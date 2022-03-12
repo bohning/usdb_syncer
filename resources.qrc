@@ -1,0 +1,19 @@
+<RCC>
+  <qresource prefix="icons">
+    <file>resources/audio.png</file>
+    <file>resources/tick.png</file>
+    <file>resources/background.png</file>
+    <file>resources/cover.png</file>
+    <file>resources/video.png</file>
+    <file>resources/text.png</file>
+    <file>resources/rating.png</file>
+    <file>resources/faviconUSDB.ico</file>
+    <file>resources/artist.png</file>
+    <file>resources/edition.png</file>
+    <file>resources/golden_notes.png</file>
+    <file>resources/id.png</file>
+    <file>resources/language.png</file>
+    <file>resources/title.png</file>
+    <file>resources/views.png</file>
+  </qresource>
+</RCC>

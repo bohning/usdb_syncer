@@ -1,0 +1,616 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>MainWindow</class>
+ <widget class="QMainWindow" name="MainWindow">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>1349</width>
+    <height>670</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>USDB Song Manager</string>
+  </property>
+  <widget class="QWidget" name="centralwidget">
+   <layout class="QVBoxLayout" name="verticalLayout">
+    <item>
+     <layout class="QHBoxLayout" name="horizontalLayout_2">
+      <item>
+       <widget class="QPushButton" name="pushButton_getAvailableSongs">
+        <property name="font">
+         <font>
+          <pointsize>16</pointsize>
+         </font>
+        </property>
+        <property name="styleSheet">
+         <string notr="true">background-color: rgb(0, 102, 0);</string>
+        </property>
+        <property name="text">
+         <string>Get song list from usdb!</string>
+        </property>
+        <property name="icon">
+         <iconset resource="resources.qrc">
+          <normaloff>:/icons/resources/audio.png</normaloff>:/icons/resources/audio.png</iconset>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <spacer name="horizontalSpacer">
+        <property name="orientation">
+         <enum>Qt::Horizontal</enum>
+        </property>
+        <property name="sizeHint" stdset="0">
+         <size>
+          <width>768</width>
+          <height>20</height>
+         </size>
+        </property>
+       </spacer>
+      </item>
+      <item>
+       <widget class="QLabel" name="label_9">
+        <property name="text">
+         <string>Local song directory</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QLineEdit" name="lineEdit_song_dir">
+        <property name="text">
+         <string>./usdb_songs</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QPushButton" name="pushButton_select_song_dir">
+        <property name="enabled">
+         <bool>true</bool>
+        </property>
+        <property name="font">
+         <font>
+          <pointsize>16</pointsize>
+         </font>
+        </property>
+        <property name="styleSheet">
+         <string notr="true">background-color: rgb(0, 102, 0);</string>
+        </property>
+        <property name="text">
+         <string>Select song folder</string>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </item>
+    <item>
+     <layout class="QHBoxLayout" name="horizontalLayout_6">
+      <item>
+       <widget class="QComboBox" name="comboBox_artist">
+        <property name="editable">
+         <bool>true</bool>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QComboBox" name="comboBox_title">
+        <property name="editable">
+         <bool>true</bool>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QComboBox" name="comboBox_language">
+        <property name="editable">
+         <bool>true</bool>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QComboBox" name="comboBox_edition">
+        <property name="editable">
+         <bool>true</bool>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QComboBox" name="comboBox_goldennotes">
+        <item>
+         <property name="text">
+          <string>any</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>yes</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>no</string>
+         </property>
+        </item>
+       </widget>
+      </item>
+      <item>
+       <widget class="QComboBox" name="comboBox_rating">
+        <item>
+         <property name="text">
+          <string>any</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>★</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>★★</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>★★★</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>★★★★</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>★★★★★</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>★ or more</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>★★ or more</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>★★★ or more</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>★★★★ or more</string>
+         </property>
+        </item>
+       </widget>
+      </item>
+      <item>
+       <widget class="QComboBox" name="comboBox_views">
+        <item>
+         <property name="text">
+          <string>any</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>100+</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>200+</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>300+</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>400+</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>500+</string>
+         </property>
+        </item>
+       </widget>
+      </item>
+     </layout>
+    </item>
+    <item>
+     <widget class="QTreeView" name="treeView_availableSongs">
+      <property name="alternatingRowColors">
+       <bool>true</bool>
+      </property>
+      <property name="rootIsDecorated">
+       <bool>false</bool>
+      </property>
+      <property name="sortingEnabled">
+       <bool>true</bool>
+      </property>
+      <attribute name="headerHighlightSections">
+       <bool>false</bool>
+      </attribute>
+     </widget>
+    </item>
+    <item>
+     <layout class="QHBoxLayout" name="horizontalLayout_13">
+      <item>
+       <widget class="QGroupBox" name="groupBox_songfile">
+        <property name="title">
+         <string>Download song file – settings:</string>
+        </property>
+        <property name="checkable">
+         <bool>true</bool>
+        </property>
+        <layout class="QFormLayout" name="formLayout">
+         <item row="0" column="0">
+          <widget class="QLabel" name="label">
+           <property name="text">
+            <string>File Encoding</string>
+           </property>
+          </widget>
+         </item>
+         <item row="0" column="1">
+          <widget class="QComboBox" name="comboBox_encoding">
+           <item>
+            <property name="text">
+             <string>UTF-8</string>
+            </property>
+           </item>
+           <item>
+            <property name="text">
+             <string>UTF-8 BOM</string>
+            </property>
+           </item>
+           <item>
+            <property name="text">
+             <string>CP1252</string>
+            </property>
+           </item>
+          </widget>
+         </item>
+         <item row="1" column="0">
+          <widget class="QLabel" name="label_8">
+           <property name="text">
+            <string>Line Endings</string>
+           </property>
+          </widget>
+         </item>
+         <item row="1" column="1">
+          <widget class="QComboBox" name="comboBox_line_endings">
+           <item>
+            <property name="text">
+             <string>Windows (CRLF)</string>
+            </property>
+           </item>
+           <item>
+            <property name="text">
+             <string>Mac/Linux (LF)</string>
+            </property>
+           </item>
+          </widget>
+         </item>
+        </layout>
+       </widget>
+      </item>
+      <item>
+       <widget class="QGroupBox" name="groupBox_audio">
+        <property name="title">
+         <string>Download audio – settings:</string>
+        </property>
+        <property name="checkable">
+         <bool>true</bool>
+        </property>
+        <layout class="QFormLayout" name="formLayout_2">
+         <item row="0" column="0">
+          <widget class="QLabel" name="label_7">
+           <property name="text">
+            <string>Audio Format</string>
+           </property>
+          </widget>
+         </item>
+         <item row="0" column="1">
+          <widget class="QComboBox" name="comboBox_audio_format">
+           <item>
+            <property name="text">
+             <string>.m4a (mp4a)</string>
+            </property>
+           </item>
+           <item>
+            <property name="text">
+             <string comment="mp3">.webm (opus)</string>
+            </property>
+           </item>
+           <item>
+            <property name="text">
+             <string>bestaudio</string>
+            </property>
+           </item>
+          </widget>
+         </item>
+         <item row="1" column="0">
+          <widget class="QCheckBox" name="checkBox_audio_convert">
+           <property name="text">
+            <string>convert to</string>
+           </property>
+          </widget>
+         </item>
+         <item row="1" column="1">
+          <widget class="QComboBox" name="comboBox_audio_conversion_format">
+           <item>
+            <property name="text">
+             <string>.mp3 (MPEG Audio Layer 3)</string>
+            </property>
+           </item>
+           <item>
+            <property name="text">
+             <string>.ogg (Vorbis)</string>
+            </property>
+           </item>
+           <item>
+            <property name="text">
+             <string>.opus (Opus)</string>
+            </property>
+           </item>
+          </widget>
+         </item>
+        </layout>
+       </widget>
+      </item>
+      <item>
+       <widget class="QGroupBox" name="groupBox_video">
+        <property name="title">
+         <string>Download video – settings:</string>
+        </property>
+        <property name="checkable">
+         <bool>true</bool>
+        </property>
+        <layout class="QFormLayout" name="formLayout_3">
+         <item row="0" column="0">
+          <widget class="QLabel" name="label_4">
+           <property name="text">
+            <string>Video container</string>
+           </property>
+          </widget>
+         </item>
+         <item row="0" column="1">
+          <widget class="QComboBox" name="comboBox_videocontainer">
+           <item>
+            <property name="text">
+             <string>.mp4</string>
+            </property>
+           </item>
+           <item>
+            <property name="text">
+             <string>.webm</string>
+            </property>
+           </item>
+           <item>
+            <property name="text">
+             <string>bestvideo</string>
+            </property>
+           </item>
+          </widget>
+         </item>
+         <item row="1" column="0">
+          <widget class="QLabel" name="label_5">
+           <property name="text">
+            <string>Max. resolution</string>
+           </property>
+          </widget>
+         </item>
+         <item row="1" column="1">
+          <widget class="QComboBox" name="comboBox_videoresolution">
+           <item>
+            <property name="text">
+             <string>1080p</string>
+            </property>
+           </item>
+           <item>
+            <property name="text">
+             <string>720p</string>
+            </property>
+           </item>
+          </widget>
+         </item>
+         <item row="2" column="0">
+          <widget class="QLabel" name="label_3">
+           <property name="text">
+            <string>Max. fps</string>
+           </property>
+          </widget>
+         </item>
+         <item row="2" column="1">
+          <widget class="QComboBox" name="comboBox_fps">
+           <item>
+            <property name="text">
+             <string>30</string>
+            </property>
+           </item>
+           <item>
+            <property name="text">
+             <string>60</string>
+            </property>
+           </item>
+          </widget>
+         </item>
+         <item row="3" column="1">
+          <widget class="QComboBox" name="comboBox_videoencoder">
+           <item>
+            <property name="text">
+             <string>h264</string>
+            </property>
+           </item>
+           <item>
+            <property name="text">
+             <string>h265</string>
+            </property>
+           </item>
+           <item>
+            <property name="text">
+             <string>libvpx-vp9</string>
+            </property>
+           </item>
+           <item>
+            <property name="text">
+             <string>libaom-av1</string>
+            </property>
+           </item>
+          </widget>
+         </item>
+         <item row="3" column="0">
+          <widget class="QCheckBox" name="checkBox_videoallowreencode">
+           <property name="text">
+            <string>reencode to</string>
+           </property>
+           <property name="checked">
+            <bool>false</bool>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </widget>
+      </item>
+      <item>
+       <widget class="QGroupBox" name="groupBox_cover">
+        <property name="title">
+         <string>Download cover – settings:</string>
+        </property>
+        <property name="checkable">
+         <bool>true</bool>
+        </property>
+        <layout class="QFormLayout" name="formLayout_4">
+         <item row="0" column="0">
+          <widget class="QLabel" name="label_2">
+           <property name="text">
+            <string>Max. resolution</string>
+           </property>
+          </widget>
+         </item>
+         <item row="0" column="1">
+          <widget class="QComboBox" name="comboBox_coverresolution">
+           <item>
+            <property name="text">
+             <string>1920x1920</string>
+            </property>
+           </item>
+           <item>
+            <property name="text">
+             <string>1500x1500</string>
+            </property>
+           </item>
+           <item>
+            <property name="text">
+             <string>1000x1000</string>
+            </property>
+           </item>
+           <item>
+            <property name="text">
+             <string>800x800</string>
+            </property>
+           </item>
+           <item>
+            <property name="text">
+             <string>600x600</string>
+            </property>
+           </item>
+          </widget>
+         </item>
+        </layout>
+       </widget>
+      </item>
+      <item>
+       <widget class="QGroupBox" name="groupBox_background">
+        <property name="title">
+         <string>Download background – settings:</string>
+        </property>
+        <property name="checkable">
+         <bool>true</bool>
+        </property>
+        <layout class="QFormLayout" name="formLayout_5">
+         <item row="0" column="0">
+          <widget class="QLabel" name="label_6">
+           <property name="text">
+            <string>Download bg</string>
+           </property>
+          </widget>
+         </item>
+         <item row="0" column="1">
+          <widget class="QComboBox" name="comboBox_background">
+           <item>
+            <property name="text">
+             <string>always</string>
+            </property>
+           </item>
+           <item>
+            <property name="text">
+             <string>only if no video</string>
+            </property>
+           </item>
+          </widget>
+         </item>
+        </layout>
+       </widget>
+      </item>
+     </layout>
+    </item>
+    <item>
+     <layout class="QHBoxLayout" name="horizontalLayout">
+      <item>
+       <spacer name="horizontalSpacer_2">
+        <property name="orientation">
+         <enum>Qt::Horizontal</enum>
+        </property>
+        <property name="sizeHint" stdset="0">
+         <size>
+          <width>1088</width>
+          <height>20</height>
+         </size>
+        </property>
+       </spacer>
+      </item>
+      <item>
+       <widget class="QPushButton" name="pushButton_downloadSelectedSongs">
+        <property name="enabled">
+         <bool>true</bool>
+        </property>
+        <property name="font">
+         <font>
+          <pointsize>16</pointsize>
+         </font>
+        </property>
+        <property name="styleSheet">
+         <string notr="true">background-color: rgb(0, 102, 0);</string>
+        </property>
+        <property name="text">
+         <string>Download selected songs!</string>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </item>
+   </layout>
+  </widget>
+  <widget class="QMenuBar" name="menubar">
+   <property name="geometry">
+    <rect>
+     <x>0</x>
+     <y>0</y>
+     <width>1349</width>
+     <height>24</height>
+    </rect>
+   </property>
+  </widget>
+  <widget class="QStatusBar" name="statusbar"/>
+ </widget>
+ <resources>
+  <include location="resources.qrc"/>
+ </resources>
+ <connections/>
+</ui>
