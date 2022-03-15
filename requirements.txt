@@ -1,1 +1,10 @@
-pyside6==6.2.3
+wheel==0.37.1
+PySide6==6.2.3
+pycurl==7.45.1
+lxml==4.8.0
+beautifulsoup4==4.10.0
+pytube==12.0.0
+requests==2.27.1
+yt_dlp==2022.3.8.2
+moviepy==1.0.3
+pdfme==0.4.9

@@ -16,7 +16,7 @@ import urllib
 from pytube import extract
 import shlex
 import requests
-import Levenshtein
+#import Levenshtein
 import yt_dlp
 from moviepy.editor import *
 from PIL import Image, ImageEnhance, ImageOps
