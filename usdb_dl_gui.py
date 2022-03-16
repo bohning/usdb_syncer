@@ -42,7 +42,7 @@ def get_usdb_page(rel_url, method='GET', header='', body=''):
     
     url = baseurl+rel_url
     if method == 'GET':
-        req = requests.get(url)
+        req = requests.get(url, headers=headers)
     elif method == 'POST':
         req = requests.post(url, headers=headers)
 
