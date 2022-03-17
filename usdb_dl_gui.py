@@ -26,11 +26,11 @@ import filecmp
 from QUMainWindow import Ui_MainWindow
 
 
-baseurl = "http://usdb.animux.de/"
+BASEURL = "http://usdb.animux.de/"
 
 
-def get_usdb_page(rel_url, method='GET', header='', body=''):
-    headers = {
+def _get_usdb_headers():
+    return {
         'Connection': 'keep-alive',
         'Content-Type': 'text/html',
         'charset': 'utf-8',
@@ -39,19 +39,48 @@ def get_usdb_page(rel_url, method='GET', header='', body=''):
         'Accept-Language': 'de-DE,de;q=0.9,en-US;q=0.8,en-DE;q=0.7,en;q=0.6',
         'Cookie': f'__utmz=7495734.1596286540.251.2.utmcsr=google|utmccn=(organic)|utmcmd=organic|utmctr=(not%20provided); __utmc=7495734; ziparchiv=; counter=0; PHPSESSID={args.phpsessid}; __utma=7495734.1923417532.1586343016.1641505471.1641515336.1172; __utmt=1; __utmb=7495734.23.10.1641515336'
     }
+
+
+def get_usdb_page(rel_url, method='GET', headers={}, data='', params={}):
+    _headers = _get_usdb_headers()
+    _headers.update(headers)
+
+    url = BASEURL+rel_url
     
-    url = baseurl+rel_url
     if method == 'GET':
-        req = requests.get(url)
+        req = requests.get(url, headers=_headers)
     elif method == 'POST':
-        req = requests.post(url, headers=headers)
+        req = requests.post(
+            url, headers=_headers,
+            data=data,
+            params=params
+        )
+    else:
+        print("ERROR: No Method given")
+        return None
 
     req.encoding = req.apparent_encoding
     return req.text
 
 
-def get_usdb_available_songs():
-    html = get_usdb_page('index.php?link=list', "POST", body = "limit=50000")
+def get_usdb_available_songs(filter={}):
+    """ Return a list of all available songs
+        filter - dict with filters
+
+        default filters: 'limit', 'order', 'ud'
+        possible filters: 'interpret', 'title','edition','language'
+    """
+    params = {"link":"list"}
+    payload = {
+        'limit': '50000',
+        'order': 'id',
+        'ud': 'asc'
+    }
+    payload.update(filter)
+
+    html = get_usdb_page(
+        'index.php', "POST",
+        params=params, data=payload)
 
     regex = r'<td onclick="show_detail\((\d+)\)">(.*)</td>\n<td onclick="show_detail\(\d+\)">(.*)</td>\n<td onclick="show_detail\(\d+\)">(.*)</td>\n<td onclick="show_detail\(\d+\)">(.*)</td>\n<td onclick="show_detail\(\d+\)">(.*)</td>\n<td onclick="show_detail\(\d+\)">(.*)</td>\n<td onclick="show_detail\(\d+\)">(.*)</td>'
     matches = re.findall(regex, html)
@@ -96,7 +125,7 @@ def get_usdb_details(id):
         # cover
         i += 1
         if not "nocover" in rows[i].find_all("td")[1].find("img").get("src"):
-            details["cover_url"] = f"{baseurl}" + rows[1].find_all("td")[1].find("img").get("src")
+            details["cover_url"] = f"{BASEURL}" + rows[1].find_all("td")[1].find("img").get("src")
         # bpm
         i += 1
         details["bpm"] = rows[i].find_all("td")[1].string
@@ -217,8 +246,20 @@ def get_usdb_details(id):
 
 
 def getsongtext(id):
-    html = get_usdb_page(f'index.php?link=gettxt&id={id}')
-    soup = soup = BeautifulSoup(html, 'lxml')
+    params = {
+        'link': 'gettxt',
+        'id': id,
+    }
+    data = "wd=1"
+    headers={'Content-Type': 'application/x-www-form-urlencoded'}
+    html = get_usdb_page(
+        'index.php',
+        'POST',
+        headers=headers,
+        params=params,
+        data=data
+    )
+    soup = BeautifulSoup(html, 'lxml')
     songtext = soup.find('textarea').string
     songtext = songtext.replace("<","(")
     songtext = songtext.replace(">",")")
