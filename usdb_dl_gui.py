@@ -49,6 +49,7 @@ def get_usdb_page(rel_url, method='GET', headers={}, data='', params={}):
     
     if method == 'GET':
         req = requests.get(url, headers=_headers)
+
     elif method == 'POST':
         req = requests.post(
             url, headers=_headers,
