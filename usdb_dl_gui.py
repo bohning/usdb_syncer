@@ -7,8 +7,6 @@ from PySide6.QtUiTools import QUiLoader
 import sys
 import re
 import argparse
-from io import BytesIO
-import pycurl
 import os
 import logging
 from bs4 import BeautifulSoup # needs lxml
@@ -32,32 +30,24 @@ baseurl = "http://usdb.animux.de/"
 
 
 def get_usdb_page(rel_url, method='GET', header='', body=''):
-    header = ['Connection: keep-alive',
-               'Upgrade-Insecure-Requests: 1',
-               'User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.110 Safari/537.36',
-               'Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9',
-               'Accept-Language: de-DE,de;q=0.9,en-US;q=0.8,en-DE;q=0.7,en;q=0.6',
-               f'Cookie: __utmz=7495734.1596286540.251.2.utmcsr=google|utmccn=(organic)|utmcmd=organic|utmctr=(not%20provided); __utmc=7495734; ziparchiv=; counter=0; PHPSESSID={args.phpsessid}; __utma=7495734.1923417532.1586343016.1641505471.1641515336.1172; __utmt=1; __utmb=7495734.23.10.1641515336'
-               ]
+    headers = {
+        'Connection': 'keep-alive',
+        'Content-Type': 'text/html',
+        'charset': 'utf-8',
+        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.110 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9',
+        'Accept-Language': 'de-DE,de;q=0.9,en-US;q=0.8,en-DE;q=0.7,en;q=0.6',
+        'Cookie': f'__utmz=7495734.1596286540.251.2.utmcsr=google|utmccn=(organic)|utmcmd=organic|utmctr=(not%20provided); __utmc=7495734; ziparchiv=; counter=0; PHPSESSID={args.phpsessid}; __utma=7495734.1923417532.1586343016.1641505471.1641515336.1172; __utmt=1; __utmb=7495734.23.10.1641515336'
+    }
     
-    response = BytesIO()
-    c = pycurl.Curl()
-    c.setopt(pycurl.URL, baseurl+rel_url)
-    c.setopt(pycurl.HTTPHEADER, header)
-    c.setopt(c.WRITEFUNCTION, response.write)
-    
+    url = baseurl+rel_url
     if method == 'GET':
-        c.setopt(pycurl.HTTPGET, 1)
+        req = requests.get(url, headers=headers)
     elif method == 'POST':
-        c.setopt(pycurl.POST, 1)
-        c.setopt(pycurl.POSTFIELDS, body)
-    
-    c.perform()
-    c.close()
-    
-    html = response.getvalue().decode('UTF-8')
-    return html
+        req = requests.post(url, headers=headers)
 
+    req.encoding = req.apparent_encoding
+    return req.text
 
 
 def get_usdb_available_songs():
