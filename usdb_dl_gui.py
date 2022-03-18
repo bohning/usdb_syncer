@@ -27,6 +27,7 @@ from QUMainWindow import Ui_MainWindow
 
 
 BASEURL = "http://usdb.animux.de/"
+PHPSESSID = ""
 
 
 def _get_usdb_headers():
@@ -37,7 +38,7 @@ def _get_usdb_headers():
         'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.110 Safari/537.36',
         'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9',
         'Accept-Language': 'de-DE,de;q=0.9,en-US;q=0.8,en-DE;q=0.7,en;q=0.6',
-        'Cookie': f'__utmz=7495734.1596286540.251.2.utmcsr=google|utmccn=(organic)|utmcmd=organic|utmctr=(not%20provided); __utmc=7495734; ziparchiv=; counter=0; PHPSESSID={args.phpsessid}; __utma=7495734.1923417532.1586343016.1641505471.1641515336.1172; __utmt=1; __utmb=7495734.23.10.1641515336'
+        'Cookie': f'__utmz=7495734.1596286540.251.2.utmcsr=google|utmccn=(organic)|utmcmd=organic|utmctr=(not%20provided); __utmc=7495734; ziparchiv=; counter=0; PHPSESSID={PHPSESSID}; __utma=7495734.1923417532.1586343016.1641505471.1641515336.1172; __utmt=1; __utmb=7495734.23.10.1641515336'
     }
 
 
@@ -882,9 +883,10 @@ class QUMainWindow(QMainWindow, Ui_MainWindow):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.setupUi(self)
-        self.pushButton_getAvailableSongs.clicked.connect(self.get_available_songs)
+        self.pushButton_login.clicked.connect(self.login)
+        self.pushButton_refresh.clicked.connect(self.refresh)
         self.pushButton_downloadSelectedSongs.clicked.connect(self.download_selected_songs)
-        self.pushButton_select_song_dir.clicked.connect(self.select_song_dir)
+        self.pushButton_select_song_dir.clicked.connect(self.select_song_dir)   
         #header = self.treeWidget_availableSongs.header()
         #header = self.treeView_availableSongs.header()
         #header.setSectionResizeMode(QHeaderView.ResizeToContents)
@@ -908,7 +910,29 @@ class QUMainWindow(QMainWindow, Ui_MainWindow):
         #header.setSectionResizeMode(Qt.QHeaderView.ResizeToContents)
         
         
-    def get_available_songs(self):      
+    def login(self):
+        headers = {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/98.0.4758.109 Safari/537.36 OPR/84.0.4316.31',
+            }
+
+        data = {
+            'user': self.lineEdit_user,
+            'pass': self.lineEdit_password,
+            'login': 'Login'
+            }
+
+        response = requests.post('http://usdb.animux.de/', headers=headers, data=data, verify=False)
+        global PHPSESSID
+        PHPSESSID = response.cookies.get('PHPSESSID')
+        if PHPSESSID:
+            logging.info(f"Login successful (PHPSESSID: {PHPSESSID})")
+        else:
+            logging.error("Login failed.")
+        self.refresh()
+    
+
+    def refresh(self):
         available_songs = get_usdb_available_songs()
         artists = []
         titles = []
@@ -1272,12 +1296,12 @@ def main():
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="UltraStar script.")
 
-    parser.add_argument(
-        "-pid",
-        "--phpsessid",
-        action="store",
-        default="06378024b97eu441o61g9hpqp4",
-        help="the PHP session ID after you logged into usdb (get e.g. through Chrome Developer Tools")
+    # parser.add_argument(
+    #     "-pid",
+    #     "--phpsessid",
+    #     action="store",
+    #     default="pehoqa037ja5mflmdcva8idnt3",
+    #     help="the PHP session ID after you logged into usdb (get e.g. through Chrome Developer Tools")
     
     args = parser.parse_args()
 

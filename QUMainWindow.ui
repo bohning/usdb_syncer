@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1349</width>
+    <width>1426</width>
     <height>670</height>
    </rect>
   </property>
@@ -16,24 +16,76 @@
   <widget class="QWidget" name="centralwidget">
    <layout class="QVBoxLayout" name="verticalLayout">
     <item>
-     <layout class="QHBoxLayout" name="horizontalLayout_2">
+     <layout class="QHBoxLayout" name="horizontalLayout_3">
       <item>
-       <widget class="QPushButton" name="pushButton_getAvailableSongs">
-        <property name="font">
-         <font>
-          <pointsize>16</pointsize>
-         </font>
+       <widget class="QGroupBox" name="groupBox">
+        <property name="title">
+         <string>USDB connection</string>
         </property>
-        <property name="styleSheet">
-         <string notr="true">background-color: rgb(0, 102, 0);</string>
-        </property>
-        <property name="text">
-         <string>Get song list from usdb!</string>
-        </property>
-        <property name="icon">
-         <iconset resource="resources.qrc">
-          <normaloff>:/icons/resources/audio.png</normaloff>:/icons/resources/audio.png</iconset>
-        </property>
+        <layout class="QHBoxLayout" name="horizontalLayout_2">
+         <item>
+          <widget class="QLabel" name="label_username">
+           <property name="text">
+            <string>User</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QLineEdit" name="lineEdit_user"/>
+         </item>
+         <item>
+          <widget class="QLabel" name="label_password">
+           <property name="text">
+            <string>Password</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QLineEdit" name="lineEdit_password">
+           <property name="echoMode">
+            <enum>QLineEdit::Password</enum>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QPushButton" name="pushButton_login">
+           <property name="font">
+            <font>
+             <pointsize>16</pointsize>
+            </font>
+           </property>
+           <property name="styleSheet">
+            <string notr="true">background-color: rgb(0, 102, 0);</string>
+           </property>
+           <property name="text">
+            <string> Login</string>
+           </property>
+           <property name="icon">
+            <iconset resource="../us/usdb_dl_gui/resources.qrc">
+             <normaloff>:/icons/resources/faviconUSDB.ico</normaloff>:/icons/resources/faviconUSDB.ico</iconset>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QPushButton" name="pushButton_refresh">
+           <property name="font">
+            <font>
+             <pointsize>16</pointsize>
+            </font>
+           </property>
+           <property name="styleSheet">
+            <string notr="true">background-color: rgb(0, 102, 0);</string>
+           </property>
+           <property name="text">
+            <string> Refresh</string>
+           </property>
+           <property name="icon">
+            <iconset resource="../us/usdb_dl_gui/resources.qrc">
+             <normaloff>:/icons/resources/faviconUSDB.ico</normaloff>:/icons/resources/faviconUSDB.ico</iconset>
+           </property>
+          </widget>
+         </item>
+        </layout>
        </widget>
       </item>
       <item>
@@ -43,42 +95,44 @@
         </property>
         <property name="sizeHint" stdset="0">
          <size>
-          <width>768</width>
+          <width>358</width>
           <height>20</height>
          </size>
         </property>
        </spacer>
       </item>
       <item>
-       <widget class="QLabel" name="label_9">
-        <property name="text">
-         <string>Local song directory</string>
+       <widget class="QGroupBox" name="groupBox_2">
+        <property name="title">
+         <string>Local song directory to synchronize</string>
         </property>
-       </widget>
-      </item>
-      <item>
-       <widget class="QLineEdit" name="lineEdit_song_dir">
-        <property name="text">
-         <string>./usdb_songs</string>
-        </property>
-       </widget>
-      </item>
-      <item>
-       <widget class="QPushButton" name="pushButton_select_song_dir">
-        <property name="enabled">
-         <bool>true</bool>
-        </property>
-        <property name="font">
-         <font>
-          <pointsize>16</pointsize>
-         </font>
-        </property>
-        <property name="styleSheet">
-         <string notr="true">background-color: rgb(0, 102, 0);</string>
-        </property>
-        <property name="text">
-         <string>Select song folder</string>
-        </property>
+        <layout class="QHBoxLayout" name="horizontalLayout_4">
+         <item>
+          <widget class="QLineEdit" name="lineEdit_song_dir">
+           <property name="text">
+            <string>./usdb_songs</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QPushButton" name="pushButton_select_song_dir">
+           <property name="enabled">
+            <bool>true</bool>
+           </property>
+           <property name="font">
+            <font>
+             <pointsize>16</pointsize>
+            </font>
+           </property>
+           <property name="styleSheet">
+            <string notr="true">background-color: rgb(0, 102, 0);</string>
+           </property>
+           <property name="text">
+            <string>Select song folder</string>
+           </property>
+          </widget>
+         </item>
+        </layout>
        </widget>
       </item>
      </layout>
@@ -602,7 +656,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1349</width>
+     <width>1426</width>
      <height>24</height>
     </rect>
    </property>
@@ -610,7 +664,7 @@
   <widget class="QStatusBar" name="statusbar"/>
  </widget>
  <resources>
-  <include location="resources.qrc"/>
+  <include location="../us/usdb_dl_gui/resources.qrc"/>
  </resources>
  <connections/>
 </ui>

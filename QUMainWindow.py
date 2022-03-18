@@ -26,49 +26,87 @@ class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         if not MainWindow.objectName():
             MainWindow.setObjectName(u"MainWindow")
-        MainWindow.resize(1349, 670)
+        MainWindow.resize(1426, 670)
         self.centralwidget = QWidget(MainWindow)
         self.centralwidget.setObjectName(u"centralwidget")
         self.verticalLayout = QVBoxLayout(self.centralwidget)
         self.verticalLayout.setObjectName(u"verticalLayout")
-        self.horizontalLayout_2 = QHBoxLayout()
+        self.horizontalLayout_3 = QHBoxLayout()
+        self.horizontalLayout_3.setObjectName(u"horizontalLayout_3")
+        self.groupBox = QGroupBox(self.centralwidget)
+        self.groupBox.setObjectName(u"groupBox")
+        self.horizontalLayout_2 = QHBoxLayout(self.groupBox)
         self.horizontalLayout_2.setObjectName(u"horizontalLayout_2")
-        self.pushButton_getAvailableSongs = QPushButton(self.centralwidget)
-        self.pushButton_getAvailableSongs.setObjectName(u"pushButton_getAvailableSongs")
+        self.label_username = QLabel(self.groupBox)
+        self.label_username.setObjectName(u"label_username")
+
+        self.horizontalLayout_2.addWidget(self.label_username)
+
+        self.lineEdit_user = QLineEdit(self.groupBox)
+        self.lineEdit_user.setObjectName(u"lineEdit_user")
+
+        self.horizontalLayout_2.addWidget(self.lineEdit_user)
+
+        self.label_password = QLabel(self.groupBox)
+        self.label_password.setObjectName(u"label_password")
+
+        self.horizontalLayout_2.addWidget(self.label_password)
+
+        self.lineEdit_password = QLineEdit(self.groupBox)
+        self.lineEdit_password.setObjectName(u"lineEdit_password")
+        self.lineEdit_password.setEchoMode(QLineEdit.Password)
+
+        self.horizontalLayout_2.addWidget(self.lineEdit_password)
+
+        self.pushButton_login = QPushButton(self.groupBox)
+        self.pushButton_login.setObjectName(u"pushButton_login")
         font = QFont()
         font.setPointSize(16)
-        self.pushButton_getAvailableSongs.setFont(font)
-        self.pushButton_getAvailableSongs.setStyleSheet(u"background-color: rgb(0, 102, 0);")
+        self.pushButton_login.setFont(font)
+        self.pushButton_login.setStyleSheet(u"background-color: rgb(0, 102, 0);")
         icon = QIcon()
-        icon.addFile(u":/icons/resources/audio.png", QSize(), QIcon.Normal, QIcon.Off)
-        self.pushButton_getAvailableSongs.setIcon(icon)
+        icon.addFile(u":/icons/resources/faviconUSDB.ico", QSize(), QIcon.Normal, QIcon.Off)
+        self.pushButton_login.setIcon(icon)
 
-        self.horizontalLayout_2.addWidget(self.pushButton_getAvailableSongs)
+        self.horizontalLayout_2.addWidget(self.pushButton_login)
 
-        self.horizontalSpacer = QSpacerItem(768, 20, QSizePolicy.Expanding, QSizePolicy.Minimum)
+        self.pushButton_refresh = QPushButton(self.groupBox)
+        self.pushButton_refresh.setObjectName(u"pushButton_refresh")
+        self.pushButton_refresh.setFont(font)
+        self.pushButton_refresh.setStyleSheet(u"background-color: rgb(0, 102, 0);")
+        self.pushButton_refresh.setIcon(icon)
 
-        self.horizontalLayout_2.addItem(self.horizontalSpacer)
+        self.horizontalLayout_2.addWidget(self.pushButton_refresh)
 
-        self.label_9 = QLabel(self.centralwidget)
-        self.label_9.setObjectName(u"label_9")
 
-        self.horizontalLayout_2.addWidget(self.label_9)
+        self.horizontalLayout_3.addWidget(self.groupBox)
 
-        self.lineEdit_song_dir = QLineEdit(self.centralwidget)
+        self.horizontalSpacer = QSpacerItem(358, 20, QSizePolicy.Expanding, QSizePolicy.Minimum)
+
+        self.horizontalLayout_3.addItem(self.horizontalSpacer)
+
+        self.groupBox_2 = QGroupBox(self.centralwidget)
+        self.groupBox_2.setObjectName(u"groupBox_2")
+        self.horizontalLayout_4 = QHBoxLayout(self.groupBox_2)
+        self.horizontalLayout_4.setObjectName(u"horizontalLayout_4")
+        self.lineEdit_song_dir = QLineEdit(self.groupBox_2)
         self.lineEdit_song_dir.setObjectName(u"lineEdit_song_dir")
 
-        self.horizontalLayout_2.addWidget(self.lineEdit_song_dir)
+        self.horizontalLayout_4.addWidget(self.lineEdit_song_dir)
 
-        self.pushButton_select_song_dir = QPushButton(self.centralwidget)
+        self.pushButton_select_song_dir = QPushButton(self.groupBox_2)
         self.pushButton_select_song_dir.setObjectName(u"pushButton_select_song_dir")
         self.pushButton_select_song_dir.setEnabled(True)
         self.pushButton_select_song_dir.setFont(font)
         self.pushButton_select_song_dir.setStyleSheet(u"background-color: rgb(0, 102, 0);")
 
-        self.horizontalLayout_2.addWidget(self.pushButton_select_song_dir)
+        self.horizontalLayout_4.addWidget(self.pushButton_select_song_dir)
 
 
-        self.verticalLayout.addLayout(self.horizontalLayout_2)
+        self.horizontalLayout_3.addWidget(self.groupBox_2)
+
+
+        self.verticalLayout.addLayout(self.horizontalLayout_3)
 
         self.horizontalLayout_6 = QHBoxLayout()
         self.horizontalLayout_6.setObjectName(u"horizontalLayout_6")
@@ -337,7 +375,7 @@ class Ui_MainWindow(object):
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QMenuBar(MainWindow)
         self.menubar.setObjectName(u"menubar")
-        self.menubar.setGeometry(QRect(0, 0, 1349, 24))
+        self.menubar.setGeometry(QRect(0, 0, 1426, 24))
         MainWindow.setMenuBar(self.menubar)
         self.statusbar = QStatusBar(MainWindow)
         self.statusbar.setObjectName(u"statusbar")
@@ -350,8 +388,12 @@ class Ui_MainWindow(object):
 
     def retranslateUi(self, MainWindow):
         MainWindow.setWindowTitle(QCoreApplication.translate("MainWindow", u"USDB Song Manager", None))
-        self.pushButton_getAvailableSongs.setText(QCoreApplication.translate("MainWindow", u"Get song list from usdb!", None))
-        self.label_9.setText(QCoreApplication.translate("MainWindow", u"Local song directory", None))
+        self.groupBox.setTitle(QCoreApplication.translate("MainWindow", u"USDB connection", None))
+        self.label_username.setText(QCoreApplication.translate("MainWindow", u"User", None))
+        self.label_password.setText(QCoreApplication.translate("MainWindow", u"Password", None))
+        self.pushButton_login.setText(QCoreApplication.translate("MainWindow", u" Login", None))
+        self.pushButton_refresh.setText(QCoreApplication.translate("MainWindow", u" Refresh", None))
+        self.groupBox_2.setTitle(QCoreApplication.translate("MainWindow", u"Local song directory to synchronize", None))
         self.lineEdit_song_dir.setText(QCoreApplication.translate("MainWindow", u"./usdb_songs", None))
         self.pushButton_select_song_dir.setText(QCoreApplication.translate("MainWindow", u"Select song folder", None))
         self.comboBox_goldennotes.setItemText(0, QCoreApplication.translate("MainWindow", u"any", None))
