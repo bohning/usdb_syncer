@@ -1,14 +1,18 @@
+import argparse
+import configparser
+import datetime
+from distutils.command.config import config
+import logging
+import os
+import re
+import sys
+
 from stringprep import map_table_b3
 from PySide6.QtWidgets import QApplication, QMainWindow, QFileDialog
 from PySide6 import QtCore
 from PySide6 import QtGui
 from PySide6.QtCore import Qt
 from PySide6.QtUiTools import QUiLoader
-import sys
-import re
-import argparse
-import os
-import logging
 from bs4 import BeautifulSoup # needs lxml
 import urllib
 from pytube import extract
@@ -20,7 +24,7 @@ from moviepy.editor import *
 from PIL import Image, ImageEnhance, ImageOps
 import subprocess
 from pdfme import build_pdf # maybe reportlab is better suited?
-import datetime
+
 import filecmp
 
 from QUMainWindow import Ui_MainWindow
@@ -49,9 +53,11 @@ def get_usdb_page(rel_url, method='GET', headers={}, data='', params={}):
     url = BASEURL+rel_url
     
     if method == 'GET':
+        print("GET", url, _headers, data, params)
         req = requests.get(url, headers=_headers)
 
     elif method == 'POST':
+        print("POST", url, _headers, data, params)
         req = requests.post(
             url, headers=_headers,
             data=data,
@@ -79,9 +85,10 @@ def get_usdb_available_songs(filter={}):
         'ud': 'asc'
     }
     payload.update(filter)
+    headers={'Content-Type': 'application/x-www-form-urlencoded'}
 
     html = get_usdb_page(
-        'index.php', "POST",
+        'index.php', "POST", headers=headers,
         params=params, data=payload)
 
     regex = r'<td onclick="show_detail\((\d+)\)">(.*)</td>\n<td onclick="show_detail\(\d+\)">(.*)</td>\n<td onclick="show_detail\(\d+\)">(.*)</td>\n<td onclick="show_detail\(\d+\)">(.*)</td>\n<td onclick="show_detail\(\d+\)">(.*)</td>\n<td onclick="show_detail\(\d+\)">(.*)</td>\n<td onclick="show_detail\(\d+\)">(.*)</td>'
@@ -97,7 +104,6 @@ def get_usdb_available_songs(filter={}):
         rating = str(rating_string.count("star.png"))
         song = {"id": id, "artist": artist, "title": title, "language": language, "edition": edition, "goldennotes": goldennotes, "rating": rating, "views": views}
         available_songs.append(song)
-        
     return available_songs
 
 
@@ -906,6 +912,11 @@ class QUMainWindow(QMainWindow, Ui_MainWindow):
         self.model.setHorizontalHeaderItem(10, QtGui.QStandardItem(QtGui.QIcon(":/icons/resources/video.png"), ""))
         self.model.setHorizontalHeaderItem(11, QtGui.QStandardItem(QtGui.QIcon(":/icons/resources/cover.png"), ""))
         self.model.setHorizontalHeaderItem(12, QtGui.QStandardItem(QtGui.QIcon(":/icons/resources/background.png"), ""))
+        config = configparser.ConfigParser()
+        config.read('config.ini')
+        self.lineEdit_user.setText(config["usdb"]["username"])
+        self.lineEdit_password.setText(config["usdb"]["password"])
+
         header = self.treeView_availableSongs.header()
         #header.setSectionResizeMode(Qt.QHeaderView.ResizeToContents)
         
@@ -923,7 +934,6 @@ class QUMainWindow(QMainWindow, Ui_MainWindow):
             }
 
         response = requests.post('http://usdb.animux.de/', headers=headers, data=data, verify=False)
-        global PHPSESSID
         PHPSESSID = response.cookies.get('PHPSESSID')
         if PHPSESSID:
             logging.info(f"Login successful (PHPSESSID: {PHPSESSID})")
@@ -934,10 +944,10 @@ class QUMainWindow(QMainWindow, Ui_MainWindow):
 
     def refresh(self):
         available_songs = get_usdb_available_songs()
-        artists = []
+        artists = set()
         titles = []
-        languages = []
-        editions = []
+        languages = set()
+        editions = set()
         for song in available_songs:
             if song["language"]:
                 lang = song["language"]
@@ -953,22 +963,30 @@ class QUMainWindow(QMainWindow, Ui_MainWindow):
             #item = QtGui.QStandardItem([id_zero_padded, song['artist'], song['title'], song["language"], song["edition"], "Yes" if song["goldennotes"] else "No", rating_string, song["views"]])
             check_item = QtGui.QStandardItem(id_zero_padded)
             check_item.setCheckable(True)
-            row = [check_item, QtGui.QStandardItem(song['artist']), QtGui.QStandardItem(song['title']), QtGui.QStandardItem(song["language"]), QtGui.QStandardItem(song["edition"]), QtGui.QStandardItem("Yes" if song["goldennotes"] else "No"), QtGui.QStandardItem(rating_string), QtGui.QStandardItem(song["views"])]
+            row = [
+                check_item,
+                QtGui.QStandardItem(song['artist']),
+                QtGui.QStandardItem(song['title']),
+                QtGui.QStandardItem(song["language"]),
+                QtGui.QStandardItem(song["edition"]),
+                QtGui.QStandardItem("Yes" if song["goldennotes"] else "No"),
+                QtGui.QStandardItem(rating_string),
+                QtGui.QStandardItem(song["views"])]
             #item.setCheckable(True)
             #item.setFlags(item.flags() | Qt.ItemIsUserCheckable)
             #item.setCheckState(Qt.Unchecked)
             root.appendRow(row)
             self.treeView_availableSongs.setModel(self.model)
-               
+
             #item = QTreeWidgetItem([id_zero_padded, song['artist'], song['title'], song["language"], song["edition"], "Yes" if song["goldennotes"] else "No", rating_string, song["views"]])
             #item.setFlags(item.flags() | Qt.ItemIsUserCheckable)
             #item.setCheckState(0, Qt.Unchecked)
             #self.treeWidget_availableSongs.addTopLevelItem(item)
             
-            artists.append(song['artist'])
+            artists.add(song['artist'])
             titles.append(song['title'])
-            languages.append(song['language'])
-            editions.append(song['edition'])
+            languages.add(song['language'])
+            editions.add(song['edition'])
         
         self.comboBox_artist.addItems(list(sorted(set(artists))))
         self.comboBox_title.addItems(list(sorted(set(titles))))
@@ -1283,7 +1301,7 @@ def main():
             logging.StreamHandler(sys.stdout)
         ]
     )
-    
+
     app = QApplication(sys.argv)
     quMainWindow = QUMainWindow()
     quMainWindow.show()
@@ -1296,13 +1314,6 @@ def main():
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="UltraStar script.")
 
-    # parser.add_argument(
-    #     "-pid",
-    #     "--phpsessid",
-    #     action="store",
-    #     default="pehoqa037ja5mflmdcva8idnt3",
-    #     help="the PHP session ID after you logged into usdb (get e.g. through Chrome Developer Tools")
-    
     args = parser.parse_args()
 
     # Call main
