@@ -138,6 +138,20 @@
      </layout>
     </item>
     <item>
+     <layout class="QHBoxLayout" name="horizontalLayout_5">
+      <item>
+       <widget class="QLabel" name="label_9">
+        <property name="text">
+         <string>Search</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QLineEdit" name="lineEdit_search"/>
+      </item>
+     </layout>
+    </item>
+    <item>
      <layout class="QHBoxLayout" name="horizontalLayout_6">
       <item>
        <widget class="QComboBox" name="comboBox_artist">
@@ -277,19 +291,10 @@
      </layout>
     </item>
     <item>
-     <widget class="QTreeView" name="treeView_availableSongs">
+     <widget class="QTableView" name="tableView_availableSongs">
       <property name="alternatingRowColors">
        <bool>true</bool>
       </property>
-      <property name="rootIsDecorated">
-       <bool>false</bool>
-      </property>
-      <property name="sortingEnabled">
-       <bool>true</bool>
-      </property>
-      <attribute name="headerHighlightSections">
-       <bool>false</bool>
-      </attribute>
      </widget>
     </item>
     <item>

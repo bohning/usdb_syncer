@@ -917,8 +917,14 @@ class QUMainWindow(QMainWindow, Ui_MainWindow):
         self.lineEdit_user.setText(config["usdb"]["username"])
         self.lineEdit_password.setText(config["usdb"]["password"])
 
-        header = self.treeView_availableSongs.header()
+        header = self.tableView_availableSongs.horizontalHeader()
         #header.setSectionResizeMode(Qt.QHeaderView.ResizeToContents)
+        filter_proxy_model = QtCore.QSortFilterProxyModel()
+        filter_proxy_model.setSourceModel(self.model)
+        filter_proxy_model.setFilterCaseSensitivity(Qt.CaseInsensitive)
+        filter_proxy_model.setFilterKeyColumn(1)
+        
+        self.lineEdit_search.textChanged.connect(filter_proxy_model.setFilterRegularExpression)
         
         
     def login(self):
@@ -976,7 +982,7 @@ class QUMainWindow(QMainWindow, Ui_MainWindow):
             #item.setFlags(item.flags() | Qt.ItemIsUserCheckable)
             #item.setCheckState(Qt.Unchecked)
             root.appendRow(row)
-            self.treeView_availableSongs.setModel(self.model)
+            self.tableView_availableSongs.setModel(self.model)
 
             #item = QTreeWidgetItem([id_zero_padded, song['artist'], song['title'], song["language"], song["edition"], "Yes" if song["goldennotes"] else "No", rating_string, song["views"]])
             #item.setFlags(item.flags() | Qt.ItemIsUserCheckable)
@@ -1029,7 +1035,7 @@ class QUMainWindow(QMainWindow, Ui_MainWindow):
                 
     def download_selected_songs(self):
         ids = []
-        for row in range(self.model.rowCount(self.treeView_availableSongs.rootIndex())):
+        for row in range(self.model.rowCount(self.tableView_availableSongs.rootIndex())):
             item = self.model.item(row)
             if item.checkState() == Qt.CheckState.Checked:
                 ids.append(int(item.data(0)))
@@ -1063,7 +1069,7 @@ class QUMainWindow(QMainWindow, Ui_MainWindow):
         #    ' and a reference to ',
         #    {'.': 'Title 2.', 'style': 'url', 'ref': 'title2'}]
         #)
-        for row in range(self.model.rowCount(self.treeView_availableSongs.rootIndex())):
+        for row in range(self.model.rowCount(self.tableView_availableSongs.rootIndex())):
             item = self.model.item(row, 0)
             if item.checkState() == Qt.CheckState.Checked:
                 id = str(int(item.text()))

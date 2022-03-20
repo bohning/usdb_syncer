@@ -18,7 +18,7 @@ from PySide6.QtGui import (QBrush, QColor, QConicalGradient, QCursor,
 from PySide6.QtWidgets import (QApplication, QCheckBox, QComboBox, QFormLayout,
     QGroupBox, QHBoxLayout, QHeaderView, QLabel,
     QLineEdit, QMainWindow, QMenuBar, QPushButton,
-    QSizePolicy, QSpacerItem, QStatusBar, QTreeView,
+    QSizePolicy, QSpacerItem, QStatusBar, QTableView,
     QVBoxLayout, QWidget)
 import resources_rc
 
@@ -108,6 +108,21 @@ class Ui_MainWindow(object):
 
         self.verticalLayout.addLayout(self.horizontalLayout_3)
 
+        self.horizontalLayout_5 = QHBoxLayout()
+        self.horizontalLayout_5.setObjectName(u"horizontalLayout_5")
+        self.label_9 = QLabel(self.centralwidget)
+        self.label_9.setObjectName(u"label_9")
+
+        self.horizontalLayout_5.addWidget(self.label_9)
+
+        self.lineEdit_search = QLineEdit(self.centralwidget)
+        self.lineEdit_search.setObjectName(u"lineEdit_search")
+
+        self.horizontalLayout_5.addWidget(self.lineEdit_search)
+
+
+        self.verticalLayout.addLayout(self.horizontalLayout_5)
+
         self.horizontalLayout_6 = QHBoxLayout()
         self.horizontalLayout_6.setObjectName(u"horizontalLayout_6")
         self.comboBox_artist = QComboBox(self.centralwidget)
@@ -171,14 +186,11 @@ class Ui_MainWindow(object):
 
         self.verticalLayout.addLayout(self.horizontalLayout_6)
 
-        self.treeView_availableSongs = QTreeView(self.centralwidget)
-        self.treeView_availableSongs.setObjectName(u"treeView_availableSongs")
-        self.treeView_availableSongs.setAlternatingRowColors(True)
-        self.treeView_availableSongs.setRootIsDecorated(False)
-        self.treeView_availableSongs.setSortingEnabled(True)
-        self.treeView_availableSongs.header().setHighlightSections(False)
+        self.tableView_availableSongs = QTableView(self.centralwidget)
+        self.tableView_availableSongs.setObjectName(u"tableView_availableSongs")
+        self.tableView_availableSongs.setAlternatingRowColors(True)
 
-        self.verticalLayout.addWidget(self.treeView_availableSongs)
+        self.verticalLayout.addWidget(self.tableView_availableSongs)
 
         self.horizontalLayout_13 = QHBoxLayout()
         self.horizontalLayout_13.setObjectName(u"horizontalLayout_13")
@@ -396,6 +408,7 @@ class Ui_MainWindow(object):
         self.groupBox_2.setTitle(QCoreApplication.translate("MainWindow", u"Local song directory to synchronize", None))
         self.lineEdit_song_dir.setText(QCoreApplication.translate("MainWindow", u"./usdb_songs", None))
         self.pushButton_select_song_dir.setText(QCoreApplication.translate("MainWindow", u"Select song folder", None))
+        self.label_9.setText(QCoreApplication.translate("MainWindow", u"Search", None))
         self.comboBox_goldennotes.setItemText(0, QCoreApplication.translate("MainWindow", u"any", None))
         self.comboBox_goldennotes.setItemText(1, QCoreApplication.translate("MainWindow", u"yes", None))
         self.comboBox_goldennotes.setItemText(2, QCoreApplication.translate("MainWindow", u"no", None))
