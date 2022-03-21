@@ -53,18 +53,18 @@ def get_usdb_page(rel_url, method='GET', headers={}, data='', params={}):
     url = BASEURL+rel_url
     
     if method == 'GET':
-        print("GET", url, _headers, data, params)
+        logging.info("GET", url, _headers, data, params)
         req = requests.get(url, headers=_headers)
 
     elif method == 'POST':
-        print("POST", url, _headers, data, params)
+        logging.info("POST", url, _headers, data, params)
         req = requests.post(
             url, headers=_headers,
             data=data,
             params=params
         )
     else:
-        print("ERROR: No Method given")
+        logging.info("ERROR: No Method given")
         return None
 
     req.encoding = req.apparent_encoding
@@ -726,7 +726,7 @@ def download_and_process_video(header, resource_params, video_params):
 
             #ffmpeg_trim_crop_cmd += f" -c:v {video_reencode_encoder} -crf {video_reencode_crf} -preset {video_reencode_preset} -c:a copy \"" + dst + "\""
             ffmpeg_trim_crop_cmd += f" -c:v {video_reencode_encoder} -threads 4 -crf {video_reencode_crf} -preset {video_reencode_preset} -c:a copy \"" + dst + "\""
-            print(ffmpeg_trim_crop_cmd)
+            logging.info(ffmpeg_trim_crop_cmd)
             logging.info("\tprocessing video file...")
             subprocess.run(ffmpeg_trim_crop_cmd, shell=True, check=True)
             logging.info("\tprocessing video file finished!")
