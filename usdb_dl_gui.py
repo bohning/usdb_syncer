@@ -8,7 +8,7 @@ import re
 import sys
 
 from stringprep import map_table_b3
-from PySide6.QtWidgets import QApplication, QMainWindow, QFileDialog
+from PySide6.QtWidgets import QApplication, QMainWindow, QFileDialog, QHeaderView
 from PySide6 import QtCore
 from PySide6 import QtGui
 from PySide6.QtCore import Qt
@@ -893,20 +893,16 @@ class QUMainWindow(QMainWindow, Ui_MainWindow):
         self.pushButton_refresh.clicked.connect(self.refresh)
         self.pushButton_downloadSelectedSongs.clicked.connect(self.download_selected_songs)
         self.pushButton_select_song_dir.clicked.connect(self.select_song_dir)   
-        #header = self.treeWidget_availableSongs.header()
-        #header = self.treeView_availableSongs.header()
-        #header.setSectionResizeMode(QHeaderView.ResizeToContents)
-        #header.setSectionResizeMode(1, QHeaderView.Stretch)
-        #header.setSectionResizeMode(2, QHeaderView.Stretch)
+        
         self.model = QtGui.QStandardItemModel()
         self.model.setHorizontalHeaderItem(0, QtGui.QStandardItem(QtGui.QIcon(":/icons/resources/id.png"), "ID"))
         self.model.setHorizontalHeaderItem(1, QtGui.QStandardItem(QtGui.QIcon(":/icons/resources/artist.png"), "Artist"))
         self.model.setHorizontalHeaderItem(2, QtGui.QStandardItem(QtGui.QIcon(":/icons/resources/title.png"), "Title"))
         self.model.setHorizontalHeaderItem(3, QtGui.QStandardItem(QtGui.QIcon(":/icons/resources/language.png"), "Language"))
         self.model.setHorizontalHeaderItem(4, QtGui.QStandardItem(QtGui.QIcon(":/icons/resources/edition.png"), "Edition"))
-        self.model.setHorizontalHeaderItem(5, QtGui.QStandardItem(QtGui.QIcon(":/icons/resources/golden_notes.png"), "Golden Notes"))
-        self.model.setHorizontalHeaderItem(6, QtGui.QStandardItem(QtGui.QIcon(":/icons/resources/rating.png"), "Rating"))
-        self.model.setHorizontalHeaderItem(7, QtGui.QStandardItem(QtGui.QIcon(":/icons/resources/views.png"), "Views"))
+        self.model.setHorizontalHeaderItem(5, QtGui.QStandardItem(QtGui.QIcon(":/icons/resources/golden_notes.png"), ""))
+        self.model.setHorizontalHeaderItem(6, QtGui.QStandardItem(QtGui.QIcon(":/icons/resources/rating.png"), ""))
+        self.model.setHorizontalHeaderItem(7, QtGui.QStandardItem(QtGui.QIcon(":/icons/resources/views.png"), ""))
         self.model.setHorizontalHeaderItem(8, QtGui.QStandardItem(QtGui.QIcon(":/icons/resources/text.png"), ""))
         self.model.setHorizontalHeaderItem(9, QtGui.QStandardItem(QtGui.QIcon(":/icons/resources/audio.png"), ""))
         self.model.setHorizontalHeaderItem(10, QtGui.QStandardItem(QtGui.QIcon(":/icons/resources/video.png"), ""))
@@ -916,9 +912,7 @@ class QUMainWindow(QMainWindow, Ui_MainWindow):
         config.read('config.ini')
         self.lineEdit_user.setText(config["usdb"]["username"])
         self.lineEdit_password.setText(config["usdb"]["password"])
-
-        header = self.tableView_availableSongs.horizontalHeader()
-        #header.setSectionResizeMode(Qt.QHeaderView.ResizeToContents)
+        
         filter_proxy_model = QtCore.QSortFilterProxyModel()
         filter_proxy_model.setSourceModel(self.model)
         filter_proxy_model.setFilterCaseSensitivity(Qt.CaseInsensitive)
@@ -967,27 +961,35 @@ class QUMainWindow(QMainWindow, Ui_MainWindow):
             
             root = self.model.invisibleRootItem()
             #item = QtGui.QStandardItem([id_zero_padded, song['artist'], song['title'], song["language"], song["edition"], "Yes" if song["goldennotes"] else "No", rating_string, song["views"]])
-            check_item = QtGui.QStandardItem(id_zero_padded)
-            check_item.setCheckable(True)
+            id_item = QtGui.QStandardItem()
+            id_item.setData(id_zero_padded, Qt.DisplayRole)
+            id_item.setCheckable(True)
+            artist_item = QtGui.QStandardItem()
+            artist_item.setData(song['artist'], Qt.DisplayRole)
+            title_item = QtGui.QStandardItem()
+            title_item.setData(song['title'], Qt.DisplayRole)
+            language_item = QtGui.QStandardItem()
+            language_item.setData(song['language'], Qt.DisplayRole)
+            edition_item = QtGui.QStandardItem()
+            edition_item.setData(song['edition'], Qt.DisplayRole)
+            goldennotes_item = QtGui.QStandardItem()
+            goldennotes_item.setData("Yes" if song["goldennotes"] else "No", Qt.DisplayRole)
+            rating_item = QtGui.QStandardItem()
+            rating_item.setData(rating_string, Qt.DisplayRole)
+            views_item = QtGui.QStandardItem()
+            views_item.setData(int(song["views"]), Qt.DisplayRole)
             row = [
-                check_item,
-                QtGui.QStandardItem(song['artist']),
-                QtGui.QStandardItem(song['title']),
-                QtGui.QStandardItem(song["language"]),
-                QtGui.QStandardItem(song["edition"]),
-                QtGui.QStandardItem("Yes" if song["goldennotes"] else "No"),
-                QtGui.QStandardItem(rating_string),
-                QtGui.QStandardItem(song["views"])]
-            #item.setCheckable(True)
-            #item.setFlags(item.flags() | Qt.ItemIsUserCheckable)
-            #item.setCheckState(Qt.Unchecked)
+                id_item,
+                artist_item,
+                title_item,
+                language_item,
+                edition_item,
+                goldennotes_item,
+                rating_item,
+                views_item
+            ]
             root.appendRow(row)
             self.tableView_availableSongs.setModel(self.model)
-
-            #item = QTreeWidgetItem([id_zero_padded, song['artist'], song['title'], song["language"], song["edition"], "Yes" if song["goldennotes"] else "No", rating_string, song["views"]])
-            #item.setFlags(item.flags() | Qt.ItemIsUserCheckable)
-            #item.setCheckState(0, Qt.Unchecked)
-            #self.treeWidget_availableSongs.addTopLevelItem(item)
             
             artists.add(song['artist'])
             titles.append(song['title'])
@@ -998,8 +1000,33 @@ class QUMainWindow(QMainWindow, Ui_MainWindow):
         self.comboBox_title.addItems(list(sorted(set(titles))))
         self.comboBox_language.addItems(list(sorted(set(languages))))
         self.comboBox_edition.addItems(list(sorted(set(editions))))
-            
-    
+        
+        header = self.tableView_availableSongs.horizontalHeader()
+        header.setSectionResizeMode(QHeaderView.ResizeToContents)
+        header.setSectionResizeMode(0,QHeaderView.Fixed)
+        header.resizeSection(0,84)
+        header.setSectionResizeMode(1,QHeaderView.Interactive)
+        header.setSectionResizeMode(2,QHeaderView.Interactive)
+        header.setSectionResizeMode(3,QHeaderView.Interactive)
+        header.setSectionResizeMode(4,QHeaderView.Interactive)
+        header.setSectionResizeMode(5,QHeaderView.Fixed)
+        header.resizeSection(5,header.sectionSize(5))
+        header.setSectionResizeMode(6,QHeaderView.Fixed)
+        header.resizeSection(6,header.sectionSize(6))
+        header.setSectionResizeMode(7,QHeaderView.Fixed)
+        header.resizeSection(7,header.sectionSize(7))
+        header.setSectionResizeMode(8,QHeaderView.Fixed)
+        header.resizeSection(8,24)
+        header.setSectionResizeMode(9,QHeaderView.Fixed)
+        header.resizeSection(9,24)
+        header.setSectionResizeMode(10,QHeaderView.Fixed)
+        header.resizeSection(10,24)
+        header.setSectionResizeMode(11,QHeaderView.Fixed)
+        header.resizeSection(11,24)
+        header.setSectionResizeMode(12,QHeaderView.Fixed)
+        header.resizeSection(12,24)
+        
+        
     def select_song_dir(self):
         song_dir = str(QFileDialog.getExistingDirectory(self, "Select Song Directory"))
         self.lineEdit_song_dir.setText(song_dir)

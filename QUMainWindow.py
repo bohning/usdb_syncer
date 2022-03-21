@@ -15,18 +15,18 @@ from PySide6.QtGui import (QBrush, QColor, QConicalGradient, QCursor,
     QFont, QFontDatabase, QGradient, QIcon,
     QImage, QKeySequence, QLinearGradient, QPainter,
     QPalette, QPixmap, QRadialGradient, QTransform)
-from PySide6.QtWidgets import (QApplication, QCheckBox, QComboBox, QFormLayout,
-    QGroupBox, QHBoxLayout, QHeaderView, QLabel,
-    QLineEdit, QMainWindow, QMenuBar, QPushButton,
-    QSizePolicy, QSpacerItem, QStatusBar, QTableView,
-    QVBoxLayout, QWidget)
+from PySide6.QtWidgets import (QAbstractItemView, QApplication, QCheckBox, QComboBox,
+    QFormLayout, QGroupBox, QHBoxLayout, QHeaderView,
+    QLabel, QLineEdit, QMainWindow, QMenuBar,
+    QPushButton, QSizePolicy, QSpacerItem, QStatusBar,
+    QTableView, QVBoxLayout, QWidget)
 import resources_rc
 
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         if not MainWindow.objectName():
             MainWindow.setObjectName(u"MainWindow")
-        MainWindow.resize(1426, 670)
+        MainWindow.resize(1448, 812)
         self.centralwidget = QWidget(MainWindow)
         self.centralwidget.setObjectName(u"centralwidget")
         self.verticalLayout = QVBoxLayout(self.centralwidget)
@@ -188,9 +188,14 @@ class Ui_MainWindow(object):
 
         self.tableView_availableSongs = QTableView(self.centralwidget)
         self.tableView_availableSongs.setObjectName(u"tableView_availableSongs")
+        self.tableView_availableSongs.setEditTriggers(QAbstractItemView.NoEditTriggers)
         self.tableView_availableSongs.setAlternatingRowColors(True)
+        self.tableView_availableSongs.setSelectionMode(QAbstractItemView.MultiSelection)
+        self.tableView_availableSongs.setSelectionBehavior(QAbstractItemView.SelectRows)
         self.tableView_availableSongs.setSortingEnabled(True)
         self.tableView_availableSongs.verticalHeader().setVisible(False)
+        self.tableView_availableSongs.verticalHeader().setMinimumSectionSize(24)
+        self.tableView_availableSongs.verticalHeader().setDefaultSectionSize(24)
 
         self.verticalLayout.addWidget(self.tableView_availableSongs)
 
@@ -268,6 +273,7 @@ class Ui_MainWindow(object):
         self.groupBox_video.setCheckable(True)
         self.formLayout_3 = QFormLayout(self.groupBox_video)
         self.formLayout_3.setObjectName(u"formLayout_3")
+        self.formLayout_3.setContentsMargins(12, -1, -1, -1)
         self.label_4 = QLabel(self.groupBox_video)
         self.label_4.setObjectName(u"label_4")
 
@@ -389,7 +395,7 @@ class Ui_MainWindow(object):
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QMenuBar(MainWindow)
         self.menubar.setObjectName(u"menubar")
-        self.menubar.setGeometry(QRect(0, 0, 1426, 24))
+        self.menubar.setGeometry(QRect(0, 0, 1448, 24))
         MainWindow.setMenuBar(self.menubar)
         self.statusbar = QStatusBar(MainWindow)
         self.statusbar.setObjectName(u"statusbar")
