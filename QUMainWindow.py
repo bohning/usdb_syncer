@@ -189,6 +189,8 @@ class Ui_MainWindow(object):
         self.tableView_availableSongs = QTableView(self.centralwidget)
         self.tableView_availableSongs.setObjectName(u"tableView_availableSongs")
         self.tableView_availableSongs.setAlternatingRowColors(True)
+        self.tableView_availableSongs.setSortingEnabled(True)
+        self.tableView_availableSongs.verticalHeader().setVisible(False)
 
         self.verticalLayout.addWidget(self.tableView_availableSongs)
 
