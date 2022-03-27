@@ -20,7 +20,7 @@ import shlex
 import requests
 #import Levenshtein
 import yt_dlp
-from moviepy.editor import *
+#from moviepy.editor import VideoFileClip
 from PIL import Image, ImageEnhance, ImageOps
 import subprocess
 from pdfme import build_pdf # maybe reportlab is better suited?
@@ -53,11 +53,11 @@ def get_usdb_page(rel_url, method='GET', headers={}, data='', params={}):
     url = BASEURL+rel_url
     
     if method == 'GET':
-        logging.info("GET", url, _headers, data, params)
+        logging.debug(f"GET, {url}, {_headers}, {data}, {params}")
         req = requests.get(url, headers=_headers)
 
     elif method == 'POST':
-        logging.info("POST", url, _headers, data, params)
+        logging.debug(f"POST, {url}, {_headers}, {data}, {params}")
         req = requests.post(
             url, headers=_headers,
             data=data,
@@ -943,11 +943,15 @@ class QUMainWindow(QMainWindow, Ui_MainWindow):
     
 
     def refresh(self):
+        #TODO: remove all existing items in the model!
         available_songs = get_usdb_available_songs()
         artists = set()
         titles = []
         languages = set()
         editions = set()
+        self.model.removeRows(0, self.model.rowCount())
+        
+        root = self.model.invisibleRootItem()
         for song in available_songs:
             if song["language"]:
                 lang = song["language"]
@@ -958,8 +962,7 @@ class QUMainWindow(QMainWindow, Ui_MainWindow):
             rating_string = rating * "★" #+ (5-rating) * "☆"
             
             id_zero_padded = song["id"].zfill(5)
-            
-            root = self.model.invisibleRootItem()
+
             #item = QtGui.QStandardItem([id_zero_padded, song['artist'], song['title'], song["language"], song["edition"], "Yes" if song["goldennotes"] else "No", rating_string, song["views"]])
             id_item = QtGui.QStandardItem()
             id_item.setData(id_zero_padded, Qt.DisplayRole)
@@ -1209,36 +1212,39 @@ class QUMainWindow(QMainWindow, Ui_MainWindow):
                 else:
                     audio_resource = resource_params.get("v")
                 
-                if "bestaudio" in self.comboBox_audio_format.currentText():
-                    audio_dl_format = "bestaudio"
-                elif "m4a" in self.comboBox_audio_format.currentText():
-                    audio_dl_format = "m4a"
-                elif "webm" in self.comboBox_audio_format.currentText():
-                    audio_dl_format = "webm"
+                if audio_resource:
+                    if "bestaudio" in self.comboBox_audio_format.currentText():
+                        audio_dl_format = "bestaudio"
+                    elif "m4a" in self.comboBox_audio_format.currentText():
+                        audio_dl_format = "m4a"
+                    elif "webm" in self.comboBox_audio_format.currentText():
+                        audio_dl_format = "webm"
+                        
+                    audio_target_format = ""
+                    audio_target_codec = ""
+                    if self.checkBox_audio_convert.isChecked():
+                        if "mp3" in self.comboBox_audio_conversion_format.currentText():
+                            audio_target_format = "mp3"
+                            audio_target_codec = "mp3"
+                        elif "ogg" in self.comboBox_audio_conversion_format.currentText():
+                            audio_target_format = "ogg"
+                            audio_target_codec = "vorbis"
+                        elif "opus" in self.comboBox_audio_conversion_format.currentText():
+                            audio_target_format = "opus"
+                            audio_target_codec = "opus"
                     
-                audio_target_format = ""
-                audio_target_codec = ""
-                if self.checkBox_audio_convert.isChecked():
-                    if "mp3" in self.comboBox_audio_conversion_format.currentText():
-                        audio_target_format = "mp3"
-                        audio_target_codec = "mp3"
-                    elif "ogg" in self.comboBox_audio_conversion_format.currentText():
-                        audio_target_format = "ogg"
-                        audio_target_codec = "vorbis"
-                    elif "opus" in self.comboBox_audio_conversion_format.currentText():
-                        audio_target_format = "opus"
-                        audio_target_codec = "opus"
-                
-                logging.info("\t- downloading audio from #VIDEO params")
+                    logging.info("\t- downloading audio from #VIDEO params")
+                        
+                    has_audio, ext = download_and_process_audio(header, audio_resource, audio_dl_format, audio_target_codec)
                     
-                has_audio, ext = download_and_process_audio(header, audio_resource, audio_dl_format, audio_target_codec)
-                
-                header["#MP3"] = f"{get_legal_filename(header)}.{ext}" 
-                
-                # delete #VIDEO tag used for resources
-                if header.get("#VIDEO"):
-                    header.pop("#VIDEO")
-                self.model.setItem(self.model.findItems(idp, flags=Qt.MatchExactly, column=0)[0].row(), 9, QtGui.QStandardItem(QtGui.QIcon(":/icons/resources/tick.png"), ""))
+                    header["#MP3"] = f"{get_legal_filename(header)}.{ext}" 
+                    
+                    # delete #VIDEO tag used for resources
+                    if header.get("#VIDEO"):
+                        header.pop("#VIDEO")
+                        
+                    if has_audio:
+                        self.model.setItem(self.model.findItems(idp, flags=Qt.MatchExactly, column=0)[0].row(), 9, QtGui.QStandardItem(QtGui.QIcon(":/icons/resources/tick.png"), ""))
             
             # download video
             has_video = False
@@ -1262,15 +1268,16 @@ class QUMainWindow(QMainWindow, Ui_MainWindow):
                     
                     #if not header.get("#VIDEO"):
                     header["#VIDEO"] = f"{get_legal_filename(header)}{video_params['container']}" 
-                    #TODO: set happy icon when download is finished
-                    self.model.setItem(self.model.findItems(idp, flags=Qt.MatchExactly, column=0)[0].row(), 10, QtGui.QStandardItem(QtGui.QIcon(":/icons/resources/tick.png"), ""))
+                    if has_video:
+                        self.model.setItem(self.model.findItems(idp, flags=Qt.MatchExactly, column=0)[0].row(), 10, QtGui.QStandardItem(QtGui.QIcon(":/icons/resources/tick.png"), ""))
 
             # download cover
             has_cover = False
             if dl_cover:
                 has_cover = download_and_process_cover(header, resource_params)
                 header["#COVER"] = f"{get_legal_filename(header)} [CO].jpg"
-                self.model.setItem(self.model.findItems(idp, flags=Qt.MatchExactly, column=0)[0].row(), 11, QtGui.QStandardItem(QtGui.QIcon(":/icons/resources/tick.png"), ""))
+                if has_cover:
+                    self.model.setItem(self.model.findItems(idp, flags=Qt.MatchExactly, column=0)[0].row(), 11, QtGui.QStandardItem(QtGui.QIcon(":/icons/resources/tick.png"), ""))
             
             # download background
             has_background = False
@@ -1278,7 +1285,9 @@ class QUMainWindow(QMainWindow, Ui_MainWindow):
                 if self.comboBox_background.currentText() == "always" or (not has_video and self.comboBox_background.currentText() == "only if no video"):
                     has_background = download_and_process_background(header, resource_params)
                     header["#BACKGROUND"] = f"{get_legal_filename(header)} [BG].jpg"
-                    self.model.setItem(self.model.findItems(idp, flags=Qt.MatchExactly, column=0)[0].row(), 12, QtGui.QStandardItem(QtGui.QIcon(":/icons/resources/tick.png"), ""))
+                    
+                    if has_background:
+                        self.model.setItem(self.model.findItems(idp, flags=Qt.MatchExactly, column=0)[0].row(), 12, QtGui.QStandardItem(QtGui.QIcon(":/icons/resources/tick.png"), ""))
                 
             # if not has_cover and do_dl_sc_covers and sc_info.get("cover_urls"):
             #     cover_params = {"co": sc_info.get("cover_urls")[0].replace("https://", "")} # TODO: download *all* covers
