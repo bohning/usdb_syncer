@@ -125,11 +125,21 @@ class Ui_MainWindow(object):
 
         self.horizontalLayout_6 = QHBoxLayout()
         self.horizontalLayout_6.setObjectName(u"horizontalLayout_6")
+        self.label_10 = QLabel(self.centralwidget)
+        self.label_10.setObjectName(u"label_10")
+
+        self.horizontalLayout_6.addWidget(self.label_10)
+
         self.comboBox_artist = QComboBox(self.centralwidget)
         self.comboBox_artist.setObjectName(u"comboBox_artist")
         self.comboBox_artist.setEditable(True)
 
         self.horizontalLayout_6.addWidget(self.comboBox_artist)
+
+        self.label_11 = QLabel(self.centralwidget)
+        self.label_11.setObjectName(u"label_11")
+
+        self.horizontalLayout_6.addWidget(self.label_11)
 
         self.comboBox_title = QComboBox(self.centralwidget)
         self.comboBox_title.setObjectName(u"comboBox_title")
@@ -137,17 +147,32 @@ class Ui_MainWindow(object):
 
         self.horizontalLayout_6.addWidget(self.comboBox_title)
 
+        self.label_12 = QLabel(self.centralwidget)
+        self.label_12.setObjectName(u"label_12")
+
+        self.horizontalLayout_6.addWidget(self.label_12)
+
         self.comboBox_language = QComboBox(self.centralwidget)
         self.comboBox_language.setObjectName(u"comboBox_language")
         self.comboBox_language.setEditable(True)
 
         self.horizontalLayout_6.addWidget(self.comboBox_language)
 
+        self.label_13 = QLabel(self.centralwidget)
+        self.label_13.setObjectName(u"label_13")
+
+        self.horizontalLayout_6.addWidget(self.label_13)
+
         self.comboBox_edition = QComboBox(self.centralwidget)
         self.comboBox_edition.setObjectName(u"comboBox_edition")
         self.comboBox_edition.setEditable(True)
 
         self.horizontalLayout_6.addWidget(self.comboBox_edition)
+
+        self.label_14 = QLabel(self.centralwidget)
+        self.label_14.setObjectName(u"label_14")
+
+        self.horizontalLayout_6.addWidget(self.label_14)
 
         self.comboBox_goldennotes = QComboBox(self.centralwidget)
         self.comboBox_goldennotes.addItem("")
@@ -156,6 +181,11 @@ class Ui_MainWindow(object):
         self.comboBox_goldennotes.setObjectName(u"comboBox_goldennotes")
 
         self.horizontalLayout_6.addWidget(self.comboBox_goldennotes)
+
+        self.label_15 = QLabel(self.centralwidget)
+        self.label_15.setObjectName(u"label_15")
+
+        self.horizontalLayout_6.addWidget(self.label_15)
 
         self.comboBox_rating = QComboBox(self.centralwidget)
         self.comboBox_rating.addItem("")
@@ -172,6 +202,11 @@ class Ui_MainWindow(object):
 
         self.horizontalLayout_6.addWidget(self.comboBox_rating)
 
+        self.label_16 = QLabel(self.centralwidget)
+        self.label_16.setObjectName(u"label_16")
+
+        self.horizontalLayout_6.addWidget(self.label_16)
+
         self.comboBox_views = QComboBox(self.centralwidget)
         self.comboBox_views.addItem("")
         self.comboBox_views.addItem("")
@@ -183,6 +218,13 @@ class Ui_MainWindow(object):
 
         self.horizontalLayout_6.addWidget(self.comboBox_views)
 
+        self.horizontalLayout_6.setStretch(1, 2)
+        self.horizontalLayout_6.setStretch(3, 2)
+        self.horizontalLayout_6.setStretch(5, 2)
+        self.horizontalLayout_6.setStretch(7, 2)
+        self.horizontalLayout_6.setStretch(9, 1)
+        self.horizontalLayout_6.setStretch(11, 1)
+        self.horizontalLayout_6.setStretch(13, 1)
 
         self.verticalLayout.addLayout(self.horizontalLayout_6)
 
@@ -417,10 +459,16 @@ class Ui_MainWindow(object):
         self.lineEdit_song_dir.setText(QCoreApplication.translate("MainWindow", u"./usdb_songs", None))
         self.pushButton_select_song_dir.setText(QCoreApplication.translate("MainWindow", u"Select song folder", None))
         self.label_9.setText(QCoreApplication.translate("MainWindow", u"Search", None))
+        self.label_10.setText(QCoreApplication.translate("MainWindow", u"Artists", None))
+        self.label_11.setText(QCoreApplication.translate("MainWindow", u"Titles", None))
+        self.label_12.setText(QCoreApplication.translate("MainWindow", u"Languages", None))
+        self.label_13.setText(QCoreApplication.translate("MainWindow", u"Editions", None))
+        self.label_14.setText(QCoreApplication.translate("MainWindow", u"Golden Notes", None))
         self.comboBox_goldennotes.setItemText(0, QCoreApplication.translate("MainWindow", u"any", None))
         self.comboBox_goldennotes.setItemText(1, QCoreApplication.translate("MainWindow", u"yes", None))
         self.comboBox_goldennotes.setItemText(2, QCoreApplication.translate("MainWindow", u"no", None))
 
+        self.label_15.setText(QCoreApplication.translate("MainWindow", u"Rating", None))
         self.comboBox_rating.setItemText(0, QCoreApplication.translate("MainWindow", u"any", None))
         self.comboBox_rating.setItemText(1, QCoreApplication.translate("MainWindow", u"\u2605", None))
         self.comboBox_rating.setItemText(2, QCoreApplication.translate("MainWindow", u"\u2605\u2605", None))
@@ -432,6 +480,7 @@ class Ui_MainWindow(object):
         self.comboBox_rating.setItemText(8, QCoreApplication.translate("MainWindow", u"\u2605\u2605\u2605 or more", None))
         self.comboBox_rating.setItemText(9, QCoreApplication.translate("MainWindow", u"\u2605\u2605\u2605\u2605 or more", None))
 
+        self.label_16.setText(QCoreApplication.translate("MainWindow", u"Views", None))
         self.comboBox_views.setItemText(0, QCoreApplication.translate("MainWindow", u"any", None))
         self.comboBox_views.setItemText(1, QCoreApplication.translate("MainWindow", u"100+", None))
         self.comboBox_views.setItemText(2, QCoreApplication.translate("MainWindow", u"200+", None))
