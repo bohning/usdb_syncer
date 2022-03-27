@@ -1,6 +1,6 @@
 venv
 .venv
-usdb_songs
+songs
 __pycache__
 *.pdf
 config.ini
