@@ -1222,7 +1222,7 @@ class QUMainWindow(QMainWindow, Ui_MainWindow):
                         
                     audio_target_format = ""
                     audio_target_codec = ""
-                    if self.checkBox_audio_convert.isChecked():
+                    if self.groupBox_reencode_audio.isChecked():
                         if "mp3" in self.comboBox_audio_conversion_format.currentText():
                             audio_target_format = "mp3"
                             audio_target_codec = "mp3"
@@ -1255,7 +1255,7 @@ class QUMainWindow(QMainWindow, Ui_MainWindow):
                             "container": self.comboBox_videocontainer.currentText(),
                             "resolution": self.comboBox_videoresolution.currentText(),
                             "fps": self.comboBox_fps.currentText(),
-                            "allow_reencode": self.checkBox_videoallowreencode.isChecked(),
+                            "allow_reencode": self.groupBox_reencode_video.isChecked(),
                             "encoder": self.comboBox_videoencoder.currentText()
                         }
                     has_video = download_and_process_video(header, resource_params, video_params)
@@ -1330,6 +1330,7 @@ class QUMainWindow(QMainWindow, Ui_MainWindow):
             os.chdir("..")
         
         os.chdir("..")
+        logging.info(f"DONE (Downloaded {len(ids)} songs")
 
 
 def main():

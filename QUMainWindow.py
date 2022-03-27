@@ -15,28 +15,29 @@ from PySide6.QtGui import (QBrush, QColor, QConicalGradient, QCursor,
     QFont, QFontDatabase, QGradient, QIcon,
     QImage, QKeySequence, QLinearGradient, QPainter,
     QPalette, QPixmap, QRadialGradient, QTransform)
-from PySide6.QtWidgets import (QAbstractItemView, QApplication, QCheckBox, QComboBox,
-    QFormLayout, QGroupBox, QHBoxLayout, QHeaderView,
-    QLabel, QLineEdit, QMainWindow, QMenuBar,
-    QPushButton, QSizePolicy, QSpacerItem, QStatusBar,
-    QTableView, QVBoxLayout, QWidget)
+from PySide6.QtWidgets import (QAbstractItemView, QApplication, QComboBox, QFormLayout,
+    QGroupBox, QHBoxLayout, QHeaderView, QLabel,
+    QLineEdit, QMainWindow, QMenuBar, QPushButton,
+    QSizePolicy, QSpacerItem, QStatusBar, QTableView,
+    QVBoxLayout, QWidget)
 import resources_rc
 
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         if not MainWindow.objectName():
             MainWindow.setObjectName(u"MainWindow")
-        MainWindow.resize(1448, 812)
+        MainWindow.resize(1493, 816)
         self.centralwidget = QWidget(MainWindow)
         self.centralwidget.setObjectName(u"centralwidget")
-        self.verticalLayout = QVBoxLayout(self.centralwidget)
-        self.verticalLayout.setObjectName(u"verticalLayout")
+        self.verticalLayout_2 = QVBoxLayout(self.centralwidget)
+        self.verticalLayout_2.setObjectName(u"verticalLayout_2")
         self.horizontalLayout_3 = QHBoxLayout()
         self.horizontalLayout_3.setObjectName(u"horizontalLayout_3")
         self.groupBox = QGroupBox(self.centralwidget)
         self.groupBox.setObjectName(u"groupBox")
         self.horizontalLayout_2 = QHBoxLayout(self.groupBox)
         self.horizontalLayout_2.setObjectName(u"horizontalLayout_2")
+        self.horizontalLayout_2.setContentsMargins(4, 4, 4, 4)
         self.label_username = QLabel(self.groupBox)
         self.label_username.setObjectName(u"label_username")
 
@@ -81,14 +82,16 @@ class Ui_MainWindow(object):
 
         self.horizontalLayout_3.addWidget(self.groupBox)
 
-        self.horizontalSpacer = QSpacerItem(358, 20, QSizePolicy.Expanding, QSizePolicy.Minimum)
+        self.horizontalSpacer = QSpacerItem(347, 17, QSizePolicy.Expanding, QSizePolicy.Minimum)
 
         self.horizontalLayout_3.addItem(self.horizontalSpacer)
 
         self.groupBox_2 = QGroupBox(self.centralwidget)
         self.groupBox_2.setObjectName(u"groupBox_2")
+        self.groupBox_2.setCheckable(True)
         self.horizontalLayout_4 = QHBoxLayout(self.groupBox_2)
         self.horizontalLayout_4.setObjectName(u"horizontalLayout_4")
+        self.horizontalLayout_4.setContentsMargins(4, 4, 4, 4)
         self.lineEdit_song_dir = QLineEdit(self.groupBox_2)
         self.lineEdit_song_dir.setObjectName(u"lineEdit_song_dir")
 
@@ -106,7 +109,7 @@ class Ui_MainWindow(object):
         self.horizontalLayout_3.addWidget(self.groupBox_2)
 
 
-        self.verticalLayout.addLayout(self.horizontalLayout_3)
+        self.verticalLayout_2.addLayout(self.horizontalLayout_3)
 
         self.horizontalLayout_5 = QHBoxLayout()
         self.horizontalLayout_5.setObjectName(u"horizontalLayout_5")
@@ -121,7 +124,7 @@ class Ui_MainWindow(object):
         self.horizontalLayout_5.addWidget(self.lineEdit_search)
 
 
-        self.verticalLayout.addLayout(self.horizontalLayout_5)
+        self.verticalLayout_2.addLayout(self.horizontalLayout_5)
 
         self.horizontalLayout_6 = QHBoxLayout()
         self.horizontalLayout_6.setObjectName(u"horizontalLayout_6")
@@ -226,7 +229,7 @@ class Ui_MainWindow(object):
         self.horizontalLayout_6.setStretch(11, 1)
         self.horizontalLayout_6.setStretch(13, 1)
 
-        self.verticalLayout.addLayout(self.horizontalLayout_6)
+        self.verticalLayout_2.addLayout(self.horizontalLayout_6)
 
         self.tableView_availableSongs = QTableView(self.centralwidget)
         self.tableView_availableSongs.setObjectName(u"tableView_availableSongs")
@@ -239,15 +242,17 @@ class Ui_MainWindow(object):
         self.tableView_availableSongs.verticalHeader().setMinimumSectionSize(24)
         self.tableView_availableSongs.verticalHeader().setDefaultSectionSize(24)
 
-        self.verticalLayout.addWidget(self.tableView_availableSongs)
+        self.verticalLayout_2.addWidget(self.tableView_availableSongs)
 
-        self.horizontalLayout_13 = QHBoxLayout()
-        self.horizontalLayout_13.setObjectName(u"horizontalLayout_13")
+        self.horizontalLayout_7 = QHBoxLayout()
+        self.horizontalLayout_7.setObjectName(u"horizontalLayout_7")
         self.groupBox_songfile = QGroupBox(self.centralwidget)
         self.groupBox_songfile.setObjectName(u"groupBox_songfile")
         self.groupBox_songfile.setCheckable(True)
         self.formLayout = QFormLayout(self.groupBox_songfile)
         self.formLayout.setObjectName(u"formLayout")
+        self.formLayout.setVerticalSpacing(2)
+        self.formLayout.setContentsMargins(4, 4, 4, 4)
         self.label = QLabel(self.groupBox_songfile)
         self.label.setObjectName(u"label")
 
@@ -274,13 +279,15 @@ class Ui_MainWindow(object):
         self.formLayout.setWidget(1, QFormLayout.FieldRole, self.comboBox_line_endings)
 
 
-        self.horizontalLayout_13.addWidget(self.groupBox_songfile)
+        self.horizontalLayout_7.addWidget(self.groupBox_songfile)
 
         self.groupBox_audio = QGroupBox(self.centralwidget)
         self.groupBox_audio.setObjectName(u"groupBox_audio")
         self.groupBox_audio.setCheckable(True)
         self.formLayout_2 = QFormLayout(self.groupBox_audio)
         self.formLayout_2.setObjectName(u"formLayout_2")
+        self.formLayout_2.setVerticalSpacing(2)
+        self.formLayout_2.setContentsMargins(4, 4, 4, 4)
         self.label_7 = QLabel(self.groupBox_audio)
         self.label_7.setObjectName(u"label_7")
 
@@ -294,28 +301,39 @@ class Ui_MainWindow(object):
 
         self.formLayout_2.setWidget(0, QFormLayout.FieldRole, self.comboBox_audio_format)
 
-        self.checkBox_audio_convert = QCheckBox(self.groupBox_audio)
-        self.checkBox_audio_convert.setObjectName(u"checkBox_audio_convert")
 
-        self.formLayout_2.setWidget(1, QFormLayout.LabelRole, self.checkBox_audio_convert)
+        self.horizontalLayout_7.addWidget(self.groupBox_audio)
 
-        self.comboBox_audio_conversion_format = QComboBox(self.groupBox_audio)
+        self.groupBox_reencode_audio = QGroupBox(self.centralwidget)
+        self.groupBox_reencode_audio.setObjectName(u"groupBox_reencode_audio")
+        self.groupBox_reencode_audio.setCheckable(True)
+        self.groupBox_reencode_audio.setChecked(False)
+        self.formLayout_6 = QFormLayout(self.groupBox_reencode_audio)
+        self.formLayout_6.setObjectName(u"formLayout_6")
+        self.formLayout_6.setContentsMargins(4, 4, 4, 4)
+        self.label_19 = QLabel(self.groupBox_reencode_audio)
+        self.label_19.setObjectName(u"label_19")
+
+        self.formLayout_6.setWidget(0, QFormLayout.LabelRole, self.label_19)
+
+        self.comboBox_audio_conversion_format = QComboBox(self.groupBox_reencode_audio)
         self.comboBox_audio_conversion_format.addItem("")
         self.comboBox_audio_conversion_format.addItem("")
         self.comboBox_audio_conversion_format.addItem("")
         self.comboBox_audio_conversion_format.setObjectName(u"comboBox_audio_conversion_format")
 
-        self.formLayout_2.setWidget(1, QFormLayout.FieldRole, self.comboBox_audio_conversion_format)
+        self.formLayout_6.setWidget(0, QFormLayout.FieldRole, self.comboBox_audio_conversion_format)
 
 
-        self.horizontalLayout_13.addWidget(self.groupBox_audio)
+        self.horizontalLayout_7.addWidget(self.groupBox_reencode_audio)
 
         self.groupBox_video = QGroupBox(self.centralwidget)
         self.groupBox_video.setObjectName(u"groupBox_video")
         self.groupBox_video.setCheckable(True)
         self.formLayout_3 = QFormLayout(self.groupBox_video)
         self.formLayout_3.setObjectName(u"formLayout_3")
-        self.formLayout_3.setContentsMargins(12, -1, -1, -1)
+        self.formLayout_3.setVerticalSpacing(2)
+        self.formLayout_3.setContentsMargins(4, 4, 4, 4)
         self.label_4 = QLabel(self.groupBox_video)
         self.label_4.setObjectName(u"label_4")
 
@@ -353,52 +371,52 @@ class Ui_MainWindow(object):
 
         self.formLayout_3.setWidget(2, QFormLayout.FieldRole, self.comboBox_fps)
 
-        self.comboBox_videoencoder = QComboBox(self.groupBox_video)
+
+        self.horizontalLayout_7.addWidget(self.groupBox_video)
+
+        self.groupBox_reencode_video = QGroupBox(self.centralwidget)
+        self.groupBox_reencode_video.setObjectName(u"groupBox_reencode_video")
+        self.groupBox_reencode_video.setCheckable(True)
+        self.groupBox_reencode_video.setChecked(False)
+        self.formLayout_7 = QFormLayout(self.groupBox_reencode_video)
+        self.formLayout_7.setObjectName(u"formLayout_7")
+        self.formLayout_7.setContentsMargins(4, 4, 4, 4)
+        self.label_18 = QLabel(self.groupBox_reencode_video)
+        self.label_18.setObjectName(u"label_18")
+
+        self.formLayout_7.setWidget(0, QFormLayout.LabelRole, self.label_18)
+
+        self.comboBox_videoencoder = QComboBox(self.groupBox_reencode_video)
         self.comboBox_videoencoder.addItem("")
         self.comboBox_videoencoder.addItem("")
         self.comboBox_videoencoder.addItem("")
         self.comboBox_videoencoder.addItem("")
         self.comboBox_videoencoder.setObjectName(u"comboBox_videoencoder")
 
-        self.formLayout_3.setWidget(3, QFormLayout.FieldRole, self.comboBox_videoencoder)
-
-        self.checkBox_videoallowreencode = QCheckBox(self.groupBox_video)
-        self.checkBox_videoallowreencode.setObjectName(u"checkBox_videoallowreencode")
-        self.checkBox_videoallowreencode.setChecked(False)
-
-        self.formLayout_3.setWidget(3, QFormLayout.LabelRole, self.checkBox_videoallowreencode)
+        self.formLayout_7.setWidget(0, QFormLayout.FieldRole, self.comboBox_videoencoder)
 
 
-        self.horizontalLayout_13.addWidget(self.groupBox_video)
+        self.horizontalLayout_7.addWidget(self.groupBox_reencode_video)
 
+        self.verticalLayout = QVBoxLayout()
+        self.verticalLayout.setObjectName(u"verticalLayout")
         self.groupBox_cover = QGroupBox(self.centralwidget)
         self.groupBox_cover.setObjectName(u"groupBox_cover")
         self.groupBox_cover.setCheckable(True)
         self.formLayout_4 = QFormLayout(self.groupBox_cover)
         self.formLayout_4.setObjectName(u"formLayout_4")
-        self.label_2 = QLabel(self.groupBox_cover)
-        self.label_2.setObjectName(u"label_2")
+        self.formLayout_4.setVerticalSpacing(2)
+        self.formLayout_4.setContentsMargins(4, 4, 4, 4)
 
-        self.formLayout_4.setWidget(0, QFormLayout.LabelRole, self.label_2)
-
-        self.comboBox_coverresolution = QComboBox(self.groupBox_cover)
-        self.comboBox_coverresolution.addItem("")
-        self.comboBox_coverresolution.addItem("")
-        self.comboBox_coverresolution.addItem("")
-        self.comboBox_coverresolution.addItem("")
-        self.comboBox_coverresolution.addItem("")
-        self.comboBox_coverresolution.setObjectName(u"comboBox_coverresolution")
-
-        self.formLayout_4.setWidget(0, QFormLayout.FieldRole, self.comboBox_coverresolution)
-
-
-        self.horizontalLayout_13.addWidget(self.groupBox_cover)
+        self.verticalLayout.addWidget(self.groupBox_cover)
 
         self.groupBox_background = QGroupBox(self.centralwidget)
         self.groupBox_background.setObjectName(u"groupBox_background")
         self.groupBox_background.setCheckable(True)
         self.formLayout_5 = QFormLayout(self.groupBox_background)
         self.formLayout_5.setObjectName(u"formLayout_5")
+        self.formLayout_5.setVerticalSpacing(2)
+        self.formLayout_5.setContentsMargins(4, 4, 4, 4)
         self.label_6 = QLabel(self.groupBox_background)
         self.label_6.setObjectName(u"label_6")
 
@@ -412,14 +430,17 @@ class Ui_MainWindow(object):
         self.formLayout_5.setWidget(0, QFormLayout.FieldRole, self.comboBox_background)
 
 
-        self.horizontalLayout_13.addWidget(self.groupBox_background)
+        self.verticalLayout.addWidget(self.groupBox_background)
 
 
-        self.verticalLayout.addLayout(self.horizontalLayout_13)
+        self.horizontalLayout_7.addLayout(self.verticalLayout)
+
+
+        self.verticalLayout_2.addLayout(self.horizontalLayout_7)
 
         self.horizontalLayout = QHBoxLayout()
         self.horizontalLayout.setObjectName(u"horizontalLayout")
-        self.horizontalSpacer_2 = QSpacerItem(1088, 20, QSizePolicy.Expanding, QSizePolicy.Minimum)
+        self.horizontalSpacer_2 = QSpacerItem(559, 46, QSizePolicy.Expanding, QSizePolicy.Minimum)
 
         self.horizontalLayout.addItem(self.horizontalSpacer_2)
 
@@ -432,12 +453,12 @@ class Ui_MainWindow(object):
         self.horizontalLayout.addWidget(self.pushButton_downloadSelectedSongs)
 
 
-        self.verticalLayout.addLayout(self.horizontalLayout)
+        self.verticalLayout_2.addLayout(self.horizontalLayout)
 
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QMenuBar(MainWindow)
         self.menubar.setObjectName(u"menubar")
-        self.menubar.setGeometry(QRect(0, 0, 1448, 24))
+        self.menubar.setGeometry(QRect(0, 0, 1493, 24))
         MainWindow.setMenuBar(self.menubar)
         self.statusbar = QStatusBar(MainWindow)
         self.statusbar.setObjectName(u"statusbar")
@@ -455,8 +476,8 @@ class Ui_MainWindow(object):
         self.label_password.setText(QCoreApplication.translate("MainWindow", u"Password", None))
         self.pushButton_login.setText(QCoreApplication.translate("MainWindow", u" Login", None))
         self.pushButton_refresh.setText(QCoreApplication.translate("MainWindow", u" Refresh", None))
-        self.groupBox_2.setTitle(QCoreApplication.translate("MainWindow", u"Local song directory to synchronize", None))
-        self.lineEdit_song_dir.setText(QCoreApplication.translate("MainWindow", u"./usdb_songs", None))
+        self.groupBox_2.setTitle(QCoreApplication.translate("MainWindow", u"Synchronize to local song directory", None))
+        self.lineEdit_song_dir.setText(QCoreApplication.translate("MainWindow", u"./songs", None))
         self.pushButton_select_song_dir.setText(QCoreApplication.translate("MainWindow", u"Select song folder", None))
         self.label_9.setText(QCoreApplication.translate("MainWindow", u"Search", None))
         self.label_10.setText(QCoreApplication.translate("MainWindow", u"Artists", None))
@@ -489,7 +510,7 @@ class Ui_MainWindow(object):
         self.comboBox_views.setItemText(5, QCoreApplication.translate("MainWindow", u"500+", None))
 
         self.groupBox_songfile.setTitle(QCoreApplication.translate("MainWindow", u"Download song file \u2013 settings:", None))
-        self.label.setText(QCoreApplication.translate("MainWindow", u"File Encoding", None))
+        self.label.setText(QCoreApplication.translate("MainWindow", u"Encoding", None))
         self.comboBox_encoding.setItemText(0, QCoreApplication.translate("MainWindow", u"UTF-8", None))
         self.comboBox_encoding.setItemText(1, QCoreApplication.translate("MainWindow", u"UTF-8 BOM", None))
         self.comboBox_encoding.setItemText(2, QCoreApplication.translate("MainWindow", u"CP1252", None))
@@ -504,8 +525,9 @@ class Ui_MainWindow(object):
         self.comboBox_audio_format.setItemText(1, QCoreApplication.translate("MainWindow", u".webm (opus)", u"mp3"))
         self.comboBox_audio_format.setItemText(2, QCoreApplication.translate("MainWindow", u"bestaudio", None))
 
-        self.checkBox_audio_convert.setText(QCoreApplication.translate("MainWindow", u"convert to", None))
-        self.comboBox_audio_conversion_format.setItemText(0, QCoreApplication.translate("MainWindow", u".mp3 (MPEG Audio Layer 3)", None))
+        self.groupBox_reencode_audio.setTitle(QCoreApplication.translate("MainWindow", u"Reencode audio \u2013 settings", None))
+        self.label_19.setText(QCoreApplication.translate("MainWindow", u"Audio Format", None))
+        self.comboBox_audio_conversion_format.setItemText(0, QCoreApplication.translate("MainWindow", u".mp3 (MPEG)", None))
         self.comboBox_audio_conversion_format.setItemText(1, QCoreApplication.translate("MainWindow", u".ogg (Vorbis)", None))
         self.comboBox_audio_conversion_format.setItemText(2, QCoreApplication.translate("MainWindow", u".opus (Opus)", None))
 
@@ -523,22 +545,16 @@ class Ui_MainWindow(object):
         self.comboBox_fps.setItemText(0, QCoreApplication.translate("MainWindow", u"30", None))
         self.comboBox_fps.setItemText(1, QCoreApplication.translate("MainWindow", u"60", None))
 
+        self.groupBox_reencode_video.setTitle(QCoreApplication.translate("MainWindow", u"Reencode video \u2013 settings", None))
+        self.label_18.setText(QCoreApplication.translate("MainWindow", u"Video Format", None))
         self.comboBox_videoencoder.setItemText(0, QCoreApplication.translate("MainWindow", u"h264", None))
         self.comboBox_videoencoder.setItemText(1, QCoreApplication.translate("MainWindow", u"h265", None))
         self.comboBox_videoencoder.setItemText(2, QCoreApplication.translate("MainWindow", u"libvpx-vp9", None))
         self.comboBox_videoencoder.setItemText(3, QCoreApplication.translate("MainWindow", u"libaom-av1", None))
 
-        self.checkBox_videoallowreencode.setText(QCoreApplication.translate("MainWindow", u"reencode to", None))
         self.groupBox_cover.setTitle(QCoreApplication.translate("MainWindow", u"Download cover \u2013 settings:", None))
-        self.label_2.setText(QCoreApplication.translate("MainWindow", u"Max. resolution", None))
-        self.comboBox_coverresolution.setItemText(0, QCoreApplication.translate("MainWindow", u"1920x1920", None))
-        self.comboBox_coverresolution.setItemText(1, QCoreApplication.translate("MainWindow", u"1500x1500", None))
-        self.comboBox_coverresolution.setItemText(2, QCoreApplication.translate("MainWindow", u"1000x1000", None))
-        self.comboBox_coverresolution.setItemText(3, QCoreApplication.translate("MainWindow", u"800x800", None))
-        self.comboBox_coverresolution.setItemText(4, QCoreApplication.translate("MainWindow", u"600x600", None))
-
         self.groupBox_background.setTitle(QCoreApplication.translate("MainWindow", u"Download background \u2013 settings:", None))
-        self.label_6.setText(QCoreApplication.translate("MainWindow", u"Download bg", None))
+        self.label_6.setText(QCoreApplication.translate("MainWindow", u"Download", None))
         self.comboBox_background.setItemText(0, QCoreApplication.translate("MainWindow", u"always", None))
         self.comboBox_background.setItemText(1, QCoreApplication.translate("MainWindow", u"only if no video", None))
 

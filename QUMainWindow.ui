@@ -6,18 +6,15 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1448</width>
-    <height>812</height>
+    <width>1493</width>
+    <height>816</height>
    </rect>
   </property>
   <property name="windowTitle">
    <string>USDB Song Manager</string>
   </property>
   <widget class="QWidget" name="centralwidget">
-   <layout class="QVBoxLayout" name="verticalLayout">
-    <property name="spacing">
-     <number>5</number>
-    </property>
+   <layout class="QVBoxLayout" name="verticalLayout_2">
     <item>
      <layout class="QHBoxLayout" name="horizontalLayout_3">
       <item>
@@ -110,8 +107,8 @@
         </property>
         <property name="sizeHint" stdset="0">
          <size>
-          <width>358</width>
-          <height>20</height>
+          <width>347</width>
+          <height>17</height>
          </size>
         </property>
        </spacer>
@@ -119,7 +116,10 @@
       <item>
        <widget class="QGroupBox" name="groupBox_2">
         <property name="title">
-         <string>Local song directory to synchronize</string>
+         <string>Synchronize to local song directory</string>
+        </property>
+        <property name="checkable">
+         <bool>true</bool>
         </property>
         <layout class="QHBoxLayout" name="horizontalLayout_4">
          <property name="leftMargin">
@@ -137,7 +137,7 @@
          <item>
           <widget class="QLineEdit" name="lineEdit_song_dir">
            <property name="text">
-            <string/>
+            <string>./songs</string>
            </property>
           </widget>
          </item>
@@ -395,7 +395,7 @@
      </widget>
     </item>
     <item>
-     <layout class="QHBoxLayout" name="horizontalLayout_13">
+     <layout class="QHBoxLayout" name="horizontalLayout_7">
       <item>
        <widget class="QGroupBox" name="groupBox_songfile">
         <property name="title">
@@ -423,7 +423,7 @@
          <item row="0" column="0">
           <widget class="QLabel" name="label">
            <property name="text">
-            <string>File Encoding</string>
+            <string>Encoding</string>
            </property>
           </widget>
          </item>
@@ -520,18 +520,45 @@
            </item>
           </widget>
          </item>
-         <item row="1" column="0">
-          <widget class="QCheckBox" name="checkBox_audio_convert">
+        </layout>
+       </widget>
+      </item>
+      <item>
+       <widget class="QGroupBox" name="groupBox_reencode_audio">
+        <property name="title">
+         <string>Reencode audio – settings</string>
+        </property>
+        <property name="checkable">
+         <bool>true</bool>
+        </property>
+        <property name="checked">
+         <bool>false</bool>
+        </property>
+        <layout class="QFormLayout" name="formLayout_6">
+         <property name="leftMargin">
+          <number>4</number>
+         </property>
+         <property name="topMargin">
+          <number>4</number>
+         </property>
+         <property name="rightMargin">
+          <number>4</number>
+         </property>
+         <property name="bottomMargin">
+          <number>4</number>
+         </property>
+         <item row="0" column="0">
+          <widget class="QLabel" name="label_19">
            <property name="text">
-            <string>convert to</string>
+            <string>Audio Format</string>
            </property>
           </widget>
          </item>
-         <item row="1" column="1">
+         <item row="0" column="1">
           <widget class="QComboBox" name="comboBox_audio_conversion_format">
            <item>
             <property name="text">
-             <string>.mp3 (MPEG Audio Layer 3)</string>
+             <string>.mp3 (MPEG)</string>
             </property>
            </item>
            <item>
@@ -641,7 +668,41 @@
            </item>
           </widget>
          </item>
-         <item row="3" column="1">
+        </layout>
+       </widget>
+      </item>
+      <item>
+       <widget class="QGroupBox" name="groupBox_reencode_video">
+        <property name="title">
+         <string>Reencode video – settings</string>
+        </property>
+        <property name="checkable">
+         <bool>true</bool>
+        </property>
+        <property name="checked">
+         <bool>false</bool>
+        </property>
+        <layout class="QFormLayout" name="formLayout_7">
+         <property name="leftMargin">
+          <number>4</number>
+         </property>
+         <property name="topMargin">
+          <number>4</number>
+         </property>
+         <property name="rightMargin">
+          <number>4</number>
+         </property>
+         <property name="bottomMargin">
+          <number>4</number>
+         </property>
+         <item row="0" column="0">
+          <widget class="QLabel" name="label_18">
+           <property name="text">
+            <string>Video Format</string>
+           </property>
+          </widget>
+         </item>
+         <item row="0" column="1">
           <widget class="QComboBox" name="comboBox_videoencoder">
            <item>
             <property name="text">
@@ -665,117 +726,87 @@
            </item>
           </widget>
          </item>
-         <item row="3" column="0">
-          <widget class="QCheckBox" name="checkBox_videoallowreencode">
-           <property name="text">
-            <string>reencode to</string>
-           </property>
-           <property name="checked">
-            <bool>false</bool>
-           </property>
-          </widget>
-         </item>
         </layout>
        </widget>
       </item>
       <item>
-       <widget class="QGroupBox" name="groupBox_cover">
-        <property name="title">
-         <string>Download cover – settings:</string>
-        </property>
-        <property name="checkable">
-         <bool>true</bool>
-        </property>
-        <layout class="QFormLayout" name="formLayout_4">
-         <property name="verticalSpacing">
-          <number>2</number>
-         </property>
-         <property name="leftMargin">
-          <number>4</number>
-         </property>
-         <property name="topMargin">
-          <number>4</number>
-         </property>
-         <property name="rightMargin">
-          <number>4</number>
-         </property>
-         <property name="bottomMargin">
-          <number>4</number>
-         </property>
-         <item row="0" column="0">
-          <widget class="QLabel" name="label_2">
-           <property name="text">
-            <string>Max. resolution</string>
+       <layout class="QVBoxLayout" name="verticalLayout">
+        <item>
+         <widget class="QGroupBox" name="groupBox_cover">
+          <property name="title">
+           <string>Download cover – settings:</string>
+          </property>
+          <property name="checkable">
+           <bool>true</bool>
+          </property>
+          <layout class="QFormLayout" name="formLayout_4">
+           <property name="verticalSpacing">
+            <number>2</number>
            </property>
-          </widget>
-         </item>
-         <item row="0" column="1">
-          <widget class="QComboBox" name="comboBox_coverresolution">
-           <item>
-            <property name="text">
-             <string>1920x1920</string>
-            </property>
-           </item>
-           <item>
-            <property name="text">
-             <string>1500x1500</string>
-            </property>
-           </item>
-           <item>
-            <property name="text">
-             <string>1000x1000</string>
-            </property>
-           </item>
-           <item>
-            <property name="text">
-             <string>800x800</string>
-            </property>
-           </item>
-           <item>
-            <property name="text">
-             <string>600x600</string>
-            </property>
-           </item>
-          </widget>
-         </item>
-        </layout>
-       </widget>
-      </item>
-      <item>
-       <widget class="QGroupBox" name="groupBox_background">
-        <property name="title">
-         <string>Download background – settings:</string>
-        </property>
-        <property name="checkable">
-         <bool>true</bool>
-        </property>
-        <layout class="QFormLayout" name="formLayout_5">
-         <property name="verticalSpacing">
-          <number>2</number>
-         </property>
-         <item row="0" column="0">
-          <widget class="QLabel" name="label_6">
-           <property name="text">
-            <string>Download bg</string>
+           <property name="leftMargin">
+            <number>4</number>
            </property>
-          </widget>
-         </item>
-         <item row="0" column="1">
-          <widget class="QComboBox" name="comboBox_background">
-           <item>
-            <property name="text">
-             <string>always</string>
-            </property>
+           <property name="topMargin">
+            <number>4</number>
+           </property>
+           <property name="rightMargin">
+            <number>4</number>
+           </property>
+           <property name="bottomMargin">
+            <number>4</number>
+           </property>
+          </layout>
+         </widget>
+        </item>
+        <item>
+         <widget class="QGroupBox" name="groupBox_background">
+          <property name="title">
+           <string>Download background – settings:</string>
+          </property>
+          <property name="checkable">
+           <bool>true</bool>
+          </property>
+          <layout class="QFormLayout" name="formLayout_5">
+           <property name="verticalSpacing">
+            <number>2</number>
+           </property>
+           <property name="leftMargin">
+            <number>4</number>
+           </property>
+           <property name="topMargin">
+            <number>4</number>
+           </property>
+           <property name="rightMargin">
+            <number>4</number>
+           </property>
+           <property name="bottomMargin">
+            <number>4</number>
+           </property>
+           <item row="0" column="0">
+            <widget class="QLabel" name="label_6">
+             <property name="text">
+              <string>Download</string>
+             </property>
+            </widget>
            </item>
-           <item>
-            <property name="text">
-             <string>only if no video</string>
-            </property>
+           <item row="0" column="1">
+            <widget class="QComboBox" name="comboBox_background">
+             <item>
+              <property name="text">
+               <string>always</string>
+              </property>
+             </item>
+             <item>
+              <property name="text">
+               <string>only if no video</string>
+              </property>
+             </item>
+            </widget>
            </item>
-          </widget>
-         </item>
-        </layout>
-       </widget>
+          </layout>
+         </widget>
+        </item>
+       </layout>
       </item>
      </layout>
     </item>
@@ -788,8 +819,8 @@
         </property>
         <property name="sizeHint" stdset="0">
          <size>
-          <width>1088</width>
-          <height>20</height>
+          <width>559</width>
+          <height>46</height>
          </size>
         </property>
        </spacer>
@@ -821,7 +852,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1448</width>
+     <width>1493</width>
      <height>24</height>
     </rect>
    </property>
