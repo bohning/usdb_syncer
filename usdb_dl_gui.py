@@ -584,8 +584,11 @@ def download_and_process_audio(header, audio_resource, audio_dl_format, audio_ta
     if not audio_resource:
         return False, ""
     
-    video_url = "https://www.youtube.com/watch?v=" + audio_resource
-    logging.info(f"\t- downloading audio: {video_url}")
+    if "/" in audio_resource:
+        audio_url = f"https://{audio_resource}"
+    else:
+        audio_url = f"https://www.youtube.com/watch?v={audio_resource}"
+    logging.info(f"\t- downloading audio: {audio_url}")
     
     audio_filename = get_legal_filename(header)
     
@@ -593,13 +596,17 @@ def download_and_process_audio(header, audio_resource, audio_dl_format, audio_ta
             "format": "bestaudio",
             "outtmpl": f"{audio_filename}" + ".%(ext)s",
             "keepvideo": False,
-            "verbose": False
+            "verbose": True
         }
     
     ext = ""
     if audio_dl_format != "bestaudio":
         ext = audio_dl_format
-        ydl_opts["format"] = f"bestaudio[ext={ext}]"
+        if not "/" in audio_resource:
+            ydl_opts["format"] = f"bestaudio[ext={ext}]" # ext only seems to work for Youtube
+        else:
+            ydl_opts["format"] = f"bestaudio" # not for e.g. UM
+            ydl_opts["outtmpl"] = f"{audio_filename}.m4a"
     
     if audio_target_codec:
         ydl_opts["postprocessors"] = [{
@@ -615,9 +622,9 @@ def download_and_process_audio(header, audio_resource, audio_dl_format, audio_ta
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
         try:
             #ydl.download([video_url])
-            filename = ydl.prepare_filename(ydl.extract_info("{}".format(video_url)))
+            filename = ydl.prepare_filename(ydl.extract_info(f"{audio_url}"))
         except:
-            logging.error(f"\t#VIDEO: error downloading video url: {video_url}")
+            logging.error(f"\t#VIDEO: error downloading video url: {audio_url}")
             return False, ""
     
     if audio_dl_format == "bestaudio" and not audio_target_codec:
@@ -626,10 +633,7 @@ def download_and_process_audio(header, audio_resource, audio_dl_format, audio_ta
     return True, ext
 
 
-def download_and_process_video(header, resource_params, video_params):
-    if not resource_params.get("v"):
-        return False
-    
+def download_and_process_video(header, video_resource, video_params, resource_params):    
     if video_params["resolution"] == "1080p":
         video_max_width = 1920
         video_max_height = 1080
@@ -643,7 +647,10 @@ def download_and_process_video(header, resource_params, video_params):
     video_reencode_crf = 23 #0–51 (0=lossless/huge file size, 23=default, 51=worst quality possible)
     video_reencode_preset = "ultrafast" #ultrafast, superfast, veryfast, faster, fast, medium (default preset), slow, slower, veryslow
     
-    video_url = "https://www.youtube.com/watch?v=" + resource_params.get("v")
+    if "/" in video_resource:
+        video_url = f"https://{video_resource}"
+    else:
+        video_url = f"https://www.youtube.com/watch?v={video_resource}"
     logging.info(f"\t- downloading video: {video_url}")
     
     video_filename = get_legal_filename(header)
@@ -656,8 +663,12 @@ def download_and_process_video(header, resource_params, video_params):
         #"outtmpl": os.path.join(dir, f"{artist} - {title}" + ".%(ext)s"),
         "outtmpl": f"{video_filename}" + ".%(ext)s",
         "keepvideo": False,
-        "verbose": False
+        "verbose": True,
+        "cookies-from-browser": "chrome"
     }
+    
+    if "/" in video_resource: # not Youtube
+        ydl_opts["format"] = f"bestvideo"
     
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
         try:
@@ -1249,7 +1260,8 @@ class QUMainWindow(QMainWindow, Ui_MainWindow):
             # download video
             has_video = False
             if dl_video:
-                if resource_params.get("v"):
+                video_resource = resource_params.get("v")
+                if video_resource:
                     logging.info("\t- downloading video from #VIDEO params")
                     video_params = {
                             "container": self.comboBox_videocontainer.currentText(),
@@ -1258,7 +1270,7 @@ class QUMainWindow(QMainWindow, Ui_MainWindow):
                             "allow_reencode": self.groupBox_reencode_video.isChecked(),
                             "encoder": self.comboBox_videoencoder.currentText()
                         }
-                    has_video = download_and_process_video(header, resource_params, video_params)
+                    has_video = download_and_process_video(header, video_resource, video_params, resource_params)
             #     elif resource_params := details.get("video_params"):
             #         logging.info("\t- downloading video from usdb comments")
             #         has_video = dl_yt_video(header, resource_params)
@@ -1330,7 +1342,7 @@ class QUMainWindow(QMainWindow, Ui_MainWindow):
             os.chdir("..")
         
         os.chdir("..")
-        logging.info(f"DONE (Downloaded {len(ids)} songs")
+        logging.info(f"DONE! (Downloaded {len(ids)} songs)")
 
 
 def main():
