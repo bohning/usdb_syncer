@@ -927,11 +927,10 @@ class QUMainWindow(QMainWindow, Ui_MainWindow):
         filter_proxy_model = QtCore.QSortFilterProxyModel()
         filter_proxy_model.setSourceModel(self.model)
         filter_proxy_model.setFilterCaseSensitivity(Qt.CaseInsensitive)
-        filter_proxy_model.setFilterKeyColumn(1)
+        filter_proxy_model.setFilterKeyColumn(-1)
         
         self.lineEdit_search.textChanged.connect(filter_proxy_model.setFilterRegularExpression)
         self.tableView_availableSongs.setModel(filter_proxy_model)
-        
         
         
     def login(self):
@@ -976,7 +975,6 @@ class QUMainWindow(QMainWindow, Ui_MainWindow):
             
             id_zero_padded = song["id"].zfill(5)
 
-            #item = QtGui.QStandardItem([id_zero_padded, song['artist'], song['title'], song["language"], song["edition"], "Yes" if song["goldennotes"] else "No", rating_string, song["views"]])
             id_item = QtGui.QStandardItem()
             id_item.setData(id_zero_padded, Qt.DisplayRole)
             id_item.setCheckable(True)
@@ -1016,7 +1014,6 @@ class QUMainWindow(QMainWindow, Ui_MainWindow):
         self.comboBox_language.addItems(list(sorted(set(languages))))
         self.comboBox_edition.addItems(list(sorted(set(editions))))
         
-        #self.tableView_availableSongs.setModel(self.model)
         header = self.tableView_availableSongs.horizontalHeader()
         header.setSectionResizeMode(QHeaderView.ResizeToContents)
         header.setSectionResizeMode(0,QHeaderView.Fixed)
