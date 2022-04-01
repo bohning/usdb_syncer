@@ -930,6 +930,8 @@ class QUMainWindow(QMainWindow, Ui_MainWindow):
         filter_proxy_model.setFilterKeyColumn(1)
         
         self.lineEdit_search.textChanged.connect(filter_proxy_model.setFilterRegularExpression)
+        self.tableView_availableSongs.setModel(filter_proxy_model)
+        
         
         
     def login(self):
@@ -1003,7 +1005,6 @@ class QUMainWindow(QMainWindow, Ui_MainWindow):
                 views_item
             ]
             root.appendRow(row)
-            self.tableView_availableSongs.setModel(self.model)
             
             artists.add(song['artist'])
             titles.append(song['title'])
@@ -1015,6 +1016,7 @@ class QUMainWindow(QMainWindow, Ui_MainWindow):
         self.comboBox_language.addItems(list(sorted(set(languages))))
         self.comboBox_edition.addItems(list(sorted(set(editions))))
         
+        #self.tableView_availableSongs.setModel(self.model)
         header = self.tableView_availableSongs.horizontalHeader()
         header.setSectionResizeMode(QHeaderView.ResizeToContents)
         header.setSectionResizeMode(0,QHeaderView.Fixed)
