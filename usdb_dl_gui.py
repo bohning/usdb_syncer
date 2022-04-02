@@ -82,7 +82,7 @@ def get_usdb_available_songs(filter={}):
     payload = {
         'limit': '50000',
         'order': 'id',
-        'ud': 'asc'
+        'ud': 'desc'
     }
     payload.update(filter)
     headers={'Content-Type': 'application/x-www-form-urlencoded'}
@@ -929,18 +929,24 @@ class QUMainWindow(QMainWindow, Ui_MainWindow):
         self.filter_proxy_model.setFilterCaseSensitivity(Qt.CaseInsensitive)
         self.filter_proxy_model.setFilterKeyColumn(-1)
         
-        self.lineEdit_search.textChanged.connect(self.filter_proxy_model.setFilterRegularExpression)
+        self.lineEdit_search.textChanged.connect(self.set_filter_regular_expression)
         self.tableView_availableSongs.setModel(self.filter_proxy_model)
         
         self.comboBox_search_column.currentIndexChanged.connect(self.set_filter_key_column)
         self.checkBox_case_sensitive.stateChanged.connect(self.set_case_sensitivity)
 
+
+    def set_filter_regular_expression(self, regexp):
+        self.filter_proxy_model.setFilterRegularExpression(regexp)
+        self.statusbar.showMessage(f"{self.filter_proxy_model.rowCount()} songs found.")
+    
         
     def set_filter_key_column(self, index):
         if index == 0:
             self.filter_proxy_model.setFilterKeyColumn(-1)
         else:
             self.filter_proxy_model.setFilterKeyColumn(index)
+        self.statusbar.showMessage(f"{self.filter_proxy_model.rowCount()} songs found.")
 
             
     def set_case_sensitivity(self, state):
@@ -948,6 +954,7 @@ class QUMainWindow(QMainWindow, Ui_MainWindow):
             self.filter_proxy_model.setFilterCaseSensitivity(Qt.CaseInsensitive)
         else:
             self.filter_proxy_model.setFilterCaseSensitivity(Qt.CaseSensitive)
+        self.statusbar.showMessage(f"{self.filter_proxy_model.rowCount()} songs found.")
             
         
     def login(self):
@@ -1025,6 +1032,8 @@ class QUMainWindow(QMainWindow, Ui_MainWindow):
             titles.append(song['title'])
             languages.add(song['language'])
             editions.add(song['edition'])
+            
+        self.statusbar.showMessage(f"{self.filter_proxy_model.rowCount()} songs found.")
         
         self.comboBox_artist.addItems(list(sorted(set(artists))))
         self.comboBox_title.addItems(list(sorted(set(titles))))
@@ -1152,7 +1161,7 @@ class QUMainWindow(QMainWindow, Ui_MainWindow):
             os.mkdir(songdir)
         os.chdir(songdir)
         
-        for id in ids:
+        for num, id in enumerate(ids):
             idp = str(id).zfill(5)
                         
             exists, details = get_usdb_details(id) 
@@ -1163,6 +1172,9 @@ class QUMainWindow(QMainWindow, Ui_MainWindow):
             
             #song = createsong(songtext)
             header, notes = getheaderandnotes(songtext)
+            
+            self.statusbar.showMessage(f"Downloading '{header['#ARTIST']} - {header['#TITLE']}' ({num+1}/{len(ids)})") # TODO: this is not updated until after download all songs
+            
             header["#TITLE"] = re.sub("[\[].*?[\]]", "", header["#TITLE"]).strip() # remove anything in "[]" from the title, e.g. "[duet]"
             resource_params = get_params_from_video_tag(header, "#VIDEO")
             
