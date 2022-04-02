@@ -97,7 +97,7 @@ def get_usdb_available_songs(filter={}):
     available_songs = []
     for match in matches:
         id, artist, title, edition, goldennotes, language, rating_string, views = match
-        if goldennotes == "Ja":
+        if goldennotes == "Yes":
             goldennotes = True
         else:
             goldennotes = False
@@ -924,14 +924,31 @@ class QUMainWindow(QMainWindow, Ui_MainWindow):
         self.lineEdit_user.setText(config["usdb"]["username"])
         self.lineEdit_password.setText(config["usdb"]["password"])
         
-        filter_proxy_model = QtCore.QSortFilterProxyModel()
-        filter_proxy_model.setSourceModel(self.model)
-        filter_proxy_model.setFilterCaseSensitivity(Qt.CaseInsensitive)
-        filter_proxy_model.setFilterKeyColumn(-1)
+        self.filter_proxy_model = QtCore.QSortFilterProxyModel()
+        self.filter_proxy_model.setSourceModel(self.model)
+        self.filter_proxy_model.setFilterCaseSensitivity(Qt.CaseInsensitive)
+        self.filter_proxy_model.setFilterKeyColumn(-1)
         
-        self.lineEdit_search.textChanged.connect(filter_proxy_model.setFilterRegularExpression)
-        self.tableView_availableSongs.setModel(filter_proxy_model)
+        self.lineEdit_search.textChanged.connect(self.filter_proxy_model.setFilterRegularExpression)
+        self.tableView_availableSongs.setModel(self.filter_proxy_model)
         
+        self.comboBox_search_column.currentIndexChanged.connect(self.set_filter_key_column)
+        self.checkBox_case_sensitive.stateChanged.connect(self.set_case_sensitivity)
+
+        
+    def set_filter_key_column(self, index):
+        if index == 0:
+            self.filter_proxy_model.setFilterKeyColumn(-1)
+        else:
+            self.filter_proxy_model.setFilterKeyColumn(index)
+
+            
+    def set_case_sensitivity(self, state):
+        if state == 0:
+            self.filter_proxy_model.setFilterCaseSensitivity(Qt.CaseInsensitive)
+        else:
+            self.filter_proxy_model.setFilterCaseSensitivity(Qt.CaseSensitive)
+            
         
     def login(self):
         headers = {

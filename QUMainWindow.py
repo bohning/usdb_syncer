@@ -15,11 +15,11 @@ from PySide6.QtGui import (QBrush, QColor, QConicalGradient, QCursor,
     QFont, QFontDatabase, QGradient, QIcon,
     QImage, QKeySequence, QLinearGradient, QPainter,
     QPalette, QPixmap, QRadialGradient, QTransform)
-from PySide6.QtWidgets import (QAbstractItemView, QApplication, QComboBox, QFormLayout,
-    QGroupBox, QHBoxLayout, QHeaderView, QLabel,
-    QLineEdit, QMainWindow, QMenuBar, QPushButton,
-    QSizePolicy, QSpacerItem, QStatusBar, QTableView,
-    QVBoxLayout, QWidget)
+from PySide6.QtWidgets import (QAbstractItemView, QApplication, QCheckBox, QComboBox,
+    QFormLayout, QGroupBox, QHBoxLayout, QHeaderView,
+    QLabel, QLineEdit, QMainWindow, QMenuBar,
+    QPushButton, QSizePolicy, QSpacerItem, QStatusBar,
+    QTableView, QVBoxLayout, QWidget)
 import resources_rc
 
 class Ui_MainWindow(object):
@@ -31,6 +31,7 @@ class Ui_MainWindow(object):
         self.centralwidget.setObjectName(u"centralwidget")
         self.verticalLayout_2 = QVBoxLayout(self.centralwidget)
         self.verticalLayout_2.setObjectName(u"verticalLayout_2")
+        self.verticalLayout_2.setContentsMargins(4, 4, 4, 4)
         self.horizontalLayout_3 = QHBoxLayout()
         self.horizontalLayout_3.setObjectName(u"horizontalLayout_3")
         self.groupBox = QGroupBox(self.centralwidget)
@@ -111,86 +112,118 @@ class Ui_MainWindow(object):
 
         self.verticalLayout_2.addLayout(self.horizontalLayout_3)
 
-        self.horizontalLayout_5 = QHBoxLayout()
-        self.horizontalLayout_5.setObjectName(u"horizontalLayout_5")
-        self.label_9 = QLabel(self.centralwidget)
-        self.label_9.setObjectName(u"label_9")
-
-        self.horizontalLayout_5.addWidget(self.label_9)
-
-        self.lineEdit_search = QLineEdit(self.centralwidget)
+        self.groupBox_3 = QGroupBox(self.centralwidget)
+        self.groupBox_3.setObjectName(u"groupBox_3")
+        self.horizontalLayout_6 = QHBoxLayout(self.groupBox_3)
+        self.horizontalLayout_6.setObjectName(u"horizontalLayout_6")
+        self.horizontalLayout_6.setContentsMargins(4, 4, 4, 4)
+        self.lineEdit_search = QLineEdit(self.groupBox_3)
         self.lineEdit_search.setObjectName(u"lineEdit_search")
 
-        self.horizontalLayout_5.addWidget(self.lineEdit_search)
+        self.horizontalLayout_6.addWidget(self.lineEdit_search)
 
+        self.comboBox_search_column = QComboBox(self.groupBox_3)
+        self.comboBox_search_column.addItem("")
+        icon1 = QIcon()
+        icon1.addFile(u":/icons/resources/artist.png", QSize(), QIcon.Normal, QIcon.Off)
+        self.comboBox_search_column.addItem(icon1, "")
+        icon2 = QIcon()
+        icon2.addFile(u":/icons/resources/title.png", QSize(), QIcon.Normal, QIcon.Off)
+        self.comboBox_search_column.addItem(icon2, "")
+        icon3 = QIcon()
+        icon3.addFile(u":/icons/resources/language.png", QSize(), QIcon.Normal, QIcon.Off)
+        self.comboBox_search_column.addItem(icon3, "")
+        icon4 = QIcon()
+        icon4.addFile(u":/icons/resources/edition.png", QSize(), QIcon.Normal, QIcon.Off)
+        self.comboBox_search_column.addItem(icon4, "")
+        self.comboBox_search_column.setObjectName(u"comboBox_search_column")
 
-        self.verticalLayout_2.addLayout(self.horizontalLayout_5)
+        self.horizontalLayout_6.addWidget(self.comboBox_search_column)
 
-        self.horizontalLayout_6 = QHBoxLayout()
-        self.horizontalLayout_6.setObjectName(u"horizontalLayout_6")
-        self.label_10 = QLabel(self.centralwidget)
+        self.checkBox_case_sensitive = QCheckBox(self.groupBox_3)
+        self.checkBox_case_sensitive.setObjectName(u"checkBox_case_sensitive")
+
+        self.horizontalLayout_6.addWidget(self.checkBox_case_sensitive)
+
+        self.horizontalLayout_6.setStretch(0, 5)
+        self.horizontalLayout_6.setStretch(1, 1)
+
+        self.verticalLayout_2.addWidget(self.groupBox_3)
+
+        self.groupBox_4 = QGroupBox(self.centralwidget)
+        self.groupBox_4.setObjectName(u"groupBox_4")
+        self.horizontalLayout_5 = QHBoxLayout(self.groupBox_4)
+        self.horizontalLayout_5.setObjectName(u"horizontalLayout_5")
+        self.horizontalLayout_5.setContentsMargins(4, 4, 4, 4)
+        self.label_10 = QLabel(self.groupBox_4)
         self.label_10.setObjectName(u"label_10")
+        self.label_10.setPixmap(QPixmap(u":/icons/resources/artist.png"))
 
-        self.horizontalLayout_6.addWidget(self.label_10)
+        self.horizontalLayout_5.addWidget(self.label_10)
 
-        self.comboBox_artist = QComboBox(self.centralwidget)
+        self.comboBox_artist = QComboBox(self.groupBox_4)
         self.comboBox_artist.setObjectName(u"comboBox_artist")
         self.comboBox_artist.setEditable(True)
 
-        self.horizontalLayout_6.addWidget(self.comboBox_artist)
+        self.horizontalLayout_5.addWidget(self.comboBox_artist)
 
-        self.label_11 = QLabel(self.centralwidget)
+        self.label_11 = QLabel(self.groupBox_4)
         self.label_11.setObjectName(u"label_11")
+        self.label_11.setPixmap(QPixmap(u":/icons/resources/title.png"))
 
-        self.horizontalLayout_6.addWidget(self.label_11)
+        self.horizontalLayout_5.addWidget(self.label_11)
 
-        self.comboBox_title = QComboBox(self.centralwidget)
+        self.comboBox_title = QComboBox(self.groupBox_4)
         self.comboBox_title.setObjectName(u"comboBox_title")
         self.comboBox_title.setEditable(True)
 
-        self.horizontalLayout_6.addWidget(self.comboBox_title)
+        self.horizontalLayout_5.addWidget(self.comboBox_title)
 
-        self.label_12 = QLabel(self.centralwidget)
+        self.label_12 = QLabel(self.groupBox_4)
         self.label_12.setObjectName(u"label_12")
+        self.label_12.setPixmap(QPixmap(u":/icons/resources/language.png"))
 
-        self.horizontalLayout_6.addWidget(self.label_12)
+        self.horizontalLayout_5.addWidget(self.label_12)
 
-        self.comboBox_language = QComboBox(self.centralwidget)
+        self.comboBox_language = QComboBox(self.groupBox_4)
         self.comboBox_language.setObjectName(u"comboBox_language")
         self.comboBox_language.setEditable(True)
 
-        self.horizontalLayout_6.addWidget(self.comboBox_language)
+        self.horizontalLayout_5.addWidget(self.comboBox_language)
 
-        self.label_13 = QLabel(self.centralwidget)
+        self.label_13 = QLabel(self.groupBox_4)
         self.label_13.setObjectName(u"label_13")
+        self.label_13.setPixmap(QPixmap(u":/icons/resources/edition.png"))
 
-        self.horizontalLayout_6.addWidget(self.label_13)
+        self.horizontalLayout_5.addWidget(self.label_13)
 
-        self.comboBox_edition = QComboBox(self.centralwidget)
+        self.comboBox_edition = QComboBox(self.groupBox_4)
         self.comboBox_edition.setObjectName(u"comboBox_edition")
         self.comboBox_edition.setEditable(True)
 
-        self.horizontalLayout_6.addWidget(self.comboBox_edition)
+        self.horizontalLayout_5.addWidget(self.comboBox_edition)
 
-        self.label_14 = QLabel(self.centralwidget)
+        self.label_14 = QLabel(self.groupBox_4)
         self.label_14.setObjectName(u"label_14")
+        self.label_14.setPixmap(QPixmap(u":/icons/resources/golden_notes.png"))
 
-        self.horizontalLayout_6.addWidget(self.label_14)
+        self.horizontalLayout_5.addWidget(self.label_14)
 
-        self.comboBox_goldennotes = QComboBox(self.centralwidget)
+        self.comboBox_goldennotes = QComboBox(self.groupBox_4)
         self.comboBox_goldennotes.addItem("")
         self.comboBox_goldennotes.addItem("")
         self.comboBox_goldennotes.addItem("")
         self.comboBox_goldennotes.setObjectName(u"comboBox_goldennotes")
 
-        self.horizontalLayout_6.addWidget(self.comboBox_goldennotes)
+        self.horizontalLayout_5.addWidget(self.comboBox_goldennotes)
 
-        self.label_15 = QLabel(self.centralwidget)
+        self.label_15 = QLabel(self.groupBox_4)
         self.label_15.setObjectName(u"label_15")
+        self.label_15.setPixmap(QPixmap(u":/icons/resources/rating.png"))
 
-        self.horizontalLayout_6.addWidget(self.label_15)
+        self.horizontalLayout_5.addWidget(self.label_15)
 
-        self.comboBox_rating = QComboBox(self.centralwidget)
+        self.comboBox_rating = QComboBox(self.groupBox_4)
         self.comboBox_rating.addItem("")
         self.comboBox_rating.addItem("")
         self.comboBox_rating.addItem("")
@@ -203,14 +236,15 @@ class Ui_MainWindow(object):
         self.comboBox_rating.addItem("")
         self.comboBox_rating.setObjectName(u"comboBox_rating")
 
-        self.horizontalLayout_6.addWidget(self.comboBox_rating)
+        self.horizontalLayout_5.addWidget(self.comboBox_rating)
 
-        self.label_16 = QLabel(self.centralwidget)
+        self.label_16 = QLabel(self.groupBox_4)
         self.label_16.setObjectName(u"label_16")
+        self.label_16.setPixmap(QPixmap(u":/icons/resources/views.png"))
 
-        self.horizontalLayout_6.addWidget(self.label_16)
+        self.horizontalLayout_5.addWidget(self.label_16)
 
-        self.comboBox_views = QComboBox(self.centralwidget)
+        self.comboBox_views = QComboBox(self.groupBox_4)
         self.comboBox_views.addItem("")
         self.comboBox_views.addItem("")
         self.comboBox_views.addItem("")
@@ -219,17 +253,17 @@ class Ui_MainWindow(object):
         self.comboBox_views.addItem("")
         self.comboBox_views.setObjectName(u"comboBox_views")
 
-        self.horizontalLayout_6.addWidget(self.comboBox_views)
+        self.horizontalLayout_5.addWidget(self.comboBox_views)
 
-        self.horizontalLayout_6.setStretch(1, 2)
-        self.horizontalLayout_6.setStretch(3, 2)
-        self.horizontalLayout_6.setStretch(5, 2)
-        self.horizontalLayout_6.setStretch(7, 2)
-        self.horizontalLayout_6.setStretch(9, 1)
-        self.horizontalLayout_6.setStretch(11, 1)
-        self.horizontalLayout_6.setStretch(13, 1)
+        self.horizontalLayout_5.setStretch(1, 2)
+        self.horizontalLayout_5.setStretch(3, 2)
+        self.horizontalLayout_5.setStretch(5, 2)
+        self.horizontalLayout_5.setStretch(7, 2)
+        self.horizontalLayout_5.setStretch(9, 1)
+        self.horizontalLayout_5.setStretch(11, 1)
+        self.horizontalLayout_5.setStretch(13, 1)
 
-        self.verticalLayout_2.addLayout(self.horizontalLayout_6)
+        self.verticalLayout_2.addWidget(self.groupBox_4)
 
         self.tableView_availableSongs = QTableView(self.centralwidget)
         self.tableView_availableSongs.setObjectName(u"tableView_availableSongs")
@@ -378,23 +412,16 @@ class Ui_MainWindow(object):
         self.groupBox_reencode_video.setObjectName(u"groupBox_reencode_video")
         self.groupBox_reencode_video.setCheckable(True)
         self.groupBox_reencode_video.setChecked(False)
-        self.formLayout_7 = QFormLayout(self.groupBox_reencode_video)
-        self.formLayout_7.setObjectName(u"formLayout_7")
-        self.formLayout_7.setContentsMargins(4, 4, 4, 4)
         self.label_18 = QLabel(self.groupBox_reencode_video)
         self.label_18.setObjectName(u"label_18")
-
-        self.formLayout_7.setWidget(0, QFormLayout.LabelRole, self.label_18)
-
+        self.label_18.setGeometry(QRect(15, 25, 80, 16))
         self.comboBox_videoencoder = QComboBox(self.groupBox_reencode_video)
         self.comboBox_videoencoder.addItem("")
         self.comboBox_videoencoder.addItem("")
         self.comboBox_videoencoder.addItem("")
         self.comboBox_videoencoder.addItem("")
         self.comboBox_videoencoder.setObjectName(u"comboBox_videoencoder")
-
-        self.formLayout_7.setWidget(0, QFormLayout.FieldRole, self.comboBox_videoencoder)
-
+        self.comboBox_videoencoder.setGeometry(QRect(100, 23, 118, 32))
 
         self.horizontalLayout_7.addWidget(self.groupBox_reencode_video)
 
@@ -479,17 +506,25 @@ class Ui_MainWindow(object):
         self.groupBox_2.setTitle(QCoreApplication.translate("MainWindow", u"Synchronize to local song directory", None))
         self.lineEdit_song_dir.setText(QCoreApplication.translate("MainWindow", u"./songs", None))
         self.pushButton_select_song_dir.setText(QCoreApplication.translate("MainWindow", u"Select song folder", None))
-        self.label_9.setText(QCoreApplication.translate("MainWindow", u"Search", None))
-        self.label_10.setText(QCoreApplication.translate("MainWindow", u"Artists", None))
-        self.label_11.setText(QCoreApplication.translate("MainWindow", u"Titles", None))
-        self.label_12.setText(QCoreApplication.translate("MainWindow", u"Languages", None))
-        self.label_13.setText(QCoreApplication.translate("MainWindow", u"Editions", None))
-        self.label_14.setText(QCoreApplication.translate("MainWindow", u"Golden Notes", None))
+        self.groupBox_3.setTitle(QCoreApplication.translate("MainWindow", u"Search (RexExp)", None))
+        self.comboBox_search_column.setItemText(0, QCoreApplication.translate("MainWindow", u"any", None))
+        self.comboBox_search_column.setItemText(1, QCoreApplication.translate("MainWindow", u"Artist", None))
+        self.comboBox_search_column.setItemText(2, QCoreApplication.translate("MainWindow", u"Title", None))
+        self.comboBox_search_column.setItemText(3, QCoreApplication.translate("MainWindow", u"Language", None))
+        self.comboBox_search_column.setItemText(4, QCoreApplication.translate("MainWindow", u"Edition", None))
+
+        self.checkBox_case_sensitive.setText(QCoreApplication.translate("MainWindow", u"Case sensitive", None))
+        self.groupBox_4.setTitle(QCoreApplication.translate("MainWindow", u"Filter", None))
+        self.label_10.setText("")
+        self.label_11.setText("")
+        self.label_12.setText("")
+        self.label_13.setText("")
+        self.label_14.setText("")
         self.comboBox_goldennotes.setItemText(0, QCoreApplication.translate("MainWindow", u"any", None))
         self.comboBox_goldennotes.setItemText(1, QCoreApplication.translate("MainWindow", u"yes", None))
         self.comboBox_goldennotes.setItemText(2, QCoreApplication.translate("MainWindow", u"no", None))
 
-        self.label_15.setText(QCoreApplication.translate("MainWindow", u"Rating", None))
+        self.label_15.setText("")
         self.comboBox_rating.setItemText(0, QCoreApplication.translate("MainWindow", u"any", None))
         self.comboBox_rating.setItemText(1, QCoreApplication.translate("MainWindow", u"\u2605", None))
         self.comboBox_rating.setItemText(2, QCoreApplication.translate("MainWindow", u"\u2605\u2605", None))
@@ -501,7 +536,7 @@ class Ui_MainWindow(object):
         self.comboBox_rating.setItemText(8, QCoreApplication.translate("MainWindow", u"\u2605\u2605\u2605 or more", None))
         self.comboBox_rating.setItemText(9, QCoreApplication.translate("MainWindow", u"\u2605\u2605\u2605\u2605 or more", None))
 
-        self.label_16.setText(QCoreApplication.translate("MainWindow", u"Views", None))
+        self.label_16.setText("")
         self.comboBox_views.setItemText(0, QCoreApplication.translate("MainWindow", u"any", None))
         self.comboBox_views.setItemText(1, QCoreApplication.translate("MainWindow", u"100+", None))
         self.comboBox_views.setItemText(2, QCoreApplication.translate("MainWindow", u"200+", None))
@@ -509,7 +544,7 @@ class Ui_MainWindow(object):
         self.comboBox_views.setItemText(4, QCoreApplication.translate("MainWindow", u"400+", None))
         self.comboBox_views.setItemText(5, QCoreApplication.translate("MainWindow", u"500+", None))
 
-        self.groupBox_songfile.setTitle(QCoreApplication.translate("MainWindow", u"Download song file \u2013 settings:", None))
+        self.groupBox_songfile.setTitle(QCoreApplication.translate("MainWindow", u"Download song file", None))
         self.label.setText(QCoreApplication.translate("MainWindow", u"Encoding", None))
         self.comboBox_encoding.setItemText(0, QCoreApplication.translate("MainWindow", u"UTF-8", None))
         self.comboBox_encoding.setItemText(1, QCoreApplication.translate("MainWindow", u"UTF-8 BOM", None))
@@ -519,19 +554,19 @@ class Ui_MainWindow(object):
         self.comboBox_line_endings.setItemText(0, QCoreApplication.translate("MainWindow", u"Windows (CRLF)", None))
         self.comboBox_line_endings.setItemText(1, QCoreApplication.translate("MainWindow", u"Mac/Linux (LF)", None))
 
-        self.groupBox_audio.setTitle(QCoreApplication.translate("MainWindow", u"Download audio \u2013 settings:", None))
+        self.groupBox_audio.setTitle(QCoreApplication.translate("MainWindow", u"Download audio", None))
         self.label_7.setText(QCoreApplication.translate("MainWindow", u"Audio Format", None))
         self.comboBox_audio_format.setItemText(0, QCoreApplication.translate("MainWindow", u".m4a (mp4a)", None))
         self.comboBox_audio_format.setItemText(1, QCoreApplication.translate("MainWindow", u".webm (opus)", u"mp3"))
         self.comboBox_audio_format.setItemText(2, QCoreApplication.translate("MainWindow", u"bestaudio", None))
 
-        self.groupBox_reencode_audio.setTitle(QCoreApplication.translate("MainWindow", u"Reencode audio \u2013 settings", None))
+        self.groupBox_reencode_audio.setTitle(QCoreApplication.translate("MainWindow", u"Reencode audio", None))
         self.label_19.setText(QCoreApplication.translate("MainWindow", u"Audio Format", None))
         self.comboBox_audio_conversion_format.setItemText(0, QCoreApplication.translate("MainWindow", u".mp3 (MPEG)", None))
         self.comboBox_audio_conversion_format.setItemText(1, QCoreApplication.translate("MainWindow", u".ogg (Vorbis)", None))
         self.comboBox_audio_conversion_format.setItemText(2, QCoreApplication.translate("MainWindow", u".opus (Opus)", None))
 
-        self.groupBox_video.setTitle(QCoreApplication.translate("MainWindow", u"Download video \u2013 settings:", None))
+        self.groupBox_video.setTitle(QCoreApplication.translate("MainWindow", u"Download video", None))
         self.label_4.setText(QCoreApplication.translate("MainWindow", u"Video container", None))
         self.comboBox_videocontainer.setItemText(0, QCoreApplication.translate("MainWindow", u".mp4", None))
         self.comboBox_videocontainer.setItemText(1, QCoreApplication.translate("MainWindow", u".webm", None))
@@ -545,7 +580,7 @@ class Ui_MainWindow(object):
         self.comboBox_fps.setItemText(0, QCoreApplication.translate("MainWindow", u"30", None))
         self.comboBox_fps.setItemText(1, QCoreApplication.translate("MainWindow", u"60", None))
 
-        self.groupBox_reencode_video.setTitle(QCoreApplication.translate("MainWindow", u"Reencode video \u2013 settings", None))
+        self.groupBox_reencode_video.setTitle(QCoreApplication.translate("MainWindow", u"Reencode video", None))
         self.label_18.setText(QCoreApplication.translate("MainWindow", u"Video Format", None))
         self.comboBox_videoencoder.setItemText(0, QCoreApplication.translate("MainWindow", u"h264", None))
         self.comboBox_videoencoder.setItemText(1, QCoreApplication.translate("MainWindow", u"h265", None))
