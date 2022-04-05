@@ -67,7 +67,7 @@ def get_usdb_page(rel_url, method='GET', headers={}, data='', params={}):
         logging.info("ERROR: No Method given")
         return None
 
-    req.encoding = req.apparent_encoding
+    req.encoding = "utf-8"
     return req.text
 
 
