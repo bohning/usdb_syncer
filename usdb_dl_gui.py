@@ -8,10 +8,10 @@ import re
 import sys
 
 from stringprep import map_table_b3
-from PySide6.QtWidgets import QApplication, QMainWindow, QFileDialog, QHeaderView
+from PySide6.QtWidgets import QApplication, QMainWindow, QFileDialog, QHeaderView, QMenu
 from PySide6 import QtCore
 from PySide6 import QtGui
-from PySide6.QtCore import Qt
+from PySide6.QtCore import Qt, QEvent
 from PySide6.QtUiTools import QUiLoader
 from bs4 import BeautifulSoup # needs lxml
 import urllib
@@ -20,7 +20,7 @@ import shlex
 import requests
 #import Levenshtein
 import yt_dlp
-#from moviepy.editor import VideoFileClip
+from moviepy.editor import VideoFileClip
 from PIL import Image, ImageEnhance, ImageOps
 import subprocess
 from pdfme import build_pdf # maybe reportlab is better suited?
@@ -224,14 +224,15 @@ def get_usdb_details(id):
                 comment_urls = []
                 if comment_embeds := comment_contents.find_all("embed"):
                     for i, comment_embed in enumerate(comment_embeds):
-                        yt_url = comment_embed.get("src").split("&")[0] #TODO: this assumes youtube embeds
+                        url = comment_embed.get("src").split("&")[0] #TODO: this assumes youtube embeds
                         try:
-                            yt_id = extract.video_id(yt_url)
+                            yt_id = extract.video_id(url)
                         except:
-                            logging.warning(f"\t- usdb::comment embed contains a url ({yt_url}), but the Youtube video ID could not be extracted.")
+                            logging.warning(f"\t- usdb::comment embed contains a url ({url}), but the Youtube video ID could not be extracted.")
                         else:
-                            comment_urls.append(yt_url)
-                            details["video_params"] = {"v": yt_id} #TODO: this only takes the first youtube link in the newest comments
+                            comment_urls.append(url)
+                            if not details.get("video_params"):
+                                details["video_params"] = {"v": yt_id} #TODO: this only takes the first youtube link in the newest comments
                 comment_text = comment_contents.find("td").text.strip()
                 regex = r"(?i)\b((?:https?://|www\d{0,3}[.]|[a-z0-9.\-]+[.][a-z]{2,4}/)(?:[^\s()<>]+|\(([^\s()<>]+|(\([^\s()<>]+\)))*\))+(?:\(([^\s()<>]+|(\([^\s()<>]+\)))*\)|[^\s`!()\[\]{};:'\".,<>?«»“”‘’]))"
                 urls = re.findall(regex, comment_text)
@@ -497,7 +498,7 @@ def getscinfo(header):
     return sc_info
 
 
-def get_legal_dirname(header, resource_params):
+def get_legal_dirname(header, resource_params, details):
     artist = header.get('#ARTIST')
     title = header.get('#TITLE')
     edition = header.get("#EDITION")
@@ -521,14 +522,16 @@ def get_legal_dirname(header, resource_params):
             title = title.replace(illegal_char, "").strip()
         
     dirname = f"{artist} - {title}"
-    if resource_params.get("v"):
+    if resource_params.get("v") or details.get("video_params"):
         dirname += " [VIDEO]"
     if edition := header.get("#EDITION"):
         if "singstar" in edition.lower():
             dirname += " [SS]"
-        if "[SC]" in edition:
+        elif "[SC]" in edition:
             dirname += " [SC]"
-        if "rockband" in edition.lower():
+        elif "rockband" in edition.lower():
+            dirname += " [RB]"
+        elif "rock band" in edition.lower():
             dirname += " [RB]"
         
     return dirname
@@ -787,8 +790,8 @@ def download_image(url):
             return False, reply.content
 
 
-def download_and_process_cover(header, cover_params):
-    if not cover_params.get("co"):
+def download_and_process_cover(header, cover_params, details):
+    if not cover_params.get("co") and not details.get("cover_url"):
         return
 
     logging.info("\t- downloading cover ...")
@@ -796,15 +799,20 @@ def download_and_process_cover(header, cover_params):
     cover_extension = ".jpg"
     cover_filename = get_legal_filename(header) + f" [CO]{cover_extension}"
     
-    protocol = "https://"
-    if p := cover_params.get("co-protocol"):
-        if p == "http":
-            protocol = "http://"
-    
-    if "/" in cover_params['co']:
-        cover_url = f"{protocol}{cover_params['co']}"
+    if partial_url := cover_params.get("co"):
+        protocol = "https://"
+        if p := cover_params.get("co-protocol"):
+            if p == "http":
+                protocol = "http://"
+        
+        if "/" in cover_params['co']:
+            cover_url = f"{protocol}{partial_url}"
+        else:
+            cover_url = f"{protocol}images.fanart.tv/fanart/{partial_url}"
     else:
-        cover_url = f"{protocol}images.fanart.tv/fanart/{cover_params['co']}"
+        logging.warning(f"USING SMALL COVER FROM USDB!")
+        cover_url = details.get("cover_url")
+    
     success, cover = download_image(cover_url)
     
     if success:
@@ -931,6 +939,7 @@ class QUMainWindow(QMainWindow, Ui_MainWindow):
         
         self.lineEdit_search.textChanged.connect(self.set_filter_regular_expression)
         self.tableView_availableSongs.setModel(self.filter_proxy_model)
+        self.tableView_availableSongs.installEventFilter(self)
         
         self.comboBox_search_column.currentIndexChanged.connect(self.set_filter_key_column)
         self.checkBox_case_sensitive.stateChanged.connect(self.set_case_sensitivity)
@@ -1109,7 +1118,8 @@ class QUMainWindow(QMainWindow, Ui_MainWindow):
                 pass
                 #self.treeView_availableSongs.setRowHidden(row, QtCore.QModelIndex(), True)
         self.download_songs(ids)
-        ###
+        
+        ### generate song list PDF -> own function
         document = {}
         document['style'] = {
             'margin_bottom': 15,
@@ -1128,13 +1138,7 @@ class QUMainWindow(QMainWindow, Ui_MainWindow):
             '.': f'Songlist ({date:%Y-%m-%d})', 'style': 'title', 'label': 'title1',
             'outline': {'level': 1, 'text': 'A different title 1'}
         })
-        #content1.append(
-        #    ['This is a paragraph with a ', {'.b;c:green': 'bold green part'}, ', a ',
-        #    {'.': 'link', 'style': 'url', 'uri': 'https://some.url.com'},
-        #    ', a footnote', {'footnote': 'description of the footnote'},
-        #    ' and a reference to ',
-        #    {'.': 'Title 2.', 'style': 'url', 'ref': 'title2'}]
-        #)
+
         for row in range(self.model.rowCount(self.tableView_availableSongs.rootIndex())):
             item = self.model.item(row, 0)
             if item.checkState() == Qt.CheckState.Checked:
@@ -1164,9 +1168,12 @@ class QUMainWindow(QMainWindow, Ui_MainWindow):
         for num, id in enumerate(ids):
             idp = str(id).zfill(5)
                         
-            exists, details = get_usdb_details(id) 
-            
             logging.info(f"#{idp}:")
+            
+            exists, details = get_usdb_details(id)
+            if not exists:
+                # song was deleted meanwhile, TODO: uncheck/remove from model
+                continue
             
             songtext = getsongtext(id)
             
@@ -1217,7 +1224,7 @@ class QUMainWindow(QMainWindow, Ui_MainWindow):
             #         logging.info(f"\t- sc::title_ldist > 3, is \'{header['#TITLE']}\' spelled correctly?")
             
             #header, notes, details = cleansong(header, notes, details, resource_params, sc_info, duet)
-            dirname = get_legal_dirname(header, resource_params)
+            dirname = get_legal_dirname(header, resource_params, details)
                     
             #if not os.path.exists(idp):
             #    os.mkdir(idp)
@@ -1248,8 +1255,14 @@ class QUMainWindow(QMainWindow, Ui_MainWindow):
             if dl_audio:
                 if audio_resource := resource_params.get("a"):
                     pass
+                elif audio_resource := resource_params.get("v"):
+                    pass
                 else:
-                    audio_resource = resource_params.get("v")
+                    video_params = details.get("video_params")
+                    if video_params:
+                        audio_resource = video_params.get("v")
+                        if audio_resource:
+                            logging.warning(f"Using Youtube ID {audio_resource} extracted from comments.")
                 
                 if audio_resource:
                     if "bestaudio" in self.comboBox_audio_format.currentText():
@@ -1288,7 +1301,15 @@ class QUMainWindow(QMainWindow, Ui_MainWindow):
             # download video
             has_video = False
             if dl_video:
-                video_resource = resource_params.get("v")
+                if video_resource := resource_params.get("v"):
+                    pass
+                else:
+                    video_params = details.get("video_params")
+                    if video_params:
+                        video_resource = video_params.get("v")
+                        if video_resource:
+                            logging.warning(f"Using Youtube ID {audio_resource} extracted from comments.")
+                
                 if video_resource:
                     logging.info("\t- downloading video from #VIDEO params")
                     video_params = {
@@ -1314,7 +1335,7 @@ class QUMainWindow(QMainWindow, Ui_MainWindow):
             # download cover
             has_cover = False
             if dl_cover:
-                has_cover = download_and_process_cover(header, resource_params)
+                has_cover = download_and_process_cover(header, resource_params, details)
                 header["#COVER"] = f"{get_legal_filename(header)} [CO].jpg"
                 if has_cover:
                     self.model.setItem(self.model.findItems(idp, flags=Qt.MatchExactly, column=0)[0].row(), 11, QtGui.QStandardItem(QtGui.QIcon(":/icons/resources/tick.png"), ""))
@@ -1371,6 +1392,18 @@ class QUMainWindow(QMainWindow, Ui_MainWindow):
         
         os.chdir("..")
         logging.info(f"DONE! (Downloaded {len(ids)} songs)")
+        
+    def eventFilter(self, source, event):
+        if event.type() == QEvent.ContextMenu and source == self.tableView_availableSongs:
+            menu = QMenu()
+            menu.addAction("Check all selected songs")
+            menu.addAction("Uncheck all selected songs")
+            
+            if(menu.exec(event.globalPos())):
+                index = source.indexAt(event.pos())
+                print(index)
+            return True
+        return super().eventFilter(source, event)
 
 
 def main():
