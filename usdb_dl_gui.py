@@ -522,7 +522,7 @@ def get_legal_dirname(header, resource_params, details):
             title = title.replace(illegal_char, "").strip()
         
     dirname = f"{artist} - {title}"
-    if resource_params.get("v") or details.get("video_params"):
+    if resource_params.get("v") or (not resource_params.get("a") and details.get("video_params")):
         dirname += " [VIDEO]"
     if edition := header.get("#EDITION"):
         if "singstar" in edition.lower():
@@ -1303,7 +1303,7 @@ class QUMainWindow(QMainWindow, Ui_MainWindow):
             if dl_video:
                 if video_resource := resource_params.get("v"):
                     pass
-                else:
+                elif not resource_params.get("a"):
                     video_params = details.get("video_params")
                     if video_params:
                         video_resource = video_params.get("v")
