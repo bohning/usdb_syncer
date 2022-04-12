@@ -1233,6 +1233,9 @@ class QUMainWindow(QMainWindow, Ui_MainWindow):
             if not os.path.exists(dirname):
                 os.mkdir(dirname)    
             os.chdir(dirname)
+            if not os.path.exists(idp):
+                os.mkdir(idp)
+            os.chdir(idp)
             
             # write .usdb file for synchronization
             with open(f"temp.usdb", 'w', encoding="utf_8") as f:
@@ -1388,6 +1391,7 @@ class QUMainWindow(QMainWindow, Ui_MainWindow):
             write_textfile(header, notes, duet, encoding, newline)
             self.model.setItem(self.model.findItems(idp, flags=Qt.MatchExactly, column=0)[0].row(), 8, QtGui.QStandardItem(QtGui.QIcon(":/icons/resources/tick.png"), ""))
             
+            os.chdir("..")
             os.chdir("..")
         
         os.chdir("..")
