@@ -1245,6 +1245,7 @@ class QUMainWindow(QMainWindow, Ui_MainWindow):
                     logging.info("\t FILES ARE IDENTICAL - SKIPPING SONG")
                     os.remove("temp.usdb")
                     os.chdir("..")
+                    os.chdir("..")
                     continue
                 else:
                     logging.info("\t USDB file has been updated, re-downloading...")
