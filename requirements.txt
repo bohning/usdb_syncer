@@ -7,3 +7,5 @@ requests==2.27.1
 yt_dlp==2022.2.4
 moviepy==1.0.3
 pdfme==0.4.9
+black
+isort
