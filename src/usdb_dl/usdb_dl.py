@@ -557,10 +557,13 @@ def main():
     app.exec()
     
 
-if __name__ == '__main__':
+def cli_entry() -> None:
     parser = argparse.ArgumentParser(description="UltraStar script.")
 
     args = parser.parse_args()
 
     # Call main
     main()
+
+if __name__ == "__main__":
+    cli_entry()

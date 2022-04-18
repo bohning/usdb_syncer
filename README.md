@@ -16,6 +16,11 @@ pip install --upgrade pip
 pip install -e .[dev]
 ```
 
+
+#### Run usdb_dl
+
+The package has a defined entry point for the GUI. Simply type in `usdb_dl` in your terminal (Make sure that your venv is activated).
+
 #### Run tests
 Run `tox` to execute the test pipeline. The tox pipelines are configured in the tox.ini file. Configurations for specific tools in the pipeline are maintained in the `pyproject.toml` file. Tox is configured to create its own virtual environments, install test dependencies and the package you are developing, and run all tests. If you changed the test requirements or want to perform a clean run for some reason, you can run `tox -r` to recreate tox's virtual environment. 
 
