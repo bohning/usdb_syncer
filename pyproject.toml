@@ -1,0 +1,76 @@
+[build-system]
+requires = ["setuptools>=42", "wheel", "setuptools_scm[toml]>=3.4"]
+build-backend = "setuptools.build_meta"
+
+# Enables the usage of setuptools_scm
+[tool.setuptools_scm]
+"root" = "."
+
+[tool.isort]
+profile = "black"
+line_length = 120
+
+[tool.black]
+line_length = 120
+
+[tool.pylint.master]
+# Add McCabe code complexity checker
+load-plugins= """
+    pylint.extensions.mccabe
+    """
+# The following settings modify the behavior when running pylint with pylint.extensions.docparams plugin loaded
+accept-no-param-doc = "no"
+accept-no-raise-doc = "no"
+accept-no-return-doc = "no"
+accept-no-yields-doc = "no"
+# Ignore the Sphinx config file that is unfortunately a Python file
+ignore = ["conf.py"]
+
+[tool.pylint.messages_control]
+max-line-length = 120
+# https://github.com/samuelcolvin/pydantic/issues/1961
+extension-pkg-whitelist = "pydantic"
+disable = """
+    too-few-public-methods,
+    logging-fstring-interpolation,
+    too-many-instance-attributes,
+    too-many-arguments,
+    missing-function-docstring
+    """
+
+[tool.pylint.similarities]
+# Exclude the following from code duplication checks
+ignore-comments = "yes"
+ignore-docstrings = "yes"
+ignore-imports = "yes"
+ignore-signatures = "yes"
+
+[tool.mypy]
+# https://mypy.readthedocs.io/en/stable/command_line.html#cmdoption-mypy-ignore-missing-imports
+ignore_missing_imports = true
+# Functions need to be annotated
+disallow_untyped_defs = true
+exclude = "venv/|log/"
+
+
+[tool.pytest.ini_options]
+python_classes = "!TestCase"
+addopts = """
+    -vv
+    --junitxml=reports/pytest.xml
+    --cov=usdb_dl
+    --cov-config=pyproject.toml
+    --cov-report xml:reports/coverage.xml
+    --cov-report html:reports/coverage_html
+    """
+
+[tool.coverage.run]
+branch = true
+data_file = "reports/.coverage"
+
+[tool.coverage.paths]
+# Maps coverage measured in site-packages to source files in src
+source = ["src/", ".tox/*/lib/python*/site-packages/"]
+
+[tool.pydocstyle]
+convention = "google"

@@ -3,7 +3,11 @@ dist
 venv
 .venv
 songs
-__pycache__
+**__pycache__
+**.egg-info
+.tox
+.mypy_cache
+reports
 *.pdf
-config.ini
+**/*/config.ini
 *.log

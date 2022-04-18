@@ -1,0 +1,15 @@
+{
+  "cSpell.words": [
+    "Datensatz",
+    "gefunden",
+    "gettxt",
+    "lxml",
+    "nicht",
+    "nocover",
+    "onclick",
+    "usdb"
+  ],
+  "python.testing.unittestEnabled": false,
+  "python.testing.pytestEnabled": true,
+  "python.testing.pytestArgs": ["--no-cov"]
+}

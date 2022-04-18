@@ -16,11 +16,11 @@ from PySide6.QtWidgets import QApplication, QMainWindow, QFileDialog, QHeaderVie
 from pdfme import build_pdf # maybe reportlab is better suited?
 from typing import Dict, List, Tuple
 import filecmp
-import usdb_scraper
-import note_utils
+from usdb_dl import usdb_scraper
+from usdb_dl import note_utils
 import resource_dl
 
-from QUMainWindow import Ui_MainWindow
+from usdb_dl.QUMainWindow import Ui_MainWindow
 
 
 class Worker(QRunnable):
