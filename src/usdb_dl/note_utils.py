@@ -5,6 +5,8 @@ import re
 import os
 from typing import Dict, List, Tuple
 
+_logger: logging.Logger = logging.getLogger(__file__)
+
 
 def parse_notes(notes: str) -> Tuple[Dict[str, str], List[str]]:
     """Split notes string into interable header and body.
@@ -144,7 +146,7 @@ def dump_notes(
     txt_filename = generate_filename(header)
     duetstring = " (duet)" if duet else ""
     filename = f"{txt_filename}{duetstring}.txt"
-    logging.debug("\t- writing text file with encoding %s", encoding)
+    _logger.debug("\t- writing text file with encoding %s", encoding)
     with open(os.path.join(pathname, filename), "w", encoding=encoding, newline=newline) as notes_file:
         tags = [
             "#TITLE",

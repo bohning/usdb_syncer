@@ -8,6 +8,8 @@ from typing import Dict, List, Tuple
 import requests
 from bs4 import BeautifulSoup
 
+_logger: logging.Logger = logging.getLogger(__file__)
+
 
 def get_usdb_page(
     rel_url,
@@ -33,11 +35,11 @@ def get_usdb_page(
     url = "http://usdb.animux.de/" + rel_url
 
     if method == "GET":
-        logging.debug("get request for %s", url)
+        _logger.debug("get request for %s", url)
         response = requests.get(url, headers=_headers, params=params)
 
     elif method == "POST":
-        logging.debug("post request for %s", url)
+        _logger.debug("post request for %s", url)
         response = requests.post(url, headers=_headers, data=payload, params=params)
     else:
         raise NotImplementedError(f"{method} request not supported")
@@ -93,7 +95,7 @@ def get_usdb_available_songs(content_filter: Dict[str, str] = None) -> List[dict
             "views": views,
         }
         available_songs.append(song)
-    logging.info("fetched %d available songs", len(available_songs))
+    _logger.info("fetched %d available songs", len(available_songs))
     return available_songs
 
 
@@ -207,7 +209,7 @@ def get_notes(song_id: str) -> str:
     Parameters:
         id: song id
     """
-    logging.debug("\t- fetch notes for song %s", song_id)
+    _logger.debug("\t- fetch notes for song %s", song_id)
     params = {"link": "gettxt", "id": song_id}
     payload = {"wd": "1"}
     headers = {"Content-Type": "application/x-www-form-urlencoded"}
