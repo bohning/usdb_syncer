@@ -20,7 +20,7 @@ from usdb_dl import usdb_scraper
 from usdb_dl import note_utils
 import resource_dl
 
-from usdb_dl.QUMainWindow import Ui_MainWindow
+from usdb_dl.gui.QUMainWindow import Ui_MainWindow
 
 
 class Worker(QRunnable):
