@@ -174,7 +174,8 @@ def get_usdb_details(id):
         while isEditor:
             editor_link = rows[i].find_all("td")[1].find("a")
             if editor_link:
-                editors.append(editor_link.string)
+                if editor_link.string:
+                    editors.append(editor_link.string)
                 i += 1
             else:
                 isEditor = False
@@ -599,7 +600,8 @@ def download_and_process_audio(header, audio_resource, audio_dl_format, audio_ta
             "format": "bestaudio",
             "outtmpl": f"{audio_filename}" + ".%(ext)s",
             "keepvideo": False,
-            "verbose": True
+            "verbose": True,
+            "cookiesfrombrowser": ("chrome", )
         }
     
     ext = ""
@@ -667,7 +669,7 @@ def download_and_process_video(header, video_resource, video_params, resource_pa
         "outtmpl": f"{video_filename}" + ".%(ext)s",
         "keepvideo": False,
         "verbose": True,
-        "cookies-from-browser": "chrome"
+        "cookiesfrombrowser": ("chrome", )
     }
     
     if "/" in video_resource: # not Youtube
