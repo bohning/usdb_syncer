@@ -16,7 +16,6 @@ from PySide6.QtUiTools import QUiLoader
 from bs4 import BeautifulSoup # needs lxml
 import urllib
 from pytube import extract
-import shlex
 import requests
 #import Levenshtein
 import yt_dlp
@@ -215,7 +214,7 @@ def get_usdb_details(id):
                 regex = r".*(\d{2})\.(\d{2})\.(\d{2}) - (\d{2}):(\d{2}) \| (.*)"
                 match = re.search(regex, comment_details)
                 if not match:
-                    logging.info("\t- usdb::song has no comments!")
+                    logging.warning("\t- usdb::song has no comments!")
                     continue
                 
                 comment_day, comment_month, comment_year, comment_hour, comment_minute, comment_commenter = match.groups()
@@ -303,11 +302,8 @@ def get_params_from_video_tag(header, tag):
     params = {}
     params_line = header.get(tag)
     if params_line:
-        lexer = shlex.shlex(params_line.strip(), posix=True)
-        lexer.whitespace_split = True
-        lexer.whitespace = ","
         try:    
-            params = dict(pair.split("=", 1) for pair in lexer)
+            params = dict(r.split('=') for r in params_line.split(','))
         except:
             logging.warning(f"\t- usdb::no key/value pairs in {tag} tag.")
 
@@ -586,6 +582,7 @@ def write_textfile(header, notes, duet, encoding, newline):
             
 def download_and_process_audio(header, audio_resource, audio_dl_format, audio_target_codec):
     if not audio_resource:
+        logging.warning("\t- no audio resource in #VIDEO tag")
         return False, ""
     
     if "/" in audio_resource:
@@ -794,6 +791,7 @@ def download_image(url):
 
 def download_and_process_cover(header, cover_params, details):
     if not cover_params.get("co") and not details.get("cover_url"):
+        logging.warning("\t- no cover resource in #VIDEO tag and no cover in usdb")
         return
 
     logging.info("\t- downloading cover ...")
@@ -811,8 +809,9 @@ def download_and_process_cover(header, cover_params, details):
             cover_url = f"{protocol}{partial_url}"
         else:
             cover_url = f"{protocol}images.fanart.tv/fanart/{partial_url}"
+        logging.info("\t- downloading cover from #VIDEO params")
     else:
-        logging.warning(f"USING SMALL COVER FROM USDB!")
+        logging.warning(f"\t- no cover resource in #VIDEO tag, so fallback to small usdb cover!")
         cover_url = details.get("cover_url")
     
     success, cover = download_image(cover_url)
@@ -860,6 +859,7 @@ def download_and_process_cover(header, cover_params, details):
 
 def download_and_process_background(header, background_params):
     if not background_params.get("bg"):
+        logging.warning("\t- no background resource in #VIDEO-tag")
         return
     
     logging.info("\t- downloading background ...")
@@ -876,6 +876,9 @@ def download_and_process_background(header, background_params):
         background_url = f"{protocol}{background_params['bg']}"
     else:
         background_url = f"{protocol}images.fanart.tv/fanart/{background_params['bg']}"
+        
+    logging.info("\t- downloading background from #VIDEO params")
+    
     success, background = download_image(background_url)
     
     if success:
@@ -1337,6 +1340,8 @@ class QUMainWindow(QMainWindow, Ui_MainWindow):
                     header["#VIDEO"] = f"{get_legal_filename(header)}{video_params['container']}" 
                     if has_video:
                         self.model.setItem(self.model.findItems(idp, flags=Qt.MatchExactly, column=0)[0].row(), 10, QtGui.QStandardItem(QtGui.QIcon(":/icons/resources/tick.png"), ""))
+                else:
+                    logging.warning("\t- no video resource in #VIDEO tag")
 
             # download cover
             has_cover = False
