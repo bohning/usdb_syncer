@@ -40,35 +40,6 @@ from QUMainWindow import Ui_MainWindow
         'Accept-Language': 'de-DE,de;q=0.9,en-US;q=0.8,en-DE;q=0.7,en;q=0.6',
         'Cookie': f'__utmz=7495734.1596286540.251.2.utmcsr=google|utmccn=(organic)|utmcmd=organic|utmctr=(not%20provided); __utmc=7495734; ziparchiv=; counter=0; PHPSESSID={PHPSESSID}; __utma=7495734.1923417532.1586343016.1641505471.1641515336.1172; __utmt=1; __utmb=7495734.23.10.1641515336'
     } """
-
-
-def get_params_from_video_tag(header, tag):
-    params = {}
-    params_line = header.get(tag)
-    if params_line:
-        try:    
-            params = dict(r.split('=') for r in params_line.split(','))
-        except:
-            logging.warning(f"\t- usdb::no key/value pairs in {tag} tag.")
-
-    return params
-
-
-def isduet(header, resource_params):
-    if resource_params.get("p1") and resource_params.get("p2"):
-        return True
-    
-    title = header.get('#TITLE').lower()
-    edition = header.get("#EDITION")
-    if edition:
-        edition = edition.lower()
-    else:
-        edition = "None"
-    
-    if "duet" in title or "duet" in edition:
-        return True
-    else:
-        return False
     
     
 def getscinfo(header):
@@ -238,91 +209,6 @@ def getscinfo(header):
     
     return sc_info
 
-
-def get_legal_dirname(header, resource_params, details):
-    artist = header.get('#ARTIST')
-    title = header.get('#TITLE')
-    edition = header.get("#EDITION")
-    
-    illegal_chars = ["/", "\\", ":", "*", "?", "\"", "<", ">", "|"]
-    for illegal_char in illegal_chars:
-        if illegal_char == "?" or illegal_char == ":" or illegal_char == "\"":
-            artist = artist.replace(illegal_char, "").strip()
-            title = title.replace(illegal_char, "").strip()
-        elif illegal_char == "<":
-            artist = artist.replace(illegal_char, "(")
-            title = title.replace(illegal_char, "(")
-        elif illegal_char == ">":
-            artist = artist.replace(illegal_char, ")")
-            title = title.replace(illegal_char, ")")
-        elif illegal_char == "/" or illegal_char == "\\" or illegal_char == "|" or illegal_char == "*":
-            artist = artist.replace(illegal_char, "-")
-            title = title.replace(illegal_char, "-")
-        else:
-            artist = artist.replace(illegal_char, "").strip()
-            title = title.replace(illegal_char, "").strip()
-        
-    dirname = f"{artist} - {title}"
-    if resource_params.get("v") or (not resource_params.get("a") and details.get("video_params")):
-        dirname += " [VIDEO]"
-    if edition := header.get("#EDITION"):
-        if "singstar" in edition.lower():
-            dirname += " [SS]"
-        elif "[SC]" in edition:
-            dirname += " [SC]"
-        elif "rockband" in edition.lower():
-            dirname += " [RB]"
-        elif "rock band" in edition.lower():
-            dirname += " [RB]"
-        
-    return dirname
-
-
-def get_legal_filename(header):
-    artist = header.get('#ARTIST')
-    title = header.get('#TITLE')
-    
-    illegal_chars = ["/", "\\", ":", "*", "?", "\"", "<", ">", "|"]
-    for illegal_char in illegal_chars:
-        if illegal_char == "?" or illegal_char == ":" or illegal_char == "\"":
-            artist = artist.replace(illegal_char, "").strip()
-            title = title.replace(illegal_char, "").strip()
-        elif illegal_char == "<":
-            artist = artist.replace(illegal_char, "(")
-            title = title.replace(illegal_char, "(")
-        elif illegal_char == ">":
-            artist = artist.replace(illegal_char, ")")
-            title = title.replace(illegal_char, ")")
-        elif illegal_char == "/" or illegal_char == "\\" or illegal_char == "|" or illegal_char == "*":
-            artist = artist.replace(illegal_char, "-")
-            title = title.replace(illegal_char, "-")
-        else:
-            artist = artist.replace(illegal_char, "").strip()
-            title = title.replace(illegal_char, "").strip()
-        
-    filename = f"{artist} - {title}"
-        
-    return filename
-
-
-def write_textfile(header, notes, duet, encoding, newline):
-    logging.info(f"\t- writing text file with encoding {encoding} ...")
-    
-    txt_filename = get_legal_filename(header)
-    txt_extension = ".txt"
-
-    duetstring = ""
-    if duet:
-        duetstring = " (duet)"
-    filename = f"{txt_filename}{duetstring}{txt_extension}"
-    
-    with open(filename, 'w', encoding=encoding, newline=newline) as f:
-        tag_order = ["#TITLE", "#ARTIST", "#LANGUAGE", "#EDITION", "#GENRE", "#YEAR", "#CREATOR", "#MP3", "#COVER", "#BACKGROUND", "#VIDEO", "#VIDEOGAP", "#START", "#END", "#PREVIEWSTART", "#BPM", "#GAP", "#RELATIVE", "#P1", "#P2"]
-        for tag in tag_order:
-            if header.get(tag):
-                f.write(tag + ":" + header.get(tag) + "\n")
-        for n in notes:
-            f.write(n)
             
 def download_and_process_audio(header, audio_resource, audio_dl_format, audio_target_codec):
     if not audio_resource:
@@ -335,7 +221,7 @@ def download_and_process_audio(header, audio_resource, audio_dl_format, audio_ta
         audio_url = f"https://www.youtube.com/watch?v={audio_resource}"
     logging.info(f"\t- downloading audio: {audio_url}")
     
-    audio_filename = get_legal_filename(header)
+    audio_filename = note_utils.generate_filename(header)
     
     ydl_opts = {
             "format": "bestaudio",
@@ -399,7 +285,7 @@ def download_and_process_video(header, video_resource, video_params, resource_pa
         video_url = f"https://www.youtube.com/watch?v={video_resource}"
     logging.info(f"\t- downloading video: {video_url}")
     
-    video_filename = get_legal_filename(header)
+    video_filename = note_utils.generate_filename(header)
     
     ydl_opts = {
         #"format":  f"bestvideo[ext=mp4][width<={video_max_width}][height<={video_max_height}][fps<={video_max_fps}]+bestaudio[ext=m4a]/best[ext=mp4][width<={video_max_width}][height<={video_max_height}][fps<={video_max_fps}]/best[width<={video_max_width}][height<={video_max_height}][fps<={video_max_fps}]",
@@ -541,7 +427,7 @@ def download_and_process_cover(header, cover_params, details):
     logging.info("\t- downloading cover ...")
     
     cover_extension = ".jpg"
-    cover_filename = get_legal_filename(header) + f" [CO]{cover_extension}"
+    cover_filename = note_utils.generate_filename(header) + f" [CO]{cover_extension}"
     
     if partial_url := cover_params.get("co"):
         protocol = "https://"
@@ -609,7 +495,7 @@ def download_and_process_background(header, background_params):
     logging.info("\t- downloading background ...")
     background_extension = ".jpg"
     
-    background_filename = get_legal_filename(header) + f" [BG]{background_extension}"
+    background_filename = note_utils.generate_filename(header) + f" [BG]{background_extension}"
     
     protocol = "https://"
     if p := background_params.get("bg-protocol"):
@@ -906,9 +792,9 @@ class QUMainWindow(QMainWindow, Ui_MainWindow):
             self.statusbar.showMessage(f"Downloading '{header['#ARTIST']} - {header['#TITLE']}' ({num+1}/{len(ids)})") # TODO: this is not updated until after download all songs
             
             header["#TITLE"] = re.sub("[\[].*?[\]]", "", header["#TITLE"]).strip() # remove anything in "[]" from the title, e.g. "[duet]"
-            resource_params = get_params_from_video_tag(header, "#VIDEO")
+            resource_params = note_utils.get_params_from_video_tag(header)
             
-            duet = isduet(header, resource_params)
+            duet = note_utils.is_duet(header, resource_params)
             if duet:
                 if p1 := resource_params.get("p1"):
                     header["#P1"] = p1
@@ -947,7 +833,7 @@ class QUMainWindow(QMainWindow, Ui_MainWindow):
             #         logging.info(f"\t- sc::title_ldist > 3, is \'{header['#TITLE']}\' spelled correctly?")
             
             #header, notes, details = cleansong(header, notes, details, resource_params, sc_info, duet)
-            dirname = get_legal_dirname(header, resource_params, details)
+            dirname = note_utils.generate_dirname(header, resource_params)
                     
             #if not os.path.exists(idp):
             #    os.mkdir(idp)
@@ -1017,7 +903,7 @@ class QUMainWindow(QMainWindow, Ui_MainWindow):
                         
                     has_audio, ext = download_and_process_audio(header, audio_resource, audio_dl_format, audio_target_codec)
                     
-                    header["#MP3"] = f"{get_legal_filename(header)}.{ext}" 
+                    header["#MP3"] = f"{note_utils.generate_filename(header)}.{ext}" 
                     
                     # delete #VIDEO tag used for resources
                     if header.get("#VIDEO"):
@@ -1056,7 +942,7 @@ class QUMainWindow(QMainWindow, Ui_MainWindow):
             #         has_video = dl_yt_video(header, resource_params)
                     
                     #if not header.get("#VIDEO"):
-                    header["#VIDEO"] = f"{get_legal_filename(header)}{video_params['container']}" 
+                    header["#VIDEO"] = f"{note_utils.generate_filename(header)}{video_params['container']}" 
                     if has_video:
                         self.model.setItem(self.model.findItems(idp, flags=Qt.MatchExactly, column=0)[0].row(), 10, QtGui.QStandardItem(QtGui.QIcon(":/icons/resources/tick.png"), ""))
                 else:
@@ -1066,7 +952,7 @@ class QUMainWindow(QMainWindow, Ui_MainWindow):
             has_cover = False
             if dl_cover:
                 has_cover = download_and_process_cover(header, resource_params, details)
-                header["#COVER"] = f"{get_legal_filename(header)} [CO].jpg"
+                header["#COVER"] = f"{note_utils.generate_filename(header)} [CO].jpg"
                 if has_cover:
                     self.model.setItem(self.model.findItems(idp, flags=Qt.MatchExactly, column=0)[0].row(), 11, QtGui.QStandardItem(QtGui.QIcon(":/icons/resources/tick.png"), ""))
             
@@ -1075,7 +961,7 @@ class QUMainWindow(QMainWindow, Ui_MainWindow):
             if dl_background:
                 if self.comboBox_background.currentText() == "always" or (not has_video and self.comboBox_background.currentText() == "only if no video"):
                     has_background = download_and_process_background(header, resource_params)
-                    header["#BACKGROUND"] = f"{get_legal_filename(header)} [BG].jpg"
+                    header["#BACKGROUND"] = f"{note_utils.generate_filename(header)} [BG].jpg"
                     
                     if has_background:
                         self.model.setItem(self.model.findItems(idp, flags=Qt.MatchExactly, column=0)[0].row(), 12, QtGui.QStandardItem(QtGui.QIcon(":/icons/resources/tick.png"), ""))
@@ -1115,7 +1001,7 @@ class QUMainWindow(QMainWindow, Ui_MainWindow):
                 newline = '\r\n'
             elif newline == "Mac/Linux (LF)":
                 newline = '\n'
-            write_textfile(header, notes, duet, encoding, newline)
+            note_utils.dump_notes(header, notes, duet, encoding, newline)
             self.model.setItem(self.model.findItems(idp, flags=Qt.MatchExactly, column=0)[0].row(), 8, QtGui.QStandardItem(QtGui.QIcon(":/icons/resources/tick.png"), ""))
             
             os.chdir("..")

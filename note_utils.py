@@ -2,7 +2,6 @@
 
 import logging
 import re
-import shlex
 from typing import Dict, List, Tuple
 
 
@@ -45,11 +44,8 @@ def get_params_from_video_tag(header: Dict[str, str]) -> Dict[str, str]:
     """
     if not (params_line := header.get("#VIDEO")):
         raise LookupError("no video tag found in header.")
-    lexer = shlex.shlex(params_line.strip(), posix=True)
-    lexer.whitespace_split = True
-    lexer.whitespace = ","
     try:
-        params = dict(pair.split("=", 1) for pair in lexer)
+        params = dict(r.split('=') for r in params_line.split(','))
     except ValueError as exception:
         raise LookupError("no parameter in video tag") from exception
     return params
