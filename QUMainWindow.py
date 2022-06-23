@@ -39,46 +39,17 @@ class Ui_MainWindow(object):
         self.horizontalLayout_2 = QHBoxLayout(self.groupBox)
         self.horizontalLayout_2.setObjectName(u"horizontalLayout_2")
         self.horizontalLayout_2.setContentsMargins(4, 4, 4, 4)
-        self.label_username = QLabel(self.groupBox)
-        self.label_username.setObjectName(u"label_username")
-
-        self.horizontalLayout_2.addWidget(self.label_username)
-
-        self.lineEdit_user = QLineEdit(self.groupBox)
-        self.lineEdit_user.setObjectName(u"lineEdit_user")
-
-        self.horizontalLayout_2.addWidget(self.lineEdit_user)
-
-        self.label_password = QLabel(self.groupBox)
-        self.label_password.setObjectName(u"label_password")
-
-        self.horizontalLayout_2.addWidget(self.label_password)
-
-        self.lineEdit_password = QLineEdit(self.groupBox)
-        self.lineEdit_password.setObjectName(u"lineEdit_password")
-        self.lineEdit_password.setEchoMode(QLineEdit.Password)
-
-        self.horizontalLayout_2.addWidget(self.lineEdit_password)
-
-        self.pushButton_login = QPushButton(self.groupBox)
-        self.pushButton_login.setObjectName(u"pushButton_login")
+        self.pushButton_get_songlist = QPushButton(self.groupBox)
+        self.pushButton_get_songlist.setObjectName(u"pushButton_get_songlist")
         font = QFont()
         font.setPointSize(16)
-        self.pushButton_login.setFont(font)
-        self.pushButton_login.setStyleSheet(u"background-color: rgb(0, 102, 0);")
+        self.pushButton_get_songlist.setFont(font)
+        self.pushButton_get_songlist.setStyleSheet(u"background-color: rgb(0, 102, 0);")
         icon = QIcon()
         icon.addFile(u":/icons/resources/faviconUSDB.ico", QSize(), QIcon.Normal, QIcon.Off)
-        self.pushButton_login.setIcon(icon)
+        self.pushButton_get_songlist.setIcon(icon)
 
-        self.horizontalLayout_2.addWidget(self.pushButton_login)
-
-        self.pushButton_refresh = QPushButton(self.groupBox)
-        self.pushButton_refresh.setObjectName(u"pushButton_refresh")
-        self.pushButton_refresh.setFont(font)
-        self.pushButton_refresh.setStyleSheet(u"background-color: rgb(0, 102, 0);")
-        self.pushButton_refresh.setIcon(icon)
-
-        self.horizontalLayout_2.addWidget(self.pushButton_refresh)
+        self.horizontalLayout_2.addWidget(self.pushButton_get_songlist)
 
 
         self.horizontalLayout_3.addWidget(self.groupBox)
@@ -498,11 +469,8 @@ class Ui_MainWindow(object):
 
     def retranslateUi(self, MainWindow):
         MainWindow.setWindowTitle(QCoreApplication.translate("MainWindow", u"USDB Song Manager", None))
-        self.groupBox.setTitle(QCoreApplication.translate("MainWindow", u"USDB connection", None))
-        self.label_username.setText(QCoreApplication.translate("MainWindow", u"User", None))
-        self.label_password.setText(QCoreApplication.translate("MainWindow", u"Password", None))
-        self.pushButton_login.setText(QCoreApplication.translate("MainWindow", u" Login", None))
-        self.pushButton_refresh.setText(QCoreApplication.translate("MainWindow", u" Refresh", None))
+        self.groupBox.setTitle(QCoreApplication.translate("MainWindow", u"UltraStar Song Database (usdb)", None))
+        self.pushButton_get_songlist.setText(QCoreApplication.translate("MainWindow", u"Get list of usdb songs", None))
         self.groupBox_2.setTitle(QCoreApplication.translate("MainWindow", u"Synchronize to local song directory", None))
         self.lineEdit_song_dir.setText(QCoreApplication.translate("MainWindow", u"./songs", None))
         self.pushButton_select_song_dir.setText(QCoreApplication.translate("MainWindow", u"Select song folder", None))

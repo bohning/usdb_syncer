@@ -1,5 +1,4 @@
 import argparse
-import configparser
 import datetime
 from distutils.command.config import config
 import logging
@@ -19,21 +18,19 @@ from pytube import extract
 import requests
 #import Levenshtein
 import yt_dlp
-from moviepy.editor import VideoFileClip
+#from moviepy.editor import VideoFileClip
 from PIL import Image, ImageEnhance, ImageOps
 import subprocess
 from pdfme import build_pdf # maybe reportlab is better suited?
-
+from typing import Dict, List, Tuple
 import filecmp
+import web_scraper
+import note_utils
 
 from QUMainWindow import Ui_MainWindow
 
 
-BASEURL = "http://usdb.animux.de/"
-PHPSESSID = ""
-
-
-def _get_usdb_headers():
+""" def _get_usdb_headers():
     return {
         'Connection': 'keep-alive',
         'Content-Type': 'text/html',
@@ -42,260 +39,7 @@ def _get_usdb_headers():
         'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9',
         'Accept-Language': 'de-DE,de;q=0.9,en-US;q=0.8,en-DE;q=0.7,en;q=0.6',
         'Cookie': f'__utmz=7495734.1596286540.251.2.utmcsr=google|utmccn=(organic)|utmcmd=organic|utmctr=(not%20provided); __utmc=7495734; ziparchiv=; counter=0; PHPSESSID={PHPSESSID}; __utma=7495734.1923417532.1586343016.1641505471.1641515336.1172; __utmt=1; __utmb=7495734.23.10.1641515336'
-    }
-
-
-def get_usdb_page(rel_url, method='GET', headers={}, data='', params={}):
-    _headers = _get_usdb_headers()
-    _headers.update(headers)
-
-    url = BASEURL+rel_url
-    
-    if method == 'GET':
-        logging.debug(f"GET, {url}, {_headers}, {data}, {params}")
-        req = requests.get(url, headers=_headers)
-
-    elif method == 'POST':
-        logging.debug(f"POST, {url}, {_headers}, {data}, {params}")
-        req = requests.post(
-            url, headers=_headers,
-            data=data,
-            params=params
-        )
-    else:
-        logging.info("ERROR: No Method given")
-        return None
-
-    req.encoding = "utf-8"
-    return req.text
-
-
-def get_usdb_available_songs(filter={}):
-    """ Return a list of all available songs
-        filter - dict with filters
-
-        default filters: 'limit', 'order', 'ud'
-        possible filters: 'interpret', 'title','edition','language'
-    """
-    params = {"link":"list"}
-    payload = {
-        'limit': '50000',
-        'order': 'id',
-        'ud': 'desc'
-    }
-    payload.update(filter)
-    headers={'Content-Type': 'application/x-www-form-urlencoded'}
-
-    html = get_usdb_page(
-        'index.php', "POST", headers=headers,
-        params=params, data=payload)
-
-    regex = r'<td onclick="show_detail\((\d+)\)">(.*)</td>\n<td onclick="show_detail\(\d+\)">(.*)</td>\n<td onclick="show_detail\(\d+\)">(.*)</td>\n<td onclick="show_detail\(\d+\)">(.*)</td>\n<td onclick="show_detail\(\d+\)">(.*)</td>\n<td onclick="show_detail\(\d+\)">(.*)</td>\n<td onclick="show_detail\(\d+\)">(.*)</td>'
-    matches = re.findall(regex, html)
-
-    available_songs = []
-    for match in matches:
-        id, artist, title, edition, goldennotes, language, rating_string, views = match
-        if goldennotes == "Yes":
-            goldennotes = True
-        else:
-            goldennotes = False
-        rating = str(rating_string.count("star.png"))
-        song = {"id": id, "artist": artist, "title": title, "language": language, "edition": edition, "goldennotes": goldennotes, "rating": rating, "views": views}
-        available_songs.append(song)
-    return available_songs
-
-
-def get_usdb_details(id):
-    details = {}
-    details["id"] = id
-    
-    html = get_usdb_page(f'index.php?link=detail&id={id}')
-    soup = BeautifulSoup(html, 'lxml')
-    exists = "Datensatz nicht gefunden" not in soup.get_text()
-    
-    details["exists"] = exists
-    
-    if exists:
-        if tables := soup.find_all("table", border="0", width="500"):
-            details_table = tables[0]
-            comments_table = tables[1]
-        else:
-            logging.error("\tNo tables in usdb details page.")
-        
-        rows = details_table.find_all("tr")
-        # artist and title
-        i = 0
-        details["artist"] = rows[i].find("td").string
-        details["title"] = rows[i].find_all("td")[1].string
-        
-        # cover
-        i += 1
-        if not "nocover" in rows[i].find_all("td")[1].find("img").get("src"):
-            details["cover_url"] = f"{BASEURL}" + rows[1].find_all("td")[1].find("img").get("src")
-        # bpm
-        i += 1
-        details["bpm"] = rows[i].find_all("td")[1].string
-        
-        # gap
-        i += 1
-        details["gap"] = rows[i].find_all("td")[1].string
-        
-        # golden notes
-        i += 1
-        golden_notes_img_src = rows[i].find_all("td")[1].find("img").get("src")
-        if "yes_small" in golden_notes_img_src:
-            details["golden_notes"] = True
-        else:
-            details["golden_notes"] = False
-        
-        # song check
-        i += 1
-        song_check_img_src = rows[i].find_all("td")[1].find("img").get("src")
-        if "yes_small" in song_check_img_src:
-            details["song_check"] = True
-        else:
-            details["song_check"] = False
-        
-        # date and time
-        i += 1
-        date_time = rows[i].find_all("td")[1].string
-        details["date"], details["time"] = date_time.split(" - ")
-        
-        # uploader (not necessarily creator though)
-        i += 1
-        details["uploader"] = rows[i].find_all("td")[1].find("a").string
-        
-        # multiple editors possible
-        i += 1
-        editors = []
-        isEditor = True
-        while isEditor:
-            editor_link = rows[i].find_all("td")[1].find("a")
-            if editor_link:
-                if editor_link.string:
-                    editors.append(editor_link.string)
-                i += 1
-            else:
-                isEditor = False
-        if editors:
-            details["editors"] = ", ".join(editors)
-        
-        # views
-        details["views"] = rows[i].find_all("td")[1].string
-        
-        # rating
-        i += 1
-        rating = str(sum([ 1 for i in rows[i].find_all("td")[1].find_all("img") if 'star.png' in i['src']]))
-        details["rating"] = rating
-        votes_string = rows[i].find_all("td")[1].text.strip()
-        regex = r"\((\d+)\)"
-        votes = re.search(regex, votes_string).groups()[0]
-        details["votes"] = votes
-        
-        # audio sample
-        i += 1
-        if param := rows[i].find("param", attrs={'name':'FlashVars'}):
-            details["audio_sample"] = urllib.parse.parse_qs(param.get("value"))["soundFile"][0]
-        
-        # team comments
-        i += 1
-        team_comments = rows[i].find_all("td")
-        if team_comments:
-            details["team_comments"] = rows[i].find_all("td")[1].string
-        
-        # user comments (with video links and possible GAP/BPM values)
-        comment_headers = comments_table.find_all("tr", class_="list_tr2")[:-1] # last entry is the field to enter a new comment, so this one is ignored
-        if comment_headers:
-            comments = []
-            for i, comment_header in enumerate(comment_headers):
-                comment = {}
-                comment_details = comment_header.find("td").text.strip()
-                regex = r".*(\d{2})\.(\d{2})\.(\d{2}) - (\d{2}):(\d{2}) \| (.*)"
-                match = re.search(regex, comment_details)
-                if not match:
-                    logging.warning("\t- usdb::song has no comments!")
-                    continue
-                
-                comment_day, comment_month, comment_year, comment_hour, comment_minute, comment_commenter = match.groups()
-                comment_date = f"20{comment_year}-{comment_month}-{comment_day}"
-                comment_time = f"{comment_hour}:{comment_minute}"
-                comment_contents = comment_header.next_sibling
-                comment_urls = []
-                if comment_embeds := comment_contents.find_all("embed"):
-                    for i, comment_embed in enumerate(comment_embeds):
-                        url = comment_embed.get("src").split("&")[0] #TODO: this assumes youtube embeds
-                        try:
-                            yt_id = extract.video_id(url)
-                        except:
-                            logging.warning(f"\t- usdb::comment embed contains a url ({url}), but the Youtube video ID could not be extracted.")
-                        else:
-                            comment_urls.append(url)
-                            if not details.get("video_params"):
-                                details["video_params"] = {"v": yt_id} #TODO: this only takes the first youtube link in the newest comments
-                comment_text = comment_contents.find("td").text.strip()
-                regex = r"(?i)\b((?:https?://|www\d{0,3}[.]|[a-z0-9.\-]+[.][a-z]{2,4}/)(?:[^\s()<>]+|\(([^\s()<>]+|(\([^\s()<>]+\)))*\))+(?:\(([^\s()<>]+|(\([^\s()<>]+\)))*\)|[^\s`!()\[\]{};:'\".,<>?«»“”‘’]))"
-                urls = re.findall(regex, comment_text)
-                for url in urls:
-                    try:
-                        yt_id = extract.video_id(url[0])
-                    except:
-                        logging.warning(f"\t- usdb::comment contains a plain url ({url}), but it does not seem to be a Youtube link.")
-                    else:
-                        comment_urls.append(f"https://www.youtube.com/watch?v={yt_id}")
-                        if not details.get("video_params"):
-                            details["video_params"] = {"v": yt_id}
-                        comment_text = comment_text.replace(url[0], "").strip()
-                comment = {"date": comment_date, "time": comment_time, "commenter": comment_commenter, "comment_urls": comment_urls, "comment_text": comment_text}
-                comments.append(comment)
-            if comments:
-                details["comments"] = comments
-
-    return exists, details
-
-
-def getsongtext(id):
-    params = {
-        'link': 'gettxt',
-        'id': id,
-    }
-    data = "wd=1"
-    headers={'Content-Type': 'application/x-www-form-urlencoded'}
-    html = get_usdb_page(
-        'index.php',
-        'POST',
-        headers=headers,
-        params=params,
-        data=data
-    )
-    soup = BeautifulSoup(html, 'lxml')
-    songtext = soup.find('textarea').string
-    songtext = songtext.replace("<","(")
-    songtext = songtext.replace(">",")")
-    
-    return songtext
-
-
-def getheaderandnotes(songtext):
-    header = {}
-    notes = []
-
-    if not songtext:
-        logging.error("\t- Songtext is empty, parsing failed!")
-        return header, notes
-    else:
-        for line in songtext.split('\n'):
-            if line.startswith("#"):
-                key, value = line.split(":", 1)
-                # some quick fixes to improve song search in other databases
-                if key in ["#ARTIST", "#TITLE", "#EDITION", "#GENRE"]:
-                    value = value.replace("´", "'").replace("`", "'")#.replace("’", "'")
-                    value = value.replace(" ft. ", " feat. ").replace(" ft ", " feat. ").replace(" feat ", " feat. ")
-                header[key] = value.strip()
-            else:
-                notes.append(line.replace("\r", "")+"\n")
-    
-    return header, notes
+    } """
 
 
 def get_params_from_video_tag(header, tag):
@@ -683,7 +427,7 @@ def download_and_process_video(header, video_resource, video_params, resource_pa
     ######
     
     # Trim
-    trim = resource_params.get("v-trim")
+    """ trim = resource_params.get("v-trim")
     start_time = None
     end_time = None
     if trim:
@@ -753,7 +497,7 @@ def download_and_process_video(header, video_resource, video_params, resource_pa
                 if start_time:
                     header["#START"] = str(start_time) # # START is in seconds!
             if crop:
-                logging.info("\t- video: cropping required, but reencode is disabled. Black bars will not be cropped.")
+                logging.info("\t- video: cropping required, but reencode is disabled. Black bars will not be cropped.") """
     
     ######
     
@@ -913,8 +657,7 @@ class QUMainWindow(QMainWindow, Ui_MainWindow):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.setupUi(self)
-        self.pushButton_login.clicked.connect(self.login)
-        self.pushButton_refresh.clicked.connect(self.refresh)
+        self.pushButton_get_songlist.clicked.connect(self.refresh)
         self.pushButton_downloadSelectedSongs.clicked.connect(self.download_selected_songs)
         self.pushButton_select_song_dir.clicked.connect(self.select_song_dir)   
         
@@ -932,10 +675,6 @@ class QUMainWindow(QMainWindow, Ui_MainWindow):
         self.model.setHorizontalHeaderItem(10, QtGui.QStandardItem(QtGui.QIcon(":/icons/resources/video.png"), ""))
         self.model.setHorizontalHeaderItem(11, QtGui.QStandardItem(QtGui.QIcon(":/icons/resources/cover.png"), ""))
         self.model.setHorizontalHeaderItem(12, QtGui.QStandardItem(QtGui.QIcon(":/icons/resources/background.png"), ""))
-        config = configparser.ConfigParser()
-        config.read('config.ini')
-        self.lineEdit_user.setText(config["usdb"]["username"])
-        self.lineEdit_password.setText(config["usdb"]["password"])
         
         self.filter_proxy_model = QtCore.QSortFilterProxyModel()
         self.filter_proxy_model.setSourceModel(self.model)
@@ -969,32 +708,11 @@ class QUMainWindow(QMainWindow, Ui_MainWindow):
         else:
             self.filter_proxy_model.setFilterCaseSensitivity(Qt.CaseSensitive)
         self.statusbar.showMessage(f"{self.filter_proxy_model.rowCount()} songs found.")
-            
-        
-    def login(self):
-        headers = {
-            'Content-Type': 'application/x-www-form-urlencoded',
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/98.0.4758.109 Safari/537.36 OPR/84.0.4316.31',
-            }
-
-        data = {
-            'user': self.lineEdit_user,
-            'pass': self.lineEdit_password,
-            'login': 'Login'
-            }
-
-        response = requests.post('http://usdb.animux.de/', headers=headers, data=data, verify=False)
-        PHPSESSID = response.cookies.get('PHPSESSID')
-        if PHPSESSID:
-            logging.info(f"Login successful (PHPSESSID: {PHPSESSID})")
-        else:
-            logging.error("Login failed.")
-        self.refresh()
     
 
     def refresh(self):
         #TODO: remove all existing items in the model!
-        available_songs = get_usdb_available_songs()
+        available_songs = web_scraper.get_usdb_available_songs()
         artists = set()
         titles = []
         languages = set()
@@ -1175,15 +893,15 @@ class QUMainWindow(QMainWindow, Ui_MainWindow):
                         
             logging.info(f"#{idp}:")
             
-            exists, details = get_usdb_details(id)
+            exists, details = web_scraper.get_usdb_details(id)
             if not exists:
                 # song was deleted meanwhile, TODO: uncheck/remove from model
                 continue
             
-            songtext = getsongtext(id)
+            songtext = web_scraper.get_notes(id)
             
             #song = createsong(songtext)
-            header, notes = getheaderandnotes(songtext)
+            header, notes = note_utils.parse_notes(songtext)
             
             self.statusbar.showMessage(f"Downloading '{header['#ARTIST']} - {header['#TITLE']}' ({num+1}/{len(ids)})") # TODO: this is not updated until after download all songs
             
@@ -1254,6 +972,7 @@ class QUMainWindow(QMainWindow, Ui_MainWindow):
                     continue
                 else:
                     logging.info("\t USDB file has been updated, re-downloading...")
+                    # TODO: check if resources in #VIDEO tag have changed and if so, re-download new resources only
                     os.remove(f"{idp}.usdb")
                     os.rename("temp.usdb", f"{idp}.usdb")
             else:

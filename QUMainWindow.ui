@@ -32,7 +32,7 @@
       <item>
        <widget class="QGroupBox" name="groupBox">
         <property name="title">
-         <string>USDB connection</string>
+         <string>UltraStar Song Database (usdb)</string>
         </property>
         <layout class="QHBoxLayout" name="horizontalLayout_2">
          <property name="leftMargin">
@@ -48,31 +48,7 @@
           <number>4</number>
          </property>
          <item>
-          <widget class="QLabel" name="label_username">
-           <property name="text">
-            <string>User</string>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QLineEdit" name="lineEdit_user"/>
-         </item>
-         <item>
-          <widget class="QLabel" name="label_password">
-           <property name="text">
-            <string>Password</string>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QLineEdit" name="lineEdit_password">
-           <property name="echoMode">
-            <enum>QLineEdit::Password</enum>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QPushButton" name="pushButton_login">
+          <widget class="QPushButton" name="pushButton_get_songlist">
            <property name="font">
             <font>
              <pointsize>16</pointsize>
@@ -82,26 +58,7 @@
             <string notr="true">background-color: rgb(0, 102, 0);</string>
            </property>
            <property name="text">
-            <string> Login</string>
-           </property>
-           <property name="icon">
-            <iconset resource="../us/usdb_dl_gui/resources.qrc">
-             <normaloff>:/icons/resources/faviconUSDB.ico</normaloff>:/icons/resources/faviconUSDB.ico</iconset>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QPushButton" name="pushButton_refresh">
-           <property name="font">
-            <font>
-             <pointsize>16</pointsize>
-            </font>
-           </property>
-           <property name="styleSheet">
-            <string notr="true">background-color: rgb(0, 102, 0);</string>
-           </property>
-           <property name="text">
-            <string> Refresh</string>
+            <string>Get list of usdb songs</string>
            </property>
            <property name="icon">
             <iconset resource="../us/usdb_dl_gui/resources.qrc">
