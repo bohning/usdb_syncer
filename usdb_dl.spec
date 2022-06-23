@@ -50,7 +50,8 @@ coll = COLLECT(
 )
 app = BUNDLE(
     coll,
-    name='usdb_dl.app',
-    icon=None,
+    name='USDB Download & Sync.app',
+    icon='usdb_dl.icns',
     bundle_identifier=None,
+    version='0.0.2',
 )
