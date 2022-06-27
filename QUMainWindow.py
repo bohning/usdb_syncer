@@ -44,7 +44,6 @@ class Ui_MainWindow(object):
         font = QFont()
         font.setPointSize(16)
         self.pushButton_get_songlist.setFont(font)
-        self.pushButton_get_songlist.setStyleSheet(u"background-color: rgb(0, 102, 0);")
         icon = QIcon()
         icon.addFile(u":/icons/resources/faviconUSDB.ico", QSize(), QIcon.Normal, QIcon.Off)
         self.pushButton_get_songlist.setIcon(icon)
@@ -73,7 +72,6 @@ class Ui_MainWindow(object):
         self.pushButton_select_song_dir.setObjectName(u"pushButton_select_song_dir")
         self.pushButton_select_song_dir.setEnabled(True)
         self.pushButton_select_song_dir.setFont(font)
-        self.pushButton_select_song_dir.setStyleSheet(u"background-color: rgb(0, 102, 0);")
 
         self.horizontalLayout_4.addWidget(self.pushButton_select_song_dir)
 
@@ -446,7 +444,6 @@ class Ui_MainWindow(object):
         self.pushButton_downloadSelectedSongs.setObjectName(u"pushButton_downloadSelectedSongs")
         self.pushButton_downloadSelectedSongs.setEnabled(True)
         self.pushButton_downloadSelectedSongs.setFont(font)
-        self.pushButton_downloadSelectedSongs.setStyleSheet(u"background-color: rgb(0, 102, 0);")
 
         self.horizontalLayout.addWidget(self.pushButton_downloadSelectedSongs)
 
@@ -468,9 +465,9 @@ class Ui_MainWindow(object):
     # setupUi
 
     def retranslateUi(self, MainWindow):
-        MainWindow.setWindowTitle(QCoreApplication.translate("MainWindow", u"USDB Song Manager", None))
+        MainWindow.setWindowTitle(QCoreApplication.translate("MainWindow", u"USDB Syncer", None))
         self.groupBox.setTitle(QCoreApplication.translate("MainWindow", u"UltraStar Song Database (usdb)", None))
-        self.pushButton_get_songlist.setText(QCoreApplication.translate("MainWindow", u"Get list of usdb songs", None))
+        self.pushButton_get_songlist.setText(QCoreApplication.translate("MainWindow", u"Refresh song list", None))
         self.groupBox_2.setTitle(QCoreApplication.translate("MainWindow", u"Synchronize to local song directory", None))
         self.lineEdit_song_dir.setText(QCoreApplication.translate("MainWindow", u"./songs", None))
         self.pushButton_select_song_dir.setText(QCoreApplication.translate("MainWindow", u"Select song folder", None))

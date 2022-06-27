@@ -11,7 +11,7 @@
    </rect>
   </property>
   <property name="windowTitle">
-   <string>USDB Song Manager</string>
+   <string>USDB Syncer</string>
   </property>
   <widget class="QWidget" name="centralwidget">
    <layout class="QVBoxLayout" name="verticalLayout_2" stretch="0,0,0,0,0,0">
@@ -54,14 +54,11 @@
              <pointsize>16</pointsize>
             </font>
            </property>
-           <property name="styleSheet">
-            <string notr="true">background-color: rgb(0, 102, 0);</string>
-           </property>
            <property name="text">
-            <string>Get list of usdb songs</string>
+            <string>Refresh song list</string>
            </property>
            <property name="icon">
-            <iconset resource="../us/usdb_dl_gui/resources.qrc">
+            <iconset resource="resources.qrc">
              <normaloff>:/icons/resources/faviconUSDB.ico</normaloff>:/icons/resources/faviconUSDB.ico</iconset>
            </property>
           </widget>
@@ -120,9 +117,6 @@
              <pointsize>16</pointsize>
             </font>
            </property>
-           <property name="styleSheet">
-            <string notr="true">background-color: rgb(0, 102, 0);</string>
-           </property>
            <property name="text">
             <string>Select song folder</string>
            </property>
@@ -166,7 +160,7 @@
            <string>Artist</string>
           </property>
           <property name="icon">
-           <iconset resource="../us/usdb_dl_gui/resources.qrc">
+           <iconset resource="resources.qrc">
             <normaloff>:/icons/resources/artist.png</normaloff>:/icons/resources/artist.png</iconset>
           </property>
          </item>
@@ -175,7 +169,7 @@
            <string>Title</string>
           </property>
           <property name="icon">
-           <iconset resource="../us/usdb_dl_gui/resources.qrc">
+           <iconset resource="resources.qrc">
             <normaloff>:/icons/resources/title.png</normaloff>:/icons/resources/title.png</iconset>
           </property>
          </item>
@@ -184,7 +178,7 @@
            <string>Language</string>
           </property>
           <property name="icon">
-           <iconset resource="../us/usdb_dl_gui/resources.qrc">
+           <iconset resource="resources.qrc">
             <normaloff>:/icons/resources/language.png</normaloff>:/icons/resources/language.png</iconset>
           </property>
          </item>
@@ -193,7 +187,7 @@
            <string>Edition</string>
           </property>
           <property name="icon">
-           <iconset resource="../us/usdb_dl_gui/resources.qrc">
+           <iconset resource="resources.qrc">
             <normaloff>:/icons/resources/edition.png</normaloff>:/icons/resources/edition.png</iconset>
           </property>
          </item>
@@ -233,7 +227,7 @@
           <string/>
          </property>
          <property name="pixmap">
-          <pixmap resource="../us/usdb_dl_gui/resources.qrc">:/icons/resources/artist.png</pixmap>
+          <pixmap resource="resources.qrc">:/icons/resources/artist.png</pixmap>
          </property>
         </widget>
        </item>
@@ -250,7 +244,7 @@
           <string/>
          </property>
          <property name="pixmap">
-          <pixmap resource="../us/usdb_dl_gui/resources.qrc">:/icons/resources/title.png</pixmap>
+          <pixmap resource="resources.qrc">:/icons/resources/title.png</pixmap>
          </property>
         </widget>
        </item>
@@ -267,7 +261,7 @@
           <string/>
          </property>
          <property name="pixmap">
-          <pixmap resource="../us/usdb_dl_gui/resources.qrc">:/icons/resources/language.png</pixmap>
+          <pixmap resource="resources.qrc">:/icons/resources/language.png</pixmap>
          </property>
         </widget>
        </item>
@@ -284,7 +278,7 @@
           <string/>
          </property>
          <property name="pixmap">
-          <pixmap resource="../us/usdb_dl_gui/resources.qrc">:/icons/resources/edition.png</pixmap>
+          <pixmap resource="resources.qrc">:/icons/resources/edition.png</pixmap>
          </property>
         </widget>
        </item>
@@ -301,7 +295,7 @@
           <string/>
          </property>
          <property name="pixmap">
-          <pixmap resource="../us/usdb_dl_gui/resources.qrc">:/icons/resources/golden_notes.png</pixmap>
+          <pixmap resource="resources.qrc">:/icons/resources/golden_notes.png</pixmap>
          </property>
         </widget>
        </item>
@@ -330,7 +324,7 @@
           <string/>
          </property>
          <property name="pixmap">
-          <pixmap resource="../us/usdb_dl_gui/resources.qrc">:/icons/resources/rating.png</pixmap>
+          <pixmap resource="resources.qrc">:/icons/resources/rating.png</pixmap>
          </property>
         </widget>
        </item>
@@ -394,7 +388,7 @@
           <string/>
          </property>
          <property name="pixmap">
-          <pixmap resource="../us/usdb_dl_gui/resources.qrc">:/icons/resources/views.png</pixmap>
+          <pixmap resource="resources.qrc">:/icons/resources/views.png</pixmap>
          </property>
         </widget>
        </item>
@@ -902,9 +896,6 @@
           <pointsize>16</pointsize>
          </font>
         </property>
-        <property name="styleSheet">
-         <string notr="true">background-color: rgb(0, 102, 0);</string>
-        </property>
         <property name="text">
          <string>Download selected songs!</string>
         </property>
@@ -927,7 +918,7 @@
   <widget class="QStatusBar" name="statusbar"/>
  </widget>
  <resources>
-  <include location="../us/usdb_dl_gui/resources.qrc"/>
+  <include location="resources.qrc"/>
  </resources>
  <connections/>
 </ui>

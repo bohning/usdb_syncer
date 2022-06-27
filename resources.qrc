@@ -16,4 +16,7 @@
     <file>resources/title.png</file>
     <file>resources/views.png</file>
   </qresource>
+  <qresource prefix="splash">
+    <file>resources/splash.png</file>
+  </qresource>
 </RCC>

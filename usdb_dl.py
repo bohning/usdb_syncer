@@ -7,10 +7,11 @@ import re
 import sys
 
 from stringprep import map_table_b3
-from PySide6.QtWidgets import QApplication, QMainWindow, QFileDialog, QHeaderView, QMenu
+from PySide6.QtWidgets import QApplication, QMainWindow, QFileDialog, QHeaderView, QMenu, QSplashScreen
 from PySide6 import QtCore
-from PySide6 import QtGui
+#from PySide6 import QtGui
 from PySide6.QtCore import Qt, QEvent
+from PySide6.QtGui import QPixmap, QStandardItemModel, QStandardItem, QIcon
 from PySide6.QtUiTools import QUiLoader
 from bs4 import BeautifulSoup # needs lxml
 import urllib
@@ -547,20 +548,20 @@ class QUMainWindow(QMainWindow, Ui_MainWindow):
         self.pushButton_downloadSelectedSongs.clicked.connect(self.download_selected_songs)
         self.pushButton_select_song_dir.clicked.connect(self.select_song_dir)   
         
-        self.model = QtGui.QStandardItemModel()
-        self.model.setHorizontalHeaderItem(0, QtGui.QStandardItem(QtGui.QIcon(":/icons/resources/id.png"), "ID"))
-        self.model.setHorizontalHeaderItem(1, QtGui.QStandardItem(QtGui.QIcon(":/icons/resources/artist.png"), "Artist"))
-        self.model.setHorizontalHeaderItem(2, QtGui.QStandardItem(QtGui.QIcon(":/icons/resources/title.png"), "Title"))
-        self.model.setHorizontalHeaderItem(3, QtGui.QStandardItem(QtGui.QIcon(":/icons/resources/language.png"), "Language"))
-        self.model.setHorizontalHeaderItem(4, QtGui.QStandardItem(QtGui.QIcon(":/icons/resources/edition.png"), "Edition"))
-        self.model.setHorizontalHeaderItem(5, QtGui.QStandardItem(QtGui.QIcon(":/icons/resources/golden_notes.png"), ""))
-        self.model.setHorizontalHeaderItem(6, QtGui.QStandardItem(QtGui.QIcon(":/icons/resources/rating.png"), ""))
-        self.model.setHorizontalHeaderItem(7, QtGui.QStandardItem(QtGui.QIcon(":/icons/resources/views.png"), ""))
-        self.model.setHorizontalHeaderItem(8, QtGui.QStandardItem(QtGui.QIcon(":/icons/resources/text.png"), ""))
-        self.model.setHorizontalHeaderItem(9, QtGui.QStandardItem(QtGui.QIcon(":/icons/resources/audio.png"), ""))
-        self.model.setHorizontalHeaderItem(10, QtGui.QStandardItem(QtGui.QIcon(":/icons/resources/video.png"), ""))
-        self.model.setHorizontalHeaderItem(11, QtGui.QStandardItem(QtGui.QIcon(":/icons/resources/cover.png"), ""))
-        self.model.setHorizontalHeaderItem(12, QtGui.QStandardItem(QtGui.QIcon(":/icons/resources/background.png"), ""))
+        self.model = QStandardItemModel()
+        self.model.setHorizontalHeaderItem(0, QStandardItem(QIcon(":/icons/resources/id.png"), "ID"))
+        self.model.setHorizontalHeaderItem(1, QStandardItem(QIcon(":/icons/resources/artist.png"), "Artist"))
+        self.model.setHorizontalHeaderItem(2, QStandardItem(QIcon(":/icons/resources/title.png"), "Title"))
+        self.model.setHorizontalHeaderItem(3, QStandardItem(QIcon(":/icons/resources/language.png"), "Language"))
+        self.model.setHorizontalHeaderItem(4, QStandardItem(QIcon(":/icons/resources/edition.png"), "Edition"))
+        self.model.setHorizontalHeaderItem(5, QStandardItem(QIcon(":/icons/resources/golden_notes.png"), ""))
+        self.model.setHorizontalHeaderItem(6, QStandardItem(QIcon(":/icons/resources/rating.png"), ""))
+        self.model.setHorizontalHeaderItem(7, QStandardItem(QIcon(":/icons/resources/views.png"), ""))
+        self.model.setHorizontalHeaderItem(8, QStandardItem(QIcon(":/icons/resources/text.png"), ""))
+        self.model.setHorizontalHeaderItem(9, QStandardItem(QIcon(":/icons/resources/audio.png"), ""))
+        self.model.setHorizontalHeaderItem(10, QStandardItem(QIcon(":/icons/resources/video.png"), ""))
+        self.model.setHorizontalHeaderItem(11, QStandardItem(QIcon(":/icons/resources/cover.png"), ""))
+        self.model.setHorizontalHeaderItem(12, QStandardItem(QIcon(":/icons/resources/background.png"), ""))
         
         self.filter_proxy_model = QtCore.QSortFilterProxyModel()
         self.filter_proxy_model.setSourceModel(self.model)
@@ -617,22 +618,22 @@ class QUMainWindow(QMainWindow, Ui_MainWindow):
             
             id_zero_padded = song["id"].zfill(5)
 
-            id_item = QtGui.QStandardItem()
+            id_item = QStandardItem()
             id_item.setData(id_zero_padded, Qt.DisplayRole)
             id_item.setCheckable(True)
-            artist_item = QtGui.QStandardItem()
+            artist_item = QStandardItem()
             artist_item.setData(song['artist'], Qt.DisplayRole)
-            title_item = QtGui.QStandardItem()
+            title_item = QStandardItem()
             title_item.setData(song['title'], Qt.DisplayRole)
-            language_item = QtGui.QStandardItem()
+            language_item = QStandardItem()
             language_item.setData(song['language'], Qt.DisplayRole)
-            edition_item = QtGui.QStandardItem()
+            edition_item = QStandardItem()
             edition_item.setData(song['edition'], Qt.DisplayRole)
-            goldennotes_item = QtGui.QStandardItem()
+            goldennotes_item = QStandardItem()
             goldennotes_item.setData("Yes" if song["goldennotes"] else "No", Qt.DisplayRole)
-            rating_item = QtGui.QStandardItem()
+            rating_item = QStandardItem()
             rating_item.setData(rating_string, Qt.DisplayRole)
-            views_item = QtGui.QStandardItem()
+            views_item = QStandardItem()
             views_item.setData(int(song["views"]), Qt.DisplayRole)
             row = [
                 id_item,
@@ -683,6 +684,8 @@ class QUMainWindow(QMainWindow, Ui_MainWindow):
         header.setSectionResizeMode(12,QHeaderView.Fixed)
         header.resizeSection(12,24)
         
+        return len(available_songs)
+        
         
     def select_song_dir(self):
         song_dir = str(QFileDialog.getExistingDirectory(self, "Select Song Directory"))
@@ -702,19 +705,19 @@ class QUMainWindow(QMainWindow, Ui_MainWindow):
                         if idp:
                             for file in files:
                                 if file.endswith(".txt"):
-                                    self.model.setItem(item.row(), 8, QtGui.QStandardItem(QtGui.QIcon(":/icons/resources/tick.png"), ""))
+                                    self.model.setItem(item.row(), 8, QStandardItem(QIcon(":/icons/resources/tick.png"), ""))
                                     
                                 if file.endswith(".mp3") or file.endswith(".ogg") or file.endswith("m4a") or file.endswith("opus") or file.endswith("ogg"):
-                                    self.model.setItem(item.row(), 9, QtGui.QStandardItem(QtGui.QIcon(":/icons/resources/tick.png"), ""))
+                                    self.model.setItem(item.row(), 9, QStandardItem(QIcon(":/icons/resources/tick.png"), ""))
                                 
                                 if file.endswith(".mp4") or file.endswith(".webm"):
-                                    self.model.setItem(item.row(), 10, QtGui.QStandardItem(QtGui.QIcon(":/icons/resources/tick.png"), ""))
+                                    self.model.setItem(item.row(), 10, QStandardItem(QIcon(":/icons/resources/tick.png"), ""))
                                     
                                 if file.endswith("[CO].jpg"):
-                                    self.model.setItem(item.row(), 11, QtGui.QStandardItem(QtGui.QIcon(":/icons/resources/tick.png"), ""))
+                                    self.model.setItem(item.row(), 11, QStandardItem(QIcon(":/icons/resources/tick.png"), ""))
                                     
                                 if file.endswith("[BG].jpg"):
-                                    self.model.setItem(item.row(), 12, QtGui.QStandardItem(QtGui.QIcon(":/icons/resources/tick.png"), ""))
+                                    self.model.setItem(item.row(), 12, QStandardItem(QIcon(":/icons/resources/tick.png"), ""))
         
                 
     def download_selected_songs(self):
@@ -910,7 +913,7 @@ class QUMainWindow(QMainWindow, Ui_MainWindow):
                         header.pop("#VIDEO")
                         
                     if has_audio:
-                        self.model.setItem(self.model.findItems(idp, flags=Qt.MatchExactly, column=0)[0].row(), 9, QtGui.QStandardItem(QtGui.QIcon(":/icons/resources/tick.png"), ""))
+                        self.model.setItem(self.model.findItems(idp, flags=Qt.MatchExactly, column=0)[0].row(), 9, QStandardItem(QIcon(":/icons/resources/tick.png"), ""))
             
             # download video
             has_video = False
@@ -944,7 +947,7 @@ class QUMainWindow(QMainWindow, Ui_MainWindow):
                     #if not header.get("#VIDEO"):
                     header["#VIDEO"] = f"{note_utils.generate_filename(header)}{video_params['container']}" 
                     if has_video:
-                        self.model.setItem(self.model.findItems(idp, flags=Qt.MatchExactly, column=0)[0].row(), 10, QtGui.QStandardItem(QtGui.QIcon(":/icons/resources/tick.png"), ""))
+                        self.model.setItem(self.model.findItems(idp, flags=Qt.MatchExactly, column=0)[0].row(), 10, QStandardItem(QIcon(":/icons/resources/tick.png"), ""))
                 else:
                     logging.warning("\t- no video resource in #VIDEO tag")
 
@@ -954,7 +957,7 @@ class QUMainWindow(QMainWindow, Ui_MainWindow):
                 has_cover = download_and_process_cover(header, resource_params, details)
                 header["#COVER"] = f"{note_utils.generate_filename(header)} [CO].jpg"
                 if has_cover:
-                    self.model.setItem(self.model.findItems(idp, flags=Qt.MatchExactly, column=0)[0].row(), 11, QtGui.QStandardItem(QtGui.QIcon(":/icons/resources/tick.png"), ""))
+                    self.model.setItem(self.model.findItems(idp, flags=Qt.MatchExactly, column=0)[0].row(), 11, QStandardItem(QIcon(":/icons/resources/tick.png"), ""))
             
             # download background
             has_background = False
@@ -964,7 +967,7 @@ class QUMainWindow(QMainWindow, Ui_MainWindow):
                     header["#BACKGROUND"] = f"{note_utils.generate_filename(header)} [BG].jpg"
                     
                     if has_background:
-                        self.model.setItem(self.model.findItems(idp, flags=Qt.MatchExactly, column=0)[0].row(), 12, QtGui.QStandardItem(QtGui.QIcon(":/icons/resources/tick.png"), ""))
+                        self.model.setItem(self.model.findItems(idp, flags=Qt.MatchExactly, column=0)[0].row(), 12, QStandardItem(QIcon(":/icons/resources/tick.png"), ""))
                 
             # if not has_cover and do_dl_sc_covers and sc_info.get("cover_urls"):
             #     cover_params = {"co": sc_info.get("cover_urls")[0].replace("https://", "")} # TODO: download *all* covers
@@ -1002,7 +1005,7 @@ class QUMainWindow(QMainWindow, Ui_MainWindow):
             elif newline == "Mac/Linux (LF)":
                 newline = '\n'
             note_utils.dump_notes(header, notes, duet, encoding, newline)
-            self.model.setItem(self.model.findItems(idp, flags=Qt.MatchExactly, column=0)[0].row(), 8, QtGui.QStandardItem(QtGui.QIcon(":/icons/resources/tick.png"), ""))
+            self.model.setItem(self.model.findItems(idp, flags=Qt.MatchExactly, column=0)[0].row(), 8, QStandardItem(QIcon(":/icons/resources/tick.png"), ""))
             
             os.chdir("..")
             os.chdir("..")
@@ -1037,7 +1040,15 @@ def main():
 
     app = QApplication(sys.argv)
     quMainWindow = QUMainWindow()
+    pixmap = QPixmap(":/splash/resources/splash.png")
+    splash = QSplashScreen(pixmap)
+    splash.show()
+    app.processEvents()
+    splash.showMessage("Loading song database from usdb...")
+    num_songs = quMainWindow.refresh()
+    splash.showMessage(f"Song database successfully loaded with {num_songs} songs.")
     quMainWindow.show()
+    splash.finish(quMainWindow)
     app.exec()
     
     #loader = QUiLoader()
