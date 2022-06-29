@@ -7,12 +7,10 @@ import re
 import sys
 
 from stringprep import map_table_b3
-from PySide6.QtWidgets import QApplication, QMainWindow, QFileDialog, QHeaderView, QMenu, QSplashScreen
-from PySide6 import QtCore
-#from PySide6 import QtGui
-from PySide6.QtCore import Qt, QEvent
+from PySide6.QtCore import Qt, QEvent, QSortFilterProxyModel
 from PySide6.QtGui import QPixmap, QStandardItemModel, QStandardItem, QIcon
-from PySide6.QtUiTools import QUiLoader
+from PySide6.QtWidgets import QApplication, QMainWindow, QFileDialog, QHeaderView, QMenu, QSplashScreen
+#from PySide6.QtUiTools import QUiLoader
 from bs4 import BeautifulSoup # needs lxml
 import urllib
 from pytube import extract
@@ -582,7 +580,7 @@ class QUMainWindow(QMainWindow, Ui_MainWindow):
         self.model.setHorizontalHeaderItem(11, QStandardItem(QIcon(":/icons/resources/cover.png"), ""))
         self.model.setHorizontalHeaderItem(12, QStandardItem(QIcon(":/icons/resources/background.png"), ""))
         
-        self.filter_proxy_model = QtCore.QSortFilterProxyModel()
+        self.filter_proxy_model = QSortFilterProxyModel()
         self.filter_proxy_model.setSourceModel(self.model)
         self.filter_proxy_model.setFilterCaseSensitivity(Qt.CaseInsensitive)
         self.filter_proxy_model.setFilterKeyColumn(-1)
