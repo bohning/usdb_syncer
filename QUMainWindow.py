@@ -305,6 +305,25 @@ class Ui_MainWindow(object):
 
         self.formLayout_2.setWidget(0, QFormLayout.FieldRole, self.comboBox_audio_format)
 
+        self.label_9 = QLabel(self.groupBox_audio)
+        self.label_9.setObjectName(u"label_9")
+
+        self.formLayout_2.setWidget(1, QFormLayout.LabelRole, self.label_9)
+
+        self.comboBox_browser = QComboBox(self.groupBox_audio)
+        self.comboBox_browser.addItem("")
+        self.comboBox_browser.addItem("")
+        self.comboBox_browser.addItem("")
+        self.comboBox_browser.addItem("")
+        self.comboBox_browser.addItem("")
+        self.comboBox_browser.addItem("")
+        self.comboBox_browser.addItem("")
+        self.comboBox_browser.addItem("")
+        self.comboBox_browser.addItem("")
+        self.comboBox_browser.setObjectName(u"comboBox_browser")
+
+        self.formLayout_2.setWidget(1, QFormLayout.FieldRole, self.comboBox_browser)
+
 
         self.horizontalLayout_7.addWidget(self.groupBox_audio)
 
@@ -537,6 +556,20 @@ class Ui_MainWindow(object):
         self.comboBox_audio_format.setItemText(0, QCoreApplication.translate("MainWindow", u".m4a (mp4a)", None))
         self.comboBox_audio_format.setItemText(1, QCoreApplication.translate("MainWindow", u".webm (opus)", u"mp3"))
         self.comboBox_audio_format.setItemText(2, QCoreApplication.translate("MainWindow", u"bestaudio", None))
+
+#if QT_CONFIG(tooltip)
+        self.label_9.setToolTip(QCoreApplication.translate("MainWindow", u"Login to Youtube in your favorite browser in order to access age-restricted content", None))
+#endif // QT_CONFIG(tooltip)
+        self.label_9.setText(QCoreApplication.translate("MainWindow", u"Cookies", None))
+        self.comboBox_browser.setItemText(0, QCoreApplication.translate("MainWindow", u"None", None))
+        self.comboBox_browser.setItemText(1, QCoreApplication.translate("MainWindow", u"Brave", None))
+        self.comboBox_browser.setItemText(2, QCoreApplication.translate("MainWindow", u"Chrome", None))
+        self.comboBox_browser.setItemText(3, QCoreApplication.translate("MainWindow", u"Chromium", None))
+        self.comboBox_browser.setItemText(4, QCoreApplication.translate("MainWindow", u"Edge", None))
+        self.comboBox_browser.setItemText(5, QCoreApplication.translate("MainWindow", u"Firefox", None))
+        self.comboBox_browser.setItemText(6, QCoreApplication.translate("MainWindow", u"Opera", None))
+        self.comboBox_browser.setItemText(7, QCoreApplication.translate("MainWindow", u"Safari", None))
+        self.comboBox_browser.setItemText(8, QCoreApplication.translate("MainWindow", u"Vivaldi", None))
 
         self.groupBox_reencode_audio.setTitle(QCoreApplication.translate("MainWindow", u"Reencode audio", None))
         self.label_19.setText(QCoreApplication.translate("MainWindow", u"Audio Format", None))

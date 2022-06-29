@@ -211,7 +211,7 @@ def getscinfo(header):
     return sc_info
 
             
-def download_and_process_audio(header, audio_resource, audio_dl_format, audio_target_codec):
+def download_and_process_audio(header, audio_resource, audio_dl_format, audio_target_codec, dl_browser):
     if not audio_resource:
         logging.warning("\t- no audio resource in #VIDEO tag")
         return False, ""
@@ -228,9 +228,11 @@ def download_and_process_audio(header, audio_resource, audio_dl_format, audio_ta
             "format": "bestaudio",
             "outtmpl": f"{audio_filename}" + ".%(ext)s",
             "keepvideo": False,
-            "verbose": True,
-            "cookiesfrombrowser": ("chrome", )
+            "verbose": False
         }
+    
+    if dl_browser != "none":
+        ydl_opts["cookiesfrombrowser"] = (f"{dl_browser}", )
     
     ext = ""
     if audio_dl_format != "bestaudio":
@@ -266,7 +268,7 @@ def download_and_process_audio(header, audio_resource, audio_dl_format, audio_ta
     return True, ext
 
 
-def download_and_process_video(header, video_resource, video_params, resource_params):    
+def download_and_process_video(header, video_resource, video_params, resource_params, dl_browser):    
     if video_params["resolution"] == "1080p":
         video_max_width = 1920
         video_max_height = 1080
@@ -296,9 +298,11 @@ def download_and_process_video(header, video_resource, video_params, resource_pa
         #"outtmpl": os.path.join(dir, f"{artist} - {title}" + ".%(ext)s"),
         "outtmpl": f"{video_filename}" + ".%(ext)s",
         "keepvideo": False,
-        "verbose": True,
-        "cookiesfrombrowser": ("chrome", )
+        "verbose": False
     }
+    
+    if dl_browser != "none":
+        ydl_opts["cookiesfrombrowser"] = (f"{dl_browser}", )
     
     if "/" in video_resource: # not Youtube
         ydl_opts["format"] = f"bestvideo"
@@ -781,6 +785,7 @@ class QUMainWindow(QMainWindow, Ui_MainWindow):
         ####
     
     def download_songs(self, ids):
+        dl_browser = self.comboBox_browser.currentText().lower()
         dl_video = self.groupBox_video.isChecked()
         dl_audio = self.groupBox_audio.isChecked()
         dl_cover = self.groupBox_cover.isChecked()
@@ -795,7 +800,7 @@ class QUMainWindow(QMainWindow, Ui_MainWindow):
         for num, id in enumerate(ids):
             idp = str(id).zfill(5)
                         
-            logging.info(f"#{idp} ({num+1}/{len(ids)} - {(num+1)/len(ids)*100:.1f}%):")
+            logging.info(f"#{idp} ({num+1}/{len(ids)} - {(num+1)/len(ids)*100:.1f} %):")
             
             exists, details = web_scraper.get_usdb_details(id)
             if not exists:
@@ -919,7 +924,7 @@ class QUMainWindow(QMainWindow, Ui_MainWindow):
                     
                     logging.info("\t- downloading audio from #VIDEO params")
                         
-                    has_audio, ext = download_and_process_audio(header, audio_resource, audio_dl_format, audio_target_codec)
+                    has_audio, ext = download_and_process_audio(header, audio_resource, audio_dl_format, audio_target_codec, dl_browser)
                     
                     header["#MP3"] = f"{note_utils.generate_filename(header)}.{ext}" 
                     
@@ -951,7 +956,7 @@ class QUMainWindow(QMainWindow, Ui_MainWindow):
                             "allow_reencode": self.groupBox_reencode_video.isChecked(),
                             "encoder": self.comboBox_videoencoder.currentText()
                         }
-                    has_video = download_and_process_video(header, video_resource, video_params, resource_params)
+                    has_video = download_and_process_video(header, video_resource, video_params, resource_params, dl_browser)
             #     elif resource_params := details.get("video_params"):
             #         logging.info("\t- downloading video from usdb comments")
             #         has_video = dl_yt_video(header, resource_params)
