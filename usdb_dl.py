@@ -539,11 +539,26 @@ def download_and_process_background(header, background_params):
         return False
 
 
+class QPlainTextEditLogger(logging.Handler):
+    def __init__(self, text_edit):
+        super().__init__()
+        self.text_edit = text_edit
+        self.text_edit.setReadOnly(True)
+ 
+    def emit(self, record):
+        msg = self.format(record)
+        self.text_edit.appendPlainText(msg)
+
+
 class QUMainWindow(QMainWindow, Ui_MainWindow):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.setupUi(self)
+        
+        self.handler = QPlainTextEditLogger(self.plainTextEdit)
+        self.handler.setFormatter(logging.Formatter('%(asctime)s [%(levelname)s] %(message)s', '%Y-%m-%d %H:%M:%S'))
+        
         self.pushButton_get_songlist.clicked.connect(self.refresh)
         self.pushButton_downloadSelectedSongs.clicked.connect(self.download_selected_songs)
         self.pushButton_select_song_dir.clicked.connect(self.select_song_dir)   
@@ -780,7 +795,7 @@ class QUMainWindow(QMainWindow, Ui_MainWindow):
         for num, id in enumerate(ids):
             idp = str(id).zfill(5)
                         
-            logging.info(f"#{idp}:")
+            logging.info(f"#{idp} ({num+1}/{len(ids)} - {(num+1)/len(ids)*100:.1f}%):")
             
             exists, details = web_scraper.get_usdb_details(id)
             if not exists:
@@ -1040,14 +1055,17 @@ def main():
 
     app = QApplication(sys.argv)
     quMainWindow = QUMainWindow()
+    logger = logging.getLogger()
+    logger.addHandler(quMainWindow.handler)
     pixmap = QPixmap(":/splash/resources/splash.png")
     splash = QSplashScreen(pixmap)
     splash.show()
     app.processEvents()
-    splash.showMessage("Loading song database from usdb...")
+    splash.showMessage("Loading song database from usdb...", color=Qt.gray)
     num_songs = quMainWindow.refresh()
-    splash.showMessage(f"Song database successfully loaded with {num_songs} songs.")
+    splash.showMessage(f"Song database successfully loaded with {num_songs} songs.", color=Qt.gray)
     quMainWindow.show()
+    logging.info("Application successfully loaded.")
     splash.finish(quMainWindow)
     app.exec()
     

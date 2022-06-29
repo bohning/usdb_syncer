@@ -18,8 +18,9 @@ from PySide6.QtGui import (QBrush, QColor, QConicalGradient, QCursor,
 from PySide6.QtWidgets import (QAbstractItemView, QApplication, QCheckBox, QComboBox,
     QFormLayout, QGroupBox, QHBoxLayout, QHeaderView,
     QLabel, QLineEdit, QMainWindow, QMenuBar,
-    QPushButton, QSizePolicy, QSpacerItem, QStatusBar,
-    QTableView, QVBoxLayout, QWidget)
+    QPlainTextEdit, QPushButton, QSizePolicy, QSpacerItem,
+    QStatusBar, QTableView, QVBoxLayout, QWidget)
+import resources_rc
 import resources_rc
 
 class Ui_MainWindow(object):
@@ -31,7 +32,7 @@ class Ui_MainWindow(object):
         self.centralwidget.setObjectName(u"centralwidget")
         self.verticalLayout_2 = QVBoxLayout(self.centralwidget)
         self.verticalLayout_2.setObjectName(u"verticalLayout_2")
-        self.verticalLayout_2.setContentsMargins(4, 4, 4, 4)
+        self.verticalLayout_2.setContentsMargins(0, -1, -1, -1)
         self.horizontalLayout_3 = QHBoxLayout()
         self.horizontalLayout_3.setObjectName(u"horizontalLayout_3")
         self.groupBox = QGroupBox(self.centralwidget)
@@ -436,9 +437,19 @@ class Ui_MainWindow(object):
 
         self.horizontalLayout = QHBoxLayout()
         self.horizontalLayout.setObjectName(u"horizontalLayout")
-        self.horizontalSpacer_2 = QSpacerItem(559, 46, QSizePolicy.Expanding, QSizePolicy.Minimum)
+        self.groupBox_5 = QGroupBox(self.centralwidget)
+        self.groupBox_5.setObjectName(u"groupBox_5")
+        self.verticalLayout_3 = QVBoxLayout(self.groupBox_5)
+        self.verticalLayout_3.setObjectName(u"verticalLayout_3")
+        self.verticalLayout_3.setContentsMargins(4, 4, 4, 4)
+        self.plainTextEdit = QPlainTextEdit(self.groupBox_5)
+        self.plainTextEdit.setObjectName(u"plainTextEdit")
+        self.plainTextEdit.setMaximumSize(QSize(16777215, 16777215))
 
-        self.horizontalLayout.addItem(self.horizontalSpacer_2)
+        self.verticalLayout_3.addWidget(self.plainTextEdit)
+
+
+        self.horizontalLayout.addWidget(self.groupBox_5)
 
         self.pushButton_downloadSelectedSongs = QPushButton(self.centralwidget)
         self.pushButton_downloadSelectedSongs.setObjectName(u"pushButton_downloadSelectedSongs")
@@ -450,6 +461,8 @@ class Ui_MainWindow(object):
 
         self.verticalLayout_2.addLayout(self.horizontalLayout)
 
+        self.verticalLayout_2.setStretch(3, 10)
+        self.verticalLayout_2.setStretch(5, 2)
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QMenuBar(MainWindow)
         self.menubar.setObjectName(u"menubar")
@@ -479,7 +492,7 @@ class Ui_MainWindow(object):
         self.comboBox_search_column.setItemText(4, QCoreApplication.translate("MainWindow", u"Edition", None))
 
         self.checkBox_case_sensitive.setText(QCoreApplication.translate("MainWindow", u"Case sensitive", None))
-        self.groupBox_4.setTitle(QCoreApplication.translate("MainWindow", u"Filter", None))
+        self.groupBox_4.setTitle(QCoreApplication.translate("MainWindow", u"Filter (not implemented yet)", None))
         self.label_10.setText("")
         self.label_11.setText("")
         self.label_12.setText("")
@@ -558,6 +571,7 @@ class Ui_MainWindow(object):
         self.comboBox_background.setItemText(0, QCoreApplication.translate("MainWindow", u"always", None))
         self.comboBox_background.setItemText(1, QCoreApplication.translate("MainWindow", u"only if no video", None))
 
+        self.groupBox_5.setTitle(QCoreApplication.translate("MainWindow", u"Log", None))
         self.pushButton_downloadSelectedSongs.setText(QCoreApplication.translate("MainWindow", u"Download selected songs!", None))
     # retranslateUi
 
