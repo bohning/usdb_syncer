@@ -33,11 +33,11 @@ def get_usdb_page(
     url = "http://usdb.animux.de/" + rel_url
 
     if method == "GET":
-        logging.info("get request for %s", url)
+        logging.debug("get request for %s", url)
         response = requests.get(url, headers=_headers, params=params)
 
     elif method == "POST":
-        logging.info("post request for %s", url)
+        logging.debug("post request for %s", url)
         response = requests.post(url, headers=_headers, data=payload, params=params)
     else:
         raise NotImplementedError(f"{method} request not supported")
@@ -207,7 +207,7 @@ def get_notes(song_id: str) -> str:
     Parameters:
         id: song id
     """
-    logging.info("fetch notes for song %s", song_id)
+    logging.debug("\t- fetch notes for song %s", song_id)
     params = {"link": "gettxt", "id": song_id}
     payload = {"wd": "1"}
     headers = {"Content-Type": "application/x-www-form-urlencoded"}
