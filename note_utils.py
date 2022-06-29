@@ -42,13 +42,19 @@ def get_params_from_video_tag(header: Dict[str, str]) -> Dict[str, str]:
     Returns:
         additional resource parameters
     """
+    params = dict()
     if not (params_line := header.get("#VIDEO")):
-        raise LookupError("no video tag found in header.")
+        #raise LookupError("no video tag found in header.")
+        logging.error("\t- no #VIDEO tag present")
     try:
         params = dict(r.split('=') for r in params_line.split(','))
     except ValueError as exception:
-        raise LookupError("no parameter in video tag") from exception
-    return params
+        #raise LookupError("no parameter in video tag") from exception
+        logging.error("\t- no resources in #VIDEO tag")
+    else:
+        pass
+    finally:
+        return params
 
 
 def is_duet(header: Dict[str, str], resource_params: Dict[str, str]) -> bool:
@@ -133,7 +139,7 @@ def dump_notes(
     txt_filename = generate_filename(header)
     duetstring = " (duet)" if duet else ""
     filename = f"{txt_filename}{duetstring}.txt"
-    logging.info("writing text file with encodingr %s", encoding)
+    logging.info("\t- writing text file with encoding %s", encoding)
     with open(filename, "w", encoding=encoding, newline=newline) as notes_file:
         tags = [
             "#TITLE",
