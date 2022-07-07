@@ -595,40 +595,72 @@
             <property name="text">
              <string>Brave</string>
             </property>
+            <property name="icon">
+             <iconset resource="resources.qrc">
+              <normaloff>:/icons/resources/brave.png</normaloff>:/icons/resources/brave.png</iconset>
+            </property>
            </item>
            <item>
             <property name="text">
              <string>Chrome</string>
+            </property>
+            <property name="icon">
+             <iconset resource="resources.qrc">
+              <normaloff>:/icons/resources/chrome.png</normaloff>:/icons/resources/chrome.png</iconset>
             </property>
            </item>
            <item>
             <property name="text">
              <string>Chromium</string>
             </property>
+            <property name="icon">
+             <iconset resource="resources.qrc">
+              <normaloff>:/icons/resources/chromium.png</normaloff>:/icons/resources/chromium.png</iconset>
+            </property>
            </item>
            <item>
             <property name="text">
              <string>Edge</string>
+            </property>
+            <property name="icon">
+             <iconset resource="resources.qrc">
+              <normaloff>:/icons/resources/edge.png</normaloff>:/icons/resources/edge.png</iconset>
             </property>
            </item>
            <item>
             <property name="text">
              <string>Firefox</string>
             </property>
+            <property name="icon">
+             <iconset resource="resources.qrc">
+              <normaloff>:/icons/resources/firefox.png</normaloff>:/icons/resources/firefox.png</iconset>
+            </property>
            </item>
            <item>
             <property name="text">
              <string>Opera</string>
+            </property>
+            <property name="icon">
+             <iconset resource="resources.qrc">
+              <normaloff>:/icons/resources/opera.png</normaloff>:/icons/resources/opera.png</iconset>
             </property>
            </item>
            <item>
             <property name="text">
              <string>Safari</string>
             </property>
+            <property name="icon">
+             <iconset resource="resources.qrc">
+              <normaloff>:/icons/resources/safari.png</normaloff>:/icons/resources/safari.png</iconset>
+            </property>
            </item>
            <item>
             <property name="text">
              <string>Vivaldi</string>
+            </property>
+            <property name="icon">
+             <iconset resource="resources.qrc">
+              <normaloff>:/icons/resources/vivaldi.png</normaloff>:/icons/resources/vivaldi.png</iconset>
             </property>
            </item>
           </widget>
@@ -979,14 +1011,13 @@
      <x>0</x>
      <y>0</y>
      <width>1493</width>
-     <height>24</height>
+     <height>22</height>
     </rect>
    </property>
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
  </widget>
  <resources>
-  <include location="resources.qrc"/>
   <include location="resources.qrc"/>
  </resources>
  <connections/>

@@ -1,5 +1,13 @@
 <RCC>
   <qresource prefix="icons">
+    <file>resources/brave.png</file>
+    <file>resources/chrome.png</file>
+    <file>resources/chromium.png</file>
+    <file>resources/edge.png</file>
+    <file>resources/firefox.png</file>
+    <file>resources/opera.png</file>
+    <file>resources/safari.png</file>
+    <file>resources/vivaldi.png</file>
     <file>resources/audio.png</file>
     <file>resources/tick.png</file>
     <file>resources/background.png</file>

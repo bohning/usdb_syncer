@@ -3,7 +3,7 @@
 ################################################################################
 ## Form generated from reading UI file 'QUMainWindow.ui'
 ##
-## Created by: Qt User Interface Compiler version 6.2.3
+## Created by: Qt User Interface Compiler version 6.2.4
 ##
 ## WARNING! All changes made in this file will be lost when recompiling UI file!
 ################################################################################
@@ -20,7 +20,6 @@ from PySide6.QtWidgets import (QAbstractItemView, QApplication, QCheckBox, QComb
     QLabel, QLineEdit, QMainWindow, QMenuBar,
     QPlainTextEdit, QPushButton, QSizePolicy, QSpacerItem,
     QStatusBar, QTableView, QVBoxLayout, QWidget)
-import resources_rc
 import resources_rc
 
 class Ui_MainWindow(object):
@@ -312,14 +311,30 @@ class Ui_MainWindow(object):
 
         self.comboBox_browser = QComboBox(self.groupBox_audio)
         self.comboBox_browser.addItem("")
-        self.comboBox_browser.addItem("")
-        self.comboBox_browser.addItem("")
-        self.comboBox_browser.addItem("")
-        self.comboBox_browser.addItem("")
-        self.comboBox_browser.addItem("")
-        self.comboBox_browser.addItem("")
-        self.comboBox_browser.addItem("")
-        self.comboBox_browser.addItem("")
+        icon5 = QIcon()
+        icon5.addFile(u":/icons/resources/brave.png", QSize(), QIcon.Normal, QIcon.Off)
+        self.comboBox_browser.addItem(icon5, "")
+        icon6 = QIcon()
+        icon6.addFile(u":/icons/resources/chrome.png", QSize(), QIcon.Normal, QIcon.Off)
+        self.comboBox_browser.addItem(icon6, "")
+        icon7 = QIcon()
+        icon7.addFile(u":/icons/resources/chromium.png", QSize(), QIcon.Normal, QIcon.Off)
+        self.comboBox_browser.addItem(icon7, "")
+        icon8 = QIcon()
+        icon8.addFile(u":/icons/resources/edge.png", QSize(), QIcon.Normal, QIcon.Off)
+        self.comboBox_browser.addItem(icon8, "")
+        icon9 = QIcon()
+        icon9.addFile(u":/icons/resources/firefox.png", QSize(), QIcon.Normal, QIcon.Off)
+        self.comboBox_browser.addItem(icon9, "")
+        icon10 = QIcon()
+        icon10.addFile(u":/icons/resources/opera.png", QSize(), QIcon.Normal, QIcon.Off)
+        self.comboBox_browser.addItem(icon10, "")
+        icon11 = QIcon()
+        icon11.addFile(u":/icons/resources/safari.png", QSize(), QIcon.Normal, QIcon.Off)
+        self.comboBox_browser.addItem(icon11, "")
+        icon12 = QIcon()
+        icon12.addFile(u":/icons/resources/vivaldi.png", QSize(), QIcon.Normal, QIcon.Off)
+        self.comboBox_browser.addItem(icon12, "")
         self.comboBox_browser.setObjectName(u"comboBox_browser")
 
         self.formLayout_2.setWidget(1, QFormLayout.FieldRole, self.comboBox_browser)
@@ -485,7 +500,7 @@ class Ui_MainWindow(object):
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QMenuBar(MainWindow)
         self.menubar.setObjectName(u"menubar")
-        self.menubar.setGeometry(QRect(0, 0, 1493, 24))
+        self.menubar.setGeometry(QRect(0, 0, 1493, 22))
         MainWindow.setMenuBar(self.menubar)
         self.statusbar = QStatusBar(MainWindow)
         self.statusbar.setObjectName(u"statusbar")
