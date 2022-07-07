@@ -745,9 +745,11 @@ class QUMainWindow(QMainWindow, Ui_MainWindow):
                 ids.append(int(item.data(0)))
             else:
                 pass
-                #self.treeView_availableSongs.setRowHidden(row, QtCore.QModelIndex(), True)
+                #self.treeView_availableSongs.setRowHidden(row, QModelIndex(), True)
         self.download_songs(ids)
-        
+        self.generate_songlist_pdf()
+    
+    def generate_songlist_pdf(self):
         ### generate song list PDF -> own function
         document = {}
         document['style'] = {
