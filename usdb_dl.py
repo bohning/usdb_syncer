@@ -9,8 +9,6 @@ from stringprep import map_table_b3
 from PySide6.QtCore import Qt, QEvent, QSortFilterProxyModel, QThread, Signal
 from PySide6.QtGui import QPixmap, QStandardItemModel, QStandardItem, QIcon
 from PySide6.QtWidgets import QApplication, QMainWindow, QFileDialog, QHeaderView, QMenu, QSplashScreen
-#from bs4 import BeautifulSoup # needs lxml
-#import urllib
 #from pytube import extract
 
 from pdfme import build_pdf # maybe reportlab is better suited?
@@ -230,9 +228,10 @@ class QUMainWindow(QMainWindow, Ui_MainWindow):
                 #self.treeView_availableSongs.setRowHidden(row, QModelIndex(), True)
         self.download_songs(ids)
         self.generate_songlist_pdf()
-    
+        
+        
     def generate_songlist_pdf(self):
-        ### generate song list PDF -> own function
+        ### generate song list PDF
         document = {}
         document['style'] = {
             'margin_bottom': 15,
