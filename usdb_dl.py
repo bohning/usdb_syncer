@@ -318,7 +318,7 @@ class QUMainWindow(QMainWindow, Ui_MainWindow):
                             notes.insert(i, "P2\n")
                         prev_start = int(start)
             
-            logging.info(f"\t- usdb::artist_title: {header['#ARTIST']} - {header['#TITLE']}")
+            logging.info(f"\t- Song: {header['#ARTIST']} - {header['#TITLE']}")
             
             dirname = note_utils.generate_dirname(header, resource_params)
             
@@ -381,8 +381,6 @@ class QUMainWindow(QMainWindow, Ui_MainWindow):
                         elif "opus" in self.comboBox_audio_conversion_format.currentText():
                             audio_target_format = "opus"
                             audio_target_codec = "opus"
-                    
-                    logging.info("\t- downloading audio from #VIDEO params")
                         
                     has_audio, ext = resource_dl.download_and_process_audio(header, audio_resource, audio_dl_format, audio_target_codec, dl_browser)
                     
@@ -408,7 +406,6 @@ class QUMainWindow(QMainWindow, Ui_MainWindow):
                             logging.warning(f"Using Youtube ID {audio_resource} extracted from comments.")
                 
                 if video_resource:
-                    logging.info("\t- downloading video from #VIDEO params")
                     video_params = {
                             "container": self.comboBox_videocontainer.currentText(),
                             "resolution": self.comboBox_videoresolution.currentText(),
