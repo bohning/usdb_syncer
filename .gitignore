@@ -6,4 +6,4 @@ songs
 __pycache__
 *.pdf
 config.ini
-usdb_dl.log
+*.log
