@@ -7,3 +7,4 @@ requests==2.28.1
 yt_dlp==2022.6.29
 pdfme==0.4.11
 Pillow==9.2.0
+pyinstaller==5.2
