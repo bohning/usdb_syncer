@@ -38,6 +38,8 @@ class QUMainWindow(QMainWindow, Ui_MainWindow):
         super().__init__(*args, **kwargs)
         self.setupUi(self)
         
+        self.lineEdit_song_dir.setText(os.path.join(os.getcwd(), "songs"))
+        
         self.handler = QPlainTextEditLogger(self.plainTextEdit)
         self.handler.setFormatter(logging.Formatter('%(asctime)s [%(levelname)s] %(message)s', '%Y-%m-%d %H:%M:%S'))
         
@@ -274,9 +276,9 @@ class QUMainWindow(QMainWindow, Ui_MainWindow):
         
         songdir = self.lineEdit_song_dir.text()
         #songdir = "usdb_songs"
-        if not os.path.exists(songdir):
-            os.mkdir(songdir)
-        os.chdir(songdir)
+        #if not os.path.exists(songdir):
+        #    os.mkdir(songdir)
+        #os.chdir(songdir)
         
         for num, id in enumerate(ids):
             idp = str(id).zfill(5)
@@ -321,31 +323,32 @@ class QUMainWindow(QMainWindow, Ui_MainWindow):
             logging.info(f"\t- Song: {header['#ARTIST']} - {header['#TITLE']}")
             
             dirname = note_utils.generate_dirname(header, resource_params)
+            pathname = os.path.join(os.path.join(songdir, dirname), idp)
             
-            if not os.path.exists(dirname):
-                os.mkdir(dirname)    
-            os.chdir(dirname)
-            if not os.path.exists(idp):
-                os.mkdir(idp)
-            os.chdir(idp)
+            if not os.path.exists(pathname):
+                os.makedirs(pathname)
+            #os.chdir(dirname)
+            #if not os.path.exists(idp):
+            #    os.mkdir(idp)
+            #os.chdir(idp)
             
             # write .usdb file for synchronization
-            with open(f"temp.usdb", 'w', encoding="utf_8") as f:
+            with open(os.path.join(pathname, "temp.usdb"), 'w', encoding="utf_8") as f:
                 f.write(songtext)
-            if os.path.exists(f"{idp}.usdb"):
-                if filecmp.cmp("temp.usdb", f"{idp}.usdb"):
+            if os.path.exists(os.path.join(pathname, f"{idp}.usdb")):
+                if filecmp.cmp(os.path.join(pathname, "temp.usdb"), os.path.join(pathname, f"{idp}.usdb")):
                     logging.info("\t FILES ARE IDENTICAL - SKIPPING SONG")
-                    os.remove("temp.usdb")
-                    os.chdir("..")
-                    os.chdir("..")
+                    os.remove(os.path.join(pathname, "temp.usdb"))
+                    #os.chdir("..")
+                    #os.chdir("..")
                     continue
                 else:
                     logging.info("\t USDB file has been updated, re-downloading...")
                     # TODO: check if resources in #VIDEO tag have changed and if so, re-download new resources only
-                    os.remove(f"{idp}.usdb")
-                    os.rename("temp.usdb", f"{idp}.usdb")
+                    os.remove(os.path.join(pathname, f"{idp}.usdb"))
+                    os.rename(os.path.join(pathname, "temp.usdb"), os.path.join(pathname, f"{idp}.usdb"))
             else:
-                os.rename("temp.usdb", f"{idp}.usdb")
+                os.rename(os.path.join(pathname, "temp.usdb"), os.path.join(pathname, f"{idp}.usdb"))
             
             # download audio
             has_audio = False
@@ -382,7 +385,7 @@ class QUMainWindow(QMainWindow, Ui_MainWindow):
                             audio_target_format = "opus"
                             audio_target_codec = "opus"
                         
-                    has_audio, ext = resource_dl.download_and_process_audio(header, audio_resource, audio_dl_format, audio_target_codec, dl_browser)
+                    has_audio, ext = resource_dl.download_and_process_audio(header, audio_resource, audio_dl_format, audio_target_codec, dl_browser, pathname)
                     
                     header["#MP3"] = f"{note_utils.generate_filename(header)}.{ext}" 
                     
@@ -413,7 +416,7 @@ class QUMainWindow(QMainWindow, Ui_MainWindow):
                             "allow_reencode": self.groupBox_reencode_video.isChecked(),
                             "encoder": self.comboBox_videoencoder.currentText()
                         }
-                    has_video = resource_dl.download_and_process_video(header, video_resource, video_params, resource_params, dl_browser)
+                    has_video = resource_dl.download_and_process_video(header, video_resource, video_params, resource_params, dl_browser, pathname)
                     
                     header["#VIDEO"] = f"{note_utils.generate_filename(header)}{video_params['container']}" 
                     if has_video:
@@ -424,7 +427,7 @@ class QUMainWindow(QMainWindow, Ui_MainWindow):
             # download cover
             has_cover = False
             if dl_cover:
-                has_cover = resource_dl.download_and_process_cover(header, resource_params, details)
+                has_cover = resource_dl.download_and_process_cover(header, resource_params, details, pathname)
                 header["#COVER"] = f"{note_utils.generate_filename(header)} [CO].jpg"
                 if has_cover:
                     self.model.setItem(self.model.findItems(idp, flags=Qt.MatchExactly, column=0)[0].row(), 11, QStandardItem(QIcon(":/icons/resources/tick.png"), ""))
@@ -433,7 +436,7 @@ class QUMainWindow(QMainWindow, Ui_MainWindow):
             has_background = False
             if dl_background:
                 if self.comboBox_background.currentText() == "always" or (not has_video and self.comboBox_background.currentText() == "only if no video"):
-                    has_background = resource_dl.download_and_process_background(header, resource_params)
+                    has_background = resource_dl.download_and_process_background(header, resource_params, pathname)
                     header["#BACKGROUND"] = f"{note_utils.generate_filename(header)} [BG].jpg"
                     
                     if has_background:
@@ -452,13 +455,13 @@ class QUMainWindow(QMainWindow, Ui_MainWindow):
                 newline = '\r\n'
             elif newline == "Mac/Linux (LF)":
                 newline = '\n'
-            note_utils.dump_notes(header, notes, duet, encoding, newline)
+            note_utils.dump_notes(header, notes, duet, encoding, newline, pathname)
             self.model.setItem(self.model.findItems(idp, flags=Qt.MatchExactly, column=0)[0].row(), 8, QStandardItem(QIcon(":/icons/resources/tick.png"), ""))
             
-            os.chdir("..")
-            os.chdir("..")
+            #os.chdir("..")
+            #os.chdir("..")
         
-        os.chdir("..")
+        #os.chdir("..")
         logging.info(f"DONE! (Downloaded {len(ids)} songs)")
         
     def eventFilter(self, source, event):

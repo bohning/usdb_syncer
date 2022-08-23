@@ -7,7 +7,7 @@ from PIL import Image, ImageEnhance, ImageOps
 #from moviepy.editor import VideoFileClip
 #import subprocess
 
-def download_and_process_audio(header, audio_resource, audio_dl_format, audio_target_codec, dl_browser):
+def download_and_process_audio(header, audio_resource, audio_dl_format, audio_target_codec, dl_browser, pathname):
     if not audio_resource:
         logging.warning("\t- no audio resource in #VIDEO tag")
         return False, ""
@@ -19,7 +19,7 @@ def download_and_process_audio(header, audio_resource, audio_dl_format, audio_ta
     
     logging.info(f"\t- downloading audio from #VIDEO params: {audio_url}")
     
-    audio_filename = note_utils.generate_filename(header)
+    audio_filename = os.path.join(pathname, note_utils.generate_filename(header))
     
     ydl_opts = {
             "format": "bestaudio",
@@ -65,7 +65,7 @@ def download_and_process_audio(header, audio_resource, audio_dl_format, audio_ta
     return True, ext
 
 
-def download_and_process_video(header, video_resource, video_params, resource_params, dl_browser):    
+def download_and_process_video(header, video_resource, video_params, resource_params, dl_browser, pathname):    
     if video_params["resolution"] == "1080p":
         video_max_width = 1920
         video_max_height = 1080
@@ -86,7 +86,7 @@ def download_and_process_video(header, video_resource, video_params, resource_pa
         
     logging.info(f"\t- downloading video from #VIDEO params: {video_url}")
     
-    video_filename = note_utils.generate_filename(header)
+    video_filename = os.path.join(pathname, note_utils.generate_filename(header))
     
     ydl_opts = {
         #"format":  f"bestvideo[ext=mp4][width<={video_max_width}][height<={video_max_height}][fps<={video_max_fps}]+bestaudio[ext=m4a]/best[ext=mp4][width<={video_max_width}][height<={video_max_height}][fps<={video_max_fps}]/best[width<={video_max_width}][height<={video_max_height}][fps<={video_max_fps}]",
@@ -222,7 +222,7 @@ def download_image(url):
             return False, reply.content
 
 
-def download_and_process_cover(header, cover_params, details):
+def download_and_process_cover(header, cover_params, details, pathname):
     if not cover_params.get("co") and not details.get("cover_url"):
         logging.warning("\t- no cover resource in #VIDEO tag and no cover in usdb")
         return
@@ -248,7 +248,7 @@ def download_and_process_cover(header, cover_params, details):
     success, cover = download_image(cover_url)
     
     if success:
-        open(cover_filename, "wb").write(cover)
+        open(os.path.join(pathname, cover_filename), "wb").write(cover)
         
         if cover_params.get("co-rotate") or cover_params.get("co-crop") or cover_params.get("co-resize") or cover_params.get("co-contrast"):
             with Image.open(cover_filename).convert("RGB") as cover:
@@ -288,7 +288,7 @@ def download_and_process_cover(header, cover_params, details):
         return False
 
 
-def download_and_process_background(header, background_params):
+def download_and_process_background(header, background_params, pathname):
     if not background_params.get("bg"):
         logging.warning("\t- no background resource in #VIDEO-tag")
         return
@@ -312,7 +312,7 @@ def download_and_process_background(header, background_params):
     success, background = download_image(background_url)
     
     if success:
-        open(background_filename, "wb").write(background)
+        open(os.path.join(pathname, background_filename), "wb").write(background)
         
         if background_params.get("bg-crop") or background_params.get("bg-resize"):
             with Image.open(background_filename).convert("RGB") as background:

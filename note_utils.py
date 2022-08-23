@@ -2,6 +2,7 @@
 
 import logging
 import re
+import os
 from typing import Dict, List, Tuple
 
 
@@ -123,6 +124,7 @@ def dump_notes(
     duet: bool = False,
     encoding: str = None,
     newline: str = None,
+    pathname: str = None,
 ) -> str:
     """Write notes to file.
 
@@ -140,7 +142,7 @@ def dump_notes(
     duetstring = " (duet)" if duet else ""
     filename = f"{txt_filename}{duetstring}.txt"
     logging.info("\t- writing text file with encoding %s", encoding)
-    with open(filename, "w", encoding=encoding, newline=newline) as notes_file:
+    with open(os.path.join(pathname, filename), "w", encoding=encoding, newline=newline) as notes_file:
         tags = [
             "#TITLE",
             "#ARTIST",
