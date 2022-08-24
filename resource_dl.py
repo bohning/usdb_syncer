@@ -251,7 +251,7 @@ def download_and_process_cover(header, cover_params, details, pathname):
         open(os.path.join(pathname, cover_filename), "wb").write(cover)
         
         if cover_params.get("co-rotate") or cover_params.get("co-crop") or cover_params.get("co-resize") or cover_params.get("co-contrast"):
-            with Image.open(cover_filename).convert("RGB") as cover:
+            with Image.open(os.path.join(pathname, cover_filename)).convert("RGB") as cover:
                 # rotate (optional)
                 angle = cover_params.get("co-rotate")
                 if angle:
@@ -281,7 +281,7 @@ def download_and_process_cover(header, cover_params, details, pathname):
                         cover = ImageEnhance.Contrast(cover).enhance(float(cover_contrast))
                 
                 # save post-processed cover
-                cover.save(cover_filename, "jpeg", quality=100, subsampling=0)
+                cover.save(os.path.join(pathname, cover_filename), "jpeg", quality=100, subsampling=0)
         return True
     else:
         logging.error(f"\t#COVER: file does not exist at url: {cover_url}")

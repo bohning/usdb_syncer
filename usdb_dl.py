@@ -4,9 +4,10 @@ import logging
 import os
 import re
 import sys
+import time
 
 from stringprep import map_table_b3
-from PySide6.QtCore import Qt, QEvent, QSortFilterProxyModel, QThread, Signal
+from PySide6.QtCore import Qt, QEvent, QSortFilterProxyModel, QThread, Signal, QRunnable, QThreadPool
 from PySide6.QtGui import QPixmap, QStandardItemModel, QStandardItem, QIcon
 from PySide6.QtWidgets import QApplication, QMainWindow, QFileDialog, QHeaderView, QMenu, QSplashScreen
 #from pytube import extract
@@ -32,11 +33,207 @@ class QPlainTextEditLogger(logging.Handler):
         self.text_edit.appendPlainText(msg)
 
 
+class Worker(QRunnable):
+    def __init__(self, *args, **kwargs):
+        super().__init__()
+        self.args = args
+        self.kwargs = kwargs
+ 
+ 
+    def run(self):
+        # Your long-running task goes here ...
+        
+        logging.info(f"Downloading song #{self.kwargs['id']}")
+        logging.info(f"\t- downloading usdb file #{self.kwargs['id']}")
+        ###
+        exists, details = usdb_scraper.get_usdb_details(self.kwargs['id'])
+        if not exists:
+            # song was deleted meanwhile, TODO: uncheck/remove from model
+            return
+        
+        songtext = usdb_scraper.get_notes(self.kwargs['id'])
+        
+        #song = createsong(songtext)
+        header, notes = note_utils.parse_notes(songtext)
+        
+        #self.statusbar.showMessage(f"Downloading '{header['#ARTIST']} - {header['#TITLE']}' ({num+1}/{len(ids)})") # TODO: this is not updated until after download all songs
+
+        header["#TITLE"] = re.sub("[\[].*?[\]]", "", header["#TITLE"]).strip() # remove anything in "[]" from the title, e.g. "[duet]"
+        resource_params = note_utils.get_params_from_video_tag(header)
+        
+        duet = note_utils.is_duet(header, resource_params)
+        if duet:
+            if p1 := resource_params.get("p1"):
+                header["#P1"] = p1
+            else:
+                header["#P1"] = "P1"
+            if p2 := resource_params.get("p2"):
+                header["#P2"] = p2
+            else:
+                header["#P2"] = "P2"
+            
+            notes.insert(0, "P1\n")
+            prev_start = 0
+            for i, line in enumerate(notes):
+                if line.startswith((":", "*", "F", "R", "G")):
+                    type, start, duration, pitch, *syllable = line.split(" ", maxsplit = 4)
+                    if int(start) < prev_start:
+                        notes.insert(i, "P2\n")
+                    prev_start = int(start)
+        
+        logging.info(f"\t- Song: {header['#ARTIST']} - {header['#TITLE']}")
+        
+        dirname = note_utils.generate_dirname(header, resource_params)
+        pathname = os.path.join(os.path.join(self.kwargs['songdir'], dirname), self.kwargs['idp'])
+        
+        if not os.path.exists(pathname):
+            os.makedirs(pathname)
+        
+        # write .usdb file for synchronization
+        with open(os.path.join(pathname, "temp.usdb"), 'w', encoding="utf_8") as f:
+            f.write(songtext)
+        if os.path.exists(os.path.join(pathname, f"{self.kwargs['idp']}.usdb")):
+            if filecmp.cmp(os.path.join(pathname, "temp.usdb"), os.path.join(pathname, f"{self.kwargs['idp']}.usdb")):
+                logging.info("\t FILES ARE IDENTICAL - SKIPPING SONG")
+                os.remove(os.path.join(pathname, "temp.usdb"))
+                return
+            else:
+                logging.info("\t USDB file has been updated, re-downloading...")
+                # TODO: check if resources in #VIDEO tag have changed and if so, re-download new resources only
+                os.remove(os.path.join(pathname, f"{self.kwargs['idp']}.usdb"))
+                os.rename(os.path.join(pathname, "temp.usdb"), os.path.join(pathname, f"{self.kwargs['idp']}.usdb"))
+        else:
+            os.rename(os.path.join(pathname, "temp.usdb"), os.path.join(pathname, f"{self.kwargs['idp']}.usdb"))
+        ###
+        logging.info(f"\t- downloading audio file for #{self.kwargs['id']}")
+        ###
+        has_audio = False
+        if self.kwargs['dl_audio']:
+            if audio_resource := resource_params.get("a"):
+                pass
+            elif audio_resource := resource_params.get("v"):
+                pass
+            else:
+                video_params = details.get("video_params")
+                if video_params:
+                    audio_resource = video_params.get("v")
+                    if audio_resource:
+                        logging.warning(f"Using Youtube ID {audio_resource} extracted from comments.")
+            
+            if audio_resource:
+                #if "bestaudio" in self.comboBox_audio_format.currentText():
+                #    audio_dl_format = "bestaudio"
+                #elif "m4a" in self.comboBox_audio_format.currentText():
+                audio_dl_format = "m4a"
+                #elif "webm" in self.comboBox_audio_format.currentText():
+                #    audio_dl_format = "webm"
+                    
+                audio_target_format = ""
+                audio_target_codec = ""
+                """ if self.groupBox_reencode_audio.isChecked():
+                    if "mp3" in self.comboBox_audio_conversion_format.currentText():
+                        audio_target_format = "mp3"
+                        audio_target_codec = "mp3"
+                    elif "ogg" in self.comboBox_audio_conversion_format.currentText():
+                        audio_target_format = "ogg"
+                        audio_target_codec = "vorbis"
+                    elif "opus" in self.comboBox_audio_conversion_format.currentText():
+                        audio_target_format = "opus"
+                        audio_target_codec = "opus" """
+                    
+                has_audio, ext = resource_dl.download_and_process_audio(header, audio_resource, audio_dl_format, audio_target_codec, self.kwargs['dl_browser'], pathname)
+                
+                header["#MP3"] = f"{note_utils.generate_filename(header)}.{ext}" 
+                
+                # delete #VIDEO tag used for resources
+                if header.get("#VIDEO"):
+                    header.pop("#VIDEO")
+                    
+                #if has_audio:
+                    #self.model.setItem(self.model.findItems(self.kwargs['id'], flags=Qt.MatchExactly, column=0)[0].row(), 9, QStandardItem(QIcon(":/icons/resources/tick.png"), ""))
+        ###
+        logging.info(f"\t- downloading video file for #{self.kwargs['id']}")
+        ###
+        has_video = False
+        if self.kwargs['dl_video']:
+            if video_resource := resource_params.get("v"):
+                pass
+            elif not resource_params.get("a"):
+                video_params = details.get("video_params")
+                if video_params:
+                    video_resource = video_params.get("v")
+                    if video_resource:
+                        logging.warning(f"Using Youtube ID {audio_resource} extracted from comments.")
+            
+            if video_resource:
+                """video_params = {
+                        "container": self.comboBox_videocontainer.currentText(),
+                        "resolution": self.comboBox_videoresolution.currentText(),
+                        "fps": self.comboBox_fps.currentText(),
+                        "allow_reencode": self.groupBox_reencode_video.isChecked(),
+                        "encoder": self.comboBox_videoencoder.currentText()
+                    }"""
+                video_params = {
+                        "container": ".mp4",
+                        "resolution": "1080p",
+                        "fps": "30",
+                        "allow_reencode": False,
+                        "encoder": "h264"
+                    }
+                has_video = resource_dl.download_and_process_video(header, video_resource, video_params, resource_params, self.kwargs['dl_browser'], pathname)
+                
+                header["#VIDEO"] = f"{note_utils.generate_filename(header)}{video_params['container']}" 
+                #if has_video:
+                #    self.model.setItem(self.model.findItems(idp, flags=Qt.MatchExactly, column=0)[0].row(), 10, QStandardItem(QIcon(":/icons/resources/tick.png"), ""))
+            else:
+                logging.warning("\t- no video resource in #VIDEO tag")
+        ###
+        logging.info(f"\t- downloading cover file for #{self.kwargs['id']}")
+        ###
+        has_cover = False
+        if self.kwargs['dl_cover']:
+            has_cover = resource_dl.download_and_process_cover(header, resource_params, details, pathname)
+            header["#COVER"] = f"{note_utils.generate_filename(header)} [CO].jpg"
+            #if has_cover:
+            #    self.model.setItem(self.model.findItems(idp, flags=Qt.MatchExactly, column=0)[0].row(), 11, QStandardItem(QIcon(":/icons/resources/tick.png"), ""))
+        ###
+        logging.info(f"\t- downloading background file for #{self.kwargs['id']}")
+        ###
+        has_background = False
+        if self.kwargs['dl_background']:
+            #if self.comboBox_background.currentText() == "always" or (not has_video and self.comboBox_background.currentText() == "only if no video"):
+            has_background = resource_dl.download_and_process_background(header, resource_params, pathname)
+            header["#BACKGROUND"] = f"{note_utils.generate_filename(header)} [BG].jpg"
+                
+                #if has_background:
+                #    self.model.setItem(self.model.findItems(idp, flags=Qt.MatchExactly, column=0)[0].row(), 12, QStandardItem(QIcon(":/icons/resources/tick.png"), ""))
+        ###
+        logging.info(f"\t- downloading text file for #{self.kwargs['id']}")
+        ###
+        bom = False
+        #if self.comboBox_encoding.currentText() == "UTF-8":
+        encoding = "utf_8"
+        #elif self.comboBox_encoding.currentText() == "UTF-8 BOM":
+        #    encoding = "utf_8_sig"
+        #elif self.comboBox_encoding.currentText() == "CP1252":
+        #    encoding = "cp1252"
+        #newline = self.comboBox_line_endings.currentText()
+        #if newline == "Windows (CRLF)":
+            #newline = '\r\n'
+        #elif newline == "Mac/Linux (LF)":
+        newline = '\n'
+        note_utils.dump_notes(header, notes, duet, encoding, newline, pathname)
+        #self.model.setItem(self.model.findItems(idp, flags=Qt.MatchExactly, column=0)[0].row(), 8, QStandardItem(QIcon(":/icons/resources/tick.png"), ""))
+        ###
+
+
 class QUMainWindow(QMainWindow, Ui_MainWindow):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.setupUi(self)
+        
+        self.threadpool = QThreadPool(self)
         
         self.lineEdit_song_dir.setText(os.path.join(os.getcwd(), "songs"))
         
@@ -275,194 +472,19 @@ class QUMainWindow(QMainWindow, Ui_MainWindow):
         dl_background = self.groupBox_background.isChecked()
         
         songdir = self.lineEdit_song_dir.text()
-        #songdir = "usdb_songs"
-        #if not os.path.exists(songdir):
-        #    os.mkdir(songdir)
-        #os.chdir(songdir)
+        
+        #self.threadpool = QThreadPool.globalInstance()
         
         for num, id in enumerate(ids):
             idp = str(id).zfill(5)
-                        
-            logging.info(f"#{idp} ({num+1}/{len(ids)} - {(num+1)/len(ids)*100:.1f} %):")
+            #logging.info(f"#{idp} ({num+1}/{len(ids)} - {(num+1)/len(ids)*100:.1f} %):")
             
-            exists, details = usdb_scraper.get_usdb_details(id)
-            if not exists:
-                # song was deleted meanwhile, TODO: uncheck/remove from model
-                continue
-            
-            songtext = usdb_scraper.get_notes(id)
-            
-            #song = createsong(songtext)
-            header, notes = note_utils.parse_notes(songtext)
-            
-            self.statusbar.showMessage(f"Downloading '{header['#ARTIST']} - {header['#TITLE']}' ({num+1}/{len(ids)})") # TODO: this is not updated until after download all songs
-
-            header["#TITLE"] = re.sub("[\[].*?[\]]", "", header["#TITLE"]).strip() # remove anything in "[]" from the title, e.g. "[duet]"
-            resource_params = note_utils.get_params_from_video_tag(header)
-            
-            duet = note_utils.is_duet(header, resource_params)
-            if duet:
-                if p1 := resource_params.get("p1"):
-                    header["#P1"] = p1
-                else:
-                    header["#P1"] = "P1"
-                if p2 := resource_params.get("p2"):
-                    header["#P2"] = p2
-                else:
-                    header["#P2"] = "P2"
-                
-                notes.insert(0, "P1\n")
-                prev_start = 0
-                for i, line in enumerate(notes):
-                    if line.startswith((":", "*", "F", "R", "G")):
-                        type, start, duration, pitch, *syllable = line.split(" ", maxsplit = 4)
-                        if int(start) < prev_start:
-                            notes.insert(i, "P2\n")
-                        prev_start = int(start)
-            
-            logging.info(f"\t- Song: {header['#ARTIST']} - {header['#TITLE']}")
-            
-            dirname = note_utils.generate_dirname(header, resource_params)
-            pathname = os.path.join(os.path.join(songdir, dirname), idp)
-            
-            if not os.path.exists(pathname):
-                os.makedirs(pathname)
-            #os.chdir(dirname)
-            #if not os.path.exists(idp):
-            #    os.mkdir(idp)
-            #os.chdir(idp)
-            
-            # write .usdb file for synchronization
-            with open(os.path.join(pathname, "temp.usdb"), 'w', encoding="utf_8") as f:
-                f.write(songtext)
-            if os.path.exists(os.path.join(pathname, f"{idp}.usdb")):
-                if filecmp.cmp(os.path.join(pathname, "temp.usdb"), os.path.join(pathname, f"{idp}.usdb")):
-                    logging.info("\t FILES ARE IDENTICAL - SKIPPING SONG")
-                    os.remove(os.path.join(pathname, "temp.usdb"))
-                    #os.chdir("..")
-                    #os.chdir("..")
-                    continue
-                else:
-                    logging.info("\t USDB file has been updated, re-downloading...")
-                    # TODO: check if resources in #VIDEO tag have changed and if so, re-download new resources only
-                    os.remove(os.path.join(pathname, f"{idp}.usdb"))
-                    os.rename(os.path.join(pathname, "temp.usdb"), os.path.join(pathname, f"{idp}.usdb"))
-            else:
-                os.rename(os.path.join(pathname, "temp.usdb"), os.path.join(pathname, f"{idp}.usdb"))
-            
-            # download audio
-            has_audio = False
-            if dl_audio:
-                if audio_resource := resource_params.get("a"):
-                    pass
-                elif audio_resource := resource_params.get("v"):
-                    pass
-                else:
-                    video_params = details.get("video_params")
-                    if video_params:
-                        audio_resource = video_params.get("v")
-                        if audio_resource:
-                            logging.warning(f"Using Youtube ID {audio_resource} extracted from comments.")
-                
-                if audio_resource:
-                    if "bestaudio" in self.comboBox_audio_format.currentText():
-                        audio_dl_format = "bestaudio"
-                    elif "m4a" in self.comboBox_audio_format.currentText():
-                        audio_dl_format = "m4a"
-                    elif "webm" in self.comboBox_audio_format.currentText():
-                        audio_dl_format = "webm"
-                        
-                    audio_target_format = ""
-                    audio_target_codec = ""
-                    if self.groupBox_reencode_audio.isChecked():
-                        if "mp3" in self.comboBox_audio_conversion_format.currentText():
-                            audio_target_format = "mp3"
-                            audio_target_codec = "mp3"
-                        elif "ogg" in self.comboBox_audio_conversion_format.currentText():
-                            audio_target_format = "ogg"
-                            audio_target_codec = "vorbis"
-                        elif "opus" in self.comboBox_audio_conversion_format.currentText():
-                            audio_target_format = "opus"
-                            audio_target_codec = "opus"
-                        
-                    has_audio, ext = resource_dl.download_and_process_audio(header, audio_resource, audio_dl_format, audio_target_codec, dl_browser, pathname)
-                    
-                    header["#MP3"] = f"{note_utils.generate_filename(header)}.{ext}" 
-                    
-                    # delete #VIDEO tag used for resources
-                    if header.get("#VIDEO"):
-                        header.pop("#VIDEO")
-                        
-                    if has_audio:
-                        self.model.setItem(self.model.findItems(idp, flags=Qt.MatchExactly, column=0)[0].row(), 9, QStandardItem(QIcon(":/icons/resources/tick.png"), ""))
-            
-            # download video
-            has_video = False
-            if dl_video:
-                if video_resource := resource_params.get("v"):
-                    pass
-                elif not resource_params.get("a"):
-                    video_params = details.get("video_params")
-                    if video_params:
-                        video_resource = video_params.get("v")
-                        if video_resource:
-                            logging.warning(f"Using Youtube ID {audio_resource} extracted from comments.")
-                
-                if video_resource:
-                    video_params = {
-                            "container": self.comboBox_videocontainer.currentText(),
-                            "resolution": self.comboBox_videoresolution.currentText(),
-                            "fps": self.comboBox_fps.currentText(),
-                            "allow_reencode": self.groupBox_reencode_video.isChecked(),
-                            "encoder": self.comboBox_videoencoder.currentText()
-                        }
-                    has_video = resource_dl.download_and_process_video(header, video_resource, video_params, resource_params, dl_browser, pathname)
-                    
-                    header["#VIDEO"] = f"{note_utils.generate_filename(header)}{video_params['container']}" 
-                    if has_video:
-                        self.model.setItem(self.model.findItems(idp, flags=Qt.MatchExactly, column=0)[0].row(), 10, QStandardItem(QIcon(":/icons/resources/tick.png"), ""))
-                else:
-                    logging.warning("\t- no video resource in #VIDEO tag")
-
-            # download cover
-            has_cover = False
-            if dl_cover:
-                has_cover = resource_dl.download_and_process_cover(header, resource_params, details, pathname)
-                header["#COVER"] = f"{note_utils.generate_filename(header)} [CO].jpg"
-                if has_cover:
-                    self.model.setItem(self.model.findItems(idp, flags=Qt.MatchExactly, column=0)[0].row(), 11, QStandardItem(QIcon(":/icons/resources/tick.png"), ""))
-            
-            # download background
-            has_background = False
-            if dl_background:
-                if self.comboBox_background.currentText() == "always" or (not has_video and self.comboBox_background.currentText() == "only if no video"):
-                    has_background = resource_dl.download_and_process_background(header, resource_params, pathname)
-                    header["#BACKGROUND"] = f"{note_utils.generate_filename(header)} [BG].jpg"
-                    
-                    if has_background:
-                        self.model.setItem(self.model.findItems(idp, flags=Qt.MatchExactly, column=0)[0].row(), 12, QStandardItem(QIcon(":/icons/resources/tick.png"), ""))
-            
-            # write text file
-            bom = False
-            if self.comboBox_encoding.currentText() == "UTF-8":
-                encoding = "utf_8"
-            elif self.comboBox_encoding.currentText() == "UTF-8 BOM":
-                encoding = "utf_8_sig"
-            elif self.comboBox_encoding.currentText() == "CP1252":
-                encoding = "cp1252"
-            newline = self.comboBox_line_endings.currentText()
-            if newline == "Windows (CRLF)":
-                newline = '\r\n'
-            elif newline == "Mac/Linux (LF)":
-                newline = '\n'
-            note_utils.dump_notes(header, notes, duet, encoding, newline, pathname)
-            self.model.setItem(self.model.findItems(idp, flags=Qt.MatchExactly, column=0)[0].row(), 8, QStandardItem(QIcon(":/icons/resources/tick.png"), ""))
-            
-            #os.chdir("..")
-            #os.chdir("..")
+            worker = Worker(id=id, idp=idp, ids=ids, songdir=songdir, dl_browser=dl_browser, dl_video=dl_video, dl_audio=dl_audio, dl_cover=dl_cover, dl_background=dl_background)
+            self.threadpool.start(worker)
         
-        #os.chdir("..")
+        time.sleep(3600)
         logging.info(f"DONE! (Downloaded {len(ids)} songs)")
+        
         
     def eventFilter(self, source, event):
         if event.type() == QEvent.ContextMenu and source == self.tableView_availableSongs:
