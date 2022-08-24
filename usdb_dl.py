@@ -477,11 +477,11 @@ class QUMainWindow(QMainWindow, Ui_MainWindow):
         
         for num, id in enumerate(ids):
             idp = str(id).zfill(5)
-            #logging.info(f"#{idp} ({num+1}/{len(ids)} - {(num+1)/len(ids)*100:.1f} %):")
             
             worker = Worker(id=id, idp=idp, ids=ids, songdir=songdir, dl_browser=dl_browser, dl_video=dl_video, dl_audio=dl_audio, dl_cover=dl_cover, dl_background=dl_background)
             self.threadpool.start(worker)
         
+        # TODO: this sleep() only prevents the function from exiting, which otherwise leads to a crash (don’t know why)
         time.sleep(3600)
         logging.info(f"DONE! (Downloaded {len(ids)} songs)")
         
