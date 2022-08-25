@@ -482,7 +482,7 @@ class QUMainWindow(QMainWindow, Ui_MainWindow):
             self.threadpool.start(worker)
         
         # TODO: this sleep() only prevents the function from exiting, which otherwise leads to a crash (don’t know why)
-        time.sleep(3600)
+        time.sleep(len(ids)*10)
         logging.info(f"DONE! (Downloaded {len(ids)} songs)")
         
         
