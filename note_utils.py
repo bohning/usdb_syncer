@@ -113,7 +113,7 @@ def generate_dirname(header: Dict[str, str], resource_params: Dict[str, str]) ->
             dirname += " [SS]"
         if "[SC]" in edition:
             dirname += " [SC]"
-        if "rockband" in edition.lower():
+        if "rock band" in edition.lower():
             dirname += " [RB]"
     return dirname
 
