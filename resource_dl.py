@@ -17,7 +17,7 @@ def download_and_process_audio(header, audio_resource, audio_dl_format, audio_ta
     else:
         audio_url = f"https://www.youtube.com/watch?v={audio_resource}"
     
-    logging.info(f"\t- downloading audio from #VIDEO params: {audio_url}")
+    logging.debug(f"\t- downloading audio from #VIDEO params: {audio_url}")
     
     audio_filename = os.path.join(pathname, note_utils.generate_filename(header))
     
@@ -84,7 +84,7 @@ def download_and_process_video(header, video_resource, video_params, resource_pa
     else:
         video_url = f"https://www.youtube.com/watch?v={video_resource}"
         
-    logging.info(f"\t- downloading video from #VIDEO params: {video_url}")
+    logging.debug(f"\t- downloading video from #VIDEO params: {video_url}")
     
     video_filename = os.path.join(pathname, note_utils.generate_filename(header))
     
@@ -240,7 +240,7 @@ def download_and_process_cover(header, cover_params, details, pathname):
             cover_url = f"{protocol}{partial_url}"
         else:
             cover_url = f"{protocol}images.fanart.tv/fanart/{partial_url}"
-        logging.info(f"\t- downloading cover from #VIDEO params: {cover_url}")
+        logging.debug(f"\t- downloading cover from #VIDEO params: {cover_url}")
     else:
         logging.warning(f"\t- no cover resource in #VIDEO tag, so fallback to small usdb cover!")
         cover_url = details.get("cover_url")
@@ -307,7 +307,7 @@ def download_and_process_background(header, background_params, pathname):
     else:
         background_url = f"{protocol}images.fanart.tv/fanart/{background_params['bg']}"
         
-    logging.info(f"\t- downloading background from #VIDEO params: {background_url}")
+    logging.debug(f"\t- downloading background from #VIDEO params: {background_url}")
     
     success, background = download_image(background_url)
     

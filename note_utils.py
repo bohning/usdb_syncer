@@ -141,7 +141,7 @@ def dump_notes(
     txt_filename = generate_filename(header)
     duetstring = " (duet)" if duet else ""
     filename = f"{txt_filename}{duetstring}.txt"
-    logging.info("\t- writing text file with encoding %s", encoding)
+    logging.debug("\t- writing text file with encoding %s", encoding)
     with open(os.path.join(pathname, filename), "w", encoding=encoding, newline=newline) as notes_file:
         tags = [
             "#TITLE",
