@@ -21,6 +21,9 @@ def parse_notes(notes: str) -> Tuple[Dict[str, str], List[str]]:
     for line in notes.split("\n"):
         if line.startswith("#"):
             key, value = line.split(":", 1)
+            # #AUTHOR should be #CREATOR
+            if key == "#AUTHOR":
+                key = "#CREATOR"
             # some quick fixes to improve song search in other databases
             if key in ["#ARTIST", "#TITLE", "#EDITION", "#GENRE"]:
                 value = value.replace("´", "'")
