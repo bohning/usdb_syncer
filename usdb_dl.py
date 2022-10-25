@@ -1,5 +1,6 @@
 import argparse
 import datetime
+import json
 import logging
 import os
 import re
@@ -7,7 +8,7 @@ import sys
 import time
 
 from stringprep import map_table_b3
-from PySide6.QtCore import Qt, QEvent, QSortFilterProxyModel, QThread, Signal, QRunnable, QThreadPool
+from PySide6.QtCore import Qt, QEvent, QSortFilterProxyModel, QThread, Signal, QRunnable, QThreadPool, QObject, Slot
 from PySide6.QtGui import QPixmap, QStandardItemModel, QStandardItem, QIcon
 from PySide6.QtWidgets import QApplication, QMainWindow, QFileDialog, QHeaderView, QMenu, QSplashScreen
 #from pytube import extract
@@ -20,17 +21,6 @@ import note_utils
 import resource_dl
 
 from QUMainWindow import Ui_MainWindow
-
-
-class QPlainTextEditLogger(logging.Handler):
-    def __init__(self, text_edit):
-        super().__init__()
-        self.text_edit = text_edit
-        self.text_edit.setReadOnly(True)
- 
-    def emit(self, record):
-        msg = self.format(record)
-        self.text_edit.appendPlainText(msg)
 
 
 class Worker(QRunnable):
@@ -244,10 +234,8 @@ class QUMainWindow(QMainWindow, Ui_MainWindow):
         
         self.threadpool = QThreadPool(self)
         
+        self.plainTextEdit.setReadOnly(True)
         self.lineEdit_song_dir.setText(os.path.join(os.getcwd(), "songs"))
-        
-        self.handler = QPlainTextEditLogger(self.plainTextEdit)
-        self.handler.setFormatter(logging.Formatter('%(asctime)s [%(levelname)s] %(message)s', '%Y-%m-%d %H:%M:%S'))
         
         self.pushButton_get_songlist.clicked.connect(self.refresh)
         self.pushButton_downloadSelectedSongs.clicked.connect(self.download_selected_songs)
@@ -301,10 +289,20 @@ class QUMainWindow(QMainWindow, Ui_MainWindow):
             self.filter_proxy_model.setFilterCaseSensitivity(Qt.CaseSensitive)
         self.statusbar.showMessage(f"{self.filter_proxy_model.rowCount()} songs found.")
     
+    @Slot(str)
+    def log_to_text_edit(self, message: str) -> None:
+        self.plainTextEdit.appendPlainText(message)
 
     def refresh(self):
         #TODO: remove all existing items in the model!
-        available_songs = usdb_scraper.get_usdb_available_songs()
+        # some caching for quicker debugging
+        if os.path.exists("available_songs.josn") and (time.time() - os.path.getmtime("available_songs.josn")) < 60 * 60 * 24:
+            with open("available_songs.josn") as file:
+                available_songs = json.load(file)
+        else:
+            available_songs = usdb_scraper.get_usdb_available_songs()
+            with open("available_songs.josn", "w") as file:
+                json.dump(available_songs, file)
         artists = set()
         titles = []
         languages = set()
@@ -501,11 +499,9 @@ class QUMainWindow(QMainWindow, Ui_MainWindow):
             worker = Worker(id=id, ids=ids, gui_settings=gui_settings)
             self.threadpool.start(worker)
         
-        # TODO: this sleep() only prevents the function from exiting, which otherwise leads to a crash (don’t know why)
-        time.sleep(len(ids)*20)
         logging.info(f"DONE! (Downloaded {len(ids)} songs)")
         
-        
+
     def eventFilter(self, source, event):
         if event.type() == QEvent.ContextMenu and source == self.tableView_availableSongs:
             menu = QMenu()
@@ -519,22 +515,35 @@ class QUMainWindow(QMainWindow, Ui_MainWindow):
         return super().eventFilter(source, event)
 
 
+class Signals(QObject):
+    string = Signal(str)
+
+
+class QPlainTextEditLogger(logging.Handler):
+    def __init__(self, mw: QUMainWindow) -> None:
+        super().__init__()
+        self.signals = Signals()
+        self.signals.string.connect(mw.log_to_text_edit)
+ 
+    def emit(self, record: logging.LogRecord) -> None:
+        message = self.format(record)
+        self.signals.string.emit(message)
+
+
 def main():
+    app = QApplication(sys.argv)
+    quMainWindow = QUMainWindow()
     logging.basicConfig(
         level=logging.INFO,
         format="%(asctime)s [%(levelname)s] %(message)s",
         datefmt="%Y-%m-%d %H:%M:%S",
         encoding="utf-8",
-        handlers=[
+        handlers=(
             logging.FileHandler("usdb_dl.log"),
-            logging.StreamHandler(sys.stdout)
-        ]
+            logging.StreamHandler(sys.stdout),
+            QPlainTextEditLogger(quMainWindow),
+        )
     )
-
-    app = QApplication(sys.argv)
-    quMainWindow = QUMainWindow()
-    logger = logging.getLogger()
-    logger.addHandler(quMainWindow.handler)
     pixmap = QPixmap(":/splash/resources/splash.png")
     splash = QSplashScreen(pixmap)
     splash.show()
