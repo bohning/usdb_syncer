@@ -8,6 +8,10 @@ build-backend = "setuptools.build_meta"
 
 [tool.isort]
 profile = "black"
+skip_glob = ["src/usdb_dl/gui/forms/*", "src/usdb_dl/gui/resources/*"]
+
+[tool.black]
+extend-exclude = ["src/usdb_dl/gui/forms/*", "src/usdb_dl/gui/resources/*"]
 
 [tool.pylint.master]
 # Add McCabe code complexity checker

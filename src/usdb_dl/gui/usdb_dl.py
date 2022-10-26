@@ -33,11 +33,9 @@ from PySide6.QtWidgets import (
 )
 
 from usdb_dl import note_utils, resource_dl, usdb_scraper
-from usdb_dl.gui.QUMainWindow import Ui_MainWindow
+from usdb_dl.gui.forms.QUMainWindow import Ui_MainWindow
 
 # from pytube import extract
-
-
 
 
 class Worker(QRunnable):
