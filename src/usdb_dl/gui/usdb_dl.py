@@ -18,7 +18,7 @@ from typing import Dict, List, Tuple
 import filecmp
 from usdb_dl import usdb_scraper
 from usdb_dl import note_utils
-import resource_dl
+from usdb_dl import resource_dl
 
 from usdb_dl.gui.QUMainWindow import Ui_MainWindow
 

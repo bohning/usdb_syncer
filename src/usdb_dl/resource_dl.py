@@ -1,5 +1,5 @@
 import logging
-import note_utils
+from usdb_dl import note_utils
 import yt_dlp
 import os
 import requests
