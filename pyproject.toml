@@ -8,14 +8,10 @@ build-backend = "setuptools.build_meta"
 
 [tool.isort]
 profile = "black"
-line_length = 120
-
-[tool.black]
-line_length = 120
 
 [tool.pylint.master]
 # Add McCabe code complexity checker
-load-plugins= """
+load-plugins = """
     pylint.extensions.mccabe
     """
 # The following settings modify the behavior when running pylint with pylint.extensions.docparams plugin loaded

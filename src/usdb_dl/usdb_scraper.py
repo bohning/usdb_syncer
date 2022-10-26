@@ -126,7 +126,7 @@ def _parse_song_details(
     details["uploader"] = details_table.find(text="Created by").next.text
 
     editors = []
-    
+
     pointer = details_table.find(text="Song edited by:")
     while pointer is not None:
         pointer = pointer.find_next("td")
@@ -134,7 +134,7 @@ def _parse_song_details(
             break
         editors.append(pointer.text.strip())
         pointer = pointer.find_next("tr")
-    
+
     """ pointer = details_table.find(text="Song edited by:")
     if pointer is not None:
         pointer = pointer.find_next("td")
@@ -149,7 +149,11 @@ def _parse_song_details(
 
     stars = details_table.find(text="Rating").next.find_all("img")
     details["rating"] = str(sum(["star.png" in s.get("src") for s in stars]))
-    details["votes"] = details_table.find(text="Rating").next.next.next.next.next.next.next.next.next.next.next[2:-2] # " (number) "
+    details["votes"] = details_table.find(
+        text="Rating"
+    ).next.next.next.next.next.next.next.next.next.next.next[
+        2:-2
+    ]  # " (number) "
 
     if param := details_table.find("param", attrs={"name": "FlashVars"}):
         flash_vars = urllib.parse.parse_qs(param.get("value"))

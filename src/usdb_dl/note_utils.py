@@ -1,8 +1,8 @@
 """Functionality related to notes.txt file parsing."""
 
 import logging
-import re
 import os
+import re
 from typing import Dict, List, Tuple
 
 _logger: logging.Logger = logging.getLogger(__file__)
@@ -50,12 +50,12 @@ def get_params_from_video_tag(header: Dict[str, str]) -> Dict[str, str]:
     """
     params = dict()
     if not (params_line := header.get("#VIDEO")):
-        #raise LookupError("no video tag found in header.")
+        # raise LookupError("no video tag found in header.")
         logging.error("\t- no #VIDEO tag present")
     try:
-        params = dict(r.split('=') for r in params_line.split(','))
+        params = dict(r.split("=") for r in params_line.split(","))
     except ValueError as exception:
-        #raise LookupError("no parameter in video tag") from exception
+        # raise LookupError("no parameter in video tag") from exception
         logging.error("\t- no resources in #VIDEO tag")
     else:
         pass
@@ -147,7 +147,9 @@ def dump_notes(
     duetstring = " (duet)" if duet else ""
     filename = f"{txt_filename}{duetstring}.txt"
     _logger.debug("\t- writing text file with encoding %s", encoding)
-    with open(os.path.join(pathname, filename), "w", encoding=encoding, newline=newline) as notes_file:
+    with open(
+        os.path.join(pathname, filename), "w", encoding=encoding, newline=newline
+    ) as notes_file:
         tags = [
             "#TITLE",
             "#ARTIST",
