@@ -20,7 +20,7 @@ from PySide6.QtWidgets import (QAbstractItemView, QApplication, QCheckBox, QComb
     QLabel, QLineEdit, QMainWindow, QMenuBar,
     QPlainTextEdit, QPushButton, QSizePolicy, QSpacerItem,
     QStatusBar, QTableView, QVBoxLayout, QWidget)
-import usdb_dl.gui.resources_rc
+import usdb_dl.gui.resources.resources
 
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
@@ -45,7 +45,7 @@ class Ui_MainWindow(object):
         font.setPointSize(16)
         self.pushButton_get_songlist.setFont(font)
         icon = QIcon()
-        icon.addFile(u":/icons/resources/faviconUSDB.ico", QSize(), QIcon.Normal, QIcon.Off)
+        icon.addFile(u":/icons/faviconUSDB.ico", QSize(), QIcon.Normal, QIcon.Off)
         self.pushButton_get_songlist.setIcon(icon)
 
         self.horizontalLayout_2.addWidget(self.pushButton_get_songlist)
@@ -94,16 +94,16 @@ class Ui_MainWindow(object):
         self.comboBox_search_column = QComboBox(self.groupBox_3)
         self.comboBox_search_column.addItem("")
         icon1 = QIcon()
-        icon1.addFile(u":/icons/resources/artist.png", QSize(), QIcon.Normal, QIcon.Off)
+        icon1.addFile(u":/icons/artist.png", QSize(), QIcon.Normal, QIcon.Off)
         self.comboBox_search_column.addItem(icon1, "")
         icon2 = QIcon()
-        icon2.addFile(u":/icons/resources/title.png", QSize(), QIcon.Normal, QIcon.Off)
+        icon2.addFile(u":/icons/title.png", QSize(), QIcon.Normal, QIcon.Off)
         self.comboBox_search_column.addItem(icon2, "")
         icon3 = QIcon()
-        icon3.addFile(u":/icons/resources/language.png", QSize(), QIcon.Normal, QIcon.Off)
+        icon3.addFile(u":/icons/language.png", QSize(), QIcon.Normal, QIcon.Off)
         self.comboBox_search_column.addItem(icon3, "")
         icon4 = QIcon()
-        icon4.addFile(u":/icons/resources/edition.png", QSize(), QIcon.Normal, QIcon.Off)
+        icon4.addFile(u":/icons/edition.png", QSize(), QIcon.Normal, QIcon.Off)
         self.comboBox_search_column.addItem(icon4, "")
         self.comboBox_search_column.setObjectName(u"comboBox_search_column")
 
@@ -126,7 +126,7 @@ class Ui_MainWindow(object):
         self.horizontalLayout_5.setContentsMargins(4, 4, 4, 4)
         self.label_10 = QLabel(self.groupBox_4)
         self.label_10.setObjectName(u"label_10")
-        self.label_10.setPixmap(QPixmap(u":/icons/resources/artist.png"))
+        self.label_10.setPixmap(QPixmap(u":/icons/artist.png"))
 
         self.horizontalLayout_5.addWidget(self.label_10)
 
@@ -138,7 +138,7 @@ class Ui_MainWindow(object):
 
         self.label_11 = QLabel(self.groupBox_4)
         self.label_11.setObjectName(u"label_11")
-        self.label_11.setPixmap(QPixmap(u":/icons/resources/title.png"))
+        self.label_11.setPixmap(QPixmap(u":/icons/title.png"))
 
         self.horizontalLayout_5.addWidget(self.label_11)
 
@@ -150,7 +150,7 @@ class Ui_MainWindow(object):
 
         self.label_12 = QLabel(self.groupBox_4)
         self.label_12.setObjectName(u"label_12")
-        self.label_12.setPixmap(QPixmap(u":/icons/resources/language.png"))
+        self.label_12.setPixmap(QPixmap(u":/icons/language.png"))
 
         self.horizontalLayout_5.addWidget(self.label_12)
 
@@ -162,7 +162,7 @@ class Ui_MainWindow(object):
 
         self.label_13 = QLabel(self.groupBox_4)
         self.label_13.setObjectName(u"label_13")
-        self.label_13.setPixmap(QPixmap(u":/icons/resources/edition.png"))
+        self.label_13.setPixmap(QPixmap(u":/icons/edition.png"))
 
         self.horizontalLayout_5.addWidget(self.label_13)
 
@@ -174,7 +174,7 @@ class Ui_MainWindow(object):
 
         self.label_14 = QLabel(self.groupBox_4)
         self.label_14.setObjectName(u"label_14")
-        self.label_14.setPixmap(QPixmap(u":/icons/resources/golden_notes.png"))
+        self.label_14.setPixmap(QPixmap(u":/icons/golden_notes.png"))
 
         self.horizontalLayout_5.addWidget(self.label_14)
 
@@ -188,7 +188,7 @@ class Ui_MainWindow(object):
 
         self.label_15 = QLabel(self.groupBox_4)
         self.label_15.setObjectName(u"label_15")
-        self.label_15.setPixmap(QPixmap(u":/icons/resources/rating.png"))
+        self.label_15.setPixmap(QPixmap(u":/icons/rating.png"))
 
         self.horizontalLayout_5.addWidget(self.label_15)
 
@@ -209,7 +209,7 @@ class Ui_MainWindow(object):
 
         self.label_16 = QLabel(self.groupBox_4)
         self.label_16.setObjectName(u"label_16")
-        self.label_16.setPixmap(QPixmap(u":/icons/resources/views.png"))
+        self.label_16.setPixmap(QPixmap(u":/icons/views.png"))
 
         self.horizontalLayout_5.addWidget(self.label_16)
 
@@ -312,28 +312,28 @@ class Ui_MainWindow(object):
         self.comboBox_browser = QComboBox(self.groupBox_audio)
         self.comboBox_browser.addItem("")
         icon5 = QIcon()
-        icon5.addFile(u":/icons/resources/brave.png", QSize(), QIcon.Normal, QIcon.Off)
+        icon5.addFile(u":/icons/brave.png", QSize(), QIcon.Normal, QIcon.Off)
         self.comboBox_browser.addItem(icon5, "")
         icon6 = QIcon()
-        icon6.addFile(u":/icons/resources/chrome.png", QSize(), QIcon.Normal, QIcon.Off)
+        icon6.addFile(u":/icons/chrome.png", QSize(), QIcon.Normal, QIcon.Off)
         self.comboBox_browser.addItem(icon6, "")
         icon7 = QIcon()
-        icon7.addFile(u":/icons/resources/chromium.png", QSize(), QIcon.Normal, QIcon.Off)
+        icon7.addFile(u":/icons/chromium.png", QSize(), QIcon.Normal, QIcon.Off)
         self.comboBox_browser.addItem(icon7, "")
         icon8 = QIcon()
-        icon8.addFile(u":/icons/resources/edge.png", QSize(), QIcon.Normal, QIcon.Off)
+        icon8.addFile(u":/icons/edge.png", QSize(), QIcon.Normal, QIcon.Off)
         self.comboBox_browser.addItem(icon8, "")
         icon9 = QIcon()
-        icon9.addFile(u":/icons/resources/firefox.png", QSize(), QIcon.Normal, QIcon.Off)
+        icon9.addFile(u":/icons/firefox.png", QSize(), QIcon.Normal, QIcon.Off)
         self.comboBox_browser.addItem(icon9, "")
         icon10 = QIcon()
-        icon10.addFile(u":/icons/resources/opera.png", QSize(), QIcon.Normal, QIcon.Off)
+        icon10.addFile(u":/icons/opera.png", QSize(), QIcon.Normal, QIcon.Off)
         self.comboBox_browser.addItem(icon10, "")
         icon11 = QIcon()
-        icon11.addFile(u":/icons/resources/safari.png", QSize(), QIcon.Normal, QIcon.Off)
+        icon11.addFile(u":/icons/safari.png", QSize(), QIcon.Normal, QIcon.Off)
         self.comboBox_browser.addItem(icon11, "")
         icon12 = QIcon()
-        icon12.addFile(u":/icons/resources/vivaldi.png", QSize(), QIcon.Normal, QIcon.Off)
+        icon12.addFile(u":/icons/vivaldi.png", QSize(), QIcon.Normal, QIcon.Off)
         self.comboBox_browser.addItem(icon12, "")
         self.comboBox_browser.setObjectName(u"comboBox_browser")
 

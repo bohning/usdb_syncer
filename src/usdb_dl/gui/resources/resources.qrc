@@ -1,30 +1,30 @@
 <RCC>
   <qresource prefix="icons">
-    <file>resources/brave.png</file>
-    <file>resources/chrome.png</file>
-    <file>resources/chromium.png</file>
-    <file>resources/edge.png</file>
-    <file>resources/firefox.png</file>
-    <file>resources/opera.png</file>
-    <file>resources/safari.png</file>
-    <file>resources/vivaldi.png</file>
-    <file>resources/audio.png</file>
-    <file>resources/tick.png</file>
-    <file>resources/background.png</file>
-    <file>resources/cover.png</file>
-    <file>resources/video.png</file>
-    <file>resources/text.png</file>
-    <file>resources/rating.png</file>
-    <file>resources/faviconUSDB.ico</file>
-    <file>resources/artist.png</file>
-    <file>resources/edition.png</file>
-    <file>resources/golden_notes.png</file>
-    <file>resources/id.png</file>
-    <file>resources/language.png</file>
-    <file>resources/title.png</file>
-    <file>resources/views.png</file>
+    <file>brave.png</file>
+    <file>chrome.png</file>
+    <file>chromium.png</file>
+    <file>edge.png</file>
+    <file>firefox.png</file>
+    <file>opera.png</file>
+    <file>safari.png</file>
+    <file>vivaldi.png</file>
+    <file>audio.png</file>
+    <file>tick.png</file>
+    <file>background.png</file>
+    <file>cover.png</file>
+    <file>video.png</file>
+    <file>text.png</file>
+    <file>rating.png</file>
+    <file>faviconUSDB.ico</file>
+    <file>artist.png</file>
+    <file>edition.png</file>
+    <file>golden_notes.png</file>
+    <file>id.png</file>
+    <file>language.png</file>
+    <file>title.png</file>
+    <file>views.png</file>
   </qresource>
   <qresource prefix="splash">
-    <file>resources/splash.png</file>
+    <file>splash.png</file>
   </qresource>
 </RCC>

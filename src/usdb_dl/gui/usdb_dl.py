@@ -676,7 +676,7 @@ def main():
             QPlainTextEditLogger(quMainWindow),
         ),
     )
-    pixmap = QPixmap(":/splash/resources/splash.png")
+    pixmap = QPixmap(":/splash/splash.png")
     splash = QSplashScreen(pixmap)
     splash.show()
     app.processEvents()
