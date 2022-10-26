@@ -21,6 +21,9 @@ def parse_notes(notes: str) -> Tuple[Dict[str, str], List[str]]:
     for line in notes.split("\n"):
         if line.startswith("#"):
             key, value = line.split(":", 1)
+            # #AUTHOR should be #CREATOR
+            if key == "#AUTHOR":
+                key = "#CREATOR"
             # some quick fixes to improve song search in other databases
             if key in ["#ARTIST", "#TITLE", "#EDITION", "#GENRE"]:
                 value = value.replace("´", "'")
@@ -141,7 +144,7 @@ def dump_notes(
     txt_filename = generate_filename(header)
     duetstring = " (duet)" if duet else ""
     filename = f"{txt_filename}{duetstring}.txt"
-    logging.info("\t- writing text file with encoding %s", encoding)
+    logging.debug("\t- writing text file with encoding %s", encoding)
     with open(os.path.join(pathname, filename), "w", encoding=encoding, newline=newline) as notes_file:
         tags = [
             "#TITLE",
