@@ -15,4 +15,4 @@ def test_is_duet() -> None:
 
     # If the resource params dict contains `p1` and `p2` information, the song is a duet as well.
     dummy_resource_params: dict[str, Any] = {"p1": True, "p2": True}
-    assert True == is_duet(header={}, resource_params=dummy_resource_params)
+    assert True == is_duet(header=dummy_headers, resource_params=dummy_resource_params)
