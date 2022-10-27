@@ -383,17 +383,7 @@ class QUMainWindow(QMainWindow, Ui_MainWindow):
 
     def refresh(self):
         # TODO: remove all existing items in the model!
-        # some caching for quicker debugging
-        if (
-            os.path.exists("available_songs.josn")
-            and (time.time() - os.path.getmtime("available_songs.josn")) < 60 * 60 * 24
-        ):
-            with open("available_songs.josn") as file:
-                available_songs = json.load(file)
-        else:
-            available_songs = usdb_scraper.get_usdb_available_songs()
-            with open("available_songs.josn", "w") as file:
-                json.dump(available_songs, file)
+        available_songs = get_available_songs()
         artists = set()
         titles = []
         languages = set()
@@ -645,6 +635,20 @@ class QUMainWindow(QMainWindow, Ui_MainWindow):
                 print(index)
             return True
         return super().eventFilter(source, event)
+
+
+def get_available_songs(song_dir: str) -> list[dict]:
+    path = os.path.join(song_dir, "available_songs.json")
+    if os.path.exists(path) and (time.time() - os.path.getmtime(path)) < 60 * 60 * 24:
+        with open(path) as file:
+            available_songs = json.load(file)
+    else:
+        available_songs = usdb_scraper.get_usdb_available_songs()
+        if not os.path.exists(song_dir):
+            os.mkdir(song_dir)
+        with open(path, "w") as file:
+            json.dump(available_songs, file)
+    return available_songs
 
 
 class Signals(QObject):
