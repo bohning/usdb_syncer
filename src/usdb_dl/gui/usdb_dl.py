@@ -8,9 +8,10 @@ import re
 import sys
 import time
 from stringprep import map_table_b3
-from typing import Dict, List, Tuple
+from typing import Any, cast
 
-from pdfme import build_pdf  # maybe reportlab is better suited?
+# maybe reportlab is better suited?
+from pdfme import build_pdf  # type: ignore
 from PySide6.QtCore import (
     QEvent,
     QObject,
@@ -22,7 +23,13 @@ from PySide6.QtCore import (
     Signal,
     Slot,
 )
-from PySide6.QtGui import QIcon, QPixmap, QStandardItem, QStandardItemModel
+from PySide6.QtGui import (
+    QContextMenuEvent,
+    QIcon,
+    QPixmap,
+    QStandardItem,
+    QStandardItemModel,
+)
 from PySide6.QtWidgets import (
     QApplication,
     QFileDialog,
@@ -33,21 +40,21 @@ from PySide6.QtWidgets import (
 )
 
 from usdb_dl import note_utils, resource_dl, usdb_scraper
-from usdb_dl.gui.forms.QUMainWindow import Ui_MainWindow
+from usdb_dl.gui.forms.QUMainWindow import Ui_MainWindow  # type: ignore
 
 # from pytube import extract
 
 
 class Worker(QRunnable):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, id: int, gui_settings: dict[str, Any]) -> None:
         super().__init__()
-        self.args = args
-        self.kwargs = kwargs
+        self.id = id
+        self.gui_settings = gui_settings
 
-    def run(self):
-        id = self.kwargs["id"]
-        idp = str(id).zfill(5)
-        gui_settings = self.kwargs["gui_settings"]
+    def run(self) -> None:
+        id = str(self.id)
+        idp = f"{id:05}"
+        gui_settings = self.gui_settings
         songdir = gui_settings["songdir"]
 
         logging.info(f"#{idp}: Downloading song...")
@@ -276,7 +283,12 @@ class Worker(QRunnable):
             if gui_settings["dl_songfile_line_endings"] == "Mac/Linux (LF)":
                 line_endings = "\n"
             filename = note_utils.dump_notes(
-                header, notes, duet, encoding, line_endings, pathname
+                header,
+                notes,
+                pathname,
+                duet=duet,
+                encoding=encoding,
+                newline=line_endings,
             )
 
             if filename:
@@ -289,8 +301,8 @@ class Worker(QRunnable):
 
 
 class QUMainWindow(QMainWindow, Ui_MainWindow):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(self) -> None:
+        super().__init__()
         self.setupUi(self)
 
         self.threadpool = QThreadPool(self)
@@ -347,7 +359,9 @@ class QUMainWindow(QMainWindow, Ui_MainWindow):
 
         self.filter_proxy_model = QSortFilterProxyModel()
         self.filter_proxy_model.setSourceModel(self.model)
-        self.filter_proxy_model.setFilterCaseSensitivity(Qt.CaseInsensitive)
+        self.filter_proxy_model.setFilterCaseSensitivity(
+            Qt.CaseSensitivity.CaseInsensitive
+        )
         self.filter_proxy_model.setFilterKeyColumn(-1)
 
         self.lineEdit_search.textChanged.connect(self.set_filter_regular_expression)
@@ -359,29 +373,33 @@ class QUMainWindow(QMainWindow, Ui_MainWindow):
         )
         self.checkBox_case_sensitive.stateChanged.connect(self.set_case_sensitivity)
 
-    def set_filter_regular_expression(self, regexp):
+    def set_filter_regular_expression(self, regexp: str) -> None:
         self.filter_proxy_model.setFilterRegularExpression(regexp)
         self.statusbar.showMessage(f"{self.filter_proxy_model.rowCount()} songs found.")
 
-    def set_filter_key_column(self, index):
+    def set_filter_key_column(self, index: int) -> None:
         if index == 0:
             self.filter_proxy_model.setFilterKeyColumn(-1)
         else:
             self.filter_proxy_model.setFilterKeyColumn(index)
         self.statusbar.showMessage(f"{self.filter_proxy_model.rowCount()} songs found.")
 
-    def set_case_sensitivity(self, state):
+    def set_case_sensitivity(self, state: int) -> None:
         if state == 0:
-            self.filter_proxy_model.setFilterCaseSensitivity(Qt.CaseInsensitive)
+            self.filter_proxy_model.setFilterCaseSensitivity(
+                Qt.CaseSensitivity.CaseInsensitive
+            )
         else:
-            self.filter_proxy_model.setFilterCaseSensitivity(Qt.CaseSensitive)
+            self.filter_proxy_model.setFilterCaseSensitivity(
+                Qt.CaseSensitivity.CaseSensitive
+            )
         self.statusbar.showMessage(f"{self.filter_proxy_model.rowCount()} songs found.")
 
     @Slot(str)
     def log_to_text_edit(self, message: str) -> None:
         self.plainTextEdit.appendPlainText(message)
 
-    def refresh(self):
+    def refresh(self) -> int:
         # TODO: remove all existing items in the model!
         available_songs = get_available_songs(self.lineEdit_song_dir.text())
         artists = set()
@@ -403,24 +421,31 @@ class QUMainWindow(QMainWindow, Ui_MainWindow):
             id_zero_padded = song["id"].zfill(5)
 
             id_item = QStandardItem()
-            id_item.setData(id_zero_padded, Qt.DisplayRole)
+            id_item.setData(id_zero_padded, cast(int, Qt.ItemDataRole.DisplayRole))
             id_item.setCheckable(True)
             artist_item = QStandardItem()
-            artist_item.setData(song["artist"], Qt.DisplayRole)
+            artist_item.setData(song["artist"], cast(int, Qt.ItemDataRole.DisplayRole))
             title_item = QStandardItem()
-            title_item.setData(song["title"], Qt.DisplayRole)
+            title_item.setData(song["title"], cast(int, Qt.ItemDataRole.DisplayRole))
             language_item = QStandardItem()
-            language_item.setData(song["language"], Qt.DisplayRole)
+            language_item.setData(
+                song["language"], cast(int, Qt.ItemDataRole.DisplayRole)
+            )
             edition_item = QStandardItem()
-            edition_item.setData(song["edition"], Qt.DisplayRole)
+            edition_item.setData(
+                song["edition"], cast(int, Qt.ItemDataRole.DisplayRole)
+            )
             goldennotes_item = QStandardItem()
             goldennotes_item.setData(
-                "Yes" if song["goldennotes"] else "No", Qt.DisplayRole
+                "Yes" if song["goldennotes"] else "No",
+                cast(int, Qt.ItemDataRole.DisplayRole),
             )
             rating_item = QStandardItem()
-            rating_item.setData(rating_string, Qt.DisplayRole)
+            rating_item.setData(rating_string, cast(int, Qt.ItemDataRole.DisplayRole))
             views_item = QStandardItem()
-            views_item.setData(int(song["views"]), Qt.DisplayRole)
+            views_item.setData(
+                int(song["views"]), cast(int, Qt.ItemDataRole.DisplayRole)
+            )
             row = [
                 id_item,
                 artist_item,
@@ -446,43 +471,45 @@ class QUMainWindow(QMainWindow, Ui_MainWindow):
         self.comboBox_edition.addItems(list(sorted(set(editions))))
 
         header = self.tableView_availableSongs.horizontalHeader()
-        header.setSectionResizeMode(QHeaderView.ResizeToContents)
-        header.setSectionResizeMode(0, QHeaderView.Fixed)
+        header.setSectionResizeMode(QHeaderView.ResizeMode.ResizeToContents)
+        header.setSectionResizeMode(0, QHeaderView.ResizeMode.Fixed)
         header.resizeSection(0, 84)
-        header.setSectionResizeMode(1, QHeaderView.Interactive)
-        header.setSectionResizeMode(2, QHeaderView.Interactive)
-        header.setSectionResizeMode(3, QHeaderView.Interactive)
-        header.setSectionResizeMode(4, QHeaderView.Interactive)
-        header.setSectionResizeMode(5, QHeaderView.Fixed)
+        header.setSectionResizeMode(1, QHeaderView.ResizeMode.Interactive)
+        header.setSectionResizeMode(2, QHeaderView.ResizeMode.Interactive)
+        header.setSectionResizeMode(3, QHeaderView.ResizeMode.Interactive)
+        header.setSectionResizeMode(4, QHeaderView.ResizeMode.Interactive)
+        header.setSectionResizeMode(5, QHeaderView.ResizeMode.Fixed)
         header.resizeSection(5, header.sectionSize(5))
-        header.setSectionResizeMode(6, QHeaderView.Fixed)
+        header.setSectionResizeMode(6, QHeaderView.ResizeMode.Fixed)
         header.resizeSection(6, header.sectionSize(6))
-        header.setSectionResizeMode(7, QHeaderView.Fixed)
+        header.setSectionResizeMode(7, QHeaderView.ResizeMode.Fixed)
         header.resizeSection(7, header.sectionSize(7))
-        header.setSectionResizeMode(8, QHeaderView.Fixed)
+        header.setSectionResizeMode(8, QHeaderView.ResizeMode.Fixed)
         header.resizeSection(8, 24)
-        header.setSectionResizeMode(9, QHeaderView.Fixed)
+        header.setSectionResizeMode(9, QHeaderView.ResizeMode.Fixed)
         header.resizeSection(9, 24)
-        header.setSectionResizeMode(10, QHeaderView.Fixed)
+        header.setSectionResizeMode(10, QHeaderView.ResizeMode.Fixed)
         header.resizeSection(10, 24)
-        header.setSectionResizeMode(11, QHeaderView.Fixed)
+        header.setSectionResizeMode(11, QHeaderView.ResizeMode.Fixed)
         header.resizeSection(11, 24)
-        header.setSectionResizeMode(12, QHeaderView.Fixed)
+        header.setSectionResizeMode(12, QHeaderView.ResizeMode.Fixed)
         header.resizeSection(12, 24)
 
         return len(available_songs)
 
-    def select_song_dir(self):
+    def select_song_dir(self) -> None:
         song_dir = str(QFileDialog.getExistingDirectory(self, "Select Song Directory"))
         self.lineEdit_song_dir.setText(song_dir)
         for path, dirs, files in os.walk(song_dir):
             dirs.sort()
-            idp = ""
-            item = ""
             for file in files:
                 if file.endswith(".usdb"):
                     idp = file.replace(".usdb", "")
-                    items = self.model.findItems(idp, flags=Qt.MatchExactly, column=0)
+                    items = self.model.findItems(
+                        idp,
+                        flags=Qt.MatchFlag.MatchExactly,  # type: ignore
+                        column=0,
+                    )
                     if items:
                         item = items[0]
                         item.setCheckState(Qt.CheckState.Checked)
@@ -540,8 +567,8 @@ class QUMainWindow(QMainWindow, Ui_MainWindow):
                                         ),
                                     )
 
-    def download_selected_songs(self):
-        ids = []
+    def download_selected_songs(self) -> None:
+        ids: list[int] = []
         for row in range(
             self.model.rowCount(self.tableView_availableSongs.rootIndex())
         ):
@@ -554,15 +581,16 @@ class QUMainWindow(QMainWindow, Ui_MainWindow):
         self.download_songs(ids)
         self.generate_songlist_pdf()
 
-    def generate_songlist_pdf(self):
+    def generate_songlist_pdf(self) -> None:
         ### generate song list PDF
-        document = {}
+        document: dict[str, Any] = {}
         document["style"] = {"margin_bottom": 15, "text_align": "j"}
         document["formats"] = {"url": {"c": "blue", "u": 1}, "title": {"b": 1, "s": 13}}
         document["sections"] = []
-        section1 = {}
+        section1: dict[str, list[Any]] = {}
         document["sections"].append(section1)
-        section1["content"] = content1 = []
+        content1: list[Any] = []
+        section1["content"] = content1
         date = datetime.datetime.now()
         content1.append(
             {
@@ -591,7 +619,7 @@ class QUMainWindow(QMainWindow, Ui_MainWindow):
             build_pdf(document, f)
         ####
 
-    def download_songs(self, ids):
+    def download_songs(self, ids: list[int]) -> None:
         gui_settings = {
             "songdir": self.lineEdit_song_dir.text(),
             "dl_songfile": self.groupBox_songfile.isChecked(),
@@ -615,15 +643,15 @@ class QUMainWindow(QMainWindow, Ui_MainWindow):
 
         # self.threadpool = QThreadPool.globalInstance()
 
-        for num, id in enumerate(ids):
-            worker = Worker(id=id, ids=ids, gui_settings=gui_settings)
+        for id in ids:
+            worker = Worker(id=id, gui_settings=gui_settings)
             self.threadpool.start(worker)
 
         logging.info(f"DONE! (Downloaded {len(ids)} songs)")
 
-    def eventFilter(self, source, event):
+    def eventFilter(self, source: QObject, event: QEvent) -> bool:
         if (
-            event.type() == QEvent.ContextMenu
+            isinstance(event, QContextMenuEvent)
             and source == self.tableView_availableSongs
         ):
             menu = QMenu()
@@ -631,7 +659,7 @@ class QUMainWindow(QMainWindow, Ui_MainWindow):
             menu.addAction("Uncheck all selected songs")
 
             if menu.exec(event.globalPos()):
-                index = source.indexAt(event.pos())
+                index = self.tableView_availableSongs.indexAt(event.pos())
                 print(index)
             return True
         return super().eventFilter(source, event)
@@ -666,7 +694,7 @@ class QPlainTextEditLogger(logging.Handler):
         self.signals.string.emit(message)
 
 
-def main():
+def main() -> None:
     app = QApplication(sys.argv)
     quMainWindow = QUMainWindow()
     logging.basicConfig(
@@ -683,11 +711,12 @@ def main():
     pixmap = QPixmap(":/splash/splash.png")
     splash = QSplashScreen(pixmap)
     splash.show()
-    app.processEvents()
-    splash.showMessage("Loading song database from usdb...", color=Qt.gray)
+    QApplication.processEvents()
+    splash.showMessage("Loading song database from usdb...", color=Qt.GlobalColor.gray)
     num_songs = quMainWindow.refresh()
     splash.showMessage(
-        f"Song database successfully loaded with {num_songs} songs.", color=Qt.gray
+        f"Song database successfully loaded with {num_songs} songs.",
+        color=Qt.GlobalColor.gray,
     )
     quMainWindow.show()
     logging.info("Application successfully loaded.")

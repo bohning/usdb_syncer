@@ -3,20 +3,20 @@
 import logging
 import re
 import urllib.parse
-from typing import Dict, List, Tuple
+from typing import Any, Dict, List, Tuple
 
 import requests
-from bs4 import BeautifulSoup
+from bs4 import BeautifulSoup  # type: ignore
 
 _logger: logging.Logger = logging.getLogger(__file__)
 
 
 def get_usdb_page(
-    rel_url,
+    rel_url: str,
     method: str = "GET",
-    headers: Dict[str, str] = None,
-    payload: Dict[str, str] = None,
-    params: Dict[str, str] = None,
+    headers: dict[str, str] = None,
+    payload: dict[str, str] = None,
+    params: dict[str, str] = None,
 ) -> str:
     """Retrieve html subpage from usbd.
 
@@ -177,7 +177,7 @@ def _parse_comment_details(
     return details
 
 
-def get_usdb_details(song_id: str) -> Tuple[bool, Dict[str, str]]:
+def get_usdb_details(song_id: str) -> Tuple[bool, dict[str, Any]]:
     """Retrieve song details from usdb webpage.
 
     Parameters:

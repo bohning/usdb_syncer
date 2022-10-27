@@ -2,8 +2,8 @@ import logging
 import os
 
 import requests
-import yt_dlp
-from PIL import Image, ImageEnhance, ImageOps
+import yt_dlp  # type: ignore
+from PIL import Image, ImageEnhance, ImageOps  # type: ignore
 
 from usdb_dl import note_utils
 
@@ -12,8 +12,13 @@ from usdb_dl import note_utils
 
 
 def download_and_process_audio(
-    header, audio_resource, audio_dl_format, audio_target_codec, dl_browser, pathname
-):
+    header: dict[str, str],
+    audio_resource: str,
+    audio_dl_format: str,
+    audio_target_codec: str,
+    dl_browser: str,
+    pathname: str,
+) -> tuple[bool, str]:
     if not audio_resource:
         logging.warning("\t- no audio resource in #VIDEO tag")
         return False, ""
@@ -76,8 +81,13 @@ def download_and_process_audio(
 
 
 def download_and_process_video(
-    header, video_resource, video_params, resource_params, dl_browser, pathname
-):
+    header: dict[str, str],
+    video_resource: str,
+    video_params: dict[str, str],
+    resource_params: dict[str, str],
+    dl_browser: str,
+    pathname: str,
+) -> bool:
     if video_params["resolution"] == "1080p":
         video_max_width = 1920
         video_max_height = 1080
@@ -212,7 +222,7 @@ def download_and_process_video(
     return True
 
 
-def download_image(url):
+def download_image(url: str) -> tuple[bool, bytes]:
     try:
         headers = {
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/42.0.2311.135 Safari/537.36 Edge/12.246"
@@ -222,42 +232,40 @@ def download_image(url):
         logging.error(
             f"Failed to retrieve {url}. The server may be down or your internet connection is currently unavailable."
         )
-        return False, False
-    else:
-        if reply.status_code in range(100, 199):
-            # 1xx informational response
-            return True, reply.content
-        elif reply.status_code in range(200, 299):
-            # 2xx success
-            return True, reply.content
-        elif reply.status_code in range(300, 399):
-            # 3xx redirection
-            logging.warning(
-                f"\tRedirection to {reply._next.url}. Please update the template file."
-            )
-            return True, reply.content
-        elif reply.status_code in range(400, 499):
-            # 4xx client errors
-            logging.error(
-                f"\tClient error {reply.status_code}. Failed to download {reply.url}"
-            )
-            return False, reply.content
-        elif reply.status_code in range(500, 599):
-            # 5xx server errors
-            logging.error(
-                f"\tServer error {reply.status_code}. Failed to download {reply.url}"
-            )
-            return False, reply.content
+        return False, bytes(0)
+    if reply.status_code in range(100, 199):
+        # 1xx informational response
+        return True, reply.content
+    elif reply.status_code in range(200, 299):
+        # 2xx success
+        return True, reply.content
+    elif reply.status_code in range(300, 399):
+        # 3xx redirection
+        logging.warning(
+            f"\tRedirection to {reply.next.url if reply.next else 'unknown'}. Please update the template file."
+        )
+        return True, reply.content
+    elif reply.status_code in range(400, 499):
+        # 4xx client errors
+        logging.error(
+            f"\tClient error {reply.status_code}. Failed to download {reply.url}"
+        )
+        return False, reply.content
+    elif reply.status_code in range(500, 599):
+        # 5xx server errors
+        logging.error(
+            f"\tServer error {reply.status_code}. Failed to download {reply.url}"
+        )
+        return False, reply.content
+    return False, bytes(0)
 
 
-def download_and_process_cover(header, cover_params, details, pathname):
-    if not cover_params.get("co") and not details.get("cover_url"):
-        logging.warning("\t- no cover resource in #VIDEO tag and no cover in usdb")
-        return
-
-    cover_extension = ".jpg"
-    cover_filename = note_utils.generate_filename(header) + f" [CO]{cover_extension}"
-
+def download_and_process_cover(
+    header: dict[str, str],
+    cover_params: dict[str, str],
+    details: dict[str, str],
+    pathname: str,
+) -> bool:
     if partial_url := cover_params.get("co"):
         protocol = "https://"
         if p := cover_params.get("co-protocol"):
@@ -269,16 +277,21 @@ def download_and_process_cover(header, cover_params, details, pathname):
         else:
             cover_url = f"{protocol}images.fanart.tv/fanart/{partial_url}"
         logging.debug(f"\t- downloading cover from #VIDEO params: {cover_url}")
-    else:
+    elif url := details.get("cover_url"):
+        cover_url = url
         logging.warning(
             f"\t- no cover resource in #VIDEO tag, so fallback to small usdb cover!"
         )
-        cover_url = details.get("cover_url")
+    else:
+        logging.warning("\t- no cover resource in #VIDEO tag and no cover in usdb")
+        return False
 
-    success, cover = download_image(cover_url)
+    success, img_bytes = download_image(cover_url)
+
+    cover_filename = note_utils.generate_filename(header) + " [CO].jpg"
 
     if success:
-        open(os.path.join(pathname, cover_filename), "wb").write(cover)
+        open(os.path.join(pathname, cover_filename), "wb").write(img_bytes)
 
         if (
             cover_params.get("co-rotate")
@@ -348,10 +361,12 @@ def download_and_process_cover(header, cover_params, details, pathname):
         return False
 
 
-def download_and_process_background(header, background_params, pathname):
+def download_and_process_background(
+    header: dict[str, str], background_params: dict[str, str], pathname: str
+) -> bool:
     if not background_params.get("bg"):
         logging.warning("\t- no background resource in #VIDEO-tag")
-        return
+        return False
 
     background_extension = ".jpg"
 
@@ -371,10 +386,10 @@ def download_and_process_background(header, background_params, pathname):
 
     logging.debug(f"\t- downloading background from #VIDEO params: {background_url}")
 
-    success, background = download_image(background_url)
+    success, img_bytes = download_image(background_url)
 
     if success:
-        open(os.path.join(pathname, background_filename), "wb").write(background)
+        open(os.path.join(pathname, background_filename), "wb").write(img_bytes)
 
         if background_params.get("bg-crop") or background_params.get("bg-resize"):
             with Image.open(background_filename).convert("RGB") as background:

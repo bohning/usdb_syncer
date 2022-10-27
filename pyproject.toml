@@ -8,10 +8,10 @@ build-backend = "setuptools.build_meta"
 
 [tool.isort]
 profile = "black"
-skip_glob = ["src/usdb_dl/gui/forms/*", "src/usdb_dl/gui/resources/*"]
+skip_glob = ["src/usdb_dl/gui/forms", "src/usdb_dl/gui/resources"]
 
 [tool.black]
-extend-exclude = ["src/usdb_dl/gui/forms/*", "src/usdb_dl/gui/resources/*"]
+extend-exclude = ["src/usdb_dl/gui/forms", "src/usdb_dl/gui/resources"]
 
 [tool.pylint.master]
 # Add McCabe code complexity checker
@@ -27,7 +27,6 @@ accept-no-yields-doc = "no"
 ignore = ["conf.py"]
 
 [tool.pylint.messages_control]
-max-line-length = 120
 # https://github.com/samuelcolvin/pydantic/issues/1961
 extension-pkg-whitelist = "pydantic"
 disable = """
@@ -47,10 +46,15 @@ ignore-signatures = "yes"
 
 [tool.mypy]
 # https://mypy.readthedocs.io/en/stable/command_line.html#cmdoption-mypy-ignore-missing-imports
-ignore_missing_imports = true
 # Functions need to be annotated
 disallow_untyped_defs = true
-exclude = "venv/|log/"
+exclude = [
+    "venv",
+    "log",
+    "src/usdb_dl/gui/forms",
+    "src/usdb_dl/gui/resources",
+    "resources_rc.py",
+]
 
 
 [tool.pytest.ini_options]
