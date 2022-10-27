@@ -383,7 +383,7 @@ class QUMainWindow(QMainWindow, Ui_MainWindow):
 
     def refresh(self):
         # TODO: remove all existing items in the model!
-        available_songs = get_available_songs()
+        available_songs = get_available_songs(self.lineEdit_song_dir.text())
         artists = set()
         titles = []
         languages = set()
