@@ -1,3 +1,5 @@
+"""Functions for downloading and processing media."""
+
 import logging
 import os
 
@@ -50,7 +52,7 @@ def download_and_process_audio(
                 "format"
             ] = f"bestaudio[ext={ext}]"  # ext only seems to work for Youtube
         else:
-            ydl_opts["format"] = f"bestaudio"  # not for e.g. UM
+            ydl_opts["format"] = "bestaudio"  # not for e.g. UM
             ydl_opts["outtmpl"] = f"{audio_filename}.m4a"
 
     if audio_target_codec:
@@ -84,7 +86,7 @@ def download_and_process_video(
     header: dict[str, str],
     video_resource: str,
     video_params: dict[str, str],
-    resource_params: dict[str, str],
+    _resource_params: dict[str, str],
     dl_browser: str,
     pathname: str,
 ) -> bool:
@@ -95,17 +97,17 @@ def download_and_process_video(
         video_max_width = 1280
         video_max_height = 720
     video_max_fps = video_params["fps"]
-    video_target_container = video_params["container"]
-    video_reencode_allow = video_params[
+    _video_target_container = video_params["container"]
+    _video_reencode_allow = video_params[
         "allow_reencode"
     ]  # True # if False, ffmpeg will not be used to trim or crop and subsequently reencode videos (uses US #START/#END tags)
-    video_reencode_encoder = video_params[
+    _video_reencode_encoder = video_params[
         "encoder"
     ]  # "libx264" #"libvpx-vp9" #"libaom-av1" #"libx264"
-    video_reencode_crf = (
+    _video_reencode_crf = (
         23  # 0–51 (0=lossless/huge file size, 23=default, 51=worst quality possible)
     )
-    video_reencode_preset = "ultrafast"  # ultrafast, superfast, veryfast, faster, fast, medium (default preset), slow, slower, veryslow
+    _video_reencode_preset = "ultrafast"  # ultrafast, superfast, veryfast, faster, fast, medium (default preset), slow, slower, veryslow
 
     if "/" in video_resource:
         video_url = f"https://{video_resource}"
@@ -128,18 +130,17 @@ def download_and_process_video(
     }
 
     if dl_browser != "none":
-        ydl_opts["cookiesfrombrowser"] = (f"{dl_browser}",)
+        ydl_opts["cookiesfrombrowser"] = (dl_browser,)
 
     if "/" in video_resource:  # not Youtube
-        ydl_opts["format"] = f"bestvideo"
+        ydl_opts["format"] = "bestvideo"
 
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
         try:
             ydl.download([video_url])
-            vfn = ydl.prepare_filename(ydl.extract_info("{}".format(video_url)))
+            _vfn = ydl.prepare_filename(ydl.extract_info("{}".format(video_url)))
         except:
             logging.error(f"\t#VIDEO: error downloading video url: {video_url}")
-            pass
 
     ######
 
@@ -227,7 +228,7 @@ def download_image(url: str) -> tuple[bool, bytes]:
         headers = {
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/42.0.2311.135 Safari/537.36 Edge/12.246"
         }
-        reply = requests.get(url, allow_redirects=True, headers=headers)
+        reply = requests.get(url, allow_redirects=True, headers=headers, timeout=3)
     except:
         logging.error(
             f"Failed to retrieve {url}. The server may be down or your internet connection is currently unavailable."
@@ -280,7 +281,7 @@ def download_and_process_cover(
     elif url := details.get("cover_url"):
         cover_url = url
         logging.warning(
-            f"\t- no cover resource in #VIDEO tag, so fallback to small usdb cover!"
+            "\t- no cover resource in #VIDEO tag, so fallback to small usdb cover!"
         )
     else:
         logging.warning("\t- no cover resource in #VIDEO tag and no cover in usdb")

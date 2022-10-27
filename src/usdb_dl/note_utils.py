@@ -48,7 +48,7 @@ def get_params_from_video_tag(header: Dict[str, str]) -> Dict[str, str]:
     Returns:
         additional resource parameters
     """
-    params = dict()
+    params = {}
     if params_line := header.get("#VIDEO"):
         params = dict(r.split("=") for r in params_line.split(","))
         if not params:

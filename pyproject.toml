@@ -14,17 +14,21 @@ skip_glob = ["src/usdb_dl/gui/forms", "src/usdb_dl/gui/resources"]
 extend-exclude = ["src/usdb_dl/gui/forms", "src/usdb_dl/gui/resources"]
 
 [tool.pylint.master]
+ignored-modules = ["PySide6.QtCore", "PySide6.QtGui", "PySide6.QtWidgets"]
+ignore-paths = [
+    "src/usdb_dl/gui/forms",
+    "src/usdb_dl/gui/resources",
+    "src/resources_rc.py",
+]
 # Add McCabe code complexity checker
 load-plugins = """
     pylint.extensions.mccabe
     """
 # The following settings modify the behavior when running pylint with pylint.extensions.docparams plugin loaded
-accept-no-param-doc = "no"
-accept-no-raise-doc = "no"
-accept-no-return-doc = "no"
-accept-no-yields-doc = "no"
-# Ignore the Sphinx config file that is unfortunately a Python file
-ignore = ["conf.py"]
+# accept-no-param-doc = "no"
+# accept-no-raise-doc = "no"
+# accept-no-return-doc = "no"
+# accept-no-yields-doc = "no"
 
 [tool.pylint.messages_control]
 # https://github.com/samuelcolvin/pydantic/issues/1961
@@ -45,8 +49,6 @@ ignore-imports = "yes"
 ignore-signatures = "yes"
 
 [tool.mypy]
-# https://mypy.readthedocs.io/en/stable/command_line.html#cmdoption-mypy-ignore-missing-imports
-# Functions need to be annotated
 disallow_untyped_defs = true
 exclude = [
     "venv",

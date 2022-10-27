@@ -1,3 +1,5 @@
+"""usdb_dl's GUI"""
+
 import argparse
 import datetime
 import filecmp
@@ -7,7 +9,6 @@ import os
 import re
 import sys
 import time
-from stringprep import map_table_b3
 from typing import Any, cast
 
 # maybe reportlab is better suited?
@@ -18,7 +19,6 @@ from PySide6.QtCore import (
     QRunnable,
     QSortFilterProxyModel,
     Qt,
-    QThread,
     QThreadPool,
     Signal,
     Slot,
@@ -46,33 +46,36 @@ from usdb_dl.gui.forms.QUMainWindow import Ui_MainWindow  # type: ignore
 
 
 class Worker(QRunnable):
-    def __init__(self, id: int, gui_settings: dict[str, Any]) -> None:
+    """Runnable to create a complete song folder."""
+
+    def __init__(self, song_id: int, gui_settings: dict[str, Any]) -> None:
         super().__init__()
-        self.id = id
+        self.song_id = song_id
         self.gui_settings = gui_settings
 
     def run(self) -> None:
-        id = str(self.id)
-        idp = f"{id:05}"
+        song_id = str(self.song_id)
+        idp = f"{song_id:05}"
         gui_settings = self.gui_settings
         songdir = gui_settings["songdir"]
 
         logging.info(f"#{idp}: Downloading song...")
         logging.info(f"#{idp}: (1/6) downloading usdb file...")
         ###
-        exists, details = usdb_scraper.get_usdb_details(id)
+        exists, details = usdb_scraper.get_usdb_details(song_id)
         if not exists:
             # song was deleted from usdb in the meantime, TODO: uncheck/remove from model
             return
 
-        songtext = usdb_scraper.get_notes(id)
+        songtext = usdb_scraper.get_notes(song_id)
 
         header, notes = note_utils.parse_notes(songtext)
 
-        # self.statusbar.showMessage(f"Downloading '{header['#ARTIST']} - {header['#TITLE']}' ({num+1}/{len(ids)})") # TODO: this is not updated until after download all songs
+        # TODO: this is not updated until after download all songs
+        # self.statusbar.showMessage(f"Downloading '{header['#ARTIST']} - {header['#TITLE']}' ({num+1}/{len(ids)})")
 
         header["#TITLE"] = re.sub(
-            "[\[].*?[\]]", "", header["#TITLE"]
+            r"\[.*?\]", "", header["#TITLE"]
         ).strip()  # remove anything in "[]" from the title, e.g. "[duet]"
         resource_params = note_utils.get_params_from_video_tag(header)
 
@@ -91,7 +94,7 @@ class Worker(QRunnable):
             prev_start = 0
             for i, line in enumerate(notes):
                 if line.startswith((":", "*", "F", "R", "G")):
-                    type, start, duration, pitch, *syllable = line.split(
+                    _type, start, _duration, _pitch, *_syllable = line.split(
                         " ", maxsplit=4
                     )
                     if int(start) < prev_start:
@@ -119,16 +122,13 @@ class Worker(QRunnable):
                 )
                 os.remove(os.path.join(pathname, "temp.usdb"))
                 return
-            else:
-                logging.info(
-                    "#{idp}: (1/6) usdb file has been updated, re-downloading..."
-                )
-                # TODO: check if resources in #VIDEO tag have changed and if so, re-download new resources only
-                os.remove(os.path.join(pathname, f"{idp}.usdb"))
-                os.rename(
-                    os.path.join(pathname, "temp.usdb"),
-                    os.path.join(pathname, f"{idp}.usdb"),
-                )
+            logging.info("#{idp}: (1/6) usdb file has been updated, re-downloading...")
+            # TODO: check if resources in #VIDEO tag have changed and if so, re-download new resources only
+            os.remove(os.path.join(pathname, f"{idp}.usdb"))
+            os.rename(
+                os.path.join(pathname, "temp.usdb"),
+                os.path.join(pathname, f"{idp}.usdb"),
+            )
         else:
             os.rename(
                 os.path.join(pathname, "temp.usdb"),
@@ -300,7 +300,7 @@ class Worker(QRunnable):
             logging.info(f"#{idp}: (6/6) Download completed!")
 
 
-class QUMainWindow(QMainWindow, Ui_MainWindow):
+class MainWindow(QMainWindow, Ui_MainWindow):
     def __init__(self) -> None:
         super().__init__()
         self.setupUi(self)
@@ -643,8 +643,8 @@ class QUMainWindow(QMainWindow, Ui_MainWindow):
 
         # self.threadpool = QThreadPool.globalInstance()
 
-        for id in ids:
-            worker = Worker(id=id, gui_settings=gui_settings)
+        for song_id in ids:
+            worker = Worker(song_id=song_id, gui_settings=gui_settings)
             self.threadpool.start(worker)
 
         logging.info(f"DONE! (Downloaded {len(ids)} songs)")
@@ -668,23 +668,27 @@ class QUMainWindow(QMainWindow, Ui_MainWindow):
 def get_available_songs(song_dir: str) -> list[dict]:
     path = os.path.join(song_dir, "available_songs.json")
     if os.path.exists(path) and (time.time() - os.path.getmtime(path)) < 60 * 60 * 24:
-        with open(path) as file:
+        with open(path, encoding="utf8") as file:
             available_songs = json.load(file)
     else:
         available_songs = usdb_scraper.get_usdb_available_songs()
         if not os.path.exists(song_dir):
             os.mkdir(song_dir)
-        with open(path, "w") as file:
+        with open(path, "w", encoding="utf8") as file:
             json.dump(available_songs, file)
     return available_songs
 
 
 class Signals(QObject):
+    """Custom signals."""
+
     string = Signal(str)
 
 
-class QPlainTextEditLogger(logging.Handler):
-    def __init__(self, mw: QUMainWindow) -> None:
+class TextEditLogger(logging.Handler):
+    """Handler that logs to the GUI in a thread-safe manner."""
+
+    def __init__(self, mw: MainWindow) -> None:
         super().__init__()
         self.signals = Signals()
         self.signals.string.connect(mw.log_to_text_edit)
@@ -696,7 +700,7 @@ class QPlainTextEditLogger(logging.Handler):
 
 def main() -> None:
     app = QApplication(sys.argv)
-    quMainWindow = QUMainWindow()
+    mw = MainWindow()
     logging.basicConfig(
         level=logging.INFO,
         format="%(asctime)s [%(levelname)s] %(message)s",
@@ -705,7 +709,7 @@ def main() -> None:
         handlers=(
             logging.FileHandler("usdb_dl.log"),
             logging.StreamHandler(sys.stdout),
-            QPlainTextEditLogger(quMainWindow),
+            TextEditLogger(mw),
         ),
     )
     pixmap = QPixmap(":/splash/splash.png")
@@ -713,21 +717,21 @@ def main() -> None:
     splash.show()
     QApplication.processEvents()
     splash.showMessage("Loading song database from usdb...", color=Qt.GlobalColor.gray)
-    num_songs = quMainWindow.refresh()
+    num_songs = mw.refresh()
     splash.showMessage(
         f"Song database successfully loaded with {num_songs} songs.",
         color=Qt.GlobalColor.gray,
     )
-    quMainWindow.show()
+    mw.show()
     logging.info("Application successfully loaded.")
-    splash.finish(quMainWindow)
+    splash.finish(mw)
     app.exec()
 
 
 def cli_entry() -> None:
     parser = argparse.ArgumentParser(description="UltraStar script.")
 
-    args = parser.parse_args()
+    _args = parser.parse_args()
 
     # Call main
     main()

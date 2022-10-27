@@ -36,11 +36,13 @@ def get_usdb_page(
 
     if method == "GET":
         _logger.debug("get request for %s", url)
-        response = requests.get(url, headers=_headers, params=params)
+        response = requests.get(url, headers=_headers, params=params, timeout=3)
 
     elif method == "POST":
         _logger.debug("post request for %s", url)
-        response = requests.post(url, headers=_headers, data=payload, params=params)
+        response = requests.post(
+            url, headers=_headers, data=payload, params=params, timeout=3
+        )
     else:
         raise NotImplementedError(f"{method} request not supported")
     response.raise_for_status()
@@ -135,16 +137,6 @@ def _parse_song_details(
         editors.append(pointer.text.strip())
         pointer = pointer.find_next("tr")
 
-    """ pointer = details_table.find(text="Song edited by:")
-    if pointer is not None:
-        pointer = pointer.find_next("td")
-        if pointer is not None:
-            while pointer.a is not None:
-                editors.append(pointer.text.strip())
-                pointer = pointer.find_next("tr")
-            if editors:
-                details["editors"] = ", ".join(editors) """
-
     details["views"] = details_table.find(text="Views").next.text
 
     stars = details_table.find(text="Rating").next.find_all("img")
@@ -166,7 +158,7 @@ def _parse_song_details(
 
 
 def _parse_comment_details(
-    details: Dict[str, str], comments_table: BeautifulSoup
+    details: Dict[str, str], _comments_table: BeautifulSoup
 ) -> Dict[str, str]:
     """Tbd.
 
