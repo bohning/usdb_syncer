@@ -10,7 +10,7 @@ The following explains how to set up a development environment.
 The minimal setup to develop your package is to create a virtual environment and install the package and its runtime requirements:
 
 ```bash
-python3.9 -m venv venv
+python3.10 -m venv venv
 source venv/bin/activate
 pip install --upgrade pip
 pip install -e '.[dev]'
