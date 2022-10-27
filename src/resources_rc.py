@@ -1,0 +1,1 @@
+usdb_dl/gui/resources/resources.py

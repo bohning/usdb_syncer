@@ -49,8 +49,8 @@
             <string>Refresh song list</string>
            </property>
            <property name="icon">
-            <iconset resource="resources.qrc">
-             <normaloff>:/icons/resources/faviconUSDB.ico</normaloff>:/icons/resources/faviconUSDB.ico</iconset>
+            <iconset>
+             <normaloff>:/icons/faviconUSDB.ico</normaloff>:/icons/faviconUSDB.ico</iconset>
            </property>
           </widget>
          </item>
@@ -151,8 +151,8 @@
            <string>Artist</string>
           </property>
           <property name="icon">
-           <iconset resource="resources.qrc">
-            <normaloff>:/icons/resources/artist.png</normaloff>:/icons/resources/artist.png</iconset>
+           <iconset>
+            <normaloff>:/icons/artist.png</normaloff>:/icons/artist.png</iconset>
           </property>
          </item>
          <item>
@@ -160,8 +160,8 @@
            <string>Title</string>
           </property>
           <property name="icon">
-           <iconset resource="resources.qrc">
-            <normaloff>:/icons/resources/title.png</normaloff>:/icons/resources/title.png</iconset>
+           <iconset>
+            <normaloff>:/icons/title.png</normaloff>:/icons/title.png</iconset>
           </property>
          </item>
          <item>
@@ -169,8 +169,8 @@
            <string>Language</string>
           </property>
           <property name="icon">
-           <iconset resource="resources.qrc">
-            <normaloff>:/icons/resources/language.png</normaloff>:/icons/resources/language.png</iconset>
+           <iconset>
+            <normaloff>:/icons/language.png</normaloff>:/icons/language.png</iconset>
           </property>
          </item>
          <item>
@@ -178,8 +178,8 @@
            <string>Edition</string>
           </property>
           <property name="icon">
-           <iconset resource="resources.qrc">
-            <normaloff>:/icons/resources/edition.png</normaloff>:/icons/resources/edition.png</iconset>
+           <iconset>
+            <normaloff>:/icons/edition.png</normaloff>:/icons/edition.png</iconset>
           </property>
          </item>
         </widget>
@@ -218,7 +218,7 @@
           <string/>
          </property>
          <property name="pixmap">
-          <pixmap resource="resources.qrc">:/icons/resources/artist.png</pixmap>
+          <pixmap>:/icons/artist.png</pixmap>
          </property>
         </widget>
        </item>
@@ -235,7 +235,7 @@
           <string/>
          </property>
          <property name="pixmap">
-          <pixmap resource="resources.qrc">:/icons/resources/title.png</pixmap>
+          <pixmap>:/icons/title.png</pixmap>
          </property>
         </widget>
        </item>
@@ -252,7 +252,7 @@
           <string/>
          </property>
          <property name="pixmap">
-          <pixmap resource="resources.qrc">:/icons/resources/language.png</pixmap>
+          <pixmap>:/icons/language.png</pixmap>
          </property>
         </widget>
        </item>
@@ -269,7 +269,7 @@
           <string/>
          </property>
          <property name="pixmap">
-          <pixmap resource="resources.qrc">:/icons/resources/edition.png</pixmap>
+          <pixmap>:/icons/edition.png</pixmap>
          </property>
         </widget>
        </item>
@@ -286,7 +286,7 @@
           <string/>
          </property>
          <property name="pixmap">
-          <pixmap resource="resources.qrc">:/icons/resources/golden_notes.png</pixmap>
+          <pixmap>:/icons/golden_notes.png</pixmap>
          </property>
         </widget>
        </item>
@@ -315,7 +315,7 @@
           <string/>
          </property>
          <property name="pixmap">
-          <pixmap resource="resources.qrc">:/icons/resources/rating.png</pixmap>
+          <pixmap>:/icons/rating.png</pixmap>
          </property>
         </widget>
        </item>
@@ -379,7 +379,7 @@
           <string/>
          </property>
          <property name="pixmap">
-          <pixmap resource="resources.qrc">:/icons/resources/views.png</pixmap>
+          <pixmap>:/icons/views.png</pixmap>
          </property>
         </widget>
        </item>
@@ -596,8 +596,8 @@
              <string>Brave</string>
             </property>
             <property name="icon">
-             <iconset resource="resources.qrc">
-              <normaloff>:/icons/resources/brave.png</normaloff>:/icons/resources/brave.png</iconset>
+             <iconset>
+              <normaloff>:/icons/brave.png</normaloff>:/icons/brave.png</iconset>
             </property>
            </item>
            <item>
@@ -605,8 +605,8 @@
              <string>Chrome</string>
             </property>
             <property name="icon">
-             <iconset resource="resources.qrc">
-              <normaloff>:/icons/resources/chrome.png</normaloff>:/icons/resources/chrome.png</iconset>
+             <iconset>
+              <normaloff>:/icons/chrome.png</normaloff>:/icons/chrome.png</iconset>
             </property>
            </item>
            <item>
@@ -614,8 +614,8 @@
              <string>Chromium</string>
             </property>
             <property name="icon">
-             <iconset resource="resources.qrc">
-              <normaloff>:/icons/resources/chromium.png</normaloff>:/icons/resources/chromium.png</iconset>
+             <iconset>
+              <normaloff>:/icons/chromium.png</normaloff>:/icons/chromium.png</iconset>
             </property>
            </item>
            <item>
@@ -623,8 +623,8 @@
              <string>Edge</string>
             </property>
             <property name="icon">
-             <iconset resource="resources.qrc">
-              <normaloff>:/icons/resources/edge.png</normaloff>:/icons/resources/edge.png</iconset>
+             <iconset>
+              <normaloff>:/icons/edge.png</normaloff>:/icons/edge.png</iconset>
             </property>
            </item>
            <item>
@@ -632,8 +632,8 @@
              <string>Firefox</string>
             </property>
             <property name="icon">
-             <iconset resource="resources.qrc">
-              <normaloff>:/icons/resources/firefox.png</normaloff>:/icons/resources/firefox.png</iconset>
+             <iconset>
+              <normaloff>:/icons/firefox.png</normaloff>:/icons/firefox.png</iconset>
             </property>
            </item>
            <item>
@@ -641,8 +641,8 @@
              <string>Opera</string>
             </property>
             <property name="icon">
-             <iconset resource="resources.qrc">
-              <normaloff>:/icons/resources/opera.png</normaloff>:/icons/resources/opera.png</iconset>
+             <iconset>
+              <normaloff>:/icons/opera.png</normaloff>:/icons/opera.png</iconset>
             </property>
            </item>
            <item>
@@ -650,8 +650,8 @@
              <string>Safari</string>
             </property>
             <property name="icon">
-             <iconset resource="resources.qrc">
-              <normaloff>:/icons/resources/safari.png</normaloff>:/icons/resources/safari.png</iconset>
+             <iconset>
+              <normaloff>:/icons/safari.png</normaloff>:/icons/safari.png</iconset>
             </property>
            </item>
            <item>
@@ -659,8 +659,8 @@
              <string>Vivaldi</string>
             </property>
             <property name="icon">
-             <iconset resource="resources.qrc">
-              <normaloff>:/icons/resources/vivaldi.png</normaloff>:/icons/resources/vivaldi.png</iconset>
+             <iconset>
+              <normaloff>:/icons/vivaldi.png</normaloff>:/icons/vivaldi.png</iconset>
             </property>
            </item>
           </widget>
@@ -1018,7 +1018,7 @@
   <widget class="QStatusBar" name="statusbar"/>
  </widget>
  <resources>
-  <include location="resources.qrc"/>
+  <include location="../resources/resources.qrc"/>
  </resources>
  <connections/>
 </ui>
