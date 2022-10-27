@@ -13,7 +13,7 @@ The minimal setup to develop your package is to create a virtual environment and
 python3.9 -m venv venv
 source venv/bin/activate
 pip install --upgrade pip
-pip install -e .[dev]
+pip install -e '.[dev]'
 ```
 
 
