@@ -4,8 +4,8 @@ import logging
 import os
 
 import requests
-import yt_dlp  # type: ignore
-from PIL import Image, ImageEnhance, ImageOps  # type: ignore
+import yt_dlp
+from PIL import Image, ImageEnhance, ImageOps
 
 from usdb_dl import note_utils
 
@@ -138,7 +138,7 @@ def download_and_process_video(
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
         try:
             ydl.download([video_url])
-            _vfn = ydl.prepare_filename(ydl.extract_info("{}".format(video_url)))
+            _vfn = ydl.prepare_filename(ydl.extract_info(video_url))
         except:
             logging.error(f"\t#VIDEO: error downloading video url: {video_url}")
 
@@ -376,9 +376,8 @@ def download_and_process_background(
     )
 
     protocol = "https://"
-    if p := background_params.get("bg-protocol"):
-        if p == "http":
-            protocol = "http://"
+    if background_params.get("bg-protocol") == "http":
+        protocol = "http://"
 
     if "/" in background_params["bg"]:
         background_url = f"{protocol}{background_params['bg']}"

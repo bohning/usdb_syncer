@@ -12,7 +12,7 @@ import time
 from typing import Any, cast
 
 # maybe reportlab is better suited?
-from pdfme import build_pdf  # type: ignore
+from pdfme import build_pdf
 from PySide6.QtCore import (
     QEvent,
     QObject,
@@ -40,7 +40,7 @@ from PySide6.QtWidgets import (
 )
 
 from usdb_dl import note_utils, resource_dl, usdb_scraper
-from usdb_dl.gui.forms.QUMainWindow import Ui_MainWindow  # type: ignore
+from usdb_dl.gui.forms.QUMainWindow import Ui_MainWindow
 
 # from pytube import extract
 
@@ -92,13 +92,13 @@ class Worker(QRunnable):
 
             notes.insert(0, "P1\n")
             prev_start = 0
-            for i, line in enumerate(notes):
+            for idx, line in enumerate(notes):
                 if line.startswith((":", "*", "F", "R", "G")):
                     _type, start, _duration, _pitch, *_syllable = line.split(
                         " ", maxsplit=4
                     )
                     if int(start) < prev_start:
-                        notes.insert(i, "P2\n")
+                        notes.insert(idx, "P2\n")
                     prev_start = int(start)
 
         logging.info(f"#{idp}: (1/6) {header['#ARTIST']} - {header['#TITLE']}")
@@ -122,8 +122,9 @@ class Worker(QRunnable):
                 )
                 os.remove(os.path.join(pathname, "temp.usdb"))
                 return
-            logging.info("#{idp}: (1/6) usdb file has been updated, re-downloading...")
-            # TODO: check if resources in #VIDEO tag have changed and if so, re-download new resources only
+            logging.info(f"#{idp}: (1/6) usdb file has been updated, re-downloading...")
+            # TODO: check if resources in #VIDEO tag have changed and if so, re-download
+            # new resources only
             os.remove(os.path.join(pathname, f"{idp}.usdb"))
             os.rename(
                 os.path.join(pathname, "temp.usdb"),
@@ -160,7 +161,7 @@ class Worker(QRunnable):
                 elif "webm" in gui_settings["dl_audio_format"]:
                     audio_dl_format = "webm"
 
-                audio_target_format = ""
+                _audio_target_format = ""
                 audio_target_codec = ""
                 if gui_settings["dl_audio_reencode"]:
                     if "mp3" in gui_settings["dl_audio_reencode_format"]:
@@ -411,9 +412,9 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         root = self.model.invisibleRootItem()
         for song in available_songs:
             if song["language"]:
-                lang = song["language"]
+                _lang = song["language"]
             else:
-                lang = "language_not_set"
+                _lang = "language_not_set"
 
             rating = int(song["rating"])
             rating_string = rating * "★"  # + (5-rating) * "☆"
@@ -500,15 +501,13 @@ class MainWindow(QMainWindow, Ui_MainWindow):
     def select_song_dir(self) -> None:
         song_dir = str(QFileDialog.getExistingDirectory(self, "Select Song Directory"))
         self.lineEdit_song_dir.setText(song_dir)
-        for path, dirs, files in os.walk(song_dir):
+        for _path, dirs, files in os.walk(song_dir):
             dirs.sort()
             for file in files:
                 if file.endswith(".usdb"):
                     idp = file.replace(".usdb", "")
                     items = self.model.findItems(
-                        idp,
-                        flags=Qt.MatchFlag.MatchExactly,  # type: ignore
-                        column=0,
+                        idp, flags=Qt.MatchFlag.MatchExactly, column=0
                     )
                     if items:
                         item = items[0]
@@ -615,8 +614,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                     [f"{id}\t\t{artist}\t\t{title}\t\t{language}".replace("’", "'")]
                 )
 
-        with open(f"{date:%Y-%m-%d}_songlist.pdf", "wb") as f:
-            build_pdf(document, f)
+        with open(f"{date:%Y-%m-%d}_songlist.pdf", "wb") as file:
+            build_pdf(document, file)
         ####
 
     def download_songs(self, ids: list[int]) -> None:
