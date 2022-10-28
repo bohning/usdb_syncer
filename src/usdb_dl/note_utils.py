@@ -40,7 +40,11 @@ def parse_notes(notes: str) -> Tuple[Dict[str, str], List[str]]:
 
 
 def get_params_from_video_tag(header: Dict[str, str]) -> Dict[str, str]:
-    """Optain additional resource parameter from overloaded video tag.
+    """Obtain additional resource parameter from overloaded video tag.
+
+    Such an overloaded tag could be
+
+    #VIDEO:a=example,co=foobar.jpg,bg=background.jpg
 
     Parameters:
         header: song meta data
@@ -50,9 +54,15 @@ def get_params_from_video_tag(header: Dict[str, str]) -> Dict[str, str]:
     """
     params = {}
     if params_line := header.get("#VIDEO"):
-        params = dict(r.split("=") for r in params_line.split(","))
-        if not params:
-            logging.error("\t- no resources in #VIDEO tag")
+        key_value_pairs = params_line.split(",")
+        for pair in key_value_pairs:
+            if "=" not in pair:
+                continue
+            parts = list(filter(None, pair.split("=")))
+            if len(parts) == 2:
+                params[parts[0]] = parts[1]
+            else:
+                logging.warning(f"Invalid key/value pair '{pair}' found in #VIDEO tag '{params_line}'")
     else:
         logging.error("\t- no #VIDEO tag present")
     return params
