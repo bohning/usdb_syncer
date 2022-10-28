@@ -40,9 +40,7 @@ def get_usdb_page(
 
     elif method == "POST":
         _logger.debug("post request for %s", url)
-        response = requests.post(
-            url, headers=_headers, data=payload, params=params, timeout=3
-        )
+        response = requests.post(url, headers=_headers, data=payload, params=params, timeout=3)
     else:
         raise NotImplementedError(f"{method} request not supported")
     response.raise_for_status()
@@ -101,9 +99,7 @@ def get_usdb_available_songs(content_filter: Dict[str, str] = None) -> List[dict
     return available_songs
 
 
-def _parse_song_details(
-    details: Dict[str, str], details_table: BeautifulSoup
-) -> Dict[str, str]:
+def _parse_song_details(details: Dict[str, str], details_table: BeautifulSoup) -> Dict[str, str]:
     """Parse song attributes from usdb page.
 
     Parameters:
@@ -119,9 +115,7 @@ def _parse_song_details(
 
     details["bpm"] = details_table.find(text="BPM").next.text
     details["gap"] = details_table.find(text="GAP").next.text
-    details["golden_notes"] = str(
-        "Yes" in details_table.find(text="Golden Notes").next.text
-    )
+    details["golden_notes"] = str("Yes" in details_table.find(text="Golden Notes").next.text)
     details["song_check"] = str("Yes" in details_table.find(text="Songcheck").next.text)
     date_time = details_table.find(text="Date").next.text
     details["date"], details["time"] = date_time.split(" - ")
@@ -141,9 +135,7 @@ def _parse_song_details(
 
     stars = details_table.find(text="Rating").next.find_all("img")
     details["rating"] = str(sum(["star.png" in s.get("src") for s in stars]))
-    details["votes"] = details_table.find(
-        text="Rating"
-    ).next.next.next.next.next.next.next.next.next.next.next[
+    details["votes"] = details_table.find(text="Rating").next.next.next.next.next.next.next.next.next.next.next[
         2:-2
     ]  # " (number) "
 
@@ -157,9 +149,7 @@ def _parse_song_details(
     return details
 
 
-def _parse_comment_details(
-    details: Dict[str, str], _comments_table: BeautifulSoup
-) -> Dict[str, str]:
+def _parse_comment_details(details: Dict[str, str], _comments_table: BeautifulSoup) -> Dict[str, str]:
     """Tbd.
 
     Parameters:
@@ -209,9 +199,7 @@ def get_notes(song_id: str) -> str:
     params = {"link": "gettxt", "id": song_id}
     payload = {"wd": "1"}
     headers = {"Content-Type": "application/x-www-form-urlencoded"}
-    html = get_usdb_page(
-        "index.php", "POST", headers=headers, params=params, payload=payload
-    )
+    html = get_usdb_page("index.php", "POST", headers=headers, params=params, payload=payload)
     soup = BeautifulSoup(html, "lxml")
     try:
         songtext = soup.find("textarea").string
