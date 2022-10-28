@@ -38,7 +38,7 @@ def parse_notes(notes: str) -> tuple[dict[str, str], list[str]]:
     return header, body
 
 
-def get_params_from_video_tag(header: Dict[str, str]) -> Dict[str, str]:
+def get_params_from_video_tag(header: dict[str, str]) -> dict[str, str]:
     """Obtain additional resource parameter from overloaded video tag.
 
     Such an overloaded tag could be
