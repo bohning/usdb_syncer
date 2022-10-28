@@ -14,12 +14,12 @@ skip_glob = ["src/usdb_dl/gui/forms", "src/usdb_dl/gui/resources", ".qt_for_pyth
 extend-exclude = ["src/usdb_dl/gui/forms", "src/usdb_dl/gui/resources", ".qt_for_python"]
 
 [tool.pylint.master]
-ignored-modules = ["PySide6.QtCore", "PySide6.QtGui", "PySide6.QtWidgets"]
 ignore-paths = [
     "src/usdb_dl/gui/forms",
     "src/usdb_dl/gui/resources",
     "src/resources_rc.py",
 ]
+extension-pkg-allow-list = ["PySide6"]
 # Add McCabe code complexity checker
 load-plugins = """
     pylint.extensions.mccabe
@@ -29,6 +29,9 @@ load-plugins = """
 # accept-no-raise-doc = "no"
 # accept-no-return-doc = "no"
 # accept-no-yields-doc = "no"
+
+[tool.pylint.basic]
+good-names = ["mw"]
 
 [tool.pylint.messages_control]
 # https://github.com/samuelcolvin/pydantic/issues/1961
@@ -49,6 +52,7 @@ ignore-imports = "yes"
 ignore-signatures = "yes"
 
 [tool.mypy]
+ignore_missing_imports = true
 disallow_untyped_defs = true
 exclude = [
     "venv",

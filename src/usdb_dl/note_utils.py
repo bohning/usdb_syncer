@@ -3,12 +3,11 @@
 import logging
 import os
 import re
-from typing import Dict, List, Tuple
 
 _logger: logging.Logger = logging.getLogger(__file__)
 
 
-def parse_notes(notes: str) -> Tuple[Dict[str, str], List[str]]:
+def parse_notes(notes: str) -> tuple[dict[str, str], list[str]]:
     """Split notes string into interable header and body.
 
     Parameters:
@@ -17,8 +16,8 @@ def parse_notes(notes: str) -> Tuple[Dict[str, str], List[str]]:
     Returns:
         header and body of note file
     """
-    header: Dict[str, str] = {}
-    body: List[str] = []
+    header: dict[str, str] = {}
+    body: list[str] = []
 
     for line in notes.split("\n"):
         if line.startswith("#"):
@@ -68,7 +67,7 @@ def get_params_from_video_tag(header: Dict[str, str]) -> Dict[str, str]:
     return params
 
 
-def is_duet(header: Dict[str, str], resource_params: Dict[str, str]) -> bool:
+def is_duet(header: dict[str, str], resource_params: dict[str, str]) -> bool:
     """Check if song is duet.
 
     Parameters:
@@ -86,7 +85,7 @@ def is_duet(header: Dict[str, str], resource_params: Dict[str, str]) -> bool:
     return duet
 
 
-def generate_filename(header: Dict[str, str]) -> str:
+def generate_filename(header: dict[str, str]) -> str:
     """Create file name from song meta data.
 
     Parameters:
@@ -105,7 +104,7 @@ def generate_filename(header: Dict[str, str]) -> str:
     return f"{artist} - {title}"
 
 
-def generate_dirname(header: Dict[str, str], resource_params: Dict[str, str]) -> str:
+def generate_dirname(header: dict[str, str], resource_params: dict[str, str]) -> str:
     """Create directory name from song meta data.
 
     Parameters:
@@ -129,8 +128,8 @@ def generate_dirname(header: Dict[str, str], resource_params: Dict[str, str]) ->
 
 
 def dump_notes(
-    header: Dict[str, str],
-    body: List[str],
+    header: dict[str, str],
+    body: list[str],
     pathname: str,
     duet: bool = False,
     encoding: str | None = None,
