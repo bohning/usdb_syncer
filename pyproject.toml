@@ -84,3 +84,10 @@ source = ["src/", ".tox/*/lib/python*/site-packages/"]
 
 [tool.pydocstyle]
 convention = "google"
+
+[tool.pyright]
+exclude = [
+    "src/usdb_dl/gui/forms",
+    "src/usdb_dl/gui/resources",
+    "src/resources_rc.py",
+]
