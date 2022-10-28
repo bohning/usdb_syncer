@@ -228,7 +228,7 @@ def download_image(url: str) -> tuple[bool, bytes]:
         headers = {
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/42.0.2311.135 Safari/537.36 Edge/12.246"
         }
-        reply = requests.get(url, allow_redirects=True, headers=headers, timeout=3)
+        reply = requests.get(url, allow_redirects=True, headers=headers, timeout=60)
     except:
         logging.error(
             f"Failed to retrieve {url}. The server may be down or your internet connection is currently unavailable."

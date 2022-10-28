@@ -36,11 +36,13 @@ def get_usdb_page(
 
     if method == "GET":
         _logger.debug("get request for %s", url)
-        response = requests.get(url, headers=_headers, params=params, timeout=3)
+        response = requests.get(url, headers=_headers, params=params, timeout=60)
 
     elif method == "POST":
         _logger.debug("post request for %s", url)
-        response = requests.post(url, headers=_headers, data=payload, params=params, timeout=3)
+        response = requests.post(
+            url, headers=_headers, data=payload, params=params, timeout=60
+        )
     else:
         raise NotImplementedError(f"{method} request not supported")
     response.raise_for_status()
