@@ -156,6 +156,73 @@ def _parse_comment_details(details: Dict[str, str], _comments_table: BeautifulSo
         details: dict of song attributes
         comments_table: BeautifulSoup object of song details table
     """
+    # user comments (with video links and possible GAP/BPM values)
+    comment_headers = _comments_table.find_all("tr", class_="list_tr2")[
+        :-1
+    ]  # last entry is the field to enter a new comment, so this one is ignored
+    if comment_headers:
+        comments = []
+        for i, comment_header in enumerate(comment_headers):
+            comment = {}
+            comment_details = comment_header.find("td").text.strip()
+            regex = r".*(\d{2})\.(\d{2})\.(\d{2}) - (\d{2}):(\d{2}) \| (.*)"
+            match = re.search(regex, comment_details)
+            if not match:
+                _logger.info("\t- usdb::song has no comments!")
+                continue
+
+            (
+                comment_day,
+                comment_month,
+                comment_year,
+                comment_hour,
+                comment_minute,
+                comment_commenter,
+            ) = match.groups()
+            comment_date = f"20{comment_year}-{comment_month}-{comment_day}"
+            comment_time = f"{comment_hour}:{comment_minute}"
+            comment_contents = comment_header.next_sibling
+            comment_urls = []
+            if comment_embeds := comment_contents.find_all("embed"):
+                for i, comment_embed in enumerate(comment_embeds):
+                    yt_url = comment_embed.get("src").split("&")[0]  # TODO: this assumes youtube embeds
+                    try:
+                        yt_id = extract.video_id(yt_url)
+                    except:
+                        _logger.warning(
+                            f"\t- usdb::comment embed contains a url ({yt_url}), but the Youtube video ID could not be extracted."
+                        )
+                    else:
+                        comment_urls.append(yt_url)
+                        details["video_params"] = {
+                            "v": yt_id
+                        }  # TODO: this only takes the first youtube link in the newest comments
+            comment_text = comment_contents.find("td").text.strip()
+            regex = r"(?i)\b((?:https?://|www\d{0,3}[.]|[a-z0-9.\-]+[.][a-z]{2,4}/)(?:[^\s()<>]+|\(([^\s()<>]+|(\([^\s()<>]+\)))*\))+(?:\(([^\s()<>]+|(\([^\s()<>]+\)))*\)|[^\s`!()\[\]{};:'\".,<>?«»“”‘’]))"
+            urls = re.findall(regex, comment_text)
+            for url in urls:
+                try:
+                    yt_id = extract.video_id(url[0])
+                except:
+                    _logger.warning(
+                        f"\t- usdb::comment contains a plain url ({url}), but it does not seem to be a Youtube link."
+                    )
+                else:
+                    comment_urls.append(f"https://www.youtube.com/watch?v={yt_id}")
+                    if not details.get("video_params"):
+                        details["video_params"] = {"v": yt_id}
+                    comment_text = comment_text.replace(url[0], "").strip()
+            comment = {
+                "date": comment_date,
+                "time": comment_time,
+                "commenter": comment_commenter,
+                "comment_urls": comment_urls,
+                "comment_text": comment_text,
+            }
+            comments.append(comment)
+        if comments:
+            details["comments"] = comments
+
     return details
 
 
