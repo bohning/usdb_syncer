@@ -12,32 +12,10 @@ import time
 from typing import Any, cast
 
 # maybe reportlab is better suited?
-from pdfme import build_pdf
-from PySide6.QtCore import (
-    QEvent,
-    QObject,
-    QRunnable,
-    QSortFilterProxyModel,
-    Qt,
-    QThreadPool,
-    Signal,
-    Slot,
-)
-from PySide6.QtGui import (
-    QContextMenuEvent,
-    QIcon,
-    QPixmap,
-    QStandardItem,
-    QStandardItemModel,
-)
-from PySide6.QtWidgets import (
-    QApplication,
-    QFileDialog,
-    QHeaderView,
-    QMainWindow,
-    QMenu,
-    QSplashScreen,
-)
+from pdfme import build_pdf  # type: ignore
+from PySide6.QtCore import QEvent, QObject, QRunnable, QSortFilterProxyModel, Qt, QThreadPool, Signal, Slot
+from PySide6.QtGui import QContextMenuEvent, QIcon, QPixmap, QStandardItem, QStandardItemModel
+from PySide6.QtWidgets import QApplication, QFileDialog, QHeaderView, QMainWindow, QMenu, QSplashScreen
 
 from usdb_dl import note_utils, resource_dl, usdb_scraper
 from usdb_dl.gui.forms.QUMainWindow import Ui_MainWindow

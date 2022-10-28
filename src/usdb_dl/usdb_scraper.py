@@ -40,9 +40,7 @@ def get_usdb_page(
 
     elif method == "POST":
         _logger.debug("post request for %s", url)
-        response = requests.post(
-            url, headers=_headers, data=payload, params=params, timeout=3
-        )
+        response = requests.post(url, headers=_headers, data=payload, params=params, timeout=3)
     else:
         raise NotImplementedError(f"{method} request not supported")
     response.raise_for_status()
@@ -101,9 +99,7 @@ def get_usdb_available_songs(content_filter: Dict[str, str] = None) -> List[dict
     return available_songs
 
 
-def _parse_song_details(
-    details: Dict[str, str], details_table: BeautifulSoup
-) -> Dict[str, str]:
+def _parse_song_details(details: Dict[str, str], details_table: BeautifulSoup) -> Dict[str, str]:
     """Parse song attributes from usdb page.
 
     Parameters:
@@ -119,9 +115,7 @@ def _parse_song_details(
 
     details["bpm"] = details_table.find(text="BPM").next.text
     details["gap"] = details_table.find(text="GAP").next.text
-    details["golden_notes"] = str(
-        "Yes" in details_table.find(text="Golden Notes").next.text
-    )
+    details["golden_notes"] = str("Yes" in details_table.find(text="Golden Notes").next.text)
     details["song_check"] = str("Yes" in details_table.find(text="Songcheck").next.text)
     date_time = details_table.find(text="Date").next.text
     details["date"], details["time"] = date_time.split(" - ")
@@ -141,9 +135,7 @@ def _parse_song_details(
 
     stars = details_table.find(text="Rating").next.find_all("img")
     details["rating"] = str(sum(["star.png" in s.get("src") for s in stars]))
-    details["votes"] = details_table.find(
-        text="Rating"
-    ).next.next.next.next.next.next.next.next.next.next.next[
+    details["votes"] = details_table.find(text="Rating").next.next.next.next.next.next.next.next.next.next.next[
         2:-2
     ]  # " (number) "
 
@@ -157,15 +149,80 @@ def _parse_song_details(
     return details
 
 
-def _parse_comment_details(
-    details: Dict[str, str], _comments_table: BeautifulSoup
-) -> Dict[str, str]:
+def _parse_comment_details(details: Dict[str, str], _comments_table: BeautifulSoup) -> Dict[str, str]:
     """Tbd.
 
     Parameters:
         details: dict of song attributes
         comments_table: BeautifulSoup object of song details table
     """
+    # user comments (with video links and possible GAP/BPM values)
+    comment_headers = _comments_table.find_all("tr", class_="list_tr2")[
+        :-1
+    ]  # last entry is the field to enter a new comment, so this one is ignored
+    if comment_headers:
+        comments = []
+        for i, comment_header in enumerate(comment_headers):
+            comment = {}
+            comment_details = comment_header.find("td").text.strip()
+            regex = r".*(\d{2})\.(\d{2})\.(\d{2}) - (\d{2}):(\d{2}) \| (.*)"
+            match = re.search(regex, comment_details)
+            if not match:
+                _logger.info("\t- usdb::song has no comments!")
+                continue
+
+            (
+                comment_day,
+                comment_month,
+                comment_year,
+                comment_hour,
+                comment_minute,
+                comment_commenter,
+            ) = match.groups()
+            comment_date = f"20{comment_year}-{comment_month}-{comment_day}"
+            comment_time = f"{comment_hour}:{comment_minute}"
+            comment_contents = comment_header.next_sibling
+            comment_urls = []
+            if comment_embeds := comment_contents.find_all("embed"):
+                for i, comment_embed in enumerate(comment_embeds):
+                    yt_url = comment_embed.get("src").split("&")[0]  # TODO: this assumes youtube embeds
+                    try:
+                        yt_id = extract.video_id(yt_url)
+                    except:
+                        _logger.warning(
+                            f"\t- usdb::comment embed contains a url ({yt_url}), but the Youtube video ID could not be extracted."
+                        )
+                    else:
+                        comment_urls.append(yt_url)
+                        details["video_params"] = {
+                            "v": yt_id
+                        }  # TODO: this only takes the first youtube link in the newest comments
+            comment_text = comment_contents.find("td").text.strip()
+            regex = r"(?i)\b((?:https?://|www\d{0,3}[.]|[a-z0-9.\-]+[.][a-z]{2,4}/)(?:[^\s()<>]+|\(([^\s()<>]+|(\([^\s()<>]+\)))*\))+(?:\(([^\s()<>]+|(\([^\s()<>]+\)))*\)|[^\s`!()\[\]{};:'\".,<>?«»“”‘’]))"
+            urls = re.findall(regex, comment_text)
+            for url in urls:
+                try:
+                    yt_id = extract.video_id(url[0])
+                except:
+                    _logger.warning(
+                        f"\t- usdb::comment contains a plain url ({url}), but it does not seem to be a Youtube link."
+                    )
+                else:
+                    comment_urls.append(f"https://www.youtube.com/watch?v={yt_id}")
+                    if not details.get("video_params"):
+                        details["video_params"] = {"v": yt_id}
+                    comment_text = comment_text.replace(url[0], "").strip()
+            comment = {
+                "date": comment_date,
+                "time": comment_time,
+                "commenter": comment_commenter,
+                "comment_urls": comment_urls,
+                "comment_text": comment_text,
+            }
+            comments.append(comment)
+        if comments:
+            details["comments"] = comments
+
     return details
 
 
@@ -209,9 +266,7 @@ def get_notes(song_id: str) -> str:
     params = {"link": "gettxt", "id": song_id}
     payload = {"wd": "1"}
     headers = {"Content-Type": "application/x-www-form-urlencoded"}
-    html = get_usdb_page(
-        "index.php", "POST", headers=headers, params=params, payload=payload
-    )
+    html = get_usdb_page("index.php", "POST", headers=headers, params=params, payload=payload)
     soup = BeautifulSoup(html, "lxml")
     try:
         songtext = soup.find("textarea").string

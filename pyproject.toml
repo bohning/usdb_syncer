@@ -8,11 +8,10 @@ build-backend = "setuptools.build_meta"
 
 [tool.isort]
 profile = "black"
-skip_glob = ["src/usdb_dl/gui/forms", "src/usdb_dl/gui/resources"]
+skip_glob = ["src/usdb_dl/gui/forms", "src/usdb_dl/gui/resources", ".qt_for_python"]
 
 [tool.black]
-extend-exclude = ["src/usdb_dl/gui/forms", "src/usdb_dl/gui/resources"]
-skip-magic-trailing-comma = true
+extend-exclude = ["src/usdb_dl/gui/forms", "src/usdb_dl/gui/resources", ".qt_for_python"]
 
 [tool.pylint.master]
 ignore-paths = [

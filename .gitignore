@@ -8,6 +8,8 @@ songs
 .tox
 .mypy_cache
 reports
+.qt_for_python
 *.pdf
 **/*/config.ini
+.pytest_cache
 *.log
