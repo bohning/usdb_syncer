@@ -660,8 +660,8 @@ def get_available_songs(song_dir: str) -> list[SongMeta]:
 def load_available_songs(
     song_dir: str, skip_if_stale: bool = True
 ) -> list[SongMeta] | None:
-    path = os.path.join(song_dir, ".available_songs.json")
-    if skip_if_stale and mtime_is_stale(path):
+    path = available_songs_path(song_dir)
+    if skip_if_stale and mtime_is_stale(path) or not os.path.exists(path):
         return None
     with open(path, encoding="utf8") as file:
         try:
