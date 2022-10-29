@@ -27,7 +27,6 @@ ignore-paths = [
     "src/usdb_dl/gui/resources",
     "src/resources_rc.py",
 ]
-extension-pkg-allow-list = ["PySide6"]
 # Add McCabe code complexity checker
 load-plugins = """
     pylint.extensions.mccabe
@@ -43,7 +42,7 @@ good-names = ["mw"]
 
 [tool.pylint.messages_control]
 # https://github.com/samuelcolvin/pydantic/issues/1961
-extension-pkg-whitelist = "pydantic"
+extension-pkg-whitelist = ["PySide6", "pydantic"]
 disable = [
     "too-few-public-methods",
     "logging-fstring-interpolation",
