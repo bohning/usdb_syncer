@@ -8,10 +8,18 @@ build-backend = "setuptools.build_meta"
 
 [tool.isort]
 profile = "black"
-skip_glob = ["src/usdb_dl/gui/forms", "src/usdb_dl/gui/resources", ".qt_for_python"]
+skip_glob = [
+    "src/usdb_dl/gui/forms",
+    "src/usdb_dl/gui/resources",
+    ".qt_for_python",
+]
 
 [tool.black]
-extend-exclude = ["src/usdb_dl/gui/forms", "src/usdb_dl/gui/resources", ".qt_for_python"]
+extend-exclude = [
+    "src/usdb_dl/gui/forms",
+    "src/usdb_dl/gui/resources",
+    ".qt_for_python",
+]
 
 [tool.pylint.master]
 ignore-paths = [
@@ -36,13 +44,24 @@ good-names = ["mw"]
 [tool.pylint.messages_control]
 # https://github.com/samuelcolvin/pydantic/issues/1961
 extension-pkg-whitelist = "pydantic"
-disable = """
-    too-few-public-methods,
-    logging-fstring-interpolation,
-    too-many-instance-attributes,
-    too-many-arguments,
-    missing-function-docstring
-    """
+disable = [
+    "too-few-public-methods",
+    "logging-fstring-interpolation",
+    "too-many-instance-attributes",
+    "too-many-arguments",
+    "missing-function-docstring",
+    # will want to remove these in the future
+    "fixme",
+    "line-too-long",
+    "bare-except",
+    "pointless-string-statement",
+    "too-many-locals",
+    "too-many-return-statements",
+    "too-many-branches",
+    "too-complex",
+    "too-many-nested-blocks",
+    "too-many-statements",
+]
 
 [tool.pylint.similarities]
 # Exclude the following from code duplication checks
