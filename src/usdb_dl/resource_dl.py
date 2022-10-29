@@ -8,6 +8,7 @@ import yt_dlp
 from PIL import Image, ImageEnhance, ImageOps
 
 from usdb_dl import note_utils
+from usdb_dl.usdb_scraper import SongDetails
 
 # from moviepy.editor import VideoFileClip
 # import subprocess
@@ -264,7 +265,7 @@ def download_image(url: str) -> tuple[bool, bytes]:
 def download_and_process_cover(
     header: dict[str, str],
     cover_params: dict[str, str],
-    details: dict[str, str],
+    details: SongDetails,
     pathname: str,
 ) -> bool:
     if partial_url := cover_params.get("co"):
@@ -277,7 +278,7 @@ def download_and_process_cover(
         else:
             cover_url = f"{protocol}images.fanart.tv/fanart/{partial_url}"
         logging.debug(f"\t- downloading cover from #VIDEO params: {cover_url}")
-    elif url := details.get("cover_url"):
+    elif url := details.cover_url:
         cover_url = url
         logging.warning(
             "\t- no cover resource in #VIDEO tag, so fallback to small usdb cover!"

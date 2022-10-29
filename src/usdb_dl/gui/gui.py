@@ -41,6 +41,7 @@ from PySide6.QtWidgets import (
 
 from usdb_dl import note_utils, resource_dl, usdb_scraper
 from usdb_dl.gui.forms.QUMainWindow import Ui_MainWindow
+from usdb_dl.usdb_scraper import SongMeta
 
 # from pytube import extract
 
@@ -62,8 +63,7 @@ class Worker(QRunnable):
         logging.info(f"#{idp}: Downloading song...")
         logging.info(f"#{idp}: (1/6) downloading usdb file...")
         ###
-        exists, details = usdb_scraper.get_usdb_details(song_id)
-        if not exists:
+        if (details := usdb_scraper.get_usdb_details(song_id)) is None:
             # song was deleted from usdb in the meantime, TODO: uncheck/remove from model
             return
 
@@ -138,14 +138,14 @@ class Worker(QRunnable):
                 pass
             elif audio_resource := resource_params.get("v"):
                 pass
-            else:
-                video_params = details.get("video_params")
-                if video_params:
-                    audio_resource = video_params.get("v")
-                    if audio_resource:
-                        logging.warning(
-                            f"#{idp}: (2/6) Using Youtube ID {audio_resource} extracted from comments."
-                        )
+            # else:
+            #    video_params = details.get("video_params")
+            #    if video_params:
+            #        audio_resource = video_params.get("v")
+            #        if audio_resource:
+            #            logging.warning(
+            #                f"#{idp}: (2/6) Using Youtube ID {audio_resource} extracted from comments."
+            #            )
 
             if audio_resource:
                 if "m4a" in gui_settings["dl_audio_format"]:
@@ -194,14 +194,14 @@ class Worker(QRunnable):
         if gui_settings["dl_video"]:
             if video_resource := resource_params.get("v"):
                 pass
-            elif not resource_params.get("a"):
-                video_params = details.get("video_params")
-                if video_params:
-                    video_resource = video_params.get("v")
-                    if video_resource:
-                        logging.warning(
-                            f"#{idp}: (3/6) Using Youtube ID {audio_resource} extracted from comments."
-                        )
+            # elif not resource_params.get("a"):
+            #    video_params = details.get("video_params")
+            #    if video_params:
+            #        video_resource = video_params.get("v")
+            #        if video_resource:
+            #            logging.warning(
+            #                f"#{idp}: (3/6) Using Youtube ID {audio_resource} extracted from comments."
+            #            )
 
             if video_resource:
                 video_params = {
@@ -407,42 +407,28 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
         root = self.model.invisibleRootItem()
         for song in available_songs:
-            if song["language"]:
-                _lang = song["language"]
-            else:
-                _lang = "language_not_set"
-
-            rating = int(song["rating"])
-            rating_string = rating * "★"  # + (5-rating) * "☆"
-
-            id_zero_padded = song["id"].zfill(5)
-
             id_item = QStandardItem()
-            id_item.setData(id_zero_padded, cast(int, Qt.ItemDataRole.DisplayRole))
+            id_item.setData(song.song_id_str(), cast(int, Qt.ItemDataRole.DisplayRole))
             id_item.setCheckable(True)
             artist_item = QStandardItem()
-            artist_item.setData(song["artist"], cast(int, Qt.ItemDataRole.DisplayRole))
+            artist_item.setData(song.artist, cast(int, Qt.ItemDataRole.DisplayRole))
             title_item = QStandardItem()
-            title_item.setData(song["title"], cast(int, Qt.ItemDataRole.DisplayRole))
+            title_item.setData(song.title, cast(int, Qt.ItemDataRole.DisplayRole))
             language_item = QStandardItem()
-            language_item.setData(
-                song["language"], cast(int, Qt.ItemDataRole.DisplayRole)
-            )
+            language_item.setData(song.language, cast(int, Qt.ItemDataRole.DisplayRole))
             edition_item = QStandardItem()
-            edition_item.setData(
-                song["edition"], cast(int, Qt.ItemDataRole.DisplayRole)
-            )
+            edition_item.setData(song.edition, cast(int, Qt.ItemDataRole.DisplayRole))
             goldennotes_item = QStandardItem()
             goldennotes_item.setData(
-                "Yes" if song["goldennotes"] else "No",
+                "Yes" if song.golden_notes else "No",
                 cast(int, Qt.ItemDataRole.DisplayRole),
             )
             rating_item = QStandardItem()
-            rating_item.setData(rating_string, cast(int, Qt.ItemDataRole.DisplayRole))
-            views_item = QStandardItem()
-            views_item.setData(
-                int(song["views"]), cast(int, Qt.ItemDataRole.DisplayRole)
+            rating_item.setData(
+                song.rating_str(), cast(int, Qt.ItemDataRole.DisplayRole)
             )
+            views_item = QStandardItem()
+            views_item.setData(int(song.views), cast(int, Qt.ItemDataRole.DisplayRole))
             row = [
                 id_item,
                 artist_item,
@@ -455,10 +441,10 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             ]
             root.appendRow(row)
 
-            artists.add(song["artist"])
-            titles.append(song["title"])
-            languages.add(song["language"])
-            editions.add(song["edition"])
+            artists.add(song.artist)
+            titles.append(song.title)
+            languages.add(song.language)
+            editions.add(song.edition)
 
         self.statusbar.showMessage(f"{self.filter_proxy_model.rowCount()} songs found.")
 
@@ -664,18 +650,40 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         return super().eventFilter(source, event)
 
 
-def get_available_songs(song_dir: str) -> list[dict]:
-    path = os.path.join(song_dir, "available_songs.json")
-    if os.path.exists(path) and (time.time() - os.path.getmtime(path)) < 60 * 60 * 24:
-        with open(path, encoding="utf8") as file:
-            available_songs = json.load(file)
-    else:
+def get_available_songs(song_dir: str) -> list[SongMeta]:
+    if not (available_songs := load_available_songs(song_dir)):
         available_songs = usdb_scraper.get_usdb_available_songs()
-        if not os.path.exists(song_dir):
-            os.mkdir(song_dir)
-        with open(path, "w", encoding="utf8") as file:
-            json.dump(available_songs, file)
+        dump_available_songs(song_dir, available_songs)
     return available_songs
+
+
+def load_available_songs(
+    song_dir: str, skip_if_stale: bool = True
+) -> list[SongMeta] | None:
+    path = os.path.join(song_dir, ".available_songs.json")
+    if skip_if_stale and mtime_is_stale(path):
+        return None
+    with open(path, encoding="utf8") as file:
+        try:
+            return json.load(file, object_hook=lambda d: SongMeta(**d))
+        except (json.decoder.JSONDecodeError, TypeError):
+            return None
+
+
+def dump_available_songs(song_dir: str, available_songs: list[SongMeta]) -> None:
+    if not os.path.exists(song_dir):
+        os.mkdir(song_dir)
+    with open(available_songs_path(song_dir), "w", encoding="utf8") as file:
+        json.dump(available_songs, file, cls=usdb_scraper.SongMetaEncoder)
+
+
+def available_songs_path(song_dir: str) -> str:
+    return os.path.join(song_dir, ".available_songs.json")
+
+
+def mtime_is_stale(path: str, stale_secs: int = 60 * 60 * 24) -> bool:
+    """True if the given path exists and its mtime is more than stale_secs in the past."""
+    return os.path.exists(path) and time.time() - os.path.getmtime(path) < stale_secs
 
 
 class Signals(QObject):

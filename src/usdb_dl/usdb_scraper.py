@@ -3,20 +3,206 @@
 import logging
 import re
 import urllib.parse
-from typing import Any, Dict, List, Tuple
+from functools import wraps
+from json import JSONEncoder
+from typing import Any, Callable
 
 import requests
-from bs4 import BeautifulSoup  # type: ignore
+from bs4 import BeautifulSoup
 
 _logger: logging.Logger = logging.getLogger(__file__)
+
+USDB_BASE_URL = "http://usdb.animux.de/"
+DATASET_NOT_FOUND_STRING = "Datensatz nicht gefunden"
+
+
+class ParseException(Exception):
+    """Raised when HTML from USDB has unexpected format."""
+
+
+def raises_parse_exception(func: Callable) -> Callable:
+    """Converts certain errors of annotated functions that indicate wrong assumptions
+    about the parsed HTML into ParseErrors.
+    This can be used with '# type: ignore' and an outer try-except clause to parse HTML
+    concisely, but safely.
+    """
+
+    @wraps(func)
+    def wrapped(*args: Any, **kwargs: Any) -> Any:
+        try:
+            return func(*args, **kwargs)
+        except (AttributeError, IndexError, ValueError) as exception:
+            # AttributeError: not existing attribute (e.g. because the object is None)
+            # IndexError: list index out of bounds
+            # ValueError: too many values to unpack
+            raise ParseException from exception
+
+    return wrapped
+
+
+class SongMeta:
+    """Meta data about a song that USDB shows in the result list."""
+
+    song_id: int
+    artist: str
+    title: str
+    language: str
+    edition: str
+    golden_notes: bool
+    rating: int
+    views: int
+
+    def __init__(
+        self,
+        *,
+        song_id: int | str,
+        artist: str,
+        title: str,
+        language: str,
+        edition: str,
+        golden_notes: bool | str,
+        rating: int | str,
+        views: int | str,
+    ) -> None:
+        """This constructor accepts both, strings as scraped from USDB, and already
+        parsed values as stored in a JSON file.
+        """
+        self.song_id = int(song_id)
+        self.artist = artist
+        self.title = title
+        self.language = language or "language_not_set"
+        self.edition = edition
+        self.golden_notes = (
+            golden_notes if isinstance(golden_notes, bool) else golden_notes == "Yes"
+        )
+        self.rating = rating if isinstance(rating, int) else rating.count("star.png")
+        self.views = int(views)
+
+    def song_id_str(self) -> str:
+        return f"{self.song_id:05}"
+
+    def rating_str(self) -> str:
+        return self.rating * "★"  # + (5-rating) * "☆"
+
+
+class SongMetaEncoder(JSONEncoder):
+    """Custom JSON encoder"""
+
+    def default(self, o: Any) -> Any:
+        if isinstance(o, SongMeta):
+            return o.__dict__
+        return super().default(o)
+
+
+class CommentContents:
+    """The parsed contents of a SongComment."""
+
+    text: str
+    youtube_ids: list[str]
+    urls: list[str]
+
+    def __init__(
+        self,
+        *,
+        text: str,
+        youtube_ids: list[str],
+        urls: list[str],
+    ) -> None:
+        self.text = text
+        self.youtube_ids = youtube_ids
+        self.urls = urls
+
+
+class SongComment:
+    """A comment to a song on USDB."""
+
+    date: str
+    time: str
+    author: str
+    contents: CommentContents
+
+    def __init__(
+        self,
+        *,
+        date: str,
+        time: str,
+        author: str,
+        contents: CommentContents,
+    ) -> None:
+        self.date = date
+        self.time = time
+        self.author = author
+        self.contents = contents
+
+
+class SongDetails:
+    """Details about a song that USDB shows on a song's page, or are specified in the
+    comment section."""
+
+    song_id: int
+    artist: str
+    title: str
+    cover_url: str | None
+    bpm: float
+    gap: float
+    golden_notes: bool
+    song_check: bool
+    date: str
+    time: str
+    uploader: str
+    editors: list[str]
+    views: int
+    rating: int
+    votes: int
+    audio_sample: str
+    team_comment: str | None
+    comments: list[SongComment]
+
+    def __init__(  # pylint: disable=too-many-locals
+        self,
+        *,
+        song_id: int,
+        artist: str,
+        title: str,
+        cover_url: str,
+        bpm: str,
+        gap: str,
+        golden_notes: str,
+        song_check: str,
+        date_time: str,
+        uploader: str,
+        editors: list[str],
+        views: str,
+        rating: int,
+        votes: str,
+        audio_sample: str,
+        team_comment: str,
+    ) -> None:
+        self.song_id = song_id
+        self.artist = artist
+        self.title = title
+        self.cover_url = None if "nocover" in cover_url else USDB_BASE_URL + cover_url
+        self.bpm = float(bpm)
+        self.gap = float(gap)
+        self.golden_notes = "Yes" in golden_notes
+        self.song_check = "Yes" in song_check
+        self.date, self.time = date_time.split(" - ")
+        self.uploader = uploader
+        self.editors = editors
+        self.views = int(views)
+        self.rating = rating
+        self.votes = int(votes)
+        self.audio_sample = audio_sample
+        self.team_comment = None if "No comment yet" in team_comment else team_comment
+        self.comments = []
 
 
 def get_usdb_page(
     rel_url: str,
     method: str = "GET",
-    headers: dict[str, str] = None,
-    payload: dict[str, str] = None,
-    params: dict[str, str] = None,
+    headers: dict[str, str] | None = None,
+    payload: dict[str, str] | None = None,
+    params: dict[str, str] | None = None,
 ) -> str:
     """Retrieve html subpage from usbd.
 
@@ -32,7 +218,7 @@ def get_usdb_page(
     if headers:
         _headers.update(headers)
 
-    url = "http://usdb.animux.de/" + rel_url
+    url = USDB_BASE_URL + rel_url
 
     if method == "GET":
         _logger.debug("get request for %s", url)
@@ -50,18 +236,40 @@ def get_usdb_page(
     return response.text
 
 
-def get_usdb_available_songs(content_filter: Dict[str, str] = None) -> List[dict]:
+@raises_parse_exception
+def get_usdb_details(song_id: int) -> SongDetails | None:
+    """Retrieve song details from usdb webpage, if song exists.
+
+    Parameters:
+        song_id: id of song to retrieve details for
+    """
+    html = get_usdb_page("index.php", params={"id": str(song_id), "link": "detail"})
+    soup = BeautifulSoup(html, "lxml")
+    if DATASET_NOT_FOUND_STRING in soup.get_text():
+        return None
+    return _parse_song_page(soup, song_id)
+
+
+@raises_parse_exception
+def _parse_song_page(soup: BeautifulSoup, song_id: int) -> SongDetails:
+    details_table, comments_table, _ = soup.find_all("table", border="0", width="500")
+    details = _parse_details_table(details_table, song_id)
+    details.comments = _parse_comments_table(comments_table)
+    return details
+
+
+def get_usdb_available_songs(
+    content_filter: dict[str, str] | None = None
+) -> list[SongMeta]:
     """Return a list of all available songs.
 
     Parameters:
         content_filter: filters response (e.g. {'artist': 'The Beatles'})
     """
-    params = {"link": "list"}
     payload = {"limit": "50000", "order": "id", "ud": "desc"}
-    if content_filter:
-        payload.update(content_filter)
+    payload.update(content_filter or {})
 
-    html = get_usdb_page("index.php", "POST", params=params, payload=payload)
+    html = get_usdb_page("index.php", "POST", params={"link": "list"}, payload=payload)
 
     regex = (
         r'<td onclick="show_detail\((\d+)\)">(.*)</td>\n'
@@ -74,206 +282,164 @@ def get_usdb_available_songs(content_filter: Dict[str, str] = None) -> List[dict
     )
     matches = re.findall(regex, html)
 
-    available_songs = []
-    for match in matches:
-        (
-            song_id,
-            artist,
-            title,
-            edition,
-            goldennotes,
-            language,
-            rating_string,
-            views,
-        ) = match
-        song = {
-            "id": song_id,
-            "artist": artist,
-            "title": title,
-            "language": language,
-            "edition": edition,
-            "goldennotes": bool(goldennotes == "Yes"),
-            "rating": str(rating_string.count("star.png")),
-            "views": views,
-        }
-        available_songs.append(song)
-    _logger.info("fetched %d available songs", len(available_songs))
+    available_songs = [
+        SongMeta(
+            song_id=match[0],
+            artist=match[1],
+            title=match[2],
+            edition=match[3],
+            golden_notes=match[4],
+            language=match[5],
+            rating=match[6],
+            views=match[7],
+        )
+        for match in matches
+    ]
+    _logger.info(f"fetched {len(available_songs)} available songs")
     return available_songs
 
 
-def _parse_song_details(details: Dict[str, str], details_table: BeautifulSoup) -> Dict[str, str]:
+def _parse_details_table(details_table: BeautifulSoup, song_id: int) -> SongDetails:
     """Parse song attributes from usdb page.
 
     Parameters:
         details: dict of song attributes
         details_table: BeautifulSoup object of song details table
     """
-    details["artist"] = details_table.find_next("td").text
-    details["title"] = details_table.find_next("td").find_next("td").text
-
-    cover_url = details_table.img["src"]
-    if not "nocover" in cover_url:
-        details["cover_url"] = "http://usdb.animux.de/" + cover_url
-
-    details["bpm"] = details_table.find(text="BPM").next.text
-    details["gap"] = details_table.find(text="GAP").next.text
-    details["golden_notes"] = str("Yes" in details_table.find(text="Golden Notes").next.text)
-    details["song_check"] = str("Yes" in details_table.find(text="Songcheck").next.text)
-    date_time = details_table.find(text="Date").next.text
-    details["date"], details["time"] = date_time.split(" - ")
-    details["uploader"] = details_table.find(text="Created by").next.text
-
     editors = []
-
     pointer = details_table.find(text="Song edited by:")
     while pointer is not None:
         pointer = pointer.find_next("td")
-        if pointer.a is None:
+        if pointer.a is None:  # type: ignore
             break
-        editors.append(pointer.text.strip())
-        pointer = pointer.find_next("tr")
+        editors.append(pointer.text.strip())  # type: ignore
+        pointer = pointer.find_next("tr")  # type: ignore
 
-    details["views"] = details_table.find(text="Views").next.text
+    stars = details_table.find(text="Rating").next.find_all("img")  # type: ignore
 
-    stars = details_table.find(text="Rating").next.find_all("img")
-    details["rating"] = str(sum(["star.png" in s.get("src") for s in stars]))
-    details["votes"] = details_table.find(text="Rating").next.next.next.next.next.next.next.next.next.next.next[
-        2:-2
-    ]  # " (number) "
-
+    audio_sample = ""
     if param := details_table.find("param", attrs={"name": "FlashVars"}):
-        flash_vars = urllib.parse.parse_qs(param.get("value"))
-        details["audio_sample"] = flash_vars["soundFile"][0]
-    # only captures first team comment (example of multiple needed!)
-    team_comments = details_table.find(text="Team Comment").next.text
-    if "No comment yet" not in team_comments:
-        details["team_comments"] = team_comments
-    return details
+        flash_vars = urllib.parse.parse_qs(param.get("value"))  # type: ignore
+        audio_sample = flash_vars["soundFile"][0]
+
+    return SongDetails(
+        song_id=song_id,
+        artist=details_table.find_next("td").text,  # type: ignore
+        title=details_table.find_next("td").find_next("td").text,  # type: ignore
+        cover_url=details_table.img["src"],  # type: ignore
+        bpm=details_table.find(text="BPM").next.text,  # type: ignore
+        gap=details_table.find(text="GAP").next.text,  # type: ignore
+        golden_notes=details_table.find(text="Golden Notes").next.text,  # type: ignore
+        song_check=details_table.find(text="Songcheck").next.text,  # type: ignore
+        date_time=details_table.find(text="Date").next.text,  # type: ignore
+        uploader=details_table.find(text="Created by").next.text,  # type: ignore
+        editors=editors,
+        views=details_table.find(text="Views").next.text,  # type: ignore
+        rating=sum("star.png" in s.get("src") for s in stars),
+        votes=details_table.find(
+            text="Rating"
+        ).next.next.next.next.next.next.next.next.next.next.next[  # type: ignore
+            2:-2
+        ],  # type: ignore
+        audio_sample=audio_sample,
+        # only captures first team comment (example of multiple needed!)
+        team_comment=details_table.find(text="Team Comment").next.text,  # type: ignore
+    )
 
 
-def _parse_comment_details(details: Dict[str, str], _comments_table: BeautifulSoup) -> Dict[str, str]:
-    """Tbd.
+@raises_parse_exception
+def _parse_comments_table(comments_table: BeautifulSoup) -> list[SongComment]:
+    """Parse the table into individual comments, extracting potential video links,
+    GAP and BPM values.
 
     Parameters:
         details: dict of song attributes
         comments_table: BeautifulSoup object of song details table
     """
-    # user comments (with video links and possible GAP/BPM values)
-    comment_headers = _comments_table.find_all("tr", class_="list_tr2")[
-        :-1
-    ]  # last entry is the field to enter a new comment, so this one is ignored
-    if comment_headers:
-        comments = []
-        for i, comment_header in enumerate(comment_headers):
-            comment = {}
-            comment_details = comment_header.find("td").text.strip()
-            regex = r".*(\d{2})\.(\d{2})\.(\d{2}) - (\d{2}):(\d{2}) \| (.*)"
-            match = re.search(regex, comment_details)
-            if not match:
-                _logger.info("\t- usdb::song has no comments!")
-                continue
+    comments = []
+    # last entry is the field to enter a new comment, so this one is ignored
+    for header in comments_table.find_all("tr", class_="list_tr2")[:-1]:
+        comment_details = header.find("td").text.strip()
+        regex = r".*(\d{2})\.(\d{2})\.(\d{2}) - (\d{2}):(\d{2}) \| (.*)"
+        match = re.search(regex, comment_details)
+        if not match:
+            # header is just the placeholder element
+            _logger.debug("\t- usdb::song has no comments!")
+            break
+        (
+            day,
+            month,
+            year,
+            hour,
+            minute,
+            author,
+        ) = match.groups()
+        contents = _parse_comment_contents(header.next_sibling)
+        comments.append(
+            SongComment(
+                date=f"20{year}-{month}-{day}",
+                time=f"{hour}:{minute}",
+                author=author,
+                contents=contents,
+            )
+        )
 
-            (
-                comment_day,
-                comment_month,
-                comment_year,
-                comment_hour,
-                comment_minute,
-                comment_commenter,
-            ) = match.groups()
-            comment_date = f"20{comment_year}-{comment_month}-{comment_day}"
-            comment_time = f"{comment_hour}:{comment_minute}"
-            comment_contents = comment_header.next_sibling
-            comment_urls = []
-            if comment_embeds := comment_contents.find_all("embed"):
-                for i, comment_embed in enumerate(comment_embeds):
-                    yt_url = comment_embed.get("src").split("&")[0]  # TODO: this assumes youtube embeds
-                    try:
-                        yt_id = extract.video_id(yt_url)
-                    except:
-                        _logger.warning(
-                            f"\t- usdb::comment embed contains a url ({yt_url}), but the Youtube video ID could not be extracted."
-                        )
-                    else:
-                        comment_urls.append(yt_url)
-                        details["video_params"] = {
-                            "v": yt_id
-                        }  # TODO: this only takes the first youtube link in the newest comments
-            comment_text = comment_contents.find("td").text.strip()
-            regex = r"(?i)\b((?:https?://|www\d{0,3}[.]|[a-z0-9.\-]+[.][a-z]{2,4}/)(?:[^\s()<>]+|\(([^\s()<>]+|(\([^\s()<>]+\)))*\))+(?:\(([^\s()<>]+|(\([^\s()<>]+\)))*\)|[^\s`!()\[\]{};:'\".,<>?«»“”‘’]))"
-            urls = re.findall(regex, comment_text)
-            for url in urls:
-                try:
-                    yt_id = extract.video_id(url[0])
-                except:
-                    _logger.warning(
-                        f"\t- usdb::comment contains a plain url ({url}), but it does not seem to be a Youtube link."
-                    )
-                else:
-                    comment_urls.append(f"https://www.youtube.com/watch?v={yt_id}")
-                    if not details.get("video_params"):
-                        details["video_params"] = {"v": yt_id}
-                    comment_text = comment_text.replace(url[0], "").strip()
-            comment = {
-                "date": comment_date,
-                "time": comment_time,
-                "commenter": comment_commenter,
-                "comment_urls": comment_urls,
-                "comment_text": comment_text,
-            }
-            comments.append(comment)
-        if comments:
-            details["comments"] = comments
-
-    return details
+    return comments
 
 
-def get_usdb_details(song_id: str) -> Tuple[bool, dict[str, Any]]:
-    """Retrieve song details from usdb webpage.
-
-    Parameters:
-        song_id: id of song to retrieve details for
-    """
-    html = get_usdb_page("index.php", params={"id": song_id, "link": "detail"})
-    soup = BeautifulSoup(html, "lxml")
-    # german response for 'dataset not found'
-    exists = "Datensatz nicht gefunden" not in soup.get_text()
-
-    details = {"id": song_id}
-    details["exists"] = str(exists)
-
-    if not exists:
-        return exists, details
-
-    if not (tables := soup.find_all("table", border="0", width="500")):
-        raise LookupError("no tables in usdb details page.")
-
-    details_table = tables[0]
-    comments_table = tables[1]
-
-    # parse song attributes from page
-    details = _parse_song_details(details, details_table)
-    # user comments (with video links and possible GAP/BPM values)
-    details = _parse_comment_details(details, comments_table)
-    return exists, details
+@raises_parse_exception
+def _parse_comment_contents(contents: BeautifulSoup) -> CommentContents:
+    text = contents.find("td").text.strip()  # type: ignore
+    urls = []
+    for embed in contents.find_all("embed"):
+        # TODO: this assumes youtube embeds
+        yt_url = embed.get("src").split("&")[0]
+        urls.append(yt_url)
+        # try:
+        #    yt_id = extract.video_id(yt_url)
+        # except:
+        #    _logger.warning(
+        #        f"\t- usdb::comment embed contains a url ({yt_url}), "
+        #        "but the Youtube video ID could not be extracted."
+        #    )
+        # else:
+        #    # TODO: this only takes the first youtube link in the newest comments
+        #    details["video_params"] = {"v": yt_id}
+    # regex = r"(?i)\b((?:https?://|www\d{0,3}[.]|[a-z0-9.\-]+[.][a-z]{2,4}/)(?:[^\s()<>]+|\(([^\s()<>]+|(\([^\s()<>]+\)))*\))+(?:\(([^\s()<>]+|(\([^\s()<>]+\)))*\)|[^\s`!()\[\]{};:'\".,<>?«»“”‘’]))"
+    # for url in re.findall(regex, text):
+    #     try:
+    #        yt_id = extract.video_id(url[0])
+    #     except:
+    #        _logger.warning(
+    #            f"\t- usdb::comment contains a plain url ({url}), "
+    #            "but it does not seem to be a Youtube link."
+    #        )
+    #     else:
+    #        comment_urls.append(f"https://www.youtube.com/watch?v={yt_id}")
+    #        if not details.get("video_params"):
+    #            details["video_params"] = {"v": yt_id}
+    #        text = text.replace(url[0], "").strip()
+    return CommentContents(
+        text=text,
+        urls=urls,
+        youtube_ids=[],
+    )
 
 
 def get_notes(song_id: str) -> str:
-    """Retrieve notes for a song.
-
-    Parameters:
-        id: song id
-    """
-    _logger.debug("\t- fetch notes for song %s", song_id)
-    params = {"link": "gettxt", "id": song_id}
-    payload = {"wd": "1"}
-    headers = {"Content-Type": "application/x-www-form-urlencoded"}
-    html = get_usdb_page("index.php", "POST", headers=headers, params=params, payload=payload)
+    """Retrieve notes for a song."""
+    _logger.debug(f"\t- fetch notes for song {song_id}")
+    html = get_usdb_page(
+        "index.php",
+        "POST",
+        headers={"Content-Type": "application/x-www-form-urlencoded"},
+        params={"link": "gettxt", "id": song_id},
+        payload={"wd": "1"},
+    )
     soup = BeautifulSoup(html, "lxml")
-    try:
-        songtext = soup.find("textarea").string
-    except AttributeError as exception:
-        raise LookupError(f"no notes found for song {song_id}") from exception
-    songtext = songtext.replace("<", "(")
-    songtext = songtext.replace(">", ")")
-    return songtext
+    return _parse_song_txt_from_txt_page(soup)
+
+
+@raises_parse_exception
+def _parse_song_txt_from_txt_page(soup: BeautifulSoup) -> str:
+    return soup.find("textarea").string.replace("<", "(").replace(">", ")")  # type: ignore
