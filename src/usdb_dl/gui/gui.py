@@ -13,9 +13,31 @@ from typing import Any, cast
 
 # maybe reportlab is better suited?
 from pdfme import build_pdf  # type: ignore
-from PySide6.QtCore import QEvent, QObject, QRunnable, QSortFilterProxyModel, Qt, QThreadPool, Signal, Slot
-from PySide6.QtGui import QContextMenuEvent, QIcon, QPixmap, QStandardItem, QStandardItemModel
-from PySide6.QtWidgets import QApplication, QFileDialog, QHeaderView, QMainWindow, QMenu, QSplashScreen
+from PySide6.QtCore import (
+    QEvent,
+    QObject,
+    QRunnable,
+    QSortFilterProxyModel,
+    Qt,
+    QThreadPool,
+    Signal,
+    Slot,
+)
+from PySide6.QtGui import (
+    QContextMenuEvent,
+    QIcon,
+    QPixmap,
+    QStandardItem,
+    QStandardItemModel,
+)
+from PySide6.QtWidgets import (
+    QApplication,
+    QFileDialog,
+    QHeaderView,
+    QMainWindow,
+    QMenu,
+    QSplashScreen,
+)
 
 from usdb_dl import note_utils, resource_dl, usdb_scraper
 from usdb_dl.gui.forms.QUMainWindow import Ui_MainWindow
@@ -59,14 +81,8 @@ class Worker(QRunnable):
 
         duet = note_utils.is_duet(header, resource_params)
         if duet:
-            if p1 := resource_params.get("p1"):
-                header["#P1"] = p1
-            else:
-                header["#P1"] = "P1"
-            if p2 := resource_params.get("p2"):
-                header["#P2"] = p2
-            else:
-                header["#P2"] = "P2"
+            header["#P1"] = resource_params.get("p1", "P1")
+            header["#P2"] = resource_params.get("p2", "P2")
 
             notes.insert(0, "P1\n")
             prev_start = 0
@@ -88,8 +104,8 @@ class Worker(QRunnable):
             os.makedirs(pathname)
 
         # write .usdb file for synchronization
-        with open(os.path.join(pathname, "temp.usdb"), "w", encoding="utf_8") as f:
-            f.write(songtext)
+        with open(os.path.join(pathname, "temp.usdb"), "w", encoding="utf_8") as file:
+            file.write(songtext)
         if os.path.exists(os.path.join(pathname, f"{idp}.usdb")):
             if filecmp.cmp(
                 os.path.join(pathname, "temp.usdb"),
@@ -132,24 +148,24 @@ class Worker(QRunnable):
                         )
 
             if audio_resource:
-                if "bestaudio" in gui_settings["dl_audio_format"]:
-                    audio_dl_format = "bestaudio"
-                elif "m4a" in gui_settings["dl_audio_format"]:
+                if "m4a" in gui_settings["dl_audio_format"]:
                     audio_dl_format = "m4a"
                 elif "webm" in gui_settings["dl_audio_format"]:
                     audio_dl_format = "webm"
+                else:
+                    audio_dl_format = "bestaudio"
 
                 _audio_target_format = ""
                 audio_target_codec = ""
                 if gui_settings["dl_audio_reencode"]:
                     if "mp3" in gui_settings["dl_audio_reencode_format"]:
-                        audio_target_format = "mp3"
+                        _audio_target_format = "mp3"
                         audio_target_codec = "mp3"
                     elif "ogg" in gui_settings["dl_audio_reencode_format"]:
-                        audio_target_format = "ogg"
+                        _audio_target_format = "ogg"
                         audio_target_codec = "vorbis"
                     elif "opus" in gui_settings["dl_audio_reencode_format"]:
-                        audio_target_format = "opus"
+                        _audio_target_format = "opus"
                         audio_target_codec = "opus"
 
                 has_audio, ext = resource_dl.download_and_process_audio(
@@ -280,6 +296,8 @@ class Worker(QRunnable):
 
 
 class MainWindow(QMainWindow, Ui_MainWindow):
+    """The app's main window and entry point to the GUI."""
+
     def __init__(self) -> None:
         super().__init__()
         self.setupUi(self)
@@ -583,13 +601,17 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         ):
             item = self.model.item(row, 0)
             if item.checkState() == Qt.CheckState.Checked:
-                id = str(int(item.text()))
+                song_id = str(int(item.text()))
                 artist = self.model.item(row, 1).text()
                 title = self.model.item(row, 2).text()
                 language = self.model.item(row, 3).text()
-                edition = self.model.item(row, 4).text()
+                _edition = self.model.item(row, 4).text()
                 content1.append(
-                    [f"{id}\t\t{artist}\t\t{title}\t\t{language}".replace("’", "'")]
+                    [
+                        f"{song_id}\t\t{artist}\t\t{title}\t\t{language}".replace(
+                            "’", "'"
+                        )
+                    ]
                 )
 
         with open(f"{date:%Y-%m-%d}_songlist.pdf", "wb") as file:

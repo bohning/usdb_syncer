@@ -237,22 +237,22 @@ def download_image(url: str) -> tuple[bool, bytes]:
     if reply.status_code in range(100, 199):
         # 1xx informational response
         return True, reply.content
-    elif reply.status_code in range(200, 299):
+    if reply.status_code in range(200, 299):
         # 2xx success
         return True, reply.content
-    elif reply.status_code in range(300, 399):
+    if reply.status_code in range(300, 399):
         # 3xx redirection
         logging.warning(
             f"\tRedirection to {reply.next.url if reply.next else 'unknown'}. Please update the template file."
         )
         return True, reply.content
-    elif reply.status_code in range(400, 499):
+    if reply.status_code in range(400, 499):
         # 4xx client errors
         logging.error(
             f"\tClient error {reply.status_code}. Failed to download {reply.url}"
         )
         return False, reply.content
-    elif reply.status_code in range(500, 599):
+    if reply.status_code in range(500, 599):
         # 5xx server errors
         logging.error(
             f"\tServer error {reply.status_code}. Failed to download {reply.url}"
@@ -268,10 +268,9 @@ def download_and_process_cover(
     pathname: str,
 ) -> bool:
     if partial_url := cover_params.get("co"):
-        protocol = "https://"
-        if p := cover_params.get("co-protocol"):
-            if p == "http":
-                protocol = "http://"
+        protocol = (
+            "http://" if cover_params.get("bg-protocol") == "http" else "https://"
+        )
 
         if "/" in cover_params["co"]:
             cover_url = f"{protocol}{partial_url}"
@@ -292,7 +291,8 @@ def download_and_process_cover(
     cover_filename = note_utils.generate_filename(header) + " [CO].jpg"
 
     if success:
-        open(os.path.join(pathname, cover_filename), "wb").write(img_bytes)
+        with open(os.path.join(pathname, cover_filename), "wb") as file:
+            file.write(img_bytes)
 
         if (
             cover_params.get("co-rotate")
@@ -357,9 +357,9 @@ def download_and_process_cover(
                     subsampling=0,
                 )
         return True
-    else:
-        logging.error(f"\t#COVER: file does not exist at url: {cover_url}")
-        return False
+
+    logging.error(f"\t#COVER: file does not exist at url: {cover_url}")
+    return False
 
 
 def download_and_process_background(
@@ -389,7 +389,8 @@ def download_and_process_background(
     success, img_bytes = download_image(background_url)
 
     if success:
-        open(os.path.join(pathname, background_filename), "wb").write(img_bytes)
+        with open(os.path.join(pathname, background_filename), "wb") as file:
+            file.write(img_bytes)
 
         if background_params.get("bg-crop") or background_params.get("bg-resize"):
             with Image.open(background_filename).convert("RGB") as background:
@@ -428,6 +429,6 @@ def download_and_process_background(
                 # save post-processed background
                 background.save(background_filename, "jpeg", quality=100, subsampling=0)
         return True
-    else:
-        logging.error(f"\t#BACKGROUND: file does not exist at url: {background_url}")
-        return False
+
+    logging.error(f"\t#BACKGROUND: file does not exist at url: {background_url}")
+    return False
