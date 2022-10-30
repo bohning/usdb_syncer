@@ -1,6 +1,7 @@
 """Tests for functions from the usdb_scraper module."""
 
 import os
+from datetime import datetime
 
 from bs4 import BeautifulSoup
 
@@ -30,8 +31,7 @@ def test__parse_song_page_with_commented_embedded_video(resource_dir: str) -> No
     assert details.gap == 120000
     assert details.golden_notes
     assert not details.song_check
-    assert details.date == "10.10.22"
-    assert details.time == "19:47"
+    assert details.date_time == datetime(2022, 10, 10, 19, 47)
     assert details.uploader == "bohning"
     assert details.editors == []
     assert details.views == 27
@@ -40,14 +40,12 @@ def test__parse_song_page_with_commented_embedded_video(resource_dir: str) -> No
     assert details.audio_sample is None
     assert details.team_comment is None
     assert len(details.comments) == 2
-    assert details.comments[0].date == "2022-10-11"
-    assert details.comments[0].time == "10:46"
+    assert details.comments[0].date_time == datetime(2022, 10, 11, 10, 46)
     assert details.comments[0].author == "sportgonzo"
     assert details.comments[0].contents.text == "Perfekt"
     assert details.comments[0].contents.youtube_ids == []
     assert details.comments[0].contents.urls == []
-    assert details.comments[1].date == "2022-10-10"
-    assert details.comments[1].time == "19:48"
+    assert details.comments[1].date_time == datetime(2022, 10, 10, 19, 48)
     assert details.comments[1].author == "bohning"
     assert details.comments[1].contents.text == ""
     assert details.comments[1].contents.youtube_ids == []
@@ -65,8 +63,7 @@ def test__parse_song_page_without_comments_or_cover(resource_dir: str) -> None:
     assert details.gap == 548
     assert details.golden_notes
     assert not details.song_check
-    assert details.date == "30.10.22"
-    assert details.time == "19:04"
+    assert details.date_time == datetime(2022, 10, 30, 19, 4)
     assert details.uploader == "askusbloodfist"
     assert details.editors == []
     assert details.views == 0

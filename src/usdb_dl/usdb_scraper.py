@@ -3,6 +3,7 @@
 import logging
 import re
 import urllib.parse
+from datetime import datetime
 from functools import wraps
 from json import JSONEncoder
 from typing import Any, Callable
@@ -14,6 +15,7 @@ _logger: logging.Logger = logging.getLogger(__file__)
 
 USDB_BASE_URL = "http://usdb.animux.de/"
 DATASET_NOT_FOUND_STRING = "Datensatz nicht gefunden"
+USDB_DATETIME_STRF = "%d.%m.%y - %H:%M"
 
 
 class ParseException(Exception):
@@ -116,21 +118,18 @@ class CommentContents:
 class SongComment:
     """A comment to a song on USDB."""
 
-    date: str
-    time: str
+    date_time: datetime
     author: str
     contents: CommentContents
 
     def __init__(
         self,
         *,
-        date: str,
-        time: str,
+        date_time: str,
         author: str,
         contents: CommentContents,
     ) -> None:
-        self.date = date
-        self.time = time
+        self.date_time = datetime.strptime(date_time, USDB_DATETIME_STRF)
         self.author = author
         self.contents = contents
 
@@ -147,8 +146,7 @@ class SongDetails:
     gap: float
     golden_notes: bool
     song_check: bool
-    date: str
-    time: str
+    date_time: datetime
     uploader: str
     editors: list[str]
     views: int
@@ -186,7 +184,7 @@ class SongDetails:
         self.gap = float(gap)
         self.golden_notes = "Yes" in golden_notes
         self.song_check = "Yes" in song_check
-        self.date, self.time = date_time.split(" - ")
+        self.date_time = datetime.strptime(date_time, USDB_DATETIME_STRF)
         self.uploader = uploader
         self.editors = editors
         self.views = int(views)
@@ -355,26 +353,16 @@ def _parse_comments_table(comments_table: BeautifulSoup) -> list[SongComment]:
     comments = []
     # last entry is the field to enter a new comment, so this one is ignored
     for header in comments_table.find_all("tr", class_="list_tr2")[:-1]:
-        comment_details = header.find("td").text.strip()
-        regex = r".*(\d{2})\.(\d{2})\.(\d{2}) - (\d{2}):(\d{2}) \| (.*)"
-        match = re.search(regex, comment_details)
-        if not match:
+        meta = header.find("td").text.strip()
+        if " | " not in meta:
             # header is just the placeholder element
             _logger.debug("\t- usdb::song has no comments!")
             break
-        (
-            day,
-            month,
-            year,
-            hour,
-            minute,
-            author,
-        ) = match.groups()
+        date_time, author = meta.split(" | ")
         contents = _parse_comment_contents(header.next_sibling)
         comments.append(
             SongComment(
-                date=f"20{year}-{month}-{day}",
-                time=f"{hour}:{minute}",
+                date_time=date_time,
                 author=author,
                 contents=contents,
             )
