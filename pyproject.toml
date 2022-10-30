@@ -81,8 +81,8 @@ exclude = [
     "src/usdb_dl/gui/forms",
     "src/usdb_dl/gui/resources",
     "src/resources_rc.py",
+    ".tox",
 ]
-
 
 [tool.pytest.ini_options]
 python_classes = "!TestCase"
