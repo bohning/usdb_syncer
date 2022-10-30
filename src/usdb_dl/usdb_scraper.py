@@ -154,7 +154,7 @@ class SongDetails:
     views: int
     rating: int
     votes: int
-    audio_sample: str
+    audio_sample: str | None
     team_comment: str | None
     comments: list[SongComment]
 
@@ -192,7 +192,7 @@ class SongDetails:
         self.views = int(views)
         self.rating = rating
         self.votes = int(votes)
-        self.audio_sample = audio_sample
+        self.audio_sample = audio_sample or None
         self.team_comment = None if "No comment yet" in team_comment else team_comment
         self.comments = []
 
@@ -252,7 +252,7 @@ def get_usdb_details(song_id: int) -> SongDetails | None:
 
 @raises_parse_exception
 def _parse_song_page(soup: BeautifulSoup, song_id: int) -> SongDetails:
-    details_table, comments_table, _ = soup.find_all("table", border="0", width="500")
+    details_table, comments_table, *_ = soup.find_all("table", border="0", width="500")
     details = _parse_details_table(details_table, song_id)
     details.comments = _parse_comments_table(comments_table)
     return details
@@ -336,11 +336,7 @@ def _parse_details_table(details_table: BeautifulSoup, song_id: int) -> SongDeta
         editors=editors,
         views=details_table.find(text="Views").next.text,  # type: ignore
         rating=sum("star.png" in s.get("src") for s in stars),
-        votes=details_table.find(
-            text="Rating"
-        ).next.next.next.next.next.next.next.next.next.next.next[  # type: ignore
-            2:-2
-        ],  # type: ignore
+        votes=details_table.find(text="Rating").next_element.a.text,  # type: ignore
         audio_sample=audio_sample,
         # only captures first team comment (example of multiple needed!)
         team_comment=details_table.find(text="Team Comment").next.text,  # type: ignore
