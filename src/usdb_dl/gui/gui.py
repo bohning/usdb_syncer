@@ -661,7 +661,7 @@ def load_available_songs(
     song_dir: str, skip_if_stale: bool = True
 ) -> list[SongMeta] | None:
     path = available_songs_path(song_dir)
-    if skip_if_stale and mtime_is_stale(path) or not os.path.exists(path):
+    if skip_if_stale and not has_recent_mtime(path) or not os.path.exists(path):
         return None
     with open(path, encoding="utf8") as file:
         try:
@@ -681,9 +681,9 @@ def available_songs_path(song_dir: str) -> str:
     return os.path.join(song_dir, ".available_songs.json")
 
 
-def mtime_is_stale(path: str, stale_secs: int = 60 * 60 * 24) -> bool:
-    """True if the given path exists and its mtime is more than stale_secs in the past."""
-    return os.path.exists(path) and time.time() - os.path.getmtime(path) < stale_secs
+def has_recent_mtime(path: str, recent_secs: int = 60 * 60 * 24) -> bool:
+    """True if the given path exists and its mtime is less than recent_secs in the past."""
+    return os.path.exists(path) and time.time() - os.path.getmtime(path) < recent_secs
 
 
 class Signals(QObject):
