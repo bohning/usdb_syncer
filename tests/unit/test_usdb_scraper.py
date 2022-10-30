@@ -21,8 +21,8 @@ def test__parse_song_txt_from_txt_page(resource_dir: str) -> None:
 
 def test__parse_song_page_with_commented_embedded_video(resource_dir: str) -> None:
     soup = get_soup(resource_dir, "song_page_with_embedded_video.htm")
-    details = _parse_song_page(soup, 123)
-    assert details.song_id == 123
+    details = _parse_song_page(soup, 26152)
+    assert details.song_id == 26152
     assert details.artist == "Revolverheld"
     assert details.title == "Ich lass für dich das Licht an"
     assert details.cover_url == "http://usdb.animux.de/images/coverflow/cover/26152.jpg"
@@ -52,3 +52,26 @@ def test__parse_song_page_with_commented_embedded_video(resource_dir: str) -> No
     assert details.comments[1].contents.text == ""
     assert details.comments[1].contents.youtube_ids == []
     assert details.comments[1].contents.urls == ["http://www.youtube.com/v/Vf0MC3CFihY"]
+
+
+def test__parse_song_page_without_comments_or_cover(resource_dir: str) -> None:
+    soup = get_soup(resource_dir, "song_page_without_comments_or_cover.htm")
+    details = _parse_song_page(soup, 26244)
+    assert details.song_id == 26244
+    assert details.artist == "The Used"
+    assert details.title == "River Stay"
+    assert details.cover_url is None
+    assert details.bpm == 305
+    assert details.gap == 548
+    assert details.golden_notes
+    assert not details.song_check
+    assert details.date == "30.10.22"
+    assert details.time == "19:04"
+    assert details.uploader == "askusbloodfist"
+    assert details.editors == []
+    assert details.views == 0
+    assert details.rating == 0
+    assert details.votes == 0
+    assert details.audio_sample is None
+    assert details.team_comment is None
+    assert len(details.comments) == 0

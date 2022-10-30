@@ -336,7 +336,7 @@ def _parse_details_table(details_table: BeautifulSoup, song_id: int) -> SongDeta
         editors=editors,
         views=details_table.find(text="Views").next.text,  # type: ignore
         rating=sum("star.png" in s.get("src") for s in stars),
-        votes=details_table.find(text="Rating").next_element.a.text,  # type: ignore
+        votes=details_table.find(text="Rating").next_element.text.split("(")[1].split(")")[0],  # type: ignore
         audio_sample=audio_sample,
         # only captures first team comment (example of multiple needed!)
         team_comment=details_table.find(text="Team Comment").next.text,  # type: ignore
