@@ -307,7 +307,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.plainTextEdit.setReadOnly(True)
         self.lineEdit_song_dir.setText(os.path.join(os.getcwd(), "songs"))
 
-        self.pushButton_get_songlist.clicked.connect(self.refresh)
+        self.pushButton_get_songlist.clicked.connect(lambda: self.refresh(True))
         self.pushButton_downloadSelectedSongs.clicked.connect(
             self.download_selected_songs
         )
@@ -396,9 +396,11 @@ class MainWindow(QMainWindow, Ui_MainWindow):
     def log_to_text_edit(self, message: str) -> None:
         self.plainTextEdit.appendPlainText(message)
 
-    def refresh(self) -> int:
+    def refresh(self, force_reload: bool) -> int:
         # TODO: remove all existing items in the model!
-        available_songs = get_available_songs(self.lineEdit_song_dir.text())
+        available_songs = get_available_songs(
+            self.lineEdit_song_dir.text(), force_reload
+        )
         artists = set()
         titles = []
         languages = set()
@@ -650,18 +652,16 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         return super().eventFilter(source, event)
 
 
-def get_available_songs(song_dir: str) -> list[SongMeta]:
-    if not (available_songs := load_available_songs(song_dir)):
+def get_available_songs(song_dir: str, force_reload: bool) -> list[SongMeta]:
+    if force_reload or not (available_songs := load_available_songs(song_dir)):
         available_songs = usdb_scraper.get_usdb_available_songs()
         dump_available_songs(song_dir, available_songs)
     return available_songs
 
 
-def load_available_songs(
-    song_dir: str, skip_if_stale: bool = True
-) -> list[SongMeta] | None:
+def load_available_songs(song_dir: str) -> list[SongMeta] | None:
     path = available_songs_path(song_dir)
-    if skip_if_stale and not has_recent_mtime(path) or not os.path.exists(path):
+    if not has_recent_mtime(path) or not os.path.exists(path):
         return None
     with open(path, encoding="utf8") as file:
         try:
@@ -724,7 +724,7 @@ def main() -> None:
     splash.show()
     QApplication.processEvents()
     splash.showMessage("Loading song database from usdb...", color=Qt.GlobalColor.gray)
-    num_songs = mw.refresh()
+    num_songs = mw.refresh(False)
     splash.showMessage(
         f"Song database successfully loaded with {num_songs} songs.",
         color=Qt.GlobalColor.gray,
