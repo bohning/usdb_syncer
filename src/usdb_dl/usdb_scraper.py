@@ -11,6 +11,8 @@ from typing import Any, Callable
 import requests
 from bs4 import BeautifulSoup
 
+from usdb_dl import SongId
+
 _logger: logging.Logger = logging.getLogger(__file__)
 
 USDB_BASE_URL = "http://usdb.animux.de/"
@@ -45,7 +47,7 @@ def raises_parse_exception(func: Callable) -> Callable:
 class SongMeta:
     """Meta data about a song that USDB shows in the result list."""
 
-    song_id: int
+    song_id: SongId
     artist: str
     title: str
     language: str
@@ -69,7 +71,7 @@ class SongMeta:
         """This constructor accepts both, strings as scraped from USDB, and already
         parsed values as stored in a JSON file.
         """
-        self.song_id = int(song_id)
+        self.song_id = SongId(song_id)
         self.artist = artist
         self.title = title
         self.language = language or "language_not_set"
@@ -79,9 +81,6 @@ class SongMeta:
         )
         self.rating = rating if isinstance(rating, int) else rating.count("star.png")
         self.views = int(views)
-
-    def song_id_str(self) -> str:
-        return f"{self.song_id:05}"
 
     def rating_str(self) -> str:
         return self.rating * "★"  # + (5-rating) * "☆"
@@ -93,6 +92,8 @@ class SongMetaEncoder(JSONEncoder):
     def default(self, o: Any) -> Any:
         if isinstance(o, SongMeta):
             return o.__dict__
+        if isinstance(o, SongId):
+            return int(o)
         return super().default(o)
 
 
@@ -138,7 +139,7 @@ class SongDetails:
     """Details about a song that USDB shows on a song's page, or are specified in the
     comment section."""
 
-    song_id: int
+    song_id: SongId
     artist: str
     title: str
     cover_url: str | None
@@ -159,7 +160,7 @@ class SongDetails:
     def __init__(  # pylint: disable=too-many-locals
         self,
         *,
-        song_id: int,
+        song_id: SongId,
         artist: str,
         title: str,
         cover_url: str,
@@ -234,22 +235,22 @@ def get_usdb_page(
     return response.text
 
 
-@raises_parse_exception
-def get_usdb_details(song_id: int) -> SongDetails | None:
+def get_usdb_details(song_id: SongId) -> SongDetails | None:
     """Retrieve song details from usdb webpage, if song exists.
 
     Parameters:
         song_id: id of song to retrieve details for
     """
-    html = get_usdb_page("index.php", params={"id": str(song_id), "link": "detail"})
+    html = get_usdb_page(
+        "index.php", params={"id": str(int(song_id)), "link": "detail"}
+    )
     soup = BeautifulSoup(html, "lxml")
     if DATASET_NOT_FOUND_STRING in soup.get_text():
         return None
     return _parse_song_page(soup, song_id)
 
 
-@raises_parse_exception
-def _parse_song_page(soup: BeautifulSoup, song_id: int) -> SongDetails:
+def _parse_song_page(soup: BeautifulSoup, song_id: SongId) -> SongDetails:
     details_table, comments_table, *_ = soup.find_all("table", border="0", width="500")
     details = _parse_details_table(details_table, song_id)
     details.comments = _parse_comments_table(comments_table)
@@ -297,7 +298,7 @@ def get_usdb_available_songs(
     return available_songs
 
 
-def _parse_details_table(details_table: BeautifulSoup, song_id: int) -> SongDetails:
+def _parse_details_table(details_table: BeautifulSoup, song_id: SongId) -> SongDetails:
     """Parse song attributes from usdb page.
 
     Parameters:
@@ -341,7 +342,6 @@ def _parse_details_table(details_table: BeautifulSoup, song_id: int) -> SongDeta
     )
 
 
-@raises_parse_exception
 def _parse_comments_table(comments_table: BeautifulSoup) -> list[SongComment]:
     """Parse the table into individual comments, extracting potential video links,
     GAP and BPM values.
@@ -371,7 +371,6 @@ def _parse_comments_table(comments_table: BeautifulSoup) -> list[SongComment]:
     return comments
 
 
-@raises_parse_exception
 def _parse_comment_contents(contents: BeautifulSoup) -> CommentContents:
     text = contents.find("td").text.strip()  # type: ignore
     urls = []
@@ -410,20 +409,19 @@ def _parse_comment_contents(contents: BeautifulSoup) -> CommentContents:
     )
 
 
-def get_notes(song_id: str) -> str:
+def get_notes(song_id: SongId) -> str:
     """Retrieve notes for a song."""
     _logger.debug(f"\t- fetch notes for song {song_id}")
     html = get_usdb_page(
         "index.php",
         "POST",
         headers={"Content-Type": "application/x-www-form-urlencoded"},
-        params={"link": "gettxt", "id": song_id},
+        params={"link": "gettxt", "id": str(int(song_id))},
         payload={"wd": "1"},
     )
     soup = BeautifulSoup(html, "lxml")
     return _parse_song_txt_from_txt_page(soup)
 
 
-@raises_parse_exception
 def _parse_song_txt_from_txt_page(soup: BeautifulSoup) -> str:
     return soup.find("textarea").string.replace("<", "(").replace(">", ")")  # type: ignore

@@ -1,16 +1,43 @@
 """Tests for functions from the usdb_scraper module."""
 
+import json
 import os
 from datetime import datetime
+from io import StringIO
 
 from bs4 import BeautifulSoup
 
-from usdb_dl.usdb_scraper import _parse_song_page, _parse_song_txt_from_txt_page
+from usdb_dl import SongId
+from usdb_dl.usdb_scraper import (
+    SongMeta,
+    SongMetaEncoder,
+    _parse_song_page,
+    _parse_song_txt_from_txt_page,
+)
 
 
 def get_soup(resource_dir: str, resource: str) -> BeautifulSoup:
     with open(os.path.join(resource_dir, "html", resource), encoding="utf8") as html:
         return BeautifulSoup(html, "lxml")
+
+
+def test_encoding_and_decoding_song_meta() -> None:
+    meta = SongMeta(
+        song_id=123,
+        artist="Foo",
+        title="Bar",
+        language="Esperanto",
+        edition="",
+        golden_notes=True,
+        rating=0,
+        views=1,
+    )
+    buf = StringIO()
+    json.dump(meta, buf, cls=SongMetaEncoder)
+    buf.seek(0)
+    new_meta = json.load(buf, object_hook=lambda d: SongMeta(**d))
+    assert isinstance(new_meta, SongMeta)
+    assert meta.__dict__ == new_meta.__dict__
 
 
 def test__parse_song_txt_from_txt_page(resource_dir: str) -> None:
@@ -22,8 +49,8 @@ def test__parse_song_txt_from_txt_page(resource_dir: str) -> None:
 
 def test__parse_song_page_with_commented_embedded_video(resource_dir: str) -> None:
     soup = get_soup(resource_dir, "song_page_with_embedded_video.htm")
-    details = _parse_song_page(soup, 26152)
-    assert details.song_id == 26152
+    details = _parse_song_page(soup, SongId(26152))
+    assert details.song_id == SongId(26152)
     assert details.artist == "Revolverheld"
     assert details.title == "Ich lass für dich das Licht an"
     assert details.cover_url == "http://usdb.animux.de/images/coverflow/cover/26152.jpg"
@@ -54,8 +81,8 @@ def test__parse_song_page_with_commented_embedded_video(resource_dir: str) -> No
 
 def test__parse_song_page_without_comments_or_cover(resource_dir: str) -> None:
     soup = get_soup(resource_dir, "song_page_without_comments_or_cover.htm")
-    details = _parse_song_page(soup, 26244)
-    assert details.song_id == 26244
+    details = _parse_song_page(soup, SongId(26244))
+    assert details.song_id == SongId(26244)
     assert details.artist == "The Used"
     assert details.title == "River Stay"
     assert details.cover_url is None

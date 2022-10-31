@@ -39,7 +39,7 @@ from PySide6.QtWidgets import (
     QSplashScreen,
 )
 
-from usdb_dl import note_utils, resource_dl, usdb_scraper
+from usdb_dl import SongId, note_utils, resource_dl, usdb_scraper
 from usdb_dl.gui.forms.QUMainWindow import Ui_MainWindow
 from usdb_dl.usdb_scraper import SongMeta
 
@@ -49,25 +49,23 @@ from usdb_dl.usdb_scraper import SongMeta
 class Worker(QRunnable):
     """Runnable to create a complete song folder."""
 
-    def __init__(self, song_id: int, gui_settings: dict[str, Any]) -> None:
+    def __init__(self, song_id: SongId, gui_settings: dict[str, Any]) -> None:
         super().__init__()
         self.song_id = song_id
         self.gui_settings = gui_settings
 
     def run(self) -> None:
-        song_id = str(self.song_id)
-        idp = f"{song_id:05}"
         gui_settings = self.gui_settings
         songdir = gui_settings["songdir"]
 
-        logging.info(f"#{idp}: Downloading song...")
-        logging.info(f"#{idp}: (1/6) downloading usdb file...")
+        logging.info(f"#{self.song_id}: Downloading song...")
+        logging.info(f"#{self.song_id}: (1/6) downloading usdb file...")
         ###
-        if (details := usdb_scraper.get_usdb_details(song_id)) is None:
+        if (details := usdb_scraper.get_usdb_details(self.song_id)) is None:
             # song was deleted from usdb in the meantime, TODO: uncheck/remove from model
             return
 
-        songtext = usdb_scraper.get_notes(song_id)
+        songtext = usdb_scraper.get_notes(self.song_id)
 
         header, notes = note_utils.parse_notes(songtext)
 
@@ -95,10 +93,10 @@ class Worker(QRunnable):
                         notes.insert(idx, "P2\n")
                     prev_start = int(start)
 
-        logging.info(f"#{idp}: (1/6) {header['#ARTIST']} - {header['#TITLE']}")
+        logging.info(f"#{self.song_id}: (1/6) {header['#ARTIST']} - {header['#TITLE']}")
 
         dirname = note_utils.generate_dirname(header, resource_params)
-        pathname = os.path.join(os.path.join(songdir, dirname), idp)
+        pathname = os.path.join(songdir, dirname, str(self.song_id))
 
         if not os.path.exists(pathname):
             os.makedirs(pathname)
@@ -106,31 +104,33 @@ class Worker(QRunnable):
         # write .usdb file for synchronization
         with open(os.path.join(pathname, "temp.usdb"), "w", encoding="utf_8") as file:
             file.write(songtext)
-        if os.path.exists(os.path.join(pathname, f"{idp}.usdb")):
+        if os.path.exists(os.path.join(pathname, f"{self.song_id}.usdb")):
             if filecmp.cmp(
                 os.path.join(pathname, "temp.usdb"),
-                os.path.join(pathname, f"{idp}.usdb"),
+                os.path.join(pathname, f"{self.song_id}.usdb"),
             ):
                 logging.info(
-                    f"#{idp}: (1/6) usdb and local file are identical, no need to re-download. Skipping song."
+                    f"#{self.song_id}: (1/6) usdb and local file are identical, no need to re-download. Skipping song."
                 )
                 os.remove(os.path.join(pathname, "temp.usdb"))
                 return
-            logging.info(f"#{idp}: (1/6) usdb file has been updated, re-downloading...")
+            logging.info(
+                f"#{self.song_id}: (1/6) usdb file has been updated, re-downloading..."
+            )
             # TODO: check if resources in #VIDEO tag have changed and if so, re-download
             # new resources only
-            os.remove(os.path.join(pathname, f"{idp}.usdb"))
+            os.remove(os.path.join(pathname, f"{self.song_id}.usdb"))
             os.rename(
                 os.path.join(pathname, "temp.usdb"),
-                os.path.join(pathname, f"{idp}.usdb"),
+                os.path.join(pathname, f"{self.song_id}.usdb"),
             )
         else:
             os.rename(
                 os.path.join(pathname, "temp.usdb"),
-                os.path.join(pathname, f"{idp}.usdb"),
+                os.path.join(pathname, f"{self.song_id}.usdb"),
             )
         ###
-        logging.info(f"#{idp}: (2/6) downloading audio file...")
+        logging.info(f"#{self.song_id}: (2/6) downloading audio file...")
         ###
         has_audio = False
         if gui_settings["dl_audio"]:
@@ -144,7 +144,7 @@ class Worker(QRunnable):
             #        audio_resource = video_params.get("v")
             #        if audio_resource:
             #            logging.warning(
-            #                f"#{idp}: (2/6) Using Youtube ID {audio_resource} extracted from comments."
+            #                f"#{self.song_id}: (2/6) Using Youtube ID {audio_resource} extracted from comments."
             #            )
 
             if audio_resource:
@@ -183,12 +183,12 @@ class Worker(QRunnable):
 
                 if has_audio:
                     header["#MP3"] = f"{note_utils.generate_filename(header)}.{ext}"
-                    logging.info(f"#{idp}: (2/6) Success.")
+                    logging.info(f"#{self.song_id}: (2/6) Success.")
                     # self.model.setItem(self.model.findItems(self.kwargs['id'], flags=Qt.MatchExactly, column=0)[0].row(), 9, QStandardItem(QIcon(":/icons/resources/tick.png"), ""))
                 else:
-                    logging.error(f"#{idp}: (2/6) Failed.")
+                    logging.error(f"#{self.song_id}: (2/6) Failed.")
         ###
-        logging.info(f"#{idp}: (3/6) downloading video file...")
+        logging.info(f"#{self.song_id}: (3/6) downloading video file...")
         ###
         has_video = False
         if gui_settings["dl_video"]:
@@ -200,7 +200,7 @@ class Worker(QRunnable):
             #        video_resource = video_params.get("v")
             #        if video_resource:
             #            logging.warning(
-            #                f"#{idp}: (3/6) Using Youtube ID {audio_resource} extracted from comments."
+            #                f"#{self.song_id}: (3/6) Using Youtube ID {audio_resource} extracted from comments."
             #            )
 
             if video_resource:
@@ -224,14 +224,16 @@ class Worker(QRunnable):
                     header[
                         "#VIDEO"
                     ] = f"{note_utils.generate_filename(header)}{video_params['container']}"
-                    logging.info(f"#{idp}: (3/6) Success.")
+                    logging.info(f"#{self.song_id}: (3/6) Success.")
                     # self.model.setItem(self.model.findItems(idp, flags=Qt.MatchExactly, column=0)[0].row(), 10, QStandardItem(QIcon(":/icons/resources/tick.png"), ""))
                 else:
-                    logging.error(f"#{idp}: (3/6) Failed.")
+                    logging.error(f"#{self.song_id}: (3/6) Failed.")
             else:
-                logging.warning(f"#{idp}: (3/6) no video resource in #VIDEO tag")
+                logging.warning(
+                    f"#{self.song_id}: (3/6) no video resource in #VIDEO tag"
+                )
         ###
-        logging.info(f"#{idp}: (4/6) downloading cover file...")
+        logging.info(f"#{self.song_id}: (4/6) downloading cover file...")
         ###
         has_cover = False
         if gui_settings["dl_cover"]:
@@ -240,12 +242,12 @@ class Worker(QRunnable):
             )
             if has_cover:
                 header["#COVER"] = f"{note_utils.generate_filename(header)} [CO].jpg"
-                logging.info(f"#{idp}: (4/6) Success.")
+                logging.info(f"#{self.song_id}: (4/6) Success.")
                 # self.model.setItem(self.model.findItems(idp, flags=Qt.MatchExactly, column=0)[0].row(), 11, QStandardItem(QIcon(":/icons/resources/tick.png"), ""))
             else:
-                logging.error(f"#{idp}: (4/6) Failed.")
+                logging.error(f"#{self.song_id}: (4/6) Failed.")
         ###
-        logging.info(f"#{idp}: (5/6) downloading background file...")
+        logging.info(f"#{self.song_id}: (5/6) downloading background file...")
         ###
         has_background = False
         if gui_settings["dl_background"]:
@@ -261,12 +263,12 @@ class Worker(QRunnable):
                     header[
                         "#BACKGROUND"
                     ] = f"{note_utils.generate_filename(header)} [BG].jpg"
-                    logging.info(f"#{idp}: (5/6) Success.")
+                    logging.info(f"#{self.song_id}: (5/6) Success.")
                     # self.model.setItem(self.model.findItems(idp, flags=Qt.MatchExactly, column=0)[0].row(), 12, QStandardItem(QIcon(":/icons/resources/tick.png"), ""))
                 else:
-                    logging.error(f"#{idp}: (5/6) Failed.")
+                    logging.error(f"#{self.song_id}: (5/6) Failed.")
         ###
-        logging.info(f"#{idp}: (6/6) writing song text file...")
+        logging.info(f"#{self.song_id}: (6/6) writing song text file...")
         ###
         if gui_settings["dl_songfile"]:
             encoding = "utf_8"
@@ -287,12 +289,12 @@ class Worker(QRunnable):
             )
 
             if filename:
-                logging.info(f"#{idp}: (6/6) Success.")
+                logging.info(f"#{self.song_id}: (6/6) Success.")
                 # self.model.setItem(self.model.findItems(idp, flags=Qt.MatchExactly, column=0)[0].row(), 8, QStandardItem(QIcon(":/icons/resources/tick.png"), ""))
             else:
-                logging.error(f"#{idp}: (6/6) Failed.")
+                logging.error(f"#{self.song_id}: (6/6) Failed.")
             ###
-            logging.info(f"#{idp}: (6/6) Download completed!")
+            logging.info(f"#{self.song_id}: (6/6) Download completed!")
 
 
 class MainWindow(QMainWindow, Ui_MainWindow):
@@ -410,7 +412,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         root = self.model.invisibleRootItem()
         for song in available_songs:
             id_item = QStandardItem()
-            id_item.setData(song.song_id_str(), cast(int, Qt.ItemDataRole.DisplayRole))
+            id_item.setData(str(song.song_id), cast(int, Qt.ItemDataRole.DisplayRole))
             id_item.setCheckable(True)
             artist_item = QStandardItem()
             artist_item.setData(song.artist, cast(int, Qt.ItemDataRole.DisplayRole))
@@ -551,13 +553,13 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                                     )
 
     def download_selected_songs(self) -> None:
-        ids: list[int] = []
+        ids: list[SongId] = []
         for row in range(
             self.model.rowCount(self.tableView_availableSongs.rootIndex())
         ):
             item = self.model.item(row)
             if item.checkState() == Qt.CheckState.Checked:
-                ids.append(int(item.data(0)))
+                ids.append(SongId(item.data(0)))
             else:
                 pass
                 # self.treeView_availableSongs.setRowHidden(row, QModelIndex(), True)
@@ -606,7 +608,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             build_pdf(document, file)
         ####
 
-    def download_songs(self, ids: list[int]) -> None:
+    def download_songs(self, ids: list[SongId]) -> None:
         gui_settings = {
             "songdir": self.lineEdit_song_dir.text(),
             "dl_songfile": self.groupBox_songfile.isChecked(),
