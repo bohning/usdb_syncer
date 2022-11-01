@@ -45,7 +45,6 @@ good-names = ["mw", "eventFilter"]
 [tool.pylint.messages_control]
 # https://github.com/samuelcolvin/pydantic/issues/1961
 extension-pkg-whitelist = ["PySide6", "pydantic"]
-ignored-modules = ["PySide6"]
 disable = [
     "too-few-public-methods",
     "logging-fstring-interpolation",
