@@ -184,7 +184,7 @@ class Worker(QRunnable):
                 if has_audio:
                     header["#MP3"] = f"{note_utils.generate_filename(header)}.{ext}"
                     logging.info(f"#{self.song_id}: (2/6) Success.")
-                    # self.model.setItem(self.model.findItems(self.kwargs['id'], flags=Qt.MatchExactly, column=0)[0].row(), 9, QStandardItem(QIcon(":/icons/resources/tick.png"), ""))
+                    # self.model.setItem(self.model.findItems(self.kwargs['id'], flags=Qt.MatchExactly, column=0)[0].row(), 9, QStandardItem(QIcon(":/icons/tick.png"), ""))
                 else:
                     logging.error(f"#{self.song_id}: (2/6) Failed.")
         ###
@@ -225,7 +225,7 @@ class Worker(QRunnable):
                         "#VIDEO"
                     ] = f"{note_utils.generate_filename(header)}{video_params['container']}"
                     logging.info(f"#{self.song_id}: (3/6) Success.")
-                    # self.model.setItem(self.model.findItems(idp, flags=Qt.MatchExactly, column=0)[0].row(), 10, QStandardItem(QIcon(":/icons/resources/tick.png"), ""))
+                    # self.model.setItem(self.model.findItems(idp, flags=Qt.MatchExactly, column=0)[0].row(), 10, QStandardItem(QIcon(":/icons/tick.png"), ""))
                 else:
                     logging.error(f"#{self.song_id}: (3/6) Failed.")
             else:
@@ -243,7 +243,7 @@ class Worker(QRunnable):
             if has_cover:
                 header["#COVER"] = f"{note_utils.generate_filename(header)} [CO].jpg"
                 logging.info(f"#{self.song_id}: (4/6) Success.")
-                # self.model.setItem(self.model.findItems(idp, flags=Qt.MatchExactly, column=0)[0].row(), 11, QStandardItem(QIcon(":/icons/resources/tick.png"), ""))
+                # self.model.setItem(self.model.findItems(idp, flags=Qt.MatchExactly, column=0)[0].row(), 11, QStandardItem(QIcon(":/icons/tick.png"), ""))
             else:
                 logging.error(f"#{self.song_id}: (4/6) Failed.")
         ###
@@ -264,7 +264,7 @@ class Worker(QRunnable):
                         "#BACKGROUND"
                     ] = f"{note_utils.generate_filename(header)} [BG].jpg"
                     logging.info(f"#{self.song_id}: (5/6) Success.")
-                    # self.model.setItem(self.model.findItems(idp, flags=Qt.MatchExactly, column=0)[0].row(), 12, QStandardItem(QIcon(":/icons/resources/tick.png"), ""))
+                    # self.model.setItem(self.model.findItems(idp, flags=Qt.MatchExactly, column=0)[0].row(), 12, QStandardItem(QIcon(":/icons/tick.png"), ""))
                 else:
                     logging.error(f"#{self.song_id}: (5/6) Failed.")
         ###
@@ -290,7 +290,7 @@ class Worker(QRunnable):
 
             if filename:
                 logging.info(f"#{self.song_id}: (6/6) Success.")
-                # self.model.setItem(self.model.findItems(idp, flags=Qt.MatchExactly, column=0)[0].row(), 8, QStandardItem(QIcon(":/icons/resources/tick.png"), ""))
+                # self.model.setItem(self.model.findItems(idp, flags=Qt.MatchExactly, column=0)[0].row(), 8, QStandardItem(QIcon(":/icons/tick.png"), ""))
             else:
                 logging.error(f"#{self.song_id}: (6/6) Failed.")
             ###
@@ -317,43 +317,43 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
         self.model = QStandardItemModel()
         self.model.setHorizontalHeaderItem(
-            0, QStandardItem(QIcon(":/icons/resources/id.png"), "ID")
+            0, QStandardItem(QIcon(":/icons/id.png"), "ID")
         )
         self.model.setHorizontalHeaderItem(
-            1, QStandardItem(QIcon(":/icons/resources/artist.png"), "Artist")
+            1, QStandardItem(QIcon(":/icons/artist.png"), "Artist")
         )
         self.model.setHorizontalHeaderItem(
-            2, QStandardItem(QIcon(":/icons/resources/title.png"), "Title")
+            2, QStandardItem(QIcon(":/icons/title.png"), "Title")
         )
         self.model.setHorizontalHeaderItem(
-            3, QStandardItem(QIcon(":/icons/resources/language.png"), "Language")
+            3, QStandardItem(QIcon(":/icons/language.png"), "Language")
         )
         self.model.setHorizontalHeaderItem(
-            4, QStandardItem(QIcon(":/icons/resources/edition.png"), "Edition")
+            4, QStandardItem(QIcon(":/icons/edition.png"), "Edition")
         )
         self.model.setHorizontalHeaderItem(
-            5, QStandardItem(QIcon(":/icons/resources/golden_notes.png"), "")
+            5, QStandardItem(QIcon(":/icons/golden_notes.png"), "")
         )
         self.model.setHorizontalHeaderItem(
-            6, QStandardItem(QIcon(":/icons/resources/rating.png"), "")
+            6, QStandardItem(QIcon(":/icons/rating.png"), "")
         )
         self.model.setHorizontalHeaderItem(
-            7, QStandardItem(QIcon(":/icons/resources/views.png"), "")
+            7, QStandardItem(QIcon(":/icons/views.png"), "")
         )
         self.model.setHorizontalHeaderItem(
-            8, QStandardItem(QIcon(":/icons/resources/text.png"), "")
+            8, QStandardItem(QIcon(":/icons/text.png"), "")
         )
         self.model.setHorizontalHeaderItem(
-            9, QStandardItem(QIcon(":/icons/resources/audio.png"), "")
+            9, QStandardItem(QIcon(":/icons/audio.png"), "")
         )
         self.model.setHorizontalHeaderItem(
-            10, QStandardItem(QIcon(":/icons/resources/video.png"), "")
+            10, QStandardItem(QIcon(":/icons/video.png"), "")
         )
         self.model.setHorizontalHeaderItem(
-            11, QStandardItem(QIcon(":/icons/resources/cover.png"), "")
+            11, QStandardItem(QIcon(":/icons/cover.png"), "")
         )
         self.model.setHorizontalHeaderItem(
-            12, QStandardItem(QIcon(":/icons/resources/background.png"), "")
+            12, QStandardItem(QIcon(":/icons/background.png"), "")
         )
 
         self.filter_proxy_model = QSortFilterProxyModel()
@@ -505,9 +505,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                                     self.model.setItem(
                                         item.row(),
                                         8,
-                                        QStandardItem(
-                                            QIcon(":/icons/resources/tick.png"), ""
-                                        ),
+                                        QStandardItem(QIcon(":/icons/tick.png"), ""),
                                     )
 
                                 if (
@@ -520,36 +518,28 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                                     self.model.setItem(
                                         item.row(),
                                         9,
-                                        QStandardItem(
-                                            QIcon(":/icons/resources/tick.png"), ""
-                                        ),
+                                        QStandardItem(QIcon(":/icons/tick.png"), ""),
                                     )
 
                                 if file.endswith(".mp4") or file.endswith(".webm"):
                                     self.model.setItem(
                                         item.row(),
                                         10,
-                                        QStandardItem(
-                                            QIcon(":/icons/resources/tick.png"), ""
-                                        ),
+                                        QStandardItem(QIcon(":/icons/tick.png"), ""),
                                     )
 
                                 if file.endswith("[CO].jpg"):
                                     self.model.setItem(
                                         item.row(),
                                         11,
-                                        QStandardItem(
-                                            QIcon(":/icons/resources/tick.png"), ""
-                                        ),
+                                        QStandardItem(QIcon(":/icons/tick.png"), ""),
                                     )
 
                                 if file.endswith("[BG].jpg"):
                                     self.model.setItem(
                                         item.row(),
                                         12,
-                                        QStandardItem(
-                                            QIcon(":/icons/resources/tick.png"), ""
-                                        ),
+                                        QStandardItem(QIcon(":/icons/tick.png"), ""),
                                     )
 
     def download_selected_songs(self) -> None:
