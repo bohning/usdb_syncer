@@ -4,6 +4,7 @@ import logging
 import re
 import urllib.parse
 from datetime import datetime
+from enum import Enum
 from functools import wraps
 from json import JSONEncoder
 from typing import Any, Callable
@@ -18,6 +19,13 @@ _logger: logging.Logger = logging.getLogger(__file__)
 USDB_BASE_URL = "http://usdb.animux.de/"
 DATASET_NOT_FOUND_STRING = "Datensatz nicht gefunden"
 USDB_DATETIME_STRF = "%d.%m.%y - %H:%M"
+
+
+class RequestMethod(Enum):
+    """Supported HTTP requests."""
+
+    GET = "GET"
+    POST = "POST"
 
 
 class ParseException(Exception):
@@ -198,7 +206,7 @@ class SongDetails:
 
 def get_usdb_page(
     rel_url: str,
-    method: str = "GET",
+    method: RequestMethod = RequestMethod.GET,
     headers: dict[str, str] | None = None,
     payload: dict[str, str] | None = None,
     params: dict[str, str] | None = None,
@@ -219,17 +227,15 @@ def get_usdb_page(
 
     url = USDB_BASE_URL + rel_url
 
-    if method == "GET":
+    if method == RequestMethod.GET:
         _logger.debug("get request for %s", url)
         response = requests.get(url, headers=_headers, params=params, timeout=60)
-
-    elif method == "POST":
+    else:
         _logger.debug("post request for %s", url)
         response = requests.post(
             url, headers=_headers, data=payload, params=params, timeout=60
         )
-    else:
-        raise NotImplementedError(f"{method} request not supported")
+
     response.raise_for_status()
     response.encoding = response.encoding = "utf-8"
     return response.text
@@ -268,7 +274,9 @@ def get_usdb_available_songs(
     payload = {"limit": "50000", "order": "id", "ud": "desc"}
     payload.update(content_filter or {})
 
-    html = get_usdb_page("index.php", "POST", params={"link": "list"}, payload=payload)
+    html = get_usdb_page(
+        "index.php", RequestMethod.POST, params={"link": "list"}, payload=payload
+    )
 
     regex = (
         r'<td onclick="show_detail\((\d+)\)">(.*)</td>\n'
@@ -414,7 +422,7 @@ def get_notes(song_id: SongId) -> str:
     _logger.debug(f"\t- fetch notes for song {song_id}")
     html = get_usdb_page(
         "index.php",
-        "POST",
+        RequestMethod.POST,
         headers={"Content-Type": "application/x-www-form-urlencoded"},
         params={"link": "gettxt", "id": str(int(song_id))},
         payload={"wd": "1"},
