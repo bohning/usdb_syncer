@@ -7,7 +7,7 @@ from datetime import datetime
 from enum import Enum
 from functools import wraps
 from json import JSONEncoder
-from typing import Any, Callable
+from typing import Any, Callable, NoReturn
 
 import requests
 from bs4 import BeautifulSoup
@@ -50,6 +50,11 @@ def raises_parse_exception(func: Callable) -> Callable:
             raise ParseException from exception
 
     return wrapped
+
+
+def assert_never(value: NoReturn) -> NoReturn:
+    """Used to get a static type error if an enum isn't matched exhaustively."""
+    assert False, f"Unhandled type: {type(value).__name__}"
 
 
 class SongMeta:
@@ -227,14 +232,16 @@ def get_usdb_page(
 
     url = USDB_BASE_URL + rel_url
 
-    if method == RequestMethod.GET:
+    if method is RequestMethod.GET:
         _logger.debug("get request for %s", url)
         response = requests.get(url, headers=_headers, params=params, timeout=60)
-    else:
+    elif method is RequestMethod.POST:
         _logger.debug("post request for %s", url)
         response = requests.post(
             url, headers=_headers, data=payload, params=params, timeout=60
         )
+    else:
+        assert_never(method)
 
     response.raise_for_status()
     response.encoding = response.encoding = "utf-8"
