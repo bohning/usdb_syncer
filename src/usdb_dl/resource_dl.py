@@ -8,6 +8,7 @@ import yt_dlp
 from PIL import Image, ImageEnhance, ImageOps
 
 from usdb_dl import note_utils
+from usdb_dl.options import VideoOptions
 from usdb_dl.usdb_scraper import SongDetails
 
 # from moviepy.editor import VideoFileClip
@@ -86,29 +87,22 @@ def download_and_process_audio(
 def download_and_process_video(
     header: dict[str, str],
     video_resource: str,
-    video_params: dict[str, str],
+    video_options: VideoOptions,
     _resource_params: dict[str, str],
     dl_browser: str,
     pathname: str,
 ) -> bool:
-    if video_params["resolution"] == "1080p":
-        video_max_width = 1920
-        video_max_height = 1080
-    else:
-        video_max_width = 1280
-        video_max_height = 720
-    video_max_fps = video_params["fps"]
-    _video_target_container = video_params["container"]
-    _video_reencode_allow = video_params[
-        "allow_reencode"
-    ]  # True # if False, ffmpeg will not be used to trim or crop and subsequently reencode videos (uses US #START/#END tags)
-    _video_reencode_encoder = video_params[
-        "encoder"
-    ]  # "libx264" #"libvpx-vp9" #"libaom-av1" #"libx264"
-    _video_reencode_crf = (
-        23  # 0–51 (0=lossless/huge file size, 23=default, 51=worst quality possible)
-    )
-    _video_reencode_preset = "ultrafast"  # ultrafast, superfast, veryfast, faster, fast, medium (default preset), slow, slower, veryslow
+    # _video_target_container = video_options["container"]
+    # _video_reencode_allow = video_options[
+    #    "allow_reencode"
+    # ]  # True # if False, ffmpeg will not be used to trim or crop and subsequently reencode videos (uses US #START/#END tags)
+    # _video_reencode_encoder = video_options[
+    #    "encoder"
+    # ]  # "libx264" #"libvpx-vp9" #"libaom-av1" #"libx264"
+    # _video_reencode_crf = (
+    #    23  # 0–51 (0=lossless/huge file size, 23=default, 51=worst quality possible)
+    # )
+    # _video_reencode_preset = "ultrafast"  # ultrafast, superfast, veryfast, faster, fast, medium (default preset), slow, slower, veryslow
 
     if "/" in video_resource:
         video_url = f"https://{video_resource}"
@@ -121,7 +115,7 @@ def download_and_process_video(
 
     ydl_opts = {
         # "format":  f"bestvideo[ext=mp4][width<={video_max_width}][height<={video_max_height}][fps<={video_max_fps}]+bestaudio[ext=m4a]/best[ext=mp4][width<={video_max_width}][height<={video_max_height}][fps<={video_max_fps}]/best[width<={video_max_width}][height<={video_max_height}][fps<={video_max_fps}]",
-        "format": f"bestvideo[ext=mp4][width<={video_max_width}][height<={video_max_height}][fps<={video_max_fps}]",
+        "format": video_options.ytdl_format(),
         # "format":  f"bestvideo[width<={video_max_width}][height<={video_max_height}][fps<={video_max_fps}]+bestaudio",
         # "format":  f"bestvideo[width<={video_max_width}][height<={video_max_height}][fps<={video_max_fps}]",
         # "outtmpl": os.path.join(dir, f"{artist} - {title}" + ".%(ext)s"),

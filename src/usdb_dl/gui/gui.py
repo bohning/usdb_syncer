@@ -41,6 +41,13 @@ from PySide6.QtWidgets import (
 
 from usdb_dl import SongId, note_utils, resource_dl, usdb_scraper
 from usdb_dl.gui.forms.QUMainWindow import Ui_MainWindow
+from usdb_dl.options import (
+    AudioOptions,
+    BackgroundOptions,
+    Options,
+    TxtOptions,
+    VideoOptions,
+)
 from usdb_dl.usdb_scraper import SongMeta
 
 # from pytube import extract
@@ -49,15 +56,12 @@ from usdb_dl.usdb_scraper import SongMeta
 class Worker(QRunnable):
     """Runnable to create a complete song folder."""
 
-    def __init__(self, song_id: SongId, gui_settings: dict[str, Any]) -> None:
+    def __init__(self, song_id: SongId, options: Options) -> None:
         super().__init__()
         self.song_id = song_id
-        self.gui_settings = gui_settings
+        self.options = options
 
     def run(self) -> None:
-        gui_settings = self.gui_settings
-        songdir = gui_settings["songdir"]
-
         logging.info(f"#{self.song_id}: Downloading song...")
         logging.info(f"#{self.song_id}: (1/6) downloading usdb file...")
         ###
@@ -96,7 +100,7 @@ class Worker(QRunnable):
         logging.info(f"#{self.song_id}: (1/6) {header['#ARTIST']} - {header['#TITLE']}")
 
         dirname = note_utils.generate_dirname(header, resource_params)
-        pathname = os.path.join(songdir, dirname, str(self.song_id))
+        pathname = os.path.join(self.options.song_dir, dirname, str(self.song_id))
 
         if not os.path.exists(pathname):
             os.makedirs(pathname)
@@ -133,7 +137,7 @@ class Worker(QRunnable):
         logging.info(f"#{self.song_id}: (2/6) downloading audio file...")
         ###
         has_audio = False
-        if gui_settings["dl_audio"]:
+        if audio_opts := self.options.audio_options:
             if audio_resource := resource_params.get("a"):
                 pass
             elif audio_resource := resource_params.get("v"):
@@ -148,23 +152,23 @@ class Worker(QRunnable):
             #            )
 
             if audio_resource:
-                if "m4a" in gui_settings["dl_audio_format"]:
+                if "m4a" in audio_opts.format:
                     audio_dl_format = "m4a"
-                elif "webm" in gui_settings["dl_audio_format"]:
+                elif "webm" in audio_opts.format:
                     audio_dl_format = "webm"
                 else:
                     audio_dl_format = "bestaudio"
 
                 _audio_target_format = ""
                 audio_target_codec = ""
-                if gui_settings["dl_audio_reencode"]:
-                    if "mp3" in gui_settings["dl_audio_reencode_format"]:
+                if audio_opts.reencode_format:
+                    if "mp3" in audio_opts.reencode_format:
                         _audio_target_format = "mp3"
                         audio_target_codec = "mp3"
-                    elif "ogg" in gui_settings["dl_audio_reencode_format"]:
+                    elif "ogg" in audio_opts.reencode_format:
                         _audio_target_format = "ogg"
                         audio_target_codec = "vorbis"
-                    elif "opus" in gui_settings["dl_audio_reencode_format"]:
+                    elif "opus" in audio_opts.reencode_format:
                         _audio_target_format = "opus"
                         audio_target_codec = "opus"
 
@@ -173,7 +177,7 @@ class Worker(QRunnable):
                     audio_resource,
                     audio_dl_format,
                     audio_target_codec,
-                    gui_settings["dl_browser"],
+                    self.options.browser,
                     pathname,
                 )
 
@@ -191,7 +195,7 @@ class Worker(QRunnable):
         logging.info(f"#{self.song_id}: (3/6) downloading video file...")
         ###
         has_video = False
-        if gui_settings["dl_video"]:
+        if video_opts := self.options.video_options:
             if video_resource := resource_params.get("v"):
                 pass
             # elif not resource_params.get("a"):
@@ -204,26 +208,19 @@ class Worker(QRunnable):
             #            )
 
             if video_resource:
-                video_params = {
-                    "container": gui_settings["dl_video_format"],
-                    "resolution": gui_settings["dl_video_max_resolution"],
-                    "fps": gui_settings["dl_video_max_fps"],
-                    "allow_reencode": gui_settings["dl_video_reencode"],
-                    "encoder": gui_settings["dl_video_reencode_format"],
-                }
                 has_video = resource_dl.download_and_process_video(
                     header,
                     video_resource,
-                    video_params,
+                    video_opts,
                     resource_params,
-                    gui_settings["dl_browser"],
+                    self.options.browser,
                     pathname,
                 )
 
                 if has_video:
                     header[
                         "#VIDEO"
-                    ] = f"{note_utils.generate_filename(header)}{video_params['container']}"
+                    ] = f"{note_utils.generate_filename(header)}{video_opts.format}"
                     logging.info(f"#{self.song_id}: (3/6) Success.")
                     # self.model.setItem(self.model.findItems(idp, flags=Qt.MatchExactly, column=0)[0].row(), 10, QStandardItem(QIcon(":/icons/tick.png"), ""))
                 else:
@@ -236,7 +233,7 @@ class Worker(QRunnable):
         logging.info(f"#{self.song_id}: (4/6) downloading cover file...")
         ###
         has_cover = False
-        if gui_settings["dl_cover"]:
+        if self.options.cover:
             has_cover = resource_dl.download_and_process_cover(
                 header, resource_params, details, pathname
             )
@@ -249,12 +246,8 @@ class Worker(QRunnable):
         ###
         logging.info(f"#{self.song_id}: (5/6) downloading background file...")
         ###
-        has_background = False
-        if gui_settings["dl_background"]:
-            if gui_settings["dl_background_when"] == "always" or (
-                not has_video
-                and gui_settings["dl_background_when"] == "only if no video"
-            ):
+        if bg_opts := self.options.background_options:
+            if bg_opts.download_background(has_video):
                 has_background = resource_dl.download_and_process_background(
                     header, resource_params, pathname
                 )
@@ -270,14 +263,14 @@ class Worker(QRunnable):
         ###
         logging.info(f"#{self.song_id}: (6/6) writing song text file...")
         ###
-        if gui_settings["dl_songfile"]:
+        if txt_opts := self.options.txt_options:
             encoding = "utf_8"
-            if gui_settings["dl_songfile_encoding"] == "UTF-8 BOM":
+            if txt_opts.encoding == "UTF-8 BOM":
                 encoding = "utf_8_sig"
-            elif gui_settings["dl_songfile_encoding"] == "CP1252":
+            elif txt_opts.encoding == "CP1252":
                 encoding = "cp1252"
             line_endings = "\r\n"
-            if gui_settings["dl_songfile_line_endings"] == "Mac/Linux (LF)":
+            if txt_opts.line_endings == "Mac/Linux (LF)":
                 line_endings = "\n"
             filename = note_utils.dump_notes(
                 header,
@@ -598,32 +591,56 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             build_pdf(document, file)
         ####
 
+    def _download_options(self) -> Options:
+        return Options(
+            song_dir=self.lineEdit_song_dir.text(),
+            txt_options=self._txt_options(),
+            audio_options=self._audio_options(),
+            browser=self.comboBox_browser.currentText().lower(),
+            video_options=self._video_options(),
+            cover=self.groupBox_cover.isChecked(),
+            background_options=self._background_options(),
+        )
+
+    def _txt_options(self) -> TxtOptions | None:
+        if not self.groupBox_songfile.isChecked():
+            return None
+        return TxtOptions(
+            encoding=self.comboBox_encoding.currentText(),
+            line_endings=self.comboBox_line_endings.currentText(),
+        )
+
+    def _audio_options(self) -> AudioOptions | None:
+        if not self.groupBox_audio.isChecked():
+            return None
+        return AudioOptions(
+            format=self.comboBox_audio_format.currentText(),
+            reencode_format=self.comboBox_audio_conversion_format.currentText(),
+        )
+
+    def _video_options(self) -> VideoOptions | None:
+        if not self.groupBox_video.isChecked():
+            return None
+        return VideoOptions(
+            format=self.comboBox_videocontainer.currentText(),
+            reencode_format=self.dl_video_reencode_format.currentText()
+            if self.groupBox_reencode_video.isChecked()
+            else None,
+            max_resolution=self.comboBox_videoresolution.currentText(),
+            max_fps=self.comboBox_fps.currentText(),
+        )
+
+    def _background_options(self) -> BackgroundOptions | None:
+        if not self.groupBox_background.isChecked():
+            return None
+        return BackgroundOptions(
+            only_if_no_video=self.comboBox_background.currentText(),
+        )
+
     def download_songs(self, ids: list[SongId]) -> None:
-        gui_settings = {
-            "songdir": self.lineEdit_song_dir.text(),
-            "dl_songfile": self.groupBox_songfile.isChecked(),
-            "dl_songfile_encoding": self.comboBox_encoding.currentText(),  # TODO: check
-            "dl_songfile_line_endings": self.comboBox_line_endings.currentText(),  # TODO: check
-            "dl_audio": self.groupBox_audio.isChecked(),
-            "dl_audio_format": self.comboBox_audio_format.currentText(),
-            "dl_audio_reencode": self.groupBox_reencode_audio.isChecked(),
-            "dl_audio_reencode_format": self.comboBox_audio_conversion_format.currentText(),  # TODO: check
-            "dl_browser": self.comboBox_browser.currentText().lower(),
-            "dl_video": self.groupBox_video.isChecked(),
-            "dl_video_format": self.comboBox_videocontainer.currentText().lower(),  # TODO: check
-            "dl_video_max_resolution": self.comboBox_videoresolution.currentText(),  # TODO: check
-            "dl_video_max_fps": self.comboBox_fps.currentText(),  # TODO: check
-            "dl_video_reencode": self.groupBox_reencode_video.isChecked(),
-            "dl_video_reencode_format": self.comboBox_videoencoder,  # TODO: check
-            "dl_cover": self.groupBox_cover.isChecked(),
-            "dl_background": self.groupBox_background.isChecked(),
-            "dl_background_when": self.comboBox_background.currentText(),  # TODO: check
-        }
-
-        # self.threadpool = QThreadPool.globalInstance()
-
+        options = self._download_options()
         for song_id in ids:
-            worker = Worker(song_id=song_id, gui_settings=gui_settings)
+            worker = Worker(song_id=song_id, options=options)
             self.threadpool.start(worker)
 
         logging.info(f"DONE! (Downloaded {len(ids)} songs)")
