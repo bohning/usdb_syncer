@@ -53,7 +53,9 @@ def raises_parse_exception(func: Callable) -> Callable:
 
 
 def assert_never(value: NoReturn) -> NoReturn:
-    """Used to get a static type error if an enum isn't matched exhaustively."""
+    """Used to get a static type error if an enum isn't matched exhaustively.
+
+    After we upgrade to Python 3.11, we can use typing.assert_never."""
     assert False, f"Unhandled type: {type(value).__name__}"
 
 
@@ -232,16 +234,17 @@ def get_usdb_page(
 
     url = USDB_BASE_URL + rel_url
 
-    if method is RequestMethod.GET:
-        _logger.debug("get request for %s", url)
-        response = requests.get(url, headers=_headers, params=params, timeout=60)
-    elif method is RequestMethod.POST:
-        _logger.debug("post request for %s", url)
-        response = requests.post(
-            url, headers=_headers, data=payload, params=params, timeout=60
-        )
-    else:
-        assert_never(method)
+    match method:
+        case RequestMethod.GET:
+            _logger.debug("get request for %s", url)
+            response = requests.get(url, headers=_headers, params=params, timeout=60)
+        case RequestMethod.POST:
+            _logger.debug("post request for %s", url)
+            response = requests.post(
+                url, headers=_headers, data=payload, params=params, timeout=60
+            )
+        case _ as unreachable:
+            assert_never(unreachable)
 
     response.raise_for_status()
     response.encoding = response.encoding = "utf-8"
