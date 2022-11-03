@@ -281,18 +281,18 @@ def get_usdb_available_songs(
         r'<td onclick="show_detail\(\d+\)">(.*)</td>\n'
         r'<td onclick="show_detail\(\d+\)">(.*)</td>'
     )
-    matches = re.findall(regex, html)
+    matches = re.finditer(regex, html)
 
     available_songs = [
         SongMeta(
-            song_id=match[0],
-            artist=match[1],
-            title=match[2],
-            edition=match[3],
-            golden_notes=match[4],
-            language=match[5],
-            rating=match[6],
-            views=match[7],
+            song_id=match[1],
+            artist=match[2],
+            title=match[3],
+            edition=match[4],
+            golden_notes=match[5],
+            language=match[6],
+            rating=match[7],
+            views=match[8],
         )
         for match in matches
     ]
