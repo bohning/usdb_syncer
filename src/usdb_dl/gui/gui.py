@@ -11,6 +11,8 @@ import sys
 import time
 from typing import Any, cast
 
+import appdirs
+
 # maybe reportlab is better suited?
 from pdfme import build_pdf  # type: ignore
 from PySide6.QtCore import (
@@ -385,9 +387,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
     def refresh(self, force_reload: bool) -> int:
         # TODO: remove all existing items in the model!
-        available_songs = get_available_songs(
-            self.lineEdit_song_dir.text(), force_reload
-        )
+        available_songs = get_available_songs(force_reload)
         artists = set()
         titles = []
         languages = set()
@@ -655,15 +655,15 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         return super().eventFilter(source, event)
 
 
-def get_available_songs(song_dir: str, force_reload: bool) -> list[SongMeta]:
-    if force_reload or not (available_songs := load_available_songs(song_dir)):
+def get_available_songs(force_reload: bool) -> list[SongMeta]:
+    if force_reload or not (available_songs := load_available_songs()):
         available_songs = usdb_scraper.get_usdb_available_songs()
-        dump_available_songs(song_dir, available_songs)
+        dump_available_songs(available_songs)
     return available_songs
 
 
-def load_available_songs(song_dir: str) -> list[SongMeta] | None:
-    path = available_songs_path(song_dir)
+def load_available_songs() -> list[SongMeta] | None:
+    path = available_songs_path()
     if not has_recent_mtime(path) or not os.path.exists(path):
         return None
     with open(path, encoding="utf8") as file:
@@ -673,15 +673,16 @@ def load_available_songs(song_dir: str) -> list[SongMeta] | None:
             return None
 
 
-def dump_available_songs(song_dir: str, available_songs: list[SongMeta]) -> None:
-    if not os.path.exists(song_dir):
-        os.mkdir(song_dir)
-    with open(available_songs_path(song_dir), "w", encoding="utf8") as file:
+def dump_available_songs(available_songs: list[SongMeta]) -> None:
+    os.makedirs(os.path.dirname(available_songs_path()), exist_ok=True)
+    with open(available_songs_path(), "w", encoding="utf8") as file:
         json.dump(available_songs, file, cls=usdb_scraper.SongMetaEncoder)
 
 
-def available_songs_path(song_dir: str) -> str:
-    return os.path.join(song_dir, ".available_songs.json")
+def available_songs_path() -> str:
+    return os.path.join(
+        appdirs.user_cache_dir("usdb_dl", "bohning"), "available_songs.json"
+    )
 
 
 def has_recent_mtime(path: str, recent_secs: int = 60 * 60 * 24) -> bool:
