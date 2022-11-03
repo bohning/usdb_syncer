@@ -428,6 +428,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             return None
         return BackgroundOptions(
             only_if_no_video=self.comboBox_background.currentText()
+            == "only if no video"
         )
 
     def download_songs(self, ids: list[SongId]) -> None:
