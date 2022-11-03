@@ -249,7 +249,7 @@ def download_and_process_cover(
 ) -> bool:
     if partial_url := cover_params.get("co"):
         protocol = (
-            "http://" if cover_params.get("bg-protocol") == "http" else "https://"
+            "http://" if cover_params.get("co-protocol") == "http" else "https://"
         )
 
         if "/" in cover_params["co"]:
