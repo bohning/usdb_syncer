@@ -40,7 +40,7 @@ def download_and_process_audio(
         # %(ext)s only seems to work for Youtube, not for e.g. UM
         audio_options.format = AudioContainer.BEST
     ydl_opts: dict[str, Union[str, bool, tuple, list]] = {
-        "format": audio_options.format.value,
+        "format": audio_options.format.ytdl_format(),
         "outtmpl": f"{audio_filename}.%(ext)s",
         "keepvideo": False,
         "verbose": False,

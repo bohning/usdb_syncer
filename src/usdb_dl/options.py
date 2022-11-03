@@ -44,9 +44,9 @@ class Newline(Enum):
 class AudioContainer(Enum):
     """Audio containers that can be requested when downloading with ytdl."""
 
-    M4A = "bestaudio[ext=m4a]"
-    WEBM = "bestaudio[ext=webm]"
-    BEST = "bestaudio"
+    M4A = "m4a"
+    WEBM = "webm"
+    BEST = "best"
 
     def __str__(self) -> str:  # pylint: disable=invalid-str-returned
         match self:
@@ -58,6 +58,11 @@ class AudioContainer(Enum):
                 return "Best available"
             case _ as unreachable:
                 assert_never(unreachable)
+
+    def ytdl_format(self) -> str:
+        if self is AudioContainer.BEST:
+            return "bestaudio"
+        return f"bestaudio[ext={self.value}]"
 
 
 class AudioCodec(Enum):
