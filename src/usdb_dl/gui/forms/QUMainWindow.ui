@@ -49,7 +49,7 @@
             <string>Refresh song list</string>
            </property>
            <property name="icon">
-            <iconset>
+            <iconset resource="../resources/resources.qrc">
              <normaloff>:/icons/faviconUSDB.ico</normaloff>:/icons/faviconUSDB.ico</iconset>
            </property>
           </widget>
@@ -151,7 +151,7 @@
            <string>Artist</string>
           </property>
           <property name="icon">
-           <iconset>
+           <iconset resource="../resources/resources.qrc">
             <normaloff>:/icons/artist.png</normaloff>:/icons/artist.png</iconset>
           </property>
          </item>
@@ -160,7 +160,7 @@
            <string>Title</string>
           </property>
           <property name="icon">
-           <iconset>
+           <iconset resource="../resources/resources.qrc">
             <normaloff>:/icons/title.png</normaloff>:/icons/title.png</iconset>
           </property>
          </item>
@@ -169,7 +169,7 @@
            <string>Language</string>
           </property>
           <property name="icon">
-           <iconset>
+           <iconset resource="../resources/resources.qrc">
             <normaloff>:/icons/language.png</normaloff>:/icons/language.png</iconset>
           </property>
          </item>
@@ -178,7 +178,7 @@
            <string>Edition</string>
           </property>
           <property name="icon">
-           <iconset>
+           <iconset resource="../resources/resources.qrc">
             <normaloff>:/icons/edition.png</normaloff>:/icons/edition.png</iconset>
           </property>
          </item>
@@ -218,7 +218,7 @@
           <string/>
          </property>
          <property name="pixmap">
-          <pixmap>:/icons/artist.png</pixmap>
+          <pixmap resource="../resources/resources.qrc">:/icons/artist.png</pixmap>
          </property>
         </widget>
        </item>
@@ -235,7 +235,7 @@
           <string/>
          </property>
          <property name="pixmap">
-          <pixmap>:/icons/title.png</pixmap>
+          <pixmap resource="../resources/resources.qrc">:/icons/title.png</pixmap>
          </property>
         </widget>
        </item>
@@ -252,7 +252,7 @@
           <string/>
          </property>
          <property name="pixmap">
-          <pixmap>:/icons/language.png</pixmap>
+          <pixmap resource="../resources/resources.qrc">:/icons/language.png</pixmap>
          </property>
         </widget>
        </item>
@@ -269,7 +269,7 @@
           <string/>
          </property>
          <property name="pixmap">
-          <pixmap>:/icons/edition.png</pixmap>
+          <pixmap resource="../resources/resources.qrc">:/icons/edition.png</pixmap>
          </property>
         </widget>
        </item>
@@ -286,7 +286,7 @@
           <string/>
          </property>
          <property name="pixmap">
-          <pixmap>:/icons/golden_notes.png</pixmap>
+          <pixmap resource="../resources/resources.qrc">:/icons/golden_notes.png</pixmap>
          </property>
         </widget>
        </item>
@@ -315,7 +315,7 @@
           <string/>
          </property>
          <property name="pixmap">
-          <pixmap>:/icons/rating.png</pixmap>
+          <pixmap resource="../resources/resources.qrc">:/icons/rating.png</pixmap>
          </property>
         </widget>
        </item>
@@ -379,7 +379,7 @@
           <string/>
          </property>
          <property name="pixmap">
-          <pixmap>:/icons/views.png</pixmap>
+          <pixmap resource="../resources/resources.qrc">:/icons/views.png</pixmap>
          </property>
         </widget>
        </item>
@@ -482,23 +482,7 @@
           </widget>
          </item>
          <item row="0" column="1">
-          <widget class="QComboBox" name="comboBox_encoding">
-           <item>
-            <property name="text">
-             <string>UTF-8</string>
-            </property>
-           </item>
-           <item>
-            <property name="text">
-             <string>UTF-8 BOM</string>
-            </property>
-           </item>
-           <item>
-            <property name="text">
-             <string>CP1252</string>
-            </property>
-           </item>
-          </widget>
+          <widget class="QComboBox" name="comboBox_encoding"/>
          </item>
          <item row="1" column="0">
           <widget class="QLabel" name="label_8">
@@ -508,18 +492,7 @@
           </widget>
          </item>
          <item row="1" column="1">
-          <widget class="QComboBox" name="comboBox_line_endings">
-           <item>
-            <property name="text">
-             <string>Windows (CRLF)</string>
-            </property>
-           </item>
-           <item>
-            <property name="text">
-             <string>Mac/Linux (LF)</string>
-            </property>
-           </item>
-          </widget>
+          <widget class="QComboBox" name="comboBox_line_endings"/>
          </item>
         </layout>
        </widget>
@@ -556,23 +529,7 @@
           </widget>
          </item>
          <item row="0" column="1">
-          <widget class="QComboBox" name="comboBox_audio_format">
-           <item>
-            <property name="text">
-             <string>.m4a (mp4a)</string>
-            </property>
-           </item>
-           <item>
-            <property name="text">
-             <string comment="mp3">.webm (opus)</string>
-            </property>
-           </item>
-           <item>
-            <property name="text">
-             <string>bestaudio</string>
-            </property>
-           </item>
-          </widget>
+          <widget class="QComboBox" name="comboBox_audio_format"/>
          </item>
          <item row="1" column="0">
           <widget class="QLabel" name="label_9">
@@ -585,85 +542,7 @@
           </widget>
          </item>
          <item row="1" column="1">
-          <widget class="QComboBox" name="comboBox_browser">
-           <item>
-            <property name="text">
-             <string>None</string>
-            </property>
-           </item>
-           <item>
-            <property name="text">
-             <string>Brave</string>
-            </property>
-            <property name="icon">
-             <iconset>
-              <normaloff>:/icons/brave.png</normaloff>:/icons/brave.png</iconset>
-            </property>
-           </item>
-           <item>
-            <property name="text">
-             <string>Chrome</string>
-            </property>
-            <property name="icon">
-             <iconset>
-              <normaloff>:/icons/chrome.png</normaloff>:/icons/chrome.png</iconset>
-            </property>
-           </item>
-           <item>
-            <property name="text">
-             <string>Chromium</string>
-            </property>
-            <property name="icon">
-             <iconset>
-              <normaloff>:/icons/chromium.png</normaloff>:/icons/chromium.png</iconset>
-            </property>
-           </item>
-           <item>
-            <property name="text">
-             <string>Edge</string>
-            </property>
-            <property name="icon">
-             <iconset>
-              <normaloff>:/icons/edge.png</normaloff>:/icons/edge.png</iconset>
-            </property>
-           </item>
-           <item>
-            <property name="text">
-             <string>Firefox</string>
-            </property>
-            <property name="icon">
-             <iconset>
-              <normaloff>:/icons/firefox.png</normaloff>:/icons/firefox.png</iconset>
-            </property>
-           </item>
-           <item>
-            <property name="text">
-             <string>Opera</string>
-            </property>
-            <property name="icon">
-             <iconset>
-              <normaloff>:/icons/opera.png</normaloff>:/icons/opera.png</iconset>
-            </property>
-           </item>
-           <item>
-            <property name="text">
-             <string>Safari</string>
-            </property>
-            <property name="icon">
-             <iconset>
-              <normaloff>:/icons/safari.png</normaloff>:/icons/safari.png</iconset>
-            </property>
-           </item>
-           <item>
-            <property name="text">
-             <string>Vivaldi</string>
-            </property>
-            <property name="icon">
-             <iconset>
-              <normaloff>:/icons/vivaldi.png</normaloff>:/icons/vivaldi.png</iconset>
-            </property>
-           </item>
-          </widget>
+          <widget class="QComboBox" name="comboBox_browser"/>
          </item>
         </layout>
        </widget>
@@ -700,23 +579,7 @@
           </widget>
          </item>
          <item row="0" column="1">
-          <widget class="QComboBox" name="comboBox_audio_conversion_format">
-           <item>
-            <property name="text">
-             <string>.mp3 (MPEG)</string>
-            </property>
-           </item>
-           <item>
-            <property name="text">
-             <string>.ogg (Vorbis)</string>
-            </property>
-           </item>
-           <item>
-            <property name="text">
-             <string>.opus (Opus)</string>
-            </property>
-           </item>
-          </widget>
+          <widget class="QComboBox" name="comboBox_audio_conversion_format"/>
          </item>
         </layout>
        </widget>
@@ -753,23 +616,7 @@
           </widget>
          </item>
          <item row="0" column="1">
-          <widget class="QComboBox" name="comboBox_videocontainer">
-           <item>
-            <property name="text">
-             <string>.mp4</string>
-            </property>
-           </item>
-           <item>
-            <property name="text">
-             <string>.webm</string>
-            </property>
-           </item>
-           <item>
-            <property name="text">
-             <string>bestvideo</string>
-            </property>
-           </item>
-          </widget>
+          <widget class="QComboBox" name="comboBox_videocontainer"/>
          </item>
          <item row="1" column="0">
           <widget class="QLabel" name="label_5">
@@ -779,18 +626,7 @@
           </widget>
          </item>
          <item row="1" column="1">
-          <widget class="QComboBox" name="comboBox_videoresolution">
-           <item>
-            <property name="text">
-             <string>1080p</string>
-            </property>
-           </item>
-           <item>
-            <property name="text">
-             <string>720p</string>
-            </property>
-           </item>
-          </widget>
+          <widget class="QComboBox" name="comboBox_videoresolution"/>
          </item>
          <item row="2" column="0">
           <widget class="QLabel" name="label_3">
@@ -800,18 +636,7 @@
           </widget>
          </item>
          <item row="2" column="1">
-          <widget class="QComboBox" name="comboBox_fps">
-           <item>
-            <property name="text">
-             <string>30</string>
-            </property>
-           </item>
-           <item>
-            <property name="text">
-             <string>60</string>
-            </property>
-           </item>
-          </widget>
+          <widget class="QComboBox" name="comboBox_fps"/>
          </item>
         </layout>
        </widget>
@@ -849,26 +674,6 @@
            <height>32</height>
           </rect>
          </property>
-         <item>
-          <property name="text">
-           <string>h264</string>
-          </property>
-         </item>
-         <item>
-          <property name="text">
-           <string>h265</string>
-          </property>
-         </item>
-         <item>
-          <property name="text">
-           <string>libvpx-vp9</string>
-          </property>
-         </item>
-         <item>
-          <property name="text">
-           <string>libaom-av1</string>
-          </property>
-         </item>
         </widget>
        </widget>
       </item>

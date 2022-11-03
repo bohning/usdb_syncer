@@ -16,6 +16,7 @@ skip_glob = [
 ]
 
 [tool.black]
+skip-magic-trailing-comma = true
 extend-exclude = [
     "src/usdb_dl/gui/forms",
     "src/usdb_dl/gui/resources",
@@ -28,6 +29,8 @@ ignore-paths = [
     "src/usdb_dl/gui/forms",
     "src/usdb_dl/gui/resources",
     "src/resources_rc.py",
+    "venv",
+    ".tox",
 ]
 # Add McCabe code complexity checker
 load-plugins = """

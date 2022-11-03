@@ -262,9 +262,6 @@ class Ui_MainWindow(object):
         self.formLayout.setWidget(0, QFormLayout.LabelRole, self.label)
 
         self.comboBox_encoding = QComboBox(self.groupBox_songfile)
-        self.comboBox_encoding.addItem("")
-        self.comboBox_encoding.addItem("")
-        self.comboBox_encoding.addItem("")
         self.comboBox_encoding.setObjectName(u"comboBox_encoding")
 
         self.formLayout.setWidget(0, QFormLayout.FieldRole, self.comboBox_encoding)
@@ -275,8 +272,6 @@ class Ui_MainWindow(object):
         self.formLayout.setWidget(1, QFormLayout.LabelRole, self.label_8)
 
         self.comboBox_line_endings = QComboBox(self.groupBox_songfile)
-        self.comboBox_line_endings.addItem("")
-        self.comboBox_line_endings.addItem("")
         self.comboBox_line_endings.setObjectName(u"comboBox_line_endings")
 
         self.formLayout.setWidget(1, QFormLayout.FieldRole, self.comboBox_line_endings)
@@ -297,9 +292,6 @@ class Ui_MainWindow(object):
         self.formLayout_2.setWidget(0, QFormLayout.LabelRole, self.label_7)
 
         self.comboBox_audio_format = QComboBox(self.groupBox_audio)
-        self.comboBox_audio_format.addItem("")
-        self.comboBox_audio_format.addItem("")
-        self.comboBox_audio_format.addItem("")
         self.comboBox_audio_format.setObjectName(u"comboBox_audio_format")
 
         self.formLayout_2.setWidget(0, QFormLayout.FieldRole, self.comboBox_audio_format)
@@ -310,31 +302,6 @@ class Ui_MainWindow(object):
         self.formLayout_2.setWidget(1, QFormLayout.LabelRole, self.label_9)
 
         self.comboBox_browser = QComboBox(self.groupBox_audio)
-        self.comboBox_browser.addItem("")
-        icon5 = QIcon()
-        icon5.addFile(u":/icons/brave.png", QSize(), QIcon.Normal, QIcon.Off)
-        self.comboBox_browser.addItem(icon5, "")
-        icon6 = QIcon()
-        icon6.addFile(u":/icons/chrome.png", QSize(), QIcon.Normal, QIcon.Off)
-        self.comboBox_browser.addItem(icon6, "")
-        icon7 = QIcon()
-        icon7.addFile(u":/icons/chromium.png", QSize(), QIcon.Normal, QIcon.Off)
-        self.comboBox_browser.addItem(icon7, "")
-        icon8 = QIcon()
-        icon8.addFile(u":/icons/edge.png", QSize(), QIcon.Normal, QIcon.Off)
-        self.comboBox_browser.addItem(icon8, "")
-        icon9 = QIcon()
-        icon9.addFile(u":/icons/firefox.png", QSize(), QIcon.Normal, QIcon.Off)
-        self.comboBox_browser.addItem(icon9, "")
-        icon10 = QIcon()
-        icon10.addFile(u":/icons/opera.png", QSize(), QIcon.Normal, QIcon.Off)
-        self.comboBox_browser.addItem(icon10, "")
-        icon11 = QIcon()
-        icon11.addFile(u":/icons/safari.png", QSize(), QIcon.Normal, QIcon.Off)
-        self.comboBox_browser.addItem(icon11, "")
-        icon12 = QIcon()
-        icon12.addFile(u":/icons/vivaldi.png", QSize(), QIcon.Normal, QIcon.Off)
-        self.comboBox_browser.addItem(icon12, "")
         self.comboBox_browser.setObjectName(u"comboBox_browser")
 
         self.formLayout_2.setWidget(1, QFormLayout.FieldRole, self.comboBox_browser)
@@ -355,9 +322,6 @@ class Ui_MainWindow(object):
         self.formLayout_6.setWidget(0, QFormLayout.LabelRole, self.label_19)
 
         self.comboBox_audio_conversion_format = QComboBox(self.groupBox_reencode_audio)
-        self.comboBox_audio_conversion_format.addItem("")
-        self.comboBox_audio_conversion_format.addItem("")
-        self.comboBox_audio_conversion_format.addItem("")
         self.comboBox_audio_conversion_format.setObjectName(u"comboBox_audio_conversion_format")
 
         self.formLayout_6.setWidget(0, QFormLayout.FieldRole, self.comboBox_audio_conversion_format)
@@ -378,9 +342,6 @@ class Ui_MainWindow(object):
         self.formLayout_3.setWidget(0, QFormLayout.LabelRole, self.label_4)
 
         self.comboBox_videocontainer = QComboBox(self.groupBox_video)
-        self.comboBox_videocontainer.addItem("")
-        self.comboBox_videocontainer.addItem("")
-        self.comboBox_videocontainer.addItem("")
         self.comboBox_videocontainer.setObjectName(u"comboBox_videocontainer")
 
         self.formLayout_3.setWidget(0, QFormLayout.FieldRole, self.comboBox_videocontainer)
@@ -391,8 +352,6 @@ class Ui_MainWindow(object):
         self.formLayout_3.setWidget(1, QFormLayout.LabelRole, self.label_5)
 
         self.comboBox_videoresolution = QComboBox(self.groupBox_video)
-        self.comboBox_videoresolution.addItem("")
-        self.comboBox_videoresolution.addItem("")
         self.comboBox_videoresolution.setObjectName(u"comboBox_videoresolution")
 
         self.formLayout_3.setWidget(1, QFormLayout.FieldRole, self.comboBox_videoresolution)
@@ -403,8 +362,6 @@ class Ui_MainWindow(object):
         self.formLayout_3.setWidget(2, QFormLayout.LabelRole, self.label_3)
 
         self.comboBox_fps = QComboBox(self.groupBox_video)
-        self.comboBox_fps.addItem("")
-        self.comboBox_fps.addItem("")
         self.comboBox_fps.setObjectName(u"comboBox_fps")
 
         self.formLayout_3.setWidget(2, QFormLayout.FieldRole, self.comboBox_fps)
@@ -420,10 +377,6 @@ class Ui_MainWindow(object):
         self.label_18.setObjectName(u"label_18")
         self.label_18.setGeometry(QRect(15, 25, 80, 16))
         self.comboBox_videoencoder = QComboBox(self.groupBox_reencode_video)
-        self.comboBox_videoencoder.addItem("")
-        self.comboBox_videoencoder.addItem("")
-        self.comboBox_videoencoder.addItem("")
-        self.comboBox_videoencoder.addItem("")
         self.comboBox_videoencoder.setObjectName(u"comboBox_videoencoder")
         self.comboBox_videoencoder.setGeometry(QRect(100, 23, 118, 32))
 
@@ -558,61 +511,21 @@ class Ui_MainWindow(object):
 
         self.groupBox_songfile.setTitle(QCoreApplication.translate("MainWindow", u"Download song file", None))
         self.label.setText(QCoreApplication.translate("MainWindow", u"Encoding", None))
-        self.comboBox_encoding.setItemText(0, QCoreApplication.translate("MainWindow", u"UTF-8", None))
-        self.comboBox_encoding.setItemText(1, QCoreApplication.translate("MainWindow", u"UTF-8 BOM", None))
-        self.comboBox_encoding.setItemText(2, QCoreApplication.translate("MainWindow", u"CP1252", None))
-
         self.label_8.setText(QCoreApplication.translate("MainWindow", u"Line Endings", None))
-        self.comboBox_line_endings.setItemText(0, QCoreApplication.translate("MainWindow", u"Windows (CRLF)", None))
-        self.comboBox_line_endings.setItemText(1, QCoreApplication.translate("MainWindow", u"Mac/Linux (LF)", None))
-
         self.groupBox_audio.setTitle(QCoreApplication.translate("MainWindow", u"Download audio", None))
         self.label_7.setText(QCoreApplication.translate("MainWindow", u"Audio Format", None))
-        self.comboBox_audio_format.setItemText(0, QCoreApplication.translate("MainWindow", u".m4a (mp4a)", None))
-        self.comboBox_audio_format.setItemText(1, QCoreApplication.translate("MainWindow", u".webm (opus)", u"mp3"))
-        self.comboBox_audio_format.setItemText(2, QCoreApplication.translate("MainWindow", u"bestaudio", None))
-
 #if QT_CONFIG(tooltip)
         self.label_9.setToolTip(QCoreApplication.translate("MainWindow", u"Login to Youtube in your favorite browser in order to access age-restricted content", None))
 #endif // QT_CONFIG(tooltip)
         self.label_9.setText(QCoreApplication.translate("MainWindow", u"Cookies", None))
-        self.comboBox_browser.setItemText(0, QCoreApplication.translate("MainWindow", u"None", None))
-        self.comboBox_browser.setItemText(1, QCoreApplication.translate("MainWindow", u"Brave", None))
-        self.comboBox_browser.setItemText(2, QCoreApplication.translate("MainWindow", u"Chrome", None))
-        self.comboBox_browser.setItemText(3, QCoreApplication.translate("MainWindow", u"Chromium", None))
-        self.comboBox_browser.setItemText(4, QCoreApplication.translate("MainWindow", u"Edge", None))
-        self.comboBox_browser.setItemText(5, QCoreApplication.translate("MainWindow", u"Firefox", None))
-        self.comboBox_browser.setItemText(6, QCoreApplication.translate("MainWindow", u"Opera", None))
-        self.comboBox_browser.setItemText(7, QCoreApplication.translate("MainWindow", u"Safari", None))
-        self.comboBox_browser.setItemText(8, QCoreApplication.translate("MainWindow", u"Vivaldi", None))
-
         self.groupBox_reencode_audio.setTitle(QCoreApplication.translate("MainWindow", u"Reencode audio", None))
         self.label_19.setText(QCoreApplication.translate("MainWindow", u"Audio Format", None))
-        self.comboBox_audio_conversion_format.setItemText(0, QCoreApplication.translate("MainWindow", u".mp3 (MPEG)", None))
-        self.comboBox_audio_conversion_format.setItemText(1, QCoreApplication.translate("MainWindow", u".ogg (Vorbis)", None))
-        self.comboBox_audio_conversion_format.setItemText(2, QCoreApplication.translate("MainWindow", u".opus (Opus)", None))
-
         self.groupBox_video.setTitle(QCoreApplication.translate("MainWindow", u"Download video", None))
         self.label_4.setText(QCoreApplication.translate("MainWindow", u"Video container", None))
-        self.comboBox_videocontainer.setItemText(0, QCoreApplication.translate("MainWindow", u".mp4", None))
-        self.comboBox_videocontainer.setItemText(1, QCoreApplication.translate("MainWindow", u".webm", None))
-        self.comboBox_videocontainer.setItemText(2, QCoreApplication.translate("MainWindow", u"bestvideo", None))
-
         self.label_5.setText(QCoreApplication.translate("MainWindow", u"Max. resolution", None))
-        self.comboBox_videoresolution.setItemText(0, QCoreApplication.translate("MainWindow", u"1080p", None))
-        self.comboBox_videoresolution.setItemText(1, QCoreApplication.translate("MainWindow", u"720p", None))
-
         self.label_3.setText(QCoreApplication.translate("MainWindow", u"Max. fps", None))
-        self.comboBox_fps.setItemText(0, QCoreApplication.translate("MainWindow", u"30", None))
-        self.comboBox_fps.setItemText(1, QCoreApplication.translate("MainWindow", u"60", None))
-
         self.groupBox_reencode_video.setTitle(QCoreApplication.translate("MainWindow", u"Reencode video", None))
         self.label_18.setText(QCoreApplication.translate("MainWindow", u"Video Format", None))
-        self.comboBox_videoencoder.setItemText(0, QCoreApplication.translate("MainWindow", u"h264", None))
-        self.comboBox_videoencoder.setItemText(1, QCoreApplication.translate("MainWindow", u"h265", None))
-        self.comboBox_videoencoder.setItemText(2, QCoreApplication.translate("MainWindow", u"libvpx-vp9", None))
-        self.comboBox_videoencoder.setItemText(3, QCoreApplication.translate("MainWindow", u"libaom-av1", None))
-
         self.groupBox_cover.setTitle(QCoreApplication.translate("MainWindow", u"Download cover \u2013 settings:", None))
         self.groupBox_background.setTitle(QCoreApplication.translate("MainWindow", u"Download background \u2013 settings:", None))
         self.label_6.setText(QCoreApplication.translate("MainWindow", u"Download", None))

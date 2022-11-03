@@ -2,13 +2,14 @@
 
 import logging
 import os
+from typing import Union
 
 import requests
 import yt_dlp
 from PIL import Image, ImageEnhance, ImageOps
 
 from usdb_dl import note_utils
-from usdb_dl.options import VideoOptions
+from usdb_dl.options import AudioContainer, AudioOptions, Browser, VideoOptions
 from usdb_dl.usdb_scraper import SongDetails
 
 # from moviepy.editor import VideoFileClip
@@ -18,9 +19,8 @@ from usdb_dl.usdb_scraper import SongDetails
 def download_and_process_audio(
     header: dict[str, str],
     audio_resource: str,
-    audio_dl_format: str,
-    audio_target_codec: str,
-    dl_browser: str,
+    audio_options: AudioOptions,
+    browser: Browser,
     pathname: str,
 ) -> tuple[bool, str]:
     if not audio_resource:
@@ -36,39 +36,25 @@ def download_and_process_audio(
 
     audio_filename = os.path.join(pathname, note_utils.generate_filename(header))
 
-    ydl_opts = {
-        "format": "bestaudio",
-        "outtmpl": f"{audio_filename}" + ".%(ext)s",
+    if "/" in audio_resource:
+        # %(ext)s only seems to work for Youtube, not for e.g. UM
+        audio_options.format = AudioContainer.BEST
+    ydl_opts: dict[str, Union[str, bool, tuple, list]] = {
+        "format": audio_options.format.value,
+        "outtmpl": f"{audio_filename}.%(ext)s",
         "keepvideo": False,
         "verbose": False,
     }
-
-    if dl_browser != "none":
-        ydl_opts["cookiesfrombrowser"] = (f"{dl_browser}",)
-
-    ext = ""
-    if audio_dl_format != "bestaudio":
-        ext = audio_dl_format
-        if not "/" in audio_resource:
-            ydl_opts[
-                "format"
-            ] = f"bestaudio[ext={ext}]"  # ext only seems to work for Youtube
-        else:
-            ydl_opts["format"] = "bestaudio"  # not for e.g. UM
-            ydl_opts["outtmpl"] = f"{audio_filename}.m4a"
-
-    if audio_target_codec:
+    if browser.value:
+        ydl_opts["cookiesfrombrowser"] = (browser.value,)
+    if audio_options.reencode_format:
         ydl_opts["postprocessors"] = [
             {
                 "key": "FFmpegExtractAudio",
-                "preferredcodec": f"{audio_target_codec}",
+                "preferredcodec": audio_options.reencode_format.value,
                 "preferredquality": "320",
             }
         ]
-
-        ext = audio_target_codec
-        if audio_target_codec == "vorbis":
-            ext = "ogg"
 
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
         try:
@@ -78,8 +64,7 @@ def download_and_process_audio(
             logging.error(f"\t#VIDEO: error downloading video url: {audio_url}")
             return False, ""
 
-    if audio_dl_format == "bestaudio" and not audio_target_codec:
-        ext = os.path.splitext(filename)[1][1:]
+    ext = audio_options.extension() or os.path.splitext(filename)[1][1:]
 
     return True, ext
 
@@ -89,7 +74,7 @@ def download_and_process_video(
     video_resource: str,
     video_options: VideoOptions,
     _resource_params: dict[str, str],
-    dl_browser: str,
+    browser: Browser,
     pathname: str,
 ) -> bool:
     # _video_target_container = video_options["container"]
@@ -124,8 +109,8 @@ def download_and_process_video(
         "verbose": False,
     }
 
-    if dl_browser != "none":
-        ydl_opts["cookiesfrombrowser"] = (dl_browser,)
+    if browser.value:
+        ydl_opts["cookiesfrombrowser"] = (browser.value,)
 
     if "/" in video_resource:  # not Youtube
         ydl_opts["format"] = "bestvideo"

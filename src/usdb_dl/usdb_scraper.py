@@ -7,12 +7,13 @@ from datetime import datetime
 from enum import Enum
 from functools import wraps
 from json import JSONEncoder
-from typing import Any, Callable, NoReturn
+from typing import Any, Callable
 
 import requests
 from bs4 import BeautifulSoup
 
 from usdb_dl import SongId
+from usdb_dl.typing_helpers import assert_never
 
 _logger: logging.Logger = logging.getLogger(__file__)
 
@@ -50,13 +51,6 @@ def raises_parse_exception(func: Callable) -> Callable:
             raise ParseException from exception
 
     return wrapped
-
-
-def assert_never(value: NoReturn) -> NoReturn:
-    """Used to get a static type error if an enum isn't matched exhaustively.
-
-    After we upgrade to Python 3.11, we can use typing.assert_never."""
-    assert False, f"Unhandled type: {type(value).__name__}"
 
 
 class SongMeta:
@@ -119,13 +113,7 @@ class CommentContents:
     youtube_ids: list[str]
     urls: list[str]
 
-    def __init__(
-        self,
-        *,
-        text: str,
-        youtube_ids: list[str],
-        urls: list[str],
-    ) -> None:
+    def __init__(self, *, text: str, youtube_ids: list[str], urls: list[str]) -> None:
         self.text = text
         self.youtube_ids = youtube_ids
         self.urls = urls
@@ -139,11 +127,7 @@ class SongComment:
     contents: CommentContents
 
     def __init__(
-        self,
-        *,
-        date_time: str,
-        author: str,
-        contents: CommentContents,
+        self, *, date_time: str, author: str, contents: CommentContents
     ) -> None:
         self.date_time = datetime.strptime(date_time, USDB_DATETIME_STRF)
         self.author = author
@@ -379,11 +363,7 @@ def _parse_comments_table(comments_table: BeautifulSoup) -> list[SongComment]:
         date_time, author = meta.split(" | ")
         contents = _parse_comment_contents(header.next_sibling)
         comments.append(
-            SongComment(
-                date_time=date_time,
-                author=author,
-                contents=contents,
-            )
+            SongComment(date_time=date_time, author=author, contents=contents)
         )
 
     return comments
@@ -420,11 +400,7 @@ def _parse_comment_contents(contents: BeautifulSoup) -> CommentContents:
     #        if not details.get("video_params"):
     #            details["video_params"] = {"v": yt_id}
     #        text = text.replace(url[0], "").strip()
-    return CommentContents(
-        text=text,
-        urls=urls,
-        youtube_ids=[],
-    )
+    return CommentContents(text=text, urls=urls, youtube_ids=[])
 
 
 def get_notes(song_id: SongId) -> str:

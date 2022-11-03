@@ -42,11 +42,20 @@ from PySide6.QtWidgets import (
 from usdb_dl import SongId, note_utils, resource_dl, usdb_scraper
 from usdb_dl.gui.forms.QUMainWindow import Ui_MainWindow
 from usdb_dl.options import (
+    AudioCodec,
+    AudioContainer,
     AudioOptions,
     BackgroundOptions,
+    Browser,
+    Encoding,
+    Newline,
     Options,
     TxtOptions,
+    VideoCodec,
+    VideoContainer,
+    VideoFps,
     VideoOptions,
+    VideoResolution,
 )
 from usdb_dl.usdb_scraper import SongMeta
 
@@ -152,33 +161,8 @@ class Worker(QRunnable):
             #            )
 
             if audio_resource:
-                if "m4a" in audio_opts.format:
-                    audio_dl_format = "m4a"
-                elif "webm" in audio_opts.format:
-                    audio_dl_format = "webm"
-                else:
-                    audio_dl_format = "bestaudio"
-
-                _audio_target_format = ""
-                audio_target_codec = ""
-                if audio_opts.reencode_format:
-                    if "mp3" in audio_opts.reencode_format:
-                        _audio_target_format = "mp3"
-                        audio_target_codec = "mp3"
-                    elif "ogg" in audio_opts.reencode_format:
-                        _audio_target_format = "ogg"
-                        audio_target_codec = "vorbis"
-                    elif "opus" in audio_opts.reencode_format:
-                        _audio_target_format = "opus"
-                        audio_target_codec = "opus"
-
                 has_audio, ext = resource_dl.download_and_process_audio(
-                    header,
-                    audio_resource,
-                    audio_dl_format,
-                    audio_target_codec,
-                    self.options.browser,
-                    pathname,
+                    header, audio_resource, audio_opts, self.options.browser, pathname
                 )
 
                 # delete #VIDEO tag used for resources
@@ -264,21 +248,8 @@ class Worker(QRunnable):
         logging.info(f"#{self.song_id}: (6/6) writing song text file...")
         ###
         if txt_opts := self.options.txt_options:
-            encoding = "utf_8"
-            if txt_opts.encoding == "UTF-8 BOM":
-                encoding = "utf_8_sig"
-            elif txt_opts.encoding == "CP1252":
-                encoding = "cp1252"
-            line_endings = "\r\n"
-            if txt_opts.line_endings == "Mac/Linux (LF)":
-                line_endings = "\n"
             filename = note_utils.dump_notes(
-                header,
-                notes,
-                pathname,
-                duet=duet,
-                encoding=encoding,
-                newline=line_endings,
+                header, notes, pathname, txt_opts, duet=duet
             )
 
             if filename:
@@ -360,6 +331,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.tableView_availableSongs.setModel(self.filter_proxy_model)
         self.tableView_availableSongs.installEventFilter(self)
 
+        self._populate_comboboxes()
         self.comboBox_search_column.currentIndexChanged.connect(
             self.set_filter_key_column
         )
@@ -390,6 +362,26 @@ class MainWindow(QMainWindow, Ui_MainWindow):
     @Slot(str)
     def log_to_text_edit(self, message: str) -> None:
         self.plainTextEdit.appendPlainText(message)
+
+    def _populate_comboboxes(self) -> None:
+        for encoding in Encoding:
+            self.comboBox_encoding.addItem(str(encoding), encoding)
+        for newline in Newline:
+            self.comboBox_line_endings.addItem(str(newline), newline)
+        for container in AudioContainer:
+            self.comboBox_audio_format.addItem(str(container), container)
+        for codec in AudioCodec:
+            self.comboBox_audio_conversion_format.addItem(str(codec), codec)
+        for browser in Browser:
+            self.comboBox_browser.addItem(QIcon(browser.icon()), str(browser), browser)
+        for video_container in VideoContainer:
+            self.comboBox_videocontainer.addItem(str(video_container), video_container)
+        for video_codec in VideoCodec:
+            self.comboBox_videoencoder.addItem(str(video_codec), video_codec)
+        for resolution in VideoResolution:
+            self.comboBox_videoresolution.addItem(str(resolution), resolution)
+        for fps in VideoFps:
+            self.comboBox_fps.addItem(str(fps), fps)
 
     def refresh(self, force_reload: bool) -> int:
         # TODO: remove all existing items in the model!
@@ -596,7 +588,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             song_dir=self.lineEdit_song_dir.text(),
             txt_options=self._txt_options(),
             audio_options=self._audio_options(),
-            browser=self.comboBox_browser.currentText().lower(),
+            browser=self.comboBox_browser.currentData(),
             video_options=self._video_options(),
             cover=self.groupBox_cover.isChecked(),
             background_options=self._background_options(),
@@ -606,35 +598,37 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         if not self.groupBox_songfile.isChecked():
             return None
         return TxtOptions(
-            encoding=self.comboBox_encoding.currentText(),
-            line_endings=self.comboBox_line_endings.currentText(),
+            encoding=self.comboBox_encoding.currentData(),
+            newline=self.comboBox_line_endings.currentData(),
         )
 
     def _audio_options(self) -> AudioOptions | None:
         if not self.groupBox_audio.isChecked():
             return None
         return AudioOptions(
-            format=self.comboBox_audio_format.currentText(),
-            reencode_format=self.comboBox_audio_conversion_format.currentText(),
+            format=self.comboBox_audio_format.currentData(),
+            reencode_format=self.comboBox_audio_conversion_format.currentData()
+            if self.groupBox_reencode_audio.isChecked()
+            else None,
         )
 
     def _video_options(self) -> VideoOptions | None:
         if not self.groupBox_video.isChecked():
             return None
         return VideoOptions(
-            format=self.comboBox_videocontainer.currentText(),
-            reencode_format=self.dl_video_reencode_format.currentText()
+            format=self.comboBox_videocontainer.currentData(),
+            reencode_format=self.comboBox_videoencoder.currentData()
             if self.groupBox_reencode_video.isChecked()
             else None,
-            max_resolution=self.comboBox_videoresolution.currentText(),
-            max_fps=self.comboBox_fps.currentText(),
+            max_resolution=self.comboBox_videoresolution.currentData(),
+            max_fps=self.comboBox_fps.currentData(),
         )
 
     def _background_options(self) -> BackgroundOptions | None:
         if not self.groupBox_background.isChecked():
             return None
         return BackgroundOptions(
-            only_if_no_video=self.comboBox_background.currentText(),
+            only_if_no_video=self.comboBox_background.currentText()
         )
 
     def download_songs(self, ids: list[SongId]) -> None:

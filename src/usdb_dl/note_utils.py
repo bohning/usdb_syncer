@@ -4,6 +4,8 @@ import logging
 import os
 import re
 
+from usdb_dl.options import TxtOptions
+
 _logger: logging.Logger = logging.getLogger(__file__)
 
 
@@ -61,7 +63,9 @@ def get_params_from_video_tag(header: dict[str, str]) -> dict[str, str]:
             if len(parts) == 2:
                 params[parts[0]] = parts[1]
             else:
-                logging.warning(f"Invalid key/value pair '{pair}' found in #VIDEO tag '{params_line}'")
+                logging.warning(
+                    f"Invalid key/value pair '{pair}' found in #VIDEO tag '{params_line}'"
+                )
     else:
         logging.error("\t- no #VIDEO tag present")
     return params
@@ -131,9 +135,8 @@ def dump_notes(
     header: dict[str, str],
     body: list[str],
     pathname: str,
+    txt_options: TxtOptions,
     duet: bool = False,
-    encoding: str | None = None,
-    newline: str | None = None,
 ) -> str:
     """Write notes to file.
 
@@ -150,9 +153,12 @@ def dump_notes(
     txt_filename = generate_filename(header)
     duetstring = " (duet)" if duet else ""
     filename = f"{txt_filename}{duetstring}.txt"
-    _logger.debug("\t- writing text file with encoding %s", encoding)
+    _logger.debug(f"\t- writing text file with encoding {txt_options.encoding.value}")
     with open(
-        os.path.join(pathname, filename), "w", encoding=encoding, newline=newline
+        os.path.join(pathname, filename),
+        "w",
+        encoding=txt_options.encoding.value,
+        newline=txt_options.newline.value,
     ) as notes_file:
         tags = [
             "#TITLE",
