@@ -62,7 +62,7 @@ from usdb_dl.usdb_scraper import SongMeta
 # from pytube import extract
 
 
-class MainWindow(QMainWindow, Ui_MainWindow):
+class MainWindow(Ui_MainWindow, QMainWindow):
     """The app's main window and entry point to the GUI."""
 
     def __init__(self) -> None:
