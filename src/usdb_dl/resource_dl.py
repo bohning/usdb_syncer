@@ -11,7 +11,7 @@ from PIL import Image, ImageEnhance, ImageOps
 
 from usdb_dl import note_utils
 from usdb_dl.meta_tags import ImageMetaTags
-from usdb_dl.options import AudioContainer, AudioOptions, Browser, VideoOptions
+from usdb_dl.options import AudioOptions, Browser, VideoOptions
 from usdb_dl.typing_helpers import assert_never
 from usdb_dl.usdb_scraper import SongDetails
 
@@ -45,19 +45,16 @@ def download_and_process_audio(
     if not audio_resource:
         logging.warning("\t- no audio resource in #VIDEO tag")
         return False, ""
-
     if "/" in audio_resource:
-        audio_url = f"https://{audio_resource}"
-    else:
-        audio_url = f"https://www.youtube.com/watch?v={audio_resource}"
+        logging.warning("\t- only YouTube videos are currently supported")
+        return False, ""
+
+    audio_url = f"https://www.youtube.com/watch?v={audio_resource}"
 
     logging.debug(f"\t- downloading audio from #VIDEO params: {audio_url}")
 
     audio_filename = os.path.join(pathname, note_utils.generate_filename(header))
 
-    if "/" in audio_resource:
-        # %(ext)s only seems to work for Youtube, not for e.g. UM
-        audio_options.format = AudioContainer.BEST
     ydl_opts: dict[str, Union[str, bool, tuple, list]] = {
         "format": audio_options.format.ytdl_format(),
         "outtmpl": f"{audio_filename}.%(ext)s",
@@ -108,9 +105,10 @@ def download_and_process_video(
     # _video_reencode_preset = "ultrafast"  # ultrafast, superfast, veryfast, faster, fast, medium (default preset), slow, slower, veryslow
 
     if "/" in video_resource:
-        video_url = f"https://{video_resource}"
-    else:
-        video_url = f"https://www.youtube.com/watch?v={video_resource}"
+        logging.warning("\t- only YouTube videos are currently supported")
+        return False
+
+    video_url = f"https://www.youtube.com/watch?v={video_resource}"
 
     logging.debug(f"\t- downloading video from #VIDEO params: {video_url}")
 
@@ -129,9 +127,6 @@ def download_and_process_video(
 
     if browser.value:
         ydl_opts["cookiesfrombrowser"] = (browser.value,)
-
-    if "/" in video_resource:  # not Youtube
-        ydl_opts["format"] = "bestvideo"
 
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
         try:
