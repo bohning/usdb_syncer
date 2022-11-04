@@ -4,6 +4,7 @@ import logging
 import os
 import re
 
+from usdb_dl.meta_tags import MetaTags
 from usdb_dl.options import TxtOptions
 
 _logger: logging.Logger = logging.getLogger(__file__)
@@ -71,7 +72,7 @@ def get_params_from_video_tag(header: dict[str, str]) -> dict[str, str]:
     return params
 
 
-def is_duet(header: dict[str, str], resource_params: dict[str, str]) -> bool:
+def is_duet(header: dict[str, str], meta_tags: MetaTags) -> bool:
     """Check if song is duet.
 
     Parameters:
@@ -81,11 +82,10 @@ def is_duet(header: dict[str, str], resource_params: dict[str, str]) -> bool:
     Returns:
         True if song is duet
     """
-    duet = bool(resource_params.get("p1") and resource_params.get("p2"))
     title = header["#TITLE"].lower()
     edition = header.get("#EDITION")
     edition = edition.lower() if edition else ""
-    duet = "duet" in title or "duet" in edition or duet
+    duet = "duet" in title or "duet" in edition or meta_tags.is_duet()
     return duet
 
 
@@ -108,7 +108,7 @@ def generate_filename(header: dict[str, str]) -> str:
     return f"{artist} - {title}"
 
 
-def generate_dirname(header: dict[str, str], resource_params: dict[str, str]) -> str:
+def generate_dirname(header: dict[str, str], video: bool) -> str:
     """Create directory name from song meta data.
 
     Parameters:
@@ -119,7 +119,7 @@ def generate_dirname(header: dict[str, str], resource_params: dict[str, str]) ->
         directory name
     """
     dirname = generate_filename(header)
-    if resource_params.get("v"):
+    if video:
         dirname += " [VIDEO]"
     if edition := header.get("#EDITION"):
         if "singstar" in edition.lower():

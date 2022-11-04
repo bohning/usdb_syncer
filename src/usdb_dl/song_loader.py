@@ -8,7 +8,9 @@ import re
 from PySide6.QtCore import QRunnable
 
 from usdb_dl import SongId, note_utils, resource_dl, usdb_scraper
+from usdb_dl.meta_tags import MetaTags
 from usdb_dl.options import Options
+from usdb_dl.resource_dl import ImageKind, download_and_process_image
 
 _logger: logging.Logger = logging.getLogger(__file__)
 
@@ -39,12 +41,15 @@ class SongLoader(QRunnable):
         header["#TITLE"] = re.sub(
             r"\[.*?\]", "", header["#TITLE"]
         ).strip()  # remove anything in "[]" from the title, e.g. "[duet]"
-        resource_params = note_utils.get_params_from_video_tag(header)
 
-        duet = note_utils.is_duet(header, resource_params)
+        if not (video_tag := header.get("#VIDEO")):
+            _logger.error("\t- no #VIDEO tag present")
+        meta_tags = MetaTags(video_tag or "")
+
+        duet = note_utils.is_duet(header, meta_tags)
         if duet:
-            header["#P1"] = resource_params.get("p1", "P1")
-            header["#P2"] = resource_params.get("p2", "P2")
+            header["#P1"] = meta_tags.player1 or "P1"
+            header["#P2"] = meta_tags.player2 or "P2"
 
             notes.insert(0, "P1\n")
             prev_start = 0
@@ -59,7 +64,7 @@ class SongLoader(QRunnable):
 
         _logger.info(f"#{self.song_id}: (1/6) {header['#ARTIST']} - {header['#TITLE']}")
 
-        dirname = note_utils.generate_dirname(header, resource_params)
+        dirname = note_utils.generate_dirname(header, bool(meta_tags.video))
         pathname = os.path.join(self.options.song_dir, dirname, str(self.song_id))
 
         if not os.path.exists(pathname):
@@ -98,10 +103,6 @@ class SongLoader(QRunnable):
         ###
         has_audio = False
         if audio_opts := self.options.audio_options:
-            if audio_resource := resource_params.get("a"):
-                pass
-            elif audio_resource := resource_params.get("v"):
-                pass
             # else:
             #    video_params = details.get("video_params")
             #    if video_params:
@@ -110,8 +111,7 @@ class SongLoader(QRunnable):
             #            _logger.warning(
             #                f"#{self.song_id}: (2/6) Using Youtube ID {audio_resource} extracted from comments."
             #            )
-
-            if audio_resource:
+            if audio_resource := meta_tags.audio or meta_tags.video:
                 has_audio, ext = resource_dl.download_and_process_audio(
                     header, audio_resource, audio_opts, self.options.browser, pathname
                 )
@@ -131,8 +131,6 @@ class SongLoader(QRunnable):
         ###
         has_video = False
         if video_opts := self.options.video_options:
-            if video_resource := resource_params.get("v"):
-                pass
             # elif not resource_params.get("a"):
             #    video_params = details.get("video_params")
             #    if video_params:
@@ -141,15 +139,9 @@ class SongLoader(QRunnable):
             #            _logger.warning(
             #                f"#{self.song_id}: (3/6) Using Youtube ID {audio_resource} extracted from comments."
             #            )
-
-            if video_resource:
+            if video_resource := meta_tags.video:
                 has_video = resource_dl.download_and_process_video(
-                    header,
-                    video_resource,
-                    video_opts,
-                    resource_params,
-                    self.options.browser,
-                    pathname,
+                    header, video_resource, video_opts, self.options.browser, pathname
                 )
 
                 if has_video:
@@ -169,8 +161,8 @@ class SongLoader(QRunnable):
         ###
         has_cover = False
         if self.options.cover:
-            has_cover = resource_dl.download_and_process_cover(
-                header, resource_params, details, pathname
+            has_cover = download_and_process_image(
+                header, meta_tags.cover, details, pathname, ImageKind.COVER
             )
             if has_cover:
                 header["#COVER"] = f"{note_utils.generate_filename(header)} [CO].jpg"
@@ -183,8 +175,12 @@ class SongLoader(QRunnable):
         ###
         if bg_opts := self.options.background_options:
             if bg_opts.download_background(has_video):
-                has_background = resource_dl.download_and_process_background(
-                    header, resource_params, pathname
+                has_background = download_and_process_image(
+                    header,
+                    meta_tags.background,
+                    details,
+                    pathname,
+                    ImageKind.BACKGROUND,
                 )
 
                 if has_background:

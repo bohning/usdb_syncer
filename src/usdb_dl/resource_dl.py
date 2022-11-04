@@ -2,6 +2,7 @@
 
 import logging
 import os
+from enum import Enum
 from typing import Union
 
 import requests
@@ -9,11 +10,29 @@ import yt_dlp
 from PIL import Image, ImageEnhance, ImageOps
 
 from usdb_dl import note_utils
+from usdb_dl.meta_tags import ImageMetaTags
 from usdb_dl.options import AudioContainer, AudioOptions, Browser, VideoOptions
+from usdb_dl.typing_helpers import assert_never
 from usdb_dl.usdb_scraper import SongDetails
 
 # from moviepy.editor import VideoFileClip
 # import subprocess
+
+
+class ImageKind(Enum):
+    """Types of images used for songs."""
+
+    COVER = "CO"
+    BACKGROUND = "BG"
+
+    def __str__(self) -> str:  # pylint: disable=invalid-str-returned
+        match self:
+            case ImageKind.COVER:
+                return "cover"
+            case ImageKind.BACKGROUND:
+                return "background"
+            case _ as unreachable:
+                assert_never(unreachable)
 
 
 def download_and_process_audio(
@@ -73,7 +92,6 @@ def download_and_process_video(
     header: dict[str, str],
     video_resource: str,
     video_options: VideoOptions,
-    _resource_params: dict[str, str],
     browser: Browser,
     pathname: str,
 ) -> bool:
@@ -241,174 +259,58 @@ def download_image(url: str) -> tuple[bool, bytes]:
     return False, bytes(0)
 
 
-def download_and_process_cover(
+def download_and_process_image(
     header: dict[str, str],
-    cover_params: dict[str, str],
+    meta_tags: ImageMetaTags | None,
     details: SongDetails,
     pathname: str,
+    kind: ImageKind,
 ) -> bool:
-    if partial_url := cover_params.get("co"):
-        protocol = (
-            "http://" if cover_params.get("co-protocol") == "http" else "https://"
-        )
+    if not (url := _get_image_url(meta_tags, details, kind)):
+        return False
+    success, img_bytes = download_image(url)
+    if not success:
+        logging.error(f"\t#{str(kind).upper()}: file does not exist at url: {url}")
+        return False
+    fname = f"{note_utils.generate_filename(header)} [{kind.value}].jpg"
+    path = os.path.join(pathname, fname)
+    with open(path, "wb") as file:
+        file.write(img_bytes)
+    if meta_tags and meta_tags.image_processing():
+        _process_image(meta_tags, path)
+    return True
 
-        if "/" in cover_params["co"]:
-            cover_url = f"{protocol}{partial_url}"
-        else:
-            cover_url = f"{protocol}images.fanart.tv/fanart/{partial_url}"
-        logging.debug(f"\t- downloading cover from #VIDEO params: {cover_url}")
-    elif url := details.cover_url:
-        cover_url = url
+
+def _get_image_url(
+    meta_tags: ImageMetaTags | None, details: SongDetails, kind: ImageKind
+) -> str | None:
+    url = None
+    if meta_tags:
+        url = meta_tags.source_url()
+        logging.debug(f"\t- downloading {kind} from #VIDEO params: {url}")
+    elif kind is ImageKind.COVER and details.cover_url:
+        url = details.cover_url
         logging.warning(
             "\t- no cover resource in #VIDEO tag, so fallback to small usdb cover!"
         )
     else:
-        logging.warning("\t- no cover resource in #VIDEO tag and no cover in usdb")
-        return False
-
-    success, img_bytes = download_image(cover_url)
-
-    cover_filename = note_utils.generate_filename(header) + " [CO].jpg"
-
-    if success:
-        with open(os.path.join(pathname, cover_filename), "wb") as file:
-            file.write(img_bytes)
-
-        if (
-            cover_params.get("co-rotate")
-            or cover_params.get("co-crop")
-            or cover_params.get("co-resize")
-            or cover_params.get("co-contrast")
-        ):
-            with Image.open(os.path.join(pathname, cover_filename)).convert(
-                "RGB"
-            ) as cover:
-                # rotate (optional)
-                angle = cover_params.get("co-rotate")
-                if angle:
-                    cover = cover.rotate(
-                        float(angle), resample=Image.BICUBIC, expand=True
-                    )
-
-                # crop (optional)
-                # TODO: ensure quadratic cover
-                cover_crop = cover_params.get("co-crop")
-                if cover_crop:
-                    (
-                        cover_crop_left,
-                        cover_crop_upper,
-                        cover_width,
-                        cover_height,
-                    ) = cover_crop.split("-")
-                    cover_crop_right = int(cover_crop_left) + int(cover_width)
-                    cover_crop_lower = int(cover_crop_upper) + int(cover_height)
-                    cover = cover.crop(
-                        (
-                            int(cover_crop_left),
-                            int(cover_crop_upper),
-                            cover_crop_right,
-                            cover_crop_lower,
-                        )
-                    )
-
-                # resize (optional)
-                cover_resize = cover_params.get("co-resize")
-                if cover_resize:
-                    width, height = cover_resize.split("-")
-                    cover = cover.resize(
-                        (int(width), int(height)), resample=Image.LANCZOS
-                    )
-
-                # increase contrast (optional)
-                cover_contrast = cover_params.get("co-contrast")
-                if cover_contrast:
-                    if cover_contrast == "auto":
-                        cover = ImageOps.autocontrast(cover, cutoff=5)
-                    else:
-                        cover = ImageEnhance.Contrast(cover).enhance(
-                            float(cover_contrast)
-                        )
-
-                # save post-processed cover
-                cover.save(
-                    os.path.join(pathname, cover_filename),
-                    "jpeg",
-                    quality=100,
-                    subsampling=0,
-                )
-        return True
-
-    logging.error(f"\t#COVER: file does not exist at url: {cover_url}")
-    return False
+        logging.warning(f"\t- no {kind} resource found")
+    return url
 
 
-def download_and_process_background(
-    header: dict[str, str], background_params: dict[str, str], pathname: str
-) -> bool:
-    if not background_params.get("bg"):
-        logging.warning("\t- no background resource in #VIDEO-tag")
-        return False
+def _process_image(meta_tags: ImageMetaTags, path: str) -> None:
+    with Image.open(path).convert("RGB") as image:
+        if rotate := meta_tags.rotate:
+            image = image.rotate(rotate, resample=Image.BICUBIC, expand=True)
+            # TODO: ensure quadratic cover
+        if crop := meta_tags.crop:
+            image = image.crop((crop.left, crop.upper, crop.right, crop.lower))
+        if resize := meta_tags.resize:
+            image = image.resize((resize.width, resize.height), resample=Image.LANCZOS)
+        if meta_tags.contrast == "auto":
+            image = ImageOps.autocontrast(image, cutoff=5)
+        elif meta_tags.contrast:
+            image = ImageEnhance.Contrast(image).enhance(meta_tags.contrast)
 
-    background_extension = ".jpg"
-
-    background_filename = (
-        note_utils.generate_filename(header) + f" [BG]{background_extension}"
-    )
-
-    protocol = "https://"
-    if background_params.get("bg-protocol") == "http":
-        protocol = "http://"
-
-    if "/" in background_params["bg"]:
-        background_url = f"{protocol}{background_params['bg']}"
-    else:
-        background_url = f"{protocol}images.fanart.tv/fanart/{background_params['bg']}"
-
-    logging.debug(f"\t- downloading background from #VIDEO params: {background_url}")
-
-    success, img_bytes = download_image(background_url)
-
-    if success:
-        with open(os.path.join(pathname, background_filename), "wb") as file:
-            file.write(img_bytes)
-
-        if background_params.get("bg-crop") or background_params.get("bg-resize"):
-            with Image.open(background_filename).convert("RGB") as background:
-                # resize (optional)
-                background_resize = background_params.get("bg-resize")
-                if background_resize:
-                    width, height = background_resize.split("-")
-                    background = background.resize(
-                        (int(width), int(height)), resample=Image.LANCZOS
-                    )
-
-                # crop (optional)
-                background_crop = background_params.get("bg-crop")
-                if background_crop:
-                    (
-                        background_crop_left,
-                        background_crop_upper,
-                        background_width,
-                        background_height,
-                    ) = background_crop.split("-")
-                    background_crop_right = int(background_crop_left) + int(
-                        background_width
-                    )
-                    background_crop_lower = int(background_crop_upper) + int(
-                        background_height
-                    )
-                    background = background.crop(
-                        (
-                            int(background_crop_left),
-                            int(background_crop_upper),
-                            background_crop_right,
-                            background_crop_lower,
-                        )
-                    )
-
-                # save post-processed background
-                background.save(background_filename, "jpeg", quality=100, subsampling=0)
-        return True
-
-    logging.error(f"\t#BACKGROUND: file does not exist at url: {background_url}")
-    return False
+            # save post-processed cover
+        image.save(path, "jpeg", quality=100, subsampling=0)
