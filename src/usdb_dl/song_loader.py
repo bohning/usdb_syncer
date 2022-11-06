@@ -66,6 +66,8 @@ class SongLoader(QRunnable):
 
         dirname = note_utils.generate_dirname(header, bool(meta_tags.video))
         pathname = os.path.join(self.options.song_dir, dirname, str(self.song_id))
+        filename = note_utils.generate_filename(header)
+        path_base = os.path.join(pathname, filename)
 
         if not os.path.exists(pathname):
             os.makedirs(pathname)
@@ -101,7 +103,6 @@ class SongLoader(QRunnable):
         ###
         _logger.info(f"#{self.song_id}: (2/6) downloading audio file...")
         ###
-        has_audio = False
         if audio_opts := self.options.audio_options:
             # else:
             #    video_params = details.get("video_params")
@@ -112,20 +113,21 @@ class SongLoader(QRunnable):
             #                f"#{self.song_id}: (2/6) Using Youtube ID {audio_resource} extracted from comments."
             #            )
             if audio_resource := meta_tags.audio or meta_tags.video:
-                has_audio, ext = resource_dl.download_and_process_audio(
-                    header, audio_resource, audio_opts, self.options.browser, pathname
-                )
+                if ext := resource_dl.download_video(
+                    audio_resource, audio_opts, self.options.browser, path_base
+                ):
+                    header["#MP3"] = f"{filename}.{ext}"
+                    _logger.info(f"#{self.song_id}: (2/6) Success.")
+                    # self.model.setItem(self.model.findItems(self.kwargs['id'], flags=Qt.MatchExactly, column=0)[0].row(), 9, QStandardItem(QIcon(":/icons/tick.png"), ""))
+                else:
+                    _logger.error(f"#{self.song_id}: (2/6) Failed.")
 
                 # delete #VIDEO tag used for resources
                 if header.get("#VIDEO"):
                     header.pop("#VIDEO")
 
-                if has_audio:
-                    header["#MP3"] = f"{note_utils.generate_filename(header)}.{ext}"
-                    _logger.info(f"#{self.song_id}: (2/6) Success.")
-                    # self.model.setItem(self.model.findItems(self.kwargs['id'], flags=Qt.MatchExactly, column=0)[0].row(), 9, QStandardItem(QIcon(":/icons/tick.png"), ""))
-                else:
-                    _logger.error(f"#{self.song_id}: (2/6) Failed.")
+            else:
+                _logger.warning("\t- no audio resource in #VIDEO tag")
         ###
         _logger.info(f"#{self.song_id}: (3/6) downloading video file...")
         ###
@@ -140,14 +142,11 @@ class SongLoader(QRunnable):
             #                f"#{self.song_id}: (3/6) Using Youtube ID {audio_resource} extracted from comments."
             #            )
             if video_resource := meta_tags.video:
-                has_video = resource_dl.download_and_process_video(
-                    header, video_resource, video_opts, self.options.browser, pathname
-                )
-
-                if has_video:
-                    header[
-                        "#VIDEO"
-                    ] = f"{note_utils.generate_filename(header)}{video_opts.format}"
+                if ext := resource_dl.download_video(
+                    video_resource, video_opts, self.options.browser, path_base
+                ):
+                    has_video = True
+                    header["#VIDEO"] = f"{filename}.{ext}"
                     _logger.info(f"#{self.song_id}: (3/6) Success.")
                     # self.model.setItem(self.model.findItems(idp, flags=Qt.MatchExactly, column=0)[0].row(), 10, QStandardItem(QIcon(":/icons/tick.png"), ""))
                 else:

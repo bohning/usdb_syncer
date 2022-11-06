@@ -35,108 +35,51 @@ class ImageKind(Enum):
                 assert_never(unreachable)
 
 
-def download_and_process_audio(
-    header: dict[str, str],
-    audio_resource: str,
-    audio_options: AudioOptions,
+def download_video(
+    resource: str,
+    options: AudioOptions | VideoOptions,
     browser: Browser,
-    pathname: str,
-) -> tuple[bool, str]:
-    if not audio_resource:
-        logging.warning("\t- no audio resource in #VIDEO tag")
-        return False, ""
-    if "/" in audio_resource:
-        logging.warning("\t- only YouTube videos are currently supported")
-        return False, ""
+    path_base: str,
+) -> str | None:
+    """Download video from resource to path and process it according to options.
 
-    audio_url = f"https://www.youtube.com/watch?v={audio_resource}"
+    Parameters:
+        resource: URL or YouTube id
+        options: parameters for downloading and processing
+        browser: browser to use cookies from
+        path_base: the target on the file system *without* an extension
 
-    logging.debug(f"\t- downloading audio from #VIDEO params: {audio_url}")
-
-    audio_filename = os.path.join(pathname, note_utils.generate_filename(header))
-
+    Returns:
+        the extension of the successfully downloaded file or None
+    """
+    url = f"https://{'' if '/' in resource else 'www.youtube.com/watch?v='}{resource}"
     ydl_opts: dict[str, Union[str, bool, tuple, list]] = {
-        "format": audio_options.format.ytdl_format(),
-        "outtmpl": f"{audio_filename}.%(ext)s",
+        # currently fails for archive.org, where yt_dlp can't read codecs
+        # could use "best" as a fallback
+        "format": options.format.ytdl_format(),
+        "outtmpl": f"{path_base}.%(ext)s",
         "keepvideo": False,
         "verbose": False,
     }
     if browser.value:
         ydl_opts["cookiesfrombrowser"] = (browser.value,)
-    if audio_options.reencode_format:
+    if isinstance(options, AudioOptions) and options.reencode_format:
         ydl_opts["postprocessors"] = [
             {
                 "key": "FFmpegExtractAudio",
-                "preferredcodec": audio_options.reencode_format.value,
+                "preferredcodec": options.reencode_format.value,
                 "preferredquality": "320",
             }
         ]
 
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
         try:
-            # ydl.download([video_url])
-            filename = ydl.prepare_filename(ydl.extract_info(f"{audio_url}"))
-        except:
-            logging.error(f"\t#VIDEO: error downloading video url: {audio_url}")
-            return False, ""
+            filename = ydl.prepare_filename(ydl.extract_info(f"{url}"))
+        except yt_dlp.utils.YoutubeDLError:
+            logging.error(f"\terror downloading video url: {url}")
+            return None
 
-    ext = audio_options.extension() or os.path.splitext(filename)[1][1:]
-
-    return True, ext
-
-
-def download_and_process_video(
-    header: dict[str, str],
-    video_resource: str,
-    video_options: VideoOptions,
-    browser: Browser,
-    pathname: str,
-) -> bool:
-    # _video_target_container = video_options["container"]
-    # _video_reencode_allow = video_options[
-    #    "allow_reencode"
-    # ]  # True # if False, ffmpeg will not be used to trim or crop and subsequently reencode videos (uses US #START/#END tags)
-    # _video_reencode_encoder = video_options[
-    #    "encoder"
-    # ]  # "libx264" #"libvpx-vp9" #"libaom-av1" #"libx264"
-    # _video_reencode_crf = (
-    #    23  # 0–51 (0=lossless/huge file size, 23=default, 51=worst quality possible)
-    # )
-    # _video_reencode_preset = "ultrafast"  # ultrafast, superfast, veryfast, faster, fast, medium (default preset), slow, slower, veryslow
-
-    if "/" in video_resource:
-        logging.warning("\t- only YouTube videos are currently supported")
-        return False
-
-    video_url = f"https://www.youtube.com/watch?v={video_resource}"
-
-    logging.debug(f"\t- downloading video from #VIDEO params: {video_url}")
-
-    video_filename = os.path.join(pathname, note_utils.generate_filename(header))
-
-    ydl_opts = {
-        # "format":  f"bestvideo[ext=mp4][width<={video_max_width}][height<={video_max_height}][fps<={video_max_fps}]+bestaudio[ext=m4a]/best[ext=mp4][width<={video_max_width}][height<={video_max_height}][fps<={video_max_fps}]/best[width<={video_max_width}][height<={video_max_height}][fps<={video_max_fps}]",
-        "format": video_options.ytdl_format(),
-        # "format":  f"bestvideo[width<={video_max_width}][height<={video_max_height}][fps<={video_max_fps}]+bestaudio",
-        # "format":  f"bestvideo[width<={video_max_width}][height<={video_max_height}][fps<={video_max_fps}]",
-        # "outtmpl": os.path.join(dir, f"{artist} - {title}" + ".%(ext)s"),
-        "outtmpl": f"{video_filename}" + ".%(ext)s",
-        "keepvideo": False,
-        "verbose": False,
-    }
-
-    if browser.value:
-        ydl_opts["cookiesfrombrowser"] = (browser.value,)
-
-    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-        try:
-            ydl.download([video_url])
-            _vfn = ydl.prepare_filename(ydl.extract_info(video_url))
-        except:
-            logging.error(f"\t#VIDEO: error downloading video url: {video_url}")
-
-    # TODO: check if download was successful, only then return True
-    return True
+    return os.path.splitext(filename)[1][1:]
 
 
 def download_image(url: str) -> tuple[bool, bytes]:

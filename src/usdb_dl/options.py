@@ -144,6 +144,11 @@ class VideoContainer(Enum):
             case _ as unreachable:
                 assert_never(unreachable)
 
+    def ytdl_format(self) -> str:
+        if self is VideoContainer.BEST:
+            return "bestvideo"
+        return f"bestvideo[ext={self.value}]"
+
 
 class VideoCodec(Enum):
     """Video codecs that ytdl can reencode videos to."""
