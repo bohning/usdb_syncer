@@ -36,7 +36,6 @@ from PySide6.QtWidgets import (
     QMainWindow,
     QMenu,
     QSplashScreen,
-    QToolButton,
 )
 
 from usdb_dl import SongId, usdb_scraper
