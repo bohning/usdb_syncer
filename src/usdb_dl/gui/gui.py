@@ -72,6 +72,13 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         self.threadpool = QThreadPool(self)
 
         self.plainTextEdit.setReadOnly(True)
+        self._infos: list[tuple[str, float]] = []
+        self._warnings: list[tuple[str, float]] = []
+        self._errors: list[tuple[str, float]] = []
+        self.checkBox_infos.stateChanged.connect(self._on_log_filter_changed)
+        self.checkBox_warnings.stateChanged.connect(self._on_log_filter_changed)
+        self.checkBox_errors.stateChanged.connect(self._on_log_filter_changed)
+
         self.lineEdit_song_dir.setText(os.path.join(os.getcwd(), "songs"))
 
         self.pushButton_get_songlist.clicked.connect(lambda: self.refresh(True))
@@ -138,6 +145,19 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         )
         self.checkBox_case_sensitive.stateChanged.connect(self.set_case_sensitivity)
 
+    def _on_log_filter_changed(self) -> None:
+        messages = []
+        if self.checkBox_infos.isChecked():
+            messages += self._infos
+        if self.checkBox_warnings.isChecked():
+            messages += self._warnings
+        if self.checkBox_errors.isChecked():
+            messages += self._errors
+        messages.sort(key=lambda m: m[1])
+        self.plainTextEdit.setPlainText("\n".join(m[0] for m in messages))
+        slider = self.plainTextEdit.verticalScrollBar()
+        slider.setValue(slider.maximum())
+
     def set_filter_regular_expression(self, regexp: str) -> None:
         self.filter_proxy_model.setFilterRegularExpression(regexp)
         self.statusbar.showMessage(f"{self.filter_proxy_model.rowCount()} songs found.")
@@ -161,8 +181,20 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         self.statusbar.showMessage(f"{self.filter_proxy_model.rowCount()} songs found.")
 
     @Slot(str)
-    def log_to_text_edit(self, message: str) -> None:
-        self.plainTextEdit.appendPlainText(message)
+    def log_to_text_edit(self, message: str, level: int, created: float) -> None:
+        match level:
+            case 40:
+                self._errors.append((message, created))
+                if self.checkBox_errors.isChecked():
+                    self.plainTextEdit.appendPlainText(message)
+            case 30:
+                self._warnings.append((message, created))
+                if self.checkBox_warnings.isChecked():
+                    self.plainTextEdit.appendPlainText(message)
+            case 20:
+                self._infos.append((message, created))
+                if self.checkBox_infos.isChecked():
+                    self.plainTextEdit.appendPlainText(message)
 
     def _populate_comboboxes(self) -> None:
         for encoding in Encoding:
@@ -493,7 +525,7 @@ def has_recent_mtime(path: str, recent_secs: int = 60 * 60 * 24) -> bool:
 class Signals(QObject):
     """Custom signals."""
 
-    string = Signal(str)
+    message_level_time = Signal(str, int, float)
 
 
 class TextEditLogger(logging.Handler):
@@ -502,11 +534,11 @@ class TextEditLogger(logging.Handler):
     def __init__(self, mw: MainWindow) -> None:
         super().__init__()
         self.signals = Signals()
-        self.signals.string.connect(mw.log_to_text_edit)
+        self.signals.message_level_time.connect(mw.log_to_text_edit)
 
     def emit(self, record: logging.LogRecord) -> None:
         message = self.format(record)
-        self.signals.string.emit(message)
+        self.signals.message_level_time.emit(message, record.levelno, record.created)
 
 
 def main() -> None:

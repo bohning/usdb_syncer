@@ -426,14 +426,42 @@ class Ui_MainWindow(object):
         self.horizontalLayout.setObjectName(u"horizontalLayout")
         self.groupBox_5 = QGroupBox(self.centralwidget)
         self.groupBox_5.setObjectName(u"groupBox_5")
-        self.verticalLayout_3 = QVBoxLayout(self.groupBox_5)
+        self.horizontalLayout_8 = QHBoxLayout(self.groupBox_5)
+        self.horizontalLayout_8.setObjectName(u"horizontalLayout_8")
+        self.horizontalLayout_8.setContentsMargins(4, 4, 4, 4)
+        self.verticalLayout_3 = QVBoxLayout()
         self.verticalLayout_3.setObjectName(u"verticalLayout_3")
-        self.verticalLayout_3.setContentsMargins(4, 4, 4, 4)
+        self.label_2 = QLabel(self.groupBox_5)
+        self.label_2.setObjectName(u"label_2")
+
+        self.verticalLayout_3.addWidget(self.label_2)
+
+        self.checkBox_errors = QCheckBox(self.groupBox_5)
+        self.checkBox_errors.setObjectName(u"checkBox_errors")
+        self.checkBox_errors.setChecked(True)
+
+        self.verticalLayout_3.addWidget(self.checkBox_errors)
+
+        self.checkBox_warnings = QCheckBox(self.groupBox_5)
+        self.checkBox_warnings.setObjectName(u"checkBox_warnings")
+        self.checkBox_warnings.setChecked(True)
+
+        self.verticalLayout_3.addWidget(self.checkBox_warnings)
+
+        self.checkBox_infos = QCheckBox(self.groupBox_5)
+        self.checkBox_infos.setObjectName(u"checkBox_infos")
+        self.checkBox_infos.setChecked(True)
+
+        self.verticalLayout_3.addWidget(self.checkBox_infos)
+
+
+        self.horizontalLayout_8.addLayout(self.verticalLayout_3)
+
         self.plainTextEdit = QPlainTextEdit(self.groupBox_5)
         self.plainTextEdit.setObjectName(u"plainTextEdit")
         self.plainTextEdit.setMaximumSize(QSize(16777215, 16777215))
 
-        self.verticalLayout_3.addWidget(self.plainTextEdit)
+        self.horizontalLayout_8.addWidget(self.plainTextEdit)
 
 
         self.horizontalLayout.addWidget(self.groupBox_5)
@@ -533,6 +561,10 @@ class Ui_MainWindow(object):
         self.comboBox_background.setItemText(1, QCoreApplication.translate("MainWindow", u"only if no video", None))
 
         self.groupBox_5.setTitle(QCoreApplication.translate("MainWindow", u"Log", None))
+        self.label_2.setText(QCoreApplication.translate("MainWindow", u"Show:", None))
+        self.checkBox_errors.setText(QCoreApplication.translate("MainWindow", u"Errors", None))
+        self.checkBox_warnings.setText(QCoreApplication.translate("MainWindow", u"Warnings", None))
+        self.checkBox_infos.setText(QCoreApplication.translate("MainWindow", u"Infos", None))
         self.pushButton_downloadSelectedSongs.setText(QCoreApplication.translate("MainWindow", u"Download selected songs!", None))
     # retranslateUi
 
