@@ -132,18 +132,13 @@ def generate_dirname(header: dict[str, str], video: bool) -> str:
 
 
 def dump_notes(
-    header: dict[str, str],
-    body: list[str],
-    pathname: str,
-    txt_options: TxtOptions,
-    duet: bool = False,
+    header: dict[str, str], body: list[str], pathname: str, txt_options: TxtOptions
 ) -> str:
     """Write notes to file.
 
     Parameters:
         header: song meta data
         body: song notes
-        duet: add (duet) to file name
         encoding: file encoding
         newline: newline character
 
@@ -151,7 +146,7 @@ def dump_notes(
         file name
     """
     txt_filename = generate_filename(header)
-    duetstring = " (duet)" if duet else ""
+    duetstring = " (duet)" if header.get("#P2") else ""
     filename = f"{txt_filename}{duetstring}.txt"
     _logger.debug(f"\t- writing text file with encoding {txt_options.encoding.value}")
     with open(
