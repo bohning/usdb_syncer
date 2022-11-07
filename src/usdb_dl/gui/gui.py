@@ -36,6 +36,7 @@ from PySide6.QtWidgets import (
     QMainWindow,
     QMenu,
     QSplashScreen,
+    QToolButton,
 )
 
 from usdb_dl import SongId, usdb_scraper
@@ -75,9 +76,9 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         self._infos: list[tuple[str, float]] = []
         self._warnings: list[tuple[str, float]] = []
         self._errors: list[tuple[str, float]] = []
-        self.checkBox_infos.stateChanged.connect(self._on_log_filter_changed)
-        self.checkBox_warnings.stateChanged.connect(self._on_log_filter_changed)
-        self.checkBox_errors.stateChanged.connect(self._on_log_filter_changed)
+        self.toolButton_infos.toggled.connect(self._on_log_filter_changed)
+        self.toolButton_warnings.toggled.connect(self._on_log_filter_changed)
+        self.toolButton_errors.toggled.connect(self._on_log_filter_changed)
 
         self.lineEdit_song_dir.setText(os.path.join(os.getcwd(), "songs"))
 
@@ -147,11 +148,11 @@ class MainWindow(Ui_MainWindow, QMainWindow):
 
     def _on_log_filter_changed(self) -> None:
         messages = []
-        if self.checkBox_infos.isChecked():
+        if self.toolButton_infos.isChecked():
             messages += self._infos
-        if self.checkBox_warnings.isChecked():
+        if self.toolButton_warnings.isChecked():
             messages += self._warnings
-        if self.checkBox_errors.isChecked():
+        if self.toolButton_errors.isChecked():
             messages += self._errors
         messages.sort(key=lambda m: m[1])
         self.plainTextEdit.setPlainText("\n".join(m[0] for m in messages))
@@ -185,15 +186,15 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         match level:
             case 40:
                 self._errors.append((message, created))
-                if self.checkBox_errors.isChecked():
+                if self.toolButton_errors.isChecked():
                     self.plainTextEdit.appendPlainText(message)
             case 30:
                 self._warnings.append((message, created))
-                if self.checkBox_warnings.isChecked():
+                if self.toolButton_warnings.isChecked():
                     self.plainTextEdit.appendPlainText(message)
             case 20:
                 self._infos.append((message, created))
-                if self.checkBox_infos.isChecked():
+                if self.toolButton_infos.isChecked():
                     self.plainTextEdit.appendPlainText(message)
 
     def _populate_comboboxes(self) -> None:

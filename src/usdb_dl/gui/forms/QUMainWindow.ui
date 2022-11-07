@@ -781,16 +781,19 @@
          <item>
           <layout class="QVBoxLayout" name="verticalLayout_3">
            <item>
-            <widget class="QLabel" name="label_2">
-             <property name="text">
-              <string>Show:</string>
+            <widget class="QToolButton" name="toolButton_infos">
+             <property name="toolTip">
+              <string>Information</string>
              </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QCheckBox" name="checkBox_errors">
              <property name="text">
-              <string>Errors</string>
+              <string>Infos</string>
+             </property>
+             <property name="icon">
+              <iconset resource="../resources/resources.qrc">
+               <normaloff>:/icons/info.png</normaloff>:/icons/info.png</iconset>
+             </property>
+             <property name="checkable">
+              <bool>true</bool>
              </property>
              <property name="checked">
               <bool>true</bool>
@@ -798,19 +801,39 @@
             </widget>
            </item>
            <item>
-            <widget class="QCheckBox" name="checkBox_warnings">
+            <widget class="QToolButton" name="toolButton_warnings">
+             <property name="toolTip">
+              <string>Warnings</string>
+             </property>
              <property name="text">
               <string>Warnings</string>
              </property>
+             <property name="icon">
+              <iconset resource="../resources/resources.qrc">
+               <normaloff>:/icons/warning.png</normaloff>:/icons/warning.png</iconset>
+             </property>
+             <property name="checkable">
+              <bool>true</bool>
+             </property>
              <property name="checked">
               <bool>true</bool>
              </property>
             </widget>
            </item>
            <item>
-            <widget class="QCheckBox" name="checkBox_infos">
+            <widget class="QToolButton" name="toolButton_errors">
+             <property name="toolTip">
+              <string>Errors</string>
+             </property>
              <property name="text">
-              <string>Infos</string>
+              <string>Errors</string>
+             </property>
+             <property name="icon">
+              <iconset resource="../resources/resources.qrc">
+               <normaloff>:/icons/error.png</normaloff>:/icons/error.png</iconset>
+             </property>
+             <property name="checkable">
+              <bool>true</bool>
              </property>
              <property name="checked">
               <bool>true</bool>
@@ -857,7 +880,7 @@
      <x>0</x>
      <y>0</y>
      <width>1493</width>
-     <height>22</height>
+     <height>24</height>
     </rect>
    </property>
   </widget>

@@ -1,5 +1,8 @@
 <RCC>
   <qresource prefix="icons">
+    <file>error.png</file>
+    <file>info.png</file>
+    <file>warning.png</file>
     <file>brave.png</file>
     <file>chrome.png</file>
     <file>chromium.png</file>

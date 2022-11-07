@@ -3,7 +3,7 @@
 ################################################################################
 ## Form generated from reading UI file 'QUMainWindow.ui'
 ##
-## Created by: Qt User Interface Compiler version 6.2.4
+## Created by: Qt User Interface Compiler version 6.4.0
 ##
 ## WARNING! All changes made in this file will be lost when recompiling UI file!
 ################################################################################
@@ -19,7 +19,8 @@ from PySide6.QtWidgets import (QAbstractItemView, QApplication, QCheckBox, QComb
     QFormLayout, QGroupBox, QHBoxLayout, QHeaderView,
     QLabel, QLineEdit, QMainWindow, QMenuBar,
     QPlainTextEdit, QPushButton, QSizePolicy, QSpacerItem,
-    QStatusBar, QTableView, QVBoxLayout, QWidget)
+    QStatusBar, QTableView, QToolButton, QVBoxLayout,
+    QWidget)
 import resources_rc
 
 class Ui_MainWindow(object):
@@ -431,28 +432,35 @@ class Ui_MainWindow(object):
         self.horizontalLayout_8.setContentsMargins(4, 4, 4, 4)
         self.verticalLayout_3 = QVBoxLayout()
         self.verticalLayout_3.setObjectName(u"verticalLayout_3")
-        self.label_2 = QLabel(self.groupBox_5)
-        self.label_2.setObjectName(u"label_2")
+        self.toolButton_infos = QToolButton(self.groupBox_5)
+        self.toolButton_infos.setObjectName(u"toolButton_infos")
+        icon5 = QIcon()
+        icon5.addFile(u":/icons/info.png", QSize(), QIcon.Normal, QIcon.Off)
+        self.toolButton_infos.setIcon(icon5)
+        self.toolButton_infos.setCheckable(True)
+        self.toolButton_infos.setChecked(True)
 
-        self.verticalLayout_3.addWidget(self.label_2)
+        self.verticalLayout_3.addWidget(self.toolButton_infos)
 
-        self.checkBox_errors = QCheckBox(self.groupBox_5)
-        self.checkBox_errors.setObjectName(u"checkBox_errors")
-        self.checkBox_errors.setChecked(True)
+        self.toolButton_warnings = QToolButton(self.groupBox_5)
+        self.toolButton_warnings.setObjectName(u"toolButton_warnings")
+        icon6 = QIcon()
+        icon6.addFile(u":/icons/warning.png", QSize(), QIcon.Normal, QIcon.Off)
+        self.toolButton_warnings.setIcon(icon6)
+        self.toolButton_warnings.setCheckable(True)
+        self.toolButton_warnings.setChecked(True)
 
-        self.verticalLayout_3.addWidget(self.checkBox_errors)
+        self.verticalLayout_3.addWidget(self.toolButton_warnings)
 
-        self.checkBox_warnings = QCheckBox(self.groupBox_5)
-        self.checkBox_warnings.setObjectName(u"checkBox_warnings")
-        self.checkBox_warnings.setChecked(True)
+        self.toolButton_errors = QToolButton(self.groupBox_5)
+        self.toolButton_errors.setObjectName(u"toolButton_errors")
+        icon7 = QIcon()
+        icon7.addFile(u":/icons/error.png", QSize(), QIcon.Normal, QIcon.Off)
+        self.toolButton_errors.setIcon(icon7)
+        self.toolButton_errors.setCheckable(True)
+        self.toolButton_errors.setChecked(True)
 
-        self.verticalLayout_3.addWidget(self.checkBox_warnings)
-
-        self.checkBox_infos = QCheckBox(self.groupBox_5)
-        self.checkBox_infos.setObjectName(u"checkBox_infos")
-        self.checkBox_infos.setChecked(True)
-
-        self.verticalLayout_3.addWidget(self.checkBox_infos)
+        self.verticalLayout_3.addWidget(self.toolButton_errors)
 
 
         self.horizontalLayout_8.addLayout(self.verticalLayout_3)
@@ -481,7 +489,7 @@ class Ui_MainWindow(object):
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QMenuBar(MainWindow)
         self.menubar.setObjectName(u"menubar")
-        self.menubar.setGeometry(QRect(0, 0, 1493, 22))
+        self.menubar.setGeometry(QRect(0, 0, 1493, 24))
         MainWindow.setMenuBar(self.menubar)
         self.statusbar = QStatusBar(MainWindow)
         self.statusbar.setObjectName(u"statusbar")
@@ -561,10 +569,18 @@ class Ui_MainWindow(object):
         self.comboBox_background.setItemText(1, QCoreApplication.translate("MainWindow", u"only if no video", None))
 
         self.groupBox_5.setTitle(QCoreApplication.translate("MainWindow", u"Log", None))
-        self.label_2.setText(QCoreApplication.translate("MainWindow", u"Show:", None))
-        self.checkBox_errors.setText(QCoreApplication.translate("MainWindow", u"Errors", None))
-        self.checkBox_warnings.setText(QCoreApplication.translate("MainWindow", u"Warnings", None))
-        self.checkBox_infos.setText(QCoreApplication.translate("MainWindow", u"Infos", None))
+#if QT_CONFIG(tooltip)
+        self.toolButton_infos.setToolTip(QCoreApplication.translate("MainWindow", u"Information", None))
+#endif // QT_CONFIG(tooltip)
+        self.toolButton_infos.setText(QCoreApplication.translate("MainWindow", u"Infos", None))
+#if QT_CONFIG(tooltip)
+        self.toolButton_warnings.setToolTip(QCoreApplication.translate("MainWindow", u"Warnings", None))
+#endif // QT_CONFIG(tooltip)
+        self.toolButton_warnings.setText(QCoreApplication.translate("MainWindow", u"Warnings", None))
+#if QT_CONFIG(tooltip)
+        self.toolButton_errors.setToolTip(QCoreApplication.translate("MainWindow", u"Errors", None))
+#endif // QT_CONFIG(tooltip)
+        self.toolButton_errors.setText(QCoreApplication.translate("MainWindow", u"Errors", None))
         self.pushButton_downloadSelectedSongs.setText(QCoreApplication.translate("MainWindow", u"Download selected songs!", None))
     # retranslateUi
 
