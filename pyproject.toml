@@ -77,13 +77,11 @@ ignore-signatures = "yes"
 [tool.mypy]
 ignore_missing_imports = true
 disallow_untyped_defs = true
+follow_imports = "silent"
 exclude = [
-    "venv",
-    "log",
     "src/usdb_dl/gui/forms",
     "src/usdb_dl/gui/resources",
     "src/resources_rc.py",
-    ".tox",
 ]
 
 [tool.pytest.ini_options]
