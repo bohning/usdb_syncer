@@ -181,7 +181,7 @@ class SongDetails:
         self.title = title
         self.cover_url = None if "nocover" in cover_url else USDB_BASE_URL + cover_url
         self.bpm = float(bpm.replace(",", "."))
-        self.gap = float(gap.replace(",", "."))
+        self.gap = float(gap.replace(",", ".") or 0)
         self.golden_notes = "Yes" in golden_notes
         self.song_check = "Yes" in song_check
         self.date_time = datetime.strptime(date_time, USDB_DATETIME_STRF)
