@@ -39,7 +39,8 @@ from PySide6.QtWidgets import (
 )
 
 from usdb_dl import SongId, usdb_scraper
-from usdb_dl.gui.forms.QUMainWindow import Ui_MainWindow
+from usdb_dl.gui.forms.MainWindow import Ui_MainWindow
+from usdb_dl.gui.meta_tags_dialog import MetaTagsDialog
 from usdb_dl.options import (
     AudioCodec,
     AudioContainer,
@@ -78,6 +79,8 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         self.toolButton_infos.toggled.connect(self._on_log_filter_changed)
         self.toolButton_warnings.toggled.connect(self._on_log_filter_changed)
         self.toolButton_errors.toggled.connect(self._on_log_filter_changed)
+
+        self.action_meta_tags.triggered.connect(lambda: MetaTagsDialog(self).show())
 
         self.lineEdit_song_dir.setText(os.path.join(os.getcwd(), "songs"))
 
