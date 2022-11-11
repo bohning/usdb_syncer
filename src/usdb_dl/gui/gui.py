@@ -1,14 +1,10 @@
 """usdb_dl's GUI"""
 
 import datetime
-import json
 import logging
 import os
 import sys
-import time
 from typing import Any, cast
-
-import appdirs
 
 # maybe reportlab is better suited?
 from pdfme import build_pdf  # type: ignore
@@ -37,7 +33,7 @@ from PySide6.QtWidgets import (
     QSplashScreen,
 )
 
-from usdb_dl import SongId, usdb_scraper
+from usdb_dl import SongId
 from usdb_dl.gui.forms.MainWindow import Ui_MainWindow
 from usdb_dl.gui.meta_tags_dialog import MetaTagsDialog
 from usdb_dl.options import (
@@ -56,10 +52,9 @@ from usdb_dl.options import (
     VideoOptions,
     VideoResolution,
 )
+from usdb_dl.song_list_fetcher import SongListFetcher
 from usdb_dl.song_loader import SongLoader
 from usdb_dl.usdb_scraper import SongMeta
-
-# from pytube import extract
 
 
 class MainWindow(Ui_MainWindow, QMainWindow):
@@ -72,6 +67,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         self.threadpool = QThreadPool(self)
 
         self.plainTextEdit.setReadOnly(True)
+        self.len_song_list = 0
         self._infos: list[tuple[str, float]] = []
         self._warnings: list[tuple[str, float]] = []
         self._errors: list[tuple[str, float]] = []
@@ -218,9 +214,14 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         for fps in VideoFps:
             self.comboBox_fps.addItem(str(fps), fps)
 
-    def refresh(self, force_reload: bool) -> int:
+    def refresh(self, force_reload: bool) -> None:
+        self.pushButton_get_songlist.setEnabled(False)
+        self.threadpool.start(SongListFetcher(force_reload, self.on_song_list_fetched))
+
+    def on_song_list_fetched(self, song_list: list[SongMeta]) -> None:
         # TODO: remove all existing items in the model!
-        available_songs = get_available_songs(force_reload)
+        self.pushButton_get_songlist.setEnabled(True)
+        self.len_song_list = len(song_list)
         artists = set()
         titles = []
         languages = set()
@@ -228,7 +229,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         self.model.removeRows(0, self.model.rowCount())
 
         root = self.model.invisibleRootItem()
-        for song in available_songs:
+        for song in song_list:
             id_item = QStandardItem()
             id_item.setData(str(song.song_id), cast(int, Qt.ItemDataRole.DisplayRole))
             id_item.setCheckable(True)
@@ -299,8 +300,6 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         header.resizeSection(11, 24)
         header.setSectionResizeMode(12, QHeaderView.ResizeMode.Fixed)
         header.resizeSection(12, 24)
-
-        return len(available_songs)
 
     def select_song_dir(self) -> None:
         song_dir = str(QFileDialog.getExistingDirectory(self, "Select Song Directory"))
@@ -489,41 +488,6 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         return super().eventFilter(source, event)
 
 
-def get_available_songs(force_reload: bool) -> list[SongMeta]:
-    if force_reload or not (available_songs := load_available_songs()):
-        available_songs = usdb_scraper.get_usdb_available_songs()
-        dump_available_songs(available_songs)
-    return available_songs
-
-
-def load_available_songs() -> list[SongMeta] | None:
-    path = available_songs_path()
-    if not has_recent_mtime(path) or not os.path.exists(path):
-        return None
-    with open(path, encoding="utf8") as file:
-        try:
-            return json.load(file, object_hook=lambda d: SongMeta(**d))
-        except (json.decoder.JSONDecodeError, TypeError):
-            return None
-
-
-def dump_available_songs(available_songs: list[SongMeta]) -> None:
-    os.makedirs(os.path.dirname(available_songs_path()), exist_ok=True)
-    with open(available_songs_path(), "w", encoding="utf8") as file:
-        json.dump(available_songs, file, cls=usdb_scraper.SongMetaEncoder)
-
-
-def available_songs_path() -> str:
-    return os.path.join(
-        appdirs.user_cache_dir("usdb_dl", "bohning"), "available_songs.json"
-    )
-
-
-def has_recent_mtime(path: str, recent_secs: int = 60 * 60 * 24) -> bool:
-    """True if the given path exists and its mtime is less than recent_secs in the past."""
-    return os.path.exists(path) and time.time() - os.path.getmtime(path) < recent_secs
-
-
 class Signals(QObject):
     """Custom signals."""
 
@@ -562,9 +526,9 @@ def main() -> None:
     splash.show()
     QApplication.processEvents()
     splash.showMessage("Loading song database from usdb...", color=Qt.GlobalColor.gray)
-    num_songs = mw.refresh(False)
+    SongListFetcher(False, mw.on_song_list_fetched).run()
     splash.showMessage(
-        f"Song database successfully loaded with {num_songs} songs.",
+        f"Song database successfully loaded with {mw.len_song_list} songs.",
         color=Qt.GlobalColor.gray,
     )
     mw.showMaximized()
