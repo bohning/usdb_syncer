@@ -301,7 +301,7 @@ class MetaTagsDialog(Ui_Dialog, QDialog):
 
     def _update_output(self) -> None:
         values = self._ui_values()
-        self._output = "#VIDEO:" + ",".join(values.meta_tags())
+        self._output = _video_tag_from_values(values)
         self.output.setText(self._output)
         self.char_count.setText(f"{len(self._output)} / 170 characters")
 
@@ -323,6 +323,10 @@ class MetaTagsDialog(Ui_Dialog, QDialog):
 
     def _on_copy_to_clipboard(self) -> None:
         QGuiApplication.clipboard().setText(self._output)
+
+
+def _video_tag_from_values(values: UiValues) -> str:
+    return "#VIDEO:" + ",".join(values.meta_tags())
 
 
 def _sanitize_video_url(url: str) -> str:
