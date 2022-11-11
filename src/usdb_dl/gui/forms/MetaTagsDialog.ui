@@ -47,7 +47,7 @@
       <property name="geometry">
        <rect>
         <x>0</x>
-        <y>-153</y>
+        <y>0</y>
         <width>817</width>
         <height>912</height>
        </rect>
@@ -56,22 +56,267 @@
        <item>
         <widget class="QGroupBox" name="groupBox">
          <property name="title">
-          <string>Video</string>
+          <string>Video (v)</string>
          </property>
-         <layout class="QFormLayout" name="formLayout_2">
-          <item row="0" column="0">
-           <widget class="QLabel" name="label">
-            <property name="text">
-             <string>URL:</string>
+         <layout class="QVBoxLayout" name="verticalLayout_4">
+          <property name="leftMargin">
+           <number>4</number>
+          </property>
+          <property name="topMargin">
+           <number>4</number>
+          </property>
+          <property name="rightMargin">
+           <number>4</number>
+          </property>
+          <property name="bottomMargin">
+           <number>4</number>
+          </property>
+          <item>
+           <layout class="QHBoxLayout" name="horizontalLayout_12">
+            <item>
+             <widget class="QLabel" name="label">
+              <property name="text">
+               <string>URL:</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QLineEdit" name="video_url"/>
+            </item>
+           </layout>
+          </item>
+          <item>
+           <widget class="QGroupBox" name="groupBox_3">
+            <property name="title">
+             <string>Trim</string>
             </property>
+            <layout class="QVBoxLayout" name="verticalLayout_2">
+             <property name="spacing">
+              <number>-1</number>
+             </property>
+             <property name="leftMargin">
+              <number>4</number>
+             </property>
+             <property name="topMargin">
+              <number>4</number>
+             </property>
+             <property name="rightMargin">
+              <number>4</number>
+             </property>
+             <property name="bottomMargin">
+              <number>4</number>
+             </property>
+             <item>
+              <widget class="QGroupBox" name="groupBox_8">
+               <property name="title">
+                <string>Start</string>
+               </property>
+               <layout class="QHBoxLayout" name="horizontalLayout_8">
+                <property name="leftMargin">
+                 <number>4</number>
+                </property>
+                <property name="topMargin">
+                 <number>4</number>
+                </property>
+                <property name="rightMargin">
+                 <number>4</number>
+                </property>
+                <property name="bottomMargin">
+                 <number>4</number>
+                </property>
+                <item>
+                 <widget class="QLabel" name="label_19">
+                  <property name="text">
+                   <string>Minutes:</string>
+                  </property>
+                 </widget>
+                </item>
+                <item>
+                 <widget class="QSpinBox" name="video_trim_start_mins">
+                  <property name="maximum">
+                   <number>999</number>
+                  </property>
+                 </widget>
+                </item>
+                <item>
+                 <widget class="QLabel" name="label_20">
+                  <property name="text">
+                   <string>Seconds:</string>
+                  </property>
+                 </widget>
+                </item>
+                <item>
+                 <widget class="QDoubleSpinBox" name="video_trim_start_secs">
+                  <property name="decimals">
+                   <number>3</number>
+                  </property>
+                  <property name="maximum">
+                   <double>59.990000000000002</double>
+                  </property>
+                 </widget>
+                </item>
+                <item>
+                 <spacer name="horizontalSpacer_6">
+                  <property name="orientation">
+                   <enum>Qt::Horizontal</enum>
+                  </property>
+                  <property name="sizeHint" stdset="0">
+                   <size>
+                    <width>40</width>
+                    <height>20</height>
+                   </size>
+                  </property>
+                 </spacer>
+                </item>
+                <item>
+                 <widget class="QCheckBox" name="video_trim_use_start_frames">
+                  <property name="text">
+                   <string>Use Frames</string>
+                  </property>
+                 </widget>
+                </item>
+                <item>
+                 <widget class="QSpinBox" name="video_trim_start_frames">
+                  <property name="enabled">
+                   <bool>false</bool>
+                  </property>
+                  <property name="maximum">
+                   <number>50000</number>
+                  </property>
+                 </widget>
+                </item>
+                <item>
+                 <spacer name="horizontalSpacer_2">
+                  <property name="orientation">
+                   <enum>Qt::Horizontal</enum>
+                  </property>
+                  <property name="sizeHint" stdset="0">
+                   <size>
+                    <width>40</width>
+                    <height>20</height>
+                   </size>
+                  </property>
+                 </spacer>
+                </item>
+               </layout>
+              </widget>
+             </item>
+             <item>
+              <widget class="QGroupBox" name="groupBox_7">
+               <property name="title">
+                <string>End</string>
+               </property>
+               <layout class="QHBoxLayout" name="horizontalLayout_7">
+                <property name="leftMargin">
+                 <number>4</number>
+                </property>
+                <property name="topMargin">
+                 <number>4</number>
+                </property>
+                <property name="rightMargin">
+                 <number>4</number>
+                </property>
+                <property name="bottomMargin">
+                 <number>4</number>
+                </property>
+                <item>
+                 <widget class="QLabel" name="label_6">
+                  <property name="text">
+                   <string>Minutes:</string>
+                  </property>
+                 </widget>
+                </item>
+                <item>
+                 <widget class="QSpinBox" name="video_trim_end_mins">
+                  <property name="maximum">
+                   <number>999</number>
+                  </property>
+                 </widget>
+                </item>
+                <item>
+                 <widget class="QLabel" name="label_7">
+                  <property name="text">
+                   <string>Seconds:</string>
+                  </property>
+                 </widget>
+                </item>
+                <item>
+                 <widget class="QDoubleSpinBox" name="video_trim_end_secs">
+                  <property name="decimals">
+                   <number>3</number>
+                  </property>
+                  <property name="maximum">
+                   <double>59.990000000000002</double>
+                  </property>
+                 </widget>
+                </item>
+                <item>
+                 <spacer name="horizontalSpacer_7">
+                  <property name="orientation">
+                   <enum>Qt::Horizontal</enum>
+                  </property>
+                  <property name="sizeHint" stdset="0">
+                   <size>
+                    <width>40</width>
+                    <height>20</height>
+                   </size>
+                  </property>
+                 </spacer>
+                </item>
+                <item>
+                 <widget class="QCheckBox" name="video_trim_use_end_frames">
+                  <property name="text">
+                   <string>Use Frames</string>
+                  </property>
+                 </widget>
+                </item>
+                <item>
+                 <widget class="QSpinBox" name="video_trim_end_frames">
+                  <property name="enabled">
+                   <bool>false</bool>
+                  </property>
+                  <property name="maximum">
+                   <number>50000</number>
+                  </property>
+                 </widget>
+                </item>
+                <item>
+                 <spacer name="horizontalSpacer_5">
+                  <property name="orientation">
+                   <enum>Qt::Horizontal</enum>
+                  </property>
+                  <property name="sizeHint" stdset="0">
+                   <size>
+                    <width>40</width>
+                    <height>20</height>
+                   </size>
+                  </property>
+                 </spacer>
+                </item>
+               </layout>
+              </widget>
+             </item>
+            </layout>
            </widget>
           </item>
-          <item row="2" column="0" colspan="2">
+          <item>
            <widget class="QGroupBox" name="groupBox_2">
             <property name="title">
-             <string>Cropping</string>
+             <string>Crop</string>
             </property>
             <layout class="QHBoxLayout" name="horizontalLayout">
+             <property name="leftMargin">
+              <number>4</number>
+             </property>
+             <property name="topMargin">
+              <number>4</number>
+             </property>
+             <property name="rightMargin">
+              <number>4</number>
+             </property>
+             <property name="bottomMargin">
+              <number>4</number>
+             </property>
              <item>
               <widget class="QLabel" name="label_2">
                <property name="sizePolicy">
@@ -162,190 +407,40 @@
             </layout>
            </widget>
           </item>
-          <item row="0" column="1">
-           <widget class="QLineEdit" name="video_url"/>
-          </item>
-          <item row="1" column="0" colspan="2">
-           <widget class="QGroupBox" name="groupBox_3">
-            <property name="title">
-             <string>Trimming</string>
-            </property>
-            <layout class="QVBoxLayout" name="verticalLayout_2">
-             <item>
-              <widget class="QGroupBox" name="groupBox_8">
-               <property name="title">
-                <string>Start</string>
-               </property>
-               <layout class="QHBoxLayout" name="horizontalLayout_8">
-                <item>
-                 <widget class="QLabel" name="label_19">
-                  <property name="text">
-                   <string>Minutes:</string>
-                  </property>
-                 </widget>
-                </item>
-                <item>
-                 <widget class="QSpinBox" name="video_trim_start_mins">
-                  <property name="maximum">
-                   <number>999</number>
-                  </property>
-                 </widget>
-                </item>
-                <item>
-                 <widget class="QLabel" name="label_20">
-                  <property name="text">
-                   <string>Seconds:</string>
-                  </property>
-                 </widget>
-                </item>
-                <item>
-                 <widget class="QDoubleSpinBox" name="video_trim_start_secs">
-                  <property name="maximum">
-                   <double>59.990000000000002</double>
-                  </property>
-                 </widget>
-                </item>
-                <item>
-                 <spacer name="horizontalSpacer_6">
-                  <property name="orientation">
-                   <enum>Qt::Horizontal</enum>
-                  </property>
-                  <property name="sizeHint" stdset="0">
-                   <size>
-                    <width>40</width>
-                    <height>20</height>
-                   </size>
-                  </property>
-                 </spacer>
-                </item>
-                <item>
-                 <widget class="QCheckBox" name="video_trim_use_start_frames">
-                  <property name="text">
-                   <string>Use Frames</string>
-                  </property>
-                 </widget>
-                </item>
-                <item>
-                 <widget class="QSpinBox" name="video_trim_start_frames">
-                  <property name="enabled">
-                   <bool>false</bool>
-                  </property>
-                 </widget>
-                </item>
-                <item>
-                 <spacer name="horizontalSpacer_2">
-                  <property name="orientation">
-                   <enum>Qt::Horizontal</enum>
-                  </property>
-                  <property name="sizeHint" stdset="0">
-                   <size>
-                    <width>40</width>
-                    <height>20</height>
-                   </size>
-                  </property>
-                 </spacer>
-                </item>
-               </layout>
-              </widget>
-             </item>
-             <item>
-              <widget class="QGroupBox" name="groupBox_7">
-               <property name="title">
-                <string>End</string>
-               </property>
-               <layout class="QHBoxLayout" name="horizontalLayout_7">
-                <item>
-                 <widget class="QLabel" name="label_6">
-                  <property name="text">
-                   <string>Minutes:</string>
-                  </property>
-                 </widget>
-                </item>
-                <item>
-                 <widget class="QSpinBox" name="video_trim_end_mins">
-                  <property name="maximum">
-                   <number>999</number>
-                  </property>
-                 </widget>
-                </item>
-                <item>
-                 <widget class="QLabel" name="label_7">
-                  <property name="text">
-                   <string>Seconds:</string>
-                  </property>
-                 </widget>
-                </item>
-                <item>
-                 <widget class="QDoubleSpinBox" name="video_trim_end_secs">
-                  <property name="maximum">
-                   <double>59.990000000000002</double>
-                  </property>
-                 </widget>
-                </item>
-                <item>
-                 <spacer name="horizontalSpacer_7">
-                  <property name="orientation">
-                   <enum>Qt::Horizontal</enum>
-                  </property>
-                  <property name="sizeHint" stdset="0">
-                   <size>
-                    <width>40</width>
-                    <height>20</height>
-                   </size>
-                  </property>
-                 </spacer>
-                </item>
-                <item>
-                 <widget class="QCheckBox" name="video_trim_use_end_frames">
-                  <property name="text">
-                   <string>Use Frames</string>
-                  </property>
-                 </widget>
-                </item>
-                <item>
-                 <widget class="QSpinBox" name="video_trim_end_frames">
-                  <property name="enabled">
-                   <bool>false</bool>
-                  </property>
-                 </widget>
-                </item>
-                <item>
-                 <spacer name="horizontalSpacer_5">
-                  <property name="orientation">
-                   <enum>Qt::Horizontal</enum>
-                  </property>
-                  <property name="sizeHint" stdset="0">
-                   <size>
-                    <width>40</width>
-                    <height>20</height>
-                   </size>
-                  </property>
-                 </spacer>
-                </item>
-               </layout>
-              </widget>
-             </item>
-            </layout>
-           </widget>
-          </item>
          </layout>
         </widget>
        </item>
        <item>
         <widget class="QGroupBox" name="groupBox_4">
          <property name="title">
-          <string>Audio</string>
+          <string>Audio (a)</string>
          </property>
-         <layout class="QFormLayout" name="formLayout_3">
-          <item row="0" column="0">
-           <widget class="QLabel" name="label_8">
-            <property name="text">
-             <string>URL:</string>
-            </property>
-           </widget>
-          </item>
-          <item row="0" column="1">
-           <widget class="QLineEdit" name="audio_url"/>
+         <layout class="QVBoxLayout" name="verticalLayout_5">
+          <property name="leftMargin">
+           <number>4</number>
+          </property>
+          <property name="topMargin">
+           <number>4</number>
+          </property>
+          <property name="rightMargin">
+           <number>4</number>
+          </property>
+          <property name="bottomMargin">
+           <number>4</number>
+          </property>
+          <item>
+           <layout class="QHBoxLayout" name="horizontalLayout_13">
+            <item>
+             <widget class="QLabel" name="label_8">
+              <property name="text">
+               <string>URL:</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QLineEdit" name="audio_url"/>
+            </item>
+           </layout>
           </item>
          </layout>
         </widget>
@@ -353,72 +448,169 @@
        <item>
         <widget class="QGroupBox" name="groupBox_5">
          <property name="title">
-          <string>Cover</string>
+          <string>Cover (co)</string>
          </property>
-         <layout class="QFormLayout" name="formLayout">
-          <item row="0" column="0">
-           <widget class="QLabel" name="label_10">
-            <property name="text">
-             <string>URL:</string>
-            </property>
-           </widget>
+         <layout class="QVBoxLayout" name="verticalLayout_6">
+          <property name="spacing">
+           <number>-1</number>
+          </property>
+          <property name="leftMargin">
+           <number>4</number>
+          </property>
+          <property name="topMargin">
+           <number>4</number>
+          </property>
+          <property name="rightMargin">
+           <number>4</number>
+          </property>
+          <property name="bottomMargin">
+           <number>0</number>
+          </property>
+          <item>
+           <layout class="QHBoxLayout" name="horizontalLayout_14">
+            <item>
+             <widget class="QLabel" name="label_10">
+              <property name="text">
+               <string>URL:</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QLineEdit" name="cover_url"/>
+            </item>
+           </layout>
           </item>
-          <item row="1" column="0">
-           <widget class="QLabel" name="label_16">
-            <property name="text">
-             <string>Rotation:</string>
-            </property>
-           </widget>
-          </item>
-          <item row="1" column="1">
-           <widget class="QDoubleSpinBox" name="cover_rotation">
-            <property name="suffix">
-             <string>°</string>
-            </property>
-            <property name="minimum">
-             <double>-360.000000000000000</double>
-            </property>
-            <property name="maximum">
-             <double>360.000000000000000</double>
-            </property>
-           </widget>
-          </item>
-          <item row="2" column="0">
-           <widget class="QLabel" name="label_17">
-            <property name="text">
-             <string>Contrast:</string>
-            </property>
-           </widget>
-          </item>
-          <item row="3" column="0">
-           <widget class="QLabel" name="label_18">
-            <property name="text">
-             <string>Resize:</string>
-            </property>
-           </widget>
-          </item>
-          <item row="3" column="1">
-           <widget class="QSpinBox" name="cover_resize">
-            <property name="suffix">
-             <string> px</string>
-            </property>
-            <property name="minimum">
+          <item>
+           <layout class="QHBoxLayout" name="horizontalLayout_20">
+            <property name="bottomMargin">
              <number>0</number>
             </property>
-            <property name="maximum">
-             <number>1920</number>
-            </property>
-            <property name="value">
-             <number>0</number>
-            </property>
-           </widget>
+            <item>
+             <widget class="QGroupBox" name="groupBox_12">
+              <property name="title">
+               <string>Rotation (co-rotate)</string>
+              </property>
+              <layout class="QHBoxLayout" name="horizontalLayout_15">
+               <property name="leftMargin">
+                <number>4</number>
+               </property>
+               <property name="topMargin">
+                <number>4</number>
+               </property>
+               <property name="rightMargin">
+                <number>4</number>
+               </property>
+               <property name="bottomMargin">
+                <number>4</number>
+               </property>
+               <item>
+                <widget class="QLabel" name="label_16">
+                 <property name="text">
+                  <string>Angle (ccw):</string>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QDoubleSpinBox" name="cover_rotation">
+                 <property name="suffix">
+                  <string>°</string>
+                 </property>
+                 <property name="minimum">
+                  <double>-360.000000000000000</double>
+                 </property>
+                 <property name="maximum">
+                  <double>360.000000000000000</double>
+                 </property>
+                 <property name="singleStep">
+                  <double>0.100000000000000</double>
+                 </property>
+                </widget>
+               </item>
+              </layout>
+             </widget>
+            </item>
+            <item>
+             <spacer name="horizontalSpacer_10">
+              <property name="orientation">
+               <enum>Qt::Horizontal</enum>
+              </property>
+              <property name="sizeHint" stdset="0">
+               <size>
+                <width>423</width>
+                <height>20</height>
+               </size>
+              </property>
+             </spacer>
+            </item>
+            <item>
+             <widget class="QGroupBox" name="groupBox_14">
+              <property name="title">
+               <string>Contrast (co-contrast)</string>
+              </property>
+              <layout class="QHBoxLayout" name="horizontalLayout_19">
+               <property name="leftMargin">
+                <number>4</number>
+               </property>
+               <property name="topMargin">
+                <number>4</number>
+               </property>
+               <property name="rightMargin">
+                <number>4</number>
+               </property>
+               <property name="bottomMargin">
+                <number>4</number>
+               </property>
+               <item>
+                <widget class="QLabel" name="label_17">
+                 <property name="text">
+                  <string>Value:</string>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <layout class="QHBoxLayout" name="horizontalLayout_3">
+                 <item>
+                  <widget class="QCheckBox" name="cover_contrast_auto">
+                   <property name="text">
+                    <string>Auto</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item>
+                  <widget class="QDoubleSpinBox" name="cover_contrast">
+                   <property name="singleStep">
+                    <double>0.100000000000000</double>
+                   </property>
+                   <property name="value">
+                    <double>1.000000000000000</double>
+                   </property>
+                  </widget>
+                 </item>
+                </layout>
+               </item>
+              </layout>
+             </widget>
+            </item>
+           </layout>
           </item>
-          <item row="4" column="0" colspan="2">
+          <item>
            <widget class="QGroupBox" name="groupBox_6">
             <property name="title">
-             <string>Cropping</string>
+             <string>Crop (co-crop)</string>
             </property>
             <layout class="QHBoxLayout" name="horizontalLayout_2">
+             <property name="leftMargin">
+              <number>4</number>
+             </property>
+             <property name="topMargin">
+              <number>4</number>
+             </property>
+             <property name="rightMargin">
+              <number>4</number>
+             </property>
+             <property name="bottomMargin">
+              <number>4</number>
+             </property>
              <item>
               <widget class="QLabel" name="label_11">
                <property name="sizePolicy">
@@ -509,29 +701,62 @@
             </layout>
            </widget>
           </item>
-          <item row="0" column="1">
-           <widget class="QLineEdit" name="cover_url"/>
-          </item>
-          <item row="2" column="1">
-           <layout class="QHBoxLayout" name="horizontalLayout_3">
-            <item>
-             <widget class="QCheckBox" name="cover_contrast_auto">
-              <property name="text">
-               <string>Auto</string>
-              </property>
-             </widget>
-            </item>
-            <item>
-             <widget class="QDoubleSpinBox" name="cover_contrast">
-              <property name="singleStep">
-               <double>0.100000000000000</double>
-              </property>
-              <property name="value">
-               <double>1.000000000000000</double>
-              </property>
-             </widget>
-            </item>
-           </layout>
+          <item>
+           <widget class="QGroupBox" name="groupBox_13">
+            <property name="title">
+             <string>Resize (co-resize)</string>
+            </property>
+            <layout class="QHBoxLayout" name="horizontalLayout_16">
+             <property name="leftMargin">
+              <number>4</number>
+             </property>
+             <property name="topMargin">
+              <number>4</number>
+             </property>
+             <property name="rightMargin">
+              <number>4</number>
+             </property>
+             <property name="bottomMargin">
+              <number>4</number>
+             </property>
+             <item>
+              <widget class="QLabel" name="label_18">
+               <property name="text">
+                <string>Width/Height:</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QSpinBox" name="cover_resize">
+               <property name="suffix">
+                <string> px</string>
+               </property>
+               <property name="minimum">
+                <number>0</number>
+               </property>
+               <property name="maximum">
+                <number>1920</number>
+               </property>
+               <property name="value">
+                <number>0</number>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <spacer name="horizontalSpacer_11">
+               <property name="orientation">
+                <enum>Qt::Horizontal</enum>
+               </property>
+               <property name="sizeHint" stdset="0">
+                <size>
+                 <width>594</width>
+                 <height>20</height>
+                </size>
+               </property>
+              </spacer>
+             </item>
+            </layout>
+           </widget>
           </item>
          </layout>
         </widget>
@@ -539,25 +764,53 @@
        <item>
         <widget class="QGroupBox" name="groupBox_9">
          <property name="title">
-          <string>Background</string>
+          <string>Background (bg)</string>
          </property>
-         <layout class="QFormLayout" name="formLayout_4">
-          <item row="0" column="0">
-           <widget class="QLabel" name="label_21">
-            <property name="text">
-             <string>URL:</string>
-            </property>
-           </widget>
+         <layout class="QVBoxLayout" name="verticalLayout_7">
+          <property name="leftMargin">
+           <number>4</number>
+          </property>
+          <property name="topMargin">
+           <number>4</number>
+          </property>
+          <property name="rightMargin">
+           <number>4</number>
+          </property>
+          <property name="bottomMargin">
+           <number>4</number>
+          </property>
+          <item>
+           <layout class="QHBoxLayout" name="horizontalLayout_17">
+            <item>
+             <widget class="QLabel" name="label_21">
+              <property name="text">
+               <string>URL:</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QLineEdit" name="background_url"/>
+            </item>
+           </layout>
           </item>
-          <item row="0" column="1">
-           <widget class="QLineEdit" name="background_url"/>
-          </item>
-          <item row="1" column="0" colspan="2">
+          <item>
            <widget class="QGroupBox" name="groupBox_11">
             <property name="title">
-             <string>Resize</string>
+             <string>Resize (bg-resize)</string>
             </property>
             <layout class="QHBoxLayout" name="horizontalLayout_9">
+             <property name="leftMargin">
+              <number>4</number>
+             </property>
+             <property name="topMargin">
+              <number>4</number>
+             </property>
+             <property name="rightMargin">
+              <number>4</number>
+             </property>
+             <property name="bottomMargin">
+              <number>4</number>
+             </property>
              <item>
               <widget class="QLabel" name="label_23">
                <property name="text">
@@ -608,12 +861,24 @@
             </layout>
            </widget>
           </item>
-          <item row="2" column="0" colspan="2">
+          <item>
            <widget class="QGroupBox" name="groupBox_10">
             <property name="title">
-             <string>Cropping</string>
+             <string>Crop (bg-crop)</string>
             </property>
             <layout class="QHBoxLayout" name="horizontalLayout_4">
+             <property name="leftMargin">
+              <number>4</number>
+             </property>
+             <property name="topMargin">
+              <number>4</number>
+             </property>
+             <property name="rightMargin">
+              <number>4</number>
+             </property>
+             <property name="bottomMargin">
+              <number>4</number>
+             </property>
              <item>
               <widget class="QLabel" name="label_25">
                <property name="sizePolicy">
@@ -716,7 +981,7 @@
           </sizepolicy>
          </property>
          <property name="title">
-          <string>Duet</string>
+          <string>Duet (p1, p2)</string>
          </property>
          <property name="checkable">
           <bool>true</bool>
@@ -725,6 +990,18 @@
           <bool>false</bool>
          </property>
          <layout class="QHBoxLayout" name="horizontalLayout_6">
+          <property name="leftMargin">
+           <number>4</number>
+          </property>
+          <property name="topMargin">
+           <number>4</number>
+          </property>
+          <property name="rightMargin">
+           <number>4</number>
+          </property>
+          <property name="bottomMargin">
+           <number>4</number>
+          </property>
           <item>
            <widget class="QLabel" name="label_15">
             <property name="sizePolicy">
