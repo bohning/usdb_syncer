@@ -170,9 +170,7 @@ class UiValues:
 
     def _cover_resize_meta_tag(self) -> MetaTag | None:
         if self.cover_url and self.cover_resize:
-            return MetaTag(
-                key="co-resize", value=f"{self.cover_resize}-{self.cover_resize}"
-            )
+            return MetaTag(key="co-resize", value=f"{self.cover_resize}")
         return None
 
     def _cover_crop_meta_tag(self) -> MetaTag | None:

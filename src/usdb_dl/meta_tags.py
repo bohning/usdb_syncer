@@ -28,7 +28,10 @@ class ResizeMetaTags:
     height: int
 
     def __init__(self, resize_tag: str) -> None:
-        self.width, self.height = map(int, resize_tag.split("-"))
+        if "-" in resize_tag:
+            self.width, self.height = map(int, resize_tag.split("-"))
+        else:
+            self.width = self.height = int(resize_tag)
 
 
 @dataclass
