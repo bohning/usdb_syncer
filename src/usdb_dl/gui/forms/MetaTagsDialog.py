@@ -3,7 +3,7 @@
 ################################################################################
 ## Form generated from reading UI file 'MetaTagsDialog.ui'
 ##
-## Created by: Qt User Interface Compiler version 6.4.0
+## Created by: Qt User Interface Compiler version 6.3.2
 ##
 ## WARNING! All changes made in this file will be lost when recompiling UI file!
 ################################################################################
@@ -17,15 +17,15 @@ from PySide6.QtGui import (QBrush, QColor, QConicalGradient, QCursor,
     QPalette, QPixmap, QRadialGradient, QTransform)
 from PySide6.QtWidgets import (QAbstractButton, QApplication, QCheckBox, QDialog,
     QDialogButtonBox, QDoubleSpinBox, QFrame, QGroupBox,
-    QHBoxLayout, QLabel, QLineEdit, QPushButton,
-    QScrollArea, QSizePolicy, QSpacerItem, QSpinBox,
-    QVBoxLayout, QWidget)
+    QHBoxLayout, QLabel, QLayout, QLineEdit,
+    QPushButton, QScrollArea, QSizePolicy, QSpacerItem,
+    QSpinBox, QVBoxLayout, QWidget)
 
 class Ui_Dialog(object):
     def setupUi(self, Dialog):
         if not Dialog.objectName():
             Dialog.setObjectName(u"Dialog")
-        Dialog.resize(852, 777)
+        Dialog.resize(620, 824)
         sizePolicy = QSizePolicy(QSizePolicy.Preferred, QSizePolicy.Preferred)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
@@ -36,6 +36,11 @@ class Ui_Dialog(object):
         self.verticalLayout.setObjectName(u"verticalLayout")
         self.scrollArea = QScrollArea(Dialog)
         self.scrollArea.setObjectName(u"scrollArea")
+        sizePolicy1 = QSizePolicy(QSizePolicy.Minimum, QSizePolicy.Minimum)
+        sizePolicy1.setHorizontalStretch(0)
+        sizePolicy1.setVerticalStretch(0)
+        sizePolicy1.setHeightForWidth(self.scrollArea.sizePolicy().hasHeightForWidth())
+        self.scrollArea.setSizePolicy(sizePolicy1)
         self.scrollArea.setFrameShape(QFrame.NoFrame)
         self.scrollArea.setFrameShadow(QFrame.Plain)
         self.scrollArea.setLineWidth(0)
@@ -43,9 +48,12 @@ class Ui_Dialog(object):
         self.scrollArea.setWidgetResizable(False)
         self.scrollAreaWidgetContents = QWidget()
         self.scrollAreaWidgetContents.setObjectName(u"scrollAreaWidgetContents")
-        self.scrollAreaWidgetContents.setGeometry(QRect(0, 0, 817, 912))
-        self.verticalLayout_3 = QVBoxLayout(self.scrollAreaWidgetContents)
-        self.verticalLayout_3.setObjectName(u"verticalLayout_3")
+        self.scrollAreaWidgetContents.setGeometry(QRect(0, 0, 600, 800))
+        sizePolicy1.setHeightForWidth(self.scrollAreaWidgetContents.sizePolicy().hasHeightForWidth())
+        self.scrollAreaWidgetContents.setSizePolicy(sizePolicy1)
+        self.verticalLayout_2 = QVBoxLayout(self.scrollAreaWidgetContents)
+        self.verticalLayout_2.setObjectName(u"verticalLayout_2")
+        self.verticalLayout_2.setSizeConstraint(QLayout.SetNoConstraint)
         self.groupBox = QGroupBox(self.scrollAreaWidgetContents)
         self.groupBox.setObjectName(u"groupBox")
         self.verticalLayout_4 = QVBoxLayout(self.groupBox)
@@ -68,17 +76,16 @@ class Ui_Dialog(object):
 
         self.groupBox_3 = QGroupBox(self.groupBox)
         self.groupBox_3.setObjectName(u"groupBox_3")
-        self.verticalLayout_2 = QVBoxLayout(self.groupBox_3)
-#ifndef Q_OS_MAC
-        self.verticalLayout_2.setSpacing(-1)
-#endif
-        self.verticalLayout_2.setObjectName(u"verticalLayout_2")
-        self.verticalLayout_2.setContentsMargins(4, 4, 4, 4)
+        self.horizontalLayout_21 = QHBoxLayout(self.groupBox_3)
+        self.horizontalLayout_21.setSpacing(6)
+        self.horizontalLayout_21.setObjectName(u"horizontalLayout_21")
+        self.horizontalLayout_21.setContentsMargins(4, 4, 4, 4)
         self.groupBox_8 = QGroupBox(self.groupBox_3)
         self.groupBox_8.setObjectName(u"groupBox_8")
-        self.horizontalLayout_8 = QHBoxLayout(self.groupBox_8)
+        self.verticalLayout_8 = QVBoxLayout(self.groupBox_8)
+        self.verticalLayout_8.setObjectName(u"verticalLayout_8")
+        self.horizontalLayout_8 = QHBoxLayout()
         self.horizontalLayout_8.setObjectName(u"horizontalLayout_8")
-        self.horizontalLayout_8.setContentsMargins(4, 4, 4, 4)
         self.label_19 = QLabel(self.groupBox_8)
         self.label_19.setObjectName(u"label_19")
 
@@ -106,30 +113,39 @@ class Ui_Dialog(object):
 
         self.horizontalLayout_8.addItem(self.horizontalSpacer_6)
 
+
+        self.verticalLayout_8.addLayout(self.horizontalLayout_8)
+
+        self.horizontalLayout_11 = QHBoxLayout()
+        self.horizontalLayout_11.setObjectName(u"horizontalLayout_11")
         self.video_trim_use_start_frames = QCheckBox(self.groupBox_8)
         self.video_trim_use_start_frames.setObjectName(u"video_trim_use_start_frames")
 
-        self.horizontalLayout_8.addWidget(self.video_trim_use_start_frames)
+        self.horizontalLayout_11.addWidget(self.video_trim_use_start_frames)
 
         self.video_trim_start_frames = QSpinBox(self.groupBox_8)
         self.video_trim_start_frames.setObjectName(u"video_trim_start_frames")
         self.video_trim_start_frames.setEnabled(False)
         self.video_trim_start_frames.setMaximum(50000)
 
-        self.horizontalLayout_8.addWidget(self.video_trim_start_frames)
+        self.horizontalLayout_11.addWidget(self.video_trim_start_frames)
 
         self.horizontalSpacer_2 = QSpacerItem(40, 20, QSizePolicy.Expanding, QSizePolicy.Minimum)
 
-        self.horizontalLayout_8.addItem(self.horizontalSpacer_2)
+        self.horizontalLayout_11.addItem(self.horizontalSpacer_2)
 
 
-        self.verticalLayout_2.addWidget(self.groupBox_8)
+        self.verticalLayout_8.addLayout(self.horizontalLayout_11)
+
+
+        self.horizontalLayout_21.addWidget(self.groupBox_8)
 
         self.groupBox_7 = QGroupBox(self.groupBox_3)
         self.groupBox_7.setObjectName(u"groupBox_7")
-        self.horizontalLayout_7 = QHBoxLayout(self.groupBox_7)
+        self.verticalLayout_9 = QVBoxLayout(self.groupBox_7)
+        self.verticalLayout_9.setObjectName(u"verticalLayout_9")
+        self.horizontalLayout_7 = QHBoxLayout()
         self.horizontalLayout_7.setObjectName(u"horizontalLayout_7")
-        self.horizontalLayout_7.setContentsMargins(4, 4, 4, 4)
         self.label_6 = QLabel(self.groupBox_7)
         self.label_6.setObjectName(u"label_6")
 
@@ -157,24 +173,32 @@ class Ui_Dialog(object):
 
         self.horizontalLayout_7.addItem(self.horizontalSpacer_7)
 
+
+        self.verticalLayout_9.addLayout(self.horizontalLayout_7)
+
+        self.horizontalLayout_18 = QHBoxLayout()
+        self.horizontalLayout_18.setObjectName(u"horizontalLayout_18")
         self.video_trim_use_end_frames = QCheckBox(self.groupBox_7)
         self.video_trim_use_end_frames.setObjectName(u"video_trim_use_end_frames")
 
-        self.horizontalLayout_7.addWidget(self.video_trim_use_end_frames)
+        self.horizontalLayout_18.addWidget(self.video_trim_use_end_frames)
 
         self.video_trim_end_frames = QSpinBox(self.groupBox_7)
         self.video_trim_end_frames.setObjectName(u"video_trim_end_frames")
         self.video_trim_end_frames.setEnabled(False)
         self.video_trim_end_frames.setMaximum(50000)
 
-        self.horizontalLayout_7.addWidget(self.video_trim_end_frames)
+        self.horizontalLayout_18.addWidget(self.video_trim_end_frames)
 
         self.horizontalSpacer_5 = QSpacerItem(40, 20, QSizePolicy.Expanding, QSizePolicy.Minimum)
 
-        self.horizontalLayout_7.addItem(self.horizontalSpacer_5)
+        self.horizontalLayout_18.addItem(self.horizontalSpacer_5)
 
 
-        self.verticalLayout_2.addWidget(self.groupBox_7)
+        self.verticalLayout_9.addLayout(self.horizontalLayout_18)
+
+
+        self.horizontalLayout_21.addWidget(self.groupBox_7)
 
 
         self.verticalLayout_4.addWidget(self.groupBox_3)
@@ -186,9 +210,6 @@ class Ui_Dialog(object):
         self.horizontalLayout.setContentsMargins(4, 4, 4, 4)
         self.label_2 = QLabel(self.groupBox_2)
         self.label_2.setObjectName(u"label_2")
-        sizePolicy1 = QSizePolicy(QSizePolicy.Minimum, QSizePolicy.Minimum)
-        sizePolicy1.setHorizontalStretch(0)
-        sizePolicy1.setVerticalStretch(0)
         sizePolicy1.setHeightForWidth(self.label_2.sizePolicy().hasHeightForWidth())
         self.label_2.setSizePolicy(sizePolicy1)
 
@@ -241,7 +262,7 @@ class Ui_Dialog(object):
         self.verticalLayout_4.addWidget(self.groupBox_2)
 
 
-        self.verticalLayout_3.addWidget(self.groupBox)
+        self.verticalLayout_2.addWidget(self.groupBox)
 
         self.groupBox_4 = QGroupBox(self.scrollAreaWidgetContents)
         self.groupBox_4.setObjectName(u"groupBox_4")
@@ -264,16 +285,14 @@ class Ui_Dialog(object):
         self.verticalLayout_5.addLayout(self.horizontalLayout_13)
 
 
-        self.verticalLayout_3.addWidget(self.groupBox_4)
+        self.verticalLayout_2.addWidget(self.groupBox_4)
 
         self.groupBox_5 = QGroupBox(self.scrollAreaWidgetContents)
         self.groupBox_5.setObjectName(u"groupBox_5")
         self.verticalLayout_6 = QVBoxLayout(self.groupBox_5)
-#ifndef Q_OS_MAC
-        self.verticalLayout_6.setSpacing(-1)
-#endif
+        self.verticalLayout_6.setSpacing(6)
         self.verticalLayout_6.setObjectName(u"verticalLayout_6")
-        self.verticalLayout_6.setContentsMargins(4, 4, 4, 0)
+        self.verticalLayout_6.setContentsMargins(4, 4, 4, 4)
         self.horizontalLayout_14 = QHBoxLayout()
         self.horizontalLayout_14.setObjectName(u"horizontalLayout_14")
         self.label_10 = QLabel(self.groupBox_5)
@@ -310,12 +329,12 @@ class Ui_Dialog(object):
 
         self.horizontalLayout_15.addWidget(self.cover_rotation)
 
+        self.horizontalSpacer_10 = QSpacerItem(40, 20, QSizePolicy.Expanding, QSizePolicy.Minimum)
+
+        self.horizontalLayout_15.addItem(self.horizontalSpacer_10)
+
 
         self.horizontalLayout_20.addWidget(self.groupBox_12)
-
-        self.horizontalSpacer_10 = QSpacerItem(423, 20, QSizePolicy.Expanding, QSizePolicy.Minimum)
-
-        self.horizontalLayout_20.addItem(self.horizontalSpacer_10)
 
         self.groupBox_14 = QGroupBox(self.groupBox_5)
         self.groupBox_14.setObjectName(u"groupBox_14")
@@ -344,8 +363,37 @@ class Ui_Dialog(object):
 
         self.horizontalLayout_19.addLayout(self.horizontalLayout_3)
 
+        self.horizontalSpacer_12 = QSpacerItem(40, 20, QSizePolicy.Expanding, QSizePolicy.Minimum)
+
+        self.horizontalLayout_19.addItem(self.horizontalSpacer_12)
+
 
         self.horizontalLayout_20.addWidget(self.groupBox_14)
+
+        self.groupBox_13 = QGroupBox(self.groupBox_5)
+        self.groupBox_13.setObjectName(u"groupBox_13")
+        self.horizontalLayout_16 = QHBoxLayout(self.groupBox_13)
+        self.horizontalLayout_16.setObjectName(u"horizontalLayout_16")
+        self.horizontalLayout_16.setContentsMargins(4, 4, 4, 4)
+        self.label_18 = QLabel(self.groupBox_13)
+        self.label_18.setObjectName(u"label_18")
+
+        self.horizontalLayout_16.addWidget(self.label_18)
+
+        self.cover_resize = QSpinBox(self.groupBox_13)
+        self.cover_resize.setObjectName(u"cover_resize")
+        self.cover_resize.setMinimum(0)
+        self.cover_resize.setMaximum(1920)
+        self.cover_resize.setValue(0)
+
+        self.horizontalLayout_16.addWidget(self.cover_resize)
+
+        self.horizontalSpacer_11 = QSpacerItem(40, 20, QSizePolicy.Expanding, QSizePolicy.Minimum)
+
+        self.horizontalLayout_16.addItem(self.horizontalSpacer_11)
+
+
+        self.horizontalLayout_20.addWidget(self.groupBox_13)
 
 
         self.verticalLayout_6.addLayout(self.horizontalLayout_20)
@@ -408,33 +456,8 @@ class Ui_Dialog(object):
 
         self.verticalLayout_6.addWidget(self.groupBox_6)
 
-        self.groupBox_13 = QGroupBox(self.groupBox_5)
-        self.groupBox_13.setObjectName(u"groupBox_13")
-        self.horizontalLayout_16 = QHBoxLayout(self.groupBox_13)
-        self.horizontalLayout_16.setObjectName(u"horizontalLayout_16")
-        self.horizontalLayout_16.setContentsMargins(4, 4, 4, 4)
-        self.label_18 = QLabel(self.groupBox_13)
-        self.label_18.setObjectName(u"label_18")
 
-        self.horizontalLayout_16.addWidget(self.label_18)
-
-        self.cover_resize = QSpinBox(self.groupBox_13)
-        self.cover_resize.setObjectName(u"cover_resize")
-        self.cover_resize.setMinimum(0)
-        self.cover_resize.setMaximum(1920)
-        self.cover_resize.setValue(0)
-
-        self.horizontalLayout_16.addWidget(self.cover_resize)
-
-        self.horizontalSpacer_11 = QSpacerItem(594, 20, QSizePolicy.Expanding, QSizePolicy.Minimum)
-
-        self.horizontalLayout_16.addItem(self.horizontalSpacer_11)
-
-
-        self.verticalLayout_6.addWidget(self.groupBox_13)
-
-
-        self.verticalLayout_3.addWidget(self.groupBox_5)
+        self.verticalLayout_2.addWidget(self.groupBox_5)
 
         self.groupBox_9 = QGroupBox(self.scrollAreaWidgetContents)
         self.groupBox_9.setObjectName(u"groupBox_9")
@@ -549,7 +572,7 @@ class Ui_Dialog(object):
         self.verticalLayout_7.addWidget(self.groupBox_10)
 
 
-        self.verticalLayout_3.addWidget(self.groupBox_9)
+        self.verticalLayout_2.addWidget(self.groupBox_9)
 
         self.duet = QGroupBox(self.scrollAreaWidgetContents)
         self.duet.setObjectName(u"duet")
@@ -591,11 +614,11 @@ class Ui_Dialog(object):
         self.horizontalLayout_6.addItem(self.horizontalSpacer_3)
 
 
-        self.verticalLayout_3.addWidget(self.duet)
+        self.verticalLayout_2.addWidget(self.duet)
 
         self.verticalSpacer = QSpacerItem(20, 40, QSizePolicy.Minimum, QSizePolicy.Expanding)
 
-        self.verticalLayout_3.addItem(self.verticalSpacer)
+        self.verticalLayout_2.addItem(self.verticalSpacer)
 
         self.horizontalLayout_5 = QHBoxLayout()
         self.horizontalLayout_5.setObjectName(u"horizontalLayout_5")
@@ -611,24 +634,27 @@ class Ui_Dialog(object):
         self.horizontalLayout_5.addWidget(self.button_copy_to_clipboard)
 
 
-        self.verticalLayout_3.addLayout(self.horizontalLayout_5)
+        self.verticalLayout_2.addLayout(self.horizontalLayout_5)
 
         self.horizontalLayout_10 = QHBoxLayout()
         self.horizontalLayout_10.setObjectName(u"horizontalLayout_10")
         self.char_count = QLabel(self.scrollAreaWidgetContents)
         self.char_count.setObjectName(u"char_count")
+        self.char_count.setEnabled(True)
+        sizePolicy1.setHeightForWidth(self.char_count.sizePolicy().hasHeightForWidth())
+        self.char_count.setSizePolicy(sizePolicy1)
 
         self.horizontalLayout_10.addWidget(self.char_count)
 
 
-        self.verticalLayout_3.addLayout(self.horizontalLayout_10)
+        self.verticalLayout_2.addLayout(self.horizontalLayout_10)
 
         self.buttonBox = QDialogButtonBox(self.scrollAreaWidgetContents)
         self.buttonBox.setObjectName(u"buttonBox")
         self.buttonBox.setOrientation(Qt.Horizontal)
         self.buttonBox.setStandardButtons(QDialogButtonBox.Cancel|QDialogButtonBox.Ok)
 
-        self.verticalLayout_3.addWidget(self.buttonBox)
+        self.verticalLayout_2.addWidget(self.buttonBox)
 
         self.scrollArea.setWidget(self.scrollAreaWidgetContents)
 
@@ -646,7 +672,7 @@ class Ui_Dialog(object):
         Dialog.setWindowTitle(QCoreApplication.translate("Dialog", u"Meta Tags", None))
         self.groupBox.setTitle(QCoreApplication.translate("Dialog", u"Video (v)", None))
         self.label.setText(QCoreApplication.translate("Dialog", u"URL:", None))
-        self.groupBox_3.setTitle(QCoreApplication.translate("Dialog", u"Trim", None))
+        self.groupBox_3.setTitle(QCoreApplication.translate("Dialog", u"Trim (v-trim)", None))
         self.groupBox_8.setTitle(QCoreApplication.translate("Dialog", u"Start", None))
         self.label_19.setText(QCoreApplication.translate("Dialog", u"Minutes:", None))
         self.label_20.setText(QCoreApplication.translate("Dialog", u"Seconds:", None))
@@ -655,7 +681,7 @@ class Ui_Dialog(object):
         self.label_6.setText(QCoreApplication.translate("Dialog", u"Minutes:", None))
         self.label_7.setText(QCoreApplication.translate("Dialog", u"Seconds:", None))
         self.video_trim_use_end_frames.setText(QCoreApplication.translate("Dialog", u"Use Frames", None))
-        self.groupBox_2.setTitle(QCoreApplication.translate("Dialog", u"Crop", None))
+        self.groupBox_2.setTitle(QCoreApplication.translate("Dialog", u"Crop (v-crop)", None))
         self.label_2.setText(QCoreApplication.translate("Dialog", u"Left:", None))
         self.video_crop_left.setSuffix(QCoreApplication.translate("Dialog", u" px", None))
         self.label_3.setText(QCoreApplication.translate("Dialog", u"Right:", None))
@@ -674,6 +700,9 @@ class Ui_Dialog(object):
         self.groupBox_14.setTitle(QCoreApplication.translate("Dialog", u"Contrast (co-contrast)", None))
         self.label_17.setText(QCoreApplication.translate("Dialog", u"Value:", None))
         self.cover_contrast_auto.setText(QCoreApplication.translate("Dialog", u"Auto", None))
+        self.groupBox_13.setTitle(QCoreApplication.translate("Dialog", u"Resize (co-resize)", None))
+        self.label_18.setText(QCoreApplication.translate("Dialog", u"Width/Height:", None))
+        self.cover_resize.setSuffix(QCoreApplication.translate("Dialog", u" px", None))
         self.groupBox_6.setTitle(QCoreApplication.translate("Dialog", u"Crop (co-crop)", None))
         self.label_11.setText(QCoreApplication.translate("Dialog", u"Left:", None))
         self.cover_crop_left.setSuffix(QCoreApplication.translate("Dialog", u" px", None))
@@ -683,9 +712,6 @@ class Ui_Dialog(object):
         self.cover_crop_width.setSuffix(QCoreApplication.translate("Dialog", u" px", None))
         self.label_14.setText(QCoreApplication.translate("Dialog", u"Height:", None))
         self.cover_crop_height.setSuffix(QCoreApplication.translate("Dialog", u" px", None))
-        self.groupBox_13.setTitle(QCoreApplication.translate("Dialog", u"Resize (co-resize)", None))
-        self.label_18.setText(QCoreApplication.translate("Dialog", u"Width/Height:", None))
-        self.cover_resize.setSuffix(QCoreApplication.translate("Dialog", u" px", None))
         self.groupBox_9.setTitle(QCoreApplication.translate("Dialog", u"Background (bg)", None))
         self.label_21.setText(QCoreApplication.translate("Dialog", u"URL:", None))
         self.groupBox_11.setTitle(QCoreApplication.translate("Dialog", u"Resize (bg-resize)", None))
@@ -709,6 +735,6 @@ class Ui_Dialog(object):
         self.duet_p2.setText(QCoreApplication.translate("Dialog", u"P2", None))
         self.output.setText(QCoreApplication.translate("Dialog", u"#VIDEO:", None))
         self.button_copy_to_clipboard.setText(QCoreApplication.translate("Dialog", u"Copy to Clipboard", None))
-        self.char_count.setText(QCoreApplication.translate("Dialog", u"7 / 170 characters", None))
+        self.char_count.setText(QCoreApplication.translate("Dialog", u"7 / 262 characters", None))
     # retranslateUi
 

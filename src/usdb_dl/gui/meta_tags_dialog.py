@@ -21,7 +21,10 @@ class MetaTagsDialog(Ui_Dialog, QDialog):
         super().__init__(parent=parent)
         self.setupUi(self)
         self._output = "#VIDEO:"
+        self._update_output()
+        self._connect_signals()
 
+    def _connect_signals(self) -> None:
         self.audio_url.textChanged.connect(self._update_output)
 
         self.video_url.textChanged.connect(self._update_output)
@@ -112,7 +115,7 @@ class MetaTagsDialog(Ui_Dialog, QDialog):
         values = self._meta_values()
         self._output = video_tag_from_values(values)
         self.output.setText(self._output)
-        self.char_count.setText(f"{len(self._output)} / 170 characters")
+        self.char_count.setText(f"{len(self._output)} / 262 characters")
 
     def _toggle_start_trim_units(self) -> None:
         frames = self.video_trim_use_start_frames.isChecked()

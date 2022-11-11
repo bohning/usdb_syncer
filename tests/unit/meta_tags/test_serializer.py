@@ -46,8 +46,8 @@ def test_fanart_url_shortening() -> None:
 
 def test_url_shortening_and_escaping() -> None:
     values = default_values()
-    values.cover_url = "https://www.discogs.com/de/release/24814589-David-Bowie-Heroes/image/SW1hZ2U6ODU0MzU1NDM="
+    values.cover_url = "https://www.website-with-strange-url.com/:,#"
     assert (
         video_tag_from_values(values)
-        == "#VIDEO:co=www.discogs.com%2Fde%2Frelease%2F24814589-David-Bowie-Heroes%2Fimage%2FSW1hZ2U6ODU0MzU1NDM="
+        == "#VIDEO:co=www.website-with-strange-url.com/%3A%2C%23"
     )
