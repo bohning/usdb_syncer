@@ -13,8 +13,8 @@ class SongLogger(logging.LoggerAdapter):
         super().__init__(logger, extra)
         self.song_id = song_id
 
-    def process(self, msg: str, _kwargs: Any) -> Any:
-        return f"#{self.song_id}: {msg}"
+    def process(self, msg: str, kwargs: Any) -> Any:
+        return f"#{self.song_id}: {msg}", kwargs
 
 
 def get_logger(file: str, song_id: SongId) -> SongLogger:
