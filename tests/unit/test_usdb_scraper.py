@@ -8,6 +8,7 @@ from io import StringIO
 from bs4 import BeautifulSoup
 
 from usdb_dl import SongId
+from usdb_dl.logger import get_logger
 from usdb_dl.usdb_scraper import (
     SongMeta,
     SongMetaEncoder,
@@ -48,9 +49,10 @@ def test__parse_song_txt_from_txt_page(resource_dir: str) -> None:
 
 
 def test__parse_song_page_with_commented_embedded_video(resource_dir: str) -> None:
+    song_id = SongId(26152)
     soup = get_soup(resource_dir, "song_page_with_embedded_video.htm")
-    details = _parse_song_page(soup, SongId(26152))
-    assert details.song_id == SongId(26152)
+    details = _parse_song_page(soup, song_id, get_logger(__file__, song_id))
+    assert details.song_id == song_id
     assert details.artist == "Revolverheld"
     assert details.title == "Ich lass für dich das Licht an"
     assert details.cover_url == "http://usdb.animux.de/images/coverflow/cover/26152.jpg"
@@ -80,9 +82,10 @@ def test__parse_song_page_with_commented_embedded_video(resource_dir: str) -> No
 
 
 def test__parse_song_page_without_comments_or_cover(resource_dir: str) -> None:
+    song_id = SongId(26244)
     soup = get_soup(resource_dir, "song_page_without_comments_or_cover.htm")
-    details = _parse_song_page(soup, SongId(26244))
-    assert details.song_id == SongId(26244)
+    details = _parse_song_page(soup, song_id, get_logger(__file__, song_id))
+    assert details.song_id == song_id
     assert details.artist == "The Used"
     assert details.title == "River Stay"
     assert details.cover_url is None

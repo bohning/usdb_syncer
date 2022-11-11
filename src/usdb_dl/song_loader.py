@@ -1,19 +1,17 @@
 """Contains a runnable song loader."""
 
 import filecmp
-import logging
 import os
 import re
 
 from PySide6.QtCore import QRunnable
 
 from usdb_dl import SongId, note_utils, resource_dl, usdb_scraper
+from usdb_dl.logger import SongLogger, get_logger
 from usdb_dl.meta_tags import MetaTags
 from usdb_dl.options import Options
 from usdb_dl.resource_dl import ImageKind, download_and_process_image
 from usdb_dl.usdb_scraper import SongDetails
-
-_logger: logging.Logger = logging.getLogger(__file__)
 
 
 class Context:
@@ -30,11 +28,14 @@ class Context:
     filename: str
     # without extension
     file_path: str
+    logger: SongLogger
 
-    def __init__(self, details: SongDetails, options: Options) -> None:
+    def __init__(
+        self, details: SongDetails, options: Options, logger: SongLogger
+    ) -> None:
         self.details = details
         self.options = options
-        self.songtext = usdb_scraper.get_notes(details.song_id)
+        self.songtext = usdb_scraper.get_notes(details.song_id, logger)
         self.header, self.notes = note_utils.parse_notes(self.songtext)
         # remove anything in "[]" from the title, e.g. "[duet]"
         self.header["#TITLE"] = re.sub(r"\[.*?\]", "", self.header["#TITLE"]).strip()
@@ -46,6 +47,7 @@ class Context:
         )
         self.filename = note_utils.generate_filename(self.header)
         self.file_path = os.path.join(self.dir_path, self.filename)
+        self.logger = logger
 
 
 class SongLoader(QRunnable):
@@ -55,35 +57,37 @@ class SongLoader(QRunnable):
         super().__init__()
         self.song_id = song_id
         self.options = options
+        self.logger = get_logger(__file__, song_id)
 
     def run(self) -> None:
-        _logger.info(f"#{self.song_id}: Downloading song...")
-        _logger.info(f"#{self.song_id}: (1/6) downloading usdb file...")
 
-        if (details := usdb_scraper.get_usdb_details(self.song_id)) is None:
+        self.logger.info("Downloading song...")
+        self.logger.info("(1/6) downloading usdb file...")
+
+        if (
+            details := usdb_scraper.get_usdb_details(self.song_id, self.logger)
+        ) is None:
             # song was deleted from usdb in the meantime, TODO: uncheck/remove from model
             return
 
-        ctx = Context(details, self.options)
+        ctx = Context(details, self.options, self.logger)
         _maybe_write_player_tags(ctx)
-        _logger.info(
-            f"#{self.song_id}: (1/6) {ctx.header['#ARTIST']} - {ctx.header['#TITLE']}"
-        )
+        self.logger.info(f"(1/6) {ctx.header['#ARTIST']} - {ctx.header['#TITLE']}")
 
         if _find_or_initialize_folder(ctx):
             return
         ###
-        _logger.info(f"#{self.song_id}: (2/6) downloading audio file...")
+        self.logger.info("(2/6) downloading audio file...")
         _maybe_download_audio(ctx)
-        _logger.info(f"#{self.song_id}: (3/6) downloading video file...")
+        self.logger.info("(3/6) downloading video file...")
         _maybe_download_video(ctx)
-        _logger.info(f"#{self.song_id}: (4/6) downloading cover file...")
+        self.logger.info("(4/6) downloading cover file...")
         _maybe_download_cover(ctx)
-        _logger.info(f"#{self.song_id}: (5/6) downloading background file...")
+        self.logger.info("(5/6) downloading background file...")
         _maybe_download_background(ctx)
-        _logger.info(f"#{self.song_id}: (6/6) writing song text file...")
+        self.logger.info("(6/6) writing song text file...")
         _maybe_write_txt(ctx)
-        _logger.info(f"#{self.song_id}: (6/6) Download completed!")
+        self.logger.info("(6/6) Download completed!")
 
 
 def _find_or_initialize_folder(ctx: Context) -> bool:
@@ -100,16 +104,14 @@ def _find_or_initialize_folder(ctx: Context) -> bool:
 
     if os.path.exists(usdb_path):
         if filecmp.cmp(temp_path, usdb_path):
-            _logger.info(
-                f"#{ctx.details.song_id}: (1/6) usdb and local file are identical, "
-                "no need to re-download. Skipping song."
+            ctx.logger.info(
+                "(1/6) usdb and local file are identical, no need to re-download. "
+                "Skipping song."
             )
             os.remove(temp_path)
             return True
 
-        _logger.info(
-            f"#{ctx.details.song_id}: (1/6) usdb file has been updated, re-downloading..."
-        )
+        ctx.logger.info("(1/6) usdb file has been updated, re-downloading...")
         # TODO: check if resources in #VIDEO tag have changed and if so, re-download
         # new resources only
         os.remove(usdb_path)
@@ -144,20 +146,20 @@ def _maybe_download_audio(ctx: Context) -> None:
     #    if video_params:
     #        audio_resource = video_params.get("v")
     #        if audio_resource:
-    #            _logger.warning(
-    #                f"#{self.song_id}: (2/6) Using Youtube ID {audio_resource} extracted from comments."
+    #            self.logger.warning(
+    #                f"(2/6) Using Youtube ID {audio_resource} extracted from comments."
     #            )
     if resource := ctx.meta_tags.audio or ctx.meta_tags.video:
         if ext := resource_dl.download_video(
-            resource, options, ctx.options.browser, ctx.file_path
+            resource, options, ctx.options.browser, ctx.file_path, ctx.logger
         ):
             ctx.header["#MP3"] = f"{ctx.filename}.{ext}"
-            _logger.info(f"#{ctx.details.song_id}: (2/6) Success.")
+            ctx.logger.info("(2/6) Success.")
             # self.model.setItem(self.model.findItems(self.kwargs['id'], flags=Qt.MatchExactly, column=0)[0].row(), 9, QStandardItem(QIcon(":/icons/tick.png"), ""))
         else:
-            _logger.error(f"#{ctx.details.song_id}: (2/6) Failed.")
+            ctx.logger.error("(2/6) Failed.")
     else:
-        _logger.warning("\t- no audio resource in #VIDEO tag")
+        ctx.logger.warning("no audio resource in #VIDEO tag")
 
 
 def _maybe_download_video(ctx: Context) -> None:
@@ -169,22 +171,20 @@ def _maybe_download_video(ctx: Context) -> None:
         #    if video_params:
         #        video_resource = video_params.get("v")
         #        if video_resource:
-        #            _logger.warning(
-        #                f"#{self.song_id}: (3/6) Using Youtube ID {audio_resource} extracted from comments."
+        #            self.logger.warning(
+        #                f"(3/6) Using Youtube ID {audio_resource} extracted from comments."
         #            )
     if resource := ctx.meta_tags.video:
         if ext := resource_dl.download_video(
-            resource, options, ctx.options.browser, ctx.file_path
+            resource, options, ctx.options.browser, ctx.file_path, ctx.logger
         ):
             ctx.header["#VIDEO"] = f"{ctx.filename}.{ext}"
-            _logger.info(f"#{ctx.details.song_id}: (3/6) Success.")
+            ctx.logger.info("(3/6) Success.")
             # self.model.setItem(self.model.findItems(idp, flags=Qt.MatchExactly, column=0)[0].row(), 10, QStandardItem(QIcon(":/icons/tick.png"), ""))
         else:
-            _logger.error(f"#{ctx.details.song_id}: (3/6) Failed.")
+            ctx.logger.error("(3/6) Failed.")
     else:
-        _logger.warning(
-            f"#{ctx.details.song_id}: (3/6) no video resource in #VIDEO tag"
-        )
+        ctx.logger.warning("(3/6) no video resource in #VIDEO tag")
 
 
 def _maybe_download_cover(ctx: Context) -> None:
@@ -195,10 +195,10 @@ def _maybe_download_cover(ctx: Context) -> None:
         ctx.header, ctx.meta_tags.cover, ctx.details, ctx.dir_path, ImageKind.COVER
     ):
         ctx.header["#COVER"] = f"{ctx.filename} [CO].jpg"
-        _logger.info(f"#{ctx.details.song_id}: (4/6) Success.")
+        ctx.logger.info("(4/6) Success.")
         # ctx.model.setItem(ctx.model.findItems(idp, flags=Qt.MatchExactly, column=0)[0].row(), 11, QStandardItem(QIcon(":/icons/tick.png"), ""))
     else:
-        _logger.error(f"#{ctx.details.song_id}: (4/6) Failed.")
+        ctx.logger.error("(4/6) Failed.")
 
 
 def _maybe_download_background(ctx: Context) -> None:
@@ -214,18 +214,20 @@ def _maybe_download_background(ctx: Context) -> None:
         ImageKind.BACKGROUND,
     ):
         ctx.header["#BACKGROUND"] = f"{ctx.filename} [BG].jpg"
-        _logger.info(f"#{ctx.details.song_id}: (5/6) Success.")
+        ctx.logger.info("(5/6) Success.")
         # ctx.model.setItem(ctx.model.findItems(idp, flags=Qt.MatchExactly, column=0)[0].row(), 12, QStandardItem(QIcon(":/icons/tick.png"), ""))
     else:
-        _logger.error(f"#{ctx.details.song_id}: (5/6) Failed.")
+        ctx.logger.error("(5/6) Failed.")
 
 
 def _maybe_write_txt(ctx: Context) -> None:
     if not (options := ctx.options.txt_options):
         return
-    ctx.filename = note_utils.dump_notes(ctx.header, ctx.notes, ctx.dir_path, options)
+    ctx.filename = note_utils.dump_notes(
+        ctx.header, ctx.notes, ctx.dir_path, options, ctx.logger
+    )
     if ctx.filename:
-        _logger.info(f"#{ctx.details.song_id}: (6/6) Success.")
+        ctx.logger.info("(6/6) Success.")
         # ctx.model.setItem(ctx.model.findItems(idp, flags=Qt.MatchExactly, column=0)[0].row(), 8, QStandardItem(QIcon(":/icons/tick.png"), ""))
     else:
-        _logger.error(f"#{ctx.details.song_id}: (6/6) Failed.")
+        ctx.logger.error("(6/6) Failed.")

@@ -13,6 +13,7 @@ import requests
 from bs4 import BeautifulSoup
 
 from usdb_dl import SongId
+from usdb_dl.logger import SongLogger
 from usdb_dl.typing_helpers import assert_never
 
 _logger: logging.Logger = logging.getLogger(__file__)
@@ -235,7 +236,7 @@ def get_usdb_page(
     return response.text
 
 
-def get_usdb_details(song_id: SongId) -> SongDetails | None:
+def get_usdb_details(song_id: SongId, logger: SongLogger) -> SongDetails | None:
     """Retrieve song details from usdb webpage, if song exists.
 
     Parameters:
@@ -247,13 +248,15 @@ def get_usdb_details(song_id: SongId) -> SongDetails | None:
     soup = BeautifulSoup(html, "lxml")
     if DATASET_NOT_FOUND_STRING in soup.get_text():
         return None
-    return _parse_song_page(soup, song_id)
+    return _parse_song_page(soup, song_id, logger)
 
 
-def _parse_song_page(soup: BeautifulSoup, song_id: SongId) -> SongDetails:
+def _parse_song_page(
+    soup: BeautifulSoup, song_id: SongId, logger: SongLogger
+) -> SongDetails:
     details_table, comments_table, *_ = soup.find_all("table", border="0", width="500")
     details = _parse_details_table(details_table, song_id)
-    details.comments = _parse_comments_table(comments_table)
+    details.comments = _parse_comments_table(comments_table, logger)
     return details
 
 
@@ -344,7 +347,9 @@ def _parse_details_table(details_table: BeautifulSoup, song_id: SongId) -> SongD
     )
 
 
-def _parse_comments_table(comments_table: BeautifulSoup) -> list[SongComment]:
+def _parse_comments_table(
+    comments_table: BeautifulSoup, logger: SongLogger
+) -> list[SongComment]:
     """Parse the table into individual comments, extracting potential video links,
     GAP and BPM values.
 
@@ -358,7 +363,7 @@ def _parse_comments_table(comments_table: BeautifulSoup) -> list[SongComment]:
         meta = header.find("td").text.strip()
         if " | " not in meta:
             # header is just the placeholder element
-            _logger.debug("\t- usdb::song has no comments!")
+            logger.debug("usdb::song has no comments!")
             break
         date_time, author = meta.split(" | ")
         contents = _parse_comment_contents(header.next_sibling)
@@ -403,9 +408,9 @@ def _parse_comment_contents(contents: BeautifulSoup) -> CommentContents:
     return CommentContents(text=text, urls=urls, youtube_ids=[])
 
 
-def get_notes(song_id: SongId) -> str:
+def get_notes(song_id: SongId, logger: SongLogger) -> str:
     """Retrieve notes for a song."""
-    _logger.debug(f"\t- fetch notes for song {song_id}")
+    logger.debug(f"fetch notes for song {song_id}")
     html = get_usdb_page(
         "index.php",
         RequestMethod.POST,

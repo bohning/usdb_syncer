@@ -1,6 +1,5 @@
 """Functions for downloading and processing media."""
 
-import logging
 import os
 from enum import Enum
 from typing import Union
@@ -10,6 +9,7 @@ import yt_dlp
 from PIL import Image, ImageEnhance, ImageOps
 
 from usdb_dl import note_utils
+from usdb_dl.logger import SongLogger, get_logger
 from usdb_dl.meta_tags import ImageMetaTags
 from usdb_dl.options import AudioOptions, Browser, VideoOptions
 from usdb_dl.typing_helpers import assert_never
@@ -17,6 +17,13 @@ from usdb_dl.usdb_scraper import SongDetails
 
 # from moviepy.editor import VideoFileClip
 # import subprocess
+
+IMAGE_DOWNLOAD_HEADERS = {
+    "User-Agent": (
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+        "(KHTML, like Gecko) Chrome/42.0.2311.135 Safari/537.36 Edge/12.246"
+    )
+}
 
 
 class ImageKind(Enum):
@@ -40,6 +47,7 @@ def download_video(
     options: AudioOptions | VideoOptions,
     browser: Browser,
     path_base: str,
+    logger: SongLogger,
 ) -> str | None:
     """Download video from resource to path and process it according to options.
 
@@ -76,48 +84,49 @@ def download_video(
         try:
             filename = ydl.prepare_filename(ydl.extract_info(f"{url}"))
         except yt_dlp.utils.YoutubeDLError:
-            logging.error(f"\terror downloading video url: {url}")
+            logger.error(f"error downloading video url: {url}")
             return None
 
     return os.path.splitext(filename)[1][1:]
 
 
-def download_image(url: str) -> tuple[bool, bytes]:
+def download_image(url: str, logger: SongLogger) -> bytes | None:
     try:
-        headers = {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/42.0.2311.135 Safari/537.36 Edge/12.246"
-        }
-        reply = requests.get(url, allow_redirects=True, headers=headers, timeout=60)
-    except:
-        logging.error(
-            f"Failed to retrieve {url}. The server may be down or your internet connection is currently unavailable."
+        reply = requests.get(
+            url, allow_redirects=True, headers=IMAGE_DOWNLOAD_HEADERS, timeout=60
         )
-        return False, bytes(0)
+    except:
+        logger.error(
+            f"Failed to retrieve {url}. The server may be down or your internet "
+            "connection is currently unavailable."
+        )
+        return None
     if reply.status_code in range(100, 199):
         # 1xx informational response
-        return True, reply.content
+        return reply.content
     if reply.status_code in range(200, 299):
         # 2xx success
-        return True, reply.content
+        return reply.content
     if reply.status_code in range(300, 399):
         # 3xx redirection
-        logging.warning(
-            f"\tRedirection to {reply.next.url if reply.next else 'unknown'}. Please update the template file."
+        logger.warning(
+            f"Redirection to {reply.next.url if reply.next else 'unknown'}. "
+            "Please update the template file."
         )
-        return True, reply.content
+        return reply.content
     if reply.status_code in range(400, 499):
         # 4xx client errors
-        logging.error(
-            f"\tClient error {reply.status_code}. Failed to download {reply.url}"
+        logger.error(
+            f"Client error {reply.status_code}. Failed to download {reply.url}"
         )
-        return False, reply.content
+        return None
     if reply.status_code in range(500, 599):
         # 5xx server errors
-        logging.error(
-            f"\tServer error {reply.status_code}. Failed to download {reply.url}"
+        logger.error(
+            f"Server error {reply.status_code}. Failed to download {reply.url}"
         )
-        return False, reply.content
-    return False, bytes(0)
+        return None
+    return None
 
 
 def download_and_process_image(
@@ -127,11 +136,11 @@ def download_and_process_image(
     pathname: str,
     kind: ImageKind,
 ) -> bool:
-    if not (url := _get_image_url(meta_tags, details, kind)):
+    logger = get_logger(__file__, details.song_id)
+    if not (url := _get_image_url(meta_tags, details, kind, logger)):
         return False
-    success, img_bytes = download_image(url)
-    if not success:
-        logging.error(f"\t#{str(kind).upper()}: file does not exist at url: {url}")
+    if not (img_bytes := download_image(url, logger)):
+        logger.error(f"#{str(kind).upper()}: file does not exist at url: {url}")
         return False
     fname = f"{note_utils.generate_filename(header)} [{kind.value}].jpg"
     path = os.path.join(pathname, fname)
@@ -143,19 +152,22 @@ def download_and_process_image(
 
 
 def _get_image_url(
-    meta_tags: ImageMetaTags | None, details: SongDetails, kind: ImageKind
+    meta_tags: ImageMetaTags | None,
+    details: SongDetails,
+    kind: ImageKind,
+    logger: SongLogger,
 ) -> str | None:
     url = None
     if meta_tags:
         url = meta_tags.source_url()
-        logging.debug(f"\t- downloading {kind} from #VIDEO params: {url}")
+        logger.debug(f"downloading {kind} from #VIDEO params: {url}")
     elif kind is ImageKind.COVER and details.cover_url:
         url = details.cover_url
-        logging.warning(
-            "\t- no cover resource in #VIDEO tag, so fallback to small usdb cover!"
+        logger.warning(
+            "no cover resource in #VIDEO tag, so fallback to small usdb cover!"
         )
     else:
-        logging.warning(f"\t- no {kind} resource found")
+        logger.warning(f"no {kind} resource found")
     return url
 
 

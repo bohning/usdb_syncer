@@ -1,13 +1,11 @@
 """Functionality related to notes.txt file parsing."""
 
-import logging
 import os
 import re
 
+from usdb_dl.logger import SongLogger
 from usdb_dl.meta_tags import MetaTags
 from usdb_dl.options import TxtOptions
-
-_logger: logging.Logger = logging.getLogger(__file__)
 
 
 def parse_notes(notes: str) -> tuple[dict[str, str], list[str]]:
@@ -39,37 +37,6 @@ def parse_notes(notes: str) -> tuple[dict[str, str], list[str]]:
         else:
             body.append(line.replace("\r", "") + "\n")
     return header, body
-
-
-def get_params_from_video_tag(header: dict[str, str]) -> dict[str, str]:
-    """Obtain additional resource parameter from overloaded video tag.
-
-    Such an overloaded tag could be
-
-    #VIDEO:a=example,co=foobar.jpg,bg=background.jpg
-
-    Parameters:
-        header: song meta data
-
-    Returns:
-        additional resource parameters
-    """
-    params = {}
-    if params_line := header.get("#VIDEO"):
-        key_value_pairs = params_line.split(",")
-        for pair in key_value_pairs:
-            if "=" not in pair:
-                continue
-            parts = list(filter(None, pair.split("=")))
-            if len(parts) == 2:
-                params[parts[0]] = parts[1]
-            else:
-                logging.warning(
-                    f"Invalid key/value pair '{pair}' found in #VIDEO tag '{params_line}'"
-                )
-    else:
-        logging.error("\t- no #VIDEO tag present")
-    return params
 
 
 def is_duet(header: dict[str, str], meta_tags: MetaTags) -> bool:
@@ -132,7 +99,11 @@ def generate_dirname(header: dict[str, str], video: bool) -> str:
 
 
 def dump_notes(
-    header: dict[str, str], body: list[str], pathname: str, txt_options: TxtOptions
+    header: dict[str, str],
+    body: list[str],
+    pathname: str,
+    txt_options: TxtOptions,
+    logger: SongLogger,
 ) -> str:
     """Write notes to file.
 
@@ -148,7 +119,7 @@ def dump_notes(
     txt_filename = generate_filename(header)
     duetstring = " (duet)" if header.get("#P2") else ""
     filename = f"{txt_filename}{duetstring}.txt"
-    _logger.debug(f"\t- writing text file with encoding {txt_options.encoding.value}")
+    logger.debug(f"writing text file with encoding {txt_options.encoding.value}")
     with open(
         os.path.join(pathname, filename),
         "w",
