@@ -345,5 +345,11 @@ def _sanitize_image_url(url: str) -> tuple[str, bool]:
 
 
 def _sanitize_url(url: str) -> str:
-    """Remove or escape `/` and `:`, which USDB can't handle."""
-    return url.removeprefix("https://").replace("/", "%2F").replace(":", "%3A")
+    """Remove or escape characters with special meaning or which USDB can't handle."""
+    return (
+        url.removeprefix("https://")
+        .replace("/", "%2F")
+        .replace(":", "%3A")
+        .replace("#", "%23")
+        .replace(",", "%2C")
+    )
