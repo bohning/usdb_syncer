@@ -81,6 +81,14 @@ def test__parse_song_page_with_commented_embedded_video(resource_dir: str) -> No
     assert details.comments[1].contents.urls == []
 
 
+def test__parse_song_page_with_commented_unembedded_video(resource_dir: str) -> None:
+    song_id = SongId(16575)
+    soup = get_soup(resource_dir, "song_page_with_unembedded_video.htm")
+    details = _parse_song_page(soup, song_id, get_logger(__file__, song_id))
+    assert len(details.comments) == 1
+    assert details.comments[0].contents.youtube_ids == ["WIAvMiUcCgw"]
+
+
 def test__parse_song_page_without_comments_or_cover(resource_dir: str) -> None:
     song_id = SongId(26244)
     soup = get_soup(resource_dir, "song_page_without_comments_or_cover.htm")

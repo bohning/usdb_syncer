@@ -7,7 +7,7 @@ from datetime import datetime
 from enum import Enum
 from functools import wraps
 from json import JSONEncoder
-from typing import Any, Callable
+from typing import Any, Callable, Iterator
 
 import requests
 from bs4 import BeautifulSoup
@@ -198,6 +198,16 @@ class SongDetails:
         self.audio_sample = audio_sample or None
         self.team_comment = None if "No comment yet" in team_comment else team_comment
         self.comments = []
+
+    def all_comment_videos(self) -> Iterator[str]:
+        """Yields all parsed URLs and YouTube ids. Order is latest to earliest, then ids
+        before URLs.
+        """
+        for comment in self.comments:
+            for ytid in comment.contents.youtube_ids:
+                yield ytid
+            for url in comment.contents.urls:
+                yield url
 
 
 def get_usdb_page(

@@ -3,6 +3,7 @@
 import filecmp
 import os
 import re
+from typing import Iterator
 
 from PySide6.QtCore import QRunnable
 
@@ -48,6 +49,16 @@ class Context:
         self.filename = note_utils.generate_filename(self.header)
         self.file_path = os.path.join(self.dir_path, self.filename)
         self.logger = logger
+
+    def all_audio_resources(self) -> Iterator[str]:
+        if self.meta_tags.audio:
+            yield self.meta_tags.audio
+        yield from self.all_video_resources()
+
+    def all_video_resources(self) -> Iterator[str]:
+        if self.meta_tags.video:
+            yield self.meta_tags.video
+        yield from self.details.all_comment_videos()
 
 
 class SongLoader(QRunnable):
@@ -140,51 +151,33 @@ def _maybe_write_player_tags(ctx: Context) -> None:
 def _maybe_download_audio(ctx: Context) -> None:
     if not (options := ctx.options.audio_options):
         return
-
-    # else:
-    #    video_params = details.get("video_params")
-    #    if video_params:
-    #        audio_resource = video_params.get("v")
-    #        if audio_resource:
-    #            self.logger.warning(
-    #                f"(2/6) Using Youtube ID {audio_resource} extracted from comments."
-    #            )
-    if resource := ctx.meta_tags.audio or ctx.meta_tags.video:
+    for (idx, resource) in enumerate(ctx.all_audio_resources()):
+        if idx > 9:
+            break
         if ext := resource_dl.download_video(
             resource, options, ctx.options.browser, ctx.file_path, ctx.logger
         ):
             ctx.header["#MP3"] = f"{ctx.filename}.{ext}"
             ctx.logger.info("(2/6) Success.")
             # self.model.setItem(self.model.findItems(self.kwargs['id'], flags=Qt.MatchExactly, column=0)[0].row(), 9, QStandardItem(QIcon(":/icons/tick.png"), ""))
-        else:
-            ctx.logger.error("(2/6) Failed.")
-    else:
-        ctx.logger.warning("no audio resource in #VIDEO tag")
+            return
+    ctx.logger.error("(2/6) Failed.")
 
 
 def _maybe_download_video(ctx: Context) -> None:
     if not (options := ctx.options.video_options):
         return
-
-        # elif not resource_params.get("a"):
-        #    video_params = details.get("video_params")
-        #    if video_params:
-        #        video_resource = video_params.get("v")
-        #        if video_resource:
-        #            self.logger.warning(
-        #                f"(3/6) Using Youtube ID {audio_resource} extracted from comments."
-        #            )
-    if resource := ctx.meta_tags.video:
+    for (idx, resource) in enumerate(ctx.all_video_resources()):
+        if idx > 9:
+            break
         if ext := resource_dl.download_video(
             resource, options, ctx.options.browser, ctx.file_path, ctx.logger
         ):
             ctx.header["#VIDEO"] = f"{ctx.filename}.{ext}"
             ctx.logger.info("(3/6) Success.")
             # self.model.setItem(self.model.findItems(idp, flags=Qt.MatchExactly, column=0)[0].row(), 10, QStandardItem(QIcon(":/icons/tick.png"), ""))
-        else:
-            ctx.logger.error("(3/6) Failed.")
-    else:
-        ctx.logger.warning("(3/6) no video resource in #VIDEO tag")
+            return
+    ctx.logger.error("(3/6) Failed.")
 
 
 def _maybe_download_cover(ctx: Context) -> None:
