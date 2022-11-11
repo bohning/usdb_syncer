@@ -4,7 +4,7 @@ import os
 import re
 
 from usdb_dl.logger import SongLogger
-from usdb_dl.meta_tags import MetaTags
+from usdb_dl.meta_tags.deserializer import MetaTags
 from usdb_dl.options import TxtOptions
 
 

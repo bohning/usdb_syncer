@@ -8,7 +8,7 @@ from PySide6.QtCore import QRunnable
 
 from usdb_dl import SongId, note_utils, resource_dl, usdb_scraper
 from usdb_dl.logger import SongLogger, get_logger
-from usdb_dl.meta_tags import MetaTags
+from usdb_dl.meta_tags.deserializer import MetaTags
 from usdb_dl.options import Options
 from usdb_dl.resource_dl import ImageKind, download_and_process_image
 from usdb_dl.usdb_scraper import SongDetails

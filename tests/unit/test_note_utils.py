@@ -3,7 +3,7 @@
 
 """Tests for functions from the note_utils module."""
 
-from usdb_dl.meta_tags import MetaTags
+from usdb_dl.meta_tags.deserializer import MetaTags
 from usdb_dl.note_utils import is_duet
 
 

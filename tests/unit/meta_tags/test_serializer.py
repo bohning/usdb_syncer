@@ -1,16 +1,16 @@
 """Test meta tag creator."""
 
-from usdb_dl.gui.meta_tags_dialog import (
+from usdb_dl.meta_tags.serializer import (
     ImageCropTag,
+    MetaValues,
     TrimPoint,
-    UiValues,
     VideoCropTag,
-    _video_tag_from_values,
+    video_tag_from_values,
 )
 
 
-def default_values() -> UiValues:
-    return UiValues(
+def default_values() -> MetaValues:
+    return MetaValues(
         video_url="",
         audio_url="",
         video_trim_start=TrimPoint(mins=0, secs=0, use_frames=False, frames=0),
@@ -35,19 +35,19 @@ def default_values() -> UiValues:
 def test_yt_url_shortening() -> None:
     values = default_values()
     values.video_url = "https://www.youtube.com/watch?v=dQw4w9WgXcQ"
-    assert _video_tag_from_values(values) == "#VIDEO:v=dQw4w9WgXcQ"
+    assert video_tag_from_values(values) == "#VIDEO:v=dQw4w9WgXcQ"
 
 
 def test_fanart_url_shortening() -> None:
     values = default_values()
     values.cover_url = "https://images.fanart.tv/fanart/the-room-5df4d0ed35191.jpg"
-    assert _video_tag_from_values(values) == "#VIDEO:co=the-room-5df4d0ed35191.jpg"
+    assert video_tag_from_values(values) == "#VIDEO:co=the-room-5df4d0ed35191.jpg"
 
 
 def test_url_shortening_and_escaping() -> None:
     values = default_values()
     values.cover_url = "https://www.discogs.com/de/release/24814589-David-Bowie-Heroes/image/SW1hZ2U6ODU0MzU1NDM="
     assert (
-        _video_tag_from_values(values)
+        video_tag_from_values(values)
         == "#VIDEO:co=www.discogs.com%2Fde%2Frelease%2F24814589-David-Bowie-Heroes%2Fimage%2FSW1hZ2U6ODU0MzU1NDM="
     )
