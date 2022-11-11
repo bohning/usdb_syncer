@@ -567,7 +567,7 @@ def main() -> None:
         f"Song database successfully loaded with {num_songs} songs.",
         color=Qt.GlobalColor.gray,
     )
-    mw.show()
+    mw.showMaximized()
     logging.info("Application successfully loaded.")
     splash.finish(mw)
     app.exec()
