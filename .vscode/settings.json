@@ -20,6 +20,6 @@
   "editor.codeActionsOnSave": {
     "source.organizeImports": true
   },
-  "python.languageServer": "Pylance",
+  "python.languageServer": "Default",
   "python.analysis.typeCheckingMode": "basic"
 }

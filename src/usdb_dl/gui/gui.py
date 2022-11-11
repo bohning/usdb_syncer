@@ -1,6 +1,5 @@
 """usdb_dl's GUI"""
 
-import argparse
 import datetime
 import json
 import logging
@@ -572,16 +571,3 @@ def main() -> None:
     logging.info("Application successfully loaded.")
     splash.finish(mw)
     app.exec()
-
-
-def cli_entry() -> None:
-    parser = argparse.ArgumentParser(description="UltraStar script.")
-
-    _args = parser.parse_args()
-
-    # Call main
-    main()
-
-
-if __name__ == "__main__":
-    cli_entry()

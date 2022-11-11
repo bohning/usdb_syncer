@@ -13,3 +13,7 @@ reports
 **/*/config.ini
 .pytest_cache
 *.log
+
+# generated locally
+src/usdb_dl/gui/forms/*.py
+src/usdb_dl/gui/resources/*.py
