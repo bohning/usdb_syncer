@@ -11,6 +11,9 @@ from typing import Any, Callable
 
 import requests
 from bs4 import BeautifulSoup
+from pytube import extract
+from pytube.exceptions import RegexMatchError
+from urlextract import URLExtract
 
 from usdb_dl import SongId
 from usdb_dl.logger import SongLogger
@@ -21,6 +24,7 @@ _logger: logging.Logger = logging.getLogger(__file__)
 USDB_BASE_URL = "http://usdb.animux.de/"
 DATASET_NOT_FOUND_STRING = "Datensatz nicht gefunden"
 USDB_DATETIME_STRF = "%d.%m.%y - %H:%M"
+SUPPORTED_VIDEO_SOURCES = ("vimeo.com", "archive.org", "fb.watch")
 
 
 class RequestMethod(Enum):
@@ -366,7 +370,7 @@ def _parse_comments_table(
             logger.debug("usdb::song has no comments!")
             break
         date_time, author = meta.split(" | ")
-        contents = _parse_comment_contents(header.next_sibling)
+        contents = _parse_comment_contents(header.next_sibling, logger)
         comments.append(
             SongComment(date_time=date_time, author=author, contents=contents)
         )
@@ -374,38 +378,32 @@ def _parse_comments_table(
     return comments
 
 
-def _parse_comment_contents(contents: BeautifulSoup) -> CommentContents:
+def _parse_comment_contents(
+    contents: BeautifulSoup, logger: SongLogger
+) -> CommentContents:
     text = contents.find("td").text.strip()  # type: ignore
-    urls = []
+    urls: list[str] = []
+    youtube_ids: list[str] = []
+
     for embed in contents.find_all("embed"):
-        # TODO: this assumes youtube embeds
-        yt_url = embed.get("src").split("&")[0]
-        urls.append(yt_url)
-        # try:
-        #    yt_id = extract.video_id(yt_url)
-        # except:
-        #    _logger.warning(
-        #        f"\t- usdb::comment embed contains a url ({yt_url}), "
-        #        "but the Youtube video ID could not be extracted."
-        #    )
-        # else:
-        #    # TODO: this only takes the first youtube link in the newest comments
-        #    details["video_params"] = {"v": yt_id}
-    # regex = r"(?i)\b((?:https?://|www\d{0,3}[.]|[a-z0-9.\-]+[.][a-z]{2,4}/)(?:[^\s()<>]+|\(([^\s()<>]+|(\([^\s()<>]+\)))*\))+(?:\(([^\s()<>]+|(\([^\s()<>]+\)))*\)|[^\s`!()\[\]{};:'\".,<>?«»“”‘’]))"
-    # for url in re.findall(regex, text):
-    #     try:
-    #        yt_id = extract.video_id(url[0])
-    #     except:
-    #        _logger.warning(
-    #            f"\t- usdb::comment contains a plain url ({url}), "
-    #            "but it does not seem to be a Youtube link."
-    #        )
-    #     else:
-    #        comment_urls.append(f"https://www.youtube.com/watch?v={yt_id}")
-    #        if not details.get("video_params"):
-    #            details["video_params"] = {"v": yt_id}
-    #        text = text.replace(url[0], "").strip()
-    return CommentContents(text=text, urls=urls, youtube_ids=[])
+        src = embed.get("src")
+        try:
+            youtube_ids.append(extract.video_id(src))
+        except RegexMatchError:
+            logger.debug(f"could not extract YouTube id from embedded URL '{src}'")
+
+    for url in URLExtract().gen_urls(text):
+        if isinstance(url, tuple):
+            url = url[0]
+        try:
+            youtube_ids.append(extract.video_id(url))
+        except RegexMatchError:
+            if any(source in url for source in SUPPORTED_VIDEO_SOURCES):
+                urls.append(url)
+            else:
+                logger.debug(f"unknown website in comment URL '{url}'")
+
+    return CommentContents(text=text, urls=urls, youtube_ids=youtube_ids)
 
 
 def get_notes(song_id: SongId, logger: SongLogger) -> str:

@@ -77,8 +77,8 @@ def test__parse_song_page_with_commented_embedded_video(resource_dir: str) -> No
     assert details.comments[1].date_time == datetime(2022, 10, 10, 19, 48)
     assert details.comments[1].author == "bohning"
     assert details.comments[1].contents.text == ""
-    assert details.comments[1].contents.youtube_ids == []
-    assert details.comments[1].contents.urls == ["http://www.youtube.com/v/Vf0MC3CFihY"]
+    assert details.comments[1].contents.youtube_ids == ["Vf0MC3CFihY"]
+    assert details.comments[1].contents.urls == []
 
 
 def test__parse_song_page_without_comments_or_cover(resource_dir: str) -> None:
