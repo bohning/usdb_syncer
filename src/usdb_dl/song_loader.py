@@ -5,12 +5,12 @@ import os
 import re
 from typing import Iterator
 
-from PySide6.QtCore import QRunnable
+from PySide6.QtCore import QRunnable, QThreadPool
 
 from usdb_dl import SongId, note_utils, resource_dl, usdb_scraper
+from usdb_dl.download_options import Options, download_options
 from usdb_dl.logger import SongLogger, get_logger
 from usdb_dl.meta_tags.deserializer import MetaTags
-from usdb_dl.options import Options
 from usdb_dl.resource_dl import ImageKind, download_and_process_image
 from usdb_dl.usdb_scraper import SongDetails
 
@@ -99,6 +99,14 @@ class SongLoader(QRunnable):
         self.logger.info("(6/6) writing song text file...")
         _maybe_write_txt(ctx)
         self.logger.info("(6/6) Download completed!")
+
+
+def download_songs(ids: list[SongId]) -> None:
+    options = download_options()
+    threadpool = QThreadPool.globalInstance()
+    for song_id in ids:
+        worker = SongLoader(song_id=song_id, options=options)
+        threadpool.start(worker)
 
 
 def _find_or_initialize_folder(ctx: Context) -> bool:

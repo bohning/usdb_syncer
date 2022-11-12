@@ -9,9 +9,10 @@ import yt_dlp
 from PIL import Image, ImageEnhance, ImageOps
 
 from usdb_dl import note_utils
+from usdb_dl.download_options import AudioOptions, VideoOptions
 from usdb_dl.logger import SongLogger, get_logger
 from usdb_dl.meta_tags.deserializer import ImageMetaTags
-from usdb_dl.options import AudioOptions, Browser, VideoOptions
+from usdb_dl.settings import Browser
 from usdb_dl.typing_helpers import assert_never
 from usdb_dl.usdb_scraper import SongDetails
 

@@ -1,9 +1,40 @@
-"""Options for downloading songs."""
+"""Persistent app settings.
 
-from dataclasses import dataclass
+To ensure consistent default values and avoid key collisions, QSettings should never be
+used directly. Instead, new settings should be added to the SettingKey enum and setters
+and getters should be added to this module.
+"""
+
+import os
 from enum import Enum
+from typing import Any, TypeVar, cast
+
+from PySide6.QtCore import QSettings
 
 from usdb_dl.typing_helpers import assert_never
+
+
+class SettingKey(Enum):
+    """Keys for storing and retrieving settings."""
+
+    SONG_DIR = "song_dir"
+    BROWSER = "downloads/browser"
+    TXT = "downloads/txt"
+    ENCODING = "downloads/encoding"
+    NEWLINE = "downloads/newline"
+    AUDIO = "downloads/audio"
+    AUDIO_FORMAT = "downloads/audio_format"
+    AUDIO_REENCODE = "downloads/audio_reencode"
+    AUDIO_FORMAT_NEW = "downloads/audio_format_new"
+    VIDEO = "downloads/video"
+    VIDEO_FORMAT = "downloads/video_format"
+    VIDEO_REENCODE = "downloads/video_reencode"
+    VIDEO_FORMAT_NEW = "downloads/video_format_new"
+    VIDEO_RESOLUTION_MAX = "downloads/video_resolution_max"
+    VIDEO_FPS_MAX = "downloads/video_fps_max"
+    COVER = "downloads/cover"
+    BACKGROUND = "downloads/background"
+    BACKGROUND_ALWAYS = "downloads/background_always"
 
 
 class Encoding(Enum):
@@ -39,6 +70,12 @@ class Newline(Enum):
                 return "Windows (CRLF)"
             case _ as unreachable:
                 assert_never(unreachable)
+
+    @staticmethod
+    def default() -> "Newline":
+        if os.linesep == Newline.CRLF.value:
+            return Newline.CRLF
+        return Newline.LF
 
 
 class AudioContainer(Enum):
@@ -210,66 +247,170 @@ class VideoFps(Enum):
         return str(self.value)
 
 
-@dataclass
-class TxtOptions:
-    """Settings regarding the song txt file to be downloaded."""
-
-    encoding: Encoding
-    newline: Newline
+T = TypeVar("T")
 
 
-@dataclass
-class AudioOptions:
-    """Settings regarding the audio file to be downloaded."""
-
-    format: AudioContainer
-    reencode_format: AudioCodec | None
-
-    def extension(self) -> str | None:
-        """The extension of the downloaded file. Unknown if 'bestaudio' is selected and
-        not target codec is set.
-        """
-        if self.reencode_format:
-            return self.reencode_format.value
-        if self.format is AudioContainer.BEST:
-            return None
-        return self.format.value
+def get_setting(key: SettingKey, default: T) -> T:
+    value = QSettings().value(key.value)
+    if isinstance(value, type(default)):
+        return value
+    if isinstance(default, bool):
+        # we store bools as ints because Qt doesn't store raw bools
+        return cast(T, bool(value))
+    return default
 
 
-@dataclass
-class VideoOptions:
-    """Settings regarding the video file to be downloaded."""
-
-    format: VideoContainer
-    reencode_format: VideoCodec | None
-    max_resolution: VideoResolution
-    max_fps: VideoFps
-
-    def ytdl_format(self) -> str:
-        return (
-            f"bestvideo[ext=mp4][width<={self.max_resolution.width()}]"
-            f"[height<={self.max_resolution.height()}][fps<={self.max_fps.value}]"
-        )
+def set_setting(key: SettingKey, value: Any) -> None:
+    if isinstance(value, bool):
+        # Qt stores bools as "true" and "false" otherwise
+        value = int(value)
+    QSettings().setValue(key.value, value)
 
 
-@dataclass
-class BackgroundOptions:
-    """Settings regarding the video file to be downloaded."""
-
-    only_if_no_video: bool
-
-    def download_background(self, has_video: bool) -> bool:
-        return not self.only_if_no_video or not has_video
+def get_audio() -> bool:
+    return get_setting(SettingKey.AUDIO, True)
 
 
-@dataclass
-class Options:
-    """Settings for downloading songs."""
+def set_audio(value: bool) -> None:
+    set_setting(SettingKey.AUDIO, value)
 
-    song_dir: str
-    txt_options: TxtOptions | None
-    audio_options: AudioOptions | None
-    browser: Browser
-    video_options: VideoOptions | None
-    cover: bool
-    background_options: BackgroundOptions | None
+
+def get_audio_format() -> AudioContainer:
+    return get_setting(SettingKey.AUDIO_FORMAT, AudioContainer.M4A)
+
+
+def set_audio_format(value: AudioContainer) -> None:
+    set_setting(SettingKey.AUDIO_FORMAT, value)
+
+
+def get_audio_format_new() -> AudioCodec:
+    return get_setting(SettingKey.AUDIO_FORMAT_NEW, AudioCodec.MP3)
+
+
+def set_audio_format_new(value: AudioCodec) -> None:
+    set_setting(SettingKey.AUDIO_FORMAT_NEW, value)
+
+
+def get_audio_reencode() -> bool:
+    return get_setting(SettingKey.AUDIO_REENCODE, False)
+
+
+def set_audio_reencode(value: bool) -> None:
+    set_setting(SettingKey.AUDIO_REENCODE, value)
+
+
+def get_newline() -> Newline:
+    return get_setting(SettingKey.NEWLINE, Newline.default())
+
+
+def set_newline(value: Newline) -> None:
+    set_setting(SettingKey.NEWLINE, value)
+
+
+def get_encoding() -> Encoding:
+    return get_setting(SettingKey.ENCODING, Encoding.UTF_8)
+
+
+def set_encoding(value: Encoding) -> None:
+    set_setting(SettingKey.ENCODING, value)
+
+
+def get_txt() -> bool:
+    return get_setting(SettingKey.TXT, True)
+
+
+def set_txt(value: bool) -> None:
+    set_setting(SettingKey.TXT, value)
+
+
+def get_cover() -> bool:
+    return get_setting(SettingKey.COVER, True)
+
+
+def set_cover(value: bool) -> None:
+    set_setting(SettingKey.COVER, value)
+
+
+def get_browser() -> Browser:
+    return get_setting(SettingKey.BROWSER, Browser.NONE)
+
+
+def set_browser(value: Browser) -> None:
+    set_setting(SettingKey.BROWSER, value)
+
+
+def get_song_dir() -> str:
+    return get_setting(SettingKey.SONG_DIR, os.path.join(os.getcwd(), "songs"))
+
+
+def set_song_dir(value: str) -> None:
+    set_setting(SettingKey.SONG_DIR, os.path.join(os.getcwd(), value))
+
+
+def get_video() -> bool:
+    return get_setting(SettingKey.VIDEO, True)
+
+
+def set_video(value: bool) -> None:
+    set_setting(SettingKey.VIDEO, value)
+
+
+def get_video_format() -> VideoContainer:
+    return get_setting(SettingKey.VIDEO_FORMAT, VideoContainer.MP4)
+
+
+def set_video_format(value: VideoContainer) -> None:
+    set_setting(SettingKey.VIDEO_FORMAT, value)
+
+
+def get_video_reencode() -> bool:
+    return get_setting(SettingKey.VIDEO_REENCODE, False)
+
+
+def set_video_reencode(value: bool) -> None:
+    set_setting(SettingKey.VIDEO_REENCODE, value)
+
+
+def get_video_format_new() -> VideoCodec:
+    return get_setting(SettingKey.VIDEO_FORMAT_NEW, VideoCodec.H264)
+
+
+def set_video_format_new(value: VideoCodec) -> None:
+    set_setting(SettingKey.VIDEO_FORMAT_NEW, value)
+
+
+def get_video_resolution() -> VideoResolution:
+    return get_setting(
+        SettingKey.VIDEO_RESOLUTION_MAX,
+        VideoResolution._1080P,  # pylint: disable=protected-access
+    )
+
+
+def set_video_resolution(value: VideoResolution) -> None:
+    set_setting(SettingKey.VIDEO_RESOLUTION_MAX, value)
+
+
+def get_video_fps() -> VideoFps:
+    return get_setting(
+        SettingKey.VIDEO_FPS_MAX, VideoFps._60  # pylint: disable=protected-access
+    )
+
+
+def set_video_fps(value: VideoFps) -> None:
+    set_setting(SettingKey.VIDEO_FPS_MAX, value)
+
+
+def get_background() -> bool:
+    return get_setting(SettingKey.BACKGROUND, True)
+
+
+def set_background(value: bool) -> None:
+    set_setting(SettingKey.BACKGROUND, value)
+
+
+def get_background_always() -> bool:
+    return get_setting(SettingKey.BACKGROUND_ALWAYS, True)
+
+
+def set_background_always(value: bool) -> None:
+    set_setting(SettingKey.BACKGROUND_ALWAYS, value)

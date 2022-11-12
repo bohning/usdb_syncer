@@ -3,9 +3,9 @@
 import os
 import re
 
+from usdb_dl.download_options import TxtOptions
 from usdb_dl.logger import SongLogger
 from usdb_dl.meta_tags.deserializer import MetaTags
-from usdb_dl.options import TxtOptions
 
 
 def parse_notes(notes: str) -> tuple[dict[str, str], list[str]]:

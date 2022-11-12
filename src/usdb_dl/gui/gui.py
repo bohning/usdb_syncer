@@ -33,27 +33,12 @@ from PySide6.QtWidgets import (
     QSplashScreen,
 )
 
-from usdb_dl import SongId
+from usdb_dl import SongId, settings
 from usdb_dl.gui.forms.MainWindow import Ui_MainWindow
 from usdb_dl.gui.meta_tags_dialog import MetaTagsDialog
-from usdb_dl.options import (
-    AudioCodec,
-    AudioContainer,
-    AudioOptions,
-    BackgroundOptions,
-    Browser,
-    Encoding,
-    Newline,
-    Options,
-    TxtOptions,
-    VideoCodec,
-    VideoContainer,
-    VideoFps,
-    VideoOptions,
-    VideoResolution,
-)
+from usdb_dl.gui.settings_dialog import SettingsDialog
 from usdb_dl.song_list_fetcher import SongListFetcher
-from usdb_dl.song_loader import SongLoader
+from usdb_dl.song_loader import download_songs
 from usdb_dl.usdb_scraper import SongMeta
 
 
@@ -76,8 +61,9 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         self.toolButton_errors.toggled.connect(self._on_log_filter_changed)
 
         self.action_meta_tags.triggered.connect(lambda: MetaTagsDialog(self).show())
+        self.action_settings.triggered.connect(lambda: SettingsDialog(self).show())
 
-        self.lineEdit_song_dir.setText(os.path.join(os.getcwd(), "songs"))
+        self.lineEdit_song_dir.setText(settings.get_song_dir())
 
         self.pushButton_get_songlist.clicked.connect(lambda: self.refresh(True))
         self.pushButton_downloadSelectedSongs.clicked.connect(
@@ -137,7 +123,6 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         self.tableView_availableSongs.setModel(self.filter_proxy_model)
         self.tableView_availableSongs.installEventFilter(self)
 
-        self._populate_comboboxes()
         self.comboBox_search_column.currentIndexChanged.connect(
             self.set_filter_key_column
         )
@@ -193,26 +178,6 @@ class MainWindow(Ui_MainWindow, QMainWindow):
                 self._infos.append((message, created))
                 if self.toolButton_infos.isChecked():
                     self.plainTextEdit.appendPlainText(message)
-
-    def _populate_comboboxes(self) -> None:
-        for encoding in Encoding:
-            self.comboBox_encoding.addItem(str(encoding), encoding)
-        for newline in Newline:
-            self.comboBox_line_endings.addItem(str(newline), newline)
-        for container in AudioContainer:
-            self.comboBox_audio_format.addItem(str(container), container)
-        for codec in AudioCodec:
-            self.comboBox_audio_conversion_format.addItem(str(codec), codec)
-        for browser in Browser:
-            self.comboBox_browser.addItem(QIcon(browser.icon()), str(browser), browser)
-        for video_container in VideoContainer:
-            self.comboBox_videocontainer.addItem(str(video_container), video_container)
-        for video_codec in VideoCodec:
-            self.comboBox_videoencoder.addItem(str(video_codec), video_codec)
-        for resolution in VideoResolution:
-            self.comboBox_videoresolution.addItem(str(resolution), resolution)
-        for fps in VideoFps:
-            self.comboBox_fps.addItem(str(fps), fps)
 
     def refresh(self, force_reload: bool) -> None:
         self.pushButton_get_songlist.setEnabled(False)
@@ -304,6 +269,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
     def select_song_dir(self) -> None:
         song_dir = str(QFileDialog.getExistingDirectory(self, "Select Song Directory"))
         self.lineEdit_song_dir.setText(song_dir)
+        settings.set_song_dir(song_dir)
         for _path, dirs, files in os.walk(song_dir):
             dirs.sort()
             for file in files:
@@ -370,7 +336,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
             else:
                 pass
                 # self.treeView_availableSongs.setRowHidden(row, QModelIndex(), True)
-        self.download_songs(ids)
+        download_songs(ids)
         self.generate_songlist_pdf()
 
     def generate_songlist_pdf(self) -> None:
@@ -413,64 +379,6 @@ class MainWindow(Ui_MainWindow, QMainWindow):
 
         with open(f"{date:%Y-%m-%d}_songlist.pdf", "wb") as file:
             build_pdf(document, file)
-        ####
-
-    def _download_options(self) -> Options:
-        return Options(
-            song_dir=self.lineEdit_song_dir.text(),
-            txt_options=self._txt_options(),
-            audio_options=self._audio_options(),
-            browser=self.comboBox_browser.currentData(),
-            video_options=self._video_options(),
-            cover=self.groupBox_cover.isChecked(),
-            background_options=self._background_options(),
-        )
-
-    def _txt_options(self) -> TxtOptions | None:
-        if not self.groupBox_songfile.isChecked():
-            return None
-        return TxtOptions(
-            encoding=self.comboBox_encoding.currentData(),
-            newline=self.comboBox_line_endings.currentData(),
-        )
-
-    def _audio_options(self) -> AudioOptions | None:
-        if not self.groupBox_audio.isChecked():
-            return None
-        return AudioOptions(
-            format=self.comboBox_audio_format.currentData(),
-            reencode_format=self.comboBox_audio_conversion_format.currentData()
-            if self.groupBox_reencode_audio.isChecked()
-            else None,
-        )
-
-    def _video_options(self) -> VideoOptions | None:
-        if not self.groupBox_video.isChecked():
-            return None
-        return VideoOptions(
-            format=self.comboBox_videocontainer.currentData(),
-            reencode_format=self.comboBox_videoencoder.currentData()
-            if self.groupBox_reencode_video.isChecked()
-            else None,
-            max_resolution=self.comboBox_videoresolution.currentData(),
-            max_fps=self.comboBox_fps.currentData(),
-        )
-
-    def _background_options(self) -> BackgroundOptions | None:
-        if not self.groupBox_background.isChecked():
-            return None
-        return BackgroundOptions(
-            only_if_no_video=self.comboBox_background.currentText()
-            == "only if no video"
-        )
-
-    def download_songs(self, ids: list[SongId]) -> None:
-        options = self._download_options()
-        for song_id in ids:
-            worker = SongLoader(song_id=song_id, options=options)
-            self.threadpool.start(worker)
-
-        logging.info(f"DONE! (Downloaded {len(ids)} songs)")
 
     def eventFilter(self, source: QObject, event: QEvent) -> bool:
         if (
@@ -509,6 +417,8 @@ class TextEditLogger(logging.Handler):
 
 def main() -> None:
     app = QApplication(sys.argv)
+    app.setOrganizationName("bohning")
+    app.setApplicationName("usdb_dl")
     mw = MainWindow()
     logging.basicConfig(
         level=logging.INFO,
