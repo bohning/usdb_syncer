@@ -50,7 +50,11 @@
        </widget>
       </item>
       <item row="1" column="1">
-       <widget class="QComboBox" name="comboBox_browser"/>
+       <widget class="QComboBox" name="comboBox_browser">
+        <property name="toolTip">
+         <string>Age-restricted videos require a login. Choose the browser you are logged in with.</string>
+        </property>
+       </widget>
       </item>
       <item row="2" column="0" colspan="2">
        <widget class="QGroupBox" name="groupBox_reencode_audio">
@@ -97,6 +101,9 @@
      <layout class="QFormLayout" name="formLayout_7">
       <item row="0" column="0">
        <widget class="QCheckBox" name="checkBox_background_always">
+        <property name="toolTip">
+         <string>If checked, background images will be downloaded, even if there is a video for the song as well.</string>
+        </property>
         <property name="text">
          <string>Even with video</string>
         </property>
@@ -151,7 +158,11 @@
        </widget>
       </item>
       <item row="1" column="1">
-       <widget class="QComboBox" name="comboBox_videoresolution"/>
+       <widget class="QComboBox" name="comboBox_videoresolution">
+        <property name="toolTip">
+         <string>Maximum video height. Lower values reduce file size.</string>
+        </property>
+       </widget>
       </item>
       <item row="2" column="0">
        <widget class="QLabel" name="label_3">
@@ -161,7 +172,11 @@
        </widget>
       </item>
       <item row="2" column="1">
-       <widget class="QComboBox" name="comboBox_fps"/>
+       <widget class="QComboBox" name="comboBox_fps">
+        <property name="toolTip">
+         <string>Maximum frames per second. Lower values reduce file size.</string>
+        </property>
+       </widget>
       </item>
       <item row="3" column="0" colspan="2">
        <widget class="QGroupBox" name="groupBox_reencode_video">
@@ -251,7 +266,11 @@
        </widget>
       </item>
       <item row="0" column="1">
-       <widget class="QComboBox" name="comboBox_encoding"/>
+       <widget class="QComboBox" name="comboBox_encoding">
+        <property name="toolTip">
+         <string>The BOM may cause trouble in some text editors, but is required by Vocaluxe. USDX CMD can only read CP1252.</string>
+        </property>
+       </widget>
       </item>
       <item row="1" column="0">
        <widget class="QLabel" name="label_8">
@@ -261,7 +280,11 @@
        </widget>
       </item>
       <item row="1" column="1">
-       <widget class="QComboBox" name="comboBox_line_endings"/>
+       <widget class="QComboBox" name="comboBox_line_endings">
+        <property name="toolTip">
+         <string>UNIX users (MacOS, Linux) should generally use LF. On Windows, some text editors may require CRLF.</string>
+        </property>
+       </widget>
       </item>
      </layout>
     </widget>
