@@ -30,6 +30,9 @@ class AudioOptions:
             return None
         return self.format.value
 
+    def ytdl_format(self) -> str:
+        return self.format.ytdl_format()
+
 
 @dataclass
 class VideoOptions:
@@ -42,7 +45,7 @@ class VideoOptions:
 
     def ytdl_format(self) -> str:
         return (
-            f"bestvideo[ext=mp4][width<={self.max_resolution.width()}]"
+            f"{self.format.ytdl_format()}[width<={self.max_resolution.width()}]"
             f"[height<={self.max_resolution.height()}][fps<={self.max_fps.value}]"
         )
 

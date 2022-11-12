@@ -65,7 +65,7 @@ def download_video(
     ydl_opts: dict[str, Union[str, bool, tuple, list]] = {
         # currently fails for archive.org, where yt_dlp can't read codecs
         # could use "best" as a fallback
-        "format": options.format.ytdl_format(),
+        "format": options.ytdl_format(),
         "outtmpl": f"{path_base}.%(ext)s",
         "keepvideo": False,
         "verbose": False,
