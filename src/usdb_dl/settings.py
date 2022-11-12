@@ -254,7 +254,7 @@ def get_setting(key: SettingKey, default: T) -> T:
     value = QSettings().value(key.value)
     if isinstance(value, type(default)):
         return value
-    if isinstance(default, bool):
+    if isinstance(default, bool) and isinstance(value, int):
         # we store bools as ints because Qt doesn't store raw bools
         return cast(T, bool(value))
     return default
