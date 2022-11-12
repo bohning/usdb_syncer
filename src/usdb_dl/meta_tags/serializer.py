@@ -47,7 +47,7 @@ class VideoCropTag:
     bottom: int
 
     def __str__(self) -> str:
-        if not all((self.left, self.right, self.top, self.bottom)):
+        if not any((self.left, self.right, self.top, self.bottom)):
             return ""
         return f"{self.left}-{self.right}-{self.top}-{self.bottom}"
 
