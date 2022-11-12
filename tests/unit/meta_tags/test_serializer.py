@@ -3,7 +3,6 @@
 from usdb_dl.meta_tags.serializer import (
     ImageCropTag,
     MetaValues,
-    TrimPoint,
     VideoCropTag,
     video_tag_from_values,
 )
@@ -13,8 +12,6 @@ def default_values() -> MetaValues:
     return MetaValues(
         video_url="",
         audio_url="",
-        video_trim_start=TrimPoint(mins=0, secs=0, use_frames=False, frames=0),
-        video_trim_end=TrimPoint(mins=0, secs=0, use_frames=False, frames=0),
         video_crop=VideoCropTag(left=0, right=0, top=0, bottom=0),
         cover_url="",
         cover_rotation=0,
@@ -29,6 +26,9 @@ def default_values() -> MetaValues:
         duet=False,
         duet_p1="P1",
         duet_p2="P1",
+        preview_start=0,
+        medley_start=0,
+        medley_end=0,
     )
 
 
