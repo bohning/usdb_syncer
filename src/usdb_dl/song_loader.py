@@ -36,12 +36,17 @@ class Context:
     ) -> None:
         self.details = details
         self.options = options
+
         self.songtext = usdb_scraper.get_notes(details.song_id, logger)
         self.header, self.notes = note_utils.parse_notes(self.songtext)
         # remove anything in "[]" from the title, e.g. "[duet]"
         self.header["#TITLE"] = re.sub(r"\[.*?\]", "", self.header["#TITLE"]).strip()
+
         # extract video tag
         self.meta_tags = MetaTags(self.header.pop("#VIDEO", ""))
+        if self.meta_tags.is_audio_only():
+            self.options.video_options = None
+
         dirname = note_utils.generate_dirname(self.header, bool(self.meta_tags.video))
         self.dir_path = os.path.join(
             self.options.song_dir, dirname, str(self.details.song_id)
