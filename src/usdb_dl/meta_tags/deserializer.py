@@ -4,6 +4,8 @@ import logging
 from dataclasses import dataclass
 from typing import Literal
 
+from usdb_dl.meta_tags import decode_meta_tag_value
+
 _logger: logging.Logger = logging.getLogger(__file__)
 
 
@@ -73,6 +75,7 @@ class MetaTags:
             if "=" not in pair:
                 continue
             key, value = pair.split("=", maxsplit=1)
+            value = decode_meta_tag_value(value)
             match key:
                 case "v":
                     self.video = value

@@ -5,6 +5,8 @@ from dataclasses import dataclass
 from pytube import extract
 from pytube.exceptions import RegexMatchError
 
+from usdb_dl.meta_tags import encode_meta_tag_value
+
 
 @dataclass
 class MetaTag:
@@ -111,8 +113,8 @@ class MetaValues:
     def _player_meta_tags(self) -> tuple[MetaTag, ...]:
         if self.duet:
             return (
-                MetaTag(key="p1", value=self.duet_p1 or "P1"),
-                MetaTag(key="p2", value=self.duet_p2 or "P2"),
+                MetaTag(key="p1", value=encode_meta_tag_value(self.duet_p1) or "P1"),
+                MetaTag(key="p2", value=encode_meta_tag_value(self.duet_p2) or "P2"),
             )
         return tuple()
 
@@ -206,9 +208,4 @@ def _sanitize_image_url(url: str) -> tuple[str, bool]:
 
 def _sanitize_url(url: str) -> str:
     """Remove or escape characters with special meaning or which USDB can't handle."""
-    return (
-        url.removeprefix("https://")
-        .replace(":", "%3A")
-        .replace("#", "%23")
-        .replace(",", "%2C")
-    )
+    return encode_meta_tag_value(url.removeprefix("https://"))
