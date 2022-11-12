@@ -24,7 +24,13 @@ _logger: logging.Logger = logging.getLogger(__file__)
 USDB_BASE_URL = "http://usdb.animux.de/"
 DATASET_NOT_FOUND_STRING = "Datensatz nicht gefunden"
 USDB_DATETIME_STRF = "%d.%m.%y - %H:%M"
-SUPPORTED_VIDEO_SOURCES = ("vimeo.com", "archive.org", "fb.watch")
+SUPPORTED_VIDEO_SOURCES = (
+    "vimeo.com",
+    "archive.org",
+    "fb.watch",
+    "universal-music.de",
+    "dailymotion.com",
+)
 
 
 class RequestMethod(Enum):
@@ -395,16 +401,7 @@ def _parse_comment_contents(
     urls: list[str] = []
     youtube_ids: list[str] = []
 
-    for embed in contents.find_all("embed"):
-        src = embed.get("src")
-        try:
-            youtube_ids.append(extract.video_id(src))
-        except RegexMatchError:
-            logger.debug(f"could not extract YouTube id from embedded URL '{src}'")
-
-    for url in URLExtract().gen_urls(text):
-        if isinstance(url, tuple):
-            url = url[0]
+    for url in _all_urls_in_comment(contents, text):
         try:
             youtube_ids.append(extract.video_id(url))
         except RegexMatchError:
@@ -414,6 +411,17 @@ def _parse_comment_contents(
                 logger.debug(f"unknown website in comment URL '{url}'")
 
     return CommentContents(text=text, urls=urls, youtube_ids=youtube_ids)
+
+
+def _all_urls_in_comment(contents: BeautifulSoup, text: str) -> Iterator[str]:
+    for embed in contents.find_all("embed"):
+        yield embed.get("src")
+    for anchor in contents.find_all("a"):
+        yield anchor.get("src")
+    for url in URLExtract().gen_urls(text):
+        if isinstance(url, tuple):
+            url = url[0]
+        yield url
 
 
 def get_notes(song_id: SongId, logger: SongLogger) -> str:
