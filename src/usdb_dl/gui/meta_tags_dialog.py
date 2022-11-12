@@ -8,7 +8,6 @@ from usdb_dl.gui.forms.MetaTagsDialog import Ui_Dialog
 from usdb_dl.meta_tags.serializer import (
     ImageCropTag,
     MetaValues,
-    TrimPoint,
     VideoCropTag,
     video_tag_from_values,
 )
@@ -28,16 +27,10 @@ class MetaTagsDialog(Ui_Dialog, QDialog):
         self.audio_url.textChanged.connect(self._update_output)
 
         self.video_url.textChanged.connect(self._update_output)
-        self.video_trim_start_mins.valueChanged.connect(self._update_output)
-        self.video_trim_start_secs.valueChanged.connect(self._update_output)
-        self.video_trim_use_start_frames.toggled.connect(self._update_output)
-        self.video_trim_use_start_frames.toggled.connect(self._toggle_start_trim_units)
-        self.video_trim_start_frames.valueChanged.connect(self._update_output)
-        self.video_trim_end_mins.valueChanged.connect(self._update_output)
-        self.video_trim_end_secs.valueChanged.connect(self._update_output)
-        self.video_trim_use_end_frames.toggled.connect(self._update_output)
-        self.video_trim_use_end_frames.toggled.connect(self._toggle_end_trim_units)
-        self.video_trim_end_frames.valueChanged.connect(self._update_output)
+        self.video_crop_left.valueChanged.connect(self._update_output)
+        self.video_crop_right.valueChanged.connect(self._update_output)
+        self.video_crop_top.valueChanged.connect(self._update_output)
+        self.video_crop_bottom.valueChanged.connect(self._update_output)
 
         self.cover_url.textChanged.connect(self._update_output)
         self.cover_rotation.valueChanged.connect(self._update_output)
@@ -62,24 +55,16 @@ class MetaTagsDialog(Ui_Dialog, QDialog):
         self.duet_p1.textChanged.connect(self._update_output)
         self.duet_p2.textChanged.connect(self._update_output)
 
+        self.preview_start.valueChanged.connect(self._update_output)
+        self.medley_start.valueChanged.connect(self._update_output)
+        self.medley_end.valueChanged.connect(self._update_output)
+
         self.button_copy_to_clipboard.pressed.connect(self._on_copy_to_clipboard)
 
     def _meta_values(self) -> MetaValues:
         return MetaValues(
             video_url=self.video_url.text(),
             audio_url=self.audio_url.text(),
-            video_trim_start=TrimPoint(
-                mins=self.video_trim_start_mins.value(),
-                secs=self.video_trim_start_secs.value(),
-                use_frames=self.video_trim_use_start_frames.isChecked(),
-                frames=self.video_trim_start_frames.value(),
-            ),
-            video_trim_end=TrimPoint(
-                mins=self.video_trim_end_mins.value(),
-                secs=self.video_trim_end_secs.value(),
-                use_frames=self.video_trim_use_end_frames.isChecked(),
-                frames=self.video_trim_end_frames.value(),
-            ),
             video_crop=VideoCropTag(
                 left=self.video_crop_left.value(),
                 right=self.video_crop_right.value(),
@@ -109,6 +94,9 @@ class MetaTagsDialog(Ui_Dialog, QDialog):
             duet=self.duet.isChecked(),
             duet_p1=self.duet_p1.text(),
             duet_p2=self.duet_p2.text(),
+            preview_start=self.preview_start.value(),
+            medley_start=self.medley_start.value(),
+            medley_end=self.medley_end.value(),
         )
 
     def _update_output(self) -> None:
@@ -116,18 +104,6 @@ class MetaTagsDialog(Ui_Dialog, QDialog):
         self._output = video_tag_from_values(values)
         self.output.setText(self._output)
         self.char_count.setText(f"{len(self._output)} / 262 characters")
-
-    def _toggle_start_trim_units(self) -> None:
-        frames = self.video_trim_use_start_frames.isChecked()
-        self.video_trim_start_mins.setEnabled(not frames)
-        self.video_trim_start_secs.setEnabled(not frames)
-        self.video_trim_start_frames.setEnabled(frames)
-
-    def _toggle_end_trim_units(self) -> None:
-        frames = self.video_trim_use_end_frames.isChecked()
-        self.video_trim_end_mins.setEnabled(not frames)
-        self.video_trim_end_secs.setEnabled(not frames)
-        self.video_trim_end_frames.setEnabled(frames)
 
     def _toggle_auto_contrast(self) -> None:
         auto = self.cover_contrast_auto.isChecked()

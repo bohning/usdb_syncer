@@ -18,26 +18,6 @@ class MetaTag:
 
 
 @dataclass
-class TrimPoint:
-    """The start or end point for trimming a video."""
-
-    mins: int
-    secs: float
-    use_frames: bool
-    frames: int
-
-    def __str__(self) -> str:
-        if self.use_frames:
-            if self.frames:
-                return str(self.frames)
-        elif self.mins:
-            return f"{self.mins}:{self.secs}"
-        elif self.secs:
-            return str(self.secs)
-        return ""
-
-
-@dataclass
 class VideoCropTag:
     """How much to crop from the four sides of a video."""
 
@@ -73,8 +53,6 @@ class MetaValues:
 
     video_url: str
     audio_url: str
-    video_trim_start: TrimPoint
-    video_trim_end: TrimPoint
     video_crop: VideoCropTag
     cover_url: str
     cover_crop: ImageCropTag
@@ -89,6 +67,9 @@ class MetaValues:
     duet: bool
     duet_p1: str
     duet_p2: str
+    preview_start: float
+    medley_start: int
+    medley_end: int
 
     def meta_tags(self) -> list[str]:
         return [
@@ -97,7 +78,6 @@ class MetaValues:
                 self._audio_meta_tag(),
                 self._video_meta_tag(),
                 self._video_crop_meta_tag(),
-                self._video_trim_meta_tag(),
                 *self._cover_url_meta_tags(),
                 self._cover_rotation_meta_tag(),
                 self._cover_contrast_meta_tag(),
@@ -107,6 +87,8 @@ class MetaValues:
                 self._background_resize_meta_tag(),
                 self._background_crop_meta_tag(),
                 *self._player_meta_tags(),
+                self._preview_meta_tag(),
+                self._medley_meta_tag(),
             )
             if tag is not None
         ]
@@ -124,14 +106,6 @@ class MetaValues:
     def _video_crop_meta_tag(self) -> MetaTag | None:
         if self.video_url and (value := str(self.video_crop)):
             return MetaTag(key="v-crop", value=value)
-        return None
-
-    def _video_trim_meta_tag(self) -> MetaTag | None:
-        if self.video_url:
-            start = str(self.video_trim_start)
-            end = str(self.video_trim_end)
-            if start or end:
-                return MetaTag(key="v-trim", value=f"{start}-{end}")
         return None
 
     def _player_meta_tags(self) -> tuple[MetaTag, ...]:
@@ -198,6 +172,16 @@ class MetaValues:
     def _background_crop_meta_tag(self) -> MetaTag | None:
         if self.background_url and (value := str(self.background_crop)):
             return MetaTag(key="bg-crop", value=value)
+        return None
+
+    def _preview_meta_tag(self) -> MetaTag | None:
+        if self.preview_start:
+            return MetaTag(key="preview", value=str(self.preview_start))
+        return None
+
+    def _medley_meta_tag(self) -> MetaTag | None:
+        if self.medley_start < self.medley_end:
+            return MetaTag(key="medley", value=f"{self.medley_start}-{self.medley_end}")
         return None
 
 
