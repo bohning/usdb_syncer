@@ -54,10 +54,10 @@ class VideoOptions:
 class BackgroundOptions:
     """Settings regarding the video file to be downloaded."""
 
-    only_if_no_video: bool
+    even_with_video: bool
 
     def download_background(self, has_video: bool) -> bool:
-        return not self.only_if_no_video or not has_video
+        return not has_video or self.even_with_video
 
 
 @dataclass
@@ -118,4 +118,4 @@ def _video_options() -> VideoOptions | None:
 def _background_options() -> BackgroundOptions | None:
     if not settings.get_background():
         return None
-    return BackgroundOptions(only_if_no_video=settings.get_background_always())
+    return BackgroundOptions(even_with_video=settings.get_background_always())
