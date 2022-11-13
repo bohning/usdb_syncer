@@ -33,6 +33,7 @@ class SettingKey(Enum):
     VIDEO_RESOLUTION_MAX = "downloads/video_resolution_max"
     VIDEO_FPS_MAX = "downloads/video_fps_max"
     COVER = "downloads/cover"
+    COVER_MAX_SIZE = "downloads/cover_max_size"
     BACKGROUND = "downloads/background"
     BACKGROUND_ALWAYS = "downloads/background_always"
 
@@ -329,6 +330,14 @@ def get_cover() -> bool:
 
 def set_cover(value: bool) -> None:
     set_setting(SettingKey.COVER, value)
+
+
+def get_cover_max_size() -> int:
+    return get_setting(SettingKey.COVER_MAX_SIZE, 1920)
+
+
+def set_cover_max_size(value: int) -> None:
+    set_setting(SettingKey.COVER_MAX_SIZE, value)
 
 
 def get_browser() -> Browser:

@@ -136,6 +136,7 @@ def download_and_process_image(
     details: SongDetails,
     pathname: str,
     kind: ImageKind,
+    max_width: int | None,
 ) -> bool:
     logger = get_logger(__file__, details.song_id)
     if not (url := _get_image_url(meta_tags, details, kind, logger)):
@@ -147,8 +148,7 @@ def download_and_process_image(
     path = os.path.join(pathname, fname)
     with open(path, "wb") as file:
         file.write(img_bytes)
-    if meta_tags and meta_tags.image_processing():
-        _process_image(meta_tags, path)
+    _process_image(meta_tags, max_width, path)
     return True
 
 
@@ -172,19 +172,30 @@ def _get_image_url(
     return url
 
 
-def _process_image(meta_tags: ImageMetaTags, path: str) -> None:
+def _process_image(
+    meta_tags: ImageMetaTags | None, max_width: int | None, path: str
+) -> None:
+    processed = False
     with Image.open(path).convert("RGB") as image:
-        if rotate := meta_tags.rotate:
-            image = image.rotate(rotate, resample=Image.BICUBIC, expand=True)
-            # TODO: ensure quadratic cover
-        if crop := meta_tags.crop:
-            image = image.crop((crop.left, crop.upper, crop.right, crop.lower))
-        if resize := meta_tags.resize:
-            image = image.resize((resize.width, resize.height), resample=Image.LANCZOS)
-        if meta_tags.contrast == "auto":
-            image = ImageOps.autocontrast(image, cutoff=5)
-        elif meta_tags.contrast:
-            image = ImageEnhance.Contrast(image).enhance(meta_tags.contrast)
+        if meta_tags and meta_tags.image_processing():
+            processed = True
+            if rotate := meta_tags.rotate:
+                image = image.rotate(rotate, resample=Image.BICUBIC, expand=True)
+                # TODO: ensure quadratic cover
+            if crop := meta_tags.crop:
+                image = image.crop((crop.left, crop.upper, crop.right, crop.lower))
+            if resize := meta_tags.resize:
+                image = image.resize(
+                    (resize.width, resize.height), resample=Image.LANCZOS
+                )
+            if meta_tags.contrast == "auto":
+                image = ImageOps.autocontrast(image, cutoff=5)
+            elif meta_tags.contrast:
+                image = ImageEnhance.Contrast(image).enhance(meta_tags.contrast)
+        if max_width and max_width < image.width:
+            processed = True
+            height = round(image.height * max_width / image.width)
+            image = image.resize((max_width, height), resample=Image.LANCZOS)
 
-            # save post-processed cover
-        image.save(path, "jpeg", quality=100, subsampling=0)
+        if processed:
+            image.save(path, "jpeg", quality=100, subsampling=0)

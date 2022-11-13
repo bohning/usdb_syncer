@@ -42,6 +42,7 @@ class SettingsDialog(Ui_Dialog, QDialog):
             self.comboBox_browser.findData(settings.get_browser())
         )
         self.groupBox_cover.setChecked(settings.get_cover())
+        self.cover_max_size.setValue(settings.get_cover_max_size())
         self.groupBox_songfile.setChecked(settings.get_txt())
         self.comboBox_encoding.setCurrentIndex(
             self.comboBox_encoding.findData(settings.get_encoding())
@@ -79,6 +80,7 @@ class SettingsDialog(Ui_Dialog, QDialog):
     def _save_settings(self) -> None:
         settings.set_browser(self.comboBox_browser.currentData())
         settings.set_cover(self.groupBox_cover.isChecked())
+        settings.set_cover_max_size(self.cover_max_size.value())
         settings.set_txt(self.groupBox_songfile.isChecked())
         settings.set_encoding(self.comboBox_encoding.currentData())
         settings.set_newline(self.comboBox_line_endings.currentData())

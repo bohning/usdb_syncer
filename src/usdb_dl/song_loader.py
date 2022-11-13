@@ -198,7 +198,12 @@ def _maybe_download_cover(ctx: Context) -> None:
         return
 
     if download_and_process_image(
-        ctx.header, ctx.meta_tags.cover, ctx.details, ctx.dir_path, ImageKind.COVER
+        ctx.header,
+        ctx.meta_tags.cover,
+        ctx.details,
+        ctx.dir_path,
+        ImageKind.COVER,
+        max_width=ctx.options.cover.max_size,
     ):
         ctx.header["#COVER"] = f"{ctx.filename} [CO].jpg"
         ctx.logger.info("(4/6) Success.")
@@ -218,6 +223,7 @@ def _maybe_download_background(ctx: Context) -> None:
         ctx.details,
         ctx.dir_path,
         ImageKind.BACKGROUND,
+        max_width=None,
     ):
         ctx.header["#BACKGROUND"] = f"{ctx.filename} [BG].jpg"
         ctx.logger.info("(5/6) Success.")

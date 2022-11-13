@@ -51,8 +51,15 @@ class VideoOptions:
 
 
 @dataclass
+class CoverOptions:
+    """Settings regarding the cover image to be downloaded."""
+
+    max_size: int | None
+
+
+@dataclass
 class BackgroundOptions:
-    """Settings regarding the video file to be downloaded."""
+    """Settings regarding the background image to be downloaded."""
 
     even_with_video: bool
 
@@ -69,7 +76,7 @@ class Options:
     audio_options: AudioOptions | None
     browser: settings.Browser
     video_options: VideoOptions | None
-    cover: bool
+    cover: CoverOptions | None
     background_options: BackgroundOptions | None
 
 
@@ -80,7 +87,7 @@ def download_options() -> Options:
         audio_options=_audio_options(),
         browser=settings.get_browser(),
         video_options=_video_options(),
-        cover=settings.get_cover(),
+        cover=_cover_options(),
         background_options=_background_options(),
     )
 
@@ -113,6 +120,12 @@ def _video_options() -> VideoOptions | None:
         max_resolution=settings.get_video_resolution(),
         max_fps=settings.get_video_fps(),
     )
+
+
+def _cover_options() -> CoverOptions | None:
+    if not settings.get_cover():
+        return None
+    return CoverOptions(max_size=settings.get_cover_max_size() or None)
 
 
 def _background_options() -> BackgroundOptions | None:
