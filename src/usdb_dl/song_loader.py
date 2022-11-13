@@ -76,34 +76,25 @@ class SongLoader(QRunnable):
         self.logger = get_logger(__file__, song_id)
 
     def run(self) -> None:
-
-        self.logger.info("Downloading song...")
-        self.logger.info("(1/6) downloading usdb file...")
-
-        if (
-            details := usdb_scraper.get_usdb_details(self.song_id, self.logger)
-        ) is None:
+        details = usdb_scraper.get_usdb_details(self.song_id, self.logger)
+        if details is None:
             # song was deleted from usdb in the meantime, TODO: uncheck/remove from model
+            self.logger.error("Could not find song on USDB!")
             return
+        self.logger.info(f"Found '{details.artist} - {details.title}' on  USDB")
 
         ctx = Context(details, self.options, self.logger)
         _maybe_write_player_tags(ctx)
-        self.logger.info(f"(1/6) {ctx.header['#ARTIST']} - {ctx.header['#TITLE']}")
 
         if _find_or_initialize_folder(ctx):
             return
-        ###
-        self.logger.info("(2/6) downloading audio file...")
+
         _maybe_download_audio(ctx)
-        self.logger.info("(3/6) downloading video file...")
         _maybe_download_video(ctx)
-        self.logger.info("(4/6) downloading cover file...")
         _maybe_download_cover(ctx)
-        self.logger.info("(5/6) downloading background file...")
         _maybe_download_background(ctx)
-        self.logger.info("(6/6) writing song text file...")
         _maybe_write_txt(ctx)
-        self.logger.info("(6/6) Download completed!")
+        self.logger.info("All done!")
 
 
 def download_songs(ids: list[SongId]) -> None:
@@ -128,14 +119,11 @@ def _find_or_initialize_folder(ctx: Context) -> bool:
 
     if os.path.exists(usdb_path):
         if filecmp.cmp(temp_path, usdb_path):
-            ctx.logger.info(
-                "(1/6) usdb and local file are identical, no need to re-download. "
-                "Skipping song."
-            )
+            ctx.logger.info("Aborted; song is already synchronized")
             os.remove(temp_path)
             return True
 
-        ctx.logger.info("(1/6) usdb file has been updated, re-downloading...")
+        ctx.logger.info("USDB file has been updated, re-downloading...")
         # TODO: check if resources in #VIDEO tag have changed and if so, re-download
         # new resources only
         os.remove(usdb_path)
@@ -158,7 +146,10 @@ def _maybe_write_player_tags(ctx: Context) -> None:
             _type, start, _duration, _pitch, *_syllable = line.split(" ", maxsplit=4)
             if int(start) < prev_start:
                 ctx.notes.insert(idx, "P2\n")
+                ctx.logger.debug("Success! Restored duet markers.")
+                return
             prev_start = int(start)
+    ctx.logger.error("Failed to restore duet markers!")
 
 
 def _maybe_download_audio(ctx: Context) -> None:
@@ -171,10 +162,10 @@ def _maybe_download_audio(ctx: Context) -> None:
             resource, options, ctx.options.browser, ctx.file_path, ctx.logger
         ):
             ctx.header["#MP3"] = f"{ctx.filename}.{ext}"
-            ctx.logger.info("(2/6) Success.")
+            ctx.logger.info("Success! Downloaded audio.")
             # self.model.setItem(self.model.findItems(self.kwargs['id'], flags=Qt.MatchExactly, column=0)[0].row(), 9, QStandardItem(QIcon(":/icons/tick.png"), ""))
             return
-    ctx.logger.error("(2/6) Failed.")
+    ctx.logger.error("Failed to download audio!")
 
 
 def _maybe_download_video(ctx: Context) -> None:
@@ -187,10 +178,10 @@ def _maybe_download_video(ctx: Context) -> None:
             resource, options, ctx.options.browser, ctx.file_path, ctx.logger
         ):
             ctx.header["#VIDEO"] = f"{ctx.filename}.{ext}"
-            ctx.logger.info("(3/6) Success.")
+            ctx.logger.info("Success! Downloaded video.")
             # self.model.setItem(self.model.findItems(idp, flags=Qt.MatchExactly, column=0)[0].row(), 10, QStandardItem(QIcon(":/icons/tick.png"), ""))
             return
-    ctx.logger.error("(3/6) Failed.")
+    ctx.logger.error("Failed to download video!")
 
 
 def _maybe_download_cover(ctx: Context) -> None:
@@ -206,10 +197,10 @@ def _maybe_download_cover(ctx: Context) -> None:
         max_width=ctx.options.cover.max_size,
     ):
         ctx.header["#COVER"] = f"{ctx.filename} [CO].jpg"
-        ctx.logger.info("(4/6) Success.")
+        ctx.logger.info("Success! Downloaded cover.")
         # ctx.model.setItem(ctx.model.findItems(idp, flags=Qt.MatchExactly, column=0)[0].row(), 11, QStandardItem(QIcon(":/icons/tick.png"), ""))
     else:
-        ctx.logger.error("(4/6) Failed.")
+        ctx.logger.error("Failed to download cover!")
 
 
 def _maybe_download_background(ctx: Context) -> None:
@@ -226,10 +217,10 @@ def _maybe_download_background(ctx: Context) -> None:
         max_width=None,
     ):
         ctx.header["#BACKGROUND"] = f"{ctx.filename} [BG].jpg"
-        ctx.logger.info("(5/6) Success.")
+        ctx.logger.info("Success! Downloaded background.")
         # ctx.model.setItem(ctx.model.findItems(idp, flags=Qt.MatchExactly, column=0)[0].row(), 12, QStandardItem(QIcon(":/icons/tick.png"), ""))
     else:
-        ctx.logger.error("(5/6) Failed.")
+        ctx.logger.error("Failed to download background!")
 
 
 def _maybe_write_txt(ctx: Context) -> None:
@@ -239,7 +230,7 @@ def _maybe_write_txt(ctx: Context) -> None:
         ctx.header, ctx.notes, ctx.dir_path, options, ctx.logger
     )
     if ctx.filename:
-        ctx.logger.info("(6/6) Success.")
+        ctx.logger.info("Success! Created song txt.")
         # ctx.model.setItem(ctx.model.findItems(idp, flags=Qt.MatchExactly, column=0)[0].row(), 8, QStandardItem(QIcon(":/icons/tick.png"), ""))
     else:
-        ctx.logger.error("(6/6) Failed.")
+        ctx.logger.error("Failed to create song txt!")
