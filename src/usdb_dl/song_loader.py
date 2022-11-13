@@ -82,13 +82,9 @@ class SongLoader(QRunnable):
             self.logger.error("Could not find song on USDB!")
             return
         self.logger.info(f"Found '{details.artist} - {details.title}' on  USDB")
-
         ctx = Context(details, self.options, self.logger)
-        _maybe_write_player_tags(ctx)
-
         if _find_or_initialize_folder(ctx):
             return
-
         _maybe_download_audio(ctx)
         _maybe_download_video(ctx)
         _maybe_download_cover(ctx)
@@ -130,26 +126,6 @@ def _find_or_initialize_folder(ctx: Context) -> bool:
 
     os.rename(temp_path, usdb_path)
     return False
-
-
-def _maybe_write_player_tags(ctx: Context) -> None:
-    if not note_utils.is_duet(ctx.header, ctx.meta_tags):
-        return
-
-    ctx.header["#P1"] = ctx.meta_tags.player1 or "P1"
-    ctx.header["#P2"] = ctx.meta_tags.player2 or "P2"
-
-    ctx.notes.insert(0, "P1\n")
-    prev_start = 0
-    for idx, line in enumerate(ctx.notes):
-        if line.startswith((":", "*", "F", "R", "G")):
-            _type, start, _duration, _pitch, *_syllable = line.split(" ", maxsplit=4)
-            if int(start) < prev_start:
-                ctx.notes.insert(idx, "P2\n")
-                ctx.logger.debug("Success! Restored duet markers.")
-                return
-            prev_start = int(start)
-    ctx.logger.error("Failed to restore duet markers!")
 
 
 def _maybe_download_audio(ctx: Context) -> None:
@@ -226,11 +202,36 @@ def _maybe_download_background(ctx: Context) -> None:
 def _maybe_write_txt(ctx: Context) -> None:
     if not (options := ctx.options.txt_options):
         return
-    ctx.filename = note_utils.dump_notes(
-        ctx.header, ctx.notes, ctx.dir_path, options, ctx.logger
-    )
-    if ctx.filename:
-        ctx.logger.info("Success! Created song txt.")
-        # ctx.model.setItem(ctx.model.findItems(idp, flags=Qt.MatchExactly, column=0)[0].row(), 8, QStandardItem(QIcon(":/icons/tick.png"), ""))
-    else:
-        ctx.logger.error("Failed to create song txt!")
+    _write_missing_headers(ctx)
+    note_utils.dump_notes(ctx.header, ctx.notes, ctx.dir_path, options, ctx.logger)
+    ctx.logger.info("Success! Created song txt.")
+    # ctx.model.setItem(ctx.model.findItems(idp, flags=Qt.MatchExactly, column=0)[0].row(), 8, QStandardItem(QIcon(":/icons/tick.png"), ""))
+
+
+def _write_missing_headers(ctx: Context) -> None:
+    _maybe_write_player_tags_and_markers(ctx)
+    if ctx.meta_tags.preview is not None:
+        ctx.header["#PREVIEWSTART"] = str(ctx.meta_tags.preview)
+    if medley := ctx.meta_tags.medley:
+        ctx.header["#MEDLEYSTARTBEAT"] = str(medley.start)
+        ctx.header["#MEDLEYENDBEAT"] = str(medley.end)
+
+
+def _maybe_write_player_tags_and_markers(ctx: Context) -> None:
+    if not note_utils.is_duet(ctx.header, ctx.meta_tags):
+        return
+
+    ctx.header["#P1"] = ctx.meta_tags.player1 or "P1"
+    ctx.header["#P2"] = ctx.meta_tags.player2 or "P2"
+
+    ctx.notes.insert(0, "P1\n")
+    prev_start = 0
+    for idx, line in enumerate(ctx.notes):
+        if line.startswith((":", "*", "F", "R", "G")):
+            _type, start, _duration, _pitch, *_syllable = line.split(" ", maxsplit=4)
+            if int(start) < prev_start:
+                ctx.notes.insert(idx, "P2\n")
+                ctx.logger.debug("Success! Restored duet markers.")
+                return
+            prev_start = int(start)
+    ctx.logger.error("Failed to restore duet markers!")

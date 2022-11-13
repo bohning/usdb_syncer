@@ -147,6 +147,8 @@ def dump_notes(
             "#RELATIVE",
             "#P1",
             "#P2",
+            "#MEDLEYSTARTBEAT",
+            "#MEDLEYENDBEAT",
         ]
         for tag in tags:
             if value := header.get(tag):

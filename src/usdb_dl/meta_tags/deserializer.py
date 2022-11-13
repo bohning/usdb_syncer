@@ -57,6 +57,16 @@ class ImageMetaTags:
         return any((self.rotate, self.crop, self.resize, self.contrast))
 
 
+class MedleyTag:
+    """A tag with medley start and end."""
+
+    start: int
+    end: int
+
+    def __init__(self, value: str) -> None:
+        self.start, self.end = map(int, value.split("-"))
+
+
 class MetaTags:
     """Additional resource parameters from an overloaded video tag. Such an overloaded
     tag could look like:
@@ -69,6 +79,8 @@ class MetaTags:
     background: ImageMetaTags | None = None
     player1: str | None = None
     player2: str | None = None
+    preview: float | None = None
+    medley: MedleyTag | None = None
 
     def __init__(self, video_tag: str) -> None:
         for pair in video_tag.split(","):
@@ -108,6 +120,10 @@ class MetaTags:
                     self.player1 = value
                 case "p2":
                     self.player2 = value
+                case "preview":
+                    self.preview = float(value)
+                case "medley":
+                    self.medley = MedleyTag(value)
                 case _:
                     _logger.warning(
                         f"Invalid key/value pair '{pair}' found in #VIDEO tag '{video_tag}'"

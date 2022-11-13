@@ -907,6 +907,9 @@
               <property name="suffix">
                <string> s</string>
               </property>
+              <property name="decimals">
+               <number>3</number>
+              </property>
               <property name="maximum">
                <double>999.990000000000009</double>
               </property>
