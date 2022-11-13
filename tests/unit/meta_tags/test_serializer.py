@@ -25,7 +25,7 @@ def default_values() -> MetaValues:
         background_crop=ImageCropTag(left=0, top=0, width=0, height=0),
         duet=False,
         duet_p1="P1",
-        duet_p2="P1",
+        duet_p2="P2",
         preview_start=0,
         medley_start=0,
         medley_end=0,
