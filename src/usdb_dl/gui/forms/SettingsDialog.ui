@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>374</width>
-    <height>372</height>
+    <width>491</width>
+    <height>459</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -229,6 +229,9 @@
        <layout class="QFormLayout" name="formLayout">
         <item row="0" column="0">
          <widget class="QLabel" name="label">
+          <property name="toolTip">
+           <string/>
+          </property>
           <property name="text">
            <string>Encoding:</string>
           </property>
@@ -243,7 +246,7 @@
            </sizepolicy>
           </property>
           <property name="toolTip">
-           <string>The BOM may cause trouble in some text editors, but is required by Vocaluxe. USDX CMD can only read CP1252.</string>
+           <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Choose UTF-8 for USDX, US Play, US Worldparty and Performous.&lt;/p&gt;&lt;p&gt;Choose UTF-8 BOM for Vocaluxe (Byte Order Mark may cause trouble in some text editors).&lt;/p&gt;&lt;p&gt;Choose CP1252 for USDX (pre 1.1) and USDX CMD. &lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
           </property>
          </widget>
         </item>
@@ -263,7 +266,7 @@
            </sizepolicy>
           </property>
           <property name="toolTip">
-           <string>UNIX users (MacOS, Linux) should generally use LF. On Windows, some text editors may require CRLF.</string>
+           <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;USDX and variants can handle both line ending types, but if you want to edit the song file manually, your editor of choice may required a certain line ending. UNIX users (MacOS, Linux) should generally use LF (line feed). On Windows, some text editors may require CRLF (carriage return, line feed).&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
           </property>
          </widget>
         </item>
@@ -294,7 +297,7 @@
            </sizepolicy>
           </property>
           <property name="toolTip">
-           <string>Images larger than this will be scaled to the set value. Use 0 to disable.</string>
+           <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Images larger than this will be scaled to the set value. Use 0 to disable.&lt;/p&gt;&lt;p&gt;Some USDX variants have problems displaying covers larger than 1920x1920 pixels.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
           </property>
           <property name="suffix">
            <string> px</string>
@@ -341,7 +344,7 @@
            </sizepolicy>
           </property>
           <property name="toolTip">
-           <string>If checked, background images will be downloaded, even if there is a video for the song as well.</string>
+           <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;If checked, background images will be downloaded even if there is a video for the song as well.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
           </property>
           <property name="text">
            <string>Even with video</string>
@@ -375,7 +378,7 @@
           </sizepolicy>
          </property>
          <property name="toolTip">
-          <string>Age-restricted videos require a login. Choose the browser you are logged in with.</string>
+          <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Age-restricted videos require a login. Choose the browser you are logged in with, so that the respective cookie can be retrieved automatically.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
          </property>
         </widget>
        </item>
