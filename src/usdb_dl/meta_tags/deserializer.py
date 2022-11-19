@@ -91,7 +91,7 @@ class MetaTags:
             match key:
                 case "v":
                     self.video = value
-                case "v-trim", "v-crop":
+                case "v-trim" | "v-crop":
                     # currently not used
                     pass
                 case "a":
