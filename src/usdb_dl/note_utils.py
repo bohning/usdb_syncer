@@ -75,29 +75,6 @@ def generate_filename(header: dict[str, str]) -> str:
     return f"{artist} - {title}"
 
 
-def generate_dirname(header: dict[str, str], video: bool) -> str:
-    """Create directory name from song meta data.
-
-    Parameters:
-        header: song meta data
-        resource_params: additional resource parameters from video tag
-
-    Returns:
-        directory name
-    """
-    dirname = generate_filename(header)
-    if video:
-        dirname += " [VIDEO]"
-    if edition := header.get("#EDITION"):
-        if "singstar" in edition.lower():
-            dirname += " [SS]"
-        if "[SC]" in edition:
-            dirname += " [SC]"
-        if "rock band" in edition.lower():
-            dirname += " [RB]"
-    return dirname
-
-
 def dump_notes(
     header: dict[str, str],
     body: list[str],
@@ -116,9 +93,7 @@ def dump_notes(
     Returns:
         file name
     """
-    txt_filename = generate_filename(header)
-    duetstring = " (duet)" if header.get("#P2") else ""
-    filename = f"{txt_filename}{duetstring}.txt"
+    filename = f"{generate_filename(header)}.txt"
     logger.debug(f"writing text file with encoding {txt_options.encoding.value}")
     with open(
         os.path.join(pathname, filename),

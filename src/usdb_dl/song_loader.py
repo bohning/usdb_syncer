@@ -45,11 +45,10 @@ class Context:
         # extract video tag
         self.meta_tags = MetaTags(self.header.pop("#VIDEO", ""))
 
-        dirname = note_utils.generate_dirname(self.header, bool(self.meta_tags.video))
-        self.dir_path = os.path.join(
-            self.options.song_dir, dirname, str(self.details.song_id)
-        )
         self.filename = note_utils.generate_filename(self.header)
+        self.dir_path = os.path.join(
+            self.options.song_dir, self.filename, str(self.details.song_id)
+        )
         self.file_path = os.path.join(self.dir_path, self.filename)
         self.logger = logger
 
