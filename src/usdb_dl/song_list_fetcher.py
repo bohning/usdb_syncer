@@ -2,7 +2,6 @@
 
 import json
 import os
-import time
 from typing import Callable
 
 import appdirs
@@ -42,7 +41,7 @@ def get_available_songs(force_reload: bool) -> list[SongMeta]:
 
 def load_available_songs() -> list[SongMeta] | None:
     path = available_songs_path()
-    if not has_recent_mtime(path) or not os.path.exists(path):
+    if not os.path.exists(path):
         return None
     with open(path, encoding="utf8") as file:
         try:
@@ -61,8 +60,3 @@ def available_songs_path() -> str:
     return os.path.join(
         appdirs.user_cache_dir("usdb_dl", "bohning"), "available_songs.json"
     )
-
-
-def has_recent_mtime(path: str, recent_secs: int = 60 * 60 * 24) -> bool:
-    """True if the given path exists and its mtime is less than recent_secs in the past."""
-    return os.path.exists(path) and time.time() - os.path.getmtime(path) < recent_secs
