@@ -1,6 +1,10 @@
 """Tests for functions from the note_utils module."""
 
+from usdb_dl import SongId
+from usdb_dl.logger import get_logger
 from usdb_dl.meta_tags.deserializer import MetaTags
+
+_logger = get_logger(__file__, SongId(1))
 
 
 def test_video_meta_tags() -> None:
@@ -8,14 +12,14 @@ def test_video_meta_tags() -> None:
     supported, but should not cause an error.
     """
     tag = "v=xPU8OAjjS4k,v-trim=24-5610,v-crop=244-244-0-0"
-    meta = MetaTags(tag)
+    meta = MetaTags(tag, _logger)
     assert meta.video == "xPU8OAjjS4k"
 
 
 def test_audio_meta_tags() -> None:
     """Test that an audio URL / YouTube id is parsed."""
     tag = "a=1oKKwuIZzr8"
-    meta = MetaTags(tag)
+    meta = MetaTags(tag, _logger)
     assert meta.audio == "1oKKwuIZzr8"
 
 
@@ -28,7 +32,7 @@ def test_cover_meta_tags() -> None:
         "co=m.media-amazon.com/images/I/91UzQS12wXL._SL1500_.jpg,co-rotate=0.8,"
         "co-crop=30-22-1468-1468,co-contrast=1.5,co-resize=1920-1921,co-protocol=http"
     )
-    meta = MetaTags(tag)
+    meta = MetaTags(tag, _logger)
     assert meta.cover
     assert meta.cover.source == "m.media-amazon.com/images/I/91UzQS12wXL._SL1500_.jpg"
     assert meta.cover.protocol == "http"
@@ -52,7 +56,7 @@ def test_background_meta_tags() -> None:
         "bg=static.universal-music.de/asset_new/403774/195/view/Jon-Bellion-2016.jpg,"
         "bg-resize=1920-1280,bg-crop=0-80-1920-1160"
     )
-    meta = MetaTags(tag)
+    meta = MetaTags(tag, _logger)
     assert meta.background
     assert (
         meta.background.source
@@ -72,6 +76,6 @@ def test_background_meta_tags() -> None:
 def test_player_meta_tags() -> None:
     """Test that player information is parsed."""
     tag = "p1=Freddie Mercury,p2=Backing"
-    meta = MetaTags(tag)
+    meta = MetaTags(tag, _logger)
     assert meta.player1 == "Freddie Mercury"
     assert meta.player2 == "Backing"

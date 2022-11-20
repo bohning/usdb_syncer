@@ -1,12 +1,14 @@
 """Logic and dataclasses for meta tags from a txts video tag."""
 
-import logging
 from dataclasses import dataclass
-from typing import Literal
+from typing import Callable, Literal, TypeVar
 
+from usdb_dl.logger import SongLogger
 from usdb_dl.meta_tags import decode_meta_tag_value
 
-_logger: logging.Logger = logging.getLogger(__file__)
+
+class MetaTagParseError(Exception):
+    """Raised when a meta tag cannot be parsed."""
 
 
 class CropMetaTags:
@@ -17,8 +19,13 @@ class CropMetaTags:
     right: int
     lower: int
 
-    def __init__(self, crop_tag: str) -> None:
-        self.left, self.upper, width, height = map(int, crop_tag.split("-"))
+    def __init__(self, value: str) -> None:
+        try:
+            self.left, self.upper, width, height = map(int, value.split("-"))
+        except ValueError as err:
+            raise MetaTagParseError(
+                f"invalid value for crop meta tag: '{value}'"
+            ) from err
         self.right = self.left + width
         self.lower = self.upper + height
 
@@ -29,11 +36,16 @@ class ResizeMetaTags:
     width: int
     height: int
 
-    def __init__(self, resize_tag: str) -> None:
-        if "-" in resize_tag:
-            self.width, self.height = map(int, resize_tag.split("-"))
-        else:
-            self.width = self.height = int(resize_tag)
+    def __init__(self, value: str) -> None:
+        try:
+            if "-" in value:
+                self.width, self.height = map(int, value.split("-"))
+            else:
+                self.width = self.height = int(value)
+        except ValueError as err:
+            raise MetaTagParseError(
+                f"invalid value for resize meta tag: '{value}'"
+            ) from err
 
 
 @dataclass
@@ -64,7 +76,12 @@ class MedleyTag:
     end: int
 
     def __init__(self, value: str) -> None:
-        self.start, self.end = map(int, value.split("-"))
+        try:
+            self.start, self.end = map(int, value.split("-"))
+        except ValueError as err:
+            raise MetaTagParseError(
+                f"invalid value for medley meta tag: '{value}'"
+            ) from err
 
 
 class MetaTags:
@@ -82,9 +99,13 @@ class MetaTags:
     preview: float | None = None
     medley: MedleyTag | None = None
 
-    def __init__(self, video_tag: str) -> None:
+    def __init__(self, video_tag: str, logger: SongLogger) -> None:
+        if not "=" in video_tag:
+            # probably a regular video file name and not a meta tag
+            return
         for pair in video_tag.split(","):
             if "=" not in pair:
+                logger.warning(f"missing key or value for meta tag: '{pair}'")
                 continue
             key, value = pair.split("=", maxsplit=1)
             value = decode_meta_tag_value(value)
@@ -101,33 +122,37 @@ class MetaTags:
                 case "co-protocol" if self.cover:
                     self.cover.protocol = value
                 case "co-rotate" if self.cover:
-                    self.cover.rotate = float(value)
+                    self.cover.rotate = _try_parse_meta_tag(float, value, logger)
                 case "co-crop" if self.cover:
-                    self.cover.crop = CropMetaTags(value)
+                    self.cover.crop = _try_parse_meta_tag(CropMetaTags, value, logger)
                 case "co-resize" if self.cover:
-                    self.cover.resize = ResizeMetaTags(value)
+                    self.cover.resize = _try_parse_meta_tag(
+                        ResizeMetaTags, value, logger
+                    )
                 case "co-contrast" if self.cover:
-                    self.cover.contrast = "auto" if value == "auto" else float(value)
+                    self.cover.contrast = _try_parse_contrast(value, logger)
                 case "bg":
                     self.background = ImageMetaTags(source=value)
                 case "bg-protocol" if self.background:
                     self.background.protocol = value
                 case "bg-crop" if self.background:
-                    self.background.crop = CropMetaTags(value)
+                    self.background.crop = _try_parse_meta_tag(
+                        CropMetaTags, value, logger
+                    )
                 case "bg-resize" if self.background:
-                    self.background.resize = ResizeMetaTags(value)
+                    self.background.resize = _try_parse_meta_tag(
+                        ResizeMetaTags, value, logger
+                    )
                 case "p1":
                     self.player1 = value
                 case "p2":
                     self.player2 = value
                 case "preview":
-                    self.preview = float(value)
+                    self.preview = _try_parse_meta_tag(float, value, logger)
                 case "medley":
-                    self.medley = MedleyTag(value)
+                    self.medley = _try_parse_meta_tag(MedleyTag, value, logger)
                 case _:
-                    _logger.warning(
-                        f"Invalid key/value pair '{pair}' found in #VIDEO tag '{video_tag}'"
-                    )
+                    logger.warning(f"unknown key for meta tag: '{pair}'")
 
     def is_duet(self) -> bool:
         return self.player1 is not None and self.player2 is not None
@@ -135,3 +160,33 @@ class MetaTags:
     def is_audio_only(self) -> bool:
         """True if a resource is explicitly set for audio only."""
         return bool(self.audio and not self.video)
+
+
+T = TypeVar("T")
+
+
+def _try_parse_meta_tag(
+    cls: Callable[[str], T], value: str, logger: SongLogger
+) -> T | None:
+    try:
+        return cls(value)
+    except MetaTagParseError as err:
+        logger.warning(str(err))
+    except ValueError:
+        if cls in (float, int):
+            logger.warning(f"invalid number for meta tag: '{value}'")
+        else:
+            logger.warning(f"invalid value for meta tag: '{value}'")
+    return None
+
+
+def _try_parse_contrast(
+    value: str, logger: SongLogger
+) -> Literal["auto"] | float | None:
+    if value == "auto":
+        return "auto"
+    try:
+        return float(value)
+    except ValueError:
+        logger.warning(f"invalid value for contrast meta tag: '{value}'")
+    return None

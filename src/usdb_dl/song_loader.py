@@ -43,7 +43,7 @@ class Context:
         self.header["#TITLE"] = re.sub(r"\[.*?\]", "", self.header["#TITLE"]).strip()
 
         # extract video tag
-        self.meta_tags = MetaTags(self.header.pop("#VIDEO", ""))
+        self.meta_tags = MetaTags(self.header.pop("#VIDEO", ""), logger)
 
         self.filename = note_utils.generate_filename(self.header)
         self.dir_path = os.path.join(
