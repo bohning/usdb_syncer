@@ -110,7 +110,9 @@ def _find_or_initialize_folder(ctx: Context) -> bool:
     usdb_path = os.path.join(ctx.dir_path, f"{ctx.details.song_id}.usdb")
 
     # write .usdb file for synchronization
-    with open(temp_path, "w", encoding="utf_8") as file:
+    # songtxt may have CRLF newlines, so prevent Python from replacing LF with CRLF on
+    # Windows
+    with open(temp_path, "w", encoding="utf_8", newline="") as file:
         file.write(ctx.songtext)
 
     if os.path.exists(usdb_path):
@@ -202,14 +204,14 @@ def _maybe_download_background(ctx: Context) -> None:
 def _maybe_write_txt(ctx: Context) -> None:
     if not (options := ctx.options.txt_options):
         return
-    _write_missing_headers(ctx)
+    _set_missing_headers(ctx)
     note_utils.dump_notes(ctx.header, ctx.notes, ctx.dir_path, options, ctx.logger)
     ctx.logger.info("Success! Created song txt.")
     # ctx.model.setItem(ctx.model.findItems(idp, flags=Qt.MatchExactly, column=0)[0].row(), 8, QStandardItem(QIcon(":/icons/tick.png"), ""))
 
 
-def _write_missing_headers(ctx: Context) -> None:
-    _maybe_write_player_tags_and_markers(ctx)
+def _set_missing_headers(ctx: Context) -> None:
+    _maybe_set_player_tags_and_markers(ctx)
     if ctx.meta_tags.preview is not None:
         ctx.header["#PREVIEWSTART"] = str(ctx.meta_tags.preview)
     if medley := ctx.meta_tags.medley:
@@ -217,7 +219,7 @@ def _write_missing_headers(ctx: Context) -> None:
         ctx.header["#MEDLEYENDBEAT"] = str(medley.end)
 
 
-def _maybe_write_player_tags_and_markers(ctx: Context) -> None:
+def _maybe_set_player_tags_and_markers(ctx: Context) -> None:
     if not note_utils.is_duet(ctx.header, ctx.meta_tags):
         return
 
