@@ -415,9 +415,11 @@ def _parse_comment_contents(
 
 def _all_urls_in_comment(contents: BeautifulSoup, text: str) -> Iterator[str]:
     for embed in contents.find_all("embed"):
-        yield embed.get("src")
+        if src := embed.get("src"):
+            yield src
     for anchor in contents.find_all("a"):
-        yield anchor.get("src")
+        if href := anchor.get("href"):
+            yield href
     for url in URLExtract().gen_urls(text):
         if isinstance(url, tuple):
             url = url[0]
