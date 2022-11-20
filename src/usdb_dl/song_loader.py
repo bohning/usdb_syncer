@@ -44,8 +44,6 @@ class Context:
 
         # extract video tag
         self.meta_tags = MetaTags(self.header.pop("#VIDEO", ""))
-        if self.meta_tags.is_audio_only():
-            self.options.video_options = None
 
         dirname = note_utils.generate_dirname(self.header, bool(self.meta_tags.video))
         self.dir_path = os.path.join(
@@ -147,7 +145,7 @@ def _maybe_download_audio(ctx: Context) -> None:
 
 
 def _maybe_download_video(ctx: Context) -> None:
-    if not (options := ctx.options.video_options):
+    if not (options := ctx.options.video_options) or ctx.meta_tags.is_audio_only():
         return
     for (idx, resource) in enumerate(ctx.all_video_resources()):
         if idx > 9:

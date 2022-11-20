@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from usdb_dl import settings
 
 
-@dataclass
+@dataclass(frozen=True)
 class TxtOptions:
     """Settings regarding the song txt file to be downloaded."""
 
@@ -13,7 +13,7 @@ class TxtOptions:
     newline: settings.Newline
 
 
-@dataclass
+@dataclass(frozen=True)
 class AudioOptions:
     """Settings regarding the audio file to be downloaded."""
 
@@ -34,7 +34,7 @@ class AudioOptions:
         return self.format.ytdl_format()
 
 
-@dataclass
+@dataclass(frozen=True)
 class VideoOptions:
     """Settings regarding the video file to be downloaded."""
 
@@ -50,14 +50,14 @@ class VideoOptions:
         )
 
 
-@dataclass
+@dataclass(frozen=True)
 class CoverOptions:
     """Settings regarding the cover image to be downloaded."""
 
     max_size: int | None
 
 
-@dataclass
+@dataclass(frozen=True)
 class BackgroundOptions:
     """Settings regarding the background image to be downloaded."""
 
@@ -67,7 +67,7 @@ class BackgroundOptions:
         return not has_video or self.even_with_video
 
 
-@dataclass
+@dataclass(frozen=True)
 class Options:
     """Settings for downloading songs."""
 
