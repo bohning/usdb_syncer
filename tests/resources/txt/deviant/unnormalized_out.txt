@@ -1,0 +1,15 @@
+#ARTIST:artist
+#TITLE:title
+#CREATOR:me
+#BPM:250.0
+#GAP:12345.0
+#UNKNOWN HEADERS GET : inserted at the end
+: 0 1 0 first note 
+* 2 1 0 golden 
+- 4
+* 6 1 0 alternative golden note
+- 6
+* 8 1 0 strange line break
+- 6
+* 2 1 0 inline line break
+E

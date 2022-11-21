@@ -1,0 +1,16 @@
+#ARTIST:artist
+#TITLE:title
+#BPM:250.0
+#GAP:12345.0
+: 0 1 0 first note 
+* 2 1 0 golden 
+F 4 1 0 freestyle 
+R 6 1 0 rap 
+G 8 1 0 golden freestyle
+- 10 12
+: 12 1 0 one 
+: 14 1 0 more
+- 16
+: 18 1 0 and 
+: 20 1 0 another
+E

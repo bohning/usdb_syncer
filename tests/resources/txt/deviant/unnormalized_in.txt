@@ -1,0 +1,19 @@
+#artist:artist
+#title:title
+#unknown headers get : inserted at the end
+#BPM:250
+#GAP:12345
+#AUTHOR:me
+P1
+: 0 1 0 first note 
+* 2 1 0 golden 
+
+- 4
+*: 6 1 0 alternative golden note
+
+   -6
+* 8 1 0 strange line break
+
+- 6 * 2 1 0 inline line break
+
+E

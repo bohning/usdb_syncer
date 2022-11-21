@@ -1,0 +1,22 @@
+#ARTIST:artist
+#TITLE:title
+#headers without values get ignored
+#same if there is a :
+#START:invalid
+#END:123junk
+#MEDLEYSTARTBEAT:1.2
+#MEDLEYENDBEAT:3.4
+leading junk
+P1
+: 0 1 0 first note 
+junk before line break
+- 4
+junk after line break
+Z 18 1 0 invalid note kind
+: 20 -1 0 invalid duration
+: 20.1 -1 0 invalid start
+: 20 -1 missing pitch
+: 21 1 1
+
+E
+trailing junk

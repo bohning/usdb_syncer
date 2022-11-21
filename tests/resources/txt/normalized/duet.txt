@@ -1,0 +1,17 @@
+#ARTIST:artist
+#TITLE:title
+#BPM:250.0
+#GAP:12345.0
+P1
+: 0 1 0 first note 
+* 2 1 0 golden 
+- 4
+: 8 1 0 third 
+: 10 1 0 fourth
+P2
+: 4 1 0 first 
+* 6 1 0 player 2 
+- 10
+: 12 1 0 and 
+: 14 1 0 another
+E

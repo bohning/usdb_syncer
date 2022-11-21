@@ -1,0 +1,6 @@
+#ARTIST:artist
+#TITLE:title
+#BPM:0.0
+#GAP:0.0
+: 0 1 0 first note 
+E
