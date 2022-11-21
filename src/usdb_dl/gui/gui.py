@@ -85,24 +85,6 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         self.filter_proxy_model.set_text_filter(search)
         self.statusbar.showMessage(f"{self.filter_proxy_model.rowCount()} songs found.")
 
-    def set_filter_key_column(self, index: int) -> None:
-        if index == 0:
-            self.filter_proxy_model.setFilterKeyColumn(-1)
-        else:
-            self.filter_proxy_model.setFilterKeyColumn(index)
-        self.statusbar.showMessage(f"{self.filter_proxy_model.rowCount()} songs found.")
-
-    def set_case_sensitivity(self, state: int) -> None:
-        if state == 0:
-            self.filter_proxy_model.setFilterCaseSensitivity(
-                Qt.CaseSensitivity.CaseInsensitive
-            )
-        else:
-            self.filter_proxy_model.setFilterCaseSensitivity(
-                Qt.CaseSensitivity.CaseSensitive
-            )
-        self.statusbar.showMessage(f"{self.filter_proxy_model.rowCount()} songs found.")
-
     @Slot(str)
     def log_to_text_edit(self, message: str, level: int, created: float) -> None:
         match level:
