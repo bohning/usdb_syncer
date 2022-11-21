@@ -50,6 +50,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
 
         self.action_meta_tags.triggered.connect(lambda: MetaTagsDialog(self).show())
         self.action_settings.triggered.connect(lambda: SettingsDialog(self).show())
+        self.action_generate_song_pdf.triggered.connect(self.generate_song_pdf)
 
         self.lineEdit_song_dir.setText(settings.get_song_dir())
 
@@ -209,9 +210,8 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         indices = self.tableView_availableSongs.selectionModel().selectedRows()
         ids = self.model.ids_for_indices(indices)
         download_songs(ids)
-        self.generate_songlist_pdf()
 
-    def generate_songlist_pdf(self) -> None:
+    def generate_song_pdf(self) -> None:
         document: dict[str, Any] = {}
         document["style"] = {"margin_bottom": 15, "text_align": "j"}
         document["formats"] = {"url": {"c": "blue", "u": 1}, "title": {"b": 1, "s": 13}}

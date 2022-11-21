@@ -524,6 +524,7 @@
     </property>
     <addaction name="action_settings"/>
     <addaction name="action_meta_tags"/>
+    <addaction name="action_generate_song_pdf"/>
    </widget>
    <addaction name="menuEdit"/>
   </widget>
@@ -536,6 +537,11 @@
   <action name="action_settings">
    <property name="text">
     <string>Settings</string>
+   </property>
+  </action>
+  <action name="action_generate_song_pdf">
+   <property name="text">
+    <string>Generate Song List (PDF)</string>
    </property>
   </action>
  </widget>
