@@ -4,32 +4,18 @@ import datetime
 import logging
 import os
 import sys
-from typing import Any, cast
+from glob import glob
+from typing import Any
 
 # maybe reportlab is better suited?
 from pdfme import build_pdf  # type: ignore
-from PySide6.QtCore import (
-    QEvent,
-    QObject,
-    QSortFilterProxyModel,
-    Qt,
-    QThreadPool,
-    Signal,
-    Slot,
-)
-from PySide6.QtGui import (
-    QContextMenuEvent,
-    QIcon,
-    QPixmap,
-    QStandardItem,
-    QStandardItemModel,
-)
+from PySide6.QtCore import QObject, Qt, QThreadPool, Signal, Slot
+from PySide6.QtGui import QPixmap
 from PySide6.QtWidgets import (
     QApplication,
     QFileDialog,
     QHeaderView,
     QMainWindow,
-    QMenu,
     QSplashScreen,
 )
 
@@ -37,6 +23,8 @@ from usdb_dl import SongId, settings
 from usdb_dl.gui.forms.MainWindow import Ui_MainWindow
 from usdb_dl.gui.meta_tags_dialog import MetaTagsDialog
 from usdb_dl.gui.settings_dialog import SettingsDialog
+from usdb_dl.gui.sort_filter_proxy_model import SortFilterProxyModel
+from usdb_dl.gui.table_model import TableModel
 from usdb_dl.song_list_fetcher import SongListFetcher
 from usdb_dl.song_loader import download_songs
 from usdb_dl.usdb_scraper import SongMeta
@@ -71,62 +59,13 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         )
         self.pushButton_select_song_dir.clicked.connect(self.select_song_dir)
 
-        self.model = QStandardItemModel()
-        self.model.setHorizontalHeaderItem(
-            0, QStandardItem(QIcon(":/icons/id.png"), "ID")
-        )
-        self.model.setHorizontalHeaderItem(
-            1, QStandardItem(QIcon(":/icons/artist.png"), "Artist")
-        )
-        self.model.setHorizontalHeaderItem(
-            2, QStandardItem(QIcon(":/icons/title.png"), "Title")
-        )
-        self.model.setHorizontalHeaderItem(
-            3, QStandardItem(QIcon(":/icons/language.png"), "Language")
-        )
-        self.model.setHorizontalHeaderItem(
-            4, QStandardItem(QIcon(":/icons/edition.png"), "Edition")
-        )
-        self.model.setHorizontalHeaderItem(
-            5, QStandardItem(QIcon(":/icons/golden_notes.png"), "")
-        )
-        self.model.setHorizontalHeaderItem(
-            6, QStandardItem(QIcon(":/icons/rating.png"), "")
-        )
-        self.model.setHorizontalHeaderItem(
-            7, QStandardItem(QIcon(":/icons/views.png"), "")
-        )
-        self.model.setHorizontalHeaderItem(
-            8, QStandardItem(QIcon(":/icons/text.png"), "")
-        )
-        self.model.setHorizontalHeaderItem(
-            9, QStandardItem(QIcon(":/icons/audio.png"), "")
-        )
-        self.model.setHorizontalHeaderItem(
-            10, QStandardItem(QIcon(":/icons/video.png"), "")
-        )
-        self.model.setHorizontalHeaderItem(
-            11, QStandardItem(QIcon(":/icons/cover.png"), "")
-        )
-        self.model.setHorizontalHeaderItem(
-            12, QStandardItem(QIcon(":/icons/background.png"), "")
-        )
+        self.model = TableModel(self)
 
-        self.filter_proxy_model = QSortFilterProxyModel()
+        self.filter_proxy_model = SortFilterProxyModel(self)
         self.filter_proxy_model.setSourceModel(self.model)
-        self.filter_proxy_model.setFilterCaseSensitivity(
-            Qt.CaseSensitivity.CaseInsensitive
-        )
-        self.filter_proxy_model.setFilterKeyColumn(-1)
 
-        self.lineEdit_search.textChanged.connect(self.set_filter_regular_expression)
+        self.lineEdit_search.textChanged.connect(self.set_text_filter)
         self.tableView_availableSongs.setModel(self.filter_proxy_model)
-        self.tableView_availableSongs.installEventFilter(self)
-
-        self.comboBox_search_column.currentIndexChanged.connect(
-            self.set_filter_key_column
-        )
-        self.checkBox_case_sensitive.stateChanged.connect(self.set_case_sensitivity)
 
     def _on_log_filter_changed(self) -> None:
         messages = []
@@ -141,8 +80,8 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         slider = self.plainTextEdit.verticalScrollBar()
         slider.setValue(slider.maximum())
 
-    def set_filter_regular_expression(self, regexp: str) -> None:
-        self.filter_proxy_model.setFilterRegularExpression(regexp)
+    def set_text_filter(self, search: str) -> None:
+        self.filter_proxy_model.set_text_filter(search)
         self.statusbar.showMessage(f"{self.filter_proxy_model.rowCount()} songs found.")
 
     def set_filter_key_column(self, index: int) -> None:
@@ -185,6 +124,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
 
     def on_song_list_fetched(self, song_list: list[SongMeta]) -> None:
         # TODO: remove all existing items in the model!
+        self.model.load_data(song_list)
         self.pushButton_get_songlist.setEnabled(True)
         self.len_song_list = len(song_list)
         artists = set()
@@ -193,42 +133,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         editions = set()
         self.model.removeRows(0, self.model.rowCount())
 
-        root = self.model.invisibleRootItem()
         for song in song_list:
-            id_item = QStandardItem()
-            id_item.setData(str(song.song_id), cast(int, Qt.ItemDataRole.DisplayRole))
-            id_item.setCheckable(True)
-            artist_item = QStandardItem()
-            artist_item.setData(song.artist, cast(int, Qt.ItemDataRole.DisplayRole))
-            title_item = QStandardItem()
-            title_item.setData(song.title, cast(int, Qt.ItemDataRole.DisplayRole))
-            language_item = QStandardItem()
-            language_item.setData(song.language, cast(int, Qt.ItemDataRole.DisplayRole))
-            edition_item = QStandardItem()
-            edition_item.setData(song.edition, cast(int, Qt.ItemDataRole.DisplayRole))
-            goldennotes_item = QStandardItem()
-            goldennotes_item.setData(
-                "Yes" if song.golden_notes else "No",
-                cast(int, Qt.ItemDataRole.DisplayRole),
-            )
-            rating_item = QStandardItem()
-            rating_item.setData(
-                song.rating_str(), cast(int, Qt.ItemDataRole.DisplayRole)
-            )
-            views_item = QStandardItem()
-            views_item.setData(int(song.views), cast(int, Qt.ItemDataRole.DisplayRole))
-            row = [
-                id_item,
-                artist_item,
-                title_item,
-                language_item,
-                edition_item,
-                goldennotes_item,
-                rating_item,
-                views_item,
-            ]
-            root.appendRow(row)
-
             artists.add(song.artist)
             titles.append(song.title)
             languages.add(song.language)
@@ -270,77 +175,43 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         song_dir = str(QFileDialog.getExistingDirectory(self, "Select Song Directory"))
         self.lineEdit_song_dir.setText(song_dir)
         settings.set_song_dir(song_dir)
-        for _path, dirs, files in os.walk(song_dir):
+        self._crawl_song_dir()
+
+    def _crawl_song_dir(self) -> None:
+        checks: list[tuple[SongId, dict[int, bool]]] = []
+        for _path, dirs, files in os.walk(self.lineEdit_song_dir.text()):
             dirs.sort()
             for file in files:
                 if file.endswith(".usdb"):
-                    idp = file.replace(".usdb", "")
-                    items = self.model.findItems(
-                        idp, flags=Qt.MatchFlag.MatchExactly, column=0
-                    )
-                    if items:
-                        item = items[0]
-                        item.setCheckState(Qt.CheckState.Checked)
-
-                        if idp:
-                            for file in files:
-                                if file.endswith(".txt"):
-                                    self.model.setItem(
-                                        item.row(),
-                                        8,
-                                        QStandardItem(QIcon(":/icons/tick.png"), ""),
-                                    )
-
-                                if (
-                                    file.endswith(".mp3")
-                                    or file.endswith(".ogg")
-                                    or file.endswith("m4a")
-                                    or file.endswith("opus")
-                                    or file.endswith("ogg")
-                                ):
-                                    self.model.setItem(
-                                        item.row(),
-                                        9,
-                                        QStandardItem(QIcon(":/icons/tick.png"), ""),
-                                    )
-
-                                if file.endswith(".mp4") or file.endswith(".webm"):
-                                    self.model.setItem(
-                                        item.row(),
-                                        10,
-                                        QStandardItem(QIcon(":/icons/tick.png"), ""),
-                                    )
-
-                                if file.endswith("[CO].jpg"):
-                                    self.model.setItem(
-                                        item.row(),
-                                        11,
-                                        QStandardItem(QIcon(":/icons/tick.png"), ""),
-                                    )
-
-                                if file.endswith("[BG].jpg"):
-                                    self.model.setItem(
-                                        item.row(),
-                                        12,
-                                        QStandardItem(QIcon(":/icons/tick.png"), ""),
-                                    )
+                    song_id = file.removesuffix(".usdb")
+                    check_indices: dict[int, bool] = {}
+                    checks.append((SongId(song_id), check_indices))
+                    for song_file in files:
+                        if song_file.endswith(".txt"):
+                            check_indices[8] = True
+                        if (
+                            song_file.endswith(".mp3")
+                            or song_file.endswith(".ogg")
+                            or song_file.endswith("m4a")
+                            or song_file.endswith("opus")
+                            or song_file.endswith("ogg")
+                        ):
+                            check_indices[9] = True
+                        if song_file.endswith(".mp4") or song_file.endswith(".webm"):
+                            check_indices[10] = True
+                        if song_file.endswith("[CO].jpg"):
+                            check_indices[11] = True
+                        if song_file.endswith("[BG].jpg"):
+                            check_indices[12] = True
+        self.model.set_checks(checks)
 
     def download_selected_songs(self) -> None:
-        ids: list[SongId] = []
-        for row in range(
-            self.model.rowCount(self.tableView_availableSongs.rootIndex())
-        ):
-            item = self.model.item(row)
-            if item.checkState() == Qt.CheckState.Checked:
-                ids.append(SongId(item.data(0)))
-            else:
-                pass
-                # self.treeView_availableSongs.setRowHidden(row, QModelIndex(), True)
+        indices = self.tableView_availableSongs.selectionModel().selectedRows()
+        ids = self.model.ids_for_indices(indices)
         download_songs(ids)
         self.generate_songlist_pdf()
 
     def generate_songlist_pdf(self) -> None:
-        ### generate song list PDF
         document: dict[str, Any] = {}
         document["style"] = {"margin_bottom": 15, "text_align": "j"}
         document["formats"] = {"url": {"c": "blue", "u": 1}, "title": {"b": 1, "s": 13}}
@@ -359,41 +230,18 @@ class MainWindow(Ui_MainWindow, QMainWindow):
             }
         )
 
-        for row in range(
-            self.model.rowCount(self.tableView_availableSongs.rootIndex())
-        ):
-            item = self.model.item(row, 0)
-            if item.checkState() == Qt.CheckState.Checked:
-                song_id = str(int(item.text()))
-                artist = self.model.item(row, 1).text()
-                title = self.model.item(row, 2).text()
-                language = self.model.item(row, 3).text()
-                _edition = self.model.item(row, 4).text()
-                content1.append(
-                    [
-                        f"{song_id}\t\t{artist}\t\t{title}\t\t{language}".replace(
-                            "’", "'"
-                        )
-                    ]
-                )
+        pattern = f"{self.lineEdit_song_dir.text()}/**/*.usdb"
+        for path in glob(pattern, recursive=True):
+            id_str = os.path.basename(path).removesuffix(".usdb")
+            if (song_id := SongId.try_from(id_str)) is None:
+                continue
+            if not (song := self.model.item_for_id(song_id)):
+                continue
+            data = f"{song_id}\t\t{song.artist}\t\t{song.title}\t\t{song.language}"
+            content1.append([data.replace("’", "'")])
 
         with open(f"{date:%Y-%m-%d}_songlist.pdf", "wb") as file:
             build_pdf(document, file)
-
-    def eventFilter(self, source: QObject, event: QEvent) -> bool:
-        if (
-            isinstance(event, QContextMenuEvent)
-            and source == self.tableView_availableSongs
-        ):
-            menu = QMenu()
-            menu.addAction("Check all selected songs")
-            menu.addAction("Uncheck all selected songs")
-
-            if menu.exec(event.globalPos()):
-                index = self.tableView_availableSongs.indexAt(event.pos())
-                print(index)
-            return True
-        return super().eventFilter(source, event)
 
 
 class Signals(QObject):

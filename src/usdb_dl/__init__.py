@@ -3,6 +3,8 @@
 
 """A download manager for USDB songs."""
 
+from typing import Optional
+
 from importlib_metadata import PackageNotFoundError, version
 
 __module_name__ = "usdb_dl"
@@ -39,3 +41,13 @@ class SongId:
         if isinstance(__o, SongId):
             return self._value == __o._value
         return False
+
+    def __hash__(self) -> int:
+        return hash(self._value)
+
+    @staticmethod
+    def try_from(value: str | int) -> Optional["SongId"]:
+        try:
+            return SongId(value)
+        except (ValueError, AssertionError):
+            return None
