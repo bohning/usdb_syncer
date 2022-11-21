@@ -85,7 +85,7 @@ def download_video(
         try:
             filename = ydl.prepare_filename(ydl.extract_info(f"{url}"))
         except yt_dlp.utils.YoutubeDLError:
-            logger.error(f"error downloading video url: {url}")
+            logger.debug(f"error downloading video url: {url}")
             return None
 
     return os.path.splitext(filename)[1][1:]

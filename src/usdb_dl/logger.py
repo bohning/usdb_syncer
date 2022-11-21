@@ -1,4 +1,12 @@
-"""Helpers for logging"""
+"""Helpers for logging.
+
+Logging levels:
+    CRITICAL:   The app is forced to shut down or will stop working as intended.
+    ERROR:      A problem occured comprimising the outcome of an operation.
+    WARNING:    A problem occured, but the app has a way to recover.
+    INFO:       Something happened that is of interest to the user.
+    DEBUG:      Something happened that might be relevant for diagnosis or debugging.
+"""
 
 import logging
 from typing import Any
