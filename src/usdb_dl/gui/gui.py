@@ -9,7 +9,7 @@ from typing import Any
 
 # maybe reportlab is better suited?
 from pdfme import build_pdf  # type: ignore
-from PySide6.QtCore import QObject, Qt, QThreadPool, Signal, Slot
+from PySide6.QtCore import QObject, Qt, QThreadPool, QTimer, Signal, Slot
 from PySide6.QtGui import QPixmap
 from PySide6.QtWidgets import (
     QApplication,
@@ -39,6 +39,11 @@ class MainWindow(Ui_MainWindow, QMainWindow):
 
         self.threadpool = QThreadPool(self)
 
+        self._search_timer = QTimer(self)
+        self._search_timer.setSingleShot(True)
+        self._search_timer.setInterval(250)
+        self._search_timer.timeout.connect(self._apply_text_filter)  # type:ignore
+
         self.plainTextEdit.setReadOnly(True)
         self.len_song_list = 0
         self._infos: list[tuple[str, float]] = []
@@ -65,7 +70,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         self.filter_proxy_model = SortFilterProxyModel(self)
         self.filter_proxy_model.setSourceModel(self.model)
 
-        self.lineEdit_search.textChanged.connect(self.set_text_filter)
+        self.lineEdit_search.textChanged.connect(self._search_timer.start)
         self.tableView_availableSongs.setModel(self.filter_proxy_model)
 
     def _on_log_filter_changed(self) -> None:
@@ -81,8 +86,8 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         slider = self.plainTextEdit.verticalScrollBar()
         slider.setValue(slider.maximum())
 
-    def set_text_filter(self, search: str) -> None:
-        self.filter_proxy_model.set_text_filter(search)
+    def _apply_text_filter(self) -> None:
+        self.filter_proxy_model.set_text_filter(self.lineEdit_search.text())
         self.statusbar.showMessage(f"{self.filter_proxy_model.rowCount()} songs found.")
 
     @Slot(str)
