@@ -60,6 +60,8 @@ class ImageMetaTags:
     contrast: Literal["auto"] | float | None = None
 
     def source_url(self) -> str:
+        if "://" in self.source:
+            return self.source
         if "/" in self.source:
             return f"{self.protocol}://{self.source}"
         return f"{self.protocol}://images.fanart.tv/fanart/{self.source}"

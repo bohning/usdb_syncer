@@ -43,6 +43,14 @@ class ImageKind(Enum):
                 assert_never(unreachable)
 
 
+def url_from_video_resouce(resource: str) -> str:
+    if "://" in resource:
+        return resource
+    if "/" in resource:
+        return f"https://{resource}"
+    return f"https://www.youtube.com/watch?v={resource}"
+
+
 def download_video(
     resource: str,
     options: AudioOptions | VideoOptions,
@@ -61,7 +69,7 @@ def download_video(
     Returns:
         the extension of the successfully downloaded file or None
     """
-    url = f"https://{'' if '/' in resource else 'www.youtube.com/watch?v='}{resource}"
+    url = url_from_video_resouce(resource)
     ydl_opts: dict[str, Union[str, bool, tuple, list]] = {
         # currently fails for archive.org, where yt_dlp can't read codecs
         # could use "best" as a fallback
