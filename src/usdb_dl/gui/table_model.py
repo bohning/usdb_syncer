@@ -21,7 +21,7 @@ QIndex = QModelIndex | QPersistentModelIndex
 class CustomRole(int, Enum):
     """Custom values expanding Qt.QItemDataRole."""
 
-    SEARCHABLE_TEXT = 100
+    ALL_DATA = 100
 
 
 def columns() -> tuple[tuple[QIcon, str], ...]:
@@ -119,8 +119,8 @@ class TableModel(QAbstractTableModel):
             return self._songs[index.row()].display_data(index.column())
         if role == Qt.ItemDataRole.DecorationRole:
             return self._songs[index.row()].decoration_data(index.column())
-        if role == CustomRole.SEARCHABLE_TEXT:
-            return self._songs[index.row()].searchable_text
+        if role == CustomRole.ALL_DATA:
+            return self._songs[index.row()]
         return None
 
     def headerData(

@@ -4,12 +4,13 @@ import datetime
 import logging
 import os
 import sys
+from enum import Enum
 from glob import glob
 from typing import Any
 
 # maybe reportlab is better suited?
 from pdfme import build_pdf  # type: ignore
-from PySide6.QtCore import QObject, Qt, QThreadPool, QTimer, Signal, Slot
+from PySide6.QtCore import QObject, Qt, QThreadPool, QTimer, Signal
 from PySide6.QtGui import QPixmap
 from PySide6.QtWidgets import (
     QApplication,
@@ -30,22 +31,71 @@ from usdb_dl.song_loader import download_songs
 from usdb_dl.usdb_scraper import SongMeta
 
 
+class RatingFilter(Enum):
+    """Selectable filters for song ratings."""
+
+    ANY = (0, False)
+    EXACT_1 = (1, True)
+    EXACT_2 = (2, True)
+    EXACT_3 = (3, True)
+    EXACT_4 = (4, True)
+    EXACT_5 = (5, True)
+    MIN_2 = (2, False)
+    MIN_3 = (3, False)
+    MIN_4 = (4, False)
+    MIN_5 = (5, False)
+
+    def __str__(self) -> str:
+        if self == RatingFilter.ANY:
+            return "Any"
+        if self.value[1]:
+            return self.value[0] * "★"
+        return self.value[0] * "★" + " or more"
+
+
+class GoldenNotesFilter(Enum):
+    """Selectable filters for songs with or without golden notes."""
+
+    ANY = None
+    YES = True
+    NO = False
+
+    def __str__(self) -> str:
+        if self == GoldenNotesFilter.ANY:
+            return "Any"
+        if self == GoldenNotesFilter.YES:
+            return "Yes"
+        return "No"
+
+
+class ViewsFilter(Enum):
+    """Selectable filters for songs with a specific view count."""
+
+    ANY = 0
+    MIN_100 = 100
+    MIN_200 = 200
+    MIN_300 = 300
+    MIN_400 = 400
+    MIN_500 = 500
+
+    def __str__(self) -> str:
+        if self == ViewsFilter.ANY:
+            return "Any"
+        return f"{self.value}+"
+
+
 class MainWindow(Ui_MainWindow, QMainWindow):
     """The app's main window and entry point to the GUI."""
+
+    _search_timer: QTimer
+    len_song_list = 0
 
     def __init__(self) -> None:
         super().__init__()
         self.setupUi(self)
-
         self.threadpool = QThreadPool(self)
 
-        self._search_timer = QTimer(self)
-        self._search_timer.setSingleShot(True)
-        self._search_timer.setInterval(250)
-        self._search_timer.timeout.connect(self._apply_text_filter)  # type:ignore
-
         self.plainTextEdit.setReadOnly(True)
-        self.len_song_list = 0
         self._infos: list[tuple[str, float]] = []
         self._warnings: list[tuple[str, float]] = []
         self._errors: list[tuple[str, float]] = []
@@ -66,12 +116,59 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         self.pushButton_select_song_dir.clicked.connect(self.select_song_dir)
 
         self.model = TableModel(self)
-
         self.filter_proxy_model = SortFilterProxyModel(self)
         self.filter_proxy_model.setSourceModel(self.model)
-
-        self.lineEdit_search.textChanged.connect(self._search_timer.start)
         self.tableView_availableSongs.setModel(self.filter_proxy_model)
+
+        self._setup_search()
+
+    def _setup_search(self) -> None:
+        self._setup_search_text_line_edit()
+        self._populate_search_filters()
+        self._connect_search_filters()
+
+    def _setup_search_text_line_edit(self) -> None:
+        self._search_timer = QTimer(self)
+        self._search_timer.setSingleShot(True)
+        self._search_timer.setInterval(250)
+        self._search_timer.timeout.connect(self._apply_text_filter)  # type:ignore
+        self.lineEdit_search.textChanged.connect(self._search_timer.start)
+
+    def _populate_search_filters(self) -> None:
+        for rating in RatingFilter:
+            self.comboBox_rating.addItem(str(rating), rating.value)
+        for golden in GoldenNotesFilter:
+            self.comboBox_golden_notes.addItem(str(golden), golden.value)
+        for views in ViewsFilter:
+            self.comboBox_views.addItem(str(views), views.value)
+
+    def _connect_search_filters(self) -> None:
+        for (combo_box, setter) in (
+            (self.comboBox_artist, self.filter_proxy_model.set_artist_filter),
+            (self.comboBox_title, self.filter_proxy_model.set_title_filter),
+            (self.comboBox_language, self.filter_proxy_model.set_language_filter),
+            (self.comboBox_edition, self.filter_proxy_model.set_edition_filter),
+        ):
+            combo_box.currentIndexChanged.connect(
+                lambda idx, combo_box=combo_box, setter=setter: setter(
+                    "" if not idx else combo_box.currentText()
+                )
+            )
+        self.comboBox_rating.currentIndexChanged.connect(
+            lambda: self.filter_proxy_model.set_rating_filter(
+                *self.comboBox_rating.currentData()
+            )
+        )
+        self.comboBox_golden_notes.currentIndexChanged.connect(
+            lambda: self.filter_proxy_model.set_golden_notes_filter(
+                self.comboBox_golden_notes.currentData()
+            )
+        )
+        self.comboBox_views.currentIndexChanged.connect(
+            lambda: self.filter_proxy_model.set_views_filter(
+                self.comboBox_views.currentData()
+            )
+        )
 
     def _on_log_filter_changed(self) -> None:
         messages = []
@@ -90,7 +187,6 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         self.filter_proxy_model.set_text_filter(self.lineEdit_search.text())
         self.statusbar.showMessage(f"{self.filter_proxy_model.rowCount()} songs found.")
 
-    @Slot(str)
     def log_to_text_edit(self, message: str, level: int, created: float) -> None:
         match level:
             case 40:
@@ -116,23 +212,23 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         self.pushButton_get_songlist.setEnabled(True)
         self.len_song_list = len(song_list)
         artists = set()
-        titles = []
+        titles = set()
         languages = set()
         editions = set()
         self.model.removeRows(0, self.model.rowCount())
 
         for song in song_list:
             artists.add(song.artist)
-            titles.append(song.title)
+            titles.add(song.title)
             languages.add(song.language)
             editions.add(song.edition)
 
         self.statusbar.showMessage(f"{self.filter_proxy_model.rowCount()} songs found.")
 
-        self.comboBox_artist.addItems(list(sorted(set(artists))))
-        self.comboBox_title.addItems(list(sorted(set(titles))))
-        self.comboBox_language.addItems(list(sorted(set(languages))))
-        self.comboBox_edition.addItems(list(sorted(set(editions))))
+        self.comboBox_artist.addItems(list(sorted(artists)))
+        self.comboBox_title.addItems(list(sorted(titles)))
+        self.comboBox_language.addItems(list(sorted(languages)))
+        self.comboBox_edition.addItems(list(sorted(editions)))
 
         header = self.tableView_availableSongs.horizontalHeader()
         header.setSectionResizeMode(QHeaderView.ResizeMode.ResizeToContents)
