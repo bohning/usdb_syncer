@@ -115,6 +115,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
             self.download_selected_songs
         )
         self.pushButton_select_song_dir.clicked.connect(self.select_song_dir)
+        self.clear_filters.clicked.connect(self._clear_filters)
 
         self.model = TableModel(self)
         self.filter_proxy_model = SortFilterProxyModel(self)
@@ -277,6 +278,16 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         self.lineEdit_song_dir.setText(song_dir)
         settings.set_song_dir(song_dir)
         self._crawl_song_dir()
+
+    def _clear_filters(self) -> None:
+        self.lineEdit_search.setText("")
+        self.comboBox_artist.setCurrentIndex(0)
+        self.comboBox_title.setCurrentIndex(0)
+        self.comboBox_language.setCurrentIndex(0)
+        self.comboBox_edition.setCurrentIndex(0)
+        self.comboBox_golden_notes.setCurrentIndex(0)
+        self.comboBox_rating.setCurrentIndex(0)
+        self.comboBox_views.setCurrentIndex(0)
 
     def _crawl_song_dir(self) -> None:
         checks: list[tuple[SongId, dict[int, bool]]] = []
