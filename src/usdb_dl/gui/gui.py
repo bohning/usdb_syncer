@@ -290,8 +290,9 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         self.model.set_checks(checks)
 
     def download_selected_songs(self) -> None:
-        indices = self.tableView_availableSongs.selectionModel().selectedRows()
-        ids = self.model.ids_for_indices(indices)
+        selected_rows = self.tableView_availableSongs.selectionModel().selectedRows()
+        source_rows = map(self.filter_proxy_model.mapToSource, selected_rows)
+        ids = self.model.ids_for_indices(source_rows)
         download_songs(ids)
 
     def generate_song_pdf(self) -> None:

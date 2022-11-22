@@ -1,7 +1,7 @@
 """Table model for song data."""
 
 from enum import Enum
-from typing import Any
+from typing import Any, Iterator
 
 from PySide6.QtCore import (
     QAbstractTableModel,
@@ -137,7 +137,7 @@ class TableModel(QAbstractTableModel):
             return columns()[section][1]
         return None
 
-    def ids_for_indices(self, indices: list[QModelIndex]) -> list[SongId]:
+    def ids_for_indices(self, indices: Iterator[QModelIndex]) -> list[SongId]:
         return [self._songs[idx.row()].song_id for idx in indices]
 
     def set_checks(self, checks: list[tuple[SongId, dict[int, bool]]]) -> None:
