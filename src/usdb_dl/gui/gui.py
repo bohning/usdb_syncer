@@ -14,6 +14,7 @@ from PySide6.QtCore import QObject, Qt, QThreadPool, QTimer, Signal
 from PySide6.QtGui import QPixmap
 from PySide6.QtWidgets import (
     QApplication,
+    QComboBox,
     QFileDialog,
     QHeaderView,
     QMainWindow,
@@ -109,7 +110,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
 
         self.lineEdit_song_dir.setText(settings.get_song_dir())
 
-        self.pushButton_get_songlist.clicked.connect(lambda: self.refresh(True))
+        self.pushButton_get_songlist.clicked.connect(self._refetch_song_list)
         self.pushButton_downloadSelectedSongs.clicked.connect(
             self.download_selected_songs
         )
@@ -202,34 +203,14 @@ class MainWindow(Ui_MainWindow, QMainWindow):
                 if self.toolButton_infos.isChecked():
                     self.plainTextEdit.appendPlainText(message)
 
-    def refresh(self, force_reload: bool) -> None:
-        self.pushButton_get_songlist.setEnabled(False)
-        self.threadpool.start(SongListFetcher(force_reload, self.on_song_list_fetched))
-
-    def on_song_list_fetched(self, song_list: list[SongMeta]) -> None:
-        # TODO: remove all existing items in the model!
+    def initialize_song_table(self, song_list: list[SongMeta]) -> None:
         self.model.load_data(song_list)
-        self.pushButton_get_songlist.setEnabled(True)
+        self._setup_table_header()
         self.len_song_list = len(song_list)
-        artists = set()
-        titles = set()
-        languages = set()
-        editions = set()
-        self.model.removeRows(0, self.model.rowCount())
-
-        for song in song_list:
-            artists.add(song.artist)
-            titles.add(song.title)
-            languages.add(song.language)
-            editions.add(song.edition)
-
+        self._update_dynamic_filters(song_list)
         self.statusbar.showMessage(f"{self.filter_proxy_model.rowCount()} songs found.")
 
-        self.comboBox_artist.addItems(list(sorted(artists)))
-        self.comboBox_title.addItems(list(sorted(titles)))
-        self.comboBox_language.addItems(list(sorted(languages)))
-        self.comboBox_edition.addItems(list(sorted(editions)))
-
+    def _setup_table_header(self) -> None:
         header = self.tableView_availableSongs.horizontalHeader()
         header.setSectionResizeMode(QHeaderView.ResizeMode.ResizeToContents)
         header.setSectionResizeMode(0, QHeaderView.ResizeMode.Fixed)
@@ -254,6 +235,42 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         header.resizeSection(11, 24)
         header.setSectionResizeMode(12, QHeaderView.ResizeMode.Fixed)
         header.resizeSection(12, 24)
+
+    def _refetch_song_list(self) -> None:
+        self.pushButton_get_songlist.setEnabled(False)
+        self.threadpool.start(SongListFetcher(True, self._on_song_list_fetched))
+
+    def _on_song_list_fetched(self, song_list: list[SongMeta]) -> None:
+        self.model.load_data(song_list)
+        self.len_song_list = len(song_list)
+        self._update_dynamic_filters(song_list)
+        self.statusbar.showMessage(f"{self.filter_proxy_model.rowCount()} songs found.")
+        self.pushButton_get_songlist.setEnabled(True)
+
+    def _update_dynamic_filters(self, song_list: list[SongMeta]) -> None:
+        def update_filter(selector: QComboBox, attribute: str) -> None:
+            items = list(sorted(set(getattr(song, attribute) for song in song_list)))
+            items.insert(0, "Any")
+            current_text = selector.currentText()
+            try:
+                new_index = items.index(current_text)
+            except ValueError:
+                new_index = 0
+            selector.blockSignals(True)
+            selector.clear()
+            selector.addItems(items)
+            selector.setCurrentIndex(new_index)
+            selector.blockSignals(False)
+            if current_text != selector.currentText():
+                selector.currentIndexChanged.emit(new_index)  # type: ignore
+
+        for (selector, name) in (
+            (self.comboBox_artist, "artist"),
+            (self.comboBox_title, "title"),
+            (self.comboBox_language, "language"),
+            (self.comboBox_edition, "edition"),
+        ):
+            update_filter(selector, name)
 
     def select_song_dir(self) -> None:
         song_dir = str(QFileDialog.getExistingDirectory(self, "Select Song Directory"))
@@ -368,7 +385,7 @@ def main() -> None:
     splash.show()
     QApplication.processEvents()
     splash.showMessage("Loading song database from usdb...", color=Qt.GlobalColor.gray)
-    SongListFetcher(False, mw.on_song_list_fetched).run()
+    SongListFetcher(False, mw.initialize_song_table).run()
     splash.showMessage(
         f"Song database successfully loaded with {mw.len_song_list} songs.",
         color=Qt.GlobalColor.gray,
