@@ -5,6 +5,7 @@ from PySide6.QtCore import (
     QObject,
     QPersistentModelIndex,
     QSortFilterProxyModel,
+    QTimer,
 )
 
 from usdb_dl.gui.table_model import CustomRole, TableSongMeta
@@ -24,39 +25,47 @@ class SortFilterProxyModel(QSortFilterProxyModel):
         self._golden_notes_filter: bool | None = None
         self._rating_filter = (0, False)
         self._views_filter = 0
+
+        self._filter_invalidation_timer = QTimer(parent)
+        self._filter_invalidation_timer.setSingleShot(True)
+        self._filter_invalidation_timer.setInterval(200)
+        self._filter_invalidation_timer.timeout.connect(  # type:ignore
+            self.invalidateRowsFilter
+        )
+
         super().__init__(parent)
 
     def set_text_filter(self, text: str) -> None:
         self._text_filter = text.lower().split()
-        self.invalidate()
+        self._filter_invalidation_timer.start()
 
     def set_artist_filter(self, artist: str) -> None:
         self._artist_filter = artist
-        self.invalidate()
+        self._filter_invalidation_timer.start()
 
     def set_title_filter(self, title: str) -> None:
         self._title_filter = title
-        self.invalidate()
+        self._filter_invalidation_timer.start()
 
     def set_language_filter(self, language: str) -> None:
         self._language_filter = language
-        self.invalidate()
+        self._filter_invalidation_timer.start()
 
     def set_edition_filter(self, edition: str) -> None:
         self._edition_filter = edition
-        self.invalidate()
+        self._filter_invalidation_timer.start()
 
     def set_golden_notes_filter(self, golden_notes: bool | None) -> None:
         self._golden_notes_filter = golden_notes
-        self.invalidate()
+        self._filter_invalidation_timer.start()
 
     def set_rating_filter(self, rating: int, exact: bool) -> None:
         self._rating_filter = (rating, exact)
-        self.invalidate()
+        self._filter_invalidation_timer.start()
 
     def set_views_filter(self, min_views: int) -> None:
         self._views_filter = min_views
-        self.invalidate()
+        self._filter_invalidation_timer.start()
 
     def filterAcceptsRow(self, source_row: int, source_parent: QIndex) -> bool:
         model = self.sourceModel()

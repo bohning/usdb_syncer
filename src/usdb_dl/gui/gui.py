@@ -125,16 +125,9 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         self._setup_search()
 
     def _setup_search(self) -> None:
-        self._setup_search_text_line_edit()
+        self.lineEdit_search.textChanged.connect(self._apply_text_filter)
         self._populate_search_filters()
         self._connect_search_filters()
-
-    def _setup_search_text_line_edit(self) -> None:
-        self._search_timer = QTimer(self)
-        self._search_timer.setSingleShot(True)
-        self._search_timer.setInterval(250)
-        self._search_timer.timeout.connect(self._apply_text_filter)  # type:ignore
-        self.lineEdit_search.textChanged.connect(self._search_timer.start)
 
     def _populate_search_filters(self) -> None:
         for rating in RatingFilter:
