@@ -2,10 +2,8 @@
 
 from dataclasses import dataclass
 
-from pytube import extract
-from pytube.exceptions import RegexMatchError
-
 from usdb_dl.meta_tags import encode_meta_tag_value
+from usdb_dl.utils import extract_youtube_id
 
 
 @dataclass
@@ -193,10 +191,7 @@ def video_tag_from_values(values: MetaValues) -> str:
 
 def _sanitize_video_url(url: str) -> str:
     """Returns a YouTube id or sanitized URL."""
-    try:
-        return extract.video_id(url)
-    except RegexMatchError:
-        return _sanitize_url(url)
+    return extract_youtube_id(url) or _sanitize_url(url)
 
 
 def _sanitize_image_url(url: str) -> tuple[str, bool]:

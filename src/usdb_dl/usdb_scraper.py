@@ -11,19 +11,19 @@ from typing import Any, Callable, Iterator
 
 import requests
 from bs4 import BeautifulSoup
-from pytube import extract
-from pytube.exceptions import RegexMatchError
 from urlextract import URLExtract
 
 from usdb_dl import SongId
 from usdb_dl.logger import SongLogger
 from usdb_dl.typing_helpers import assert_never
+from usdb_dl.utils import extract_youtube_id
 
 _logger: logging.Logger = logging.getLogger(__file__)
 
 USDB_BASE_URL = "http://usdb.animux.de/"
 DATASET_NOT_FOUND_STRING = "Datensatz nicht gefunden"
 USDB_DATETIME_STRF = "%d.%m.%y - %H:%M"
+# partially taken from pytube.extract.video_id
 SUPPORTED_VIDEO_SOURCES = (
     "vimeo.com",
     "archive.org",
@@ -402,13 +402,12 @@ def _parse_comment_contents(
     youtube_ids: list[str] = []
 
     for url in _all_urls_in_comment(contents, text):
-        try:
-            youtube_ids.append(extract.video_id(url))
-        except RegexMatchError:
-            if any(source in url for source in SUPPORTED_VIDEO_SOURCES):
-                urls.append(url)
-            else:
-                logger.debug(f"unknown website in comment URL '{url}'")
+        if yt_id := extract_youtube_id(url):
+            youtube_ids.append(yt_id)
+        elif any(source in url for source in SUPPORTED_VIDEO_SOURCES):
+            urls.append(url)
+        else:
+            logger.debug(f"unknown website in comment URL '{url}'")
 
     return CommentContents(text=text, urls=urls, youtube_ids=youtube_ids)
 
