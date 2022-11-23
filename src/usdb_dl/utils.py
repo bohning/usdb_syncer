@@ -4,30 +4,28 @@ import re
 
 
 def extract_youtube_id(url: str) -> str | None:
-    """Extracts the YouTube id from one of the following formats:
-    `https://youtube.com/watch?v={id}`
-    `https://youtube.com/v/{id}`
-    `https://youtube.com/embed/{id}`
-    `https://youtu.be/{id}`
+    """Extracts the YouTube id from a variety of URLs.
 
-    Partially taken from `pytube.extract.video_id`.
+    Partially taken from `https://regexr.com/531i0`.
     """
 
     pattern = r"""
         (?:https?://)?
         (?:www\.)?
+        (?:m\.)?
         (?:
-            youtube\.com/watch\?(?:.*&)?v=
+            youtube\.com/
             |
-            youtube\.com/v/
+            youtube-nocookie\.com/
             |
-            youtube\.com/embed/
-            |
-            youtu\.be/
+            youtu\.be               # no '/' because id may follow immediately
         )
-        ([0-9A-Za-z_-]{11})                 # the actual id
-        .*                                  # URL may contain additonal parameters
+        \S*
+        (?:/|%3D|v=|vi=)
+        ([0-9a-z_-]{11})            # the actual id
+        (?:[%#?&]|$)                # URL may contain additonal parameters
+        .*
         """
-    if match := re.search(pattern, url, re.X):
+    if match := re.search(pattern, url, re.VERBOSE | re.IGNORECASE):
         return match.group(1)
     return None
