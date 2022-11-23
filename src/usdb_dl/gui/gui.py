@@ -10,9 +10,10 @@ from typing import Any
 
 # maybe reportlab is better suited?
 from pdfme import build_pdf  # type: ignore
-from PySide6.QtCore import QObject, Qt, QThreadPool, QTimer, Signal
+from PySide6.QtCore import QItemSelection, QObject, Qt, QThreadPool, QTimer, Signal
 from PySide6.QtGui import QPixmap
 from PySide6.QtWidgets import (
+    QAbstractItemView,
     QApplication,
     QComboBox,
     QFileDialog,
@@ -121,6 +122,13 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         self.filter_proxy_model = SortFilterProxyModel(self)
         self.filter_proxy_model.setSourceModel(self.model)
         self.tableView_availableSongs.setModel(self.filter_proxy_model)
+        self.tableView_availableSongs.setSelectionMode(
+            QAbstractItemView.ExtendedSelection
+        )
+        self.tableView_availableSongs.selectionModel().selectionChanged.connect(
+            self._on_selection_changed
+        )
+        self._on_selection_changed()
 
         self._setup_search()
 
@@ -177,6 +185,15 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         self.plainTextEdit.setPlainText("\n".join(m[0] for m in messages))
         slider = self.plainTextEdit.verticalScrollBar()
         slider.setValue(slider.maximum())
+
+    def _on_selection_changed(
+        self,
+        _selected: QItemSelection = QItemSelection(),
+        _deselected: QItemSelection = QItemSelection(),
+    ) -> None:
+        count = len(self.tableView_availableSongs.selectionModel().selectedRows())
+        self.pushButton_downloadSelectedSongs.setText(f"Download {count} songs!")
+        self.pushButton_downloadSelectedSongs.setEnabled(bool(count))
 
     def _apply_text_filter(self) -> None:
         self.filter_proxy_model.set_text_filter(self.lineEdit_search.text())
