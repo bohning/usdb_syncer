@@ -7,6 +7,7 @@ from PySide6.QtCore import (
     QSortFilterProxyModel,
     QTimer,
 )
+from unidecode import unidecode
 
 from usdb_dl.gui.table_model import CustomRole, TableSongMeta
 
@@ -36,7 +37,7 @@ class SortFilterProxyModel(QSortFilterProxyModel):
         super().__init__(parent)
 
     def set_text_filter(self, text: str) -> None:
-        self._text_filter = text.lower().split()
+        self._text_filter = unidecode(text).lower().split()
         self._filter_invalidation_timer.start()
 
     def set_artist_filter(self, artist: str) -> None:

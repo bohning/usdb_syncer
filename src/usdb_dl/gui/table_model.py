@@ -11,6 +11,7 @@ from PySide6.QtCore import (
     Qt,
 )
 from PySide6.QtGui import QIcon
+from unidecode import unidecode
 
 from usdb_dl import SongId
 from usdb_dl.usdb_scraper import SongMeta
@@ -52,13 +53,15 @@ class TableSongMeta:
         self.golden_notes = "Yes" if data.golden_notes else "No"
         self.rating_str = data.rating_str()
         self._checks: dict[int, bool] = {}
-        self.searchable_text = " ".join(
-            (
-                self.song_id_str,
-                self.data.artist,
-                self.data.title,
-                self.data.language,
-                self.data.edition,
+        self.searchable_text = unidecode(
+            " ".join(
+                (
+                    self.song_id_str,
+                    self.data.artist,
+                    self.data.title,
+                    self.data.language,
+                    self.data.edition,
+                )
             )
         ).lower()
 
