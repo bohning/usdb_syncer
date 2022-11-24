@@ -331,7 +331,7 @@ def _parse_details_table(details_table: BeautifulSoup, song_id: SongId) -> SongD
         details_table: BeautifulSoup object of song details table
     """
     editors = []
-    pointer = details_table.find(text="Song edited by:")
+    pointer = details_table.find(string="Song edited by:")
     while pointer is not None:
         pointer = pointer.find_next("td")
         if pointer.a is None:  # type: ignore
@@ -339,7 +339,7 @@ def _parse_details_table(details_table: BeautifulSoup, song_id: SongId) -> SongD
         editors.append(pointer.text.strip())  # type: ignore
         pointer = pointer.find_next("tr")  # type: ignore
 
-    stars = details_table.find(text="Rating").next.find_all("img")  # type: ignore
+    stars = details_table.find(string="Rating").next.find_all("img")  # type: ignore
 
     audio_sample = ""
     if param := details_table.find("param", attrs={"name": "FlashVars"}):
@@ -351,19 +351,19 @@ def _parse_details_table(details_table: BeautifulSoup, song_id: SongId) -> SongD
         artist=details_table.find_next("td").text,  # type: ignore
         title=details_table.find_next("td").find_next("td").text,  # type: ignore
         cover_url=details_table.img["src"],  # type: ignore
-        bpm=details_table.find(text="BPM").next.text,  # type: ignore
-        gap=details_table.find(text="GAP").next.text,  # type: ignore
-        golden_notes=details_table.find(text="Golden Notes").next.text,  # type: ignore
-        song_check=details_table.find(text="Songcheck").next.text,  # type: ignore
-        date_time=details_table.find(text="Date").next.text,  # type: ignore
-        uploader=details_table.find(text="Created by").next.text,  # type: ignore
+        bpm=details_table.find(string="BPM").next.text,  # type: ignore
+        gap=details_table.find(string="GAP").next.text,  # type: ignore
+        golden_notes=details_table.find(string="Golden Notes").next.text,  # type: ignore
+        song_check=details_table.find(string="Songcheck").next.text,  # type: ignore
+        date_time=details_table.find(string="Date").next.text,  # type: ignore
+        uploader=details_table.find(string="Created by").next.text,  # type: ignore
         editors=editors,
-        views=details_table.find(text="Views").next.text,  # type: ignore
+        views=details_table.find(string="Views").next.text,  # type: ignore
         rating=sum("star.png" in s.get("src") for s in stars),
-        votes=details_table.find(text="Rating").next_element.text.split("(")[1].split(")")[0],  # type: ignore
+        votes=details_table.find(string="Rating").next_element.text.split("(")[1].split(")")[0],  # type: ignore
         audio_sample=audio_sample,
         # only captures first team comment (example of multiple needed!)
-        team_comment=details_table.find(text="Team Comment").next.text,  # type: ignore
+        team_comment=details_table.find(string="Team Comment").next.text,  # type: ignore
     )
 
 
