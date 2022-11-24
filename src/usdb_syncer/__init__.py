@@ -7,7 +7,7 @@ from typing import Optional
 
 from importlib_metadata import PackageNotFoundError, version
 
-__module_name__ = "usdb_dl"
+__module_name__ = "usdb_syncer"
 
 try:  # pragma: no cover
     __version__ = version(__module_name__)

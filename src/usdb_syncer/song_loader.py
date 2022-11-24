@@ -7,12 +7,12 @@ from typing import Iterator
 
 from PySide6.QtCore import QRunnable, QThreadPool
 
-from usdb_dl import SongId, note_utils, resource_dl, usdb_scraper
-from usdb_dl.download_options import Options, download_options
-from usdb_dl.logger import SongLogger, get_logger
-from usdb_dl.meta_tags.deserializer import MetaTags
-from usdb_dl.resource_dl import ImageKind, download_and_process_image
-from usdb_dl.usdb_scraper import SongDetails
+from usdb_syncer import SongId, note_utils, resource_dl, usdb_scraper
+from usdb_syncer.download_options import Options, download_options
+from usdb_syncer.logger import SongLogger, get_logger
+from usdb_syncer.meta_tags.deserializer import MetaTags
+from usdb_syncer.resource_dl import ImageKind, download_and_process_image
+from usdb_syncer.usdb_scraper import SongDetails
 
 
 class Context:

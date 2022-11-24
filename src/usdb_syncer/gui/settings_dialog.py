@@ -3,8 +3,8 @@
 from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import QDialog, QWidget
 
-from usdb_dl import settings
-from usdb_dl.gui.forms.SettingsDialog import Ui_Dialog
+from usdb_syncer import settings
+from usdb_syncer.gui.forms.SettingsDialog import Ui_Dialog
 
 
 class SettingsDialog(Ui_Dialog, QDialog):

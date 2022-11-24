@@ -8,10 +8,9 @@ from tools import generate_pyside_files
 def cli_entry() -> None:
     parser = argparse.ArgumentParser(description="UltraStar script.")
     _args = parser.parse_args()
-
     generate_pyside_files()
 
-    from usdb_dl.gui.gui import main  # pylint: disable=import-outside-toplevel
+    from usdb_syncer.gui.gui import main  # pylint: disable=import-outside-toplevel
 
     main()
 

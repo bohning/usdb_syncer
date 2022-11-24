@@ -13,10 +13,10 @@ import requests
 from bs4 import BeautifulSoup
 from urlextract import URLExtract
 
-from usdb_dl import SongId
-from usdb_dl.logger import SongLogger
-from usdb_dl.typing_helpers import assert_never
-from usdb_dl.utils import extract_youtube_id
+from usdb_syncer import SongId
+from usdb_syncer.logger import SongLogger
+from usdb_syncer.typing_helpers import assert_never
+from usdb_syncer.utils import extract_youtube_id
 
 _logger: logging.Logger = logging.getLogger(__file__)
 

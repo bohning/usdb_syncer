@@ -1,1 +1,1 @@
-usdb_dl/gui/resources/resources.py
+usdb_syncer/gui/resources/resources.py

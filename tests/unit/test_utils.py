@@ -2,7 +2,7 @@
 
 import os
 
-from usdb_dl.utils import extract_youtube_id
+from usdb_syncer.utils import extract_youtube_id
 
 FAKE_YOUTUBE_ID = "fake_YT-id0"
 

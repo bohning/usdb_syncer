@@ -13,8 +13,8 @@ from PySide6.QtCore import (
 from PySide6.QtGui import QIcon
 from unidecode import unidecode
 
-from usdb_dl import SongId
-from usdb_dl.usdb_scraper import SongMeta
+from usdb_syncer import SongId
+from usdb_syncer.usdb_scraper import SongMeta
 
 QIndex = QModelIndex | QPersistentModelIndex
 

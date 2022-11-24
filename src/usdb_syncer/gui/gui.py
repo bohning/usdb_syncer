@@ -1,4 +1,4 @@
-"""usdb_dl's GUI"""
+"""usdb_syncer's GUI"""
 
 import datetime
 import logging
@@ -22,15 +22,15 @@ from PySide6.QtWidgets import (
     QSplashScreen,
 )
 
-from usdb_dl import SongId, settings
-from usdb_dl.gui.forms.MainWindow import Ui_MainWindow
-from usdb_dl.gui.meta_tags_dialog import MetaTagsDialog
-from usdb_dl.gui.settings_dialog import SettingsDialog
-from usdb_dl.gui.sort_filter_proxy_model import SortFilterProxyModel
-from usdb_dl.gui.table_model import TableModel
-from usdb_dl.song_list_fetcher import SongListFetcher
-from usdb_dl.song_loader import download_songs
-from usdb_dl.usdb_scraper import SongMeta
+from usdb_syncer import SongId, settings
+from usdb_syncer.gui.forms.MainWindow import Ui_MainWindow
+from usdb_syncer.gui.meta_tags_dialog import MetaTagsDialog
+from usdb_syncer.gui.settings_dialog import SettingsDialog
+from usdb_syncer.gui.sort_filter_proxy_model import SortFilterProxyModel
+from usdb_syncer.gui.table_model import TableModel
+from usdb_syncer.song_list_fetcher import SongListFetcher
+from usdb_syncer.song_loader import download_songs
+from usdb_syncer.usdb_scraper import SongMeta
 
 
 class RatingFilter(Enum):
@@ -388,7 +388,7 @@ class TextEditLogger(logging.Handler):
 def main() -> None:
     app = QApplication(sys.argv)
     app.setOrganizationName("bohning")
-    app.setApplicationName("usdb_dl")
+    app.setApplicationName("usdb_syncer")
     mw = MainWindow()
     logging.basicConfig(
         level=logging.INFO,
@@ -396,7 +396,7 @@ def main() -> None:
         datefmt="%Y-%m-%d %H:%M:%S",
         encoding="utf-8",
         handlers=(
-            logging.FileHandler("usdb_dl.log"),
+            logging.FileHandler("usdb_syncer.log"),
             logging.StreamHandler(sys.stdout),
             TextEditLogger(mw),
         ),

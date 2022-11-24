@@ -2,8 +2,8 @@
 
 from dataclasses import dataclass
 
-from usdb_dl.meta_tags import encode_meta_tag_value
-from usdb_dl.utils import extract_youtube_id
+from usdb_syncer.meta_tags import encode_meta_tag_value
+from usdb_syncer.utils import extract_youtube_id
 
 
 @dataclass

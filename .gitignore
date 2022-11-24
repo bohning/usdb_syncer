@@ -15,5 +15,5 @@ reports
 *.log
 
 # generated locally
-src/usdb_dl/gui/forms/*.py
-src/usdb_dl/gui/resources/*.py
+src/usdb_syncer/gui/forms/*.py
+src/usdb_syncer/gui/resources/*.py

@@ -1,8 +1,8 @@
 """Tests for functions from the note_utils module."""
 
-from usdb_dl import SongId
-from usdb_dl.logger import get_logger
-from usdb_dl.meta_tags.deserializer import MetaTags
+from usdb_syncer import SongId
+from usdb_syncer.logger import get_logger
+from usdb_syncer.meta_tags.deserializer import MetaTags
 
 _logger = get_logger(__file__, SongId(1))
 

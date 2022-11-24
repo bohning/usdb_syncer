@@ -3,8 +3,8 @@
 from dataclasses import dataclass
 from typing import Callable, Literal, TypeVar
 
-from usdb_dl.logger import SongLogger
-from usdb_dl.meta_tags import decode_meta_tag_value
+from usdb_syncer.logger import SongLogger
+from usdb_syncer.meta_tags import decode_meta_tag_value
 
 
 class MetaTagParseError(Exception):

@@ -9,7 +9,7 @@ from PySide6.QtCore import (
 )
 from unidecode import unidecode
 
-from usdb_dl.gui.table_model import CustomRole, TableSongMeta
+from usdb_syncer.gui.table_model import CustomRole, TableSongMeta
 
 QIndex = QModelIndex | QPersistentModelIndex
 

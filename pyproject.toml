@@ -9,8 +9,8 @@ build-backend = "setuptools.build_meta"
 [tool.isort]
 profile = "black"
 skip_glob = [
-    "src/usdb_dl/gui/forms",
-    "src/usdb_dl/gui/resources",
+    "src/usdb_syncer/gui/forms",
+    "src/usdb_syncer/gui/resources",
     "src/resources_rc.py",
     ".qt_for_python",
 ]
@@ -18,16 +18,16 @@ skip_glob = [
 [tool.black]
 skip-magic-trailing-comma = true
 extend-exclude = [
-    "src/usdb_dl/gui/forms",
-    "src/usdb_dl/gui/resources",
+    "src/usdb_syncer/gui/forms",
+    "src/usdb_syncer/gui/resources",
     "src/resources_rc.py",
     ".qt_for_python",
 ]
 
 [tool.pylint.master]
 ignore-paths = [
-    "src/usdb_dl/gui/forms",
-    "src/usdb_dl/gui/resources",
+    "src/usdb_syncer/gui/forms",
+    "src/usdb_syncer/gui/resources",
     "src/resources_rc.py",
     "venv",
     ".tox",
@@ -79,8 +79,8 @@ ignore_missing_imports = true
 disallow_untyped_defs = true
 follow_imports = "silent"
 exclude = [
-    "src/usdb_dl/gui/forms",
-    "src/usdb_dl/gui/resources",
+    "src/usdb_syncer/gui/forms",
+    "src/usdb_syncer/gui/resources",
     "src/resources_rc.py",
 ]
 
@@ -89,7 +89,7 @@ python_classes = "!TestCase"
 addopts = """
     -vv
     --junitxml=reports/pytest.xml
-    --cov=usdb_dl
+    --cov=usdb_syncer
     --cov-config=pyproject.toml
     --cov-report xml:reports/coverage.xml
     --cov-report html:reports/coverage_html
@@ -108,8 +108,8 @@ convention = "google"
 
 [tool.pyright]
 exclude = [
-    "src/usdb_dl/gui/forms",
-    "src/usdb_dl/gui/resources",
+    "src/usdb_syncer/gui/forms",
+    "src/usdb_syncer/gui/resources",
     "src/resources_rc.py",
     "venv",
     ".tox",

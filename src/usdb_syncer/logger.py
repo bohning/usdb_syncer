@@ -11,7 +11,7 @@ Logging levels:
 import logging
 from typing import Any
 
-from usdb_dl import SongId
+from usdb_syncer import SongId
 
 
 class SongLogger(logging.LoggerAdapter):

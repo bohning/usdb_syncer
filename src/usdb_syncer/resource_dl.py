@@ -8,13 +8,13 @@ import requests
 import yt_dlp
 from PIL import Image, ImageEnhance, ImageOps
 
-from usdb_dl import note_utils
-from usdb_dl.download_options import AudioOptions, VideoOptions
-from usdb_dl.logger import SongLogger, get_logger
-from usdb_dl.meta_tags.deserializer import ImageMetaTags
-from usdb_dl.settings import Browser
-from usdb_dl.typing_helpers import assert_never
-from usdb_dl.usdb_scraper import SongDetails
+from usdb_syncer import note_utils
+from usdb_syncer.download_options import AudioOptions, VideoOptions
+from usdb_syncer.logger import SongLogger, get_logger
+from usdb_syncer.meta_tags.deserializer import ImageMetaTags
+from usdb_syncer.settings import Browser
+from usdb_syncer.typing_helpers import assert_never
+from usdb_syncer.usdb_scraper import SongDetails
 
 # from moviepy.editor import VideoFileClip
 # import subprocess

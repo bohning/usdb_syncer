@@ -7,9 +7,9 @@ from io import StringIO
 
 from bs4 import BeautifulSoup
 
-from usdb_dl import SongId
-from usdb_dl.logger import get_logger
-from usdb_dl.usdb_scraper import (
+from usdb_syncer import SongId
+from usdb_syncer.logger import get_logger
+from usdb_syncer.usdb_scraper import (
     SongMeta,
     SongMetaEncoder,
     _parse_song_page,

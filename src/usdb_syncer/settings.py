@@ -11,7 +11,7 @@ from typing import Any, TypeVar, cast
 
 from PySide6.QtCore import QSettings
 
-from usdb_dl.typing_helpers import assert_never
+from usdb_syncer.typing_helpers import assert_never
 
 
 class SettingKey(Enum):

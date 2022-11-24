@@ -3,9 +3,9 @@
 import os
 from glob import glob
 
-from usdb_dl import SongId
-from usdb_dl.logger import get_logger
-from usdb_dl.notes_parser import SongTxt
+from usdb_syncer import SongId
+from usdb_syncer.logger import get_logger
+from usdb_syncer.notes_parser import SongTxt
 
 _logger = get_logger(__file__, SongId(1))
 

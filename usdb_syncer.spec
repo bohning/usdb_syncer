@@ -5,7 +5,7 @@ block_cipher = None
 
 
 a = Analysis(
-    ['usdb_dl.py'],
+    ['usdb_syncer.py'],
     pathex=[],
     binaries=[],
     datas=[],
@@ -26,7 +26,7 @@ exe = EXE(
     a.scripts,
     [],
     exclude_binaries=True,
-    name='usdb_dl',
+    name='usdb_syncer',
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
@@ -46,12 +46,12 @@ coll = COLLECT(
     strip=False,
     upx=True,
     upx_exclude=[],
-    name='usdb_dl',
+    name='usdb_syncer',
 )
 app = BUNDLE(
     coll,
     name='USDB Download & Sync.app',
-    icon='usdb_dl.icns',
+    icon='usdb_syncer.icns',
     bundle_identifier=None,
     version='0.0.2',
 )

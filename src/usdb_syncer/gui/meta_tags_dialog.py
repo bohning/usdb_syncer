@@ -4,8 +4,8 @@
 from PySide6.QtGui import QGuiApplication
 from PySide6.QtWidgets import QDialog, QWidget
 
-from usdb_dl.gui.forms.MetaTagsDialog import Ui_Dialog
-from usdb_dl.meta_tags.serializer import (
+from usdb_syncer.gui.forms.MetaTagsDialog import Ui_Dialog
+from usdb_syncer.meta_tags.serializer import (
     ImageCropTag,
     MetaValues,
     VideoCropTag,

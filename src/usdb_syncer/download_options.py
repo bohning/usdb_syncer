@@ -2,7 +2,7 @@
 
 from dataclasses import dataclass
 
-from usdb_dl import settings
+from usdb_syncer import settings
 
 
 @dataclass(frozen=True)

@@ -1,6 +1,6 @@
 """Test meta tag creator."""
 
-from usdb_dl.meta_tags.serializer import (
+from usdb_syncer.meta_tags.serializer import (
     ImageCropTag,
     MetaValues,
     VideoCropTag,

@@ -7,8 +7,8 @@ from typing import Callable
 import appdirs
 from PySide6.QtCore import QObject, QRunnable, Signal
 
-from usdb_dl import usdb_scraper
-from usdb_dl.usdb_scraper import SongMeta
+from usdb_syncer import usdb_scraper
+from usdb_syncer.usdb_scraper import SongMeta
 
 
 class Signals(QObject):
@@ -58,5 +58,5 @@ def dump_available_songs(available_songs: list[SongMeta]) -> None:
 
 def available_songs_path() -> str:
     return os.path.join(
-        appdirs.user_cache_dir("usdb_dl", "bohning"), "available_songs.json"
+        appdirs.user_cache_dir("usdb_syncer", "bohning"), "available_songs.json"
     )

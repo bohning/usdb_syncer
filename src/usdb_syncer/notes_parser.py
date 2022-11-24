@@ -2,8 +2,8 @@
 import re
 from enum import Enum
 
-from usdb_dl.logger import SongLogger
-from usdb_dl.meta_tags.deserializer import MetaTags
+from usdb_syncer.logger import SongLogger
+from usdb_syncer.meta_tags.deserializer import MetaTags
 
 
 class NotesParseError(Exception):
