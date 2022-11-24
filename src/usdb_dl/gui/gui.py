@@ -123,7 +123,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         self.filter_proxy_model.setSourceModel(self.model)
         self.tableView_availableSongs.setModel(self.filter_proxy_model)
         self.tableView_availableSongs.setSelectionMode(
-            QAbstractItemView.ExtendedSelection
+            QAbstractItemView.SelectionMode.ExtendedSelection
         )
         self.tableView_availableSongs.selectionModel().selectionChanged.connect(
             self._on_selection_changed
