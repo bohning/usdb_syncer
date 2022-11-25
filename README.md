@@ -3,7 +3,8 @@
 ## Development
 
 usdb_syncer is written in Python.
-The following explains how to set up a development environment.
+The following explains how to set up a development environment. A Python installation with
+version 3.10 or later is assumed.
 
 ### Python Setup
 
@@ -11,8 +12,10 @@ The following explains how to set up a development environment.
 The minimal setup to develop your package is to create a virtual environment and install the package and its runtime requirements:
 
 ```bash
-# your Python installation may instead be available under `py` or `python`
-python3.10 -m venv venv
+# Your Python installation may instead be available under `py` or `python`.
+python3 -m venv venv
+# In Windows PowerShell run this instead: `.\venv\Scripts\Activate.ps1`
+# In Windows CMD run this instead: `.\venv\scripts\activate.bat`
 source venv/bin/activate
 pip install --upgrade pip
 pip install -e '.[dev]'
@@ -39,8 +42,6 @@ The following tools are part of the test pipeline:
 
 - [pylint](https://github.com/PyCQA/pylint): Statically checks your code for errors and code smells.
 
-- [pytest](https://github.com/pytest-dev/pytest): Provides a framework for unit tests. Also doc-tests your docstrings and collects coverage information via pytest-cov.
+- [pytest](https://github.com/pytest-dev/pytest): Provides a framework for unit tests.
 
-- [pydocstyle](https://github.com/PyCQA/pydocstyle): Checks your docstring style. Use Google style docstrings.
-
-If you don’t want to run the whole test pipeline, you can also use single commands from the pipeline, e.g., pytest. The tools will automatically pick up the correct configuration from the `pyproject.toml` file. There is a nice explanatory video here that touches on some of these tools and the overall structure of a Python project.
+If you don’t want to run the whole test pipeline, you can also use single commands from the pipeline, e.g., `pytest`. The tools will automatically pick up the correct configuration from the `pyproject.toml` file.
