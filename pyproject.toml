@@ -12,7 +12,6 @@ skip_glob = [
     "src/usdb_syncer/gui/forms",
     "src/usdb_syncer/gui/resources",
     "src/resources_rc.py",
-    ".qt_for_python",
 ]
 
 [tool.black]
@@ -21,7 +20,6 @@ extend-exclude = [
     "src/usdb_syncer/gui/forms",
     "src/usdb_syncer/gui/resources",
     "src/resources_rc.py",
-    ".qt_for_python",
 ]
 
 [tool.pylint.master]
@@ -36,18 +34,12 @@ ignore-paths = [
 load-plugins = """
     pylint.extensions.mccabe
     """
-# The following settings modify the behavior when running pylint with pylint.extensions.docparams plugin loaded
-# accept-no-param-doc = "no"
-# accept-no-raise-doc = "no"
-# accept-no-return-doc = "no"
-# accept-no-yields-doc = "no"
 
 [tool.pylint.basic]
-good-names = ["mw", "eventFilter"]
+good-names = ["mw"]
 
 [tool.pylint.messages_control]
-# https://github.com/samuelcolvin/pydantic/issues/1961
-extension-pkg-whitelist = ["PySide6", "pydantic"]
+extension-pkg-whitelist = ["PySide6"]
 disable = [
     "too-few-public-methods",
     "logging-fstring-interpolation",
@@ -83,28 +75,6 @@ exclude = [
     "src/usdb_syncer/gui/resources",
     "src/resources_rc.py",
 ]
-
-[tool.pytest.ini_options]
-python_classes = "!TestCase"
-addopts = """
-    -vv
-    --junitxml=reports/pytest.xml
-    --cov=usdb_syncer
-    --cov-config=pyproject.toml
-    --cov-report xml:reports/coverage.xml
-    --cov-report html:reports/coverage_html
-    """
-
-[tool.coverage.run]
-branch = true
-data_file = "reports/.coverage"
-
-[tool.coverage.paths]
-# Maps coverage measured in site-packages to source files in src
-source = ["src/", ".tox/*/lib/python*/site-packages/"]
-
-[tool.pydocstyle]
-convention = "google"
 
 [tool.pyright]
 exclude = [
