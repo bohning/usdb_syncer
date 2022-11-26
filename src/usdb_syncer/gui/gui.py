@@ -1,13 +1,9 @@
 """usdb_syncer's GUI"""
 
-import datetime
 import logging
 import sys
 from enum import Enum
-from typing import Any
 
-# maybe reportlab is better suited?
-from pdfme import build_pdf  # type: ignore
 from PySide6.QtCore import QObject, Qt, QThreadPool, QTimer, Signal
 from PySide6.QtGui import QPixmap
 from PySide6.QtWidgets import (
@@ -23,6 +19,7 @@ from usdb_syncer.gui.forms.MainWindow import Ui_MainWindow
 from usdb_syncer.gui.meta_tags_dialog import MetaTagsDialog
 from usdb_syncer.gui.settings_dialog import SettingsDialog
 from usdb_syncer.gui.table import SongTable
+from usdb_syncer.pdf import generate_song_pdf
 from usdb_syncer.song_list_fetcher import SongListFetcher, SyncedSongMeta
 from usdb_syncer.song_loader import download_songs
 
@@ -117,7 +114,9 @@ class MainWindow(Ui_MainWindow, QMainWindow):
     def _setup_toolbar(self) -> None:
         self.action_meta_tags.triggered.connect(lambda: MetaTagsDialog(self).show())
         self.action_settings.triggered.connect(lambda: SettingsDialog(self).show())
-        self.action_generate_song_pdf.triggered.connect(self.generate_song_pdf)
+        self.action_generate_song_pdf.triggered.connect(
+            lambda: generate_song_pdf(self.table.all_local_songs())
+        )
         self.pushButton_get_songlist.clicked.connect(self._refetch_song_list)
 
     def _setup_song_dir(self) -> None:
@@ -261,32 +260,6 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         self.comboBox_golden_notes.setCurrentIndex(0)
         self.comboBox_rating.setCurrentIndex(0)
         self.comboBox_views.setCurrentIndex(0)
-
-    def generate_song_pdf(self) -> None:
-        document: dict[str, Any] = {}
-        document["style"] = {"margin_bottom": 15, "text_align": "j"}
-        document["formats"] = {"url": {"c": "blue", "u": 1}, "title": {"b": 1, "s": 13}}
-        document["sections"] = []
-        section1: dict[str, list[Any]] = {}
-        document["sections"].append(section1)
-        content1: list[Any] = []
-        section1["content"] = content1
-        date = datetime.datetime.now()
-        content1.append(
-            {
-                ".": f"Songlist ({date:%Y-%m-%d})",
-                "style": "title",
-                "label": "title1",
-                "outline": {"level": 1, "text": "A different title 1"},
-            }
-        )
-
-        for song in self.table.all_local_songs():
-            data = f"{song.song_id}\t\t{song.artist}\t\t{song.title}\t\t{song.language}"
-            content1.append([data.replace("’", "'")])
-
-        with open(f"{date:%Y-%m-%d}_songlist.pdf", "wb") as file:
-            build_pdf(document, file)
 
 
 class Signals(QObject):
