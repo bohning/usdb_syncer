@@ -9,6 +9,7 @@ from functools import wraps
 from json import JSONEncoder
 from typing import Any, Callable, Iterator
 
+import attrs
 import requests
 from bs4 import BeautifulSoup
 from urlextract import URLExtract
@@ -64,6 +65,7 @@ def raises_parse_exception(func: Callable) -> Callable:
     return wrapped
 
 
+@attrs.frozen(auto_attribs=True, kw_only=True)
 class UsdbSong:
     """Meta data about a song that USDB shows in the result list."""
 
@@ -76,31 +78,34 @@ class UsdbSong:
     rating: int
     views: int
 
-    def __init__(
-        self,
+    @classmethod
+    def from_json(cls, dct: dict[str, Any]) -> "UsdbSong":
+        dct["song_id"] = SongId(dct["song_id"])
+        return cls(**dct)
+
+    @classmethod
+    def from_html(
+        cls,
         *,
-        song_id: int | str,
+        song_id: str,
         artist: str,
         title: str,
         language: str,
         edition: str,
-        golden_notes: bool | str,
-        rating: int | str,
-        views: int | str,
-    ) -> None:
-        """This constructor accepts both, strings as scraped from USDB, and already
-        parsed values as stored in a JSON file.
-        """
-        self.song_id = SongId(song_id)
-        self.artist = artist
-        self.title = title
-        self.language = language or "language_not_set"
-        self.edition = edition
-        self.golden_notes = (
-            golden_notes if isinstance(golden_notes, bool) else golden_notes == "Yes"
+        golden_notes: str,
+        rating: str,
+        views: str,
+    ) -> "UsdbSong":
+        return cls(
+            song_id=SongId.parse(song_id),
+            artist=artist,
+            title=title,
+            language=language,
+            edition=edition,
+            golden_notes=golden_notes == "Yes",
+            rating=rating.count("star.png"),
+            views=int(views),
         )
-        self.rating = rating if isinstance(rating, int) else rating.count("star.png")
-        self.views = int(views)
 
 
 class SongMetaEncoder(JSONEncoder):
@@ -108,9 +113,9 @@ class SongMetaEncoder(JSONEncoder):
 
     def default(self, o: Any) -> Any:
         if isinstance(o, UsdbSong):
-            return o.__dict__
+            return attrs.asdict(o, recurse=False)
         if isinstance(o, SongId):
-            return int(o)
+            return int(o.value)
         return super().default(o)
 
 
@@ -260,7 +265,7 @@ def get_usdb_details(song_id: SongId, logger: SongLogger) -> SongDetails | None:
         song_id: id of song to retrieve details for
     """
     html = get_usdb_page(
-        "index.php", params={"id": str(int(song_id)), "link": "detail"}
+        "index.php", params={"id": str(song_id.value), "link": "detail"}
     )
     soup = BeautifulSoup(html, "lxml")
     if DATASET_NOT_FOUND_STRING in soup.get_text():
@@ -304,7 +309,7 @@ def get_usdb_available_songs(
     matches = re.finditer(regex, html)
 
     available_songs = [
-        UsdbSong(
+        UsdbSong.from_html(
             song_id=match[1],
             artist=match[2],
             title=match[3],
@@ -429,7 +434,7 @@ def get_notes(song_id: SongId, logger: SongLogger) -> str:
         "index.php",
         RequestMethod.POST,
         headers={"Content-Type": "application/x-www-form-urlencoded"},
-        params={"link": "gettxt", "id": str(int(song_id))},
+        params={"link": "gettxt", "id": str(song_id.value)},
         payload={"wd": "1"},
     )
     soup = BeautifulSoup(html, "lxml")

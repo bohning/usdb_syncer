@@ -51,8 +51,8 @@ def load_available_songs() -> list[UsdbSong] | None:
         return None
     with open(path, encoding="utf8") as file:
         try:
-            return json.load(file, object_hook=lambda d: UsdbSong(**d))
-        except (json.decoder.JSONDecodeError, TypeError):
+            return json.load(file, object_hook=UsdbSong.from_json)
+        except (json.decoder.JSONDecodeError, TypeError, KeyError):
             return None
 
 

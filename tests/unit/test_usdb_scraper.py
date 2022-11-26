@@ -23,8 +23,8 @@ def get_soup(resource_dir: str, resource: str) -> BeautifulSoup:
 
 
 def test_encoding_and_decoding_song_meta() -> None:
-    meta = UsdbSong(
-        song_id=123,
+    song = UsdbSong(
+        song_id=SongId(123),
         artist="Foo",
         title="Bar",
         language="Esperanto",
@@ -34,11 +34,11 @@ def test_encoding_and_decoding_song_meta() -> None:
         views=1,
     )
     buf = StringIO()
-    json.dump(meta, buf, cls=SongMetaEncoder)
+    json.dump(song, buf, cls=SongMetaEncoder)
     buf.seek(0)
-    new_meta = json.load(buf, object_hook=lambda d: UsdbSong(**d))
-    assert isinstance(new_meta, UsdbSong)
-    assert meta.__dict__ == new_meta.__dict__
+    new_song = json.load(buf, object_hook=UsdbSong.from_json)
+    assert isinstance(new_song, UsdbSong)
+    assert song == new_song
 
 
 def test__parse_song_txt_from_txt_page(resource_dir: str) -> None:
