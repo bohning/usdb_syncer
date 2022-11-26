@@ -112,12 +112,12 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         self.toolButton_errors.toggled.connect(self._on_log_filter_changed)
 
     def _setup_toolbar(self) -> None:
+        self.action_refetch_song_list.triggered.connect(self._refetch_song_list)
         self.action_meta_tags.triggered.connect(lambda: MetaTagsDialog(self).show())
         self.action_settings.triggered.connect(lambda: SettingsDialog(self).show())
         self.action_generate_song_pdf.triggered.connect(
             lambda: generate_song_pdf(self.table.all_local_songs())
         )
-        self.pushButton_get_songlist.clicked.connect(self._refetch_song_list)
 
     def _setup_song_dir(self) -> None:
         self.lineEdit_song_dir.setText(settings.get_song_dir())
