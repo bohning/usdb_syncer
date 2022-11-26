@@ -6,10 +6,10 @@ from typing import Any, Iterator
 
 from pdfme import build_pdf  # type: ignore
 
-from usdb_syncer.usdb_scraper import SongMeta
+from usdb_syncer.usdb_scraper import UsdbSong
 
 
-def generate_song_pdf(songs: Iterator[SongMeta]) -> None:
+def generate_song_pdf(songs: Iterator[UsdbSong]) -> None:
     document: dict[str, Any] = {}
     document["style"] = {"margin_bottom": 15, "text_align": "j"}
     document["formats"] = {"url": {"c": "blue", "u": 1}, "title": {"b": 1, "s": 13}}

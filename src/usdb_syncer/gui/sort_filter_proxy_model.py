@@ -9,7 +9,8 @@ from PySide6.QtCore import (
 )
 from unidecode import unidecode
 
-from usdb_syncer.gui.table_model import CustomRole, TableSongMeta
+from usdb_syncer.gui.table_model import CustomRole
+from usdb_syncer.song_data import SongData
 
 QIndex = QModelIndex | QPersistentModelIndex
 
@@ -71,7 +72,7 @@ class SortFilterProxyModel(QSortFilterProxyModel):
     def filterAcceptsRow(self, source_row: int, source_parent: QIndex) -> bool:
         model = self.sourceModel()
         idx = model.index(source_row, 0, source_parent)
-        song: TableSongMeta = model.data(idx, CustomRole.ALL_DATA)
+        song: SongData = model.data(idx, CustomRole.ALL_DATA)
         if self._artist_filter not in ("", song.data.artist):
             return False
         if self._title_filter not in ("", song.data.title):

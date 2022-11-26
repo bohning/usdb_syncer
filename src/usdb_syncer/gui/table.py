@@ -8,8 +8,7 @@ from PySide6.QtWidgets import QAbstractItemView, QHeaderView, QTableView
 from usdb_syncer import SongId
 from usdb_syncer.gui.sort_filter_proxy_model import SortFilterProxyModel
 from usdb_syncer.gui.table_model import TableModel
-from usdb_syncer.song_list_fetcher import SyncedSongMeta
-from usdb_syncer.usdb_scraper import SongMeta
+from usdb_syncer.usdb_scraper import UsdbSong
 
 
 class SongTable:
@@ -23,7 +22,7 @@ class SongTable:
         self._view.setModel(self._proxy_model)
         self._view.setSelectionMode(QAbstractItemView.SelectionMode.ExtendedSelection)
 
-    def initialize(self, song_list: list[SyncedSongMeta]) -> None:
+    def initialize(self, song_list: list[UsdbSong]) -> None:
         self._model.set_data(song_list)
         self._setup_table_header()
 
@@ -58,11 +57,11 @@ class SongTable:
         source_rows = map(self._proxy_model.mapToSource, selected_rows)
         return self._model.ids_for_indices(source_rows)
 
-    def all_local_songs(self) -> Iterator[SongMeta]:
+    def all_local_songs(self) -> Iterator[UsdbSong]:
         return self._model.all_local_songs()
 
-    def resync_data(self, song_dir: str) -> None:
-        self._model.resync_data(song_dir)
+    def resync_local_data(self) -> None:
+        self._model.resync_local_data()
 
     ### selection model
 
@@ -118,5 +117,5 @@ class SongTable:
 
     ### data model
 
-    def set_data(self, songs: list[SyncedSongMeta]) -> None:
+    def set_data(self, songs: list[UsdbSong]) -> None:
         self._model.set_data(songs)

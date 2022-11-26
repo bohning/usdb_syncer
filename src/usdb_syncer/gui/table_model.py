@@ -12,11 +12,10 @@ from PySide6.QtCore import (
     Qt,
 )
 from PySide6.QtGui import QIcon
-from unidecode import unidecode
 
-from usdb_syncer import SongId
-from usdb_syncer.song_list_fetcher import SyncedSongMeta
-from usdb_syncer.usdb_scraper import SongMeta
+from usdb_syncer import SongId, settings
+from usdb_syncer.song_data import SongData
+from usdb_syncer.usdb_scraper import UsdbSong
 
 QIndex = QModelIndex | QPersistentModelIndex
 
@@ -46,72 +45,43 @@ def columns() -> tuple[tuple[QIcon, str], ...]:
     )
 
 
-class TableSongMeta:
-    """SongMeta wrapper for use in the song table."""
-
-    def __init__(self, data: SongMeta) -> None:
-        self.data = data
-        self.song_id = data.song_id
-        self.song_id_str = str(data.song_id)
-        self.golden_notes = "Yes" if data.golden_notes else "No"
-        self.rating_str = data.rating_str()
-        self._checks: dict[int, bool] = {}
-        self.searchable_text = unidecode(
-            " ".join(
-                (
-                    self.song_id_str,
-                    self.data.artist,
-                    self.data.title,
-                    self.data.language,
-                    self.data.edition,
-                )
-            )
-        ).lower()
-
-    def display_data(self, index: int) -> str:
-        match index:
-            case 0:
-                return self.song_id_str
-            case 1:
-                return self.data.artist
-            case 2:
-                return self.data.title
-            case 3:
-                return self.data.language
-            case 4:
-                return self.data.edition
-            case 5:
-                return self.golden_notes
-            case 6:
-                return self.rating_str
-            case 7:
-                return str(self.data.views)
-            case _:
-                return ""
-
-    def decoration_data(self, index: int) -> QIcon | None:
-        return QIcon(":/icons/tick.png") if self._checks.get(index) else None
-
-    def update_checks(self, checks: dict[int, bool]) -> None:
-        self._checks.update(checks)
-
-
 class TableModel(QAbstractTableModel):
     """Table model for song data."""
 
-    _songs: list[SyncedSongMeta]
+    _songs: tuple[SongData, ...] = tuple()
     _indices: dict[SongId, int]
 
     def __init__(self, parent: QObject) -> None:
-        self._songs = []
         self._indices = {}
         super().__init__(parent)
 
-    def set_data(self, songs: list[SyncedSongMeta]) -> None:
+    def set_data(self, songs: list[UsdbSong]) -> None:
+        song_dir = settings.get_song_dir()
         self.beginResetModel()
-        self._songs = songs
+        self._songs = tuple(SongData.from_usdb_song(s, song_dir) for s in songs)
         self._indices = dict(map(lambda t: (t[1].song_id, t[0]), enumerate(songs)))
         self.endResetModel()
+
+    def ids_for_indices(self, indices: Iterator[QModelIndex]) -> list[SongId]:
+        return [self._songs[idx.row()].data.song_id for idx in indices]
+
+    def item_for_id(self, song_id: SongId) -> UsdbSong | None:
+        if (idx := self._indices.get(song_id)) is not None:
+            return self._songs[idx].data
+        return None
+
+    def all_local_songs(self) -> Iterator[UsdbSong]:
+        return (song.data for song in self._songs if song.local_txt)
+
+    def resync_local_data(self) -> None:
+        song_dir = settings.get_song_dir()
+        self.beginResetModel()
+        self._songs = tuple(
+            SongData.from_usdb_song(s.data, song_dir) for s in self._songs
+        )
+        self.endResetModel()
+
+    ### QAbstractTableModel implementation
 
     def columnCount(self, parent: QIndex = QModelIndex()) -> int:
         return 0 if parent.isValid() else len(columns())
@@ -143,19 +113,3 @@ class TableModel(QAbstractTableModel):
         if role == Qt.ItemDataRole.DisplayRole:
             return columns()[section][1]
         return None
-
-    def ids_for_indices(self, indices: Iterator[QModelIndex]) -> list[SongId]:
-        return [self._songs[idx.row()].song_id for idx in indices]
-
-    def item_for_id(self, song_id: SongId) -> SongMeta | None:
-        if (idx := self._indices.get(song_id)) is not None:
-            return self._songs[idx].data
-        return None
-
-    def all_local_songs(self) -> Iterator[SongMeta]:
-        return (song.data for song in self._songs if song.local_txt)
-
-    def resync_data(self, song_dir: str) -> None:
-        self.beginResetModel()
-        self._songs = [SyncedSongMeta(s.data, song_dir) for s in self._songs]
-        self.endResetModel()

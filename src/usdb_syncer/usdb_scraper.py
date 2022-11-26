@@ -64,7 +64,7 @@ def raises_parse_exception(func: Callable) -> Callable:
     return wrapped
 
 
-class SongMeta:
+class UsdbSong:
     """Meta data about a song that USDB shows in the result list."""
 
     song_id: SongId
@@ -102,15 +102,12 @@ class SongMeta:
         self.rating = rating if isinstance(rating, int) else rating.count("star.png")
         self.views = int(views)
 
-    def rating_str(self) -> str:
-        return self.rating * "★"  # + (5-rating) * "☆"
-
 
 class SongMetaEncoder(JSONEncoder):
     """Custom JSON encoder"""
 
     def default(self, o: Any) -> Any:
-        if isinstance(o, SongMeta):
+        if isinstance(o, UsdbSong):
             return o.__dict__
         if isinstance(o, SongId):
             return int(o)
@@ -282,7 +279,7 @@ def _parse_song_page(
 
 def get_usdb_available_songs(
     content_filter: dict[str, str] | None = None
-) -> list[SongMeta]:
+) -> list[UsdbSong]:
     """Return a list of all available songs.
 
     Parameters:
@@ -307,7 +304,7 @@ def get_usdb_available_songs(
     matches = re.finditer(regex, html)
 
     available_songs = [
-        SongMeta(
+        UsdbSong(
             song_id=match[1],
             artist=match[2],
             title=match[3],

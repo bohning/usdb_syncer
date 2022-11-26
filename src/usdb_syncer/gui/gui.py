@@ -20,8 +20,9 @@ from usdb_syncer.gui.meta_tags_dialog import MetaTagsDialog
 from usdb_syncer.gui.settings_dialog import SettingsDialog
 from usdb_syncer.gui.table import SongTable
 from usdb_syncer.pdf import generate_song_pdf
-from usdb_syncer.song_list_fetcher import SongListFetcher, SyncedSongMeta
+from usdb_syncer.song_list_fetcher import SongListFetcher
 from usdb_syncer.song_loader import download_songs
+from usdb_syncer.usdb_scraper import UsdbSong
 
 
 class RatingFilter(Enum):
@@ -112,6 +113,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         self.toolButton_errors.toggled.connect(self._on_log_filter_changed)
 
     def _setup_toolbar(self) -> None:
+        self.action_download_local_songs.triggered.connect(self._select_local_songs)
         self.action_refetch_song_list.triggered.connect(self._refetch_song_list)
         self.action_meta_tags.triggered.connect(lambda: MetaTagsDialog(self).show())
         self.action_settings.triggered.connect(lambda: SettingsDialog(self).show())
@@ -199,30 +201,28 @@ class MainWindow(Ui_MainWindow, QMainWindow):
                 if self.toolButton_infos.isChecked():
                     self.plainTextEdit.appendPlainText(message)
 
-    def initialize_song_table(self, song_list: list[SyncedSongMeta]) -> None:
+    def initialize_song_table(self, song_list: list[UsdbSong]) -> None:
         self.table.initialize(song_list)
         self.len_song_list = len(song_list)
         self._update_dynamic_filters(song_list)
 
     def _refetch_song_list(self) -> None:
-        self.pushButton_get_songlist.setEnabled(False)
+        self.action_refetch_song_list.setEnabled(False)
         self.threadpool.start(
             SongListFetcher(
                 True, self.lineEdit_song_dir.text(), self._on_song_list_fetched
             )
         )
 
-    def _on_song_list_fetched(self, song_list: list[SyncedSongMeta]) -> None:
+    def _on_song_list_fetched(self, song_list: list[UsdbSong]) -> None:
         self.table.set_data(song_list)
         self.len_song_list = len(song_list)
         self._update_dynamic_filters(song_list)
-        self.pushButton_get_songlist.setEnabled(True)
+        self.action_refetch_song_list.setEnabled(True)
 
-    def _update_dynamic_filters(self, song_list: list[SyncedSongMeta]) -> None:
+    def _update_dynamic_filters(self, song_list: list[UsdbSong]) -> None:
         def update_filter(selector: QComboBox, attribute: str) -> None:
-            items = list(
-                sorted(set(getattr(song.data, attribute) for song in song_list))
-            )
+            items = list(sorted(set(getattr(song, attribute) for song in song_list)))
             items.insert(0, "Any")
             current_text = selector.currentText()
             try:
@@ -249,7 +249,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         song_dir = str(QFileDialog.getExistingDirectory(self, "Select Song Directory"))
         self.lineEdit_song_dir.setText(song_dir)
         settings.set_song_dir(song_dir)
-        self.table.resync_data(song_dir)
+        self.table.resync_local_data()
 
     def _clear_filters(self) -> None:
         self.lineEdit_search.setText("")

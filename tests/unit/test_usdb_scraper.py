@@ -10,8 +10,8 @@ from bs4 import BeautifulSoup
 from usdb_syncer import SongId
 from usdb_syncer.logger import get_logger
 from usdb_syncer.usdb_scraper import (
-    SongMeta,
     SongMetaEncoder,
+    UsdbSong,
     _parse_song_page,
     _parse_song_txt_from_txt_page,
 )
@@ -23,7 +23,7 @@ def get_soup(resource_dir: str, resource: str) -> BeautifulSoup:
 
 
 def test_encoding_and_decoding_song_meta() -> None:
-    meta = SongMeta(
+    meta = UsdbSong(
         song_id=123,
         artist="Foo",
         title="Bar",
@@ -36,8 +36,8 @@ def test_encoding_and_decoding_song_meta() -> None:
     buf = StringIO()
     json.dump(meta, buf, cls=SongMetaEncoder)
     buf.seek(0)
-    new_meta = json.load(buf, object_hook=lambda d: SongMeta(**d))
-    assert isinstance(new_meta, SongMeta)
+    new_meta = json.load(buf, object_hook=lambda d: UsdbSong(**d))
+    assert isinstance(new_meta, UsdbSong)
     assert meta.__dict__ == new_meta.__dict__
 
 
