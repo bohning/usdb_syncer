@@ -1,6 +1,7 @@
 """Table model for song data."""
 
 from enum import Enum
+from functools import cache
 from typing import Any, Iterator
 
 from PySide6.QtCore import (
@@ -14,6 +15,7 @@ from PySide6.QtGui import QIcon
 from unidecode import unidecode
 
 from usdb_syncer import SongId
+from usdb_syncer.song_list_fetcher import SyncedSongMeta
 from usdb_syncer.usdb_scraper import SongMeta
 
 QIndex = QModelIndex | QPersistentModelIndex
@@ -25,6 +27,7 @@ class CustomRole(int, Enum):
     ALL_DATA = 100
 
 
+@cache
 def columns() -> tuple[tuple[QIcon, str], ...]:
     return (
         (QIcon(":/icons/id.png"), "ID"),
@@ -96,21 +99,22 @@ class TableSongMeta:
 class TableModel(QAbstractTableModel):
     """Table model for song data."""
 
-    _songs: tuple[TableSongMeta, ...] = tuple()
+    _songs: list[SyncedSongMeta]
     _indices: dict[SongId, int]
 
     def __init__(self, parent: QObject) -> None:
+        self._songs = []
         self._indices = {}
         super().__init__(parent)
 
-    def load_data(self, songs: list[SongMeta]) -> None:
+    def set_data(self, songs: list[SyncedSongMeta]) -> None:
         self.beginResetModel()
-        self._songs = tuple(map(TableSongMeta, songs))
+        self._songs = songs
         self._indices = dict(map(lambda t: (t[1].song_id, t[0]), enumerate(songs)))
         self.endResetModel()
 
     def columnCount(self, parent: QIndex = QModelIndex()) -> int:
-        return 0 if parent.isValid() else 12
+        return 0 if parent.isValid() else len(columns())
 
     def rowCount(self, parent: QIndex = QModelIndex()) -> int:
         return 0 if parent.isValid() else len(self._songs)
@@ -143,15 +147,15 @@ class TableModel(QAbstractTableModel):
     def ids_for_indices(self, indices: Iterator[QModelIndex]) -> list[SongId]:
         return [self._songs[idx.row()].song_id for idx in indices]
 
-    def set_checks(self, checks: list[tuple[SongId, dict[int, bool]]]) -> None:
-        self.beginResetModel()
-        for (song_id, song_checks) in checks:
-            if (idx := self._indices.get(song_id)) is not None:
-                song = self._songs[idx]
-                song.update_checks(song_checks)
-        self.endResetModel()
-
     def item_for_id(self, song_id: SongId) -> SongMeta | None:
         if (idx := self._indices.get(song_id)) is not None:
             return self._songs[idx].data
         return None
+
+    def all_local_songs(self) -> Iterator[SongMeta]:
+        return (song.data for song in self._songs if song.local_txt)
+
+    def resync_data(self, song_dir: str) -> None:
+        self.beginResetModel()
+        self._songs = [SyncedSongMeta(s.data, song_dir) for s in self._songs]
+        self.endResetModel()

@@ -2,35 +2,29 @@
 
 import datetime
 import logging
-import os
 import sys
 from enum import Enum
-from glob import glob
 from typing import Any
 
 # maybe reportlab is better suited?
 from pdfme import build_pdf  # type: ignore
-from PySide6.QtCore import QItemSelection, QObject, Qt, QThreadPool, QTimer, Signal
+from PySide6.QtCore import QObject, Qt, QThreadPool, QTimer, Signal
 from PySide6.QtGui import QPixmap
 from PySide6.QtWidgets import (
-    QAbstractItemView,
     QApplication,
     QComboBox,
     QFileDialog,
-    QHeaderView,
     QMainWindow,
     QSplashScreen,
 )
 
-from usdb_syncer import SongId, settings
+from usdb_syncer import settings
 from usdb_syncer.gui.forms.MainWindow import Ui_MainWindow
 from usdb_syncer.gui.meta_tags_dialog import MetaTagsDialog
 from usdb_syncer.gui.settings_dialog import SettingsDialog
-from usdb_syncer.gui.sort_filter_proxy_model import SortFilterProxyModel
-from usdb_syncer.gui.table_model import TableModel
-from usdb_syncer.song_list_fetcher import SongListFetcher
+from usdb_syncer.gui.table import SongTable
+from usdb_syncer.song_list_fetcher import SongListFetcher, SyncedSongMeta
 from usdb_syncer.song_loader import download_songs
-from usdb_syncer.usdb_scraper import SongMeta
 
 
 class RatingFilter(Enum):
@@ -96,7 +90,22 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         super().__init__()
         self.setupUi(self)
         self.threadpool = QThreadPool(self)
+        self._setup_table()
+        self._setup_log()
+        self._setup_toolbar()
+        self._setup_song_dir()
+        self._setup_search()
+        self._setup_download()
 
+    def _setup_table(self) -> None:
+        self.table = SongTable(self, self.tableView_availableSongs)
+        self.table.connect_row_count_changed(
+            lambda c: self.statusbar.showMessage(f"{c} songs found.")
+        )
+        self.table.connect_selected_rows_changed(self._on_selected_rows_changed)
+        self._on_selected_rows_changed(self.table.selected_row_count())
+
+    def _setup_log(self) -> None:
         self.plainTextEdit.setReadOnly(True)
         self._infos: list[tuple[str, float]] = []
         self._warnings: list[tuple[str, float]] = []
@@ -105,37 +114,25 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         self.toolButton_warnings.toggled.connect(self._on_log_filter_changed)
         self.toolButton_errors.toggled.connect(self._on_log_filter_changed)
 
+    def _setup_toolbar(self) -> None:
         self.action_meta_tags.triggered.connect(lambda: MetaTagsDialog(self).show())
         self.action_settings.triggered.connect(lambda: SettingsDialog(self).show())
         self.action_generate_song_pdf.triggered.connect(self.generate_song_pdf)
-
-        self.lineEdit_song_dir.setText(settings.get_song_dir())
-
         self.pushButton_get_songlist.clicked.connect(self._refetch_song_list)
-        self.pushButton_downloadSelectedSongs.clicked.connect(
-            self.download_selected_songs
-        )
+
+    def _setup_song_dir(self) -> None:
+        self.lineEdit_song_dir.setText(settings.get_song_dir())
         self.pushButton_select_song_dir.clicked.connect(self.select_song_dir)
-        self.clear_filters.clicked.connect(self._clear_filters)
 
-        self.model = TableModel(self)
-        self.filter_proxy_model = SortFilterProxyModel(self)
-        self.filter_proxy_model.setSourceModel(self.model)
-        self.tableView_availableSongs.setModel(self.filter_proxy_model)
-        self.tableView_availableSongs.setSelectionMode(
-            QAbstractItemView.SelectionMode.ExtendedSelection
+    def _setup_download(self) -> None:
+        self.pushButton_downloadSelectedSongs.clicked.connect(
+            lambda: download_songs(self.table.selected_song_ids())
         )
-        self.tableView_availableSongs.selectionModel().selectionChanged.connect(
-            self._on_selection_changed
-        )
-        self._on_selection_changed()
-
-        self._setup_search()
 
     def _setup_search(self) -> None:
-        self.lineEdit_search.textChanged.connect(self._apply_text_filter)
         self._populate_search_filters()
         self._connect_search_filters()
+        self.clear_filters.clicked.connect(self._clear_filters)
 
     def _populate_search_filters(self) -> None:
         for rating in RatingFilter:
@@ -146,11 +143,12 @@ class MainWindow(Ui_MainWindow, QMainWindow):
             self.comboBox_views.addItem(str(views), views.value)
 
     def _connect_search_filters(self) -> None:
+        self.lineEdit_search.textChanged.connect(self.table.set_text_filter)
         for (combo_box, setter) in (
-            (self.comboBox_artist, self.filter_proxy_model.set_artist_filter),
-            (self.comboBox_title, self.filter_proxy_model.set_title_filter),
-            (self.comboBox_language, self.filter_proxy_model.set_language_filter),
-            (self.comboBox_edition, self.filter_proxy_model.set_edition_filter),
+            (self.comboBox_artist, self.table.set_artist_filter),
+            (self.comboBox_title, self.table.set_title_filter),
+            (self.comboBox_language, self.table.set_language_filter),
+            (self.comboBox_edition, self.table.set_edition_filter),
         ):
             combo_box.currentIndexChanged.connect(
                 lambda idx, combo_box=combo_box, setter=setter: setter(
@@ -158,19 +156,15 @@ class MainWindow(Ui_MainWindow, QMainWindow):
                 )
             )
         self.comboBox_rating.currentIndexChanged.connect(
-            lambda: self.filter_proxy_model.set_rating_filter(
-                *self.comboBox_rating.currentData()
-            )
+            lambda: self.table.set_rating_filter(*self.comboBox_rating.currentData())
         )
         self.comboBox_golden_notes.currentIndexChanged.connect(
-            lambda: self.filter_proxy_model.set_golden_notes_filter(
+            lambda: self.table.set_golden_notes_filter(
                 self.comboBox_golden_notes.currentData()
             )
         )
         self.comboBox_views.currentIndexChanged.connect(
-            lambda: self.filter_proxy_model.set_views_filter(
-                self.comboBox_views.currentData()
-            )
+            lambda: self.table.set_views_filter(self.comboBox_views.currentData())
         )
 
     def _on_log_filter_changed(self) -> None:
@@ -186,18 +180,10 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         slider = self.plainTextEdit.verticalScrollBar()
         slider.setValue(slider.maximum())
 
-    def _on_selection_changed(
-        self,
-        _selected: QItemSelection = QItemSelection(),
-        _deselected: QItemSelection = QItemSelection(),
-    ) -> None:
-        count = len(self.tableView_availableSongs.selectionModel().selectedRows())
-        self.pushButton_downloadSelectedSongs.setText(f"Download {count} songs!")
+    def _on_selected_rows_changed(self, count: int) -> None:
+        s__ = "" if count == 1 else "s"
+        self.pushButton_downloadSelectedSongs.setText(f"Download {count} song{s__}!")
         self.pushButton_downloadSelectedSongs.setEnabled(bool(count))
-
-    def _apply_text_filter(self) -> None:
-        self.filter_proxy_model.set_text_filter(self.lineEdit_search.text())
-        self.statusbar.showMessage(f"{self.filter_proxy_model.rowCount()} songs found.")
 
     def log_to_text_edit(self, message: str, level: int, created: float) -> None:
         match level:
@@ -214,53 +200,30 @@ class MainWindow(Ui_MainWindow, QMainWindow):
                 if self.toolButton_infos.isChecked():
                     self.plainTextEdit.appendPlainText(message)
 
-    def initialize_song_table(self, song_list: list[SongMeta]) -> None:
-        self.model.load_data(song_list)
-        self._setup_table_header()
+    def initialize_song_table(self, song_list: list[SyncedSongMeta]) -> None:
+        self.table.initialize(song_list)
         self.len_song_list = len(song_list)
         self._update_dynamic_filters(song_list)
-        self.statusbar.showMessage(f"{self.filter_proxy_model.rowCount()} songs found.")
-
-    def _setup_table_header(self) -> None:
-        header = self.tableView_availableSongs.horizontalHeader()
-        header.setSectionResizeMode(QHeaderView.ResizeMode.ResizeToContents)
-        header.setSectionResizeMode(0, QHeaderView.ResizeMode.Fixed)
-        header.resizeSection(0, 84)
-        header.setSectionResizeMode(1, QHeaderView.ResizeMode.Interactive)
-        header.setSectionResizeMode(2, QHeaderView.ResizeMode.Interactive)
-        header.setSectionResizeMode(3, QHeaderView.ResizeMode.Interactive)
-        header.setSectionResizeMode(4, QHeaderView.ResizeMode.Interactive)
-        header.setSectionResizeMode(5, QHeaderView.ResizeMode.Fixed)
-        header.resizeSection(5, header.sectionSize(5))
-        header.setSectionResizeMode(6, QHeaderView.ResizeMode.Fixed)
-        header.resizeSection(6, header.sectionSize(6))
-        header.setSectionResizeMode(7, QHeaderView.ResizeMode.Fixed)
-        header.resizeSection(7, header.sectionSize(7))
-        header.setSectionResizeMode(8, QHeaderView.ResizeMode.Fixed)
-        header.resizeSection(8, 24)
-        header.setSectionResizeMode(9, QHeaderView.ResizeMode.Fixed)
-        header.resizeSection(9, 24)
-        header.setSectionResizeMode(10, QHeaderView.ResizeMode.Fixed)
-        header.resizeSection(10, 24)
-        header.setSectionResizeMode(11, QHeaderView.ResizeMode.Fixed)
-        header.resizeSection(11, 24)
-        header.setSectionResizeMode(12, QHeaderView.ResizeMode.Fixed)
-        header.resizeSection(12, 24)
 
     def _refetch_song_list(self) -> None:
         self.pushButton_get_songlist.setEnabled(False)
-        self.threadpool.start(SongListFetcher(True, self._on_song_list_fetched))
+        self.threadpool.start(
+            SongListFetcher(
+                True, self.lineEdit_song_dir.text(), self._on_song_list_fetched
+            )
+        )
 
-    def _on_song_list_fetched(self, song_list: list[SongMeta]) -> None:
-        self.model.load_data(song_list)
+    def _on_song_list_fetched(self, song_list: list[SyncedSongMeta]) -> None:
+        self.table.set_data(song_list)
         self.len_song_list = len(song_list)
         self._update_dynamic_filters(song_list)
-        self.statusbar.showMessage(f"{self.filter_proxy_model.rowCount()} songs found.")
         self.pushButton_get_songlist.setEnabled(True)
 
-    def _update_dynamic_filters(self, song_list: list[SongMeta]) -> None:
+    def _update_dynamic_filters(self, song_list: list[SyncedSongMeta]) -> None:
         def update_filter(selector: QComboBox, attribute: str) -> None:
-            items = list(sorted(set(getattr(song, attribute) for song in song_list)))
+            items = list(
+                sorted(set(getattr(song.data, attribute) for song in song_list))
+            )
             items.insert(0, "Any")
             current_text = selector.currentText()
             try:
@@ -287,7 +250,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         song_dir = str(QFileDialog.getExistingDirectory(self, "Select Song Directory"))
         self.lineEdit_song_dir.setText(song_dir)
         settings.set_song_dir(song_dir)
-        self._crawl_song_dir()
+        self.table.resync_data(song_dir)
 
     def _clear_filters(self) -> None:
         self.lineEdit_search.setText("")
@@ -298,40 +261,6 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         self.comboBox_golden_notes.setCurrentIndex(0)
         self.comboBox_rating.setCurrentIndex(0)
         self.comboBox_views.setCurrentIndex(0)
-
-    def _crawl_song_dir(self) -> None:
-        checks: list[tuple[SongId, dict[int, bool]]] = []
-        for _path, dirs, files in os.walk(self.lineEdit_song_dir.text()):
-            dirs.sort()
-            for file in files:
-                if file.endswith(".usdb"):
-                    song_id = file.removesuffix(".usdb")
-                    check_indices: dict[int, bool] = {}
-                    checks.append((SongId(song_id), check_indices))
-                    for song_file in files:
-                        if song_file.endswith(".txt"):
-                            check_indices[8] = True
-                        if (
-                            song_file.endswith(".mp3")
-                            or song_file.endswith(".ogg")
-                            or song_file.endswith("m4a")
-                            or song_file.endswith("opus")
-                            or song_file.endswith("ogg")
-                        ):
-                            check_indices[9] = True
-                        if song_file.endswith(".mp4") or song_file.endswith(".webm"):
-                            check_indices[10] = True
-                        if song_file.endswith("[CO].jpg"):
-                            check_indices[11] = True
-                        if song_file.endswith("[BG].jpg"):
-                            check_indices[12] = True
-        self.model.set_checks(checks)
-
-    def download_selected_songs(self) -> None:
-        selected_rows = self.tableView_availableSongs.selectionModel().selectedRows()
-        source_rows = map(self.filter_proxy_model.mapToSource, selected_rows)
-        ids = self.model.ids_for_indices(source_rows)
-        download_songs(ids)
 
     def generate_song_pdf(self) -> None:
         document: dict[str, Any] = {}
@@ -352,14 +281,8 @@ class MainWindow(Ui_MainWindow, QMainWindow):
             }
         )
 
-        pattern = f"{self.lineEdit_song_dir.text()}/**/*.usdb"
-        for path in glob(pattern, recursive=True):
-            id_str = os.path.basename(path).removesuffix(".usdb")
-            if (song_id := SongId.try_from(id_str)) is None:
-                continue
-            if not (song := self.model.item_for_id(song_id)):
-                continue
-            data = f"{song_id}\t\t{song.artist}\t\t{song.title}\t\t{song.language}"
+        for song in self.table.all_local_songs():
+            data = f"{song.song_id}\t\t{song.artist}\t\t{song.title}\t\t{song.language}"
             content1.append([data.replace("’", "'")])
 
         with open(f"{date:%Y-%m-%d}_songlist.pdf", "wb") as file:
@@ -406,7 +329,7 @@ def main() -> None:
     splash.show()
     QApplication.processEvents()
     splash.showMessage("Loading song database from usdb...", color=Qt.GlobalColor.gray)
-    SongListFetcher(False, mw.initialize_song_table).run()
+    SongListFetcher(False, mw.lineEdit_song_dir.text(), mw.initialize_song_table).run()
     splash.showMessage(
         f"Song database successfully loaded with {mw.len_song_list} songs.",
         color=Qt.GlobalColor.gray,
