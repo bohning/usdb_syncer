@@ -10,7 +10,7 @@ from PySide6.QtGui import QIcon
 from unidecode import unidecode
 
 from usdb_syncer.logger import get_logger
-from usdb_syncer.notes_parser import NotesParseError, SongTxt
+from usdb_syncer.notes_parser import SongTxt
 from usdb_syncer.usdb_scraper import UsdbSong
 
 
@@ -87,11 +87,10 @@ def _get_song_txt(song: UsdbSong, song_dir: str) -> SongTxt | None:
         return None
     txt_path = os.path.join(folder, f"{song.artist} - {song.title}.txt")
     logger = get_logger(__file__, song.song_id)
-    try:
+    if os.path.exists(txt_path):
         with open(txt_path, encoding="utf-8") as file:
-            return SongTxt(file.read(), logger)
-    except (NotesParseError, OSError, FileNotFoundError):
-        return None
+            return SongTxt.try_parse(file.read(), logger)
+    return None
 
 
 def _file_exists(folder: str, fname: str | None) -> bool:

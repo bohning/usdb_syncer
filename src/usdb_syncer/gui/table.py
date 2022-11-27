@@ -1,14 +1,22 @@
 """Controller for the song table."""
 
+
+import logging
+import os
+from glob import glob
 from typing import Any, Callable, Iterator
 
-from PySide6.QtCore import QObject
+from PySide6.QtCore import QItemSelectionModel, QModelIndex, QObject
 from PySide6.QtWidgets import QAbstractItemView, QHeaderView, QTableView
 
 from usdb_syncer import SongId
 from usdb_syncer.gui.sort_filter_proxy_model import SortFilterProxyModel
 from usdb_syncer.gui.table_model import TableModel
+from usdb_syncer.logger import get_logger
+from usdb_syncer.notes_parser import SongTxt
 from usdb_syncer.usdb_scraper import UsdbSong
+
+_logger = logging.getLogger(__file__)
 
 
 class SongTable:
@@ -52,17 +60,6 @@ class SongTable:
         header.setSectionResizeMode(12, QHeaderView.ResizeMode.Fixed)
         header.resizeSection(12, 24)
 
-    def selected_song_ids(self) -> list[SongId]:
-        selected_rows = self._view.selectionModel().selectedRows()
-        source_rows = map(self._proxy_model.mapToSource, selected_rows)
-        return self._model.ids_for_indices(source_rows)
-
-    def all_local_songs(self) -> Iterator[UsdbSong]:
-        return self._model.all_local_songs()
-
-    def resync_local_data(self) -> None:
-        self._model.resync_local_data()
-
     ### selection model
 
     def connect_selected_rows_changed(self, func: Callable[[int], None]) -> None:
@@ -76,6 +73,38 @@ class SongTable:
 
     def selected_row_count(self) -> int:
         return len(self._view.selectionModel().selectedRows())
+
+    def selected_song_ids(self) -> list[SongId]:
+        selected_rows = self._view.selectionModel().selectedRows()
+        source_rows = map(self._proxy_model.mapToSource, selected_rows)
+        return self._model.ids_for_indices(source_rows)
+
+    def select_local_songs(self, directory: str) -> None:
+        err_logger = get_logger(__file__)
+        err_logger.setLevel(logging.ERROR)
+        self._view.selectionModel().clearSelection()
+        for path in glob(os.path.join(directory, "**", "*.txt"), recursive=True):
+            with open(path, encoding="utf-8") as file:
+                contents = file.read()
+            if not (txt := SongTxt.try_parse(contents, err_logger)):
+                continue
+            rows = self._proxy_model.find_rows(txt.headers.artist, txt.headers.title)
+            if not rows:
+                _logger.warning(f"no matches for '{txt.headers.artist_title_str()}'")
+                continue
+            if len(rows) > 1:
+                _logger.info(
+                    f"{len(rows)} matches for '{txt.headers.artist_title_str()}'"
+                )
+            for row in rows:
+                self.select_row(row)
+
+    def select_row(self, row: QModelIndex) -> None:
+        self._view.selectionModel().select(
+            row,
+            QItemSelectionModel.SelectionFlag.Rows
+            | QItemSelectionModel.SelectionFlag.Select,
+        )
 
     ### sort and filter model
 
@@ -119,3 +148,9 @@ class SongTable:
 
     def set_data(self, songs: list[UsdbSong]) -> None:
         self._model.set_data(songs)
+
+    def all_local_songs(self) -> Iterator[UsdbSong]:
+        return self._model.all_local_songs()
+
+    def resync_local_data(self) -> None:
+        self._model.resync_local_data()

@@ -3,7 +3,7 @@
 from dataclasses import dataclass
 from typing import Callable, Literal, TypeVar
 
-from usdb_syncer.logger import SongLogger
+from usdb_syncer.logger import Logger
 from usdb_syncer.meta_tags import decode_meta_tag_value
 
 
@@ -101,7 +101,7 @@ class MetaTags:
     preview: float | None = None
     medley: MedleyTag | None = None
 
-    def __init__(self, video_tag: str, logger: SongLogger) -> None:
+    def __init__(self, video_tag: str, logger: Logger) -> None:
         if not "=" in video_tag:
             # probably a regular video file name and not a meta tag
             return
@@ -168,7 +168,7 @@ T = TypeVar("T")
 
 
 def _try_parse_meta_tag(
-    cls: Callable[[str], T], value: str, logger: SongLogger
+    cls: Callable[[str], T], value: str, logger: Logger
 ) -> T | None:
     try:
         return cls(value)
@@ -182,9 +182,7 @@ def _try_parse_meta_tag(
     return None
 
 
-def _try_parse_contrast(
-    value: str, logger: SongLogger
-) -> Literal["auto"] | float | None:
+def _try_parse_contrast(value: str, logger: Logger) -> Literal["auto"] | float | None:
     if value == "auto":
         return "auto"
     try:

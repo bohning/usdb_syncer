@@ -413,6 +413,7 @@
      <string>Synchronize</string>
     </property>
     <addaction name="action_refetch_song_list"/>
+    <addaction name="action_select_local_songs"/>
    </widget>
    <addaction name="menu_sync"/>
    <addaction name="menu_tools"/>
@@ -442,9 +443,9 @@
     <string>Check USDB Song List</string>
    </property>
   </action>
-  <action name="actionCheck_Local_Files">
+  <action name="action_select_local_songs">
    <property name="text">
-    <string>Check Local Files</string>
+    <string>Select local Songs</string>
    </property>
   </action>
  </widget>

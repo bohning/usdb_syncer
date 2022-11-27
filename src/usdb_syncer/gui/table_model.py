@@ -49,24 +49,24 @@ class TableModel(QAbstractTableModel):
     """Table model for song data."""
 
     _songs: tuple[SongData, ...] = tuple()
-    _indices: dict[SongId, int]
+    _rows: dict[SongId, int]
 
     def __init__(self, parent: QObject) -> None:
-        self._indices = {}
+        self._rows = {}
         super().__init__(parent)
 
     def set_data(self, songs: list[UsdbSong]) -> None:
         song_dir = settings.get_song_dir()
         self.beginResetModel()
         self._songs = tuple(SongData.from_usdb_song(s, song_dir) for s in songs)
-        self._indices = dict(map(lambda t: (t[1].song_id, t[0]), enumerate(songs)))
+        self._rows = dict(map(lambda t: (t[1].song_id, t[0]), enumerate(songs)))
         self.endResetModel()
 
     def ids_for_indices(self, indices: Iterator[QModelIndex]) -> list[SongId]:
         return [self._songs[idx.row()].data.song_id for idx in indices]
 
     def item_for_id(self, song_id: SongId) -> UsdbSong | None:
-        if (idx := self._indices.get(song_id)) is not None:
+        if (idx := self._rows.get(song_id)) is not None:
             return self._songs[idx].data
         return None
 

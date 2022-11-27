@@ -37,6 +37,16 @@ class SortFilterProxyModel(QSortFilterProxyModel):
 
         super().__init__(parent)
 
+    def find_rows(self, artist: str, title: str) -> list[QModelIndex]:
+        rows = []
+        model = self.sourceModel()
+        for row in range(self.rowCount()):
+            idx = model.index(row, 0)
+            data: SongData = model.data(idx, CustomRole.ALL_DATA)
+            if data.data.artist == artist and data.data.title == title:
+                rows.append(idx)
+        return rows
+
     def set_text_filter(self, text: str) -> None:
         self._text_filter = unidecode(text).lower().split()
         self._filter_invalidation_timer.start()

@@ -1,8 +1,11 @@
 """Parser for UltraStar txt files."""
 import re
 from enum import Enum
+from typing import Optional
 
-from usdb_syncer.logger import SongLogger
+import attrs
+
+from usdb_syncer.logger import Logger
 from usdb_syncer.meta_tags.deserializer import MetaTags
 
 
@@ -55,7 +58,7 @@ class Line:
     # break to the next line; None if last line (at least for this player)
     line_break: int | tuple[int, int] | None = None
 
-    def __init__(self, lines: list[str], logger: SongLogger) -> None:
+    def __init__(self, lines: list[str], logger: Logger) -> None:
         """Consumes a stream of notes until a line or document terminator is yielded."""
         self.notes = []
         while lines:
@@ -122,7 +125,7 @@ class PlayerNotes:
     player_1: list[Line]
     player_2: list[Line] | None = None
 
-    def __init__(self, lines: list[str], logger: SongLogger) -> None:
+    def __init__(self, lines: list[str], logger: Logger) -> None:
         self.player_1 = _player_lines(lines, logger)
         self.player_2 = _player_lines(lines, logger) or None
 
@@ -133,7 +136,7 @@ class PlayerNotes:
         return f"{body}\nE"
 
 
-def _player_lines(lines: list[str], logger: SongLogger) -> list[Line]:
+def _player_lines(lines: list[str], logger: Logger) -> list[Line]:
     notes: list[Line] = []
     if lines and lines[0].startswith("P"):
         lines.pop(0)
@@ -182,7 +185,7 @@ class Headers:
     resolution: str | None = None
     _unknown: dict[str, str]
 
-    def __init__(self, lines: list[str], logger: SongLogger) -> None:
+    def __init__(self, lines: list[str], logger: Logger) -> None:
         """Consumes a stream of lines while they are headers."""
         self._unknown = {}
         while lines:
@@ -276,7 +279,11 @@ class Headers:
             )
         return out
 
+    def artist_title_str(self) -> str:
+        return f"{self.artist} - {self.title}"
 
+
+@attrs.define()
 class SongTxt:
     """A parsed .txt file of an UltraStar song."""
 
@@ -284,13 +291,18 @@ class SongTxt:
     notes: PlayerNotes
     meta_tags: MetaTags
 
-    def __init__(self, value: str, logger: SongLogger) -> None:
-        lines = [line for line in value.split("\n") if line]
-        self.headers = Headers(lines, logger)
-        self.meta_tags = MetaTags(self.headers.video or "", logger)
-        self.notes = PlayerNotes(lines, logger)
-        if lines:
-            logger.warning(f"trailing text in song txt: '{lines}'")
-
     def __str__(self) -> str:
         return f"{self.headers}\n{self.notes}"
+
+    @classmethod
+    def try_parse(cls, value: str, logger: Logger) -> Optional["SongTxt"]:
+        lines = [line for line in value.split("\n") if line]
+        try:
+            headers = Headers(lines, logger)
+            meta_tags = MetaTags(headers.video or "", logger)
+            notes = PlayerNotes(lines, logger)
+        except NotesParseError:
+            return None
+        if lines:
+            logger.warning(f"trailing text in song txt: '{lines}'")
+        return cls(headers=headers, meta_tags=meta_tags, notes=notes)

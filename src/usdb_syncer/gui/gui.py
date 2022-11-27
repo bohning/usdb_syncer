@@ -113,7 +113,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         self.toolButton_errors.toggled.connect(self._on_log_filter_changed)
 
     def _setup_toolbar(self) -> None:
-        self.action_download_local_songs.triggered.connect(self._select_local_songs)
+        self.action_select_local_songs.triggered.connect(self._select_local_songs)
         self.action_refetch_song_list.triggered.connect(self._refetch_song_list)
         self.action_meta_tags.triggered.connect(lambda: MetaTagsDialog(self).show())
         self.action_settings.triggered.connect(lambda: SettingsDialog(self).show())
@@ -205,6 +205,10 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         self.table.initialize(song_list)
         self.len_song_list = len(song_list)
         self._update_dynamic_filters(song_list)
+
+    def _select_local_songs(self) -> None:
+        directory = QFileDialog.getExistingDirectory(self, "Select Song Directory")
+        self.table.select_local_songs(directory)
 
     def _refetch_song_list(self) -> None:
         self.action_refetch_song_list.setEnabled(False)
