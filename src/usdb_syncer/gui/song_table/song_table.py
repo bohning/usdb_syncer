@@ -10,8 +10,8 @@ from PySide6.QtCore import QItemSelectionModel, QModelIndex, QObject
 from PySide6.QtWidgets import QAbstractItemView, QHeaderView, QTableView
 
 from usdb_syncer import SongId
-from usdb_syncer.gui.sort_filter_proxy_model import SortFilterProxyModel
-from usdb_syncer.gui.table_model import TableModel
+from usdb_syncer.gui.song_table.sort_filter_proxy_model import SortFilterProxyModel
+from usdb_syncer.gui.song_table.table_model import TableModel
 from usdb_syncer.logger import get_logger
 from usdb_syncer.notes_parser import SongTxt
 from usdb_syncer.usdb_scraper import UsdbSong

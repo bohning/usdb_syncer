@@ -12,7 +12,7 @@ def cli_entry(run_tools: bool = True) -> None:
     if run_tools:
         generate_pyside_files()
 
-    from usdb_syncer.gui.gui import main  # pylint: disable=import-outside-toplevel
+    from usdb_syncer.gui.mw import main  # pylint: disable=import-outside-toplevel
 
     main()
 
