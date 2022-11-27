@@ -1,7 +1,6 @@
 """Table model for song data."""
 
 from enum import Enum
-from functools import cache
 from typing import Any, Iterator
 
 from PySide6.QtCore import (
@@ -11,9 +10,9 @@ from PySide6.QtCore import (
     QPersistentModelIndex,
     Qt,
 )
-from PySide6.QtGui import QIcon
 
 from usdb_syncer import SongId, settings
+from usdb_syncer.gui.song_table.column import Column
 from usdb_syncer.song_data import SongData
 from usdb_syncer.usdb_scraper import UsdbSong
 
@@ -24,25 +23,6 @@ class CustomRole(int, Enum):
     """Custom values expanding Qt.QItemDataRole."""
 
     ALL_DATA = 100
-
-
-@cache
-def columns() -> tuple[tuple[QIcon, str], ...]:
-    return (
-        (QIcon(":/icons/id.png"), "ID"),
-        (QIcon(":/icons/artist.png"), "Artist"),
-        (QIcon(":/icons/title.png"), "Title"),
-        (QIcon(":/icons/language.png"), "Language"),
-        (QIcon(":/icons/edition.png"), "Edition"),
-        (QIcon(":/icons/golden_notes.png"), ""),
-        (QIcon(":/icons/rating.png"), ""),
-        (QIcon(":/icons/views.png"), ""),
-        (QIcon(":/icons/text.png"), ""),
-        (QIcon(":/icons/audio.png"), ""),
-        (QIcon(":/icons/video.png"), ""),
-        (QIcon(":/icons/cover.png"), ""),
-        (QIcon(":/icons/background.png"), ""),
-    )
 
 
 class TableModel(QAbstractTableModel):
@@ -84,7 +64,7 @@ class TableModel(QAbstractTableModel):
     ### QAbstractTableModel implementation
 
     def columnCount(self, parent: QIndex = QModelIndex()) -> int:
-        return 0 if parent.isValid() else len(columns())
+        return 0 if parent.isValid() else len(Column)
 
     def rowCount(self, parent: QIndex = QModelIndex()) -> int:
         return 0 if parent.isValid() else len(self._songs)
@@ -109,7 +89,7 @@ class TableModel(QAbstractTableModel):
         if orientation != Qt.Orientation.Horizontal:
             return None
         if role == Qt.ItemDataRole.DecorationRole:
-            return columns()[section][0]
+            return Column(section).decoration_data()
         if role == Qt.ItemDataRole.DisplayRole:
-            return columns()[section][1]
+            return Column(section).display_data()
         return None

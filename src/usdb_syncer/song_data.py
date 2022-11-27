@@ -9,8 +9,10 @@ import attrs
 from PySide6.QtGui import QIcon
 from unidecode import unidecode
 
+from usdb_syncer.gui.song_table import Column
 from usdb_syncer.logger import get_logger
 from usdb_syncer.notes_parser import SongTxt
+from usdb_syncer.typing_helpers import assert_never
 from usdb_syncer.usdb_scraper import UsdbSong
 
 
@@ -44,37 +46,51 @@ class SongData:
             else False,
         )
 
-    def display_data(self, column: int) -> str:
-        match column:
-            case 0:
+    def display_data(self, column: int) -> str | None:
+        col = Column(column)
+        match col:
+            case Column.SONG_ID:
                 return str(self.data.song_id)
-            case 1:
+            case Column.ARTIST:
                 return self.data.artist
-            case 2:
+            case Column.TITLE:
                 return self.data.title
-            case 3:
+            case Column.LANGUAGE:
                 return self.data.language
-            case 4:
+            case Column.EDITION:
                 return self.data.edition
-            case 5:
+            case Column.GOLDEN_NOTES:
                 return yes_no_str(self.data.golden_notes)
-            case 6:
+            case Column.RATING:
                 return rating_str(self.data.rating)
-            case 7:
+            case Column.VIEWS:
                 return str(self.data.views)
-            case _:
-                return ""
+            case Column.TXT | Column.AUDIO | Column.VIDEO | Column.COVER:
+                return None
+            case Column.BACKGROUND:
+                return None
+            case _ as unreachable:
+                assert_never(unreachable)
 
     def decoration_data(self, column: int) -> QIcon | None:
-        if (
-            (column == 8 and self.local_txt)
-            or (column == 9 and self.local_audio)
-            or (column == 10 and self.local_video)
-            or (column == 11 and self.local_cover)
-            or (column == 12 and self.local_background)
-        ):
-            return QIcon(":/icons/tick.png")
-        return None
+        col = Column(column)
+        match col:
+            case Column.SONG_ID | Column.ARTIST | Column.TITLE | Column.LANGUAGE:
+                return None
+            case Column.EDITION | Column.GOLDEN_NOTES | Column.RATING | Column.VIEWS:
+                return None
+            case Column.TXT:
+                return optional_check_icon(self.local_txt)
+            case Column.AUDIO:
+                return optional_check_icon(self.local_audio)
+            case Column.VIDEO:
+                return optional_check_icon(self.local_video)
+            case Column.COVER:
+                return optional_check_icon(self.local_cover)
+            case Column.BACKGROUND:
+                return optional_check_icon(self.local_background)
+            case _ as unreachable:
+                assert_never(unreachable)
 
 
 def _song_folder_path(song: UsdbSong, song_dir: str) -> str:
@@ -114,3 +130,11 @@ def rating_str(rating: int) -> str:
 
 def yes_no_str(yes: bool) -> str:
     return "Yes" if yes else "No"
+
+
+# Creating a QIcon without a QApplication gives a runtime error, so we can't put it
+# in a global, but we also don't want to keep recreating it.
+# So we store it in this convenience function.
+@cache
+def optional_check_icon(yes: bool) -> QIcon | None:
+    return QIcon(":/icons/tick.png") if yes else None
