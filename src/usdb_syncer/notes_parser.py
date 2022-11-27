@@ -136,6 +136,8 @@ class PlayerNotes:
     @classmethod
     def parse(cls, lines: list[str], logger: Logger) -> "PlayerNotes":
         player_1 = _player_lines(lines, logger)
+        if not player_1:
+            raise NotesParseError("no notes in file")
         player_2 = _player_lines(lines, logger) or None
         return cls(player_1, player_2)
 

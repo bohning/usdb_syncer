@@ -27,3 +27,12 @@ def test_notes_parser_deviant(resource_dir: str) -> None:
             out = file.read()
         txt = SongTxt.try_parse(contents, _logger)
         assert str(txt) == out
+
+
+def test_notes_parser_invalid(resource_dir: str) -> None:
+    folder = os.path.join(resource_dir, "txt", "invalid")
+    for path in glob(f"{folder}/*.txt"):
+        with open(path, encoding="utf-8") as file:
+            contents = file.read()
+        txt = SongTxt.try_parse(contents, _logger)
+        assert txt is None

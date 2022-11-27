@@ -1,0 +1,6 @@
+: 0 1 0 first note 
+* 2 1 0 golden 
+- 4
+: 8 1 0 third 
+: 10 1 0 fourth
+E
