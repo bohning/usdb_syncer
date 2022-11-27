@@ -19,4 +19,4 @@ def cli_entry(run_tools: bool = True) -> None:
 
 if __name__ == "__main__":
     # run by the executable where PySide binaries are not available
-    cli_entry(run_tools=True)
+    cli_entry(run_tools=False)
