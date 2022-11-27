@@ -1,7 +1,7 @@
 """Parser for UltraStar txt files."""
 import re
 from enum import Enum
-from typing import Optional
+from typing import Any, Optional
 
 import attrs
 
@@ -23,6 +23,7 @@ class NoteKind(Enum):
     GOLDEN_RAP = "G"
 
 
+@attrs.define
 class Note:
     """Representation of a note, parsed from a string."""
 
@@ -32,18 +33,20 @@ class Note:
     pitch: int
     text: str
 
-    def __init__(self, value: str) -> None:
+    @classmethod
+    def parse(cls, value: str) -> "Note":
         regex = re.compile(r"(:|\*|F|R|G):? +(-?\d+) +(\d+) +(-?\d+) (.+)")
         if not (match := regex.fullmatch(value)):
             raise NotesParseError(f"invalid note: '{value}'")
-        self.text = match.group(5) or ""
+        text = match.group(5)
         try:
-            self.kind = NoteKind(match.group(1))
-            self.start = int(match.group(2))
-            self.duration = int(match.group(3))
-            self.pitch = int(match.group(4))
+            kind = NoteKind(match.group(1))
+            start = int(match.group(2))
+            duration = int(match.group(3))
+            pitch = int(match.group(4))
         except ValueError as err:
             raise NotesParseError(f"invalid note: '{value}'") from err
+        return Note(kind, start, duration, pitch, text)
 
     def __str__(self) -> str:
         return (
@@ -51,23 +54,26 @@ class Note:
         )
 
 
+@attrs.define
 class Line:
     """Representation of a line, parsed from a list of strings."""
 
     notes: list[Note]
     # break to the next line; None if last line (at least for this player)
-    line_break: int | tuple[int, int] | None = None
+    line_break: int | tuple[int, int] | None
 
-    def __init__(self, lines: list[str], logger: Logger) -> None:
+    @classmethod
+    def parse(cls, lines: list[str], logger: Logger) -> "Line":
         """Consumes a stream of notes until a line or document terminator is yielded."""
-        self.notes = []
+        notes = []
+        line_break = None
         while lines:
             txt_line = lines.pop(0).lstrip()
             if txt_line.rstrip() in ("E", "P2"):
                 break
             if txt_line.startswith("-"):
                 try:
-                    self.line_break, next_line = _parse_line_break(txt_line)
+                    line_break, next_line = _parse_line_break(txt_line)
                 except NotesParseError as err:
                     logger.warning(str(err))
                     continue
@@ -76,11 +82,12 @@ class Line:
                         lines.insert(0, next_line)
                     break
             try:
-                self.notes.append(Note(txt_line))
+                notes.append(Note.parse(txt_line))
             except NotesParseError as err:
                 logger.warning(str(err))
         else:
             logger.warning("unterminated line")
+        return cls(notes, line_break)
 
     def is_last(self) -> bool:
         """True if this Line is the last line for any player."""
@@ -119,15 +126,18 @@ def _parse_line_break(value: str) -> tuple[int | tuple[int, int], str | None]:
     return line_break, match.group(3)
 
 
+@attrs.define
 class PlayerNotes:
     """All lines for players 1 and 2 if applicable."""
 
     player_1: list[Line]
-    player_2: list[Line] | None = None
+    player_2: list[Line] | None
 
-    def __init__(self, lines: list[str], logger: Logger) -> None:
-        self.player_1 = _player_lines(lines, logger)
-        self.player_2 = _player_lines(lines, logger) or None
+    @classmethod
+    def parse(cls, lines: list[str], logger: Logger) -> "PlayerNotes":
+        player_1 = _player_lines(lines, logger)
+        player_2 = _player_lines(lines, logger) or None
+        return cls(player_1, player_2)
 
     def __str__(self) -> str:
         body = "\n".join(map(str, self.player_1))
@@ -141,7 +151,7 @@ def _player_lines(lines: list[str], logger: Logger) -> list[Line]:
     if lines and lines[0].startswith("P"):
         lines.pop(0)
     while lines:
-        line = Line(lines, logger)
+        line = Line.parse(lines, logger)
         if line.notes:
             notes.append(line)
         if line.is_last():
@@ -153,11 +163,13 @@ def _player_lines(lines: list[str], logger: Logger) -> list[Line]:
     return notes
 
 
+@attrs.define
 class Headers:
     """Ultrastar headers."""
 
-    title: str = ""
-    artist: str = ""
+    unknown: dict[str, str]
+    title: str
+    artist: str
     bpm: float = 0.0
     gap: float = 0.0
     language: str | None = None
@@ -183,11 +195,11 @@ class Headers:
     encoding: str | None = None
     comment: str | None = None
     resolution: str | None = None
-    _unknown: dict[str, str]
 
-    def __init__(self, lines: list[str], logger: Logger) -> None:
+    @classmethod
+    def parse(cls, lines: list[str], logger: Logger) -> "Headers":
         """Consumes a stream of lines while they are headers."""
-        self._unknown = {}
+        kwargs: dict[str, Any] = {"unknown": {}}
         while lines:
             if not lines[0].startswith("#"):
                 break
@@ -200,43 +212,14 @@ class Headers:
                 # ignore headers with empty values
                 continue
             try:
-                self._set_header_value(header, value)
+                _set_header_value(kwargs, header, value)
             except ValueError:
                 logger.warning(f"invalid header value: '{line}'")
-        if not self.title or not self.artist:
+        if "title" not in kwargs or "artist" not in kwargs:
             raise NotesParseError("cannot parse song without artist and title")
-        if not self.bpm:
+        if "bpm" not in kwargs:
             logger.warning("missing bpm")
-
-    def _set_header_value(self, header: str, value: str) -> None:
-        header = "creator" if header == "AUTHOR" else header.lower()
-        if header in (
-            "title",
-            "artist",
-            "language",
-            "edition",
-            "genre",
-            "album",
-            "year",
-            "creator",
-            "mp3",
-            "cover",
-            "background",
-            "relative",
-            "video",
-            "p1",
-            "p2",
-            "encoding",
-            "comment",
-            "resolution",
-        ):
-            setattr(self, header, value)
-        elif header in ("bpm", "gap", "videogap", "start", "end", "previewstart"):
-            setattr(self, header, float(value.replace(",", ".")))
-        elif header in ("medleystartbeat", "medleyendbeat"):
-            setattr(self, header, int(value))
-        else:
-            self._unknown[header] = value
+        return cls(**kwargs)
 
     def reset_file_location_headers(self) -> None:
         self.mp3 = self.video = self.cover = self.background = None
@@ -273,14 +256,45 @@ class Headers:
             )
             if (val := getattr(self, key)) is not None
         )
-        if self._unknown:
+        if self.unknown:
             out = "\n".join(
-                (out, *(f"#{key.upper()}:{val}" for key, val in self._unknown.items()))
+                (out, *(f"#{key.upper()}:{val}" for key, val in self.unknown.items()))
             )
         return out
 
     def artist_title_str(self) -> str:
         return f"{self.artist} - {self.title}"
+
+
+def _set_header_value(kwargs: dict[str, Any], header: str, value: str) -> None:
+    header = "creator" if header == "AUTHOR" else header.lower()
+    if header in (
+        "title",
+        "artist",
+        "language",
+        "edition",
+        "genre",
+        "album",
+        "year",
+        "creator",
+        "mp3",
+        "cover",
+        "background",
+        "relative",
+        "video",
+        "p1",
+        "p2",
+        "encoding",
+        "comment",
+        "resolution",
+    ):
+        kwargs[header] = value
+    elif header in ("bpm", "gap", "videogap", "start", "end", "previewstart"):
+        kwargs[header] = float(value.replace(",", "."))
+    elif header in ("medleystartbeat", "medleyendbeat"):
+        kwargs[header] = int(value)
+    else:
+        kwargs["unknown"][header] = value
 
 
 @attrs.define()
@@ -298,9 +312,9 @@ class SongTxt:
     def try_parse(cls, value: str, logger: Logger) -> Optional["SongTxt"]:
         lines = [line for line in value.split("\n") if line]
         try:
-            headers = Headers(lines, logger)
+            headers = Headers.parse(lines, logger)
             meta_tags = MetaTags(headers.video or "", logger)
-            notes = PlayerNotes(lines, logger)
+            notes = PlayerNotes.parse(lines, logger)
         except NotesParseError:
             return None
         if lines:
