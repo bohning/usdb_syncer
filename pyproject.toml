@@ -46,25 +46,9 @@ disable = [
     "too-many-instance-attributes",
     "too-many-arguments",
     "missing-function-docstring",
-    # will want to remove these in the future
-    "fixme",
-    "line-too-long",
-    "bare-except",
-    "pointless-string-statement",
-    "too-many-locals",
     "too-many-return-statements",
-    "too-many-branches",
-    "too-complex",
-    "too-many-nested-blocks",
-    "too-many-statements",
+    "duplicate-code",
 ]
-
-[tool.pylint.similarities]
-# Exclude the following from code duplication checks
-ignore-comments = "yes"
-ignore-docstrings = "yes"
-ignore-imports = "yes"
-ignore-signatures = "yes"
 
 [tool.mypy]
 ignore_missing_imports = true

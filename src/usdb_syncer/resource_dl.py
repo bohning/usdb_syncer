@@ -10,7 +10,7 @@ from PIL import Image, ImageEnhance, ImageOps
 
 from usdb_syncer import note_utils
 from usdb_syncer.download_options import AudioOptions, VideoOptions
-from usdb_syncer.logger import SongLogger, get_logger
+from usdb_syncer.logger import Logger, get_logger
 from usdb_syncer.meta_tags.deserializer import ImageMetaTags
 from usdb_syncer.settings import Browser
 from usdb_syncer.typing_helpers import assert_never
@@ -56,7 +56,7 @@ def download_video(
     options: AudioOptions | VideoOptions,
     browser: Browser,
     path_base: str,
-    logger: SongLogger,
+    logger: Logger,
 ) -> str | None:
     """Download video from resource to path and process it according to options.
 
@@ -99,42 +99,28 @@ def download_video(
     return os.path.splitext(filename)[1][1:]
 
 
-def download_image(url: str, logger: SongLogger) -> bytes | None:
+def download_image(url: str, logger: Logger) -> bytes | None:
     try:
         reply = requests.get(
             url, allow_redirects=True, headers=IMAGE_DOWNLOAD_HEADERS, timeout=60
         )
-    except:
+    except requests.RequestException:
         logger.error(
             f"Failed to retrieve {url}. The server may be down or your internet "
             "connection is currently unavailable."
         )
         return None
-    if reply.status_code in range(100, 199):
-        # 1xx informational response
-        return reply.content
-    if reply.status_code in range(200, 299):
-        # 2xx success
-        return reply.content
-    if reply.status_code in range(300, 399):
-        # 3xx redirection
-        logger.warning(
-            f"Redirection to {reply.next.url if reply.next else 'unknown'}. "
-            "Please update the template file."
-        )
+    if reply.status_code in range(100, 399):
+        # 1xx informational response, 2xx success, 3xx redirection
         return reply.content
     if reply.status_code in range(400, 499):
-        # 4xx client errors
         logger.error(
             f"Client error {reply.status_code}. Failed to download {reply.url}"
         )
-        return None
-    if reply.status_code in range(500, 599):
-        # 5xx server errors
+    elif reply.status_code in range(500, 599):
         logger.error(
             f"Server error {reply.status_code}. Failed to download {reply.url}"
         )
-        return None
     return None
 
 
@@ -164,7 +150,7 @@ def _get_image_url(
     meta_tags: ImageMetaTags | None,
     details: SongDetails,
     kind: ImageKind,
-    logger: SongLogger,
+    logger: Logger,
 ) -> str | None:
     url = None
     if meta_tags:
@@ -189,7 +175,6 @@ def _process_image(
             processed = True
             if rotate := meta_tags.rotate:
                 image = image.rotate(rotate, resample=Image.BICUBIC, expand=True)
-                # TODO: ensure quadratic cover
             if crop := meta_tags.crop:
                 image = image.crop((crop.left, crop.upper, crop.right, crop.lower))
             if resize := meta_tags.resize:

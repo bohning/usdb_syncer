@@ -9,7 +9,7 @@ from PySide6.QtCore import QRunnable, QThreadPool
 
 from usdb_syncer import SongId, note_utils, resource_dl, usdb_scraper
 from usdb_syncer.download_options import Options, download_options
-from usdb_syncer.logger import SongLogger, get_logger
+from usdb_syncer.logger import Logger, get_logger
 from usdb_syncer.meta_tags.deserializer import MetaTags
 from usdb_syncer.resource_dl import ImageKind, download_and_process_image
 from usdb_syncer.usdb_scraper import SongDetails
@@ -29,11 +29,9 @@ class Context:
     filename: str
     # without extension
     file_path: str
-    logger: SongLogger
+    logger: Logger
 
-    def __init__(
-        self, details: SongDetails, options: Options, logger: SongLogger
-    ) -> None:
+    def __init__(self, details: SongDetails, options: Options, logger: Logger) -> None:
         self.details = details
         self.options = options
 
@@ -119,8 +117,6 @@ def _find_or_initialize_folder(ctx: Context) -> bool:
             return True
 
         ctx.logger.info("USDB file has been updated, re-downloading...")
-        # TODO: check if resources in #VIDEO tag have changed and if so, re-download
-        # new resources only
         os.remove(usdb_path)
 
     os.rename(temp_path, usdb_path)
@@ -138,7 +134,6 @@ def _maybe_download_audio(ctx: Context) -> None:
         ):
             ctx.header["#MP3"] = f"{ctx.filename}.{ext}"
             ctx.logger.info("Success! Downloaded audio.")
-            # self.model.setItem(self.model.findItems(self.kwargs['id'], flags=Qt.MatchExactly, column=0)[0].row(), 9, QStandardItem(QIcon(":/icons/tick.png"), ""))
             return
     ctx.logger.error("Failed to download audio!")
 
@@ -154,7 +149,6 @@ def _maybe_download_video(ctx: Context) -> None:
         ):
             ctx.header["#VIDEO"] = f"{ctx.filename}.{ext}"
             ctx.logger.info("Success! Downloaded video.")
-            # self.model.setItem(self.model.findItems(idp, flags=Qt.MatchExactly, column=0)[0].row(), 10, QStandardItem(QIcon(":/icons/tick.png"), ""))
             return
     ctx.logger.error("Failed to download video!")
 
@@ -173,7 +167,6 @@ def _maybe_download_cover(ctx: Context) -> None:
     ):
         ctx.header["#COVER"] = f"{ctx.filename} [CO].jpg"
         ctx.logger.info("Success! Downloaded cover.")
-        # ctx.model.setItem(ctx.model.findItems(idp, flags=Qt.MatchExactly, column=0)[0].row(), 11, QStandardItem(QIcon(":/icons/tick.png"), ""))
     else:
         ctx.logger.error("Failed to download cover!")
 
@@ -193,7 +186,6 @@ def _maybe_download_background(ctx: Context) -> None:
     ):
         ctx.header["#BACKGROUND"] = f"{ctx.filename} [BG].jpg"
         ctx.logger.info("Success! Downloaded background.")
-        # ctx.model.setItem(ctx.model.findItems(idp, flags=Qt.MatchExactly, column=0)[0].row(), 12, QStandardItem(QIcon(":/icons/tick.png"), ""))
     else:
         ctx.logger.error("Failed to download background!")
 
@@ -204,7 +196,6 @@ def _maybe_write_txt(ctx: Context) -> None:
     _set_missing_headers(ctx)
     note_utils.dump_notes(ctx.header, ctx.notes, ctx.dir_path, options, ctx.logger)
     ctx.logger.info("Success! Created song txt.")
-    # ctx.model.setItem(ctx.model.findItems(idp, flags=Qt.MatchExactly, column=0)[0].row(), 8, QStandardItem(QIcon(":/icons/tick.png"), ""))
 
 
 def _set_missing_headers(ctx: Context) -> None:

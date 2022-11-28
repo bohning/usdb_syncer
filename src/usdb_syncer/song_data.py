@@ -65,7 +65,7 @@ class SongData:
                 return rating_str(self.data.rating)
             case Column.VIEWS:
                 return str(self.data.views)
-            case Column.TXT | Column.AUDIO | Column.VIDEO | Column.COVER:
+            case Column.TXT | Column.AUDIO | Column.VIDEO | Column.COVER:  # pylint: disable=duplicate-code
                 return None
             case Column.BACKGROUND:
                 return None

@@ -15,7 +15,7 @@ from bs4 import BeautifulSoup
 from urlextract import URLExtract
 
 from usdb_syncer import SongId
-from usdb_syncer.logger import SongLogger
+from usdb_syncer.logger import Logger
 from usdb_syncer.typing_helpers import assert_never
 from usdb_syncer.utils import extract_youtube_id
 
@@ -258,7 +258,7 @@ def get_usdb_page(
     return response.text
 
 
-def get_usdb_details(song_id: SongId, logger: SongLogger) -> SongDetails | None:
+def get_usdb_details(song_id: SongId, logger: Logger) -> SongDetails | None:
     """Retrieve song details from usdb webpage, if song exists.
 
     Parameters:
@@ -274,7 +274,7 @@ def get_usdb_details(song_id: SongId, logger: SongLogger) -> SongDetails | None:
 
 
 def _parse_song_page(
-    soup: BeautifulSoup, song_id: SongId, logger: SongLogger
+    soup: BeautifulSoup, song_id: SongId, logger: Logger
 ) -> SongDetails:
     details_table, comments_table, *_ = soup.find_all("table", border="0", width="500")
     details = _parse_details_table(details_table, song_id)
@@ -342,6 +342,7 @@ def _parse_details_table(details_table: BeautifulSoup, song_id: SongId) -> SongD
         pointer = pointer.find_next("tr")  # type: ignore
 
     stars = details_table.find(string="Rating").next.find_all("img")  # type: ignore
+    votes_str = details_table.find(string="Rating").next_element.text  # type: ignore
 
     audio_sample = ""
     if param := details_table.find("param", attrs={"name": "FlashVars"}):
@@ -362,7 +363,7 @@ def _parse_details_table(details_table: BeautifulSoup, song_id: SongId) -> SongD
         editors=editors,
         views=details_table.find(string="Views").next.text,  # type: ignore
         rating=sum("star.png" in s.get("src") for s in stars),
-        votes=details_table.find(string="Rating").next_element.text.split("(")[1].split(")")[0],  # type: ignore
+        votes=votes_str.split("(")[1].split(")")[0],
         audio_sample=audio_sample,
         # only captures first team comment (example of multiple needed!)
         team_comment=details_table.find(string="Team Comment").next.text,  # type: ignore
@@ -370,7 +371,7 @@ def _parse_details_table(details_table: BeautifulSoup, song_id: SongId) -> SongD
 
 
 def _parse_comments_table(
-    comments_table: BeautifulSoup, logger: SongLogger
+    comments_table: BeautifulSoup, logger: Logger
 ) -> list[SongComment]:
     """Parse the table into individual comments, extracting potential video links,
     GAP and BPM values.
@@ -396,9 +397,7 @@ def _parse_comments_table(
     return comments
 
 
-def _parse_comment_contents(
-    contents: BeautifulSoup, logger: SongLogger
-) -> CommentContents:
+def _parse_comment_contents(contents: BeautifulSoup, logger: Logger) -> CommentContents:
     text = contents.find("td").text.strip()  # type: ignore
     urls: list[str] = []
     youtube_ids: list[str] = []
@@ -427,7 +426,7 @@ def _all_urls_in_comment(contents: BeautifulSoup, text: str) -> Iterator[str]:
         yield url
 
 
-def get_notes(song_id: SongId, logger: SongLogger) -> str:
+def get_notes(song_id: SongId, logger: Logger) -> str:
     """Retrieve notes for a song."""
     logger.debug(f"fetch notes for song {song_id}")
     html = get_usdb_page(
