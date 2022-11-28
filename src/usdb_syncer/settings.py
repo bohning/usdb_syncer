@@ -98,9 +98,10 @@ class AudioContainer(Enum):
                 assert_never(unreachable)
 
     def ytdl_format(self) -> str:
+        # prefer best audio-only codec; otherwise take a video codec and extract later
         if self is AudioContainer.BEST:
-            return "bestaudio"
-        return f"bestaudio[ext={self.value}]"
+            return "bestaudio/bestaudio*"
+        return f"bestaudio[ext={self.value}]/bestaudio/bestaudio*"
 
 
 class AudioCodec(Enum):
