@@ -80,24 +80,21 @@ class SongTable:
         return self._model.ids_for_indices(source_rows)
 
     def select_local_songs(self, directory: str) -> None:
-        err_logger = get_logger(__file__)
-        err_logger.setLevel(logging.ERROR)
+        txts = _parse_all_txts(directory)
+        rows = self._proxy_model.find_rows_for_song_txts(txts)
+        for idx, song_rows in enumerate(rows):
+            if not song_rows:
+                name = txts[idx].headers.artist_title_str()
+                _logger.warning(f"no matches for '{name}'")
+            if len(song_rows) > 1:
+                name = txts[idx].headers.artist_title_str()
+                _logger.info(f"{len(song_rows)} matches for '{name}'")
+        self.set_selection_to_rows(idx for row_list in rows for idx in row_list)
+
+    def set_selection_to_rows(self, rows: Iterator[QModelIndex]) -> None:
         self._view.selectionModel().clearSelection()
-        for path in glob(os.path.join(directory, "**", "*.txt"), recursive=True):
-            with open(path, encoding="utf-8") as file:
-                contents = file.read()
-            if not (txt := SongTxt.try_parse(contents, err_logger)):
-                continue
-            rows = self._proxy_model.find_rows(txt.headers.artist, txt.headers.title)
-            if not rows:
-                _logger.warning(f"no matches for '{txt.headers.artist_title_str()}'")
-                continue
-            if len(rows) > 1:
-                _logger.info(
-                    f"{len(rows)} matches for '{txt.headers.artist_title_str()}'"
-                )
-            for row in rows:
-                self.select_row(row)
+        for row in rows:
+            self.select_row(row)
 
     def select_row(self, row: QModelIndex) -> None:
         self._view.selectionModel().select(
@@ -154,3 +151,16 @@ class SongTable:
 
     def resync_local_data(self) -> None:
         self._model.resync_local_data()
+
+
+def _parse_all_txts(directory: str) -> list[SongTxt]:
+    err_logger = get_logger(__file__ + "[errors]")
+    err_logger.setLevel(logging.ERROR)
+    txts: list[SongTxt] = []
+    for path in glob(os.path.join(directory, "**", "*.txt"), recursive=True):
+        with open(path, encoding="utf-8") as file:
+            contents = file.read()
+        if not (txt := SongTxt.try_parse(contents, err_logger)):
+            continue
+        txts.append(txt)
+    return txts

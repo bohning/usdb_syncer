@@ -10,6 +10,7 @@ from PySide6.QtCore import (
 from unidecode import unidecode
 
 from usdb_syncer.gui.song_table.table_model import CustomRole
+from usdb_syncer.notes_parser import SongTxt
 from usdb_syncer.song_data import SongData
 
 QIndex = QModelIndex | QPersistentModelIndex
@@ -37,14 +38,17 @@ class SortFilterProxyModel(QSortFilterProxyModel):
 
         super().__init__(parent)
 
-    def find_rows(self, artist: str, title: str) -> list[QModelIndex]:
-        rows = []
+    def find_rows_for_song_txts(
+        self, song_txts: list[SongTxt]
+    ) -> tuple[list[QModelIndex], ...]:
+        rows: tuple[list[QModelIndex], ...] = tuple([] for _ in range(len(song_txts)))
         model = self.sourceModel()
         for row in range(self.rowCount()):
-            idx = model.index(row, 0)
-            data: SongData = model.data(idx, CustomRole.ALL_DATA)
-            if data.data.artist == artist and data.data.title == title:
-                rows.append(idx)
+            index = model.index(row, 0)
+            data: SongData = model.data(index, CustomRole.ALL_DATA)
+            for txt_idx, txt in enumerate(song_txts):
+                if _song_data_matches_txt(data, txt):
+                    rows[txt_idx].append(index)
         return rows
 
     def set_text_filter(self, text: str) -> None:
@@ -102,3 +106,8 @@ class SortFilterProxyModel(QSortFilterProxyModel):
         if song.data.views < self._views_filter:
             return False
         return all(w in song.searchable_text for w in self._text_filter)
+
+
+def _song_data_matches_txt(data: SongData, txt: SongTxt) -> bool:
+    headers = txt.headers
+    return data.data.artist == headers.artist and data.data.title == headers.title
