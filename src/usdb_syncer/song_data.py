@@ -65,9 +65,8 @@ class SongData:
                 return rating_str(self.data.rating)
             case Column.VIEWS:
                 return str(self.data.views)
-            case Column.TXT | Column.AUDIO | Column.VIDEO | Column.COVER:  # pylint: disable=duplicate-code
-                return None
-            case Column.BACKGROUND:
+            case Column.TXT | Column.AUDIO | Column.VIDEO | Column.COVER | \
+                Column.BACKGROUND:  # fmt:skip
                 return None
             case _ as unreachable:
                 assert_never(unreachable)
@@ -75,9 +74,8 @@ class SongData:
     def decoration_data(self, column: int) -> QIcon | None:
         col = Column(column)
         match col:
-            case Column.SONG_ID | Column.ARTIST | Column.TITLE | Column.LANGUAGE:
-                return None
-            case Column.EDITION | Column.GOLDEN_NOTES | Column.RATING | Column.VIEWS:
+            case Column.SONG_ID | Column.ARTIST | Column.TITLE | Column.LANGUAGE | \
+                Column.EDITION | Column.GOLDEN_NOTES | Column.RATING | Column.VIEWS:  # fmt:skip
                 return None
             case Column.TXT:
                 return optional_check_icon(self.local_txt)

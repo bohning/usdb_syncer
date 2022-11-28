@@ -44,9 +44,8 @@ class Column(Enum):
                 return "Language"
             case Column.EDITION:
                 return "Edition"
-            case Column.SONG_ID | Column.GOLDEN_NOTES | Column.RATING | Column.VIEWS:
-                return None
-            case Column.TXT | Column.AUDIO | Column.VIDEO | Column.COVER:
+            case Column.SONG_ID | Column.GOLDEN_NOTES | Column.RATING | Column.VIEWS | \
+                Column.TXT | Column.AUDIO | Column.VIDEO | Column.COVER:  # fmt:skip
                 return None
             case Column.BACKGROUND:
                 return None
