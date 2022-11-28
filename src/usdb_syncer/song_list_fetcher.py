@@ -7,8 +7,8 @@ from typing import Callable
 import appdirs
 from PySide6.QtCore import QObject, QRunnable, Signal
 
-from usdb_syncer import usdb_scraper
-from usdb_syncer.usdb_scraper import UsdbSong
+from usdb_syncer.usdb_scraper import get_usdb_available_songs
+from usdb_syncer.usdb_song import SongMetaEncoder, UsdbSong
 
 
 class Signals(QObject):
@@ -40,7 +40,7 @@ class SongListFetcher(QRunnable):
 
 def get_available_songs(force_reload: bool) -> list[UsdbSong]:
     if force_reload or not (available_songs := load_available_songs()):
-        available_songs = usdb_scraper.get_usdb_available_songs()
+        available_songs = get_usdb_available_songs()
         dump_available_songs(available_songs)
     return available_songs
 
@@ -59,7 +59,7 @@ def load_available_songs() -> list[UsdbSong] | None:
 def dump_available_songs(available_songs: list[UsdbSong]) -> None:
     os.makedirs(os.path.dirname(available_songs_path()), exist_ok=True)
     with open(available_songs_path(), "w", encoding="utf8") as file:
-        json.dump(available_songs, file, cls=usdb_scraper.SongMetaEncoder)
+        json.dump(available_songs, file, cls=SongMetaEncoder)
 
 
 def available_songs_path() -> str:
