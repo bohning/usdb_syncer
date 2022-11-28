@@ -9,7 +9,7 @@ import attrs
 from PySide6.QtGui import QIcon
 from unidecode import unidecode
 
-from usdb_syncer.gui.song_table import Column
+from usdb_syncer.gui.song_table.column import Column
 from usdb_syncer.logger import get_logger
 from usdb_syncer.notes_parser import SongTxt
 from usdb_syncer.typing_helpers import assert_never

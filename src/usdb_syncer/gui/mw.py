@@ -18,7 +18,7 @@ from usdb_syncer import settings
 from usdb_syncer.gui.forms.MainWindow import Ui_MainWindow
 from usdb_syncer.gui.meta_tags_dialog import MetaTagsDialog
 from usdb_syncer.gui.settings_dialog import SettingsDialog
-from usdb_syncer.gui.song_table import SongTable
+from usdb_syncer.gui.song_table.song_table import SongTable
 from usdb_syncer.pdf import generate_song_pdf
 from usdb_syncer.song_list_fetcher import SongListFetcher
 from usdb_syncer.song_loader import download_songs
