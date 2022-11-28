@@ -109,5 +109,16 @@ class SortFilterProxyModel(QSortFilterProxyModel):
 
 
 def _song_data_matches_txt(data: SongData, txt: SongTxt) -> bool:
-    headers = txt.headers
-    return data.data.artist == headers.artist and data.data.title == headers.title
+    return _normalize_text(data.data.artist) == _normalize_text(
+        txt.headers.artist
+    ) and _normalize_text(data.data.title) == _normalize_text(txt.headers.title)
+
+
+def _normalize_text(text: str) -> str:
+    return (
+        unidecode(text)
+        .lower()
+        .replace(" ft. ", " feat. ")
+        .replace(" ft ", " feat. ")
+        .replace(" feat ", " feat. ")
+    )
