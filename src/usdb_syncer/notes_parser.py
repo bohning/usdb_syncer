@@ -5,7 +5,7 @@ from typing import Any, Optional
 
 import attrs
 
-from usdb_syncer.logger import Logger
+from usdb_syncer.logger import Log
 from usdb_syncer.meta_tags.deserializer import MetaTags
 
 
@@ -63,7 +63,7 @@ class Line:
     line_break: int | tuple[int, int] | None
 
     @classmethod
-    def parse(cls, lines: list[str], logger: Logger) -> "Line":
+    def parse(cls, lines: list[str], logger: Log) -> "Line":
         """Consumes a stream of notes until a line or document terminator is yielded."""
         notes = []
         line_break = None
@@ -134,7 +134,7 @@ class PlayerNotes:
     player_2: list[Line] | None
 
     @classmethod
-    def parse(cls, lines: list[str], logger: Logger) -> "PlayerNotes":
+    def parse(cls, lines: list[str], logger: Log) -> "PlayerNotes":
         player_1 = _player_lines(lines, logger)
         if not player_1:
             raise NotesParseError("no notes in file")
@@ -148,7 +148,7 @@ class PlayerNotes:
         return f"{body}\nE"
 
 
-def _player_lines(lines: list[str], logger: Logger) -> list[Line]:
+def _player_lines(lines: list[str], logger: Log) -> list[Line]:
     notes: list[Line] = []
     if lines and lines[0].startswith("P"):
         lines.pop(0)
@@ -199,7 +199,7 @@ class Headers:
     resolution: str | None = None
 
     @classmethod
-    def parse(cls, lines: list[str], logger: Logger) -> "Headers":
+    def parse(cls, lines: list[str], logger: Log) -> "Headers":
         """Consumes a stream of lines while they are headers."""
         kwargs: dict[str, Any] = {"unknown": {}}
         while lines:
@@ -311,7 +311,7 @@ class SongTxt:
         return f"{self.headers}\n{self.notes}"
 
     @classmethod
-    def try_parse(cls, value: str, logger: Logger) -> Optional["SongTxt"]:
+    def try_parse(cls, value: str, logger: Log) -> Optional["SongTxt"]:
         lines = [line for line in value.split("\n") if line]
         try:
             headers = Headers.parse(lines, logger)

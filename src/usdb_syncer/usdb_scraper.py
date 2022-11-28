@@ -15,7 +15,7 @@ from bs4 import BeautifulSoup
 from urlextract import URLExtract
 
 from usdb_syncer import SongId
-from usdb_syncer.logger import Logger
+from usdb_syncer.logger import Log
 from usdb_syncer.typing_helpers import assert_never
 from usdb_syncer.utils import extract_youtube_id
 
@@ -258,7 +258,7 @@ def get_usdb_page(
     return response.text
 
 
-def get_usdb_details(song_id: SongId, logger: Logger) -> SongDetails | None:
+def get_usdb_details(song_id: SongId, logger: Log) -> SongDetails | None:
     """Retrieve song details from usdb webpage, if song exists.
 
     Parameters:
@@ -273,9 +273,7 @@ def get_usdb_details(song_id: SongId, logger: Logger) -> SongDetails | None:
     return _parse_song_page(soup, song_id, logger)
 
 
-def _parse_song_page(
-    soup: BeautifulSoup, song_id: SongId, logger: Logger
-) -> SongDetails:
+def _parse_song_page(soup: BeautifulSoup, song_id: SongId, logger: Log) -> SongDetails:
     details_table, comments_table, *_ = soup.find_all("table", border="0", width="500")
     details = _parse_details_table(details_table, song_id)
     details.comments = _parse_comments_table(comments_table, logger)
@@ -371,7 +369,7 @@ def _parse_details_table(details_table: BeautifulSoup, song_id: SongId) -> SongD
 
 
 def _parse_comments_table(
-    comments_table: BeautifulSoup, logger: Logger
+    comments_table: BeautifulSoup, logger: Log
 ) -> list[SongComment]:
     """Parse the table into individual comments, extracting potential video links,
     GAP and BPM values.
@@ -397,7 +395,7 @@ def _parse_comments_table(
     return comments
 
 
-def _parse_comment_contents(contents: BeautifulSoup, logger: Logger) -> CommentContents:
+def _parse_comment_contents(contents: BeautifulSoup, logger: Log) -> CommentContents:
     text = contents.find("td").text.strip()  # type: ignore
     urls: list[str] = []
     youtube_ids: list[str] = []
@@ -426,7 +424,7 @@ def _all_urls_in_comment(contents: BeautifulSoup, text: str) -> Iterator[str]:
         yield url
 
 
-def get_notes(song_id: SongId, logger: Logger) -> str:
+def get_notes(song_id: SongId, logger: Log) -> str:
     """Retrieve notes for a song."""
     logger.debug(f"fetch notes for song {song_id}")
     html = get_usdb_page(

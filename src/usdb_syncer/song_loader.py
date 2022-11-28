@@ -9,7 +9,7 @@ from PySide6.QtCore import QRunnable, QThreadPool
 
 from usdb_syncer import SongId, note_utils, resource_dl, usdb_scraper
 from usdb_syncer.download_options import Options, download_options
-from usdb_syncer.logger import Logger, get_logger
+from usdb_syncer.logger import Log, get_logger
 from usdb_syncer.meta_tags.deserializer import MetaTags
 from usdb_syncer.resource_dl import ImageKind, download_and_process_image
 from usdb_syncer.usdb_scraper import SongDetails
@@ -29,9 +29,9 @@ class Context:
     filename: str
     # without extension
     file_path: str
-    logger: Logger
+    logger: Log
 
-    def __init__(self, details: SongDetails, options: Options, logger: Logger) -> None:
+    def __init__(self, details: SongDetails, options: Options, logger: Log) -> None:
         self.details = details
         self.options = options
 

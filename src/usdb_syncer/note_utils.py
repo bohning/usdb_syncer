@@ -4,7 +4,7 @@ import os
 import re
 
 from usdb_syncer.download_options import TxtOptions
-from usdb_syncer.logger import Logger
+from usdb_syncer.logger import Log
 from usdb_syncer.meta_tags.deserializer import MetaTags
 
 
@@ -80,7 +80,7 @@ def dump_notes(
     body: list[str],
     pathname: str,
     txt_options: TxtOptions,
-    logger: Logger,
+    logger: Log,
 ) -> str:
     """Write notes to file.
 

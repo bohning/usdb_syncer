@@ -25,10 +25,10 @@ class SongLogger(logging.LoggerAdapter):
         return f"#{self.song_id}: {msg}", kwargs
 
 
-Logger = logging.Logger | SongLogger
+Log = logging.Logger | SongLogger
 
 
-def get_logger(file: str, song_id: SongId | None = None) -> Logger:
+def get_logger(file: str, song_id: SongId | None = None) -> Log:
     logger = logging.getLogger(file)
     if song_id:
         return SongLogger(song_id, logger)

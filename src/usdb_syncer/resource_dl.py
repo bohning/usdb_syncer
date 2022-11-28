@@ -10,7 +10,7 @@ from PIL import Image, ImageEnhance, ImageOps
 
 from usdb_syncer import note_utils
 from usdb_syncer.download_options import AudioOptions, VideoOptions
-from usdb_syncer.logger import Logger, get_logger
+from usdb_syncer.logger import Log, get_logger
 from usdb_syncer.meta_tags.deserializer import ImageMetaTags
 from usdb_syncer.settings import Browser
 from usdb_syncer.typing_helpers import assert_never
@@ -56,7 +56,7 @@ def download_video(
     options: AudioOptions | VideoOptions,
     browser: Browser,
     path_base: str,
-    logger: Logger,
+    logger: Log,
 ) -> str | None:
     """Download video from resource to path and process it according to options.
 
@@ -99,7 +99,7 @@ def download_video(
     return os.path.splitext(filename)[1][1:]
 
 
-def download_image(url: str, logger: Logger) -> bytes | None:
+def download_image(url: str, logger: Log) -> bytes | None:
     try:
         reply = requests.get(
             url, allow_redirects=True, headers=IMAGE_DOWNLOAD_HEADERS, timeout=60
@@ -147,10 +147,7 @@ def download_and_process_image(
 
 
 def _get_image_url(
-    meta_tags: ImageMetaTags | None,
-    details: SongDetails,
-    kind: ImageKind,
-    logger: Logger,
+    meta_tags: ImageMetaTags | None, details: SongDetails, kind: ImageKind, logger: Log
 ) -> str | None:
     url = None
     if meta_tags:
