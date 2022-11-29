@@ -80,8 +80,8 @@ def download_video(
         ydl_opts["cookiesfrombrowser"] = (browser.value,)
     if isinstance(options, AudioOptions):
         postprocessors = {"key": "FFmpegExtractAudio", "preferredquality": "320"}
-        if options.reencode_format:
-            postprocessors["preferredcodec"] = options.reencode_format.value
+        if codec := options.preferred_codec():
+            postprocessors["preferredcodec"] = codec
         ydl_opts["postprocessors"] = [postprocessors]
 
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:

@@ -22,10 +22,8 @@ class SettingsDialog(Ui_Dialog, QDialog):
             self.comboBox_encoding.addItem(str(encoding), encoding)
         for newline in settings.Newline:
             self.comboBox_line_endings.addItem(str(newline), newline)
-        for container in settings.AudioContainer:
+        for container in settings.AudioFormat:
             self.comboBox_audio_format.addItem(str(container), container)
-        for codec in settings.AudioCodec:
-            self.comboBox_audio_conversion_format.addItem(str(codec), codec)
         for browser in settings.Browser:
             self.comboBox_browser.addItem(QIcon(browser.icon()), str(browser), browser)
         for video_container in settings.VideoContainer:
@@ -54,12 +52,6 @@ class SettingsDialog(Ui_Dialog, QDialog):
         self.comboBox_audio_format.setCurrentIndex(
             self.comboBox_audio_format.findData(settings.get_audio_format())
         )
-        self.comboBox_audio_conversion_format.setCurrentIndex(
-            self.comboBox_audio_conversion_format.findData(
-                settings.get_audio_format_new()
-            )
-        )
-        self.groupBox_reencode_audio.setChecked(settings.get_audio_reencode())
         self.groupBox_video.setChecked(settings.get_video())
         self.comboBox_videocontainer.setCurrentIndex(
             self.comboBox_videocontainer.findData(settings.get_video_format())
@@ -86,10 +78,6 @@ class SettingsDialog(Ui_Dialog, QDialog):
         settings.set_newline(self.comboBox_line_endings.currentData())
         settings.set_audio(self.groupBox_audio.isChecked())
         settings.set_audio_format(self.comboBox_audio_format.currentData())
-        settings.set_audio_format_new(
-            self.comboBox_audio_conversion_format.currentData()
-        )
-        settings.set_audio_reencode(self.groupBox_reencode_audio.isChecked())
         settings.set_video(self.groupBox_video.isChecked())
         settings.set_video_format(self.comboBox_videocontainer.currentData())
         settings.set_video_format_new(self.comboBox_videoencoder.currentData())

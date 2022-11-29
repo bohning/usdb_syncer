@@ -17,16 +17,11 @@ class TxtOptions:
 class AudioOptions:
     """Settings regarding the audio file to be downloaded."""
 
-    format: settings.AudioContainer
-    reencode_format: settings.AudioCodec | None
+    format: settings.AudioFormat
 
-    def extension(self) -> str | None:
-        """The extension of the downloaded file. Unknown if 'bestaudio' is selected and
-        not target codec is set.
-        """
-        if self.reencode_format:
-            return self.reencode_format.value
-        if self.format is settings.AudioContainer.BEST:
+    def preferred_codec(self) -> str | None:
+        """The extension of the downloaded file. Unknown if 'bestaudio' is selected."""
+        if self.format is settings.AudioFormat.BEST:
             return None
         return self.format.value
 
@@ -103,12 +98,7 @@ def _txt_options() -> TxtOptions | None:
 def _audio_options() -> AudioOptions | None:
     if not settings.get_audio():
         return None
-    return AudioOptions(
-        format=settings.get_audio_format(),
-        reencode_format=settings.get_audio_format_new()
-        if settings.get_audio_reencode()
-        else None,
-    )
+    return AudioOptions(format=settings.get_audio_format())
 
 
 def _video_options() -> VideoOptions | None:

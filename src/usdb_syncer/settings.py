@@ -24,8 +24,6 @@ class SettingKey(Enum):
     NEWLINE = "downloads/newline"
     AUDIO = "downloads/audio"
     AUDIO_FORMAT = "downloads/audio_format"
-    AUDIO_REENCODE = "downloads/audio_reencode"
-    AUDIO_FORMAT_NEW = "downloads/audio_format_new"
     VIDEO = "downloads/video"
     VIDEO_FORMAT = "downloads/video_format"
     VIDEO_REENCODE = "downloads/video_reencode"
@@ -79,48 +77,29 @@ class Newline(Enum):
         return Newline.LF
 
 
-class AudioContainer(Enum):
+class AudioFormat(Enum):
     """Audio containers that can be requested when downloading with ytdl."""
 
-    M4A = "m4a"
-    WEBM = "webm"
     BEST = "best"
+    M4A = "m4a"
+    MP3 = "mp3"
 
     def __str__(self) -> str:  # pylint: disable=invalid-str-returned
         match self:
-            case AudioContainer.M4A:
-                return ".m4a (mp4a)"
-            case AudioContainer.WEBM:
-                return ".webm (opus)"
-            case AudioContainer.BEST:
+            case AudioFormat.BEST:
                 return "Best available"
+            case AudioFormat.M4A:
+                return ".m4a (mp4a)"
+            case AudioFormat.MP3:
+                return ".mp3 (MPEG)"
             case _ as unreachable:
                 assert_never(unreachable)
 
     def ytdl_format(self) -> str:
         # prefer best audio-only codec; otherwise take a video codec and extract later
-        if self is AudioContainer.BEST:
+        if self is AudioFormat.BEST:
             return "bestaudio/bestaudio*"
         return f"bestaudio[ext={self.value}]/bestaudio/bestaudio*"
-
-
-class AudioCodec(Enum):
-    """Audio codecs that ytdl can reencode downloaded videos to."""
-
-    MP3 = "mp3"
-    OGG = "ogg"
-    OPUS = "opus"
-
-    def __str__(self) -> str:  # pylint: disable=invalid-str-returned
-        match self:
-            case AudioCodec.MP3:
-                return ".mp3 (MPEG)"
-            case AudioCodec.OGG:
-                return ".ogg (Vorbis)"
-            case AudioCodec.OPUS:
-                return ".opus (Opus)"
-            case _ as unreachable:
-                assert_never(unreachable)
 
 
 class Browser(Enum):
@@ -253,7 +232,11 @@ T = TypeVar("T")
 
 
 def get_setting(key: SettingKey, default: T) -> T:
-    value = QSettings().value(key.value)
+    try:
+        value = QSettings().value(key.value)
+    except AttributeError:
+        # setting contains a type incompatible with this version
+        return default
     if isinstance(value, type(default)):
         return value
     if isinstance(default, bool) and isinstance(value, int):
@@ -277,28 +260,12 @@ def set_audio(value: bool) -> None:
     set_setting(SettingKey.AUDIO, value)
 
 
-def get_audio_format() -> AudioContainer:
-    return get_setting(SettingKey.AUDIO_FORMAT, AudioContainer.M4A)
+def get_audio_format() -> AudioFormat:
+    return get_setting(SettingKey.AUDIO_FORMAT, AudioFormat.BEST)
 
 
-def set_audio_format(value: AudioContainer) -> None:
+def set_audio_format(value: AudioFormat) -> None:
     set_setting(SettingKey.AUDIO_FORMAT, value)
-
-
-def get_audio_format_new() -> AudioCodec:
-    return get_setting(SettingKey.AUDIO_FORMAT_NEW, AudioCodec.MP3)
-
-
-def set_audio_format_new(value: AudioCodec) -> None:
-    set_setting(SettingKey.AUDIO_FORMAT_NEW, value)
-
-
-def get_audio_reencode() -> bool:
-    return get_setting(SettingKey.AUDIO_REENCODE, False)
-
-
-def set_audio_reencode(value: bool) -> None:
-    set_setting(SettingKey.AUDIO_REENCODE, value)
 
 
 def get_newline() -> Newline:
