@@ -29,3 +29,13 @@ def extract_youtube_id(url: str) -> str | None:
     if match := re.search(pattern, url, re.VERBOSE | re.IGNORECASE):
         return match.group(1)
     return None
+
+
+def try_read_unknown_encoding(path: str) -> str | None:
+    for codec in ["utf-8-sig", "cp1252"]:
+        try:
+            with open(path, encoding=codec) as file:
+                return file.read()
+        except UnicodeDecodeError:
+            pass
+    return None

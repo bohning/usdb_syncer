@@ -15,6 +15,7 @@ from usdb_syncer.gui.song_table.table_model import TableModel
 from usdb_syncer.logger import get_logger
 from usdb_syncer.notes_parser import SongTxt
 from usdb_syncer.usdb_scraper import UsdbSong
+from usdb_syncer.utils import try_read_unknown_encoding
 
 _logger = logging.getLogger(__file__)
 
@@ -158,9 +159,7 @@ def _parse_all_txts(directory: str) -> list[SongTxt]:
     err_logger.setLevel(logging.ERROR)
     txts: list[SongTxt] = []
     for path in glob(os.path.join(directory, "**", "*.txt"), recursive=True):
-        with open(path, encoding="utf-8") as file:
-            contents = file.read()
-        if not (txt := SongTxt.try_parse(contents, err_logger)):
-            continue
-        txts.append(txt)
+        contents = try_read_unknown_encoding(path)
+        if contents and (txt := SongTxt.try_parse(contents, err_logger)):
+            txts.append(txt)
     return txts
