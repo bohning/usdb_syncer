@@ -51,7 +51,7 @@ class UsdbSong:
         )
 
 
-class SongMetaEncoder(JSONEncoder):
+class UsdbSongEncoder(JSONEncoder):
     """Custom JSON encoder"""
 
     def default(self, o: Any) -> Any:

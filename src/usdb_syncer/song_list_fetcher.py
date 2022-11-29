@@ -8,7 +8,7 @@ import appdirs
 from PySide6.QtCore import QObject, QRunnable, Signal
 
 from usdb_syncer.usdb_scraper import get_usdb_available_songs
-from usdb_syncer.usdb_song import SongMetaEncoder, UsdbSong
+from usdb_syncer.usdb_song import UsdbSong, UsdbSongEncoder
 
 
 class Signals(QObject):
@@ -59,7 +59,7 @@ def load_available_songs() -> list[UsdbSong] | None:
 def dump_available_songs(available_songs: list[UsdbSong]) -> None:
     os.makedirs(os.path.dirname(available_songs_path()), exist_ok=True)
     with open(available_songs_path(), "w", encoding="utf8") as file:
-        json.dump(available_songs, file, cls=SongMetaEncoder)
+        json.dump(available_songs, file, cls=UsdbSongEncoder)
 
 
 def available_songs_path() -> str:
