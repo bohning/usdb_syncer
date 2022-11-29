@@ -44,10 +44,12 @@ class VideoOptions:
     max_fps: settings.VideoFps
 
     def ytdl_format(self) -> str:
-        return (
-            f"{self.format.ytdl_format()}[width<={self.max_resolution.width()}]"
-            f"[height<={self.max_resolution.height()}][fps<={self.max_fps.value}]"
-        )
+        fmt = self.format.ytdl_format()
+        width = f"[width<={self.max_resolution.width()}]"
+        height = f"[height<={self.max_resolution.height()}]"
+        fps = f"[fps<={self.max_fps.value}]"
+        # fps filter always fails for some platforms, so skip it as a fallback
+        return f"{fmt}{width}{height}{fps}/{fmt}{width}{height}"
 
 
 @dataclass(frozen=True)

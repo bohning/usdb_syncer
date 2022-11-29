@@ -185,8 +185,8 @@ class VideoContainer(Enum):
 
     def ytdl_format(self) -> str:
         if self is VideoContainer.BEST:
-            return "bestvideo"
-        return f"bestvideo[ext={self.value}]"
+            return "bestvideo*"
+        return f"bestvideo*[ext={self.value}]"
 
 
 class VideoCodec(Enum):
