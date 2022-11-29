@@ -6,7 +6,7 @@ import os
 from glob import glob
 from typing import Any, Callable, Iterator
 
-from PySide6.QtCore import QItemSelectionModel, QModelIndex, QObject
+from PySide6.QtCore import QItemSelection, QItemSelectionModel, QModelIndex, QObject
 from PySide6.QtWidgets import QAbstractItemView, QHeaderView, QTableView
 
 from usdb_syncer import SongId
@@ -93,15 +93,13 @@ class SongTable:
         self.set_selection_to_rows(idx for row_list in rows for idx in row_list)
 
     def set_selection_to_rows(self, rows: Iterator[QModelIndex]) -> None:
-        self._view.selectionModel().clearSelection()
+        selection = QItemSelection()
         for row in rows:
-            self.select_row(row)
-
-    def select_row(self, row: QModelIndex) -> None:
+            selection.select(row, row)
         self._view.selectionModel().select(
-            row,
+            selection,
             QItemSelectionModel.SelectionFlag.Rows
-            | QItemSelectionModel.SelectionFlag.Select,
+            | QItemSelectionModel.SelectionFlag.ClearAndSelect,
         )
 
     ### sort and filter model
