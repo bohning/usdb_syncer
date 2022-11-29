@@ -7,11 +7,10 @@ from PySide6.QtCore import (
     QSortFilterProxyModel,
     QTimer,
 )
-from unidecode import unidecode
 
 from usdb_syncer.gui.song_table.table_model import CustomRole
 from usdb_syncer.notes_parser import SongTxt
-from usdb_syncer.song_data import SongData
+from usdb_syncer.song_data import SongData, fuzz_text
 
 QIndex = QModelIndex | QPersistentModelIndex
 
@@ -41,18 +40,16 @@ class SortFilterProxyModel(QSortFilterProxyModel):
     def find_rows_for_song_txts(
         self, song_txts: list[SongTxt]
     ) -> tuple[list[QModelIndex], ...]:
-        rows: tuple[list[QModelIndex], ...] = tuple([] for _ in range(len(song_txts)))
+        comparer = FuzzyComparer(song_txts)
         model = self.sourceModel()
         for row in range(self.rowCount()):
-            index = model.index(row, 0)
-            data: SongData = model.data(index, CustomRole.ALL_DATA)
-            for txt_idx, txt in enumerate(song_txts):
-                if _song_data_matches_txt(data, txt):
-                    rows[txt_idx].append(index)
-        return rows
+            index = self.index(row, 0)
+            data: SongData = model.data(self.mapToSource(index), CustomRole.ALL_DATA)
+            comparer.check(data, index)
+        return comparer.results
 
     def set_text_filter(self, text: str) -> None:
-        self._text_filter = unidecode(text).lower().split()
+        self._text_filter = fuzz_text(text).split()
         self._filter_invalidation_timer.start()
 
     def set_artist_filter(self, artist: str) -> None:
@@ -105,20 +102,24 @@ class SortFilterProxyModel(QSortFilterProxyModel):
             return False
         if song.data.views < self._views_filter:
             return False
-        return all(w in song.searchable_text for w in self._text_filter)
+        return all(word in song.fuzzy_text for word in self._text_filter)
 
 
-def _song_data_matches_txt(data: SongData, txt: SongTxt) -> bool:
-    return _normalize_text(data.data.artist) == _normalize_text(
-        txt.headers.artist
-    ) and _normalize_text(data.data.title) == _normalize_text(txt.headers.title)
+class FuzzyComparer:
+    """Helper to find rows matching txts."""
 
+    results: tuple[list[QModelIndex], ...]
 
-def _normalize_text(text: str) -> str:
-    return (
-        unidecode(text)
-        .lower()
-        .replace(" ft. ", " feat. ")
-        .replace(" ft ", " feat. ")
-        .replace(" feat ", " feat. ")
-    )
+    def __init__(self, song_txts: list[SongTxt]) -> None:
+        self._len = len(song_txts)
+        self.artists = tuple(fuzz_text(txt.headers.artist) for txt in song_txts)
+        self.titles = tuple(fuzz_text(txt.headers.title) for txt in song_txts)
+        self.results = tuple([] for _ in range(self._len))
+
+    def check(self, data: SongData, index: QModelIndex) -> None:
+        for idx in range(self._len):
+            if (
+                data.fuzzy_text.artist == self.artists[idx]
+                and data.fuzzy_text.title == self.titles[idx]
+            ):
+                self.results[idx].append(index)

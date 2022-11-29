@@ -17,6 +17,51 @@ from usdb_syncer.usdb_scraper import UsdbSong
 from usdb_syncer.utils import try_read_unknown_encoding
 
 
+class FuzzySearchText:
+    """Song data for robust searching."""
+
+    def __init__(self, song: UsdbSong) -> None:
+        self.song_id = str(song.song_id)
+        self.artist = fuzz_text(song.artist)
+        self.title = fuzz_text(song.title)
+        self.language = fuzz_text(song.language)
+        self.edition = fuzz_text(song.edition)
+
+    def __contains__(self, text: str) -> bool:
+        return any(
+            text in attr
+            for attr in (
+                self.song_id,
+                self.artist,
+                self.title,
+                self.language,
+                self.edition,
+            )
+        )
+
+
+# common word variations
+REPLACEMENTS = (
+    (" vs. ", " vs  "),
+    (" & ", " and "),
+    ("&", " and "),
+    (" + ", " and "),
+    (" ft. ", " feat. "),
+    (" ft ", " feat. "),
+    (" feat ", " feat. "),
+    ("!", ""),
+    ("?", ""),
+    ("/", ""),
+)
+
+
+def fuzz_text(text: str) -> str:
+    text = unidecode(text).lower()
+    for old, new in REPLACEMENTS:
+        text = text.replace(old, new)
+    return text
+
+
 @attrs.frozen(auto_attribs=True, kw_only=True)
 class SongData:
     """Wrapper for song data from USDB, rendered for presentation in the song table,
@@ -24,7 +69,7 @@ class SongData:
     """
 
     data: UsdbSong
-    searchable_text: str
+    fuzzy_text: FuzzySearchText
     local_txt: bool
     local_audio: bool
     local_video: bool
@@ -37,7 +82,7 @@ class SongData:
         txt = _get_song_txt(song, song_dir)
         return cls(
             data=song,
-            searchable_text=_searchable_text(song),
+            fuzzy_text=FuzzySearchText(song),
             local_txt=bool(txt),
             local_audio=_file_exists(folder, txt.headers.mp3) if txt else False,
             local_video=_file_exists(folder, txt.headers.video) if txt else False,
@@ -111,14 +156,6 @@ def _file_exists(folder: str, fname: str | None) -> bool:
     if not fname:
         return False
     return os.path.exists(os.path.join(folder, fname))
-
-
-def _searchable_text(song: UsdbSong) -> str:
-    return unidecode(
-        " ".join(
-            (str(song.song_id), song.artist, song.title, song.language, song.edition)
-        )
-    ).lower()
 
 
 @cache
