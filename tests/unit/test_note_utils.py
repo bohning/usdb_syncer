@@ -1,6 +1,3 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-
 """Tests for functions from the note_utils module."""
 
 from usdb_syncer import SongId

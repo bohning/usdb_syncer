@@ -1,9 +1,4 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-
 """A download manager for USDB songs."""
-
-from typing import Optional
 
 import attrs
 
