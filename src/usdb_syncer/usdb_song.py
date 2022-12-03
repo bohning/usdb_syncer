@@ -1,5 +1,7 @@
 """Meta data about a song that USDB shows in the result list."""
 
+from __future__ import annotations
+
 from json import JSONEncoder
 from typing import Any
 
@@ -22,7 +24,7 @@ class UsdbSong:
     views: int
 
     @classmethod
-    def from_json(cls, dct: dict[str, Any]) -> "UsdbSong":
+    def from_json(cls, dct: dict[str, Any]) -> UsdbSong:
         dct["song_id"] = SongId(dct["song_id"])
         return cls(**dct)
 
@@ -38,7 +40,7 @@ class UsdbSong:
         golden_notes: str,
         rating: str,
         views: str,
-    ) -> "UsdbSong":
+    ) -> UsdbSong:
         return cls(
             song_id=SongId.parse(song_id),
             artist=artist,

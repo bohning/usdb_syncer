@@ -1,4 +1,6 @@
 """Parser for UltraStar txt files."""
+from __future__ import annotations
+
 import re
 from enum import Enum
 from typing import Any, Optional
@@ -34,7 +36,7 @@ class Note:
     text: str
 
     @classmethod
-    def parse(cls, value: str) -> "Note":
+    def parse(cls, value: str) -> Note:
         regex = re.compile(r"(:|\*|F|R|G):? +(-?\d+) +(\d+) +(-?\d+) (.+)")
         if not (match := regex.fullmatch(value)):
             raise NotesParseError(f"invalid note: '{value}'")
@@ -63,7 +65,7 @@ class Line:
     line_break: int | tuple[int, int] | None
 
     @classmethod
-    def parse(cls, lines: list[str], logger: Log) -> "Line":
+    def parse(cls, lines: list[str], logger: Log) -> Line:
         """Consumes a stream of notes until a line or document terminator is yielded."""
         notes = []
         line_break = None
@@ -134,7 +136,7 @@ class PlayerNotes:
     player_2: list[Line] | None
 
     @classmethod
-    def parse(cls, lines: list[str], logger: Log) -> "PlayerNotes":
+    def parse(cls, lines: list[str], logger: Log) -> PlayerNotes:
         player_1 = _player_lines(lines, logger)
         if not player_1:
             raise NotesParseError("no notes in file")
@@ -199,7 +201,7 @@ class Headers:
     resolution: str | None = None
 
     @classmethod
-    def parse(cls, lines: list[str], logger: Log) -> "Headers":
+    def parse(cls, lines: list[str], logger: Log) -> Headers:
         """Consumes a stream of lines while they are headers."""
         kwargs: dict[str, Any] = {"unknown": {}}
         while lines:

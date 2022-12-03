@@ -2,6 +2,8 @@
     plus information about locally existing files.
     """
 
+from __future__ import annotations
+
 import os
 from functools import cache
 
@@ -77,7 +79,7 @@ class SongData:
     local_background: bool
 
     @classmethod
-    def from_usdb_song(cls, song: UsdbSong, song_dir: str) -> "SongData":
+    def from_usdb_song(cls, song: UsdbSong, song_dir: str) -> SongData:
         folder = _song_folder_path(song, song_dir)
         txt = _get_song_txt(song, song_dir)
         return cls(

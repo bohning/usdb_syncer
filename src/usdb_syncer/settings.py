@@ -5,6 +5,8 @@ used directly. Instead, new settings should be added to the SettingKey enum and 
 and getters should be added to this module.
 """
 
+from __future__ import annotations
+
 import os
 from enum import Enum
 from typing import Any, TypeVar, cast
@@ -71,7 +73,7 @@ class Newline(Enum):
                 assert_never(unreachable)
 
     @staticmethod
-    def default() -> "Newline":
+    def default() -> Newline:
         if os.linesep == Newline.CRLF.value:
             return Newline.CRLF
         return Newline.LF

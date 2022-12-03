@@ -1,5 +1,7 @@
 """A download manager for USDB songs."""
 
+from __future__ import annotations
+
 import attrs
 
 
@@ -16,5 +18,5 @@ class SongId:
         return f"{self.value:05}"
 
     @classmethod
-    def parse(cls, value: str) -> "SongId":
+    def parse(cls, value: str) -> SongId:
         return cls(int(value))
