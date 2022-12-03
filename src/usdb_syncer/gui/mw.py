@@ -17,10 +17,11 @@ from PySide6.QtWidgets import (
 from usdb_syncer import settings
 from usdb_syncer.gui.forms.MainWindow import Ui_MainWindow
 from usdb_syncer.gui.meta_tags_dialog import MetaTagsDialog
+from usdb_syncer.gui.progress import run_with_progress
 from usdb_syncer.gui.settings_dialog import SettingsDialog
 from usdb_syncer.gui.song_table.song_table import SongTable
 from usdb_syncer.pdf import generate_song_pdf
-from usdb_syncer.song_list_fetcher import SongListFetcher
+from usdb_syncer.song_list_fetcher import SongListFetcher, get_available_songs
 from usdb_syncer.song_loader import download_songs
 from usdb_syncer.usdb_scraper import UsdbSong
 
@@ -211,18 +212,16 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         self.table.select_local_songs(directory)
 
     def _refetch_song_list(self) -> None:
-        self.action_refetch_song_list.setEnabled(False)
-        self.threadpool.start(
-            SongListFetcher(
-                True, self.lineEdit_song_dir.text(), self._on_song_list_fetched
-            )
+        run_with_progress(
+            "Fetching song list...",
+            lambda _: get_available_songs(True),
+            self._on_song_list_fetched,
         )
 
     def _on_song_list_fetched(self, song_list: list[UsdbSong]) -> None:
         self.table.set_data(song_list)
         self.len_song_list = len(song_list)
         self._update_dynamic_filters(song_list)
-        self.action_refetch_song_list.setEnabled(True)
 
     def _update_dynamic_filters(self, song_list: list[UsdbSong]) -> None:
         def update_filter(selector: QComboBox, attribute: str) -> None:
