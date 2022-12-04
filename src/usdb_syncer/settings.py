@@ -82,14 +82,11 @@ class Newline(Enum):
 class AudioFormat(Enum):
     """Audio containers that can be requested when downloading with ytdl."""
 
-    BEST = "best"
     M4A = "m4a"
     MP3 = "mp3"
 
     def __str__(self) -> str:  # pylint: disable=invalid-str-returned
         match self:
-            case AudioFormat.BEST:
-                return "Best available"
             case AudioFormat.M4A:
                 return ".m4a (mp4a)"
             case AudioFormat.MP3:
@@ -99,8 +96,6 @@ class AudioFormat(Enum):
 
     def ytdl_format(self) -> str:
         # prefer best audio-only codec; otherwise take a video codec and extract later
-        if self is AudioFormat.BEST:
-            return "bestaudio/bestaudio*"
         return f"bestaudio[ext={self.value}]/bestaudio/bestaudio*"
 
 
@@ -236,7 +231,7 @@ T = TypeVar("T")
 def get_setting(key: SettingKey, default: T) -> T:
     try:
         value = QSettings().value(key.value)
-    except AttributeError:
+    except (AttributeError, ValueError):
         # setting contains a type incompatible with this version
         return default
     if isinstance(value, type(default)):
@@ -263,7 +258,7 @@ def set_audio(value: bool) -> None:
 
 
 def get_audio_format() -> AudioFormat:
-    return get_setting(SettingKey.AUDIO_FORMAT, AudioFormat.BEST)
+    return get_setting(SettingKey.AUDIO_FORMAT, AudioFormat.M4A)
 
 
 def set_audio_format(value: AudioFormat) -> None:

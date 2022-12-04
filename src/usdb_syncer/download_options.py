@@ -19,12 +19,6 @@ class AudioOptions:
 
     format: settings.AudioFormat
 
-    def preferred_codec(self) -> str | None:
-        """The extension of the downloaded file. Unknown if 'bestaudio' is selected."""
-        if self.format is settings.AudioFormat.BEST:
-            return None
-        return self.format.value
-
     def ytdl_format(self) -> str:
         return self.format.ytdl_format()
 
