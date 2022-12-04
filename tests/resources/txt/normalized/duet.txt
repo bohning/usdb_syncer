@@ -8,6 +8,9 @@ P1
 - 4
 : 8 1 0 third 
 : 10 1 0 fourth
+- 12
+: 14 1 0 5 
+: 16 1 0 6
 P2
 : 4 1 0 first 
 * 6 1 0 player 2 

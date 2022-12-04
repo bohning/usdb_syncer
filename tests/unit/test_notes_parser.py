@@ -36,3 +36,14 @@ def test_notes_parser_invalid(resource_dir: str) -> None:
             contents = file.read()
         txt = SongTxt.try_parse(contents, _logger)
         assert txt is None
+
+
+def test_duet_fixing(resource_dir: str) -> None:
+    path = os.path.join(resource_dir, "txt", "normalized", "duet.txt")
+    with open(path, encoding="utf-8") as file:
+        contents = file.read()
+    without_markers = contents.replace("P1\n", "").replace("P2\n", "")
+    txt = SongTxt.try_parse(without_markers, _logger)
+    assert txt
+    txt.notes.maybe_split_duet_notes()
+    assert str(txt) == contents

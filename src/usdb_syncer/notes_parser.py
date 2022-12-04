@@ -57,12 +57,38 @@ class Note:
 
 
 @attrs.define
+class LineBreak:
+    """Line breaks consist of a single value or two values for the previous line end and
+    the next line start.
+    """
+
+    start: int
+    end: int | None
+
+    @classmethod
+    def parse(cls, value: str) -> tuple[LineBreak, str | None]:
+        """Some line breaks aren't terminated by a line break. If this is the case, the
+        rest of the line is returned.
+        """
+        regex = re.compile(r"- *(-?\d+) *(-?\d+)? *(.+)?")
+        if not (match := regex.fullmatch(value)):
+            raise NotesParseError(f"invalid line break: '{value}'")
+        end = int(match.group(2)) if match.group(2) else None
+        return cls(int(match.group(1)), end), match.group(3)
+
+    def __str__(self) -> str:
+        if self.end is not None:
+            return f"- {self.start} {self.end}"
+        return f"- {self.start}"
+
+
+@attrs.define
 class Line:
     """Representation of a line, parsed from a list of strings."""
 
     notes: list[Note]
     # break to the next line; None if last line (at least for this player)
-    line_break: int | tuple[int, int] | None
+    line_break: LineBreak | None
 
     @classmethod
     def parse(cls, lines: list[str], logger: Log) -> Line:
@@ -75,7 +101,7 @@ class Line:
                 break
             if txt_line.startswith("-"):
                 try:
-                    line_break, next_line = _parse_line_break(txt_line)
+                    line_break, next_line = LineBreak.parse(txt_line)
                 except NotesParseError as err:
                     logger.warning(str(err))
                     continue
@@ -97,35 +123,12 @@ class Line:
 
     def __str__(self) -> str:
         out = "\n".join(map(str, self.notes))
-        if line_break := self._line_break_str():
-            out = f"{out}\n{line_break}"
+        if self.line_break:
+            out = f"{out}\n{self.line_break}"
         return out
 
-    def _line_break_str(self) -> str | None:
-        if self.line_break is None:
-            return None
-        if isinstance(self.line_break, int):
-            return f"- {self.line_break}"
-        return f"- {self.line_break[0]} {self.line_break[1]}"
-
-
-def _parse_line_break(value: str) -> tuple[int | tuple[int, int], str | None]:
-    """Parses a line representing a line break.
-
-    Line breaks consist of a single value or two values for the previous line end and
-    the next line start. Some also aren't terminated by a line break. If this is the
-    case, the rest of the line is returned.
-    """
-    # line breaks may contain one or two beat values ()
-    regex = re.compile(r"- *(-?\d+) *(-?\d+)? *(.+)?")
-    if not (match := regex.fullmatch(value)):
-        raise NotesParseError(f"invalid line break: '{value}'")
-    line_break: int | tuple[int, int] = (
-        (int(match.group(1)), int(match.group(2)))
-        if match.group(2)
-        else int(match.group(1))
-    )
-    return line_break, match.group(3)
+    def split(self) -> tuple[Line, Line] | None:
+        pass
 
 
 @attrs.define
@@ -149,6 +152,28 @@ class PlayerNotes:
             body = "\n".join(("P1", body, "P2", *map(str, self.player_2)))
         return f"{body}\nE"
 
+    def maybe_split_duet_notes(self) -> None:
+        """Try to detect a second player's notes and fix self accordingly."""
+        if self.player_2:
+            return
+        if not (first_line_break := self.player_1[0].line_break):
+            # only one line
+            return
+        last_start = first_line_break.start
+        for idx, line in enumerate(self.player_1):
+            if not line.line_break:
+                break
+            if line.line_break.start < last_start:
+                part_1, part_2 = _split_duet_line(line, line.line_break.start)
+                self.player_2 = self.player_1[idx + 1 :]
+                if part_2.notes:
+                    self.player_2.insert(0, part_2)
+                self.player_1 = self.player_1[:idx]
+                if part_1.notes:
+                    self.player_1.append(part_1)
+                return
+            last_start = line.line_break.start
+
 
 def _player_lines(lines: list[str], logger: Log) -> list[Line]:
     notes: list[Line] = []
@@ -165,6 +190,17 @@ def _player_lines(lines: list[str], logger: Log) -> list[Line]:
         # ensure there is no trailing line break, e.g. because the last note was invalid
         notes[-1].line_break = None
     return notes
+
+
+def _split_duet_line(line: Line, cutoff: int) -> tuple[Line, Line]:
+    """Split a line into two, where the first part only contains notes _after_ some
+    cutoff and the second part contains the rest. Either line may be empty.
+    """
+    idx = 0
+    for idx, note in enumerate(line.notes):
+        if note.start < cutoff:
+            break
+    return Line(line.notes[:idx], None), Line(line.notes[idx:], line.line_break)
 
 
 @attrs.define
