@@ -5,7 +5,7 @@ block_cipher = None
 
 
 a = Analysis(
-    ['src\\usdb_syncer\\main.py'],
+    ['src/usdb_syncer/main.py'],
     pathex=[],
     binaries=[],
     datas=[],
@@ -31,7 +31,7 @@ exe = EXE(
     bootloader_ignore_signals=False,
     strip=False,
     upx=True,
-    console=True,
+    console=False,
     disable_windowed_traceback=False,
     argv_emulation=False,
     target_arch=None,
@@ -47,4 +47,10 @@ coll = COLLECT(
     upx=True,
     upx_exclude=[],
     name='main',
+)
+app = BUNDLE(
+    coll,
+    name='USDB Syncer.app',
+    icon='usdb_syncer.icns',
+    bundle_identifier=None,
 )
