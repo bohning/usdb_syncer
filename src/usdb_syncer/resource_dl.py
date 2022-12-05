@@ -70,6 +70,7 @@ def download_video(
         the extension of the successfully downloaded file or None
     """
     url = url_from_video_resouce(resource)
+    ext = None
     ydl_opts: dict[str, Union[str, bool, tuple, list]] = {
         "format": options.ytdl_format(),
         "outtmpl": f"{path_base}.%(ext)s",
@@ -85,6 +86,9 @@ def download_video(
             "preferredcodec": options.format.value,
         }
         ydl_opts["postprocessors"] = [postprocessor]
+        # `prepare_filename()` does not take into account postprocessing, so note the
+        # file extension
+        ext = options.format.value
 
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
         try:
@@ -93,7 +97,7 @@ def download_video(
             logger.debug(f"error downloading video url: {url}")
             return None
 
-    return os.path.splitext(filename)[1][1:]
+    return ext or os.path.splitext(filename)[1][1:]
 
 
 def download_image(url: str, logger: Log) -> bytes | None:
