@@ -122,6 +122,9 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         self.action_meta_tags.triggered.connect(lambda: MetaTagsDialog(self).show())
         self.action_settings.triggered.connect(lambda: SettingsDialog(self).show())
         self.action_generate_song_pdf.triggered.connect(self._generate_song_pdf)
+        self.action_show_log.triggered.connect(
+            lambda: os.system(f"start {os.path.dirname(AppPaths.log)}")
+        )
 
     def _setup_song_dir(self) -> None:
         self.lineEdit_song_dir.setText(settings.get_song_dir())

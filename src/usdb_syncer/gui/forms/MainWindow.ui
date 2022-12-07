@@ -415,8 +415,15 @@
     <addaction name="action_refetch_song_list"/>
     <addaction name="action_select_local_songs"/>
    </widget>
+   <widget class="QMenu" name="menu_about">
+    <property name="title">
+     <string>About</string>
+    </property>
+    <addaction name="action_show_log"/>
+   </widget>
    <addaction name="menu_sync"/>
    <addaction name="menu_tools"/>
+   <addaction name="menu_about"/>
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
   <action name="action_meta_tags">
@@ -431,7 +438,7 @@
   </action>
   <action name="action_generate_song_pdf">
    <property name="text">
-    <string>Generate Song List (PDF)</string>
+    <string>Generate Song List (PDF)...</string>
    </property>
   </action>
   <action name="action_refetch_song_list">
@@ -446,6 +453,11 @@
   <action name="action_select_local_songs">
    <property name="text">
     <string>Select local Songs</string>
+   </property>
+  </action>
+  <action name="action_show_log">
+   <property name="text">
+    <string>Show Log</string>
    </property>
   </action>
  </widget>
