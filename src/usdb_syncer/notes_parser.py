@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import re
 from enum import Enum
-from typing import Any, Optional
+from typing import Any
 
 import attrs
 
@@ -153,7 +153,7 @@ class PlayerNotes:
         return f"{body}\nE"
 
     def maybe_split_duet_notes(self) -> None:
-        """Try to detect a second player's notes and fix self accordingly."""
+        """Try to detect a second player's notes and fix notes accordingly."""
         if self.player_2:
             return
         if not (first_line_break := self.player_1[0].line_break):
@@ -262,6 +262,7 @@ class Headers:
         return cls(**kwargs)
 
     def reset_file_location_headers(self) -> None:
+        """Clear all tags with local file locations."""
         self.mp3 = self.video = self.cover = self.background = None
 
     def __str__(self) -> str:
@@ -349,14 +350,32 @@ class SongTxt:
         return f"{self.headers}\n{self.notes}"
 
     @classmethod
-    def try_parse(cls, value: str, logger: Log) -> Optional["SongTxt"]:
+    def parse(cls, value: str, logger: Log) -> SongTxt:
         lines = [line for line in value.split("\n") if line]
-        try:
-            headers = Headers.parse(lines, logger)
-            meta_tags = MetaTags(headers.video or "", logger)
-            notes = PlayerNotes.parse(lines, logger)
-        except NotesParseError:
-            return None
+        headers = Headers.parse(lines, logger)
+        meta_tags = MetaTags(headers.video or "", logger)
+        notes = PlayerNotes.parse(lines, logger)
         if lines:
             logger.warning(f"trailing text in song txt: '{lines}'")
         return cls(headers=headers, meta_tags=meta_tags, notes=notes)
+
+    @classmethod
+    def try_parse(cls, value: str, logger: Log) -> SongTxt | None:
+        try:
+            return cls.parse(value, logger)
+        except NotesParseError:
+            return None
+
+    def restore_missing_headers(self) -> None:
+        if self.notes.player_2:
+            self.headers.p1 = self.meta_tags.player1 or "P1"
+            self.headers.p2 = self.meta_tags.player2 or "P2"
+        if self.meta_tags.preview is not None:
+            self.headers.previewstart = self.meta_tags.preview
+        if medley := self.meta_tags.medley:
+            self.headers.medleystartbeat = medley.start
+            self.headers.medleyendbeat = medley.end
+
+    def write_to_file(self, path: str, encoding: str, newline: str) -> None:
+        with open(path, "w", encoding=encoding, newline=newline) as file:
+            file.write(str(self))

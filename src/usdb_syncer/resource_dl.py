@@ -8,7 +8,6 @@ import requests
 import yt_dlp
 from PIL import Image, ImageEnhance, ImageOps
 
-from usdb_syncer import note_utils
 from usdb_syncer.download_options import AudioOptions, VideoOptions
 from usdb_syncer.logger import Log, get_logger
 from usdb_syncer.meta_tags.deserializer import ImageMetaTags
@@ -55,7 +54,7 @@ def download_video(
     resource: str,
     options: AudioOptions | VideoOptions,
     browser: Browser,
-    path_base: str,
+    path_stem: str,
     logger: Log,
 ) -> str | None:
     """Download video from resource to path and process it according to options.
@@ -64,7 +63,7 @@ def download_video(
         resource: URL or YouTube id
         options: parameters for downloading and processing
         browser: browser to use cookies from
-        path_base: the target on the file system *without* an extension
+        path_stem: the target on the file system *without* an extension
 
     Returns:
         the extension of the successfully downloaded file or None
@@ -73,7 +72,7 @@ def download_video(
     ext = None
     ydl_opts: dict[str, Union[str, bool, tuple, list]] = {
         "format": options.ytdl_format(),
-        "outtmpl": f"{path_base}.%(ext)s",
+        "outtmpl": f"{path_stem}.%(ext)s",
         "keepvideo": False,
         "verbose": False,
     }
@@ -126,25 +125,25 @@ def download_image(url: str, logger: Log) -> bytes | None:
 
 
 def download_and_process_image(
-    header: dict[str, str],
+    filename_stem: str,
     meta_tags: ImageMetaTags | None,
     details: SongDetails,
     pathname: str,
     kind: ImageKind,
     max_width: int | None,
-) -> bool:
+) -> str | None:
     logger = get_logger(__file__, details.song_id)
     if not (url := _get_image_url(meta_tags, details, kind, logger)):
-        return False
+        return None
     if not (img_bytes := download_image(url, logger)):
         logger.error(f"#{str(kind).upper()}: file does not exist at url: {url}")
-        return False
-    fname = f"{note_utils.generate_filename(header)} [{kind.value}].jpg"
+        return None
+    fname = f"{filename_stem} [{kind.value}].jpg"
     path = os.path.join(pathname, fname)
     with open(path, "wb") as file:
         file.write(img_bytes)
     _process_image(meta_tags, max_width, path)
-    return True
+    return fname
 
 
 def _get_image_url(

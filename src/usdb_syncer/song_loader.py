@@ -2,17 +2,17 @@
 
 import filecmp
 import os
-import re
 from typing import Iterator
 
 from PySide6.QtCore import QRunnable, QThreadPool
 
-from usdb_syncer import SongId, note_utils, resource_dl, usdb_scraper
+from usdb_syncer import SongId, resource_dl, usdb_scraper
 from usdb_syncer.download_options import Options, download_options
 from usdb_syncer.logger import Log, get_logger
-from usdb_syncer.meta_tags.deserializer import MetaTags
+from usdb_syncer.notes_parser import SongTxt
 from usdb_syncer.resource_dl import ImageKind, download_and_process_image
 from usdb_syncer.usdb_scraper import SongDetails
+from usdb_syncer.utils import sanitize_filename
 
 
 class Context:
@@ -21,14 +21,12 @@ class Context:
     details: SongDetails
     options: Options
     songtext: str
-    header: dict[str, str]
-    notes: list[str]
-    meta_tags: MetaTags
+    txt: SongTxt
     dir_path: str
     # without extension
-    filename: str
+    filename_stem: str
     # without extension
-    file_path: str
+    file_path_stem: str
     logger: Log
 
     def __init__(self, details: SongDetails, options: Options, logger: Log) -> None:
@@ -36,28 +34,26 @@ class Context:
         self.options = options
 
         self.songtext = usdb_scraper.get_notes(details.song_id, logger)
-        self.header, self.notes = note_utils.parse_notes(self.songtext)
-        # remove anything in "[]" from the title, e.g. "[duet]"
-        self.header["#TITLE"] = re.sub(r"\[.*?\]", "", self.header["#TITLE"]).strip()
+        self.txt = SongTxt.parse(self.songtext, logger)
+        self.txt.headers.reset_file_location_headers()
+        self.txt.notes.maybe_split_duet_notes()
+        self.txt.restore_missing_headers()
 
-        # extract video tag
-        self.meta_tags = MetaTags(self.header.pop("#VIDEO", ""), logger)
-
-        self.filename = note_utils.generate_filename(self.header)
+        self.filename_stem = sanitize_filename(self.txt.headers.artist_title_str())
         self.dir_path = os.path.join(
-            self.options.song_dir, self.filename, str(self.details.song_id)
+            self.options.song_dir, self.filename_stem, str(self.details.song_id)
         )
-        self.file_path = os.path.join(self.dir_path, self.filename)
+        self.file_path_stem = os.path.join(self.dir_path, self.filename_stem)
         self.logger = logger
 
     def all_audio_resources(self) -> Iterator[str]:
-        if self.meta_tags.audio:
-            yield self.meta_tags.audio
+        if self.txt.meta_tags.audio:
+            yield self.txt.meta_tags.audio
         yield from self.all_video_resources()
 
     def all_video_resources(self) -> Iterator[str]:
-        if self.meta_tags.video:
-            yield self.meta_tags.video
+        if self.txt.meta_tags.video:
+            yield self.txt.meta_tags.video
         yield from self.details.all_comment_videos()
 
 
@@ -130,24 +126,24 @@ def _maybe_download_audio(ctx: Context) -> None:
         if idx > 9:
             break
         if ext := resource_dl.download_video(
-            resource, options, ctx.options.browser, ctx.file_path, ctx.logger
+            resource, options, ctx.options.browser, ctx.file_path_stem, ctx.logger
         ):
-            ctx.header["#MP3"] = f"{ctx.filename}.{ext}"
+            ctx.txt.headers.mp3 = f"{ctx.filename_stem}.{ext}"
             ctx.logger.info("Success! Downloaded audio.")
             return
     ctx.logger.error("Failed to download audio!")
 
 
 def _maybe_download_video(ctx: Context) -> None:
-    if not (options := ctx.options.video_options) or ctx.meta_tags.is_audio_only():
+    if not (options := ctx.options.video_options) or ctx.txt.meta_tags.is_audio_only():
         return
     for (idx, resource) in enumerate(ctx.all_video_resources()):
         if idx > 9:
             break
         if ext := resource_dl.download_video(
-            resource, options, ctx.options.browser, ctx.file_path, ctx.logger
+            resource, options, ctx.options.browser, ctx.file_path_stem, ctx.logger
         ):
-            ctx.header["#VIDEO"] = f"{ctx.filename}.{ext}"
+            ctx.txt.headers.video = f"{ctx.filename_stem}.{ext}"
             ctx.logger.info("Success! Downloaded video.")
             return
     ctx.logger.error("Failed to download video!")
@@ -157,15 +153,15 @@ def _maybe_download_cover(ctx: Context) -> None:
     if not ctx.options.cover:
         return
 
-    if download_and_process_image(
-        ctx.header,
-        ctx.meta_tags.cover,
+    if filename := download_and_process_image(
+        ctx.filename_stem,
+        ctx.txt.meta_tags.cover,
         ctx.details,
         ctx.dir_path,
         ImageKind.COVER,
         max_width=ctx.options.cover.max_size,
     ):
-        ctx.header["#COVER"] = f"{ctx.filename} [CO].jpg"
+        ctx.txt.headers.cover = filename
         ctx.logger.info("Success! Downloaded cover.")
     else:
         ctx.logger.error("Failed to download cover!")
@@ -174,17 +170,17 @@ def _maybe_download_cover(ctx: Context) -> None:
 def _maybe_download_background(ctx: Context) -> None:
     if not (options := ctx.options.background_options):
         return
-    if not options.download_background("#VIDEO" in ctx.header):
+    if not options.download_background(bool(ctx.txt.headers.video)):
         return
-    if download_and_process_image(
-        ctx.header,
-        ctx.meta_tags.background,
+    if filename := download_and_process_image(
+        ctx.filename_stem,
+        ctx.txt.meta_tags.background,
         ctx.details,
         ctx.dir_path,
         ImageKind.BACKGROUND,
         max_width=None,
     ):
-        ctx.header["#BACKGROUND"] = f"{ctx.filename} [BG].jpg"
+        ctx.txt.headers.background = filename
         ctx.logger.info("Success! Downloaded background.")
     else:
         ctx.logger.error("Failed to download background!")
@@ -193,35 +189,7 @@ def _maybe_download_background(ctx: Context) -> None:
 def _maybe_write_txt(ctx: Context) -> None:
     if not (options := ctx.options.txt_options):
         return
-    _set_missing_headers(ctx)
-    note_utils.dump_notes(ctx.header, ctx.notes, ctx.dir_path, options, ctx.logger)
+    ctx.txt.write_to_file(
+        f"{ctx.file_path_stem}.txt", options.encoding.value, options.newline.value
+    )
     ctx.logger.info("Success! Created song txt.")
-
-
-def _set_missing_headers(ctx: Context) -> None:
-    _maybe_set_player_tags_and_markers(ctx)
-    if ctx.meta_tags.preview is not None:
-        ctx.header["#PREVIEWSTART"] = str(ctx.meta_tags.preview)
-    if medley := ctx.meta_tags.medley:
-        ctx.header["#MEDLEYSTARTBEAT"] = str(medley.start)
-        ctx.header["#MEDLEYENDBEAT"] = str(medley.end)
-
-
-def _maybe_set_player_tags_and_markers(ctx: Context) -> None:
-    if not note_utils.is_duet(ctx.header, ctx.meta_tags):
-        return
-
-    ctx.header["#P1"] = ctx.meta_tags.player1 or "P1"
-    ctx.header["#P2"] = ctx.meta_tags.player2 or "P2"
-
-    ctx.notes.insert(0, "P1\n")
-    prev_start = 0
-    for idx, line in enumerate(ctx.notes):
-        if line.startswith((":", "*", "F", "R", "G")):
-            _type, start, _duration, _pitch, *_syllable = line.split(" ", maxsplit=4)
-            if int(start) < prev_start:
-                ctx.notes.insert(idx, "P2\n")
-                ctx.logger.debug("Success! Restored duet markers.")
-                return
-            prev_start = int(start)
-    ctx.logger.error("Failed to restore duet markers!")

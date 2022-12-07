@@ -156,9 +156,6 @@ class MetaTags:
                 case _:
                     logger.warning(f"unknown key for meta tag: '{pair}'")
 
-    def is_duet(self) -> bool:
-        return self.player1 is not None and self.player2 is not None
-
     def is_audio_only(self) -> bool:
         """True if a resource is explicitly set for audio only."""
         return bool(self.audio and not self.video)
