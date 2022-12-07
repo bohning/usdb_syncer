@@ -384,4 +384,4 @@ def get_notes(song_id: SongId, logger: Log) -> str:
 
 
 def _parse_song_txt_from_txt_page(soup: BeautifulSoup) -> str:
-    return soup.find("textarea").string.replace("<", "(").replace(">", ")")  # type: ignore
+    return soup.find("textarea").string  # type: ignore
