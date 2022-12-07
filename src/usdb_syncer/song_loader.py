@@ -1,6 +1,5 @@
 """Contains a runnable song loader."""
 
-import filecmp
 import os
 from typing import Iterator
 
@@ -11,6 +10,7 @@ from usdb_syncer.download_options import Options, download_options
 from usdb_syncer.logger import Log, get_logger
 from usdb_syncer.notes_parser import SongTxt
 from usdb_syncer.resource_dl import ImageKind, download_and_process_image
+from usdb_syncer.sync_meta import SyncMeta
 from usdb_syncer.usdb_scraper import SongDetails
 from usdb_syncer.utils import sanitize_filename
 
@@ -94,28 +94,16 @@ def download_songs(ids: list[SongId]) -> None:
 
 def _find_or_initialize_folder(ctx: Context) -> bool:
     """True if the folder already exists and is up to date."""
-
-    if not os.path.exists(ctx.dir_path):
-        os.makedirs(ctx.dir_path)
-    temp_path = os.path.join(ctx.dir_path, "temp.usdb")
     usdb_path = os.path.join(ctx.dir_path, f"{ctx.details.song_id}.usdb")
-
-    # write .usdb file for synchronization
-    # songtxt may have CRLF newlines, so prevent Python from replacing LF with CRLF on
-    # Windows
-    with open(temp_path, "w", encoding="utf_8", newline="") as file:
-        file.write(ctx.songtext)
-
-    if os.path.exists(usdb_path):
-        if filecmp.cmp(temp_path, usdb_path):
+    if os.path.exists(usdb_path) and (meta := SyncMeta.try_from_file(usdb_path)):
+        if not meta.update_txt_hash(ctx.songtext):
             ctx.logger.info("Aborted; song is already synchronized")
-            os.remove(temp_path)
             return True
-
         ctx.logger.info("USDB file has been updated, re-downloading...")
-        os.remove(usdb_path)
-
-    os.rename(temp_path, usdb_path)
+    else:
+        os.makedirs(ctx.dir_path, exist_ok=True)
+        meta = SyncMeta.new(ctx.details.song_id, ctx.songtext)
+    meta.to_file(ctx.dir_path)
     return False
 
 

@@ -20,3 +20,10 @@ class SongId:
     @classmethod
     def parse(cls, value: str) -> SongId:
         return cls(int(value))
+
+    @classmethod
+    def try_parse(cls, value: str) -> SongId | None:
+        try:
+            return cls.parse(value)
+        except ValueError:
+            return None
