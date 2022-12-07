@@ -1,6 +1,23 @@
 """General-purpose utilities."""
 
+import os
 import re
+
+from appdirs import AppDirs
+
+_app_dirs = AppDirs("usdb_syncer", "bohning")
+
+
+class AppPaths:
+    """App data paths."""
+
+    log = os.path.join(_app_dirs.user_data_dir, "usdb_syncer.log")
+    song_list = os.path.join(_app_dirs.user_cache_dir, "available_songs.json")
+
+    @classmethod
+    def make_dirs(cls) -> None:
+        os.makedirs(os.path.dirname(cls.log), exist_ok=True)
+        os.makedirs(os.path.dirname(cls.song_list), exist_ok=True)
 
 
 def extract_youtube_id(url: str) -> str | None:

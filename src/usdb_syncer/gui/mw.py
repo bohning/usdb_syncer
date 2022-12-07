@@ -24,6 +24,7 @@ from usdb_syncer.pdf import generate_song_pdf
 from usdb_syncer.song_list_fetcher import SongListFetcher, get_available_songs
 from usdb_syncer.song_loader import download_songs
 from usdb_syncer.usdb_scraper import UsdbSong
+from usdb_syncer.utils import AppPaths
 
 
 class RatingFilter(Enum):
@@ -285,6 +286,7 @@ class TextEditLogger(logging.Handler):
 
 
 def main() -> None:
+    AppPaths.make_dirs()
     app = QApplication(sys.argv)
     app.setOrganizationName("bohning")
     app.setApplicationName("usdb_syncer")
@@ -295,7 +297,7 @@ def main() -> None:
         datefmt="%Y-%m-%d %H:%M:%S",
         encoding="utf-8",
         handlers=(
-            logging.FileHandler("usdb_syncer.log"),
+            logging.FileHandler(AppPaths.log),
             logging.StreamHandler(sys.stdout),
             TextEditLogger(mw),
         ),
