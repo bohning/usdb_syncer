@@ -9,7 +9,7 @@ from pdfme import build_pdf  # type: ignore
 from usdb_syncer.usdb_scraper import UsdbSong
 
 
-def generate_song_pdf(songs: Iterator[UsdbSong]) -> None:
+def generate_song_pdf(songs: Iterator[UsdbSong], path: str) -> None:
     document: dict[str, Any] = {}
     document["style"] = {"margin_bottom": 15, "text_align": "j"}
     document["formats"] = {"url": {"c": "blue", "u": 1}, "title": {"b": 1, "s": 13}}
@@ -32,5 +32,5 @@ def generate_song_pdf(songs: Iterator[UsdbSong]) -> None:
         data = f"{song.song_id}\t\t{song.artist}\t\t{song.title}\t\t{song.language}"
         content1.append([data.replace("’", "'")])
 
-    with open(f"{date:%Y-%m-%d}_songlist.pdf", "wb") as file:
+    with open(path, "wb") as file:
         build_pdf(document, file)

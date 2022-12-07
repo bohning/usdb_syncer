@@ -1,6 +1,8 @@
 """usdb_syncer's GUI"""
 
+import datetime
 import logging
+import os
 import sys
 from enum import Enum
 
@@ -119,9 +121,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         self.action_refetch_song_list.triggered.connect(self._refetch_song_list)
         self.action_meta_tags.triggered.connect(lambda: MetaTagsDialog(self).show())
         self.action_settings.triggered.connect(lambda: SettingsDialog(self).show())
-        self.action_generate_song_pdf.triggered.connect(
-            lambda: generate_song_pdf(self.table.all_local_songs())
-        )
+        self.action_generate_song_pdf.triggered.connect(self._generate_song_pdf)
 
     def _setup_song_dir(self) -> None:
         self.lineEdit_song_dir.setText(settings.get_song_dir())
@@ -264,6 +264,13 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         self.comboBox_golden_notes.setCurrentIndex(0)
         self.comboBox_rating.setCurrentIndex(0)
         self.comboBox_views.setCurrentIndex(0)
+
+    def _generate_song_pdf(self) -> None:
+        fname = f"{datetime.datetime.now():%Y-%m-%d}_songlist.pdf"
+        path = os.path.join(settings.get_song_dir(), fname)
+        path = QFileDialog.getSaveFileName(self, dir=path, filter="PDF (*.pdf)")[0]
+        if path:
+            generate_song_pdf(self.table.all_local_songs(), path)
 
 
 class Signals(QObject):
