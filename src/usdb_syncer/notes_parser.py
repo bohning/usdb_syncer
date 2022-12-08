@@ -351,7 +351,7 @@ class SongTxt:
 
     @classmethod
     def parse(cls, value: str, logger: Log) -> SongTxt:
-        lines = [line for line in value.split("\n") if line]
+        lines = [line for line in value.splitlines() if line]
         headers = Headers.parse(lines, logger)
         meta_tags = MetaTags(headers.video or "", logger)
         notes = PlayerNotes.parse(lines, logger)
