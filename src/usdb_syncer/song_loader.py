@@ -67,7 +67,7 @@ class SongLoader(QRunnable):
         self.logger = get_logger(__file__, song_id)
 
     def run(self) -> None:
-        details = usdb_scraper.get_usdb_details(self.song_id, self.logger)
+        details = usdb_scraper.get_usdb_details(self.song_id)
         if details is None:
             # song was deleted from usdb in the meantime, TODO: uncheck/remove from model
             self.logger.error("Could not find song on USDB!")

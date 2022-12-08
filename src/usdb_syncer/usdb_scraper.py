@@ -10,7 +10,6 @@ from typing import Any, Callable, Iterator
 
 import requests
 from bs4 import BeautifulSoup
-from urlextract import URLExtract
 
 from usdb_syncer import SongId
 from usdb_syncer.logger import Log
@@ -23,13 +22,25 @@ _logger: logging.Logger = logging.getLogger(__file__)
 USDB_BASE_URL = "http://usdb.animux.de/"
 DATASET_NOT_FOUND_STRING = "Datensatz nicht gefunden"
 USDB_DATETIME_STRF = "%d.%m.%y - %H:%M"
-# partially taken from pytube.extract.video_id
-SUPPORTED_VIDEO_SOURCES = (
-    "vimeo.com",
-    "archive.org",
-    "fb.watch",
-    "universal-music.de",
-    "dailymotion.com",
+SUPPORTED_VIDEO_SOURCES_REGEX = re.compile(
+    r"""\b
+        (
+            (?:https?://)?
+            (?:www\.)?
+            (?:
+                youtube\.com
+                | youtube-nocookie\.com
+                | youtu\.be
+                | vimeo\.com
+                | archive\.org
+                | fb\.watch
+                | universal-music\.de
+                | dailymotion\.com
+            )
+            /\S+
+        )
+    """,
+    re.VERBOSE,
 )
 
 
@@ -203,7 +214,7 @@ def get_usdb_page(
     return response.text
 
 
-def get_usdb_details(song_id: SongId, logger: Log) -> SongDetails | None:
+def get_usdb_details(song_id: SongId) -> SongDetails | None:
     """Retrieve song details from usdb webpage, if song exists.
 
     Parameters:
@@ -215,13 +226,13 @@ def get_usdb_details(song_id: SongId, logger: Log) -> SongDetails | None:
     soup = BeautifulSoup(html, "lxml")
     if DATASET_NOT_FOUND_STRING in soup.get_text():
         return None
-    return _parse_song_page(soup, song_id, logger)
+    return _parse_song_page(soup, song_id)
 
 
-def _parse_song_page(soup: BeautifulSoup, song_id: SongId, logger: Log) -> SongDetails:
+def _parse_song_page(soup: BeautifulSoup, song_id: SongId) -> SongDetails:
     details_table, comments_table, *_ = soup.find_all("table", border="0", width="500")
     details = _parse_details_table(details_table, song_id)
-    details.comments = _parse_comments_table(comments_table, logger)
+    details.comments = _parse_comments_table(comments_table)
     return details
 
 
@@ -313,9 +324,7 @@ def _parse_details_table(details_table: BeautifulSoup, song_id: SongId) -> SongD
     )
 
 
-def _parse_comments_table(
-    comments_table: BeautifulSoup, logger: Log
-) -> list[SongComment]:
+def _parse_comments_table(comments_table: BeautifulSoup) -> list[SongComment]:
     """Parse the table into individual comments, extracting potential video links,
     GAP and BPM values.
 
@@ -329,10 +338,9 @@ def _parse_comments_table(
         meta = header.find("td").text.strip()
         if " | " not in meta:
             # header is just the placeholder element
-            logger.debug("usdb::song has no comments!")
             break
         date_time, author = meta.split(" | ")
-        contents = _parse_comment_contents(header.next_sibling, logger)
+        contents = _parse_comment_contents(header.next_sibling)
         comments.append(
             SongComment(date_time=date_time, author=author, contents=contents)
         )
@@ -340,7 +348,7 @@ def _parse_comments_table(
     return comments
 
 
-def _parse_comment_contents(contents: BeautifulSoup, logger: Log) -> CommentContents:
+def _parse_comment_contents(contents: BeautifulSoup) -> CommentContents:
     text = contents.find("td").text.strip()  # type: ignore
     urls: list[str] = []
     youtube_ids: list[str] = []
@@ -348,10 +356,8 @@ def _parse_comment_contents(contents: BeautifulSoup, logger: Log) -> CommentCont
     for url in _all_urls_in_comment(contents, text):
         if yt_id := extract_youtube_id(url):
             youtube_ids.append(yt_id)
-        elif any(source in url for source in SUPPORTED_VIDEO_SOURCES):
-            urls.append(url)
         else:
-            logger.debug(f"unknown website in comment URL '{url}'")
+            urls.append(url)
 
     return CommentContents(text=text, urls=urls, youtube_ids=youtube_ids)
 
@@ -363,10 +369,8 @@ def _all_urls_in_comment(contents: BeautifulSoup, text: str) -> Iterator[str]:
     for anchor in contents.find_all("a"):
         if href := anchor.get("href"):
             yield href
-    for url in URLExtract().gen_urls(text):
-        if isinstance(url, tuple):
-            url = url[0]
-        yield url
+    for match in SUPPORTED_VIDEO_SOURCES_REGEX.finditer(text):
+        yield match.group(1)
 
 
 def get_notes(song_id: SongId, logger: Log) -> str:
