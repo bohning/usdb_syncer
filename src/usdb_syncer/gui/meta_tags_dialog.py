@@ -1,6 +1,12 @@
 """Dialog to create meta tags."""
 
-
+from pyshorteners import Shortener
+from pyshorteners.exceptions import (
+    BadAPIResponseException,
+    BadURLException,
+    ExpandingErrorException,
+    ShorteningErrorException,
+)
 from PySide6.QtGui import QGuiApplication
 from PySide6.QtWidgets import QDialog, QWidget
 
@@ -12,6 +18,9 @@ from usdb_syncer.meta_tags.serializer import (
     video_tag_from_values,
 )
 
+MAX_LEN = 262
+URL_TAG_NAMES = ("cover_url", "background_url", "audio_url", "video_url")
+
 
 class MetaTagsDialog(Ui_Dialog, QDialog):
     """Dialog to create meta tags."""
@@ -22,6 +31,7 @@ class MetaTagsDialog(Ui_Dialog, QDialog):
         self._output = "#VIDEO:"
         self._update_output()
         self._connect_signals()
+        self._shortened_urls: dict[str, str] = {}
 
     def _connect_signals(self) -> None:
         self.audio_url.textChanged.connect(self._update_output)
@@ -101,9 +111,14 @@ class MetaTagsDialog(Ui_Dialog, QDialog):
 
     def _update_output(self) -> None:
         values = self._meta_values()
-        self._output = video_tag_from_values(values)
+        while True:
+            self._output = video_tag_from_values(values)
+            if len(self._output) <= MAX_LEN:
+                break
+            if not self._try_shorten_url(values):
+                break
         self.output.setText(self._output)
-        self.char_count.setText(f"{len(self._output)} / 262 characters")
+        self.char_count.setText(f"{len(self._output)} / {MAX_LEN} characters")
 
     def _toggle_auto_contrast(self) -> None:
         auto = self.cover_contrast_auto.isChecked()
@@ -111,3 +126,34 @@ class MetaTagsDialog(Ui_Dialog, QDialog):
 
     def _on_copy_to_clipboard(self) -> None:
         QGuiApplication.clipboard().setText(self._output)
+
+    def _try_shorten_url(self, values: MetaValues) -> bool:
+        """True if some URL was shortened."""
+        urls = [(name, getattr(values, name)) for name in URL_TAG_NAMES]
+        urls.sort(key=lambda u: len(u[1]), reverse=True)
+        for name, url in urls:
+            if short := self._shortened_urls.get(url, ""):
+                setattr(values, name, short)
+                return True
+            if len(url) < 30:
+                continue
+            if short := try_shorten_url(url):
+                self._shortened_urls[url] = short
+                setattr(values, name, short)
+                return True
+        return False
+
+
+def try_shorten_url(url: str) -> str:
+    try:
+        short = Shortener().tinyurl.short(url).removeprefix("https://")
+    except (
+        BadAPIResponseException,
+        BadURLException,
+        ExpandingErrorException,
+        ShorteningErrorException,
+    ):
+        return ""
+    if len(short) < len(url):
+        return short
+    return ""
