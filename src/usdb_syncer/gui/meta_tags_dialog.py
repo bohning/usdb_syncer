@@ -119,6 +119,7 @@ class MetaTagsDialog(Ui_Dialog, QDialog):
                 break
         self.output.setText(self._output)
         self.char_count.setText(f"{len(self._output)} / {MAX_LEN} characters")
+        self.button_copy_to_clipboard.setEnabled(len(self._output) <= MAX_LEN)
 
     def _toggle_auto_contrast(self) -> None:
         auto = self.cover_contrast_auto.isChecked()
