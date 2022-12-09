@@ -29,7 +29,9 @@ class Context:
     file_path_stem: str
     logger: Log
 
-    def __init__(self, details: SongDetails, options: Options, logger: Log) -> None:
+    def __init__(
+        self, details: SongDetails, options: Options, meta_path: str, logger: Log
+    ) -> None:
         self.details = details
         self.options = options
 
@@ -44,6 +46,11 @@ class Context:
             self.options.song_dir, self.filename_stem, str(self.details.song_id)
         )
         self.file_path_stem = os.path.join(self.dir_path, self.filename_stem)
+
+        self.sync_meta, self.new_src_txt = _load_sync_meta(
+            meta_path, details.song_id, self.songtext
+        )
+
         self.logger = logger
 
     def all_audio_resources(self) -> Iterator[str]:
@@ -57,13 +64,22 @@ class Context:
         yield from self.details.all_comment_videos()
 
 
+def _load_sync_meta(path: str, song_id: SongId, new_txt: str) -> tuple[SyncMeta, bool]:
+    """True if new_txt is different to the last one (if any)."""
+    if os.path.exists(path) and (meta := SyncMeta.try_from_file(path)):
+        updated = meta.update_src_txt_hash(new_txt)
+        return meta, updated
+    return SyncMeta.new(song_id, new_txt), True
+
+
 class SongLoader(QRunnable):
     """Runnable to create a complete song folder."""
 
-    def __init__(self, song_id: SongId, options: Options) -> None:
+    def __init__(self, song_id: SongId, options: Options, meta_path: str) -> None:
         super().__init__()
         self.song_id = song_id
         self.options = options
+        self.meta_path = meta_path
         self.logger = get_logger(__file__, song_id)
 
     def run(self) -> None:
@@ -73,38 +89,26 @@ class SongLoader(QRunnable):
             self.logger.error("Could not find song on USDB!")
             return
         self.logger.info(f"Found '{details.artist} - {details.title}' on  USDB")
-        ctx = Context(details, self.options, self.logger)
-        if _find_or_initialize_folder(ctx):
+        ctx = Context(details, self.options, self.meta_path, self.logger)
+        if not ctx.new_src_txt:
+            ctx.logger.info("Aborted; song is already synchronized")
             return
+        os.makedirs(ctx.dir_path, exist_ok=True)
         _maybe_download_audio(ctx)
         _maybe_download_video(ctx)
         _maybe_download_cover(ctx)
         _maybe_download_background(ctx)
         _maybe_write_txt(ctx)
+        _write_sync_meta(ctx)
         self.logger.info("All done!")
 
 
-def download_songs(ids: list[SongId]) -> None:
+def download_songs(ids_and_meta_paths: list[tuple[SongId, str]]) -> None:
     options = download_options()
     threadpool = QThreadPool.globalInstance()
-    for song_id in ids:
-        worker = SongLoader(song_id=song_id, options=options)
+    for song_id, meta_path in ids_and_meta_paths:
+        worker = SongLoader(song_id=song_id, options=options, meta_path=meta_path)
         threadpool.start(worker)
-
-
-def _find_or_initialize_folder(ctx: Context) -> bool:
-    """True if the folder already exists and is up to date."""
-    usdb_path = os.path.join(ctx.dir_path, f"{ctx.details.song_id}.usdb")
-    if os.path.exists(usdb_path) and (meta := SyncMeta.try_from_file(usdb_path)):
-        if not meta.update_txt_hash(ctx.songtext):
-            ctx.logger.info("Aborted; song is already synchronized")
-            return True
-        ctx.logger.info("USDB file has been updated, re-downloading...")
-    else:
-        os.makedirs(ctx.dir_path, exist_ok=True)
-        meta = SyncMeta.new(ctx.details.song_id, ctx.songtext)
-    meta.to_file(ctx.dir_path)
-    return False
 
 
 def _maybe_download_audio(ctx: Context) -> None:
@@ -177,7 +181,11 @@ def _maybe_download_background(ctx: Context) -> None:
 def _maybe_write_txt(ctx: Context) -> None:
     if not (options := ctx.options.txt_options):
         return
-    ctx.txt.write_to_file(
-        f"{ctx.file_path_stem}.txt", options.encoding.value, options.newline.value
-    )
+    path = f"{ctx.file_path_stem}.txt"
+    ctx.txt.write_to_file(path, options.encoding.value, options.newline.value)
+    ctx.sync_meta.set_txt_meta(path)
     ctx.logger.info("Success! Created song txt.")
+
+
+def _write_sync_meta(ctx: Context) -> None:
+    ctx.sync_meta.to_file(ctx.dir_path)

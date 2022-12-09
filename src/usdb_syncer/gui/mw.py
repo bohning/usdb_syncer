@@ -132,8 +132,17 @@ class MainWindow(Ui_MainWindow, QMainWindow):
 
     def _setup_download(self) -> None:
         self.pushButton_downloadSelectedSongs.clicked.connect(
-            lambda: download_songs(self.table.selected_song_ids())
+            self._download_selected_songs
         )
+
+    def _download_selected_songs(self) -> None:
+        song_dir = settings.get_song_dir()
+        ids_and_meta_paths = [
+            (song_id, song.sync_meta_path(song_dir))
+            for song_id in self.table.selected_song_ids()
+            if (song := self.table.get_song(song_id))
+        ]
+        download_songs(ids_and_meta_paths)
 
     def _setup_search(self) -> None:
         self._populate_search_filters()

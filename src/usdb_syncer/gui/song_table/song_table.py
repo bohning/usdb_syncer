@@ -151,6 +151,9 @@ class SongTable:
     def resync_local_data(self) -> None:
         self._model.resync_local_data()
 
+    def get_song(self, song_id: SongId) -> UsdbSong | None:
+        return self._model.item_for_id(song_id)
+
 
 def _parse_all_txts(directory: str) -> list[SongTxt]:
     err_logger = get_logger(__file__ + "[errors]")

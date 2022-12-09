@@ -2,12 +2,14 @@
 
 from __future__ import annotations
 
+import os
 from json import JSONEncoder
 from typing import Any
 
 import attrs
 
 from usdb_syncer import SongId
+from usdb_syncer.utils import sanitize_filename
 
 
 @attrs.frozen(auto_attribs=True, kw_only=True)
@@ -51,6 +53,13 @@ class UsdbSong:
             rating=rating.count("star.png"),
             views=int(views),
         )
+
+    def song_folder(self, song_dir: str) -> str:
+        artist_title = sanitize_filename(f"{self.artist} - {self.title}")
+        return os.path.join(song_dir, artist_title, str(self.song_id))
+
+    def sync_meta_path(self, song_dir: str) -> str:
+        return os.path.join(self.song_folder(song_dir), f"{self.song_id}.usdb")
 
 
 class UsdbSongEncoder(JSONEncoder):
