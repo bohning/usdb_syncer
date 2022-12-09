@@ -39,7 +39,7 @@ class TableModel(QAbstractTableModel):
         song_dir = settings.get_song_dir()
         self.beginResetModel()
         self._songs = tuple(SongData.from_usdb_song(s, song_dir) for s in songs)
-        self._rows = dict(map(lambda t: (t[1].song_id, t[0]), enumerate(songs)))
+        self._rows = {song.song_id: idx for idx, song in enumerate(songs)}
         self.endResetModel()
 
     def ids_for_indices(self, indices: Iterator[QModelIndex]) -> list[SongId]:
