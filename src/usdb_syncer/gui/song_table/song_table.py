@@ -155,6 +155,9 @@ class SongTable:
     def get_data(self, song_id: SongId) -> SongData | None:
         return self._model.item_for_id(song_id)
 
+    def update_item(self, new: SongData) -> None:
+        self._model.update_item(new)
+
 
 def _parse_all_txts(directory: str) -> list[SongTxt]:
     err_logger = get_logger(__file__ + "[errors]")

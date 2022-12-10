@@ -16,14 +16,14 @@ from PySide6.QtWidgets import (
     QSplashScreen,
 )
 
-from usdb_syncer import settings
+from usdb_syncer import SongId, settings
 from usdb_syncer.gui.forms.MainWindow import Ui_MainWindow
 from usdb_syncer.gui.meta_tags_dialog import MetaTagsDialog
 from usdb_syncer.gui.progress import run_with_progress
 from usdb_syncer.gui.settings_dialog import SettingsDialog
 from usdb_syncer.gui.song_table.song_table import SongTable
 from usdb_syncer.pdf import generate_song_pdf
-from usdb_syncer.song_data import SongData
+from usdb_syncer.song_data import LocalFiles, SongData
 from usdb_syncer.song_list_fetcher import get_all_song_data, resync_song_data
 from usdb_syncer.song_loader import download_songs
 from usdb_syncer.utils import AppPaths
@@ -82,6 +82,13 @@ class ViewsFilter(Enum):
         return f"{self.value}+"
 
 
+class SongSignals(QObject):
+    """Signals relating to songs."""
+
+    started = Signal(SongId)
+    finished = Signal(SongId, LocalFiles)
+
+
 class MainWindow(Ui_MainWindow, QMainWindow):
     """The app's main window and entry point to the GUI."""
 
@@ -98,6 +105,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         self._setup_song_dir()
         self._setup_search()
         self._setup_download()
+        self._setup_signals()
 
     def _setup_table(self) -> None:
         self.table = SongTable(self, self.tableView_availableSongs)
@@ -142,7 +150,11 @@ class MainWindow(Ui_MainWindow, QMainWindow):
             for song_id in self.table.selected_song_ids()
             if (song := self.table.get_data(song_id))
         ]
-        download_songs(ids_and_meta_paths)
+        download_songs(
+            ids_and_meta_paths,
+            self.song_signals.started.emit,
+            self.song_signals.finished.emit,
+        )
 
     def _setup_search(self) -> None:
         self._populate_search_filters()
@@ -214,6 +226,15 @@ class MainWindow(Ui_MainWindow, QMainWindow):
                 self._infos.append((message, created))
                 if self.toolButton_infos.isChecked():
                     self.plainTextEdit.appendPlainText(message)
+
+    def _setup_signals(self) -> None:
+        self.song_signals = SongSignals()
+        self.song_signals.finished.connect(self._update_downloaded_song)
+
+    def _update_downloaded_song(self, song_id: SongId, files: LocalFiles) -> None:
+        if old := self.table.get_data(song_id):
+            new = old.with_local_files(files)
+            self.table.update_item(new)
 
     def initialize_song_table(self, songs: tuple[SongData, ...]) -> None:
         self.table.initialize(songs)
@@ -288,8 +309,8 @@ class MainWindow(Ui_MainWindow, QMainWindow):
             generate_song_pdf(self.table.all_local_songs(), path)
 
 
-class Signals(QObject):
-    """Custom signals."""
+class LogSignal(QObject):
+    """Signal used by the logger."""
 
     message_level_time = Signal(str, int, float)
 
@@ -299,7 +320,7 @@ class TextEditLogger(logging.Handler):
 
     def __init__(self, mw: MainWindow) -> None:
         super().__init__()
-        self.signals = Signals()
+        self.signals = LogSignal()
         self.signals.message_level_time.connect(mw.log_to_text_edit)
 
     def emit(self, record: logging.LogRecord) -> None:

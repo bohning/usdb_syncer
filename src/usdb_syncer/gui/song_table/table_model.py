@@ -41,6 +41,13 @@ class TableModel(QAbstractTableModel):
         self._rows = {song.data.song_id: idx for idx, song in enumerate(songs)}
         self.endResetModel()
 
+    def update_item(self, new: SongData) -> None:
+        idx = self._rows[new.data.song_id]
+        self.songs = self.songs[:idx] + (new,) + self.songs[idx + 1 :]
+        start_idx = self.index(idx, 0)
+        end_idx = self.index(idx, self.columnCount())
+        self.dataChanged.emit(start_idx, end_idx)  # type:ignore
+
     def ids_for_indices(self, indices: Iterator[QModelIndex]) -> list[SongId]:
         return [self.songs[idx.row()].data.song_id for idx in indices]
 

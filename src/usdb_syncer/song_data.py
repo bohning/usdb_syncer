@@ -11,6 +11,7 @@ from PySide6.QtGui import QIcon
 from unidecode import unidecode
 
 from usdb_syncer.gui.song_table.column import Column
+from usdb_syncer.sync_meta import SyncMeta
 from usdb_syncer.typing_helpers import assert_never
 from usdb_syncer.usdb_scraper import UsdbSong
 
@@ -70,6 +71,10 @@ class LocalFiles:
     video: bool = False
     cover: bool = False
     background: bool = False
+
+    @classmethod
+    def from_sync_meta(cls, usdb_path: str, sync_meta: SyncMeta) -> LocalFiles:
+        return cls(usdb_path=usdb_path, txt=bool(sync_meta.txt))
 
 
 @attrs.frozen(auto_attribs=True)

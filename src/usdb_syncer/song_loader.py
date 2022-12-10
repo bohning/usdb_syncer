@@ -1,7 +1,7 @@
 """Contains a runnable song loader."""
 
 import os
-from typing import Iterator
+from typing import Callable, Iterator
 
 from PySide6.QtCore import QRunnable, QThreadPool
 
@@ -10,6 +10,7 @@ from usdb_syncer.download_options import Options, download_options
 from usdb_syncer.logger import Log, get_logger
 from usdb_syncer.notes_parser import SongTxt
 from usdb_syncer.resource_dl import ImageKind, download_and_process_image
+from usdb_syncer.song_data import LocalFiles
 from usdb_syncer.sync_meta import SyncMeta
 from usdb_syncer.usdb_scraper import SongDetails
 from usdb_syncer.utils import sanitize_filename
@@ -42,9 +43,7 @@ class Context:
         self.txt.restore_missing_headers()
 
         self.filename_stem = sanitize_filename(self.txt.headers.artist_title_str())
-        self.dir_path = os.path.join(
-            self.options.song_dir, self.filename_stem, str(self.details.song_id)
-        )
+        self.dir_path = os.path.dirname(meta_path)
         self.file_path_stem = os.path.join(self.dir_path, self.filename_stem)
 
         self.sync_meta, self.new_src_txt = _load_sync_meta(
@@ -75,14 +74,24 @@ def _load_sync_meta(path: str, song_id: SongId, new_txt: str) -> tuple[SyncMeta,
 class SongLoader(QRunnable):
     """Runnable to create a complete song folder."""
 
-    def __init__(self, song_id: SongId, options: Options, meta_path: str) -> None:
+    def __init__(
+        self,
+        song_id: SongId,
+        options: Options,
+        meta_path: str,
+        on_start: Callable[[SongId], None],
+        on_finish: Callable[[SongId, LocalFiles], None],
+    ) -> None:
         super().__init__()
         self.song_id = song_id
         self.options = options
         self.meta_path = meta_path
+        self.on_start = on_start
+        self.on_finish = on_finish
         self.logger = get_logger(__file__, song_id)
 
     def run(self) -> None:
+        self.on_start(self.song_id)
         details = usdb_scraper.get_usdb_details(self.song_id)
         if details is None:
             # song was deleted from usdb in the meantime, TODO: uncheck/remove from model
@@ -101,13 +110,20 @@ class SongLoader(QRunnable):
         _maybe_write_txt(ctx)
         _write_sync_meta(ctx)
         self.logger.info("All done!")
+        self.on_finish(
+            self.song_id, LocalFiles(self.meta_path, bool(ctx.sync_meta.txt))
+        )
 
 
-def download_songs(ids_and_meta_paths: list[tuple[SongId, str]]) -> None:
+def download_songs(
+    ids_and_meta_paths: list[tuple[SongId, str]],
+    on_start: Callable[[SongId], None],
+    on_finish: Callable[[SongId, LocalFiles], None],
+) -> None:
     options = download_options()
     threadpool = QThreadPool.globalInstance()
     for song_id, meta_path in ids_and_meta_paths:
-        worker = SongLoader(song_id=song_id, options=options, meta_path=meta_path)
+        worker = SongLoader(song_id, options, meta_path, on_start, on_finish)
         threadpool.start(worker)
 
 
