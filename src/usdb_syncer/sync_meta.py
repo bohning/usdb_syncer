@@ -42,6 +42,10 @@ class SyncMeta:
     # Sha1 hash as a hex str
     src_txt_hash: str
     txt: FileMeta | None = None
+    audio: FileMeta | None = None
+    video: FileMeta | None = None
+    cover: FileMeta | None = None
+    background: FileMeta | None = None
     version: int = SYNC_META_VERSION
 
     @classmethod
@@ -80,6 +84,18 @@ class SyncMeta:
 
     def set_txt_meta(self, path: str) -> None:
         self.txt = FileMeta.from_path(path)
+
+    def set_audio_meta(self, path: str) -> None:
+        self.audio = FileMeta.from_path(path)
+
+    def set_video_meta(self, path: str) -> None:
+        self.video = FileMeta.from_path(path)
+
+    def set_cover_meta(self, path: str) -> None:
+        self.cover = FileMeta.from_path(path)
+
+    def set_background_meta(self, path: str) -> None:
+        self.background = FileMeta.from_path(path)
 
 
 def hash_txt(txt: str) -> str:

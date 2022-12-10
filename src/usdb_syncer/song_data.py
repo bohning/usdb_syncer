@@ -74,7 +74,14 @@ class LocalFiles:
 
     @classmethod
     def from_sync_meta(cls, usdb_path: str, sync_meta: SyncMeta) -> LocalFiles:
-        return cls(usdb_path=usdb_path, txt=bool(sync_meta.txt))
+        return cls(
+            usdb_path=usdb_path,
+            txt=bool(sync_meta.txt),
+            audio=bool(sync_meta.audio),
+            video=bool(sync_meta.video),
+            cover=bool(sync_meta.cover),
+            background=bool(sync_meta.background),
+        )
 
 
 @attrs.frozen(auto_attribs=True)

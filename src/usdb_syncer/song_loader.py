@@ -111,7 +111,7 @@ class SongLoader(QRunnable):
         _write_sync_meta(ctx)
         self.logger.info("All done!")
         self.on_finish(
-            self.song_id, LocalFiles(self.meta_path, bool(ctx.sync_meta.txt))
+            self.song_id, LocalFiles.from_sync_meta(self.meta_path, ctx.sync_meta)
         )
 
 
@@ -136,7 +136,9 @@ def _maybe_download_audio(ctx: Context) -> None:
         if ext := resource_dl.download_video(
             resource, options, ctx.options.browser, ctx.file_path_stem, ctx.logger
         ):
-            ctx.txt.headers.mp3 = f"{ctx.filename_stem}.{ext}"
+            path = f"{ctx.file_path_stem}.{ext}"
+            ctx.sync_meta.set_audio_meta(path)
+            ctx.txt.headers.mp3 = os.path.basename(path)
             ctx.logger.info("Success! Downloaded audio.")
             return
     ctx.logger.error("Failed to download audio!")
@@ -151,7 +153,9 @@ def _maybe_download_video(ctx: Context) -> None:
         if ext := resource_dl.download_video(
             resource, options, ctx.options.browser, ctx.file_path_stem, ctx.logger
         ):
-            ctx.txt.headers.video = f"{ctx.filename_stem}.{ext}"
+            path = f"{ctx.file_path_stem}.{ext}"
+            ctx.sync_meta.set_video_meta(path)
+            ctx.txt.headers.video = os.path.basename(path)
             ctx.logger.info("Success! Downloaded video.")
             return
     ctx.logger.error("Failed to download video!")
@@ -170,6 +174,7 @@ def _maybe_download_cover(ctx: Context) -> None:
         max_width=ctx.options.cover.max_size,
     ):
         ctx.txt.headers.cover = filename
+        ctx.sync_meta.set_cover_meta(os.path.join(ctx.dir_path, filename))
         ctx.logger.info("Success! Downloaded cover.")
     else:
         ctx.logger.error("Failed to download cover!")
@@ -189,6 +194,7 @@ def _maybe_download_background(ctx: Context) -> None:
         max_width=None,
     ):
         ctx.txt.headers.background = filename
+        ctx.sync_meta.set_background_meta(os.path.join(ctx.dir_path, filename))
         ctx.logger.info("Success! Downloaded background.")
     else:
         ctx.logger.error("Failed to download background!")
