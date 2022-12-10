@@ -262,7 +262,9 @@ class MainWindow(Ui_MainWindow, QMainWindow):
             update_filter(selector, name)
 
     def select_song_dir(self) -> None:
-        song_dir = str(QFileDialog.getExistingDirectory(self, "Select Song Directory"))
+        song_dir = QFileDialog.getExistingDirectory(self, "Select Song Directory")
+        if not song_dir:
+            return
         self.lineEdit_song_dir.setText(song_dir)
         settings.set_song_dir(song_dir)
         self.table.resync_local_data()
