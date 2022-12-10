@@ -11,7 +11,7 @@ from PySide6.QtCore import (
     Qt,
 )
 
-from usdb_syncer import SongId, settings
+from usdb_syncer import SongId
 from usdb_syncer.gui.song_table.column import Column
 from usdb_syncer.song_data import SongData
 from usdb_syncer.usdb_scraper import UsdbSong
@@ -28,38 +28,29 @@ class CustomRole(int, Enum):
 class TableModel(QAbstractTableModel):
     """Table model for song data."""
 
-    _songs: tuple[SongData, ...] = tuple()
+    songs: tuple[SongData, ...] = tuple()
     _rows: dict[SongId, int]
 
     def __init__(self, parent: QObject) -> None:
         self._rows = {}
         super().__init__(parent)
 
-    def set_data(self, songs: list[UsdbSong]) -> None:
-        song_dir = settings.get_song_dir()
+    def set_data(self, songs: tuple[SongData, ...]) -> None:
         self.beginResetModel()
-        self._songs = tuple(SongData.from_usdb_song(s, song_dir) for s in songs)
-        self._rows = {song.song_id: idx for idx, song in enumerate(songs)}
+        self.songs = songs
+        self._rows = {song.data.song_id: idx for idx, song in enumerate(songs)}
         self.endResetModel()
 
     def ids_for_indices(self, indices: Iterator[QModelIndex]) -> list[SongId]:
-        return [self._songs[idx.row()].data.song_id for idx in indices]
+        return [self.songs[idx.row()].data.song_id for idx in indices]
 
-    def item_for_id(self, song_id: SongId) -> UsdbSong | None:
+    def item_for_id(self, song_id: SongId) -> SongData | None:
         if (idx := self._rows.get(song_id)) is not None:
-            return self._songs[idx].data
+            return self.songs[idx]
         return None
 
     def all_local_songs(self) -> Iterator[UsdbSong]:
-        return (song.data for song in self._songs if song.local_txt)
-
-    def resync_local_data(self) -> None:
-        song_dir = settings.get_song_dir()
-        self.beginResetModel()
-        self._songs = tuple(
-            SongData.from_usdb_song(s.data, song_dir) for s in self._songs
-        )
-        self.endResetModel()
+        return (song.data for song in self.songs if song.local_files.txt)
 
     ### QAbstractTableModel implementation
 
@@ -67,17 +58,17 @@ class TableModel(QAbstractTableModel):
         return 0 if parent.isValid() else len(Column)
 
     def rowCount(self, parent: QIndex = QModelIndex()) -> int:
-        return 0 if parent.isValid() else len(self._songs)
+        return 0 if parent.isValid() else len(self.songs)
 
     def data(self, index: QIndex, role: int = Qt.ItemDataRole.DisplayRole) -> Any:
         if not index.isValid():
             return None
         if role == Qt.ItemDataRole.DisplayRole:
-            return self._songs[index.row()].display_data(index.column())
+            return self.songs[index.row()].display_data(index.column())
         if role == Qt.ItemDataRole.DecorationRole:
-            return self._songs[index.row()].decoration_data(index.column())
+            return self.songs[index.row()].decoration_data(index.column())
         if role == CustomRole.ALL_DATA:
-            return self._songs[index.row()]
+            return self.songs[index.row()]
         return None
 
     def headerData(

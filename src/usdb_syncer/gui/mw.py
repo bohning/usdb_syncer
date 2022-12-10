@@ -23,9 +23,9 @@ from usdb_syncer.gui.progress import run_with_progress
 from usdb_syncer.gui.settings_dialog import SettingsDialog
 from usdb_syncer.gui.song_table.song_table import SongTable
 from usdb_syncer.pdf import generate_song_pdf
-from usdb_syncer.song_list_fetcher import SongListFetcher, get_available_songs
+from usdb_syncer.song_data import SongData
+from usdb_syncer.song_list_fetcher import get_all_song_data, resync_song_data
 from usdb_syncer.song_loader import download_songs
-from usdb_syncer.usdb_scraper import UsdbSong
 from usdb_syncer.utils import AppPaths
 
 
@@ -140,7 +140,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         ids_and_meta_paths = [
             (song_id, song.sync_meta_path(song_dir))
             for song_id in self.table.selected_song_ids()
-            if (song := self.table.get_song(song_id))
+            if (song := self.table.get_data(song_id))
         ]
         download_songs(ids_and_meta_paths)
 
@@ -215,10 +215,10 @@ class MainWindow(Ui_MainWindow, QMainWindow):
                 if self.toolButton_infos.isChecked():
                     self.plainTextEdit.appendPlainText(message)
 
-    def initialize_song_table(self, song_list: list[UsdbSong]) -> None:
-        self.table.initialize(song_list)
-        self.len_song_list = len(song_list)
-        self._update_dynamic_filters(song_list)
+    def initialize_song_table(self, songs: tuple[SongData, ...]) -> None:
+        self.table.initialize(songs)
+        self.len_song_list = len(songs)
+        self._update_dynamic_filters(songs)
 
     def _select_local_songs(self) -> None:
         directory = QFileDialog.getExistingDirectory(self, "Select Song Directory")
@@ -227,18 +227,18 @@ class MainWindow(Ui_MainWindow, QMainWindow):
     def _refetch_song_list(self) -> None:
         run_with_progress(
             "Fetching song list...",
-            lambda _: get_available_songs(True),
+            lambda _: get_all_song_data(True),
             self._on_song_list_fetched,
         )
 
-    def _on_song_list_fetched(self, song_list: list[UsdbSong]) -> None:
-        self.table.set_data(song_list)
-        self.len_song_list = len(song_list)
-        self._update_dynamic_filters(song_list)
+    def _on_song_list_fetched(self, songs: tuple[SongData, ...]) -> None:
+        self.table.set_data(songs)
+        self.len_song_list = len(songs)
+        self._update_dynamic_filters(songs)
 
-    def _update_dynamic_filters(self, song_list: list[UsdbSong]) -> None:
+    def _update_dynamic_filters(self, songs: tuple[SongData, ...]) -> None:
         def update_filter(selector: QComboBox, attribute: str) -> None:
-            items = list(sorted(set(getattr(song, attribute) for song in song_list)))
+            items = list(sorted(set(getattr(song.data, attribute) for song in songs)))
             items.insert(0, "Any")
             current_text = selector.currentText()
             try:
@@ -267,7 +267,8 @@ class MainWindow(Ui_MainWindow, QMainWindow):
             return
         self.lineEdit_song_dir.setText(song_dir)
         settings.set_song_dir(song_dir)
-        self.table.resync_local_data()
+        data = resync_song_data(self.table.get_all_data())
+        self.table.set_data(data)
 
     def _clear_filters(self) -> None:
         self.lineEdit_search.setText("")
@@ -328,7 +329,8 @@ def main() -> None:
     splash.show()
     QApplication.processEvents()
     splash.showMessage("Loading song database from usdb...", color=Qt.GlobalColor.gray)
-    SongListFetcher(False, mw.lineEdit_song_dir.text(), mw.initialize_song_table).run()
+    songs = get_all_song_data(False)
+    mw.initialize_song_table(songs)
     splash.showMessage(
         f"Song database successfully loaded with {mw.len_song_list} songs.",
         color=Qt.GlobalColor.gray,

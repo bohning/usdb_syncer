@@ -2,40 +2,33 @@
 
 import json
 import os
-from typing import Callable
+from glob import glob
 
-from PySide6.QtCore import QObject, QRunnable, Signal
-
+from usdb_syncer import SongId, settings
+from usdb_syncer.logger import get_logger
+from usdb_syncer.notes_parser import SongTxt
+from usdb_syncer.song_data import LocalFiles, SongData
+from usdb_syncer.sync_meta import SyncMeta
 from usdb_syncer.usdb_scraper import get_usdb_available_songs
 from usdb_syncer.usdb_song import UsdbSong, UsdbSongEncoder
-from usdb_syncer.utils import AppPaths
+from usdb_syncer.utils import AppPaths, try_read_unknown_encoding
 
 
-class Signals(QObject):
-    """Custom signals."""
+def get_all_song_data(force_reload: bool) -> tuple[SongData, ...]:
+    songs = get_available_songs(force_reload)
+    local_files = find_local_files()
+    return tuple(
+        SongData.from_usdb_song(song, local_files.get(song.song_id, LocalFiles()))
+        for song in songs
+    )
 
-    song_list = Signal(object)
 
-
-class SongListFetcher(QRunnable):
-    """Runnable for getting the available songs from USDB or the local cache and
-    crawling the song directory for associated local files.
-    """
-
-    def __init__(
-        self,
-        force_reload: bool,
-        song_dir: str,
-        on_done: Callable[[list[UsdbSong]], None],
-    ) -> None:
-        super().__init__()
-        self.force_reload = force_reload
-        self.song_dir = song_dir
-        self.signals = Signals()
-        self.signals.song_list.connect(on_done)
-
-    def run(self) -> None:
-        self.signals.song_list.emit(get_available_songs(self.force_reload))
+def resync_song_data(data: tuple[SongData, ...]) -> tuple[SongData, ...]:
+    local_files = find_local_files()
+    return tuple(
+        song.with_local_files(local_files.get(song.data.song_id, LocalFiles()))
+        for song in data
+    )
 
 
 def get_available_songs(force_reload: bool) -> list[UsdbSong]:
@@ -59,3 +52,35 @@ def load_available_songs() -> list[UsdbSong] | None:
 def dump_available_songs(available_songs: list[UsdbSong]) -> None:
     with open(AppPaths.song_list, "w", encoding="utf8") as file:
         json.dump(available_songs, file, cls=UsdbSongEncoder)
+
+
+def find_local_files() -> dict[SongId, LocalFiles]:
+    local_files: dict[SongId, LocalFiles] = {}
+    pattern = os.path.join(settings.get_song_dir(), "**", "*.usdb")
+    for path in glob(pattern, recursive=True):
+        if meta := SyncMeta.try_from_file(path):
+            local_files[meta.song_id] = files = LocalFiles(usdb_path=path)
+            folder = os.path.dirname(path)
+            if txt := _get_song_txt(meta, folder):
+                files.txt = True
+                files.audio = _file_exists(folder, txt.headers.mp3)
+                files.video = _file_exists(folder, txt.headers.video)
+                files.cover = _file_exists(folder, txt.headers.cover)
+                files.background = _file_exists(folder, txt.headers.background)
+    return local_files
+
+
+def _get_song_txt(meta: SyncMeta, folder: str) -> SongTxt | None:
+    if not meta.txt:
+        return None
+    txt_path = os.path.join(folder, meta.txt.fname)
+    logger = get_logger(__file__, meta.song_id)
+    if os.path.exists(txt_path) and (contents := try_read_unknown_encoding(txt_path)):
+        return SongTxt.try_parse(contents, logger)
+    return None
+
+
+def _file_exists(folder: str, fname: str | None) -> bool:
+    if not fname:
+        return False
+    return os.path.exists(os.path.join(folder, fname))

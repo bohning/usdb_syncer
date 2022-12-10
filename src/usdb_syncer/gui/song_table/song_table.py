@@ -14,6 +14,7 @@ from usdb_syncer.gui.song_table.sort_filter_proxy_model import SortFilterProxyMo
 from usdb_syncer.gui.song_table.table_model import TableModel
 from usdb_syncer.logger import get_logger
 from usdb_syncer.notes_parser import SongTxt
+from usdb_syncer.song_data import SongData
 from usdb_syncer.usdb_scraper import UsdbSong
 from usdb_syncer.utils import try_read_unknown_encoding
 
@@ -31,7 +32,7 @@ class SongTable:
         self._view.setModel(self._proxy_model)
         self._view.setSelectionMode(QAbstractItemView.SelectionMode.ExtendedSelection)
 
-    def initialize(self, song_list: list[UsdbSong]) -> None:
+    def initialize(self, song_list: tuple[SongData, ...]) -> None:
         self._model.set_data(song_list)
         self._setup_table_header()
 
@@ -142,16 +143,16 @@ class SongTable:
 
     ### data model
 
-    def set_data(self, songs: list[UsdbSong]) -> None:
+    def set_data(self, songs: tuple[SongData, ...]) -> None:
         self._model.set_data(songs)
+
+    def get_all_data(self) -> tuple[SongData, ...]:
+        return self._model.songs
 
     def all_local_songs(self) -> Iterator[UsdbSong]:
         return self._model.all_local_songs()
 
-    def resync_local_data(self) -> None:
-        self._model.resync_local_data()
-
-    def get_song(self, song_id: SongId) -> UsdbSong | None:
+    def get_data(self, song_id: SongId) -> SongData | None:
         return self._model.item_for_id(song_id)
 
 
