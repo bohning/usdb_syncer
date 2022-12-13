@@ -366,6 +366,11 @@ class SongTxt:
         except NotesParseError:
             return None
 
+    def maybe_split_duet_notes(self) -> None:
+        if self.headers.relative and self.headers.relative.lower() == "yes":
+            return
+        self.notes.maybe_split_duet_notes()
+
     def restore_missing_headers(self) -> None:
         if self.notes.player_2:
             self.headers.p1 = self.meta_tags.player1 or "P1"
