@@ -48,6 +48,7 @@ disable = [
     "missing-function-docstring",
     "too-many-return-statements",
     "duplicate-code",
+    "too-many-public-methods",
 ]
 
 [tool.mypy]
