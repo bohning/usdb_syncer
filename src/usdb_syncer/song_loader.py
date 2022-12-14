@@ -49,7 +49,7 @@ class Context:
             self.meta_path = meta_path
         else:
             self.dir_path = next_unique_directory(
-                os.path.join(options.song_dir, self.filename_stem, str(details.song_id))
+                os.path.join(options.song_dir, self.filename_stem)
             )
             self.meta_path = os.path.join(self.dir_path, f"{details.song_id}.usdb")
         self.file_path_stem = os.path.join(self.dir_path, self.filename_stem)
