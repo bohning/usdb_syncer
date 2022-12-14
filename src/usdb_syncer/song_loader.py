@@ -23,6 +23,7 @@ class Context:
     options: Options
     songtext: str
     txt: SongTxt
+    meta_path: str
     dir_path: str
     # without extension
     filename_stem: str
@@ -31,7 +32,7 @@ class Context:
     logger: Log
 
     def __init__(
-        self, details: SongDetails, options: Options, meta_path: str, logger: Log
+        self, details: SongDetails, options: Options, meta_path: str | None, logger: Log
     ) -> None:
         self.details = details
         self.options = options
@@ -43,11 +44,18 @@ class Context:
         self.txt.restore_missing_headers()
 
         self.filename_stem = sanitize_filename(self.txt.headers.artist_title_str())
-        self.dir_path = os.path.dirname(meta_path)
+        if meta_path:
+            self.dir_path = os.path.dirname(meta_path)
+            self.meta_path = meta_path
+        else:
+            self.dir_path = os.path.join(
+                options.song_dir, self.filename_stem, str(details.song_id)
+            )
+            self.meta_path = os.path.join(self.dir_path, f"{details.song_id}.usdb")
         self.file_path_stem = os.path.join(self.dir_path, self.filename_stem)
 
         self.sync_meta, self.new_src_txt = _load_sync_meta(
-            meta_path, details.song_id, self.songtext
+            self.meta_path, details.song_id, self.songtext
         )
 
         self.logger = logger
@@ -78,7 +86,7 @@ class SongLoader(QRunnable):
         self,
         song_id: SongId,
         options: Options,
-        meta_path: str,
+        meta_path: str | None,
         on_start: Callable[[SongId], None],
         on_finish: Callable[[SongId, LocalFiles], None],
     ) -> None:
@@ -111,12 +119,12 @@ class SongLoader(QRunnable):
         _write_sync_meta(ctx)
         self.logger.info("All done!")
         self.on_finish(
-            self.song_id, LocalFiles.from_sync_meta(self.meta_path, ctx.sync_meta)
+            self.song_id, LocalFiles.from_sync_meta(ctx.meta_path, ctx.sync_meta)
         )
 
 
 def download_songs(
-    ids_and_meta_paths: list[tuple[SongId, str]],
+    ids_and_meta_paths: list[tuple[SongId, str | None]],
     on_start: Callable[[SongId], None],
     on_finish: Callable[[SongId, LocalFiles], None],
 ) -> None:

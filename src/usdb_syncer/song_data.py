@@ -145,11 +145,6 @@ class SongData:
             case _ as unreachable:
                 assert_never(unreachable)
 
-    def sync_meta_path(self, song_dir: str) -> str:
-        if self.local_files.usdb_path:
-            return self.local_files.usdb_path
-        return self.data.sync_meta_path(song_dir)
-
 
 @cache
 def rating_str(rating: int) -> str:

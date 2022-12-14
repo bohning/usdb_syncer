@@ -144,9 +144,8 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         )
 
     def _download_selected_songs(self) -> None:
-        song_dir = settings.get_song_dir()
         ids_and_meta_paths = [
-            (song_id, song.sync_meta_path(song_dir))
+            (song_id, song.local_files.usdb_path)
             for song_id in self.table.selected_song_ids()
             if (song := self.table.get_data(song_id))
         ]

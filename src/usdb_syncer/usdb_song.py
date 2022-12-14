@@ -58,9 +58,6 @@ class UsdbSong:
         artist_title = sanitize_filename(f"{self.artist} - {self.title}")
         return os.path.join(song_dir, artist_title, str(self.song_id))
 
-    def sync_meta_path(self, song_dir: str) -> str:
-        return os.path.join(self.song_folder(song_dir), f"{self.song_id}.usdb")
-
 
 class UsdbSongEncoder(JSONEncoder):
     """Custom JSON encoder"""
