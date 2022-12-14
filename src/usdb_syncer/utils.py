@@ -66,3 +66,13 @@ def sanitize_filename(fname: str) -> str:
         for char in old:
             fname = fname.replace(char, new)
     return fname
+
+
+def next_unique_directory(path: str) -> str:
+    """Ensures directory name is unique by adding a suffix if necessary."""
+    out_path = path
+    suffix = 0
+    while os.path.exists(out_path):
+        suffix += 1
+        out_path = f"{path} ({suffix})"
+    return out_path

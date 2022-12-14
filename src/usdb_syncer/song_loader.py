@@ -13,7 +13,7 @@ from usdb_syncer.resource_dl import ImageKind, download_and_process_image
 from usdb_syncer.song_data import LocalFiles
 from usdb_syncer.sync_meta import SyncMeta
 from usdb_syncer.usdb_scraper import SongDetails
-from usdb_syncer.utils import sanitize_filename
+from usdb_syncer.utils import next_unique_directory, sanitize_filename
 
 
 class Context:
@@ -48,8 +48,8 @@ class Context:
             self.dir_path = os.path.dirname(meta_path)
             self.meta_path = meta_path
         else:
-            self.dir_path = os.path.join(
-                options.song_dir, self.filename_stem, str(details.song_id)
+            self.dir_path = next_unique_directory(
+                os.path.join(options.song_dir, self.filename_stem, str(details.song_id))
             )
             self.meta_path = os.path.join(self.dir_path, f"{details.song_id}.usdb")
         self.file_path_stem = os.path.join(self.dir_path, self.filename_stem)
