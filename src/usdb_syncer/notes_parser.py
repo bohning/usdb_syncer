@@ -384,3 +384,9 @@ class SongTxt:
     def write_to_file(self, path: str, encoding: str, newline: str) -> None:
         with open(path, "w", encoding=encoding, newline=newline) as file:
             file.write(str(self))
+
+    def sanitize(self) -> None:
+        """Fix USDB issues and prepare for local usage."""
+        self.headers.reset_file_location_headers()
+        self.notes.maybe_split_duet_notes()
+        self.restore_missing_headers()

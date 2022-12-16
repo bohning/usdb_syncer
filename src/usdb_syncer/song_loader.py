@@ -1,14 +1,17 @@
 """Contains a runnable song loader."""
 
+from __future__ import annotations
+
 import os
 from typing import Callable, Iterator
 
+import attrs
 from PySide6.QtCore import QRunnable, QThreadPool
 
 from usdb_syncer import SongId, resource_dl, usdb_scraper
 from usdb_syncer.download_options import Options, download_options
 from usdb_syncer.logger import Log, get_logger
-from usdb_syncer.notes_parser import SongTxt
+from usdb_syncer.notes_parser import Headers, SongTxt
 from usdb_syncer.resource_dl import ImageKind, download_and_process_image
 from usdb_syncer.song_data import LocalFiles
 from usdb_syncer.sync_meta import SyncMeta
@@ -16,49 +19,57 @@ from usdb_syncer.usdb_scraper import SongDetails
 from usdb_syncer.utils import next_unique_directory, sanitize_filename
 
 
+@attrs.define(kw_only=True)
+class Locations:
+    """Paths for downloading a song."""
+
+    meta_path: str
+    dir_path: str
+    filename_stem: str
+    file_path_stem: str
+
+    @classmethod
+    def new(
+        cls, song_id: SongId, song_dir: str, meta_path: str | None, headers: Headers
+    ) -> Locations:
+        filename_stem = sanitize_filename(headers.artist_title_str())
+        if meta_path:
+            dir_path = os.path.dirname(meta_path)
+        else:
+            dir_path = next_unique_directory(os.path.join(song_dir, filename_stem))
+            meta_path = os.path.join(dir_path, f"{song_id}.usdb")
+        return cls(
+            meta_path=meta_path,
+            dir_path=dir_path,
+            filename_stem=filename_stem,
+            file_path_stem=os.path.join(dir_path, filename_stem),
+        )
+
+
+@attrs.define
 class Context:
     """Context for downloading media and creating a song folder."""
 
     details: SongDetails
     options: Options
-    songtext: str
     txt: SongTxt
-    meta_path: str
-    dir_path: str
-    # without extension
-    filename_stem: str
-    # without extension
-    file_path_stem: str
+    paths: Locations
+    sync_meta: SyncMeta
+    new_src_txt: bool
     logger: Log
 
-    def __init__(
-        self, details: SongDetails, options: Options, meta_path: str | None, logger: Log
-    ) -> None:
-        self.details = details
-        self.options = options
-
-        self.songtext = usdb_scraper.get_notes(details.song_id, logger)
-        self.txt = SongTxt.parse(self.songtext, logger)
-        self.txt.headers.reset_file_location_headers()
-        self.txt.notes.maybe_split_duet_notes()
-        self.txt.restore_missing_headers()
-
-        self.filename_stem = sanitize_filename(self.txt.headers.artist_title_str())
-        if meta_path:
-            self.dir_path = os.path.dirname(meta_path)
-            self.meta_path = meta_path
-        else:
-            self.dir_path = next_unique_directory(
-                os.path.join(options.song_dir, self.filename_stem)
-            )
-            self.meta_path = os.path.join(self.dir_path, f"{details.song_id}.usdb")
-        self.file_path_stem = os.path.join(self.dir_path, self.filename_stem)
-
-        self.sync_meta, self.new_src_txt = _load_sync_meta(
-            self.meta_path, details.song_id, self.songtext
+    @classmethod
+    def new(
+        cls, details: SongDetails, options: Options, meta_path: str | None, logger: Log
+    ) -> Context:
+        txt_str = usdb_scraper.get_notes(details.song_id, logger)
+        txt = SongTxt.parse(txt_str, logger)
+        txt.sanitize()
+        paths = Locations.new(details.song_id, options.song_dir, meta_path, txt.headers)
+        sync_meta, new_src_txt = _load_sync_meta(
+            paths.meta_path, details.song_id, txt_str
         )
-
-        self.logger = logger
+        return cls(details, options, txt, paths, sync_meta, new_src_txt, logger)
 
     def all_audio_resources(self) -> Iterator[str]:
         if self.txt.meta_tags.audio:
@@ -106,11 +117,11 @@ class SongLoader(QRunnable):
             self.logger.error("Could not find song on USDB!")
             return
         self.logger.info(f"Found '{details.artist} - {details.title}' on  USDB")
-        ctx = Context(details, self.options, self.meta_path, self.logger)
+        ctx = Context.new(details, self.options, self.meta_path, self.logger)
         if not ctx.new_src_txt:
             ctx.logger.info("Aborted; song is already synchronized")
             return
-        os.makedirs(ctx.dir_path, exist_ok=True)
+        os.makedirs(ctx.paths.dir_path, exist_ok=True)
         _maybe_download_audio(ctx)
         _maybe_download_video(ctx)
         _maybe_download_cover(ctx)
@@ -119,7 +130,7 @@ class SongLoader(QRunnable):
         _write_sync_meta(ctx)
         self.logger.info("All done!")
         self.on_finish(
-            self.song_id, LocalFiles.from_sync_meta(ctx.meta_path, ctx.sync_meta)
+            self.song_id, LocalFiles.from_sync_meta(ctx.paths.meta_path, ctx.sync_meta)
         )
 
 
@@ -142,9 +153,9 @@ def _maybe_download_audio(ctx: Context) -> None:
         if idx > 9:
             break
         if ext := resource_dl.download_video(
-            resource, options, ctx.options.browser, ctx.file_path_stem, ctx.logger
+            resource, options, ctx.options.browser, ctx.paths.file_path_stem, ctx.logger
         ):
-            path = f"{ctx.file_path_stem}.{ext}"
+            path = f"{ctx.paths.file_path_stem}.{ext}"
             ctx.sync_meta.set_audio_meta(path)
             ctx.txt.headers.mp3 = os.path.basename(path)
             ctx.logger.info("Success! Downloaded audio.")
@@ -181,9 +192,9 @@ def _maybe_download_video(ctx: Context) -> None:
         if idx > 9:
             break
         if ext := resource_dl.download_video(
-            resource, options, ctx.options.browser, ctx.file_path_stem, ctx.logger
+            resource, options, ctx.options.browser, ctx.paths.file_path_stem, ctx.logger
         ):
-            path = f"{ctx.file_path_stem}.{ext}"
+            path = f"{ctx.paths.file_path_stem}.{ext}"
             ctx.sync_meta.set_video_meta(path)
             ctx.txt.headers.video = os.path.basename(path)
             ctx.logger.info("Success! Downloaded video.")
@@ -196,15 +207,15 @@ def _maybe_download_cover(ctx: Context) -> None:
         return
 
     if filename := download_and_process_image(
-        ctx.filename_stem,
+        ctx.paths.filename_stem,
         ctx.txt.meta_tags.cover,
         ctx.details,
-        ctx.dir_path,
+        ctx.paths.dir_path,
         ImageKind.COVER,
         max_width=ctx.options.cover.max_size,
     ):
         ctx.txt.headers.cover = filename
-        ctx.sync_meta.set_cover_meta(os.path.join(ctx.dir_path, filename))
+        ctx.sync_meta.set_cover_meta(os.path.join(ctx.paths.dir_path, filename))
         ctx.logger.info("Success! Downloaded cover.")
     else:
         ctx.logger.error("Failed to download cover!")
@@ -216,15 +227,15 @@ def _maybe_download_background(ctx: Context) -> None:
     if not options.download_background(bool(ctx.txt.headers.video)):
         return
     if filename := download_and_process_image(
-        ctx.filename_stem,
+        ctx.paths.filename_stem,
         ctx.txt.meta_tags.background,
         ctx.details,
-        ctx.dir_path,
+        ctx.paths.dir_path,
         ImageKind.BACKGROUND,
         max_width=None,
     ):
         ctx.txt.headers.background = filename
-        ctx.sync_meta.set_background_meta(os.path.join(ctx.dir_path, filename))
+        ctx.sync_meta.set_background_meta(os.path.join(ctx.paths.dir_path, filename))
         ctx.logger.info("Success! Downloaded background.")
     else:
         ctx.logger.error("Failed to download background!")
@@ -233,11 +244,11 @@ def _maybe_download_background(ctx: Context) -> None:
 def _maybe_write_txt(ctx: Context) -> None:
     if not (options := ctx.options.txt_options):
         return
-    path = f"{ctx.file_path_stem}.txt"
+    path = f"{ctx.paths.file_path_stem}.txt"
     ctx.txt.write_to_file(path, options.encoding.value, options.newline.value)
     ctx.sync_meta.set_txt_meta(path)
     ctx.logger.info("Success! Created song txt.")
 
 
 def _write_sync_meta(ctx: Context) -> None:
-    ctx.sync_meta.to_file(ctx.dir_path)
+    ctx.sync_meta.to_file(ctx.paths.dir_path)
