@@ -401,6 +401,22 @@ class SongTxt:
         self.headers.reset_file_location_headers()
         self.notes.maybe_split_duet_notes()
         self.restore_missing_headers()
+        if self.headers.language == "Polish":
+            self.fix_polish_song()
+
+    def fix_polish_song(self) -> None:
+        self.headers.artist = _fix_polish_letters(self.headers.artist)
+        self.headers.title = _fix_polish_letters(self.headers.title)
+        # edition, genre, creator, p1, p2, album, comment, anything else?
+        
+        for line in self.notes.player_1:
+            for note in line.notes:
+                note.text = _fix_polish_letters(note.text)
+
+        if self.notes.player_2:
+            for line in self.notes.player_1:
+                for note in line.notes:
+                    note.text = _fix_polish_letters(note.text)
 
     def minimum_song_length(self) -> str:
         """Return the minimum song length based on last beat, BPM and GAP"""
@@ -409,3 +425,24 @@ class SongTxt:
         )
 
         return f"{minutes:02.0f}:{seconds:02.0f}"
+
+
+def _fix_polish_letters(string: str) -> str:
+    return (
+        string.replace("¹", "ą")
+        .replace("¥", "Ą")
+        .replace("æ", "ć")
+        .replace("Æ", "Ć")
+        .replace("ê", "ę")
+        .replace("Ê", "Ę")
+        .replace("³", "ł")
+        .replace("£", "Ł")
+        .replace("ñ", "ń")
+        .replace("Ñ", "Ń")
+        .replace("œ", "ś")
+        .replace("Œ", "Ś")
+        .replace("Ÿ", "ź")
+        .replace("Ź", "Ź")
+        .replace("¿", "ż")
+        .replace("¯", "Ż")
+    )
