@@ -76,3 +76,11 @@ def next_unique_directory(path: str) -> str:
         suffix += 1
         out_path = f"{path} ({suffix})"
     return out_path
+
+
+def is_name_maybe_with_suffix(text: str, name: str) -> bool:
+    """True if `text` is 'name' or 'name (n)' for the provided `name` and some number n."""
+    if not text.startswith(name):
+        return False
+    tail = text.removeprefix(name)
+    return not tail or re.fullmatch(r" \(\d+\)", tail) is not None
