@@ -1,7 +1,9 @@
 """General-purpose utilities."""
 
 import os
+import platform
 import re
+import subprocess
 
 from appdirs import AppDirs
 
@@ -84,3 +86,10 @@ def is_name_maybe_with_suffix(text: str, name: str) -> bool:
         return False
     tail = text.removeprefix(name)
     return not tail or re.fullmatch(r" \(\d+\)", tail) is not None
+
+
+def open_file_explorer(path: str) -> None:
+    if platform.system() == "Windows":
+        os.system(f"start {path}")
+    else:
+        subprocess.run(["/usr/bin/open", path], check=True)

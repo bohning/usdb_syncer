@@ -26,7 +26,7 @@ from usdb_syncer.pdf import generate_song_pdf
 from usdb_syncer.song_data import LocalFiles, SongData
 from usdb_syncer.song_list_fetcher import get_all_song_data, resync_song_data
 from usdb_syncer.song_loader import download_songs
-from usdb_syncer.utils import AppPaths
+from usdb_syncer.utils import AppPaths, open_file_explorer
 
 
 class RatingFilter(Enum):
@@ -131,7 +131,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         self.action_settings.triggered.connect(lambda: SettingsDialog(self).show())
         self.action_generate_song_pdf.triggered.connect(self._generate_song_pdf)
         self.action_show_log.triggered.connect(
-            lambda: os.system(f"start {os.path.dirname(AppPaths.log)}")
+            lambda: open_file_explorer(os.path.dirname(AppPaths.log))
         )
 
     def _setup_song_dir(self) -> None:
