@@ -10,6 +10,26 @@ import attrs
 from usdb_syncer.logger import Log
 from usdb_syncer.meta_tags.deserializer import MetaTags
 
+POLISH_REPLACEMENTS = (
+    ("¹", "ą"),
+    ("¥", "Ą"),
+    ("æ", "ć"),
+    ("æ", "ć"),
+    ("Æ", "Ć"),
+    ("ê", "ę"),
+    ("Ê", "Ę"),
+    ("³", "ł"),
+    ("£", "Ł"),
+    ("ñ", "ń"),
+    ("Ñ", "Ń"),
+    ("œ", "ś"),
+    ("Œ", "Ś"),
+    ("Ÿ", "ź"),
+    ("¿", "ż"),
+    ("¯", "Ż"),
+)
+# ("Ź", "Ź") the letter "Ź" does not seem have an equivalent
+
 
 class NotesParseError(Exception):
     """Raised when failing to parse notes."""
@@ -408,7 +428,7 @@ class SongTxt:
         self.headers.artist = _fix_polish_letters(self.headers.artist)
         self.headers.title = _fix_polish_letters(self.headers.title)
         # edition, genre, creator, p1, p2, album, comment, anything else?
-        
+
         for line in self.notes.player_1:
             for note in line.notes:
                 note.text = _fix_polish_letters(note.text)
@@ -428,21 +448,7 @@ class SongTxt:
 
 
 def _fix_polish_letters(string: str) -> str:
-    return (
-        string.replace("¹", "ą")
-        .replace("¥", "Ą")
-        .replace("æ", "ć")
-        .replace("Æ", "Ć")
-        .replace("ê", "ę")
-        .replace("Ê", "Ę")
-        .replace("³", "ł")
-        .replace("£", "Ł")
-        .replace("ñ", "ń")
-        .replace("Ñ", "Ń")
-        .replace("œ", "ś")
-        .replace("Œ", "Ś")
-        .replace("Ÿ", "ź")
-        .replace("Ź", "Ź")
-        .replace("¿", "ż")
-        .replace("¯", "Ż")
-    )
+    for old, new in POLISH_REPLACEMENTS:
+        string = string.replace(old, new)
+
+    return string
