@@ -133,6 +133,9 @@ class Line:
     def split(self) -> tuple[Line, Line] | None:
         pass
 
+    def start(self) -> int:
+        return self.notes[0].start
+
     def end(self) -> int:
         return self.notes[-1].end()
 
@@ -180,6 +183,11 @@ class PlayerNotes:
                 return
             last_start = line.line_break.start
 
+    def start(self) -> int:
+        if self.player_2:
+            return min(self.player_1[0].start(), self.player_2[0].start())
+        return self.player_1[0].start()
+
     def end(self) -> int:
         if self.player_2:
             return max(self.player_1[-1].end(), self.player_2[-1].end())
@@ -222,7 +230,7 @@ class Headers:
     title: str
     artist: str
     bpm: float = 0.0
-    gap: float = 0.0
+    gap: int = 0
     language: str | None = None
     edition: str | None = None
     genre: str | None = None
@@ -235,7 +243,7 @@ class Headers:
     video: str | None = None
     videogap: float | None = None
     start: float | None = None
-    end: float | None = None
+    end: int | None = None
     previewstart: float | None = None
     relative: str | None = None
     p1: str | None = None
@@ -341,9 +349,9 @@ def _set_header_value(kwargs: dict[str, Any], header: str, value: str) -> None:
         "resolution",
     ):
         kwargs[header] = value
-    elif header in ("bpm", "gap", "videogap", "start", "end", "previewstart"):
+    elif header in ("bpm", "videogap", "start", "previewstart"):
         kwargs[header] = float(value.replace(",", "."))
-    elif header in ("medleystartbeat", "medleyendbeat"):
+    elif header in ("gap", "end", "medleystartbeat", "medleyendbeat"):
         kwargs[header] = int(value)
     else:
         kwargs["unknown"][header] = value
@@ -401,6 +409,7 @@ class SongTxt:
         self.headers.reset_file_location_headers()
         self.notes.maybe_split_duet_notes()
         self.restore_missing_headers()
+        self.set_first_timestamp_to_zero()
 
     def minimum_song_length(self) -> str:
         """Return the minimum song length based on last beat, BPM and GAP"""
@@ -409,3 +418,34 @@ class SongTxt:
         )
 
         return f"{minutes:02.0f}:{seconds:02.0f}"
+
+    def set_first_timestamp_to_zero(self) -> None:
+        """Shifts all notes such that the first note starts at beat zero and adjusts #GAP accordingly"""
+
+        offset = self.notes.start()
+        if offset == 0:
+            return
+
+        # adjust all notes of track 1
+        for line in self.notes.player_1:
+            for note in line.notes:
+                note.start = note.start - offset
+            if line.line_break:
+                line.line_break.start = line.line_break.start - offset
+                if line.line_break.end:
+                    line.line_break.end = line.line_break.end - offset
+
+        # if song has a second track (i.e. is a duet), adjust all notes of track 2
+        if self.notes.player_2:
+            for line in self.notes.player_2:
+                for note in line.notes:
+                    note.start = note.start - offset
+                if line.line_break:
+                    line.line_break.start = line.line_break.start - offset
+                    if line.line_break.end:
+                        line.line_break.end = line.line_break.end - offset
+
+        # adjust #GAP
+        self.headers.gap = int(
+            self.headers.gap + offset / (self.headers.bpm * 4) * 60000
+        )
