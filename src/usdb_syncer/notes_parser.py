@@ -423,7 +423,9 @@ class SongTxt:
         return f"{minutes:02.0f}:{seconds:02.0f}"
 
     def set_first_timestamp_to_zero(self) -> None:
-        """Shifts all notes such that the first note starts at beat zero and adjusts #GAP accordingly"""
+        """Shifts all notes such that the first note starts at beat zero and adjusts
+        GAP accordingly
+        """
 
         offset = self.notes.start()
         if offset == 0:
