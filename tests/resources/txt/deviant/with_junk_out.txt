@@ -1,6 +1,8 @@
-#ARTIST:artist
 #TITLE:title
+#ARTIST:artist
+#MEDLEYSTARTBEAT:1
+#MEDLEYENDBEAT:3
 #BPM:0.0
-#GAP:0.0
+#GAP:0
 : 0 1 0 first note 
 E

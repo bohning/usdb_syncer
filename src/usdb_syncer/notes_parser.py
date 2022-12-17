@@ -352,7 +352,7 @@ def _set_header_value(kwargs: dict[str, Any], header: str, value: str) -> None:
     elif header in ("bpm", "videogap", "start", "previewstart"):
         kwargs[header] = float(value.replace(",", "."))
     elif header in ("gap", "end", "medleystartbeat", "medleyendbeat"):
-        kwargs[header] = int(value)
+        kwargs[header] = round(float(value))
     else:
         kwargs["unknown"][header] = value
 
@@ -405,10 +405,13 @@ class SongTxt:
             file.write(str(self))
 
     def sanitize(self) -> None:
-        """Fix USDB issues and prepare for local usage."""
+        """Sanitize USDB issues and prepare for local usage."""
         self.headers.reset_file_location_headers()
-        self.notes.maybe_split_duet_notes()
         self.restore_missing_headers()
+        self.fix()
+
+    def fix(self) -> None:
+        self.notes.maybe_split_duet_notes()
         self.set_first_timestamp_to_zero()
 
     def minimum_song_length(self) -> str:

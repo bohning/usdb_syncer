@@ -29,6 +29,18 @@ def test_notes_parser_deviant(resource_dir: str) -> None:
         assert str(txt) == out
 
 
+def test_notes_parser_fixes(resource_dir: str) -> None:
+    folder = os.path.join(resource_dir, "txt", "fixes")
+    for path in glob(f"{folder}/*_in.txt"):
+        with open(path, encoding="utf-8") as file:
+            contents = file.read()
+        with open(path.replace("_in.txt", "_out.txt"), encoding="utf-8") as file:
+            out = file.read()
+        txt = SongTxt.parse(contents, _logger)
+        txt.fix()
+        assert str(txt) == out
+
+
 def test_notes_parser_invalid(resource_dir: str) -> None:
     folder = os.path.join(resource_dir, "txt", "invalid")
     for path in glob(f"{folder}/*.txt"):

@@ -1,8 +1,8 @@
-#ARTIST:artist
 #TITLE:title
+#ARTIST:artist
 #CREATOR:me
 #BPM:250.0
-#GAP:12345.0
+#GAP:12345
 #UNKNOWN HEADERS GET : inserted at the end
 : 0 1 0 first note 
 * 2 1 0 golden 
