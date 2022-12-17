@@ -174,6 +174,20 @@ class PlayerNotes:
                 return
             last_start = line.line_break.start
 
+    def get_last_beat(self) -> int:
+        if self.player_2:
+            return max(
+                self.player_1[-1:][0].notes[-1:][0].start
+                + self.player_1[-1:][0].notes[-1:][0].duration,
+                self.player_2[-1:][0].notes[-1:][0].start
+                + self.player_2[-1:][0].notes[-1:][0].duration,
+            )
+        else:
+            return (
+                self.player_1[-1:][0].notes[-1:][0].start
+                + self.player_1[-1:][0].notes[-1:][0].duration
+            )
+
 
 def _player_lines(lines: list[str], logger: Log) -> list[Line]:
     notes: list[Line] = []
@@ -390,3 +404,13 @@ class SongTxt:
         self.headers.reset_file_location_headers()
         self.notes.maybe_split_duet_notes()
         self.restore_missing_headers()
+
+    def get_minimum_song_length(self) -> str:
+        """Return the minimum song length based on last beat, BPM and GAP"""
+        minutes, seconds = divmod(
+            self.notes.get_last_beat() / self.headers.bpm * 15
+            + self.headers.gap / 1000,
+            60,
+        )
+
+        return f"{minutes:02.0f}:{seconds:02.0f}"

@@ -176,27 +176,8 @@ def _maybe_download_audio(ctx: Context) -> None:
             ctx.logger.info("Success! Downloaded audio.")
             return
 
-    if ctx.txt.notes.player_2:
-        last_beat = max(
-            ctx.txt.notes.player_1[-1:][0].notes[-1:][0].start
-            + ctx.txt.notes.player_1[-1:][0].notes[-1:][0].duration,
-            ctx.txt.notes.player_2[-1:][0].notes[-1:][0].start
-            + ctx.txt.notes.player_2[-1:][0].notes[-1:][0].duration,
-        )
-    else:
-        last_beat = (
-            ctx.txt.notes.player_1[-1:][0].notes[-1:][0].start
-            + ctx.txt.notes.player_1[-1:][0].notes[-1:][0].duration
-        )
-
-    minimum_song_length = (
-        last_beat / ctx.txt.headers.bpm * 15 + ctx.txt.headers.gap / 1000
-    )
-
-    minutes, seconds = divmod(minimum_song_length, 60)
-
     ctx.logger.error(
-        f"Failed to download audio (duration ≥ {int(minutes):02d}:{int(seconds):02d})"
+        f"Failed to download audio (song duration > {ctx.txt.get_minimum_song_length()})!"
     )
 
 
