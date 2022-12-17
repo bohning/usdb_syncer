@@ -17,6 +17,7 @@ from PySide6.QtWidgets import (
 )
 
 from usdb_syncer import SongId, settings
+from usdb_syncer.gui.ffmpeg_dialog import check_ffmpeg
 from usdb_syncer.gui.forms.MainWindow import Ui_MainWindow
 from usdb_syncer.gui.meta_tags_dialog import MetaTagsDialog
 from usdb_syncer.gui.progress import run_with_progress
@@ -144,16 +145,19 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         )
 
     def _download_selected_songs(self) -> None:
-        ids_and_meta_paths = [
-            (song_id, song.local_files.usdb_path)
-            for song_id in self.table.selected_song_ids()
-            if (song := self.table.get_data(song_id))
-        ]
-        download_songs(
-            ids_and_meta_paths,
-            self.song_signals.started.emit,
-            self.song_signals.finished.emit,
-        )
+        def _download_songs() -> None:
+            ids_and_meta_paths = [
+                (song_id, song.local_files.usdb_path)
+                for song_id in self.table.selected_song_ids()
+                if (song := self.table.get_data(song_id))
+            ]
+            download_songs(
+                ids_and_meta_paths,
+                self.song_signals.started.emit,
+                self.song_signals.finished.emit,
+            )
+
+        check_ffmpeg(self, _download_songs)
 
     def _setup_search(self) -> None:
         self._populate_search_filters()

@@ -95,3 +95,7 @@ def open_file_explorer(path: str) -> None:
         subprocess.run(["xdg-open", path], check=True)
     else:
         subprocess.run(["open", path], check=True)
+
+
+def add_to_system_path(path: str) -> None:
+    os.environ["PATH"] = path + os.pathsep + os.environ["PATH"]

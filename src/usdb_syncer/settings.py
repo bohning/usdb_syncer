@@ -20,6 +20,7 @@ class SettingKey(Enum):
     """Keys for storing and retrieving settings."""
 
     SONG_DIR = "song_dir"
+    FFMPEG_DIR = "ffmpeg_dir"
     BROWSER = "downloads/browser"
     TXT = "downloads/txt"
     ENCODING = "downloads/encoding"
@@ -388,3 +389,11 @@ def get_background_always() -> bool:
 
 def set_background_always(value: bool) -> None:
     set_setting(SettingKey.BACKGROUND_ALWAYS, value)
+
+
+def get_ffmpeg_dir() -> str:
+    return get_setting(SettingKey.FFMPEG_DIR, "")
+
+
+def set_ffmpeg_dir(value: str) -> None:
+    set_setting(SettingKey.FFMPEG_DIR, value)
