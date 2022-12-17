@@ -89,10 +89,9 @@ def is_name_maybe_with_suffix(text: str, name: str) -> bool:
 
 
 def open_file_explorer(path: str) -> None:
-    match sys.platform:
-        case "win32":
-            os.startfile(path)
-        case "linux":
-            subprocess.run(["xdg-open", path], check=True)
-        case _:
-            subprocess.run(["open", path], check=True)
+    if sys.platform == "win32":
+        os.startfile(path)
+    elif sys.platform == "linux":
+        subprocess.run(["xdg-open", path], check=True)
+    else:
+        subprocess.run(["open", path], check=True)
