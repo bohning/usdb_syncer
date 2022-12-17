@@ -177,7 +177,7 @@ def _maybe_download_audio(ctx: Context) -> None:
             return
 
     ctx.logger.error(
-        f"Failed to download audio (song duration > {ctx.txt.get_minimum_song_length()})!"
+        f"Failed to download audio (song duration > {ctx.txt.minimum_song_length()})!"
     )
 
 

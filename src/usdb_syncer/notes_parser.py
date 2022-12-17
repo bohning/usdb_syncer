@@ -55,6 +55,9 @@ class Note:
             f"{self.kind.value} {self.start} {self.duration} {self.pitch} {self.text}"
         )
 
+    def end(self) -> int:
+        return self.start + self.duration
+
 
 @attrs.define
 class LineBreak:
@@ -130,6 +133,9 @@ class Line:
     def split(self) -> tuple[Line, Line] | None:
         pass
 
+    def end(self) -> int:
+        return self.notes[-1].end()
+
 
 @attrs.define
 class PlayerNotes:
@@ -174,19 +180,10 @@ class PlayerNotes:
                 return
             last_start = line.line_break.start
 
-    def get_last_beat(self) -> int:
+    def end(self) -> int:
         if self.player_2:
-            return max(
-                self.player_1[-1:][0].notes[-1:][0].start
-                + self.player_1[-1:][0].notes[-1:][0].duration,
-                self.player_2[-1:][0].notes[-1:][0].start
-                + self.player_2[-1:][0].notes[-1:][0].duration,
-            )
-        else:
-            return (
-                self.player_1[-1:][0].notes[-1:][0].start
-                + self.player_1[-1:][0].notes[-1:][0].duration
-            )
+            return max(self.player_1[-1].end(), self.player_2[-1].end())
+        return self.player_1[-1].end()
 
 
 def _player_lines(lines: list[str], logger: Log) -> list[Line]:
@@ -405,12 +402,10 @@ class SongTxt:
         self.notes.maybe_split_duet_notes()
         self.restore_missing_headers()
 
-    def get_minimum_song_length(self) -> str:
+    def minimum_song_length(self) -> str:
         """Return the minimum song length based on last beat, BPM and GAP"""
         minutes, seconds = divmod(
-            self.notes.get_last_beat() / self.headers.bpm * 15
-            + self.headers.gap / 1000,
-            60,
+            self.notes.end() / (self.headers.bpm * 4) * 60 + self.headers.gap / 1000, 60
         )
 
         return f"{minutes:02.0f}:{seconds:02.0f}"
