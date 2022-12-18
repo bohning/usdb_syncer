@@ -10,10 +10,11 @@ from PySide6.QtCore import QRunnable, QThreadPool
 
 from usdb_syncer import SongId, resource_dl, usdb_scraper
 from usdb_syncer.download_options import Options, download_options
+from usdb_syncer.encoding import CodePage
 from usdb_syncer.logger import Log, get_logger
 from usdb_syncer.notes_parser import Headers, SongTxt
 from usdb_syncer.resource_dl import ImageKind, download_and_process_image
-from usdb_syncer.song_data import LocalFiles
+from usdb_syncer.song_data import LocalFiles, SongData
 from usdb_syncer.sync_meta import SyncMeta
 from usdb_syncer.usdb_scraper import SongDetails
 from usdb_syncer.utils import (
@@ -21,6 +22,23 @@ from usdb_syncer.utils import (
     next_unique_directory,
     sanitize_filename,
 )
+
+
+@attrs.define
+class DownloadInfo:
+    """Data required to start a song download."""
+
+    song_id: SongId
+    meta_path: str | None
+    encoding: CodePage
+
+    @classmethod
+    def from_song_data(cls, data: SongData) -> DownloadInfo:
+        return cls(
+            data.data.song_id,
+            data.local_files.usdb_path,
+            CodePage.from_language(data.data.language),
+        )
 
 
 @attrs.define(kw_only=True)
@@ -69,12 +87,14 @@ class Context:
 
     @classmethod
     def new(
-        cls, details: SongDetails, options: Options, meta_path: str | None, logger: Log
+        cls, details: SongDetails, options: Options, info: DownloadInfo, logger: Log
     ) -> Context:
-        txt_str = usdb_scraper.get_notes(details.song_id, logger)
+        txt_str = usdb_scraper.get_notes(details.song_id, info.encoding, logger)
         txt = SongTxt.parse(txt_str, logger)
         txt.sanitize()
-        paths = Locations.new(details.song_id, options.song_dir, meta_path, txt.headers)
+        paths = Locations.new(
+            details.song_id, options.song_dir, info.meta_path, txt.headers
+        )
         sync_meta, new_src_txt = _load_sync_meta(
             paths.meta_path, details.song_id, txt_str
         )
@@ -104,19 +124,18 @@ class SongLoader(QRunnable):
 
     def __init__(
         self,
-        song_id: SongId,
+        info: DownloadInfo,
         options: Options,
-        meta_path: str | None,
         on_start: Callable[[SongId], None],
         on_finish: Callable[[SongId, LocalFiles], None],
     ) -> None:
         super().__init__()
-        self.song_id = song_id
+        self.song_id = info.song_id
+        self.data = info
         self.options = options
-        self.meta_path = meta_path
         self.on_start = on_start
         self.on_finish = on_finish
-        self.logger = get_logger(__file__, song_id)
+        self.logger = get_logger(__file__, info.song_id)
 
     def run(self) -> None:
         self.on_start(self.song_id)
@@ -126,7 +145,7 @@ class SongLoader(QRunnable):
             self.logger.error("Could not find song on USDB!")
             return
         self.logger.info(f"Found '{details.artist} - {details.title}' on  USDB")
-        ctx = Context.new(details, self.options, self.meta_path, self.logger)
+        ctx = Context.new(details, self.options, self.data, self.logger)
         if not ctx.new_src_txt:
             ctx.logger.info("Aborted; song is already synchronized")
             return
@@ -146,14 +165,14 @@ class SongLoader(QRunnable):
 
 
 def download_songs(
-    ids_and_meta_paths: list[tuple[SongId, str | None]],
+    infos: list[DownloadInfo],
     on_start: Callable[[SongId], None],
     on_finish: Callable[[SongId, LocalFiles], None],
 ) -> None:
     options = download_options()
     threadpool = QThreadPool.globalInstance()
-    for song_id, meta_path in ids_and_meta_paths:
-        worker = SongLoader(song_id, options, meta_path, on_start, on_finish)
+    for info in infos:
+        worker = SongLoader(info, options, on_start, on_finish)
         threadpool.start(worker)
 
 

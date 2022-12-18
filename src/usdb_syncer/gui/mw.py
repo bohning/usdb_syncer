@@ -26,7 +26,7 @@ from usdb_syncer.gui.song_table.song_table import SongTable
 from usdb_syncer.pdf import generate_song_pdf
 from usdb_syncer.song_data import LocalFiles, SongData
 from usdb_syncer.song_list_fetcher import get_all_song_data, resync_song_data
-from usdb_syncer.song_loader import download_songs
+from usdb_syncer.song_loader import DownloadInfo, download_songs
 from usdb_syncer.utils import AppPaths, open_file_explorer
 
 
@@ -146,15 +146,13 @@ class MainWindow(Ui_MainWindow, QMainWindow):
 
     def _download_selected_songs(self) -> None:
         def _download_songs() -> None:
-            ids_and_meta_paths = [
-                (song_id, song.local_files.usdb_path)
+            songs = [
+                DownloadInfo.from_song_data(song)
                 for song_id in self.table.selected_song_ids()
                 if (song := self.table.get_data(song_id))
             ]
             download_songs(
-                ids_and_meta_paths,
-                self.song_signals.started.emit,
-                self.song_signals.finished.emit,
+                songs, self.song_signals.started.emit, self.song_signals.finished.emit
             )
 
         check_ffmpeg(self, _download_songs)

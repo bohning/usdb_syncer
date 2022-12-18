@@ -8,6 +8,7 @@ from typing import Any
 import attrs
 
 from usdb_syncer import SongId
+from usdb_syncer.encoding import CodePage
 
 
 @attrs.frozen(auto_attribs=True, kw_only=True)
@@ -41,10 +42,11 @@ class UsdbSong:
         rating: str,
         views: str,
     ) -> UsdbSong:
+        code_page = CodePage.from_language(language)
         return cls(
             song_id=SongId.parse(song_id),
-            artist=artist,
-            title=title,
+            artist=code_page.restore_text_from_cp1252(artist),
+            title=code_page.restore_text_from_cp1252(title),
             language=language,
             edition=edition,
             golden_notes=golden_notes == "Yes",
