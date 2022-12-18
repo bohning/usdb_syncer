@@ -1,7 +1,7 @@
-#ARTIST:artist
 #TITLE:title
+#ARTIST:artist
 #BPM:250.0
-#GAP:12345.0
+#GAP:12345
 : 0 1 0 first note 
 * 2 1 0 golden 
 F 4 1 0 freestyle 

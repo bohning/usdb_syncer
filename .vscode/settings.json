@@ -22,5 +22,8 @@
     "source.organizeImports": true
   },
   "python.languageServer": "Default",
-  "python.analysis.typeCheckingMode": "basic"
+  "python.analysis.typeCheckingMode": "basic",
+  "editor.rulers": [
+    88
+  ]
 }

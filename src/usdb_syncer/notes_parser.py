@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import re
 from enum import Enum
-from typing import Any
+from typing import Any, Iterator
 
 import attrs
 
@@ -84,6 +84,11 @@ class LineBreak:
             return f"- {self.start} {self.end}"
         return f"- {self.start}"
 
+    def shift(self, offset: int) -> None:
+        self.start = self.start + offset
+        if self.end is not None:
+            self.end = self.end + offset
+
 
 @attrs.define
 class Line:
@@ -133,8 +138,17 @@ class Line:
     def split(self) -> tuple[Line, Line] | None:
         pass
 
+    def start(self) -> int:
+        return self.notes[0].start
+
     def end(self) -> int:
         return self.notes[-1].end()
+
+    def shift(self, offset: int) -> None:
+        for note in self.notes:
+            note.start += offset
+        if self.line_break:
+            self.line_break.shift(offset)
 
 
 @attrs.define
@@ -180,10 +194,20 @@ class PlayerNotes:
                 return
             last_start = line.line_break.start
 
+    def start(self) -> int:
+        if self.player_2:
+            return min(self.player_1[0].start(), self.player_2[0].start())
+        return self.player_1[0].start()
+
     def end(self) -> int:
         if self.player_2:
             return max(self.player_1[-1].end(), self.player_2[-1].end())
         return self.player_1[-1].end()
+
+    def all_lines(self) -> Iterator[Line]:
+        yield from self.player_1
+        if self.player_2:
+            yield from self.player_2
 
 
 def _player_lines(lines: list[str], logger: Log) -> list[Line]:
@@ -222,7 +246,7 @@ class Headers:
     title: str
     artist: str
     bpm: float = 0.0
-    gap: float = 0.0
+    gap: int = 0
     language: str | None = None
     edition: str | None = None
     genre: str | None = None
@@ -235,7 +259,7 @@ class Headers:
     video: str | None = None
     videogap: float | None = None
     start: float | None = None
-    end: float | None = None
+    end: int | None = None
     previewstart: float | None = None
     relative: str | None = None
     p1: str | None = None
@@ -341,10 +365,10 @@ def _set_header_value(kwargs: dict[str, Any], header: str, value: str) -> None:
         "resolution",
     ):
         kwargs[header] = value
-    elif header in ("bpm", "gap", "videogap", "start", "end", "previewstart"):
+    elif header in ("bpm", "videogap", "start", "previewstart"):
         kwargs[header] = float(value.replace(",", "."))
-    elif header in ("medleystartbeat", "medleyendbeat"):
-        kwargs[header] = int(value)
+    elif header in ("gap", "end", "medleystartbeat", "medleyendbeat"):
+        kwargs[header] = round(float(value))
     else:
         kwargs["unknown"][header] = value
 
@@ -397,15 +421,37 @@ class SongTxt:
             file.write(str(self))
 
     def sanitize(self) -> None:
-        """Fix USDB issues and prepare for local usage."""
+        """Sanitize USDB issues and prepare for local usage."""
         self.headers.reset_file_location_headers()
-        self.notes.maybe_split_duet_notes()
         self.restore_missing_headers()
+        self.fix()
+
+    def fix(self) -> None:
+        self.notes.maybe_split_duet_notes()
+        self.set_first_timestamp_to_zero()
 
     def minimum_song_length(self) -> str:
         """Return the minimum song length based on last beat, BPM and GAP"""
-        minutes, seconds = divmod(
-            self.notes.end() / (self.headers.bpm * 4) * 60 + self.headers.gap / 1000, 60
-        )
+        beats_secs = beats_to_secs(self.notes.end(), self.headers.bpm)
+        minimum_secs = beats_secs + self.headers.gap / 1000
+        minutes, seconds = divmod(minimum_secs, 60)
 
         return f"{minutes:02.0f}:{seconds:02.0f}"
+
+    def set_first_timestamp_to_zero(self) -> None:
+        """Shifts all notes such that the first note starts at beat zero and adjusts
+        GAP accordingly
+        """
+        if (offset := self.notes.start()) == 0:
+            return
+        for line in self.notes.all_lines():
+            line.shift(-offset)
+        self.headers.gap = self.headers.gap + beats_to_ms(offset, self.headers.bpm)
+
+
+def beats_to_secs(beats: int, bpm: float) -> float:
+    return beats / (bpm * 4) * 60
+
+
+def beats_to_ms(beats: int, bpm: float) -> int:
+    return round(beats_to_secs(beats, bpm) * 1000)

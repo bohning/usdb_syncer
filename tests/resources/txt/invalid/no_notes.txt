@@ -1,4 +1,4 @@
-#ARTIST:artist
 #TITLE:title
+#ARTIST:artist
 no
 notes

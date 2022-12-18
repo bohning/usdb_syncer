@@ -5,7 +5,7 @@
 #START:invalid
 #END:123junk
 #MEDLEYSTARTBEAT:1.2
-#MEDLEYENDBEAT:3.4
+#MEDLEYENDBEAT:2.6
 leading junk
 P1
 : 0 1 0 first note 

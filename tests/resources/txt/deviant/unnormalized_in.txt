@@ -2,7 +2,7 @@
 #title:title
 #unknown headers get : inserted at the end
 #BPM:250
-#GAP:12345
+#GAP:12345.0
 #AUTHOR:me
 P1
 : 0 1 0 first note 
