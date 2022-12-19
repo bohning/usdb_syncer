@@ -1,24 +1,24 @@
 #TITLE:Sharp Dressed Man
 #ARTIST:ZZ Top
-#BPM:124.0
+#BPM:248.0
 #GAP:23750
-: 0 4 -8 Clean 
-: 4 2 -8 shirt
-: 6 4 -6 ~, 
-: 17 3 -8 new 
-: 20 6 -8 shoes
-- 31
-: 31 2 -10 and 
-: 33 2 -8 I 
-: 35 1 -12 don't 
-: 36 3 -10 know 
-: 39 1 -10 where 
-: 40 2 -8 I 
-: 42 2 -8 am 
-: 44 3 -8 go
-: 47 2 -10 in' 
-: 49 4 -7 to
-: 53 3 -9 ~
-- 58
-: 64 4 -8 Silk 
+: 0 7 -8 Clean 
+: 8 3 -8 shirt
+: 12 8 -6 ~, 
+: 34 5 -8 new 
+: 40 12 -8 shoes
+- 54
+: 62 3 -10 and 
+: 66 3 -8 I 
+: 70 1 -12 don't 
+: 72 5 -10 know 
+: 78 1 -10 where 
+: 80 3 -8 I 
+: 84 3 -8 am 
+: 88 5 -8 go
+: 94 3 -10 in' 
+: 98 7 -7 to
+: 106 6 -9 ~
+- 114
+: 128 8 -8 Silk 
 E

@@ -89,6 +89,11 @@ class LineBreak:
         if self.end is not None:
             self.end = self.end + offset
 
+    def multiply(self, factor: int) -> None:
+        self.start = self.start * factor
+        if self.end is not None:
+            self.end = self.end * factor
+
 
 @attrs.define
 class Line:
@@ -149,6 +154,13 @@ class Line:
             note.start += offset
         if self.line_break:
             self.line_break.shift(offset)
+
+    def multiply(self, factor: int) -> None:
+        for note in self.notes:
+            note.start *= factor
+            note.duration *= factor
+        if self.line_break:
+            self.line_break.multiply(factor)
 
 
 @attrs.define
@@ -428,7 +440,10 @@ class SongTxt:
 
     def fix(self) -> None:
         self.notes.maybe_split_duet_notes()
-        self.set_first_timestamp_to_zero()
+        self.fix_first_timestamp()
+        self.fix_low_bpm()
+        self.fix_line_breaks()
+        self.fix_touching_notes()
 
     def minimum_song_length(self) -> str:
         """Return the minimum song length based on last beat, BPM and GAP"""
@@ -438,20 +453,104 @@ class SongTxt:
 
         return f"{minutes:02.0f}:{seconds:02.0f}"
 
-    def set_first_timestamp_to_zero(self) -> None:
+    def fix_first_timestamp(self) -> None:
         """Shifts all notes such that the first note starts at beat zero and adjusts
         GAP accordingly
         """
         if (offset := self.notes.start()) == 0:
+            # round GAP to nearest 10 ms
+            self.headers.gap = round(self.headers.gap / 10) * 10
             return
         for line in self.notes.all_lines():
             line.shift(-offset)
-        self.headers.gap = self.headers.gap + beats_to_ms(offset, self.headers.bpm)
+        self.headers.gap = (
+            round((self.headers.gap + beats_to_ms(offset, self.headers.bpm)) / 10) * 10
+        )
+
+    def fix_low_bpm(self) -> None:
+        """(repeatedly) multiplies BPM value and all note timings by two
+        until the BPM is in a range (200, 400)"""
+        bpm_threshold = 200.0
+
+        if (original_bpm := self.headers.bpm) >= bpm_threshold:
+            return
+
+        while self.headers.bpm < bpm_threshold:
+            self.headers.bpm *= 2
+
+        timing_factor = int(self.headers.bpm / original_bpm)
+
+        # modify medley tags
+        if self.headers.medleystartbeat:
+            self.headers.medleystartbeat *= timing_factor
+
+        if self.headers.medleyendbeat:
+            self.headers.medleyendbeat *= timing_factor
+
+        # modify all note timings
+        for line in self.notes.all_lines():
+            line.multiply(timing_factor)
+
+    def fix_line_breaks(self) -> None:
+        for i, line in enumerate(self.notes.player_1):
+            if line.line_break:
+                # remove end
+                line.line_break.end = None
+                # set line break timing similar to USDX implementation
+                next_line_start = self.notes.player_1[i + 1].start()
+                gap = next_line_start - line.end()
+
+                if gap < 2:
+                    line.line_break.start = next_line_start
+                elif gap == 2:
+                    line.line_break.start = line.end() + 1
+                else:
+                    line.line_break.start = line.end() + 2
+
+        if self.notes.player_2:
+            for i, line in enumerate(self.notes.player_1):
+                if line.line_break:
+                    # remove end
+                    line.line_break.end = None
+                    # set line break timing similar to USDX implementation
+                    next_line_start = self.notes.player_1[i + 1].start()
+                    gap = next_line_start - line.end()
+
+                    if gap < 2:
+                        line.line_break.start = next_line_start
+                    elif gap == 2:
+                        line.line_break.start = line.end() + 1
+                    else:
+                        line.line_break.start = line.end() + 2
+
+    def fix_touching_notes(self) -> None:
+        for i, line in enumerate(self.notes.player_1):
+            for j, note in enumerate(line.notes[:-1]):
+                if note.end() == line.notes[j + 1].start and note.duration > 1:
+                    note.duration -= 1
+            if not line.is_last():
+                if (
+                    line.end() == self.notes.player_1[i + 1].start
+                    and line.notes[-1].duration > 1
+                ):
+                    line.notes[-1].duration -= 1
+
+        if self.notes.player_2:
+            for i, line in enumerate(self.notes.player_2):
+                for j, note in enumerate(line.notes[:-1]):
+                    if note.end() == line.notes[j + 1].start and note.duration > 1:
+                        note.duration -= 1
+                if not line.is_last():
+                    if (
+                        line.end() == self.notes.player_1[i + 1].start
+                        and line.notes[-1].duration > 1
+                    ):
+                        line.notes[-1].duration -= 1
 
 
 def beats_to_secs(beats: int, bpm: float) -> float:
     return beats / (bpm * 4) * 60
 
 
-def beats_to_ms(beats: int, bpm: float) -> int:
-    return round(beats_to_secs(beats, bpm) * 1000)
+def beats_to_ms(beats: int, bpm: float) -> float:
+    return beats_to_secs(beats, bpm) * 1000
