@@ -1,6 +1,7 @@
 """Parser for UltraStar txt files."""
 from __future__ import annotations
 
+import math
 import re
 from enum import Enum
 from typing import Any, Iterator
@@ -9,6 +10,8 @@ import attrs
 
 from usdb_syncer.logger import Log
 from usdb_syncer.meta_tags.deserializer import MetaTags
+
+MINIMUM_BPM = 200.0
 
 
 class NotesParseError(Exception):
@@ -57,6 +60,10 @@ class Note:
 
     def end(self) -> int:
         return self.start + self.duration
+
+    def shorten(self) -> None:
+        if self.duration > 1:
+            self.duration = self.duration - 1
 
 
 @attrs.define
@@ -164,62 +171,67 @@ class Line:
 
 
 @attrs.define
-class PlayerNotes:
+class Tracks:
     """All lines for players 1 and 2 if applicable."""
 
-    player_1: list[Line]
-    player_2: list[Line] | None
+    track_1: list[Line]
+    track_2: list[Line] | None
 
     @classmethod
-    def parse(cls, lines: list[str], logger: Log) -> PlayerNotes:
-        player_1 = _player_lines(lines, logger)
-        if not player_1:
+    def parse(cls, lines: list[str], logger: Log) -> Tracks:
+        track_1 = _player_lines(lines, logger)
+        if not track_1:
             raise NotesParseError("no notes in file")
-        player_2 = _player_lines(lines, logger) or None
-        return cls(player_1, player_2)
+        track_2 = _player_lines(lines, logger) or None
+        return cls(track_1, track_2)
 
     def __str__(self) -> str:
-        body = "\n".join(map(str, self.player_1))
-        if self.player_2:
-            body = "\n".join(("P1", body, "P2", *map(str, self.player_2)))
+        body = "\n".join(map(str, self.track_1))
+        if self.track_2:
+            body = "\n".join(("P1", body, "P2", *map(str, self.track_2)))
         return f"{body}\nE"
 
     def maybe_split_duet_notes(self) -> None:
         """Try to detect a second player's notes and fix notes accordingly."""
-        if self.player_2:
+        if self.track_2:
             return
-        if not (first_line_break := self.player_1[0].line_break):
+        if not (first_line_break := self.track_1[0].line_break):
             # only one line
             return
         last_start = first_line_break.start
-        for idx, line in enumerate(self.player_1):
+        for idx, line in enumerate(self.track_1):
             if not line.line_break:
                 break
             if line.line_break.start < last_start:
                 part_1, part_2 = _split_duet_line(line, line.line_break.start)
-                self.player_2 = self.player_1[idx + 1 :]
+                self.track_2 = self.track_1[idx + 1 :]
                 if part_2.notes:
-                    self.player_2.insert(0, part_2)
-                self.player_1 = self.player_1[:idx]
+                    self.track_2.insert(0, part_2)
+                self.track_1 = self.track_1[:idx]
                 if part_1.notes:
-                    self.player_1.append(part_1)
+                    self.track_1.append(part_1)
                 return
             last_start = line.line_break.start
 
     def start(self) -> int:
-        if self.player_2:
-            return min(self.player_1[0].start(), self.player_2[0].start())
-        return self.player_1[0].start()
+        if self.track_2:
+            return min(self.track_1[0].start(), self.track_2[0].start())
+        return self.track_1[0].start()
 
     def end(self) -> int:
-        if self.player_2:
-            return max(self.player_1[-1].end(), self.player_2[-1].end())
-        return self.player_1[-1].end()
+        if self.track_2:
+            return max(self.track_1[-1].end(), self.track_2[-1].end())
+        return self.track_1[-1].end()
 
     def all_lines(self) -> Iterator[Line]:
-        yield from self.player_1
-        if self.player_2:
-            yield from self.player_2
+        yield from self.track_1
+        if self.track_2:
+            yield from self.track_2
+
+    def all_tracks(self) -> Iterator[list[Line]]:
+        yield self.track_1
+        if self.track_2:
+            yield self.track_2
 
 
 def _player_lines(lines: list[str], logger: Log) -> list[Line]:
@@ -390,7 +402,7 @@ class SongTxt:
     """A parsed .txt file of an UltraStar song."""
 
     headers: Headers
-    notes: PlayerNotes
+    notes: Tracks
     meta_tags: MetaTags
 
     def __str__(self) -> str:
@@ -401,7 +413,7 @@ class SongTxt:
         lines = [line for line in value.splitlines() if line]
         headers = Headers.parse(lines, logger)
         meta_tags = MetaTags(headers.video or "", logger)
-        notes = PlayerNotes.parse(lines, logger)
+        notes = Tracks.parse(lines, logger)
         if lines:
             logger.warning(f"trailing text in song txt: '{lines}'")
         return cls(headers=headers, meta_tags=meta_tags, notes=notes)
@@ -419,7 +431,7 @@ class SongTxt:
         self.notes.maybe_split_duet_notes()
 
     def restore_missing_headers(self) -> None:
-        if self.notes.player_2:
+        if self.notes.track_2:
             self.headers.p1 = self.meta_tags.player1 or "P1"
             self.headers.p2 = self.meta_tags.player2 or "P2"
         if self.meta_tags.preview is not None:
@@ -463,89 +475,47 @@ class SongTxt:
             return
         for line in self.notes.all_lines():
             line.shift(-offset)
-        self.headers.gap = (
-            round((self.headers.gap + beats_to_ms(offset, self.headers.bpm)) / 10) * 10
+        self.headers.gap = int(
+            round(self.headers.gap + beats_to_ms(offset, self.headers.bpm), -1)
         )
 
     def fix_low_bpm(self) -> None:
-        """(repeatedly) multiplies BPM value and all note timings by two
-        until the BPM is in a range (200, 400)"""
-        bpm_threshold = 200.0
+        """(repeatedly) doubles BPM value and all note timings
+        until the BPM is above MINIMUM_BPM"""
 
-        if (original_bpm := self.headers.bpm) >= bpm_threshold:
+        if self.headers.bpm >= MINIMUM_BPM:
             return
 
-        while self.headers.bpm < bpm_threshold:
-            self.headers.bpm *= 2
+        # how often to multiply bpm until it is larger or equal to the threshold
+        exp = math.ceil(math.log2(MINIMUM_BPM / self.headers.bpm))
+        factor = 2**exp
 
-        timing_factor = int(self.headers.bpm / original_bpm)
+        self.headers.bpm *= factor
 
         # modify medley tags
         if self.headers.medleystartbeat:
-            self.headers.medleystartbeat *= timing_factor
+            self.headers.medleystartbeat *= factor
 
         if self.headers.medleyendbeat:
-            self.headers.medleyendbeat *= timing_factor
+            self.headers.medleyendbeat *= factor
 
         # modify all note timings
         for line in self.notes.all_lines():
-            line.multiply(timing_factor)
+            line.multiply(factor)
 
     def fix_line_breaks(self) -> None:
-        for i, line in enumerate(self.notes.player_1):
-            if line.line_break:
-                # remove end
-                line.line_break.end = None
-                # set line break timing similar to USDX implementation
-                next_line_start = self.notes.player_1[i + 1].start()
-                gap = next_line_start - line.end()
-
-                if gap < 2:
-                    line.line_break.start = next_line_start
-                elif gap == 2:
-                    line.line_break.start = line.end() + 1
-                else:
-                    line.line_break.start = line.end() + 2
-
-        if self.notes.player_2:
-            for i, line in enumerate(self.notes.player_1):
-                if line.line_break:
-                    # remove end
-                    line.line_break.end = None
-                    # set line break timing similar to USDX implementation
-                    next_line_start = self.notes.player_1[i + 1].start()
-                    gap = next_line_start - line.end()
-
-                    if gap < 2:
-                        line.line_break.start = next_line_start
-                    elif gap == 2:
-                        line.line_break.start = line.end() + 1
-                    else:
-                        line.line_break.start = line.end() + 2
+        for track in self.notes.all_tracks():
+            fix_line_breaks(track)
 
     def fix_touching_notes(self) -> None:
-        for i, line in enumerate(self.notes.player_1):
-            for j, note in enumerate(line.notes[:-1]):
-                if note.end() == line.notes[j + 1].start and note.duration > 1:
-                    note.duration -= 1
-            if not line.is_last():
-                if (
-                    line.end() == self.notes.player_1[i + 1].start
-                    and line.notes[-1].duration > 1
-                ):
-                    line.notes[-1].duration -= 1
-
-        if self.notes.player_2:
-            for i, line in enumerate(self.notes.player_2):
-                for j, note in enumerate(line.notes[:-1]):
-                    if note.end() == line.notes[j + 1].start and note.duration > 1:
-                        note.duration -= 1
+        for track in self.notes.all_tracks():
+            for num_line, line in enumerate(track):
+                for num_note, note in enumerate(line.notes[:-1]):
+                    if note.end() == line.notes[num_note + 1].start:
+                        note.shorten()
                 if not line.is_last():
-                    if (
-                        line.end() == self.notes.player_1[i + 1].start
-                        and line.notes[-1].duration > 1
-                    ):
-                        line.notes[-1].duration -= 1
+                    if line.end() == self.notes.track_1[num_line + 1].start:
+                        line.notes[-1].shorten()
 
 
 def beats_to_secs(beats: int, bpm: float) -> float:
@@ -554,3 +524,23 @@ def beats_to_secs(beats: int, bpm: float) -> float:
 
 def beats_to_ms(beats: int, bpm: float) -> float:
     return beats_to_secs(beats, bpm) * 1000
+
+
+def fix_line_breaks(lines: list[Line]) -> None:
+    last_line = None
+    for line in lines:
+        if last_line and last_line.line_break:
+            # remove end (not needed/used)
+            last_line.line_break.end = None
+
+            # similar to USDX implementation (https://github.com/UltraStar-Deluxe/USDX/blob/0974aadaa747a5ce7f1f094908e669209641b5d4/src/screens/UScreenEditSub.pas#L2976) # pylint: disable=line-too-long
+            gap = line.start() - last_line.end()
+            if gap < 2:
+                last_line.line_break.start = line.start()
+            elif gap == 2:
+                last_line.line_break.start = last_line.end() + 1
+            else:
+                last_line.line_break.start = last_line.end() + 2
+
+        # update last_line
+        last_line = line
