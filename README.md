@@ -25,8 +25,10 @@ pip install -e '.[dev]'
 
 The package has a defined entry point for the GUI. Simply type in `usdb_syncer` in your terminal. Make sure that your venv is activated.
 
-On Windows, this might not work out of the box, because symlinks are disabled by default.
-Try following this answer on Stack Overflow: <https://stackoverflow.com/a/59761201/7542749>
+On __Windows__, this might not work out of the box, because symlinks are disabled by default.
+Try either
+1. enable Developer Settings and use Git feature for symlinks, see [this answer on Stack Overflow](https://stackoverflow.com/a/59761201/7542749) or
+2. setup with WSL 2 and Ubuntu 22.04, see [details in wiki](https://github.com/bohning/usdb_syncer/wiki/Setup#using-wsl)
 
 #### Run tests
 
