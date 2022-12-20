@@ -524,13 +524,10 @@ class SongTxt:
                         line.notes[-1].shorten()
 
     def fix_pitch_values(self) -> None:
-        min_pitch = 1000
-        for note in self.notes.all_notes():
-            if min_pitch is None or note.pitch < min_pitch:
-                min_pitch = note.pitch
-
+        min_pitch = min(note.pitch for note in self.notes.all_notes())
         octave_shift = min_pitch // 12
 
+        # only adjust pitches if they are at least two octaves off
         if abs(octave_shift) >= 2:
             for note in self.notes.all_notes():
                 note.pitch = note.pitch - octave_shift * 12
