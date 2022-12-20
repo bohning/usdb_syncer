@@ -1,0 +1,19 @@
+#TITLE:Fångad Av En Stormvind
+#ARTIST:Carola
+#BPM:372.0
+#GAP:17420
+: 0 2 14 Jag
+: 4 4 14  har
+: 12 6 15  al
+: 20 6 14 drig
+: 28 4 12  slu
+: 36 4 10 tat
+* 44 32 17  tro
+- 78
+: 108 2 17 Att
+: 112 6 19  ef
+: 120 2 21 ter
+: 124 6 22  var
+: 132 6 19 je
+: 140 10 17  natt
+E
