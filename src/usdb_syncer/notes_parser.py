@@ -368,7 +368,7 @@ def _set_header_value(kwargs: dict[str, Any], header: str, value: str) -> None:
     elif header in ("bpm", "videogap", "start", "previewstart"):
         kwargs[header] = float(value.replace(",", "."))
     elif header in ("gap", "end", "medleystartbeat", "medleyendbeat"):
-        kwargs[header] = round(float(value))
+        kwargs[header] = round(float(value.replace(",", ".")))
     else:
         kwargs["unknown"][header] = value
 
