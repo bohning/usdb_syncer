@@ -27,30 +27,8 @@ The package has a defined entry point for the GUI. Simply type in `usdb_syncer` 
 
 On __Windows__, this might not work out of the box, because symlinks are disabled by default.
 Try either
-1. following this answer on Stack Overflow: <https://stackoverflow.com/a/59761201/7542749> or
-2. setup with WSL 2 and e.g. Ubuntu 22.04
-
-    [latest WSL updates support GUIs started from WSL](https://learn.microsoft.com/en-us/windows/wsl/tutorials/gui-apps). Make sure to to use WSL 2 and update to latest version. On Windows run
-
-    ``` cmd
-    wsl --update
-    :: restart wsl
-    wsl --shutdown
-    ```
-
-    in WSL
-
-    ``` bash
-    apt update
-    apt install -y python3 libegl1 python3-venv
-    # clone project in wsl to avoid damaging symlinks
-    git clone ...
-    cd usdb_syncer
-
-    # ... follow instructions from setup above ...
-
-    usdb_syncer
-    ```
+1. enable Developer Settings and use Git feature for symlinks, see [this answer on Stack Overflow](https://stackoverflow.com/a/59761201/7542749) or
+2. setup with WSL 2 and Ubuntu 22.04, see [details in wiki](https://github.com/bohning/usdb_syncer/wiki/Setup#using-wsl)
 
 #### Run tests
 
