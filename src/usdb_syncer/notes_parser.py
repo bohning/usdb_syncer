@@ -365,10 +365,15 @@ def _set_header_value(kwargs: dict[str, Any], header: str, value: str) -> None:
         "resolution",
     ):
         kwargs[header] = value
+    # these are given in (fractional) seconds, thus may have a decimal comma or point
     elif header in ("bpm", "videogap", "start", "previewstart"):
         kwargs[header] = float(value.replace(",", "."))
-    elif header in ("gap", "end", "medleystartbeat", "medleyendbeat"):
+    # these are given in milliseconds, but may have a decimal point or comma in usdb
+    elif header in ("gap", "end"):
         kwargs[header] = round(float(value.replace(",", ".")))
+    # these are given in beats and should thus be integers
+    elif header in ("medleystartbeat", "medleyendbeat"):
+        kwargs[header] = int(value)
     else:
         kwargs["unknown"][header] = value
 
