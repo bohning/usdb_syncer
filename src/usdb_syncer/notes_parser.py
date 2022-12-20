@@ -238,6 +238,15 @@ class Tracks:
             for note in line.notes:
                 yield note
 
+    def fix_pitch_values(self) -> None:
+        min_pitch = min(note.pitch for note in self.all_notes())
+        octave_shift = min_pitch // 12
+
+        # only adjust pitches if they are at least two octaves off
+        if abs(octave_shift) >= 2:
+            for note in self.all_notes():
+                note.pitch = note.pitch - octave_shift * 12
+
 
 def _player_lines(lines: list[str], logger: Log) -> list[Line]:
     notes: list[Line] = []
@@ -461,7 +470,7 @@ class SongTxt:
         self.fix_low_bpm()
         self.fix_line_breaks()
         self.fix_touching_notes()
-        self.fix_pitch_values()
+        self.notes.fix_pitch_values()
 
     def minimum_song_length(self) -> str:
         """Return the minimum song length based on last beat, BPM and GAP"""
@@ -522,15 +531,6 @@ class SongTxt:
                 if not line.is_last():
                     if line.end() == self.notes.track_1[num_line + 1].start:
                         line.notes[-1].shorten()
-
-    def fix_pitch_values(self) -> None:
-        min_pitch = min(note.pitch for note in self.notes.all_notes())
-        octave_shift = min_pitch // 12
-
-        # only adjust pitches if they are at least two octaves off
-        if abs(octave_shift) >= 2:
-            for note in self.notes.all_notes():
-                note.pitch = note.pitch - octave_shift * 12
 
 
 def beats_to_secs(beats: int, bpm: float) -> float:
