@@ -25,11 +25,6 @@ pip install -e '.[dev]'
 
 The package has a defined entry point for the GUI. Simply type in `usdb_syncer` in your terminal. Make sure that your venv is activated.
 
-On __Windows__, this might not work out of the box, because symlinks are disabled by default.
-Try either
-1. enable Developer Settings and use Git feature for symlinks, see [this answer on Stack Overflow](https://stackoverflow.com/a/59761201/7542749) or
-2. setup with WSL 2 and Ubuntu 22.04, see [details in wiki](https://github.com/bohning/usdb_syncer/wiki/Setup#using-wsl)
-
 #### Run tests
 
 Run `tox` to execute the test pipeline. The tox pipelines are configured in the tox.ini file. Configurations for specific tools in the pipeline are maintained in the `pyproject.toml` file. Tox is configured to create its own virtual environments, install test dependencies and the package you are developing, and run all tests. If you changed the test requirements or want to perform a clean run for some reason, you can run `tox -r` to recreate tox's virtual environment.

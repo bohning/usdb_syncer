@@ -11,7 +11,6 @@ profile = "black"
 skip_glob = [
     "src/usdb_syncer/gui/forms",
     "src/usdb_syncer/gui/resources",
-    "src/resources_rc.py",
 ]
 
 [tool.black]
@@ -19,14 +18,12 @@ skip-magic-trailing-comma = true
 extend-exclude = [
     "src/usdb_syncer/gui/forms",
     "src/usdb_syncer/gui/resources",
-    "src/resources_rc.py",
 ]
 
 [tool.pylint.master]
 ignore-paths = [
     "src/usdb_syncer/gui/forms",
     "src/usdb_syncer/gui/resources",
-    "src/resources_rc.py",
     "venv",
     ".tox",
 ]
@@ -58,14 +55,12 @@ follow_imports = "silent"
 exclude = [
     "src/usdb_syncer/gui/forms",
     "src/usdb_syncer/gui/resources",
-    "src/resources_rc.py",
 ]
 
 [tool.pyright]
 exclude = [
     "src/usdb_syncer/gui/forms",
     "src/usdb_syncer/gui/resources",
-    "src/resources_rc.py",
     "venv",
     ".tox",
 ]
