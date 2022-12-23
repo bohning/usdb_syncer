@@ -66,7 +66,7 @@ def test__parse_song_page_with_commented_embedded_video(resource_dir: str) -> No
     assert len(details.comments) == 2
     assert details.comments[0].date_time == datetime(2022, 10, 11, 10, 46)
     assert details.comments[0].author == "sportgonzo"
-    assert details.comments[0].contents.text == "Perfekt"
+    assert details.comments[0].contents.text == "Perfekt :-)"
     assert details.comments[0].contents.youtube_ids == []
     assert details.comments[0].contents.urls == []
     assert details.comments[1].date_time == datetime(2022, 10, 10, 19, 48)
