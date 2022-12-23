@@ -350,7 +350,12 @@ def _parse_comments_table(comments_table: BeautifulSoup) -> list[SongComment]:
 
 
 def _parse_comment_contents(contents: BeautifulSoup) -> CommentContents:
-    text = contents.find("td").text.strip()  # type: ignore
+    td_element = contents.find("td")
+    for emoji in td_element.find_all("img"):
+        emoji.replaceWith(emoji.get("title"))
+
+    # text = contents.find("td").text.strip()  # type: ignore
+    text = td_element.text.strip()  # type: ignore
     urls: list[str] = []
     youtube_ids: list[str] = []
 
