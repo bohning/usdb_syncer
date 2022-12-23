@@ -54,6 +54,8 @@ class Note:
         if kind != NoteKind.FREESTYLE:
             if not text.strip():
                 text = "~" + text
+        if text.strip() == "-":
+            text = text.replace("-", "~")
         return Note(kind, start, duration, pitch, text)
 
     def __str__(self) -> str:
