@@ -40,10 +40,10 @@ class Note:
 
     @classmethod
     def parse(cls, value: str) -> Note:
-        regex = re.compile(r"(:|\*|F|R|G):? +(-?\d+) +(\d+) +(-?\d+) (.+)")
+        regex = re.compile(r"(:|\*|F|R|G):? +(-?\d+) +(\d+) +(-?\d+)(?: (.*))?")
         if not (match := regex.fullmatch(value)):
             raise NotesParseError(f"invalid note: '{value}'")
-        text = match.group(5)
+        text = match.group(5) or ""
         try:
             kind = NoteKind(match.group(1))
             start = int(match.group(2))
@@ -51,6 +51,11 @@ class Note:
             pitch = int(match.group(4))
         except ValueError as err:
             raise NotesParseError(f"invalid note: '{value}'") from err
+        if kind != NoteKind.FREESTYLE:
+            if not text.strip():
+                text = "~" + text
+        if text.strip() == "-":
+            text = text.replace("-", "~")
         return Note(kind, start, duration, pitch, text)
 
     def __str__(self) -> str:

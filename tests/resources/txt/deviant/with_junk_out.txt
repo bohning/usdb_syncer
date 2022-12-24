@@ -3,4 +3,6 @@
 #BPM:0.0
 #GAP:0
 : 0 1 0 first note 
+- 4
+: 21 1 1 ~
 E
