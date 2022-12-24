@@ -40,10 +40,12 @@ class Note:
 
     @classmethod
     def parse(cls, value: str) -> Note:
-        regex = re.compile(r"(:|\*|F|R|G):? +(-?\d+) +(\d+) +(-?\d+) (.*)")
+        regex = re.compile(r"(:|\*|F|R|G):? +(-?\d+) +(\d+) +(-?\d+)(?: (.*))?")
         if not (match := regex.fullmatch(value)):
             raise NotesParseError(f"invalid note: '{value}'")
         text = match.group(5)
+        if not text:
+            text = ""
         try:
             kind = NoteKind(match.group(1))
             start = int(match.group(2))
