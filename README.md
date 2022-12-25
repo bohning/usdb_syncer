@@ -1,5 +1,9 @@
 # USDB Syncer
 
+[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
+[![Imports: isort](https://img.shields.io/badge/%20imports-isort-%231674b1?style=flat)](https://pycqa.github.io/isort/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
 ## Development
 
 usdb_syncer is written in Python.
@@ -17,7 +21,7 @@ python3 -m venv venv
 # In Windows PowerShell run this instead: `.\venv\Scripts\Activate.ps1`
 # In Windows CMD run this instead: `.\venv\scripts\activate.bat`
 source venv/bin/activate
-pip install --upgrade pip
+pip install --upgrade pip tox
 pip install -e '.[dev]'
 ```
 
