@@ -79,12 +79,26 @@ def download_video(
     if browser.value:
         ydl_opts["cookiesfrombrowser"] = (browser.value,)
     if isinstance(options, AudioOptions):
-        postprocessor = {
+        pp_extract_audio = {
             "key": "FFmpegExtractAudio",
             "preferredquality": "320",
             "preferredcodec": options.format.value,
         }
-        ydl_opts["postprocessors"] = [postprocessor]
+        pp_normalize = {
+            "key": "ExecAfterDownload",
+            "exec_cmd": " && ".join(
+                [
+                    # copy to temp file
+                    f'ffmpeg -i "{path_stem}.%(ext)s" '
+                    f'-acodec copy -y "{path_stem}-temp.%(ext)s"',
+                    # simple loudness normalization with EBU R128 algorithm
+                    # see https://trac.ffmpeg.org/wiki/AudioVolume
+                    f'ffmpeg -i "{path_stem}-temp.%(ext)s" '
+                    f'-filter:a loudnorm -y "{path_stem}.%(ext)s"',
+                ]
+            ),
+        }
+        ydl_opts["postprocessors"] = [pp_extract_audio, pp_normalize]
         # `prepare_filename()` does not take into account postprocessing, so note the
         # file extension
         ext = options.format.value
@@ -95,6 +109,10 @@ def download_video(
         except yt_dlp.utils.YoutubeDLError:
             logger.debug(f"error downloading video url: {url}")
             return None
+        finally:
+            # remove temp file created while normalization
+            if os.path.exists(temp_file := f"{path_stem}-temp.{ext}"):
+                os.remove(temp_file)
 
     return ext or os.path.splitext(filename)[1][1:]
 
