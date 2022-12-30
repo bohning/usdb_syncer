@@ -70,7 +70,9 @@ class Note:
         if self.duration > 1:
             self.duration = self.duration - 1
 
-    def reset_trailing_spaces(self, prefix_count: int, suffix_count: int) -> None:
+    def reset_trailing_spaces(  # pylint: disable=too-complex
+        self, prefix_count: int, suffix_count: int
+    ) -> None:
         # reusing UltraStar Manager implementation
         # https://github.com/UltraStar-Deluxe/UltraStar-Manager/blob/d0f7e879d856f487ae0abed9d484c615f13ae1ee/src/song/QUSongLine.cpp#L16 # pylint: disable=line-too-long
         # https://github.com/UltraStar-Deluxe/UltraStar-Manager/blob/d0f7e879d856f487ae0abed9d484c615f13ae1ee/src/plugins/lyric/QULyricTask.cpp#L365 # pylint: disable=line-too-long
