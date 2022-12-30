@@ -66,9 +66,9 @@ class Note:
     def end(self) -> int:
         return self.start + self.duration
 
-    def shorten(self) -> None:
-        if self.duration > 1:
-            self.duration = self.duration - 1
+    def shorten(self, beats:int=1) -> None:
+        if self.duration > beats:
+            self.duration = self.duration - beats
 
 
 @attrs.define
