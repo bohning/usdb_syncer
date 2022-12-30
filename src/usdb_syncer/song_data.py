@@ -5,6 +5,7 @@ plus information about locally existing files.
 from __future__ import annotations
 
 from functools import cache
+from typing import Any
 
 import attrs
 from PySide6.QtGui import QIcon
@@ -142,6 +143,38 @@ class SongData:
                 return optional_check_icon(self.local_files.cover)
             case Column.BACKGROUND:
                 return optional_check_icon(self.local_files.background)
+            case _ as unreachable:
+                assert_never(unreachable)
+
+    def sort_data(self, column: int) -> Any | None:
+        col = Column(column)
+        match col:
+            case Column.SONG_ID:
+                return self.data.song_id.value
+            case Column.ARTIST:
+                return self.data.artist
+            case Column.TITLE:
+                return self.data.title
+            case Column.LANGUAGE:
+                return self.data.language
+            case Column.EDITION:
+                return self.data.edition
+            case Column.GOLDEN_NOTES:
+                return self.data.golden_notes
+            case Column.RATING:
+                return self.data.rating
+            case Column.VIEWS:
+                return self.data.views
+            case Column.TXT:
+                return self.local_files.txt
+            case Column.AUDIO:
+                return self.local_files.audio
+            case Column.VIDEO:
+                return self.local_files.video
+            case Column.COVER:
+                return self.local_files.cover
+            case Column.BACKGROUND:
+                return self.local_files.background
             case _ as unreachable:
                 assert_never(unreachable)
 
