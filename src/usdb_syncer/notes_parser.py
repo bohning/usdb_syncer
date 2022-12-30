@@ -70,6 +70,47 @@ class Note:
         if self.duration > 1:
             self.duration = self.duration - 1
 
+    def reset_trailing_spaces(self, prefix_count: int, suffix_count: int) -> None:
+        # reusing UltraStar Manager implementation
+        # https://github.com/UltraStar-Deluxe/UltraStar-Manager/blob/d0f7e879d856f487ae0abed9d484c615f13ae1ee/src/song/QUSongLine.cpp#L16 # pylint: disable=line-too-long
+        # https://github.com/UltraStar-Deluxe/UltraStar-Manager/blob/d0f7e879d856f487ae0abed9d484c615f13ae1ee/src/plugins/lyric/QULyricTask.cpp#L365 # pylint: disable=line-too-long
+
+        # the simple way
+        if prefix_count != -1 and suffix_count != -1:
+            self.text = self.text.strip()
+
+            for _ in range(prefix_count):
+                self.text = " " + self.text
+            for _ in range(suffix_count):
+                self.text = self.text + " "
+
+            return
+
+        # the hard way
+        if prefix_count == -1:
+            # prefix unchanged
+
+            for _ in range(len(self.text)):
+                if not self.text.endswith(" "):
+                    break
+
+                self.text = self.text[:-1]
+
+            for _ in range(suffix_count):
+                self.text = self.text + " "
+
+        if suffix_count == -1:
+            # suffix unchanged
+
+            for _ in range(len(self.text)):
+                if not self.text.startswith(" "):
+                    break
+
+                self.text = self.text[1:]
+
+            for _ in range(prefix_count):
+                self.text = " " + self.text
+
 
 @attrs.define
 class LineBreak:
@@ -251,6 +292,24 @@ class Tracks:
         if abs(octave_shift) >= 2:
             for note in self.all_notes():
                 note.pitch = note.pitch - octave_shift * 12
+
+    def fix_spaces(self) -> None:
+        for line in self.all_lines():
+            # first syllable should not start with a space
+            if line.notes[0].text.startswith(" "):
+                line.notes[0].reset_trailing_spaces(0, -1)
+
+            # if current syllable starts with a space
+            # shift it to the end of the previous syllable
+            for idx in range(1, len(line.notes)):
+                if line.notes[idx].text.startswith(" "):
+                    line.notes[idx - 1].reset_trailing_spaces(-1, 1)
+                    line.notes[idx].reset_trailing_spaces(0, -1)
+
+            # ensure last syllable ends with a space as well
+            # (so that syllable highlighting is always complete when singing)
+            if not line.notes[-1].text.endswith(" "):
+                line.notes[-1].reset_trailing_spaces(-1, 1)
 
 
 def _player_lines(lines: list[str], logger: Log) -> list[Line]:
@@ -481,6 +540,7 @@ class SongTxt:
         self.fix_line_breaks()
         self.fix_touching_notes()
         self.notes.fix_pitch_values()
+        self.notes.fix_spaces()
 
     def minimum_song_length(self) -> str:
         """Return the minimum song length based on last beat, BPM and GAP"""
