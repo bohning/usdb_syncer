@@ -66,7 +66,7 @@ class Note:
     def end(self) -> int:
         return self.start + self.duration
 
-    def shorten(self, beats:int=1) -> None:
+    def shorten(self, beats: int = 1) -> None:
         if self.duration > beats:
             self.duration = self.duration - beats
 
@@ -252,6 +252,10 @@ class Tracks:
             for note in self.all_notes():
                 note.pitch = note.pitch - octave_shift * 12
 
+    def fix_apostrophes(self) -> None:
+        for note in self.all_notes():
+            note.text = note.text.replace("`", "’").replace("´", "’").replace("'", "’")
+
 
 def _player_lines(lines: list[str], logger: Log) -> list[Line]:
     notes: list[Line] = []
@@ -384,6 +388,34 @@ class Headers:
     def artist_title_str(self) -> str:
         return f"{self.artist} - {self.title}"
 
+    def fix_apostrophes(self) -> None:
+        self.artist = self.artist.replace("`", "’").replace("´", "’").replace("'", "’")
+        self.title = self.title.replace("`", "’").replace("´", "’").replace("'", "’")
+        if self.language:
+            self.language = (
+                self.language.replace("`", "’").replace("´", "’").replace("'", "’")
+            )
+        if self.genre:
+            self.genre = (
+                self.genre.replace("`", "’").replace("´", "’").replace("'", "’")
+            )
+        if self.creator:
+            self.creator = (
+                self.creator.replace("`", "’").replace("´", "’").replace("'", "’")
+            )
+        if self.p1:
+            self.p1 = self.p1.replace("`", "’").replace("´", "’").replace("'", "’")
+        if self.p2:
+            self.p2 = self.p2.replace("`", "’").replace("´", "’").replace("'", "’")
+        if self.album:
+            self.album = (
+                self.album.replace("`", "’").replace("´", "’").replace("'", "’")
+            )
+        if self.comment:
+            self.comment = (
+                self.comment.replace("`", "’").replace("´", "’").replace("'", "’")
+            )
+
 
 def _set_header_value(kwargs: dict[str, Any], header: str, value: str) -> None:
     header = "creator" if header == "AUTHOR" else header.lower()
@@ -481,6 +513,8 @@ class SongTxt:
         self.fix_line_breaks()
         self.fix_touching_notes()
         self.notes.fix_pitch_values()
+        self.notes.fix_apostrophes()
+        self.headers.fix_apostrophes()
 
     def minimum_song_length(self) -> str:
         """Return the minimum song length based on last beat, BPM and GAP"""

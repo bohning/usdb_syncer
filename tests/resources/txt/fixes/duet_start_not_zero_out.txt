@@ -21,7 +21,7 @@ P1
 : 241 5 1  stars
 : 247 2 1  look
 : 250 3 -2  like
-: 255 3 1  they're
+: 255 3 1  they’re
 : 260 3 3  not
 : 265 3 -2  shi
 : 269 3 -2 ning
@@ -55,6 +55,6 @@ F 445 5 1  oh,
 : 455 1 1  was
 : 457 1 1  thin
 : 458 2 1 king
-: 461 3 1  'bout
+: 461 3 1  ’bout
 : 465 2 1  her
 E
