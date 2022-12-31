@@ -33,7 +33,7 @@ load-plugins = """
     """
 
 [tool.pylint.basic]
-good-names = ["mw"]
+good-names = ["mw", "p1", "p2"]
 
 [tool.pylint.messages_control]
 extension-pkg-whitelist = ["PySide6"]
