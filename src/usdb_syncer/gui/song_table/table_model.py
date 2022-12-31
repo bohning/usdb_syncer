@@ -23,6 +23,7 @@ class CustomRole(int, Enum):
     """Custom values expanding Qt.QItemDataRole."""
 
     ALL_DATA = 100
+    SORT     = 101
 
 
 class TableModel(QAbstractTableModel):
@@ -76,6 +77,8 @@ class TableModel(QAbstractTableModel):
             return self.songs[index.row()].decoration_data(index.column())
         if role == CustomRole.ALL_DATA:
             return self.songs[index.row()]
+        if role == CustomRole.SORT:
+            return self.songs[index.row()].sort_data(index.column())
         return None
 
     def headerData(

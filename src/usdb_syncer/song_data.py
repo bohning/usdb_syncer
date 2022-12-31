@@ -145,6 +145,38 @@ class SongData:
             case _ as unreachable:
                 assert_never(unreachable)
 
+    def sort_data(self, column: int) -> int | str | bool:
+        col = Column(column)
+        match col:
+            case Column.SONG_ID:
+                return self.data.song_id.value
+            case Column.ARTIST:
+                return self.data.artist
+            case Column.TITLE:
+                return self.data.title
+            case Column.LANGUAGE:
+                return self.data.language
+            case Column.EDITION:
+                return self.data.edition
+            case Column.GOLDEN_NOTES:
+                return self.data.golden_notes
+            case Column.RATING:
+                return self.data.rating
+            case Column.VIEWS:
+                return self.data.views
+            case Column.TXT:
+                return self.local_files.txt
+            case Column.AUDIO:
+                return self.local_files.audio
+            case Column.VIDEO:
+                return self.local_files.video
+            case Column.COVER:
+                return self.local_files.cover
+            case Column.BACKGROUND:
+                return self.local_files.background
+            case _ as unreachable:
+                assert_never(unreachable)
+
 
 @cache
 def rating_str(rating: int) -> str:
