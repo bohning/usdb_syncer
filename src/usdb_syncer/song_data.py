@@ -5,7 +5,6 @@ plus information about locally existing files.
 from __future__ import annotations
 
 from functools import cache
-from typing import Any
 
 import attrs
 from PySide6.QtGui import QIcon
@@ -146,7 +145,7 @@ class SongData:
             case _ as unreachable:
                 assert_never(unreachable)
 
-    def sort_data(self, column: int) -> Any | None:
+    def sort_data(self, column: int) -> int | str | bool:
         col = Column(column)
         match col:
             case Column.SONG_ID:
