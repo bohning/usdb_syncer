@@ -254,7 +254,12 @@ class Tracks:
 
     def fix_apostrophes(self) -> None:
         for note in self.all_notes():
-            note.text = note.text.replace("`", "’").replace("´", "’").replace("'", "’")
+            note.text = (
+                note.text.replace("''", '"')
+                .replace("`", "’")
+                .replace("´", "’")
+                .replace("'", "’")
+            )
 
 
 def _player_lines(lines: list[str], logger: Log) -> list[Line]:
@@ -404,7 +409,10 @@ class Headers:
                 setattr(
                     self,
                     key,
-                    value.replace("`", "’").replace("´", "’").replace("'", "’"),
+                    value.replace("''", '"')
+                    .replace("`", "’")
+                    .replace("´", "’")
+                    .replace("'", "’"),
                 )
 
 
