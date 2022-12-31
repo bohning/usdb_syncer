@@ -389,32 +389,23 @@ class Headers:
         return f"{self.artist} - {self.title}"
 
     def fix_apostrophes(self) -> None:
-        self.artist = self.artist.replace("`", "’").replace("´", "’").replace("'", "’")
-        self.title = self.title.replace("`", "’").replace("´", "’").replace("'", "’")
-        if self.language:
-            self.language = (
-                self.language.replace("`", "’").replace("´", "’").replace("'", "’")
-            )
-        if self.genre:
-            self.genre = (
-                self.genre.replace("`", "’").replace("´", "’").replace("'", "’")
-            )
-        if self.creator:
-            self.creator = (
-                self.creator.replace("`", "’").replace("´", "’").replace("'", "’")
-            )
-        if self.p1:
-            self.p1 = self.p1.replace("`", "’").replace("´", "’").replace("'", "’")
-        if self.p2:
-            self.p2 = self.p2.replace("`", "’").replace("´", "’").replace("'", "’")
-        if self.album:
-            self.album = (
-                self.album.replace("`", "’").replace("´", "’").replace("'", "’")
-            )
-        if self.comment:
-            self.comment = (
-                self.comment.replace("`", "’").replace("´", "’").replace("'", "’")
-            )
+        for key in (
+            "artist",
+            "title",
+            "language",
+            "genre",
+            "creator",
+            "p1",
+            "p2",
+            "album",
+            "comment",
+        ):
+            if value := getattr(self, key):
+                setattr(
+                    self,
+                    key,
+                    value.replace("`", "’").replace("´", "’").replace("'", "’"),
+                )
 
 
 def _set_header_value(kwargs: dict[str, Any], header: str, value: str) -> None:
