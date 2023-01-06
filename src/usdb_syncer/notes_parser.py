@@ -66,7 +66,7 @@ class Note:
     def end(self) -> int:
         return self.start + self.duration
 
-    def shorten(self, beats:int=1) -> None:
+    def shorten(self, beats: int = 1) -> None:
         if self.duration > beats:
             self.duration = self.duration - beats
 
@@ -539,7 +539,7 @@ class SongTxt:
                     if note.end() == line.notes[num_note + 1].start:
                         note.shorten()
                 if not line.is_last():
-                    if line.end() == self.notes.track_1[num_line + 1].start:
+                    if line.end() == track[num_line + 1].start():
                         line.notes[-1].shorten()
 
 
