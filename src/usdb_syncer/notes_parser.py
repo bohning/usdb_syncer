@@ -398,7 +398,6 @@ class Headers:
             "p1",
             "p2",
             "album",
-            "comment",
         ):
             if value := getattr(self, key):
                 setattr(self, key, replace_false_apostrophes_and_quotation_marks(value))
