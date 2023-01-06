@@ -255,10 +255,9 @@ class Tracks:
     def fix_apostrophes(self) -> None:
         for note in self.all_notes():
             note.text = (
-                note.text.replace("''", '"')
-                .replace("`", "’")
-                .replace("´", "’")
-                .replace("'", "’")
+                note.text.replace("''", '"')  # two single quotation marks '' by "
+                .replace("`", "’")  # grave accent ` by upright apostrophe '
+                .replace("´", "’")  # acute accent ´ by upright apostrophe '
             )
 
 
@@ -409,10 +408,9 @@ class Headers:
                 setattr(
                     self,
                     key,
-                    value.replace("''", '"')
-                    .replace("`", "’")
-                    .replace("´", "’")
-                    .replace("'", "’"),
+                    value.replace("''", '"')  # two single quotation marks '' by "
+                    .replace("`", "'")  # grave accent ` by upright apostrophe '
+                    .replace("´", "'"),  # acute accent ´ by upright apostrophe '
                 )
 
 
