@@ -499,10 +499,10 @@ class SongTxt:
     def minimum_song_length(self) -> str:
         """Return the minimum song length based on last beat, BPM and GAP"""
         beats_secs = beats_to_secs(self.notes.end(), self.headers.bpm)
-        minimum_secs = beats_secs + self.headers.gap / 1000
+        minimum_secs = round(beats_secs + self.headers.gap / 1000)
         minutes, seconds = divmod(minimum_secs, 60)
 
-        return f"{minutes:02.0f}:{seconds:02.0f}"
+        return f"{minutes:02d}:{seconds:02d}"
 
     def fix_first_timestamp(self) -> None:
         """Shifts all notes such that the first note starts at beat zero and adjusts
