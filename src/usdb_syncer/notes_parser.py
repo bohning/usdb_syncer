@@ -66,7 +66,7 @@ class Note:
     def end(self) -> int:
         return self.start + self.duration
 
-    def shorten(self, beats:int=1) -> None:
+    def shorten(self, beats: int = 1) -> None:
         if self.duration > beats:
             self.duration = self.duration - beats
 
@@ -242,6 +242,20 @@ class Tracks:
         for line in self.all_lines():
             for note in line.notes:
                 yield note
+
+    def fix_line_breaks(self) -> None:
+        for track in self.all_tracks():
+            fix_line_breaks(track)
+
+    def fix_touching_notes(self) -> None:
+        for track in self.all_tracks():
+            for num_line, line in enumerate(track):
+                for num_note, note in enumerate(line.notes[:-1]):
+                    if note.end() == line.notes[num_note + 1].start:
+                        note.shorten()
+                if not line.is_last():
+                    if line.end() == track[num_line + 1].start():
+                        line.notes[-1].shorten()
 
     def fix_pitch_values(self) -> None:
         min_pitch = min(note.pitch for note in self.all_notes())
@@ -478,8 +492,8 @@ class SongTxt:
         self.notes.maybe_split_duet_notes()
         self.fix_first_timestamp()
         self.fix_low_bpm()
-        self.fix_line_breaks()
-        self.fix_touching_notes()
+        self.notes.fix_line_breaks()
+        self.notes.fix_touching_notes()
         self.notes.fix_pitch_values()
 
     def minimum_song_length(self) -> str:
@@ -527,20 +541,6 @@ class SongTxt:
         # modify all note timings
         for line in self.notes.all_lines():
             line.multiply(factor)
-
-    def fix_line_breaks(self) -> None:
-        for track in self.notes.all_tracks():
-            fix_line_breaks(track)
-
-    def fix_touching_notes(self) -> None:
-        for track in self.notes.all_tracks():
-            for num_line, line in enumerate(track):
-                for num_note, note in enumerate(line.notes[:-1]):
-                    if note.end() == line.notes[num_note + 1].start:
-                        note.shorten()
-                if not line.is_last():
-                    if line.end() == self.notes.track_1[num_line + 1].start:
-                        line.notes[-1].shorten()
 
 
 def beats_to_secs(beats: int, bpm: float) -> float:
