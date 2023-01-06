@@ -23,7 +23,7 @@ class CustomRole(int, Enum):
     """Custom values expanding Qt.QItemDataRole."""
 
     ALL_DATA = 100
-    SORT     = 101
+    SORT = 101
 
 
 class TableModel(QAbstractTableModel):
