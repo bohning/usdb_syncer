@@ -254,11 +254,7 @@ class Tracks:
 
     def fix_apostrophes(self) -> None:
         for note in self.all_notes():
-            note.text = (
-                note.text.replace("''", '"')  # two single quotation marks '' by "
-                .replace("`", "’")  # grave accent ` by upright apostrophe '
-                .replace("´", "’")  # acute accent ´ by upright apostrophe '
-            )
+            note.text = replace_false_apostrophes_and_quotation_marks(note.text)
 
 
 def _player_lines(lines: list[str], logger: Log) -> list[Line]:
@@ -405,13 +401,7 @@ class Headers:
             "comment",
         ):
             if value := getattr(self, key):
-                setattr(
-                    self,
-                    key,
-                    value.replace("''", '"')  # two single quotation marks '' by "
-                    .replace("`", "'")  # grave accent ` by upright apostrophe '
-                    .replace("´", "'"),  # acute accent ´ by upright apostrophe '
-                )
+                setattr(self, key, replace_false_apostrophes_and_quotation_marks(value))
 
 
 def _set_header_value(kwargs: dict[str, Any], header: str, value: str) -> None:
@@ -600,3 +590,10 @@ def fix_line_breaks(lines: list[Line]) -> None:
 
         # update last_line
         last_line = line
+
+
+def replace_false_apostrophes_and_quotation_marks(value: str) -> str:
+    # two single quotation marks '' by "
+    # grave accent ` by upright apostrophe '
+    # acute accent ´ by upright apostrophe '
+    return value.replace("''", '"').replace("`", "'").replace("´", "'")
