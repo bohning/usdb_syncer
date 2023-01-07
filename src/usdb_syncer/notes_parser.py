@@ -389,16 +389,7 @@ class Headers:
         return f"{self.artist} - {self.title}"
 
     def fix_apostrophes(self) -> None:
-        for key in (
-            "artist",
-            "title",
-            "language",
-            "genre",
-            "creator",
-            "p1",
-            "p2",
-            "album",
-        ):
+        for key in ("artist", "title", "language", "genre", "p1", "p2", "album"):
             if value := getattr(self, key):
                 setattr(self, key, replace_false_apostrophes_and_quotation_marks(value))
 
