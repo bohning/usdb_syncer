@@ -274,6 +274,10 @@ class Tracks:
             for note in self.all_notes():
                 note.pitch = note.pitch - octave_shift * 12
 
+    def fix_apostrophes(self) -> None:
+        for note in self.all_notes():
+            note.text = replace_false_apostrophes_and_quotation_marks(note.text)
+
     def fix_spaces(self) -> None:
         """Ensures
         1. no syllables start with whitespace,
@@ -428,6 +432,11 @@ class Headers:
     def artist_title_str(self) -> str:
         return f"{self.artist} - {self.title}"
 
+    def fix_apostrophes(self) -> None:
+        for key in ("artist", "title", "language", "genre", "p1", "p2", "album"):
+            if value := getattr(self, key):
+                setattr(self, key, replace_false_apostrophes_and_quotation_marks(value))
+
 
 def _set_header_value(kwargs: dict[str, Any], header: str, value: str) -> None:
     header = "creator" if header == "AUTHOR" else header.lower()
@@ -525,6 +534,8 @@ class SongTxt:
         self.notes.fix_line_breaks()
         self.notes.fix_touching_notes()
         self.notes.fix_pitch_values()
+        self.notes.fix_apostrophes()
+        self.headers.fix_apostrophes()
         self.notes.fix_spaces()
 
     def minimum_song_length(self) -> str:
@@ -600,3 +611,10 @@ def fix_line_breaks(lines: list[Line]) -> None:
 
         # update last_line
         last_line = line
+
+
+def replace_false_apostrophes_and_quotation_marks(value: str) -> str:
+    # two single quotation marks '' by "
+    # grave accent ` by upright apostrophe '
+    # acute accent ´ by upright apostrophe '
+    return value.replace("''", '"').replace("`", "'").replace("´", "'")
