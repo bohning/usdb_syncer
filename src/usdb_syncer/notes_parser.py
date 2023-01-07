@@ -70,6 +70,14 @@ class Note:
         if self.duration > 1:
             self.duration = self.duration - 1
 
+    def left_trim_text(self) -> None:
+        """Remove whitespace from the start of the note."""
+        self.text = self.text.lstrip()
+
+    def right_trim_text_and_add_space(self) -> None:
+        """Ensure the note ends with a single space."""
+        self.text = self.text.rstrip() + " "
+
     def reset_trailing_spaces(  # pylint: disable=too-complex
         self, prefix_count: int, suffix_count: int
     ) -> None:
@@ -296,22 +304,26 @@ class Tracks:
                 note.pitch = note.pitch - octave_shift * 12
 
     def fix_spaces(self) -> None:
+        """Ensures
+        1. no syllables start with whitespace,
+        2. word-final syllables end with a single space,
+        3. the last syllable in a line ends with a single space.
+        """
         for line in self.all_lines():
-            # first syllable should not start with a space
-            if line.notes[0].text.startswith(" "):
-                line.notes[0].reset_trailing_spaces(0, -1)
+            line.notes[0].left_trim_text()
 
-            # if current syllable starts with a space
-            # shift it to the end of the previous syllable
+            # if current syllable starts with a space shift it to the end of the
+            # previous syllable
             for idx in range(1, len(line.notes)):
                 if line.notes[idx].text.startswith(" "):
-                    line.notes[idx - 1].reset_trailing_spaces(-1, 1)
-                    line.notes[idx].reset_trailing_spaces(0, -1)
+                    line.notes[idx - 1].right_trim_text_and_add_space()
+                    line.notes[idx].left_trim_text()
+                if line.notes[idx].text.endswith(" "):
+                    line.notes[idx].right_trim_text_and_add_space()
 
-            # ensure last syllable ends with a space as well
-            # (so that syllable highlighting is always complete when singing)
-            if not line.notes[-1].text.endswith(" "):
-                line.notes[-1].reset_trailing_spaces(-1, 1)
+            # last syllable should end with a space, otherwise syllable highlighting
+            # used to be incomplete in USDX, and it allows simple text concatenation
+            line.notes[-1].right_trim_text_and_add_space()
 
 
 def _player_lines(lines: list[str], logger: Log) -> list[Line]:
