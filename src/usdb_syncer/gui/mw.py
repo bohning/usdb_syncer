@@ -17,12 +17,14 @@ from PySide6.QtWidgets import (
 )
 
 from usdb_syncer import SongId, settings
+from usdb_syncer.gui.debug_console import DebugConsole
 from usdb_syncer.gui.ffmpeg_dialog import check_ffmpeg
 from usdb_syncer.gui.forms.MainWindow import Ui_MainWindow
 from usdb_syncer.gui.meta_tags_dialog import MetaTagsDialog
 from usdb_syncer.gui.progress import run_with_progress
 from usdb_syncer.gui.settings_dialog import SettingsDialog
 from usdb_syncer.gui.song_table.song_table import SongTable
+from usdb_syncer.gui.utils import scroll_to_bottom, set_shortcut
 from usdb_syncer.pdf import generate_song_pdf
 from usdb_syncer.song_data import LocalFiles, SongData
 from usdb_syncer.song_list_fetcher import get_all_song_data, resync_song_data
@@ -103,6 +105,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         self._setup_table()
         self._setup_log()
         self._setup_toolbar()
+        self._setup_shortcuts()
         self._setup_song_dir()
         self._setup_search()
         self._setup_download()
@@ -134,6 +137,9 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         self.action_show_log.triggered.connect(
             lambda: open_file_explorer(os.path.dirname(AppPaths.log))
         )
+
+    def _setup_shortcuts(self) -> None:
+        set_shortcut("Ctrl+.", self, lambda: DebugConsole(self).show())
 
     def _setup_song_dir(self) -> None:
         self.lineEdit_song_dir.setText(settings.get_song_dir())
@@ -205,8 +211,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
             messages += self._errors
         messages.sort(key=lambda m: m[1])
         self.plainTextEdit.setPlainText("\n".join(m[0] for m in messages))
-        slider = self.plainTextEdit.verticalScrollBar()
-        slider.setValue(slider.maximum())
+        scroll_to_bottom(self.plainTextEdit)
 
     def _on_selected_rows_changed(self, count: int) -> None:
         s__ = "" if count == 1 else "s"
