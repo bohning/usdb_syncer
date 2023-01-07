@@ -78,49 +78,6 @@ class Note:
         """Ensure the note ends with a single space."""
         self.text = self.text.rstrip() + " "
 
-    def reset_trailing_spaces(  # pylint: disable=too-complex
-        self, prefix_count: int, suffix_count: int
-    ) -> None:
-        # reusing UltraStar Manager implementation
-        # https://github.com/UltraStar-Deluxe/UltraStar-Manager/blob/d0f7e879d856f487ae0abed9d484c615f13ae1ee/src/song/QUSongLine.cpp#L16 # pylint: disable=line-too-long
-        # https://github.com/UltraStar-Deluxe/UltraStar-Manager/blob/d0f7e879d856f487ae0abed9d484c615f13ae1ee/src/plugins/lyric/QULyricTask.cpp#L365 # pylint: disable=line-too-long
-
-        # the simple way
-        if prefix_count != -1 and suffix_count != -1:
-            self.text = self.text.strip()
-
-            for _ in range(prefix_count):
-                self.text = " " + self.text
-            for _ in range(suffix_count):
-                self.text = self.text + " "
-
-            return
-
-        # the hard way
-        if prefix_count == -1:
-            # prefix unchanged
-
-            for _ in range(len(self.text)):
-                if not self.text.endswith(" "):
-                    break
-
-                self.text = self.text[:-1]
-
-            for _ in range(suffix_count):
-                self.text = self.text + " "
-
-        if suffix_count == -1:
-            # suffix unchanged
-
-            for _ in range(len(self.text)):
-                if not self.text.startswith(" "):
-                    break
-
-                self.text = self.text[1:]
-
-            for _ in range(prefix_count):
-                self.text = " " + self.text
-
 
 @attrs.define
 class LineBreak:
