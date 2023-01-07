@@ -70,6 +70,14 @@ class Note:
         if self.duration > beats:
             self.duration = self.duration - beats
 
+    def left_trim_text(self) -> None:
+        """Remove whitespace from the start of the note."""
+        self.text = self.text.lstrip()
+
+    def right_trim_text_and_add_space(self) -> None:
+        """Ensure the note ends with a single space."""
+        self.text = self.text.rstrip() + " "
+
 
 @attrs.define
 class LineBreak:
@@ -265,6 +273,28 @@ class Tracks:
         if abs(octave_shift) >= 2:
             for note in self.all_notes():
                 note.pitch = note.pitch - octave_shift * 12
+
+    def fix_spaces(self) -> None:
+        """Ensures
+        1. no syllables start with whitespace,
+        2. word-final syllables end with a single space,
+        3. the last syllable in a line ends with a single space.
+        """
+        for line in self.all_lines():
+            line.notes[0].left_trim_text()
+
+            # if current syllable starts with a space shift it to the end of the
+            # previous syllable
+            for idx in range(1, len(line.notes)):
+                if line.notes[idx].text.startswith(" "):
+                    line.notes[idx - 1].right_trim_text_and_add_space()
+                    line.notes[idx].left_trim_text()
+                if line.notes[idx].text.endswith(" "):
+                    line.notes[idx].right_trim_text_and_add_space()
+
+            # last syllable should end with a space, otherwise syllable highlighting
+            # used to be incomplete in USDX, and it allows simple text concatenation
+            line.notes[-1].right_trim_text_and_add_space()
 
 
 def _player_lines(lines: list[str], logger: Log) -> list[Line]:
@@ -495,6 +525,7 @@ class SongTxt:
         self.notes.fix_line_breaks()
         self.notes.fix_touching_notes()
         self.notes.fix_pitch_values()
+        self.notes.fix_spaces()
 
     def minimum_song_length(self) -> str:
         """Return the minimum song length based on last beat, BPM and GAP"""
