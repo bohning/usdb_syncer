@@ -70,6 +70,14 @@ class Note:
         if self.duration > beats:
             self.duration = self.duration - beats
 
+    def left_trim_text(self) -> None:
+        """Remove whitespace from the start of the note."""
+        self.text = self.text.lstrip()
+
+    def right_trim_text_and_add_space(self) -> None:
+        """Ensure the note ends with a single space."""
+        self.text = self.text.rstrip() + " "
+
 
 @attrs.define
 class LineBreak:
@@ -243,6 +251,20 @@ class Tracks:
             for note in line.notes:
                 yield note
 
+    def fix_line_breaks(self) -> None:
+        for track in self.all_tracks():
+            fix_line_breaks(track)
+
+    def fix_touching_notes(self) -> None:
+        for track in self.all_tracks():
+            for num_line, line in enumerate(track):
+                for num_note, note in enumerate(line.notes[:-1]):
+                    if note.end() == line.notes[num_note + 1].start:
+                        note.shorten()
+                if not line.is_last():
+                    if line.end() == track[num_line + 1].start():
+                        line.notes[-1].shorten()
+
     def fix_pitch_values(self) -> None:
         min_pitch = min(note.pitch for note in self.all_notes())
         octave_shift = min_pitch // 12
@@ -255,6 +277,28 @@ class Tracks:
     def fix_apostrophes(self) -> None:
         for note in self.all_notes():
             note.text = replace_false_apostrophes_and_quotation_marks(note.text)
+
+    def fix_spaces(self) -> None:
+        """Ensures
+        1. no syllables start with whitespace,
+        2. word-final syllables end with a single space,
+        3. the last syllable in a line ends with a single space.
+        """
+        for line in self.all_lines():
+            line.notes[0].left_trim_text()
+
+            # if current syllable starts with a space shift it to the end of the
+            # previous syllable
+            for idx in range(1, len(line.notes)):
+                if line.notes[idx].text.startswith(" "):
+                    line.notes[idx - 1].right_trim_text_and_add_space()
+                    line.notes[idx].left_trim_text()
+                if line.notes[idx].text.endswith(" "):
+                    line.notes[idx].right_trim_text_and_add_space()
+
+            # last syllable should end with a space, otherwise syllable highlighting
+            # used to be incomplete in USDX, and it allows simple text concatenation
+            line.notes[-1].right_trim_text_and_add_space()
 
 
 def _player_lines(lines: list[str], logger: Log) -> list[Line]:
@@ -487,19 +531,20 @@ class SongTxt:
         self.notes.maybe_split_duet_notes()
         self.fix_first_timestamp()
         self.fix_low_bpm()
-        self.fix_line_breaks()
-        self.fix_touching_notes()
+        self.notes.fix_line_breaks()
+        self.notes.fix_touching_notes()
         self.notes.fix_pitch_values()
         self.notes.fix_apostrophes()
         self.headers.fix_apostrophes()
+        self.notes.fix_spaces()
 
     def minimum_song_length(self) -> str:
         """Return the minimum song length based on last beat, BPM and GAP"""
         beats_secs = beats_to_secs(self.notes.end(), self.headers.bpm)
-        minimum_secs = beats_secs + self.headers.gap / 1000
+        minimum_secs = round(beats_secs + self.headers.gap / 1000)
         minutes, seconds = divmod(minimum_secs, 60)
 
-        return f"{minutes:02.0f}:{seconds:02.0f}"
+        return f"{minutes:02d}:{seconds:02d}"
 
     def fix_first_timestamp(self) -> None:
         """Shifts all notes such that the first note starts at beat zero and adjusts
@@ -538,20 +583,6 @@ class SongTxt:
         # modify all note timings
         for line in self.notes.all_lines():
             line.multiply(factor)
-
-    def fix_line_breaks(self) -> None:
-        for track in self.notes.all_tracks():
-            fix_line_breaks(track)
-
-    def fix_touching_notes(self) -> None:
-        for track in self.notes.all_tracks():
-            for num_line, line in enumerate(track):
-                for num_note, note in enumerate(line.notes[:-1]):
-                    if note.end() == line.notes[num_note + 1].start:
-                        note.shorten()
-                if not line.is_last():
-                    if line.end() == self.notes.track_1[num_line + 1].start:
-                        line.notes[-1].shorten()
 
 
 def beats_to_secs(beats: int, bpm: float) -> float:
