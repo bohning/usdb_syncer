@@ -4,7 +4,6 @@ import datetime
 import logging
 import os
 import sys
-from enum import Enum
 
 from PySide6.QtCore import QObject, Qt, QThreadPool, QTimer, Signal
 from PySide6.QtGui import QPixmap
@@ -27,62 +26,10 @@ from usdb_syncer.gui.song_table.song_table import SongTable
 from usdb_syncer.gui.utils import scroll_to_bottom, set_shortcut
 from usdb_syncer.pdf import generate_song_pdf
 from usdb_syncer.song_data import LocalFiles, SongData
+from usdb_syncer.song_filters import GoldenNotesFilter, RatingFilter, ViewsFilter
 from usdb_syncer.song_list_fetcher import get_all_song_data, resync_song_data
 from usdb_syncer.song_loader import DownloadInfo, download_songs
 from usdb_syncer.utils import AppPaths, open_file_explorer
-
-
-class RatingFilter(Enum):
-    """Selectable filters for song ratings."""
-
-    ANY = (0, False)
-    EXACT_1 = (1, True)
-    EXACT_2 = (2, True)
-    EXACT_3 = (3, True)
-    EXACT_4 = (4, True)
-    EXACT_5 = (5, True)
-    MIN_2 = (2, False)
-    MIN_3 = (3, False)
-    MIN_4 = (4, False)
-    MIN_5 = (5, False)
-
-    def __str__(self) -> str:
-        if self == RatingFilter.ANY:
-            return "Any"
-        if self.value[1]:
-            return self.value[0] * "★"
-        return self.value[0] * "★" + " or more"
-
-
-class GoldenNotesFilter(Enum):
-    """Selectable filters for songs with or without golden notes."""
-
-    ANY = None
-    YES = True
-    NO = False
-
-    def __str__(self) -> str:
-        if self == GoldenNotesFilter.ANY:
-            return "Any"
-        if self == GoldenNotesFilter.YES:
-            return "Yes"
-        return "No"
-
-
-class ViewsFilter(Enum):
-    """Selectable filters for songs with a specific view count."""
-
-    ANY = 0
-    MIN_100 = 100
-    MIN_200 = 200
-    MIN_300 = 300
-    MIN_400 = 400
-    MIN_500 = 500
-
-    def __str__(self) -> str:
-        if self == ViewsFilter.ANY:
-            return "Any"
-        return f"{self.value}+"
 
 
 class SongSignals(QObject):
