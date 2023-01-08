@@ -335,25 +335,15 @@ class TextEditLogger(logging.Handler):
 
 
 def main() -> None:
-    AppPaths.make_dirs()
-    app = QApplication(sys.argv)
-    app.setOrganizationName("bohning")
-    app.setApplicationName("usdb_syncer")
+    app = _init_app()
     mw = MainWindow()
-    logging.basicConfig(
-        level=logging.INFO,
-        style="{",
-        format="{asctime} [{levelname}] {message}",
-        datefmt="%Y-%m-%d %H:%M:%S",
-        encoding="utf-8",
-        handlers=(
-            logging.FileHandler(AppPaths.log),
-            logging.StreamHandler(sys.stdout),
-            TextEditLogger(mw),
-        ),
-    )
-    pixmap = QPixmap(":/splash/splash.png")
-    splash = QSplashScreen(pixmap)
+    _configure_logging(mw)
+    _load_main_window(mw)
+    app.exec()
+
+
+def _load_main_window(mw: MainWindow) -> None:
+    splash = QSplashScreen(QPixmap(":/splash/splash.png"))
     splash.show()
     QApplication.processEvents()
     splash.showMessage("Loading song database from usdb...", color=Qt.GlobalColor.gray)
@@ -366,4 +356,25 @@ def main() -> None:
     mw.showMaximized()
     logging.info("Application successfully loaded.")
     splash.finish(mw)
-    app.exec()
+
+
+def _init_app() -> QApplication:
+    app = QApplication(sys.argv)
+    app.setOrganizationName("bohning")
+    app.setApplicationName("usdb_syncer")
+    return app
+
+
+def _configure_logging(mw: MainWindow) -> None:
+    logging.basicConfig(
+        level=logging.INFO,
+        style="{",
+        format="{asctime} [{levelname}] {message}",
+        datefmt="%Y-%m-%d %H:%M:%S",
+        encoding="utf-8",
+        handlers=(
+            logging.FileHandler(AppPaths.log),
+            logging.StreamHandler(sys.stdout),
+            TextEditLogger(mw),
+        ),
+    )

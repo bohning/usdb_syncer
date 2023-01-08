@@ -8,6 +8,7 @@ from types import TracebackType
 from typing import Any
 
 from tools import generate_pyside_files
+from usdb_syncer.utils import AppPaths
 
 
 def excepthook(
@@ -19,10 +20,9 @@ def excepthook(
 
 def cli_entry(run_tools: bool = True) -> None:
     sys.excepthook = excepthook
-
+    AppPaths.make_dirs()
     parser = argparse.ArgumentParser(description="UltraStar script.")
     _args = parser.parse_args()
-
     if run_tools:
         generate_pyside_files()
 
