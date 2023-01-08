@@ -342,7 +342,8 @@ def main() -> None:
     mw = MainWindow()
     logging.basicConfig(
         level=logging.INFO,
-        format="%(asctime)s [%(levelname)s] %(message)s",
+        style="{",
+        format="{asctime} [{levelname}] {message}",
         datefmt="%Y-%m-%d %H:%M:%S",
         encoding="utf-8",
         handlers=(
