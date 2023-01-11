@@ -314,7 +314,7 @@ class Tracks:
     def fix_first_words_capitalization(self) -> None:
         for line in self.all_lines():
             # capitalize first capitalizable character
-            # e.g. "“¿que horas son?”" -> "“¿Que horas son?”"
+            # e.g. '"what time is it?"' -> '"What time is it?"'
             for char in line.notes[0].text:
                 if char != char.upper():
                     line.notes[0].text = line.notes[0].text.replace(
