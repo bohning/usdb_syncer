@@ -251,9 +251,6 @@ class Tracks:
             for note in line.notes:
                 yield note
 
-    def lyrics(self) -> str:
-        return "".join(note.text for note in self.all_notes())
-
     def is_all_caps(self) -> bool:
         return not any(
             char.islower() for note in self.all_notes() for char in note.text
