@@ -2,6 +2,8 @@
 #TITLE:Sharp Dressed Man
 #BPM:124
 #GAP:20000
+#MEDLEYSTARTBEAT:31
+#MEDLEYENDBEAT:57
 : 31 4 -8 Clean 
 : 35 2 -8 shirt
 : 37 4 -6 ~, 
