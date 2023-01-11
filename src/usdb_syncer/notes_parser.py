@@ -251,6 +251,9 @@ class Tracks:
             for note in line.notes:
                 yield note
 
+    def lyrics(self) -> str:
+        return "".join(note.text for note in self.all_notes())
+
     def fix_line_breaks(self) -> None:
         for track in self.all_tracks():
             fix_line_breaks(track)
@@ -299,6 +302,28 @@ class Tracks:
             # last syllable should end with a space, otherwise syllable highlighting
             # used to be incomplete in USDX, and it allows simple text concatenation
             line.notes[-1].right_trim_text_and_add_space()
+
+    def fix_all_caps(self) -> None:
+        if self.lyrics().isupper():
+            for note in self.all_notes():
+                note.text = note.text.lower()
+            self.fix_first_words_capitalization()
+
+    def fix_first_words_capitalization(self) -> None:
+        for line in self.all_lines():
+            # capitalize first capitalizable character
+            # e.g. "“¿que horas son?”" -> "“¿Que horas son?”"
+            text = ""
+            for char_index, char in enumerate(line.notes[0].text):
+                if char == char.capitalize():
+                    text = text + char
+                else:
+                    text = (
+                        text + char.capitalize() + line.notes[0].text[char_index + 1 :]
+                    )
+                    break
+
+            line.notes[0].text = text
 
 
 def _player_lines(lines: list[str], logger: Log) -> list[Line]:
@@ -537,6 +562,7 @@ class SongTxt:
         self.notes.fix_apostrophes()
         self.headers.fix_apostrophes()
         self.notes.fix_spaces()
+        self.notes.fix_all_caps()
 
     def minimum_song_length(self) -> str:
         """Return the minimum song length based on last beat, BPM and GAP"""
