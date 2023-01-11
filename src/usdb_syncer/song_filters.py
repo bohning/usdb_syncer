@@ -15,7 +15,6 @@ class RatingFilter(Enum):
     MIN_2 = (2, False)
     MIN_3 = (3, False)
     MIN_4 = (4, False)
-    MIN_5 = (5, False)
 
     def __str__(self) -> str:
         if self == RatingFilter.ANY:
