@@ -15,7 +15,7 @@ def test_notes_parser_normalized(resource_dir: str) -> None:
         with open(path, encoding="utf-8") as file:
             contents = file.read()
         txt = SongTxt.try_parse(contents, _logger)
-        assert str(txt) == contents
+        assert str(txt) == contents, f"failed test for '{path}'"
 
 
 def test_notes_parser_deviant(resource_dir: str) -> None:
@@ -26,7 +26,7 @@ def test_notes_parser_deviant(resource_dir: str) -> None:
         with open(path.replace("_in.txt", "_out.txt"), encoding="utf-8") as file:
             out = file.read()
         txt = SongTxt.try_parse(contents, _logger)
-        assert str(txt) == out
+        assert str(txt) == out, f"failed test for '{path}'"
 
 
 def test_notes_parser_fixes(resource_dir: str) -> None:
@@ -38,7 +38,7 @@ def test_notes_parser_fixes(resource_dir: str) -> None:
             out = file.read()
         txt = SongTxt.parse(contents, _logger)
         txt.fix()
-        assert str(txt) == out
+        assert str(txt) == out, f"failed test for '{path}'"
 
 
 def test_notes_parser_invalid(resource_dir: str) -> None:
@@ -47,4 +47,4 @@ def test_notes_parser_invalid(resource_dir: str) -> None:
         with open(path, encoding="utf-8") as file:
             contents = file.read()
         txt = SongTxt.try_parse(contents, _logger)
-        assert txt is None
+        assert txt is None, f"failed test for '{path}'"
