@@ -304,7 +304,7 @@ class Tracks:
             line.notes[-1].right_trim_text_and_add_space()
 
     def fix_all_caps(self) -> None:
-        if self.lyrics().isupper():
+        if all(note.text.isupper() for note in self.all_notes()):
             for note in self.all_notes():
                 note.text = note.text.lower()
             self.fix_first_words_capitalization()
