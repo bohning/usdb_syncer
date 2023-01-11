@@ -6,6 +6,8 @@
 #LANGUAGE:English
 #BPM:219,9
 #VIDEO:The Barden Bellas - Pool Mashup.mp4
+#P1:P1
+#P2:P2
 : 619 9 1 Oh
 - 632
 : 634 3 1 Her
