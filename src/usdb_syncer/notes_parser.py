@@ -524,11 +524,11 @@ class SongTxt:
     def sanitize(self) -> None:
         """Sanitize USDB issues and prepare for local usage."""
         self.headers.reset_file_location_headers()
-        self.restore_missing_headers()
         self.fix()
 
     def fix(self) -> None:
         self.notes.maybe_split_duet_notes()
+        self.restore_missing_headers()
         self.fix_first_timestamp()
         self.fix_low_bpm()
         self.notes.fix_line_breaks()
@@ -567,7 +567,7 @@ class SongTxt:
         if self.headers.bpm >= MINIMUM_BPM:
             return
 
-        # how often to multiply bpm until it is larger or equal to the threshold
+        # how often to double bpm until it is larger or equal to the threshold
         exp = math.ceil(math.log2(MINIMUM_BPM / self.headers.bpm))
         factor = 2**exp
 

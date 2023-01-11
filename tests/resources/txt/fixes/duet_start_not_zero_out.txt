@@ -7,6 +7,8 @@
 #VIDEO:The Barden Bellas - Pool Mashup.mp4
 #BPM:219.9
 #GAP:28720
+#P1:P1
+#P2:P2
 P1
 : 198 9 1 Oh 
 - 209
