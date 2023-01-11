@@ -315,7 +315,9 @@ class Tracks:
             # e.g. "“¿que horas son?”" -> "“¿Que horas son?”"
             text = ""
             for char_index, char in enumerate(line.notes[0].text):
-                if char == char.capitalize():
+                if char != char.upper():
+                    line.notes[0].text = line.notes[0].text.replace(char, char.upper(), 1)
+                    break
                     text = text + char
                 else:
                     text = (
