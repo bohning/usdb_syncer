@@ -254,6 +254,11 @@ class Tracks:
     def lyrics(self) -> str:
         return "".join(note.text for note in self.all_notes())
 
+    def is_all_caps(self) -> bool:
+        return not any(
+            char.islower() for note in self.all_notes() for char in note.text
+        )
+
     def fix_line_breaks(self) -> None:
         for track in self.all_tracks():
             fix_line_breaks(track)
@@ -304,7 +309,7 @@ class Tracks:
             line.notes[-1].right_trim_text_and_add_space()
 
     def fix_all_caps(self) -> None:
-        if all(note.text.isupper() for note in self.all_notes()):
+        if self.is_all_caps():
             for note in self.all_notes():
                 note.text = note.text.lower()
             self.fix_first_words_capitalization()
@@ -313,15 +318,12 @@ class Tracks:
         for line in self.all_lines():
             # capitalize first capitalizable character
             # e.g. "“¿que horas son?”" -> "“¿Que horas son?”"
-            text = ""
             for char in line.notes[0].text:
                 if char != char.upper():
                     line.notes[0].text = line.notes[0].text.replace(
                         char, char.upper(), 1
                     )
                     break
-
-            line.notes[0].text = text
 
 
 def _player_lines(lines: list[str], logger: Log) -> list[Line]:
