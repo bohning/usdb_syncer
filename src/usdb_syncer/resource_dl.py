@@ -4,6 +4,7 @@ import os
 from enum import Enum
 from typing import Union
 
+import filetype
 import requests
 import yt_dlp
 from PIL import Image, ImageEnhance, ImageOps
@@ -96,7 +97,14 @@ def download_video(
             logger.debug(f"error downloading video url: {url}")
             return None
 
-    return ext or os.path.splitext(filename)[1][1:]
+    actual_file_ext = ext or os.path.splitext(filename)[1][1:]
+    path = f"{path_stem}.{actual_file_ext}"
+    if not (filetype.is_video(path) or filetype.is_audio(path)):
+        os.remove(path)
+        logger.error("downloaded file is not video or audio -> deleted")
+        return None
+
+    return actual_file_ext
 
 
 def download_image(url: str, logger: Log) -> bytes | None:
@@ -142,6 +150,12 @@ def download_and_process_image(
     path = os.path.join(pathname, fname)
     with open(path, "wb") as file:
         file.write(img_bytes)
+
+    if not filetype.is_image(path):
+        os.remove(path)
+        logger.error(f"#{str(kind).upper()}: downloaded file is no image -> deleted")
+        return None
+
     _process_image(meta_tags, max_width, path)
     return fname
 
