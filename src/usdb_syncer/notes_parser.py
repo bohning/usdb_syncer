@@ -4,7 +4,7 @@ from __future__ import annotations
 import math
 import re
 from enum import Enum
-from typing import Any, Iterator
+from typing import Any, Callable, Iterator
 
 import attrs
 
@@ -251,6 +251,11 @@ class Tracks:
             for note in line.notes:
                 yield note
 
+    def is_all_caps(self) -> bool:
+        return not any(
+            char.islower() for note in self.all_notes() for char in note.text
+        )
+
     def fix_line_breaks(self) -> None:
         for track in self.all_tracks():
             fix_line_breaks(track)
@@ -299,6 +304,23 @@ class Tracks:
             # last syllable should end with a space, otherwise syllable highlighting
             # used to be incomplete in USDX, and it allows simple text concatenation
             line.notes[-1].right_trim_text_and_add_space()
+
+    def fix_all_caps(self) -> None:
+        if self.is_all_caps():
+            for note in self.all_notes():
+                note.text = note.text.lower()
+            self.fix_first_words_capitalization()
+
+    def fix_first_words_capitalization(self) -> None:
+        for line in self.all_lines():
+            # capitalize first capitalizable character
+            # e.g. '"what time is it?"' -> '"What time is it?"'
+            for char in line.notes[0].text:
+                if char != char.upper():
+                    line.notes[0].text = line.notes[0].text.replace(
+                        char, char.upper(), 1
+                    )
+                    break
 
 
 def _player_lines(lines: list[str], logger: Log) -> list[Line]:
@@ -437,6 +459,12 @@ class Headers:
             if value := getattr(self, key):
                 setattr(self, key, replace_false_apostrophes_and_quotation_marks(value))
 
+    def apply_to_medley_tags(self, func: Callable[[int], int]) -> None:
+        if self.medleystartbeat:
+            self.medleystartbeat = func(self.medleystartbeat)
+        if self.medleyendbeat:
+            self.medleyendbeat = func(self.medleyendbeat)
+
 
 def _set_header_value(kwargs: dict[str, Any], header: str, value: str) -> None:
     header = "creator" if header == "AUTHOR" else header.lower()
@@ -524,11 +552,11 @@ class SongTxt:
     def sanitize(self) -> None:
         """Sanitize USDB issues and prepare for local usage."""
         self.headers.reset_file_location_headers()
-        self.restore_missing_headers()
         self.fix()
 
     def fix(self) -> None:
         self.notes.maybe_split_duet_notes()
+        self.restore_missing_headers()
         self.fix_first_timestamp()
         self.fix_low_bpm()
         self.notes.fix_line_breaks()
@@ -537,6 +565,7 @@ class SongTxt:
         self.notes.fix_apostrophes()
         self.headers.fix_apostrophes()
         self.notes.fix_spaces()
+        self.notes.fix_all_caps()
 
     def minimum_song_length(self) -> str:
         """Return the minimum song length based on last beat, BPM and GAP"""
@@ -552,13 +581,15 @@ class SongTxt:
         """
         if (offset := self.notes.start()) == 0:
             # round GAP to nearest 10 ms
-            self.headers.gap = round(self.headers.gap / 10) * 10
+            self.headers.gap = int(round(self.headers.gap, -1))
             return
+
         for line in self.notes.all_lines():
             line.shift(-offset)
-        self.headers.gap = int(
-            round(self.headers.gap + beats_to_ms(offset, self.headers.bpm), -1)
-        )
+
+        self.headers.apply_to_medley_tags(lambda beats: beats - offset)
+        offset_ms = beats_to_ms(offset, self.headers.bpm)
+        self.headers.gap = int(round(self.headers.gap + offset_ms, -1))
 
     def fix_low_bpm(self) -> None:
         """(repeatedly) doubles BPM value and all note timings
@@ -567,20 +598,12 @@ class SongTxt:
         if self.headers.bpm >= MINIMUM_BPM:
             return
 
-        # how often to multiply bpm until it is larger or equal to the threshold
+        # how often to double bpm until it is larger or equal to the threshold
         exp = math.ceil(math.log2(MINIMUM_BPM / self.headers.bpm))
         factor = 2**exp
 
         self.headers.bpm *= factor
-
-        # modify medley tags
-        if self.headers.medleystartbeat:
-            self.headers.medleystartbeat *= factor
-
-        if self.headers.medleyendbeat:
-            self.headers.medleyendbeat *= factor
-
-        # modify all note timings
+        self.headers.apply_to_medley_tags(lambda beats: beats * factor)
         for line in self.notes.all_lines():
             line.multiply(factor)
 
