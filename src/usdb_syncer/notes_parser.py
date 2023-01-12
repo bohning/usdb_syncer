@@ -211,11 +211,11 @@ class Tracks:
         if not (first_line_break := self.track_1[0].line_break):
             # only one line
             return
-        last_start = first_line_break.out_time
+        last_out_time = first_line_break.out_time
         for idx, line in enumerate(self.track_1):
             if not line.line_break:
                 break
-            if line.line_break.out_time < last_start:
+            if line.line_break.out_time < last_out_time:
                 part_1, part_2 = _split_duet_line(line, line.line_break.out_time)
                 self.track_2 = self.track_1[idx + 1 :]
                 if part_2.notes:
@@ -224,7 +224,7 @@ class Tracks:
                 if part_1.notes:
                     self.track_1.append(part_1)
                 return
-            last_start = line.line_break.out_time
+            last_out_time = line.line_break.out_time
 
     def start(self) -> int:
         if self.track_2:
