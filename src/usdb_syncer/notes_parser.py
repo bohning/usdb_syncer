@@ -85,8 +85,8 @@ class LineBreak:
     the next line start.
     """
 
-    start: int
-    end: int | None
+    out_time: int
+    in_time: int | None
 
     @classmethod
     def parse(cls, value: str) -> tuple[LineBreak, str | None]:
@@ -100,19 +100,19 @@ class LineBreak:
         return cls(int(match.group(1)), end), match.group(3)
 
     def __str__(self) -> str:
-        if self.end is not None:
-            return f"- {self.start} {self.end}"
-        return f"- {self.start}"
+        if self.in_time is not None:
+            return f"- {self.out_time} {self.in_time}"
+        return f"- {self.out_time}"
 
     def shift(self, offset: int) -> None:
-        self.start = self.start + offset
-        if self.end is not None:
-            self.end = self.end + offset
+        self.out_time = self.out_time + offset
+        if self.in_time is not None:
+            self.in_time = self.in_time + offset
 
     def multiply(self, factor: int) -> None:
-        self.start = self.start * factor
-        if self.end is not None:
-            self.end = self.end * factor
+        self.out_time = self.out_time * factor
+        if self.in_time is not None:
+            self.in_time = self.in_time * factor
 
 
 @attrs.define
@@ -211,12 +211,12 @@ class Tracks:
         if not (first_line_break := self.track_1[0].line_break):
             # only one line
             return
-        last_start = first_line_break.start
+        last_start = first_line_break.out_time
         for idx, line in enumerate(self.track_1):
             if not line.line_break:
                 break
-            if line.line_break.start < last_start:
-                part_1, part_2 = _split_duet_line(line, line.line_break.start)
+            if line.line_break.out_time < last_start:
+                part_1, part_2 = _split_duet_line(line, line.line_break.out_time)
                 self.track_2 = self.track_1[idx + 1 :]
                 if part_2.notes:
                     self.track_2.insert(0, part_2)
@@ -224,7 +224,7 @@ class Tracks:
                 if part_1.notes:
                     self.track_1.append(part_1)
                 return
-            last_start = line.line_break.start
+            last_start = line.line_break.out_time
 
     def start(self) -> int:
         if self.track_2:
@@ -555,6 +555,7 @@ class SongTxt:
         self.fix()
 
     def fix(self) -> None:
+        self.fix_relative_songs()
         self.notes.maybe_split_duet_notes()
         self.restore_missing_headers()
         self.fix_first_timestamp()
@@ -574,6 +575,30 @@ class SongTxt:
         minutes, seconds = divmod(minimum_secs, 60)
 
         return f"{minutes:02d}:{seconds:02d}"
+
+    def fix_relative_songs(self) -> None:
+        if not self.headers.relative:
+            return
+
+        offset = 0
+        for line in self.notes.all_lines():
+            if line.line_break and not line.line_break.in_time:
+                line.line_break.in_time = line.line_break.out_time
+
+            for note in line.notes:
+                note.start = note.start + offset  # type: ignore
+
+            if line.line_break and line.line_break.out_time and line.line_break.in_time:
+                line.line_break.out_time = line.line_break.out_time + offset  # type: ignore
+                line.line_break.in_time = line.line_break.in_time + offset  # type: ignore
+
+                offset = line.line_break.in_time
+
+                if line.line_break.out_time == line.line_break.in_time:
+                    line.line_break.in_time = None
+
+        # remove #RELATIVE tag
+        self.headers.relative = None
 
     def fix_first_timestamp(self) -> None:
         """Shifts all notes such that the first note starts at beat zero and adjusts
@@ -621,16 +646,16 @@ def fix_line_breaks(lines: list[Line]) -> None:
     for line in lines:
         if last_line and last_line.line_break:
             # remove end (not needed/used)
-            last_line.line_break.end = None
+            last_line.line_break.in_time = None
 
             # similar to USDX implementation (https://github.com/UltraStar-Deluxe/USDX/blob/0974aadaa747a5ce7f1f094908e669209641b5d4/src/screens/UScreenEditSub.pas#L2976) # pylint: disable=line-too-long
             gap = line.start() - last_line.end()
             if gap < 2:
-                last_line.line_break.start = line.start()
+                last_line.line_break.out_time = line.start()
             elif gap == 2:
-                last_line.line_break.start = last_line.end() + 1
+                last_line.line_break.out_time = last_line.end() + 1
             else:
-                last_line.line_break.start = last_line.end() + 2
+                last_line.line_break.out_time = last_line.end() + 2
 
         # update last_line
         last_line = line
