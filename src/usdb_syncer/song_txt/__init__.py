@@ -102,10 +102,12 @@ class SongTxt:
                 # must be last line, because relative timings don't support duets
                 break
 
-            line_break.out_time = line_break.out_time + offset
-            if line_break.in_time is not None:
-                line_break.in_time = line_break.in_time + offset
-            offset = line_break.in_time or line_break.out_time
+            line_break.previous_line_out_time = (
+                line_break.previous_line_out_time + offset
+            )
+            if line_break.next_line_in_time is not None:
+                line_break.next_line_in_time = line_break.next_line_in_time + offset
+            offset = line_break.next_line_in_time or line_break.previous_line_out_time
 
         # remove #RELATIVE tag
         self.headers.relative = None
