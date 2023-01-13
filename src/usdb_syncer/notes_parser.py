@@ -582,20 +582,17 @@ class SongTxt:
 
         offset = 0
         for line in self.notes.all_lines():
-            if line.line_break and not line.line_break.in_time:
-                line.line_break.in_time = line.line_break.out_time
-
             for note in line.notes:
-                note.start = note.start + offset  # type: ignore
+                note.start = note.start + offset
 
-            if line.line_break and line.line_break.out_time and line.line_break.in_time:
-                line.line_break.out_time = line.line_break.out_time + offset  # type: ignore
-                line.line_break.in_time = line.line_break.in_time + offset  # type: ignore
+            if (line_break := line.line_break) is None:
+                # must be last line, because relative timings don't support duets
+                break
 
-                offset = line.line_break.in_time
-
-                if line.line_break.out_time == line.line_break.in_time:
-                    line.line_break.in_time = None
+            line_break.out_time = line_break.out_time + offset
+            if line_break.in_time is not None:
+                line_break.in_time = line_break.in_time + offset
+            offset = line_break.in_time or line_break.out_time
 
         # remove #RELATIVE tag
         self.headers.relative = None
