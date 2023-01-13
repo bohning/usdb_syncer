@@ -13,8 +13,8 @@ from usdb_syncer import SongId
 from usdb_syncer.gui.song_table.sort_filter_proxy_model import SortFilterProxyModel
 from usdb_syncer.gui.song_table.table_model import CustomRole, TableModel
 from usdb_syncer.logger import get_logger
-from usdb_syncer.notes_parser import SongTxt
 from usdb_syncer.song_data import SongData
+from usdb_syncer.song_txt import SongTxt
 from usdb_syncer.usdb_scraper import UsdbSong
 from usdb_syncer.utils import try_read_unknown_encoding
 

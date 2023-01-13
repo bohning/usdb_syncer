@@ -12,9 +12,9 @@ from usdb_syncer import SongId, resource_dl, usdb_scraper
 from usdb_syncer.download_options import Options, download_options
 from usdb_syncer.encoding import CodePage
 from usdb_syncer.logger import Log, get_logger
-from usdb_syncer.notes_parser import Headers, SongTxt
 from usdb_syncer.resource_dl import ImageKind, download_and_process_image
 from usdb_syncer.song_data import LocalFiles, SongData
+from usdb_syncer.song_txt import Headers, SongTxt
 from usdb_syncer.sync_meta import SyncMeta
 from usdb_syncer.usdb_scraper import SongDetails
 from usdb_syncer.utils import (
