@@ -97,14 +97,7 @@ def download_video(
             logger.debug(f"error downloading video url: {url}")
             return None
 
-    actual_file_ext = ext or os.path.splitext(filename)[1][1:]
-    path = f"{path_stem}.{actual_file_ext}"
-    if not (filetype.is_video(path) or filetype.is_audio(path)):
-        os.remove(path)
-        logger.error("downloaded file is not video or audio -> deleted")
-        return None
-
-    return actual_file_ext
+    return ext or os.path.splitext(filename)[1][1:]
 
 
 def download_image(url: str, logger: Log) -> bytes | None:
