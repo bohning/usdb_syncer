@@ -207,20 +207,17 @@ class Tracks:
             return
         last_out_time = first_line_break.previous_line_out_time
         for idx, line in enumerate(self.track_1):
-            if not line.line_break:
-                break
-            if line.line_break.previous_line_out_time < last_out_time:
-                part_1, part_2 = _split_duet_line(
-                    line, line.line_break.previous_line_out_time
-                )
-                self.track_2 = self.track_1[idx + 1 :]
-                if part_2.notes:
-                    self.track_2.insert(0, part_2)
-                self.track_1 = self.track_1[:idx]
-                if part_1.notes:
-                    self.track_1.append(part_1)
+            if not (line_break := line.line_break):
                 return
-            last_out_time = line.line_break.previous_line_out_time
+            if line_break.previous_line_out_time < last_out_time:
+                # line break has earlier start beat than previous one
+                if parts := _split_duet_line(line, line_break.previous_line_out_time):
+                    # line has notes starting earlier than previous notes
+                    # -> probably a border between two tracks
+                    self.track_2 = [parts[1]] + self.track_1[idx + 1 :]
+                    self.track_1 = self.track_1[:idx] + [parts[0]]
+                    return
+            last_out_time = line_break.previous_line_out_time
 
     def start(self) -> int:
         if self.track_2:
@@ -336,14 +333,21 @@ def _player_lines(lines: list[str], logger: Log) -> list[Line]:
     return notes
 
 
-def _split_duet_line(line: Line, cutoff: int) -> tuple[Line, Line]:
-    """Split a line into two, where the first part only contains notes _after_ some
-    cutoff and the second part contains the rest. Either line may be empty.
+def _split_duet_line(line: Line, cutoff: int) -> tuple[Line, Line] | None:
+    """Split a line into two, where the first part contains the first notes starting
+    _after_ cutoff and the second part contains the rest.
+    None if either part would be empty.
     """
     idx = 0
     for idx, note in enumerate(line.notes):
         if note.start < cutoff:
             break
+    else:
+        # second line would be empty
+        return None
+    if not idx:
+        # first line would be empty
+        return None
     return Line(line.notes[:idx], None), Line(line.notes[idx:], line.line_break)
 
 

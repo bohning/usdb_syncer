@@ -1,0 +1,11 @@
+#TITLE:not a duet
+#ARTIST:artist
+#BPM:250.0
+#GAP:0
+: 0 1 0 start 
+- 10
+: 2 1 0 next line break is 
+: 4 1 0 before previous one 
+- 6
+: 6 1 0 end 
+E
