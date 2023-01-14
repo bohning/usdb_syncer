@@ -1,21 +1,15 @@
-"""Parser for UltraStar txt files."""
+"""Notes of an parsed UltraStar txt file."""
+
 from __future__ import annotations
 
-import math
 import re
 from enum import Enum
-from typing import Any, Callable, Iterator
+from typing import Iterator
 
 import attrs
 
 from usdb_syncer.logger import Log
-from usdb_syncer.meta_tags.deserializer import MetaTags
-
-MINIMUM_BPM = 200.0
-
-
-class NotesParseError(Exception):
-    """Raised when failing to parse notes."""
+from usdb_syncer.song_txt.error import NotesParseError
 
 
 class NoteKind(Enum):
@@ -85,8 +79,8 @@ class LineBreak:
     the next line start.
     """
 
-    start: int
-    end: int | None
+    previous_line_out_time: int
+    next_line_in_time: int | None
 
     @classmethod
     def parse(cls, value: str) -> tuple[LineBreak, str | None]:
@@ -100,19 +94,19 @@ class LineBreak:
         return cls(int(match.group(1)), end), match.group(3)
 
     def __str__(self) -> str:
-        if self.end is not None:
-            return f"- {self.start} {self.end}"
-        return f"- {self.start}"
+        if self.next_line_in_time is not None:
+            return f"- {self.previous_line_out_time} {self.next_line_in_time}"
+        return f"- {self.previous_line_out_time}"
 
     def shift(self, offset: int) -> None:
-        self.start = self.start + offset
-        if self.end is not None:
-            self.end = self.end + offset
+        self.previous_line_out_time = self.previous_line_out_time + offset
+        if self.next_line_in_time is not None:
+            self.next_line_in_time = self.next_line_in_time + offset
 
     def multiply(self, factor: int) -> None:
-        self.start = self.start * factor
-        if self.end is not None:
-            self.end = self.end * factor
+        self.previous_line_out_time = self.previous_line_out_time * factor
+        if self.next_line_in_time is not None:
+            self.next_line_in_time = self.next_line_in_time * factor
 
 
 @attrs.define
@@ -211,12 +205,14 @@ class Tracks:
         if not (first_line_break := self.track_1[0].line_break):
             # only one line
             return
-        last_start = first_line_break.start
+        last_out_time = first_line_break.previous_line_out_time
         for idx, line in enumerate(self.track_1):
             if not line.line_break:
                 break
-            if line.line_break.start < last_start:
-                part_1, part_2 = _split_duet_line(line, line.line_break.start)
+            if line.line_break.previous_line_out_time < last_out_time:
+                part_1, part_2 = _split_duet_line(
+                    line, line.line_break.previous_line_out_time
+                )
                 self.track_2 = self.track_1[idx + 1 :]
                 if part_2.notes:
                     self.track_2.insert(0, part_2)
@@ -224,7 +220,7 @@ class Tracks:
                 if part_1.notes:
                     self.track_1.append(part_1)
                 return
-            last_start = line.line_break.start
+            last_out_time = line.line_break.previous_line_out_time
 
     def start(self) -> int:
         if self.track_2:
@@ -351,286 +347,21 @@ def _split_duet_line(line: Line, cutoff: int) -> tuple[Line, Line]:
     return Line(line.notes[:idx], None), Line(line.notes[idx:], line.line_break)
 
 
-@attrs.define
-class Headers:
-    """Ultrastar headers."""
-
-    unknown: dict[str, str]
-    title: str
-    artist: str
-    bpm: float = 0.0
-    gap: int = 0
-    language: str | None = None
-    edition: str | None = None
-    genre: str | None = None
-    album: str | None = None
-    year: str | None = None
-    creator: str | None = None
-    mp3: str | None = None
-    cover: str | None = None
-    background: str | None = None
-    video: str | None = None
-    videogap: float | None = None
-    start: float | None = None
-    end: int | None = None
-    previewstart: float | None = None
-    relative: str | None = None
-    p1: str | None = None
-    p2: str | None = None
-    medleystartbeat: int | None = None
-    medleyendbeat: int | None = None
-    # not rewritten, as it depends on the chosen encoding
-    encoding: str | None = None
-    comment: str | None = None
-    resolution: str | None = None
-
-    @classmethod
-    def parse(cls, lines: list[str], logger: Log) -> Headers:
-        """Consumes a stream of lines while they are headers."""
-        kwargs: dict[str, Any] = {"unknown": {}}
-        while lines:
-            if not lines[0].startswith("#"):
-                break
-            line = lines.pop(0).removeprefix("#")
-            if not ":" in line:
-                logger.warning(f"header without value: '{line}'")
-                continue
-            header, value = line.split(":", maxsplit=1)
-            if not value:
-                # ignore headers with empty values
-                continue
-            try:
-                _set_header_value(kwargs, header, value)
-            except ValueError:
-                logger.warning(f"invalid header value: '{line}'")
-        if "title" not in kwargs or "artist" not in kwargs:
-            raise NotesParseError("cannot parse song without artist and title")
-        if "bpm" not in kwargs:
-            logger.warning("missing bpm")
-        return cls(**kwargs)
-
-    def reset_file_location_headers(self) -> None:
-        """Clear all tags with local file locations."""
-        self.mp3 = self.video = self.cover = self.background = None
-
-    def __str__(self) -> str:
-        out = "\n".join(
-            f"#{key.upper()}:{val}"
-            for key in (
-                "title",
-                "artist",
-                "language",
-                "edition",
-                "genre",
-                "year",
-                "creator",
-                "mp3",
-                "cover",
-                "background",
-                "video",
-                "videogap",
-                "resolution",
-                "start",
-                "end",
-                "relative",
-                "previewstart",
-                "medleystartbeat",
-                "medleyendbeat",
-                "bpm",
-                "gap",
-                "p1",
-                "p2",
-                "album",
-                "comment",
-            )
-            if (val := getattr(self, key)) is not None
-        )
-        if self.unknown:
-            out = "\n".join(
-                (out, *(f"#{key.upper()}:{val}" for key, val in self.unknown.items()))
-            )
-        return out
-
-    def artist_title_str(self) -> str:
-        return f"{self.artist} - {self.title}"
-
-    def fix_apostrophes(self) -> None:
-        for key in ("artist", "title", "language", "genre", "p1", "p2", "album"):
-            if value := getattr(self, key):
-                setattr(self, key, replace_false_apostrophes_and_quotation_marks(value))
-
-    def apply_to_medley_tags(self, func: Callable[[int], int]) -> None:
-        if self.medleystartbeat:
-            self.medleystartbeat = func(self.medleystartbeat)
-        if self.medleyendbeat:
-            self.medleyendbeat = func(self.medleyendbeat)
-
-
-def _set_header_value(kwargs: dict[str, Any], header: str, value: str) -> None:
-    header = "creator" if header == "AUTHOR" else header.lower()
-    if header in (
-        "title",
-        "artist",
-        "language",
-        "edition",
-        "genre",
-        "album",
-        "year",
-        "creator",
-        "mp3",
-        "cover",
-        "background",
-        "relative",
-        "video",
-        "p1",
-        "p2",
-        "encoding",
-        "comment",
-        "resolution",
-    ):
-        kwargs[header] = value
-    # these are given in (fractional) seconds, thus may have a decimal comma or point
-    elif header in ("bpm", "videogap", "start", "previewstart"):
-        kwargs[header] = float(value.replace(",", "."))
-    # these are given in milliseconds, but may have a decimal point or comma in usdb
-    elif header in ("gap", "end"):
-        kwargs[header] = round(float(value.replace(",", ".")))
-    # these are given in beats and should thus be integers
-    elif header in ("medleystartbeat", "medleyendbeat"):
-        kwargs[header] = int(value)
-    else:
-        kwargs["unknown"][header] = value
-
-
-@attrs.define()
-class SongTxt:
-    """A parsed .txt file of an UltraStar song."""
-
-    headers: Headers
-    notes: Tracks
-    meta_tags: MetaTags
-
-    def __str__(self) -> str:
-        return f"{self.headers}\n{self.notes}"
-
-    @classmethod
-    def parse(cls, value: str, logger: Log) -> SongTxt:
-        lines = [line for line in value.splitlines() if line]
-        headers = Headers.parse(lines, logger)
-        meta_tags = MetaTags(headers.video or "", logger)
-        notes = Tracks.parse(lines, logger)
-        if lines:
-            logger.warning(f"trailing text in song txt: '{lines}'")
-        return cls(headers=headers, meta_tags=meta_tags, notes=notes)
-
-    @classmethod
-    def try_parse(cls, value: str, logger: Log) -> SongTxt | None:
-        try:
-            return cls.parse(value, logger)
-        except NotesParseError:
-            return None
-
-    def maybe_split_duet_notes(self) -> None:
-        if self.headers.relative and self.headers.relative.lower() == "yes":
-            return
-        self.notes.maybe_split_duet_notes()
-
-    def restore_missing_headers(self) -> None:
-        if self.notes.track_2:
-            self.headers.p1 = self.meta_tags.player1 or "P1"
-            self.headers.p2 = self.meta_tags.player2 or "P2"
-        if self.meta_tags.preview is not None:
-            self.headers.previewstart = self.meta_tags.preview
-        if medley := self.meta_tags.medley:
-            self.headers.medleystartbeat = medley.start
-            self.headers.medleyendbeat = medley.end
-
-    def write_to_file(self, path: str, encoding: str, newline: str) -> None:
-        with open(path, "w", encoding=encoding, newline=newline) as file:
-            file.write(str(self))
-
-    def sanitize(self) -> None:
-        """Sanitize USDB issues and prepare for local usage."""
-        self.headers.reset_file_location_headers()
-        self.fix()
-
-    def fix(self) -> None:
-        self.notes.maybe_split_duet_notes()
-        self.restore_missing_headers()
-        self.fix_first_timestamp()
-        self.fix_low_bpm()
-        self.notes.fix_line_breaks()
-        self.notes.fix_touching_notes()
-        self.notes.fix_pitch_values()
-        self.notes.fix_apostrophes()
-        self.headers.fix_apostrophes()
-        self.notes.fix_spaces()
-        self.notes.fix_all_caps()
-
-    def minimum_song_length(self) -> str:
-        """Return the minimum song length based on last beat, BPM and GAP"""
-        beats_secs = beats_to_secs(self.notes.end(), self.headers.bpm)
-        minimum_secs = round(beats_secs + self.headers.gap / 1000)
-        minutes, seconds = divmod(minimum_secs, 60)
-
-        return f"{minutes:02d}:{seconds:02d}"
-
-    def fix_first_timestamp(self) -> None:
-        """Shifts all notes such that the first note starts at beat zero and adjusts
-        GAP accordingly
-        """
-        if (offset := self.notes.start()) == 0:
-            # round GAP to nearest 10 ms
-            self.headers.gap = int(round(self.headers.gap, -1))
-            return
-
-        for line in self.notes.all_lines():
-            line.shift(-offset)
-
-        self.headers.apply_to_medley_tags(lambda beats: beats - offset)
-        offset_ms = beats_to_ms(offset, self.headers.bpm)
-        self.headers.gap = int(round(self.headers.gap + offset_ms, -1))
-
-    def fix_low_bpm(self) -> None:
-        """(repeatedly) doubles BPM value and all note timings
-        until the BPM is above MINIMUM_BPM"""
-
-        if self.headers.bpm >= MINIMUM_BPM:
-            return
-
-        # how often to double bpm until it is larger or equal to the threshold
-        exp = math.ceil(math.log2(MINIMUM_BPM / self.headers.bpm))
-        factor = 2**exp
-
-        self.headers.bpm *= factor
-        self.headers.apply_to_medley_tags(lambda beats: beats * factor)
-        for line in self.notes.all_lines():
-            line.multiply(factor)
-
-
-def beats_to_secs(beats: int, bpm: float) -> float:
-    return beats / (bpm * 4) * 60
-
-
-def beats_to_ms(beats: int, bpm: float) -> float:
-    return beats_to_secs(beats, bpm) * 1000
-
-
 def fix_line_breaks(lines: list[Line]) -> None:
     last_line = None
     for line in lines:
         if last_line and last_line.line_break:
             # remove end (not needed/used)
-            last_line.line_break.end = None
+            last_line.line_break.next_line_in_time = None
 
             # similar to USDX implementation (https://github.com/UltraStar-Deluxe/USDX/blob/0974aadaa747a5ce7f1f094908e669209641b5d4/src/screens/UScreenEditSub.pas#L2976) # pylint: disable=line-too-long
             gap = line.start() - last_line.end()
             if gap < 2:
-                last_line.line_break.start = line.start()
+                last_line.line_break.previous_line_out_time = line.start()
             elif gap == 2:
-                last_line.line_break.start = last_line.end() + 1
+                last_line.line_break.previous_line_out_time = last_line.end() + 1
             else:
-                last_line.line_break.start = last_line.end() + 2
+                last_line.line_break.previous_line_out_time = last_line.end() + 2
 
         # update last_line
         last_line = line

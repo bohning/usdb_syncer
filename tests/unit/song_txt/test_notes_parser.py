@@ -4,7 +4,7 @@ import os
 from glob import glob
 
 from usdb_syncer.logger import get_logger
-from usdb_syncer.notes_parser import SongTxt
+from usdb_syncer.song_txt import SongTxt
 
 _logger = get_logger(__file__)
 

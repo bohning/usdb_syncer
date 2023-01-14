@@ -6,8 +6,8 @@ from glob import glob
 
 from usdb_syncer import SongId, settings
 from usdb_syncer.logger import get_logger
-from usdb_syncer.notes_parser import SongTxt
 from usdb_syncer.song_data import LocalFiles, SongData
+from usdb_syncer.song_txt import SongTxt
 from usdb_syncer.sync_meta import SyncMeta
 from usdb_syncer.usdb_scraper import get_usdb_available_songs
 from usdb_syncer.usdb_song import UsdbSong, UsdbSongEncoder

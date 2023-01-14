@@ -1,0 +1,25 @@
+#TITLE:Golden
+#ARTIST:Harry Styles
+#MP3:Harry Styles - Golden.m4a
+#BPM:280.0
+#GAP:13800
+: 0 4 18 Hey! 
+- 6
+: 276 7 7 Gol
+: 284 8 4 den 
+- 294
+: 308 7 7 Gol
+: 316 8 4 den 
+- 326
+: 340 7 7 Gol
+: 348 7 4 den 
+: 356 7 7 as 
+: 364 7 7 I 
+: 372 7 7 o
+: 380 3 6 pen 
+: 384 3 4 my 
+: 388 12 2 eyes 
+- 402
+: 404 7 6 Hold 
+: 412 8 2 it 
+E
