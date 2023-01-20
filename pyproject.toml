@@ -8,17 +8,10 @@ build-backend = "setuptools.build_meta"
 
 [tool.isort]
 profile = "black"
-skip_glob = [
-    "src/usdb_syncer/gui/forms",
-    "src/usdb_syncer/gui/resources",
-]
+skip_glob = ["src/usdb_syncer/gui/forms", "src/usdb_syncer/gui/resources"]
 
 [tool.black]
 skip-magic-trailing-comma = true
-extend-exclude = [
-    "src/usdb_syncer/gui/forms",
-    "src/usdb_syncer/gui/resources",
-]
 
 [tool.pylint.master]
 ignore-paths = [
@@ -28,12 +21,10 @@ ignore-paths = [
     ".tox",
 ]
 # Add McCabe code complexity checker
-load-plugins = """
-    pylint.extensions.mccabe
-    """
+load-plugins = "pylint.extensions.mccabe"
 
 [tool.pylint.basic]
-good-names = ["mw"]
+good-names = ["mw", "p1", "p2"]
 
 [tool.pylint.messages_control]
 extension-pkg-whitelist = ["PySide6"]
@@ -52,10 +43,7 @@ disable = [
 ignore_missing_imports = true
 disallow_untyped_defs = true
 follow_imports = "silent"
-exclude = [
-    "src/usdb_syncer/gui/forms",
-    "src/usdb_syncer/gui/resources",
-]
+exclude = ["src/usdb_syncer/gui/forms", "src/usdb_syncer/gui/resources"]
 
 [tool.pyright]
 exclude = [

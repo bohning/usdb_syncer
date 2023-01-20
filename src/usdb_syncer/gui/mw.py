@@ -4,7 +4,6 @@ import datetime
 import logging
 import os
 import sys
-from enum import Enum
 
 from PySide6.QtCore import QObject, Qt, QThreadPool, QTimer, Signal
 from PySide6.QtGui import QPixmap
@@ -17,70 +16,20 @@ from PySide6.QtWidgets import (
 )
 
 from usdb_syncer import SongId, settings
+from usdb_syncer.gui.debug_console import DebugConsole
 from usdb_syncer.gui.ffmpeg_dialog import check_ffmpeg
 from usdb_syncer.gui.forms.MainWindow import Ui_MainWindow
 from usdb_syncer.gui.meta_tags_dialog import MetaTagsDialog
 from usdb_syncer.gui.progress import run_with_progress
 from usdb_syncer.gui.settings_dialog import SettingsDialog
 from usdb_syncer.gui.song_table.song_table import SongTable
+from usdb_syncer.gui.utils import scroll_to_bottom, set_shortcut
 from usdb_syncer.pdf import generate_song_pdf
 from usdb_syncer.song_data import LocalFiles, SongData
+from usdb_syncer.song_filters import GoldenNotesFilter, RatingFilter, ViewsFilter
 from usdb_syncer.song_list_fetcher import get_all_song_data, resync_song_data
 from usdb_syncer.song_loader import DownloadInfo, download_songs
 from usdb_syncer.utils import AppPaths, open_file_explorer
-
-
-class RatingFilter(Enum):
-    """Selectable filters for song ratings."""
-
-    ANY = (0, False)
-    EXACT_1 = (1, True)
-    EXACT_2 = (2, True)
-    EXACT_3 = (3, True)
-    EXACT_4 = (4, True)
-    EXACT_5 = (5, True)
-    MIN_2 = (2, False)
-    MIN_3 = (3, False)
-    MIN_4 = (4, False)
-    MIN_5 = (5, False)
-
-    def __str__(self) -> str:
-        if self == RatingFilter.ANY:
-            return "Any"
-        if self.value[1]:
-            return self.value[0] * "★"
-        return self.value[0] * "★" + " or more"
-
-
-class GoldenNotesFilter(Enum):
-    """Selectable filters for songs with or without golden notes."""
-
-    ANY = None
-    YES = True
-    NO = False
-
-    def __str__(self) -> str:
-        if self == GoldenNotesFilter.ANY:
-            return "Any"
-        if self == GoldenNotesFilter.YES:
-            return "Yes"
-        return "No"
-
-
-class ViewsFilter(Enum):
-    """Selectable filters for songs with a specific view count."""
-
-    ANY = 0
-    MIN_100 = 100
-    MIN_200 = 200
-    MIN_300 = 300
-    MIN_400 = 400
-    MIN_500 = 500
-
-    def __str__(self) -> str:
-        if self == ViewsFilter.ANY:
-            return "Any"
-        return f"{self.value}+"
 
 
 class SongSignals(QObject):
@@ -103,6 +52,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         self._setup_table()
         self._setup_log()
         self._setup_toolbar()
+        self._setup_shortcuts()
         self._setup_song_dir()
         self._setup_search()
         self._setup_download()
@@ -134,6 +84,9 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         self.action_show_log.triggered.connect(
             lambda: open_file_explorer(os.path.dirname(AppPaths.log))
         )
+
+    def _setup_shortcuts(self) -> None:
+        set_shortcut("Ctrl+.", self, lambda: DebugConsole(self).show())
 
     def _setup_song_dir(self) -> None:
         self.lineEdit_song_dir.setText(settings.get_song_dir())
@@ -205,8 +158,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
             messages += self._errors
         messages.sort(key=lambda m: m[1])
         self.plainTextEdit.setPlainText("\n".join(m[0] for m in messages))
-        slider = self.plainTextEdit.verticalScrollBar()
-        slider.setValue(slider.maximum())
+        scroll_to_bottom(self.plainTextEdit)
 
     def _on_selected_rows_changed(self, count: int) -> None:
         s__ = "" if count == 1 else "s"
@@ -330,24 +282,15 @@ class TextEditLogger(logging.Handler):
 
 
 def main() -> None:
-    AppPaths.make_dirs()
-    app = QApplication(sys.argv)
-    app.setOrganizationName("bohning")
-    app.setApplicationName("usdb_syncer")
+    app = _init_app()
     mw = MainWindow()
-    logging.basicConfig(
-        level=logging.INFO,
-        format="%(asctime)s [%(levelname)s] %(message)s",
-        datefmt="%Y-%m-%d %H:%M:%S",
-        encoding="utf-8",
-        handlers=(
-            logging.FileHandler(AppPaths.log),
-            logging.StreamHandler(sys.stdout),
-            TextEditLogger(mw),
-        ),
-    )
-    pixmap = QPixmap(":/splash/splash.png")
-    splash = QSplashScreen(pixmap)
+    _configure_logging(mw)
+    _load_main_window(mw)
+    app.exec()
+
+
+def _load_main_window(mw: MainWindow) -> None:
+    splash = QSplashScreen(QPixmap(":/splash/splash.png"))
     splash.show()
     QApplication.processEvents()
     splash.showMessage("Loading song database from usdb...", color=Qt.GlobalColor.gray)
@@ -360,4 +303,25 @@ def main() -> None:
     mw.showMaximized()
     logging.info("Application successfully loaded.")
     splash.finish(mw)
-    app.exec()
+
+
+def _init_app() -> QApplication:
+    app = QApplication(sys.argv)
+    app.setOrganizationName("bohning")
+    app.setApplicationName("usdb_syncer")
+    return app
+
+
+def _configure_logging(mw: MainWindow) -> None:
+    logging.basicConfig(
+        level=logging.INFO,
+        style="{",
+        format="{asctime} [{levelname}] {message}",
+        datefmt="%Y-%m-%d %H:%M:%S",
+        encoding="utf-8",
+        handlers=(
+            logging.FileHandler(AppPaths.log),
+            logging.StreamHandler(sys.stdout),
+            TextEditLogger(mw),
+        ),
+    )

@@ -10,6 +10,7 @@ import tempfile
 from enum import Enum
 from typing import Union
 
+import filetype
 import requests
 import yt_dlp
 from PIL import Image, ImageEnhance, ImageOps
@@ -257,10 +258,16 @@ def download_and_process_image(
     if not (img_bytes := download_image(url, logger)):
         logger.error(f"#{str(kind).upper()}: file does not exist at url: {url}")
         return None
+
+    if not filetype.is_image(img_bytes):
+        logger.error(f"#{str(kind).upper()}: file at {url} is no image")
+        return None
+
     fname = f"{filename_stem} [{kind.value}].jpg"
     path = os.path.join(pathname, fname)
     with open(path, "wb") as file:
         file.write(img_bytes)
+
     _process_image(meta_tags, max_width, path)
     return fname
 

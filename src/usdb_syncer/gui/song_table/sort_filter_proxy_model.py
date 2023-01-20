@@ -9,8 +9,8 @@ from PySide6.QtCore import (
 )
 
 from usdb_syncer.gui.song_table.table_model import CustomRole
-from usdb_syncer.notes_parser import SongTxt
 from usdb_syncer.song_data import SongData, fuzz_text
+from usdb_syncer.song_txt import SongTxt
 
 QIndex = QModelIndex | QPersistentModelIndex
 

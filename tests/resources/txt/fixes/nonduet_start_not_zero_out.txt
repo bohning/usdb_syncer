@@ -1,12 +1,14 @@
 #TITLE:Sharp Dressed Man
 #ARTIST:ZZ Top
+#MEDLEYSTARTBEAT:0
+#MEDLEYENDBEAT:52
 #BPM:248.0
 #GAP:23750
 : 0 7 -8 Clean 
 : 8 3 -8 shirt
 : 12 8 -6 ~, 
 : 34 5 -8 new 
-: 40 12 -8 shoes
+: 40 12 -8 shoes 
 - 54
 : 62 3 -10 and 
 : 66 3 -8 I 
@@ -18,7 +20,7 @@
 : 88 5 -8 go
 : 94 3 -10 in' 
 : 98 7 -7 to
-: 106 6 -9 ~
+: 106 6 -9 ~ 
 - 114
 : 128 8 -8 Silk 
 E
