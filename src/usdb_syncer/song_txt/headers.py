@@ -21,7 +21,7 @@ class BeatsPerMinute:
     value: float
 
     def __str__(self) -> str:
-        return str(round(self.value, 2))
+        return f"{round(self.value, 2):g}"
 
     @classmethod
     def parse(cls, value: str) -> BeatsPerMinute:
