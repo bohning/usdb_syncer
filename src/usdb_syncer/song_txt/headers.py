@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import math
 from typing import Any, Callable
 
 import attrs
@@ -9,6 +10,40 @@ import attrs
 from usdb_syncer.logger import Log
 from usdb_syncer.song_txt.error import NotesParseError
 from usdb_syncer.song_txt.tracks import replace_false_apostrophes_and_quotation_marks
+
+MINIMUM_BPM = 200.0
+
+
+@attrs.define
+class BeatsPerMinute:
+    """New type for beats per minute float."""
+
+    value: float
+
+    def __str__(self) -> str:
+        return str(round(self.value, 2))
+
+    @classmethod
+    def parse(cls, value: str) -> BeatsPerMinute:
+        return cls(float(value.replace(",", ".")))
+
+    def beats_to_secs(self, beats: int) -> float:
+        return beats / (self.value * 4) * 60
+
+    def beats_to_ms(self, beats: int) -> float:
+        return self.beats_to_secs(beats) * 1000
+
+    def is_too_low(self) -> bool:
+        return self.value < MINIMUM_BPM
+
+    def make_large_enough(self) -> int:
+        """Double BPM (if necessary, multiple times) until it is above MINIMUM_BPM
+        and returns the required multiplication factor."""
+        # how often to double bpm until it is larger or equal to the threshold
+        exp = math.ceil(math.log2(MINIMUM_BPM / self.value))
+        factor = 2**exp
+        self.value = self.value * factor
+        return factor
 
 
 @attrs.define
@@ -18,7 +53,7 @@ class Headers:
     unknown: dict[str, str]
     title: str
     artist: str
-    bpm: float = 0.0
+    bpm: BeatsPerMinute
     gap: int = 0
     language: str | None = None
     edition: str | None = None
@@ -63,10 +98,8 @@ class Headers:
                 _set_header_value(kwargs, header, value)
             except ValueError:
                 logger.warning(f"invalid header value: '{line}'")
-        if "title" not in kwargs or "artist" not in kwargs:
-            raise NotesParseError("cannot parse song without artist and title")
-        if "bpm" not in kwargs:
-            logger.warning("missing bpm")
+        if "title" not in kwargs or "artist" not in kwargs or "bpm" not in kwargs:
+            raise NotesParseError("cannot parse song without artist, title or bpm")
         return cls(**kwargs)
 
     def reset_file_location_headers(self) -> None:
@@ -150,7 +183,7 @@ def _set_header_value(kwargs: dict[str, Any], header: str, value: str) -> None:
     ):
         kwargs[header] = value
     # these are given in (fractional) seconds, thus may have a decimal comma or point
-    elif header in ("bpm", "videogap", "start", "previewstart"):
+    elif header in ("videogap", "start", "previewstart"):
         kwargs[header] = float(value.replace(",", "."))
     # these are given in milliseconds, but may have a decimal point or comma in usdb
     elif header in ("gap", "end"):
@@ -158,5 +191,7 @@ def _set_header_value(kwargs: dict[str, Any], header: str, value: str) -> None:
     # these are given in beats and should thus be integers
     elif header in ("medleystartbeat", "medleyendbeat"):
         kwargs[header] = int(value)
+    elif header == "bpm":
+        kwargs[header] = BeatsPerMinute.parse(value)
     else:
         kwargs["unknown"][header] = value

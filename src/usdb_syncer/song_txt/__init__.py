@@ -12,8 +12,6 @@ from usdb_syncer.song_txt.error import NotesParseError
 from usdb_syncer.song_txt.headers import Headers
 from usdb_syncer.song_txt.tracks import Tracks
 
-MINIMUM_BPM = 200.0
-
 
 @attrs.define()
 class SongTxt:
@@ -85,7 +83,7 @@ class SongTxt:
 
     def minimum_song_length(self) -> str:
         """Return the minimum song length based on last beat, BPM and GAP"""
-        beats_secs = beats_to_secs(self.notes.end(), self.headers.bpm)
+        beats_secs = self.headers.bpm.beats_to_secs(self.notes.end())
         minimum_secs = round(beats_secs + self.headers.gap / 1000)
         minutes, seconds = divmod(minimum_secs, 60)
 
@@ -127,29 +125,18 @@ class SongTxt:
             line.shift(-offset)
 
         self.headers.apply_to_medley_tags(lambda beats: beats - offset)
-        offset_ms = beats_to_ms(offset, self.headers.bpm)
+        offset_ms = self.headers.bpm.beats_to_ms(offset)
         self.headers.gap = int(round(self.headers.gap + offset_ms, -1))
 
     def fix_low_bpm(self) -> None:
         """(repeatedly) doubles BPM value and all note timings
         until the BPM is above MINIMUM_BPM"""
 
-        if self.headers.bpm >= MINIMUM_BPM:
+        if not self.headers.bpm.is_too_low():
             return
 
-        # how often to double bpm until it is larger or equal to the threshold
-        exp = math.ceil(math.log2(MINIMUM_BPM / self.headers.bpm))
-        factor = 2**exp
+        factor = self.headers.bpm.make_large_enough()
 
-        self.headers.bpm *= factor
         self.headers.apply_to_medley_tags(lambda beats: beats * factor)
         for line in self.notes.all_lines():
             line.multiply(factor)
-
-
-def beats_to_secs(beats: int, bpm: float) -> float:
-    return beats / (bpm * 4) * 60
-
-
-def beats_to_ms(beats: int, bpm: float) -> float:
-    return beats_to_secs(beats, bpm) * 1000
