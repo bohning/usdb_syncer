@@ -1,0 +1,33 @@
+#TITLE:Crying In The Chapel
+#ARTIST:Elvis Presley
+#BPM:277.83
+#GAP:550
+: 0 3 12 You 
+: 4 11 14 saw 
+: 16 7 15 me 
+: 24 7 16 cry
+: 32 7 19 ing 
+: 40 7 21 in 
+: 48 7 24 the 
+: 56 31 26 cha
+: 88 36 26 pel 
+- 126
+: 132 7 26 The 
+: 140 7 26 tears 
+: 148 7 28 I 
+: 156 11 26 shed 
+: 168 11 24 were 
+: 180 7 21 tears 
+: 188 3 24 of 
+: 192 32 24 joy 
+- 226
+: 264 3 19 I 
+: 268 7 19 know 
+: 276 3 21 the 
+: 280 7 24 mean
+: 288 7 21 ing 
+: 296 11 19 of 
+: 308 7 16 con
+: 316 27 14 tent
+: 344 20 16 ment 
+E
