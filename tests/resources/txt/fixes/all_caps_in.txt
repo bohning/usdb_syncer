@@ -1,0 +1,25 @@
+#ARTIST:J-Ax & Fedez
+#TITLE:Italiana
+#MP3:J-Ax & Fedez - Italiana.mp3
+#LANGUAGE:Italian
+#BPM:244
+#GAP:2910
+F 14 5 27 BRRR
+F 20 61 17 RAH-
+- 81
+: 82 1 5 PA
+: 84 3 12 E
+: 88 1 12 SE
+: 90 1 10  SCON
+: 92 3 8 TA
+: 96 1 8 TO,
+- 97
+: 98 1 8 L'OF
+: 100 1 8 FER
+: 102 3 8 TA
+: 106 1 8  DI
+: 108 3 8 VI
+: 112 1 8 DE
+: 114 1 8 PER
+: 116 1 8 CHE'
+E
