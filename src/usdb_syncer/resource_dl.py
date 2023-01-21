@@ -60,6 +60,9 @@ def url_from_video_resouce(resource: str) -> str:
 def normalize_loudness(path: str, logger: Log) -> None:
     """normalize audio file loudness
 
+    Parameters:
+        path: the (unnormalized) audio file path
+
     Details:
         Uses ffmpeg's loudnorm filter to measure paramters and apply correction of
         (perceived) loudness in accordance with EBU R128 in tow passes,
@@ -116,33 +119,35 @@ def normalize_loudness(path: str, logger: Log) -> None:
     lra = measured_lra if float(measured_lra) > default_lra else default_lra
 
     # temporary copy of file
-    tmp = tempfile.NamedTemporaryFile(delete=False, dir=os.path.dirname(path))
-    shutil.copy2(path, tmp.name)
+    # Note: delete=False required on windows to prevent PermissionError: [Errno 13] Permission denied
+    with tempfile.NamedTemporaryFile(delete=False, dir=os.path.dirname(path)) as tmp:
+        shutil.copy2(path, tmp.name)
 
-    # 2nd pass, generate output file, read loudnorm parameters for normalization type
-    command = [
-        "ffmpeg",
-        # quiet output
-        "-hide_banner",
-        "-nostats",
-        # input file
-        "-i",
-        tmp.name,
-        # loudness normalization
-        "-af",
-        f"loudnorm=I=-23:LRA={lra}:tp=-2:"
-        f"measured_I={measured_i}:measured_LRA={measured_lra}:"
-        f"measured_tp={measured_tp}:measured_thresh={measured_thresh}:offset={offset}:"
-        f"linear=true:print_format=json",
-        # overwrite if output file exists
-        "-y",
-        # output file
-        path,
-    ]
-    result = subprocess.run(command, check=True, stdout=None, stderr=subprocess.PIPE)
+        # 2nd pass, generate output file, read loudnorm parameters for normalization type
+        command = [
+            "ffmpeg",
+            # quiet output
+            "-hide_banner",
+            "-nostats",
+            # input file
+            "-i",
+            tmp.name,
+            # loudness normalization
+            "-af",
+            f"loudnorm=I=-23:LRA={lra}:tp=-2:"
+            f"measured_I={measured_i}:measured_LRA={measured_lra}:"
+            f"measured_tp={measured_tp}:measured_thresh={measured_thresh}:offset={offset}:"
+            f"linear=true:print_format=json",
+            # overwrite if output file exists
+            "-y",
+            # output file
+            path,
+        ]
+        result = subprocess.run(
+            command, check=True, stdout=None, stderr=subprocess.PIPE
+        )
 
-    # remove temporary file
-    tmp.close()
+    # remove temporary file, required because of delete=False
     os.unlink(tmp.name)
 
     # parse parameters from 2nd pass stdout
