@@ -68,6 +68,7 @@ class SongTxt:
         self.fix()
 
     def fix(self) -> None:
+        # non-optional fixes
         self.fix_relative_songs()
         self.notes.maybe_split_duet_notes()
         self.restore_missing_headers()
@@ -80,6 +81,7 @@ class SongTxt:
         self.headers.fix_apostrophes()
         self.notes.fix_spaces()
         self.notes.fix_all_caps()
+        self.notes.fix_first_words_capitalization()
 
     def minimum_song_length(self) -> str:
         """Return the minimum song length based on last beat, BPM and GAP"""
