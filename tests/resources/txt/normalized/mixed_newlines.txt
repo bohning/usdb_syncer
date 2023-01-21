@@ -1,6 +1,6 @@
 #TITLE:title
 #ARTIST:artist
-#BPM:250.0
+#BPM:250
 #GAP:12345
 : 0 1 0 first note 
 - 10 12

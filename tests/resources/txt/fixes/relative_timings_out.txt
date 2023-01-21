@@ -1,7 +1,7 @@
 #TITLE:Golden
 #ARTIST:Harry Styles
 #MP3:Harry Styles - Golden.m4a
-#BPM:280.0
+#BPM:280
 #GAP:13800
 : 0 4 18 Hey! 
 - 6

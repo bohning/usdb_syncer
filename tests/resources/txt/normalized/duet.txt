@@ -1,6 +1,6 @@
 #TITLE:title
 #ARTIST:artist
-#BPM:250.0
+#BPM:250
 #GAP:12345
 #P1:P1
 #P2:P2

@@ -1,7 +1,7 @@
 #TITLE:title
 #ARTIST:artist
 #CREATOR:me
-#BPM:250.0
+#BPM:250
 #GAP:12345
 #UNKNOWN HEADERS GET : inserted at the end
 : 0 1 0 first note 

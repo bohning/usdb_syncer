@@ -1,6 +1,6 @@
 #TITLE:not a duet
 #ARTIST:artist
-#BPM:250.0
+#BPM:250
 #GAP:0
 : 0 1 0 Start 
 - 2
