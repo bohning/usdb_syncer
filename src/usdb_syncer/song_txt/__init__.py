@@ -7,7 +7,7 @@ import math
 import attrs
 
 from usdb_syncer.logger import Log
-from usdb_syncer.meta_tags.deserializer import MetaTags
+from usdb_syncer.meta_tags import MetaTags
 from usdb_syncer.song_txt.error import NotesParseError
 from usdb_syncer.song_txt.headers import Headers
 from usdb_syncer.song_txt.tracks import Tracks
@@ -29,7 +29,7 @@ class SongTxt:
     def parse(cls, value: str, logger: Log) -> SongTxt:
         lines = [line for line in value.splitlines() if line]
         headers = Headers.parse(lines, logger)
-        meta_tags = MetaTags(headers.video or "", logger)
+        meta_tags = MetaTags.parse(headers.video or "", logger)
         notes = Tracks.parse(lines, logger)
         if lines:
             logger.warning(f"trailing text in song txt: '{lines}'")

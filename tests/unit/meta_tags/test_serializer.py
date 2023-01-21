@@ -2,14 +2,14 @@
 
 from usdb_syncer.meta_tags.serializer import (
     ImageCropTag,
-    MetaValues,
+    MetaTagValues,
     VideoCropTag,
     video_tag_from_values,
 )
 
 
-def default_values() -> MetaValues:
-    return MetaValues(
+def default_values() -> MetaTagValues:
+    return MetaTagValues(
         video_url="",
         audio_url="",
         video_crop=VideoCropTag(left=0, right=0, top=0, bottom=0),

@@ -13,7 +13,7 @@ from PySide6.QtWidgets import QDialog, QWidget
 from usdb_syncer.gui.forms.MetaTagsDialog import Ui_Dialog
 from usdb_syncer.meta_tags.serializer import (
     ImageCropTag,
-    MetaValues,
+    MetaTagValues,
     VideoCropTag,
     video_tag_from_values,
 )
@@ -71,8 +71,8 @@ class MetaTagsDialog(Ui_Dialog, QDialog):
 
         self.button_copy_to_clipboard.pressed.connect(self._on_copy_to_clipboard)
 
-    def _meta_values(self) -> MetaValues:
-        return MetaValues(
+    def _meta_values(self) -> MetaTagValues:
+        return MetaTagValues(
             video_url=self.video_url.text(),
             audio_url=self.audio_url.text(),
             video_crop=VideoCropTag(
@@ -128,7 +128,7 @@ class MetaTagsDialog(Ui_Dialog, QDialog):
     def _on_copy_to_clipboard(self) -> None:
         QGuiApplication.clipboard().setText(self._output)
 
-    def _try_shorten_url(self, values: MetaValues) -> bool:
+    def _try_shorten_url(self, values: MetaTagValues) -> bool:
         """True if some URL was shortened."""
         urls = [(name, getattr(values, name)) for name in URL_TAG_NAMES]
         urls.sort(key=lambda u: len(u[1]), reverse=True)

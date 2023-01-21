@@ -2,7 +2,7 @@
 
 from dataclasses import dataclass
 
-from usdb_syncer.meta_tags import encode_meta_tag_value
+from usdb_syncer.meta_tags.escaping import encode_meta_tag_value
 from usdb_syncer.utils import extract_youtube_id
 
 
@@ -48,7 +48,7 @@ class ImageCropTag:
 
 
 @dataclass
-class MetaValues:
+class MetaTagValues:
     """Dataclass for current values in the dialog."""
 
     video_url: str
@@ -185,7 +185,7 @@ class MetaValues:
         return None
 
 
-def video_tag_from_values(values: MetaValues) -> str:
+def video_tag_from_values(values: MetaTagValues) -> str:
     return "#VIDEO:" + ",".join(values.meta_tags())
 
 
