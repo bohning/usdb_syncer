@@ -93,7 +93,9 @@ def normalize_loudness(path: str, logger: Log) -> None:
         path,
         # loudness normalization
         "-af",
-        f"loudnorm=I=-23:LRA={default_lra}:TP=-2:print_format=json",
+        f"loudnorm=I=-23:LRA={default_lra}:TP=-2:"
+        # - print measured paramters
+        "print_format=json",
         # no output file
         "-f",
         "null",
@@ -119,11 +121,11 @@ def normalize_loudness(path: str, logger: Log) -> None:
     lra = measured_lra if float(measured_lra) > default_lra else default_lra
 
     # temporary copy of file
-    # Note: delete=False required on windows to prevent PermissionError: [Errno 13] Permission denied
+    # Note: delete=False else (windows) PermissionError: [Errno 13] Permission denied
     with tempfile.NamedTemporaryFile(delete=False, dir=os.path.dirname(path)) as tmp:
         shutil.copy2(path, tmp.name)
 
-        # 2nd pass, generate output file, read loudnorm parameters for normalization type
+        # 2nd pass
         command = [
             "ffmpeg",
             # quiet output
@@ -135,9 +137,13 @@ def normalize_loudness(path: str, logger: Log) -> None:
             # loudness normalization
             "-af",
             f"loudnorm=I=-23:LRA={lra}:tp=-2:"
+            # parameters measured in 1st pass
             f"measured_I={measured_i}:measured_LRA={measured_lra}:"
-            f"measured_tp={measured_tp}:measured_thresh={measured_thresh}:offset={offset}:"
-            f"linear=true:print_format=json",
+            f"measured_tp={measured_tp}:measured_thresh={measured_thresh}:"
+            f"offset={offset}:"
+            "linear=true:"
+            # - print measured parameters again to validate linear normalization
+            "print_format=json",
             # overwrite if output file exists
             "-y",
             # output file
