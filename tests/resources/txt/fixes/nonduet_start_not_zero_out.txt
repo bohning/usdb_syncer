@@ -2,7 +2,7 @@
 #ARTIST:ZZ Top
 #MEDLEYSTARTBEAT:0
 #MEDLEYENDBEAT:52
-#BPM:248.0
+#BPM:248
 #GAP:23750
 : 0 7 -8 Clean 
 : 8 3 -8 shirt
@@ -10,15 +10,15 @@
 : 34 5 -8 new 
 : 40 12 -8 shoes 
 - 54
-: 62 3 -10 and 
+: 62 3 -10 And 
 : 66 3 -8 I 
-: 70 1 -12 don't 
+: 70 1 -12 don’t 
 : 72 5 -10 know 
 : 78 1 -10 where 
 : 80 3 -8 I 
 : 84 3 -8 am 
 : 88 5 -8 go
-: 94 3 -10 in' 
+: 94 3 -10 in’ 
 : 98 7 -7 to
 : 106 6 -9 ~ 
 - 114

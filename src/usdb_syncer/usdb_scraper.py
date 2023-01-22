@@ -340,7 +340,7 @@ def _parse_comments_table(comments_table: BeautifulSoup) -> list[SongComment]:
         if " | " not in meta:
             # header is just the placeholder element
             break
-        date_time, author = meta.split(" | ")
+        date_time, author = meta.removeprefix("[del] [edit] ").split(" | ")
         contents = _parse_comment_contents(header.next_sibling)
         comments.append(
             SongComment(date_time=date_time, author=author, contents=contents)

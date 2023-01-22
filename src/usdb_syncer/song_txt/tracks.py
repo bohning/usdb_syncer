@@ -309,10 +309,11 @@ class Tracks:
             # capitalize first capitalizable character
             # e.g. '"what time is it?"' -> '"What time is it?"'
             for char in line.notes[0].text:
-                if char != char.upper():
-                    line.notes[0].text = line.notes[0].text.replace(
-                        char, char.upper(), 1
-                    )
+                if char.isalpha() or char == "’":
+                    if char.islower():
+                        line.notes[0].text = line.notes[0].text.replace(
+                            char, char.upper(), 1
+                        )
                     break
 
 
@@ -372,7 +373,9 @@ def fix_line_breaks(lines: list[Line]) -> None:
 
 
 def replace_false_apostrophes_and_quotation_marks(value: str) -> str:
-    # two single quotation marks '' by "
-    # grave accent ` by upright apostrophe '
-    # acute accent ´ by upright apostrophe '
-    return value.replace("''", '"').replace("`", "'").replace("´", "'")
+    # two single upright quotation marks ('') by double upright quotation marks (")
+    # grave accent (`), acute accent (´) and upright apostrophe (')
+    # by typographer’s apostrophe (’)
+    return (
+        value.replace("''", '"').replace("`", "’").replace("´", "’").replace("'", "’")
+    )

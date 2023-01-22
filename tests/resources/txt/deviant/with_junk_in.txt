@@ -6,6 +6,7 @@
 #END:123junk
 #MEDLEYSTARTBEAT:1.2
 #MEDLEYENDBEAT:2.6
+#BPM:100
 #P1:P1
 #P2:P2
 leading junk

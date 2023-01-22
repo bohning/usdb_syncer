@@ -1,6 +1,6 @@
 #TITLE:Fångad Av En Stormvind
 #ARTIST:Carola
-#BPM:372.0
+#BPM:372
 #GAP:17420
 : 0 2 14 Jag 
 : 4 4 14 har 
