@@ -11,6 +11,7 @@ import attrs
 
 from usdb_syncer import SongId
 from usdb_syncer.logger import get_logger
+from usdb_syncer.meta_tags import MetaTags
 
 SYNC_META_VERSION = 1
 _logger = get_logger(__file__)
@@ -41,6 +42,7 @@ class SyncMeta:
     song_id: SongId
     # Sha1 hash as a hex str
     src_txt_hash: str
+    meta_tags: MetaTags
     txt: FileMeta | None = None
     audio: FileMeta | None = None
     video: FileMeta | None = None
@@ -49,8 +51,8 @@ class SyncMeta:
     version: int = SYNC_META_VERSION
 
     @classmethod
-    def new(cls, song_id: SongId, txt: str) -> SyncMeta:
-        return cls(song_id, hash_txt(txt))
+    def new(cls, song_id: SongId, txt: str, meta_tags: MetaTags) -> SyncMeta:
+        return cls(song_id, hash_txt(txt), meta_tags)
 
     @classmethod
     def try_from_file(cls, path: str) -> SyncMeta | None:
@@ -66,7 +68,8 @@ class SyncMeta:
             raise Exception("cannot read data written by a later version")
         return cls(
             SongId(dct["song_id"]),
-            dct["src_txt_hash"],
+            src_txt_hash=dct["src_txt_hash"],
+            meta_tags=MetaTags.parse(dct["meta_tags"], _logger),
             txt=FileMeta.from_nested_dict(dct["txt"]),
         )
 
@@ -112,4 +115,6 @@ class SyncMetaEncoder(json.JSONEncoder):
             return attrs.asdict(o, recurse=False)
         if isinstance(o, SongId):
             return o.value
+        if isinstance(o, MetaTags):
+            return str(o)
         return super().default(o)
