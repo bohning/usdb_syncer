@@ -2,13 +2,30 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
 from typing import Literal
 
 import attrs
 
 from usdb_syncer.logger import Log
-from usdb_syncer.meta_tags.escaping import decode_meta_tag_value
+
+# Characters that have special meaning for the meta tag syntax and therefore
+# must be escaped. Escaping is done with percent encoding.
+META_TAG_ESCAPES = ((",", "%2C"),)
+
+
+def encode_meta_tag_value(meta_tag: str) -> str:
+    """Escape special characters inside the value part of a meta tag."""
+    for char, escape in META_TAG_ESCAPES:
+        meta_tag = meta_tag.replace(char, escape)
+    return meta_tag
+
+
+def decode_meta_tag_value(meta_tag: str) -> str:
+    """Unescape special characters inside the value part of a meta tag."""
+
+    for char, escape in META_TAG_ESCAPES:
+        meta_tag = meta_tag.replace(escape, char)
+    return meta_tag
 
 
 @attrs.define
@@ -28,6 +45,12 @@ class CropMetaTags:
             logger.warning(f"invalid value for crop meta tag: '{value}'")
             return None
         return cls(left, upper, left + width, upper + height)
+
+    def to_str(self, prefix: str) -> str:
+        width = self.right - self.left
+        height = self.lower - self.upper
+        value = f"{self.left}-{self.upper}-{width}-{height}"
+        return _key_value_str(f"{prefix}-crop", value) or ""
 
 
 @attrs.define
@@ -49,8 +72,15 @@ class ResizeMetaTags:
             return None
         return cls(width, height)
 
+    def to_str(self, prefix: str) -> str:
+        if self.width != self.height:
+            value = f"{self.width}-{self.height}"
+        else:
+            value = str(self.width)
+        return _key_value_str(f"{prefix}-resize", value) or ""
 
-@dataclass
+
+@attrs.define
 class ImageMetaTags:
     """Meta tags relating to the cover or background image."""
 
@@ -72,6 +102,18 @@ class ImageMetaTags:
         """True if there is data for image processing."""
         return any((self.rotate, self.crop, self.resize, self.contrast))
 
+    def to_str(self, prefix: str) -> str:
+        return _join_tags(
+            _key_value_str(prefix, self.source),
+            _key_value_str(f"{prefix}-protocol", self.protocol)
+            if self.protocol != "https"
+            else None,
+            _key_value_str(f"{prefix}-rotate", self.rotate),
+            self.crop.to_str(prefix) if self.crop else None,
+            self.resize.to_str(prefix) if self.resize else None,
+            _key_value_str(f"{prefix}-contrast", self.contrast),
+        )
+
 
 @attrs.define
 class MedleyTag:
@@ -89,7 +131,11 @@ class MedleyTag:
             return None
         return cls(start, end)
 
+    def __str__(self) -> str:
+        return _key_value_str("medley", f"{self.start}-{self.end}") or ""
 
+
+@attrs.define
 class MetaTags:
     """Additional resource parameters from an overloaded video tag. Such an overloaded
     tag could look like:
@@ -163,6 +209,26 @@ class MetaTags:
     def is_audio_only(self) -> bool:
         """True if a resource is explicitly set for audio only."""
         return bool(self.audio and not self.video)
+
+    def __str__(self) -> str:
+        return _join_tags(
+            _key_value_str("v", self.video),
+            _key_value_str("a", self.audio),
+            self.cover.to_str("co") if self.cover else None,
+            self.background.to_str("bg") if self.background else None,
+            _key_value_str("p1", self.player1),
+            _key_value_str("p2", self.player2),
+            _key_value_str("preview", self.preview),
+            str(self.medley) if self.medley else None,
+        )
+
+
+def _key_value_str(key: str, value: str | float | None) -> str | None:
+    return None if value is None else f"{key}={value}"
+
+
+def _join_tags(*tags: str | None) -> str:
+    return ",".join(filter(None, tags))
 
 
 def _try_parse_float(value: str, logger: Log) -> float | None:

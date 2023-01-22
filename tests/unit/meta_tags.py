@@ -1,8 +1,9 @@
 """Tests for functions from the note_utils module."""
 
 from usdb_syncer import SongId
+from usdb_syncer.gui.meta_tags_dialog import _sanitize_video_url
 from usdb_syncer.logger import get_logger
-from usdb_syncer.meta_tags import MetaTags
+from usdb_syncer.meta_tags import ImageMetaTags, MetaTags
 
 _logger = get_logger(__file__, SongId(1))
 
@@ -79,3 +80,26 @@ def test_player_meta_tags() -> None:
     meta = MetaTags.parse(tag, _logger)
     assert meta.player1 == "Freddie Mercury"
     assert meta.player2 == "Backing"
+
+
+def test_yt_url_shortening() -> None:
+    tags = MetaTags(video="https://www.youtube.com/watch?v=dQw4w9WgXcQ")
+    assert str(tags) == "v=dQw4w9WgXcQ"
+
+
+def test_fanart_url_shortening() -> None:
+    tags = MetaTags(
+        cover=ImageMetaTags(
+            "https://images.fanart.tv/fanart/the-room-5df4d0ed35191.jpg"
+        )
+    )
+    assert str(tags) == "co=the-room-5df4d0ed35191.jpg"
+
+
+def test_url_shortening_and_escaping() -> None:
+    assert (
+        _sanitize_video_url(
+            "https://www.url-containing-commas.com/this,url,has,commas.jpg"
+        )
+        == "www.url-containing-commas.com/this%2Curl%2Chas%2Ccommas.jpg"
+    )

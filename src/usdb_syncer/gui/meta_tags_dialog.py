@@ -1,5 +1,7 @@
 """Dialog to create meta tags."""
 
+from typing import Callable
+
 from pyshorteners import Shortener
 from pyshorteners.exceptions import (
     BadAPIResponseException,
@@ -11,12 +13,15 @@ from PySide6.QtGui import QGuiApplication
 from PySide6.QtWidgets import QDialog, QWidget
 
 from usdb_syncer.gui.forms.MetaTagsDialog import Ui_Dialog
-from usdb_syncer.meta_tags.serializer import (
-    ImageCropTag,
-    MetaTagValues,
-    VideoCropTag,
-    video_tag_from_values,
+from usdb_syncer.meta_tags import (
+    CropMetaTags,
+    ImageMetaTags,
+    MedleyTag,
+    MetaTags,
+    ResizeMetaTags,
+    encode_meta_tag_value,
 )
+from usdb_syncer.utils import extract_youtube_id
 
 MAX_LEN = 255
 URL_TAG_NAMES = ("cover_url", "background_url", "audio_url", "video_url")
@@ -34,85 +39,133 @@ class MetaTagsDialog(Ui_Dialog, QDialog):
         self._shortened_urls: dict[str, str] = {}
 
     def _connect_signals(self) -> None:
-        self.audio_url.textChanged.connect(self._update_output)
-
-        self.video_url.textChanged.connect(self._update_output)
-        self.video_crop_left.valueChanged.connect(self._update_output)
-        self.video_crop_right.valueChanged.connect(self._update_output)
-        self.video_crop_top.valueChanged.connect(self._update_output)
-        self.video_crop_bottom.valueChanged.connect(self._update_output)
-
-        self.cover_url.textChanged.connect(self._update_output)
-        self.cover_rotation.valueChanged.connect(self._update_output)
-        self.cover_contrast.valueChanged.connect(self._update_output)
-        self.cover_contrast_auto.toggled.connect(self._update_output)
-        self.cover_contrast_auto.toggled.connect(self._toggle_auto_contrast)
-        self.cover_resize.valueChanged.connect(self._update_output)
-        self.cover_crop_left.valueChanged.connect(self._update_output)
-        self.cover_crop_top.valueChanged.connect(self._update_output)
-        self.cover_crop_width.valueChanged.connect(self._update_output)
-        self.cover_crop_height.valueChanged.connect(self._update_output)
-
-        self.background_url.textChanged.connect(self._update_output)
-        self.background_resize_width.valueChanged.connect(self._update_output)
-        self.background_resize_height.valueChanged.connect(self._update_output)
-        self.background_crop_left.valueChanged.connect(self._update_output)
-        self.background_crop_top.valueChanged.connect(self._update_output)
-        self.background_crop_width.valueChanged.connect(self._update_output)
-        self.background_crop_height.valueChanged.connect(self._update_output)
-
-        self.duet.toggled.connect(self._update_output)
-        self.duet_p1.textChanged.connect(self._update_output)
-        self.duet_p2.textChanged.connect(self._update_output)
-
-        self.preview_start.valueChanged.connect(self._update_output)
-        self.medley_start.valueChanged.connect(self._update_output)
-        self.medley_end.valueChanged.connect(self._update_output)
+        for signal in (
+            self.audio_url.textChanged,
+            self.video_url.textChanged,
+            self.cover_url.textChanged,
+            self.cover_rotation.valueChanged,
+            self.cover_contrast.valueChanged,
+            self.cover_contrast_auto.toggled,
+            self.cover_contrast_auto.toggled,
+            self.cover_resize.valueChanged,
+            self.cover_crop_left.valueChanged,
+            self.cover_crop_top.valueChanged,
+            self.cover_crop_width.valueChanged,
+            self.cover_crop_height.valueChanged,
+            self.background_url.textChanged,
+            self.background_resize_width.valueChanged,
+            self.background_resize_height.valueChanged,
+            self.background_crop_left.valueChanged,
+            self.background_crop_top.valueChanged,
+            self.background_crop_width.valueChanged,
+            self.background_crop_height.valueChanged,
+            self.duet.toggled,
+            self.duet_p1.textChanged,
+            self.duet_p2.textChanged,
+            self.preview_start.valueChanged,
+            self.medley_start.valueChanged,
+            self.medley_end.valueChanged,
+        ):
+            signal.connect(self._update_output)
 
         self.button_copy_to_clipboard.pressed.connect(self._on_copy_to_clipboard)
 
-    def _meta_values(self) -> MetaTagValues:
-        return MetaTagValues(
-            video_url=self.video_url.text(),
-            audio_url=self.audio_url.text(),
-            video_crop=VideoCropTag(
-                left=self.video_crop_left.value(),
-                right=self.video_crop_right.value(),
-                top=self.video_crop_top.value(),
-                bottom=self.video_crop_bottom.value(),
-            ),
-            cover_url=self.cover_url.text(),
-            cover_rotation=self.cover_rotation.value(),
-            cover_resize=self.cover_resize.value(),
-            cover_contrast_auto=self.cover_contrast_auto.isChecked(),
-            cover_contrast=self.cover_contrast.value(),
-            cover_crop=ImageCropTag(
-                left=self.cover_crop_left.value(),
-                top=self.cover_crop_top.value(),
-                width=self.cover_crop_width.value(),
-                height=self.cover_crop_height.value(),
-            ),
-            background_url=self.background_url.text(),
-            background_resize_width=self.background_resize_width.value(),
-            background_resize_height=self.background_resize_height.value(),
-            background_crop=ImageCropTag(
-                left=self.background_crop_left.value(),
-                top=self.background_crop_top.value(),
-                width=self.background_crop_width.value(),
-                height=self.background_crop_height.value(),
-            ),
-            duet=self.duet.isChecked(),
-            duet_p1=self.duet_p1.text(),
-            duet_p2=self.duet_p2.text(),
-            preview_start=self.preview_start.value(),
-            medley_start=self.medley_start.value(),
-            medley_end=self.medley_end.value(),
+    def _audio_source(self) -> str | None:
+        if not (source := self.audio_url.text()) or source == self.video_url.text():
+            return None
+        return _sanitize_video_url(source)
+
+    def _cover_meta_tags(self) -> ImageMetaTags | None:
+        cover_source, cover_protocol = _sanitize_image_url(self.cover_url.text())
+        if not cover_source:
+            return None
+        return ImageMetaTags(
+            source=cover_source,
+            protocol="http" if cover_protocol else "https",
+            rotate=self.cover_rotation.value() or None,
+            crop=self._cover_crop_meta_tag(),
+            resize=self._cover_resize_meta_tag(),
+            contrast="auto"
+            if self.cover_contrast_auto.isChecked()
+            else self.cover_contrast.value() or None,
+        )
+
+    def _cover_crop_meta_tag(self) -> CropMetaTags | None:
+        if not (width := self.cover_crop_width.value()) or not (
+            height := self.cover_crop_height.value()
+        ):
+            return None
+        left = self.cover_crop_left.value()
+        upper = self.cover_crop_top.value()
+        return CropMetaTags(
+            left=left, upper=upper, right=left + width, lower=upper + height
+        )
+
+    def _cover_resize_meta_tag(self) -> ResizeMetaTags | None:
+        if resize_value := self.cover_resize.value():
+            return ResizeMetaTags(resize_value, resize_value)
+        return None
+
+    def _background_meta_tags(self) -> ImageMetaTags | None:
+        bg_source, bg_protocol = _sanitize_image_url(self.background_url.text())
+        if not bg_source:
+            return None
+        return ImageMetaTags(
+            source=bg_source,
+            protocol="http" if bg_protocol else "https",
+            crop=self._background_crop_meta_tag(),
+            resize=self._background_resize_meta_tag(),
+        )
+
+    def _background_crop_meta_tag(self) -> CropMetaTags | None:
+        if not (width := self.background_crop_width.value()) or not (
+            height := self.background_crop_height.value()
+        ):
+            return None
+        left = self.background_crop_left.value()
+        upper = self.background_crop_top.value()
+        return CropMetaTags(
+            left=left, upper=upper, right=left + width, lower=upper + height
+        )
+
+    def _background_resize_meta_tag(self) -> ResizeMetaTags | None:
+        if not (width := self.background_resize_width.value()) or not (
+            height := self.background_resize_height.value()
+        ):
+            return None
+        return ResizeMetaTags(width, height)
+
+    def _medley_tag(self) -> MedleyTag | None:
+        if (start := self.medley_start.value()) < (end := self.medley_end.value()):
+            return MedleyTag(start, end)
+        return None
+
+    def _p1_meta_tag(self) -> str | None:
+        if self.duet.isChecked():
+            return encode_meta_tag_value(self.duet_p1.text()) or "P1"
+        return None
+
+    def _p2_meta_tag(self) -> str | None:
+        if self.duet.isChecked():
+            return encode_meta_tag_value(self.duet_p2.text()) or "P2"
+        return None
+
+    def _meta_tags(self) -> MetaTags:
+        return MetaTags(
+            video=_sanitize_video_url(self.video_url.text()) or None,
+            audio=self._audio_source(),
+            cover=self._cover_meta_tags(),
+            background=self._background_meta_tags(),
+            player1=self._p1_meta_tag(),
+            player2=self._p2_meta_tag(),
+            preview=self.preview_start.value() or None,
+            medley=self._medley_tag(),
         )
 
     def _update_output(self) -> None:
-        values = self._meta_values()
+        values = self._meta_tags()
         while True:
-            self._output = video_tag_from_values(values)
+            self._output = f"#VIDEO:{values}"
             if len(self._output) <= MAX_LEN:
                 break
             if not self._try_shorten_url(values):
@@ -128,24 +181,37 @@ class MetaTagsDialog(Ui_Dialog, QDialog):
     def _on_copy_to_clipboard(self) -> None:
         QGuiApplication.clipboard().setText(self._output)
 
-    def _try_shorten_url(self, values: MetaTagValues) -> bool:
+    def _try_shorten_url(self, tags: MetaTags) -> bool:
         """True if some URL was shortened."""
-        urls = [(name, getattr(values, name)) for name in URL_TAG_NAMES]
-        urls.sort(key=lambda u: len(u[1]), reverse=True)
-        for name, url in urls:
-            if short := self._shortened_urls.get(url, ""):
-                setattr(values, name, short)
+        for url, setter in _urls_and_setters(tags):
+            if cached := self._shortened_urls.get(url, ""):
+                setter(cached)
                 return True
             if len(url) < 30:
                 continue
-            if short := try_shorten_url(url):
-                self._shortened_urls[url] = short
-                setattr(values, name, short)
+            if shortened := _try_shorten_url(url):
+                self._shortened_urls[url] = shortened
+                setter(shortened)
                 return True
         return False
 
 
-def try_shorten_url(url: str) -> str:
+def _urls_and_setters(tags: MetaTags) -> list[tuple[str, Callable[[str], None]]]:
+    """Returns meta tag urls by length in ascending order and a setter for each."""
+    urls = []
+    if tags.audio:
+        urls.append((tags.audio, lambda s: setattr(tags, "audio", s)))
+    if tags.video:
+        urls.append((tags.video, lambda s: setattr(tags, "video", s)))
+    if tags.cover:
+        urls.append((tags.cover.source, lambda s: setattr(tags.cover, "source", s)))
+    if background := tags.background:
+        urls.append((background.source, lambda s: setattr(background, "source", s)))
+    urls.sort(key=lambda u: len(u[0]), reverse=True)
+    return urls
+
+
+def _try_shorten_url(url: str) -> str:
     try:
         short = Shortener().tinyurl.short(url).removeprefix("https://")
     except (
@@ -158,3 +224,20 @@ def try_shorten_url(url: str) -> str:
     if len(short) < len(url):
         return short
     return ""
+
+
+def _sanitize_video_url(url: str) -> str:
+    """Returns a YouTube id or sanitized URL."""
+    return extract_youtube_id(url) or _sanitize_url(url)
+
+
+def _sanitize_image_url(url: str) -> tuple[str, bool]:
+    """Returns a fanart id or sanitized URL and whether it uses HTTP."""
+    http = url.startswith("http://")
+    url = url.removeprefix("http://").removeprefix("https://images.fanart.tv/fanart/")
+    return _sanitize_url(url), http
+
+
+def _sanitize_url(url: str) -> str:
+    """Remove or escape characters with special meaning or which USDB can't handle."""
+    return encode_meta_tag_value(url.removeprefix("https://"))
