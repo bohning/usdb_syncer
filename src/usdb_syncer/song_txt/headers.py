@@ -9,6 +9,7 @@ import attrs
 
 from usdb_syncer.logger import Log
 from usdb_syncer.song_txt.error import NotesParseError
+from usdb_syncer.song_txt.language_translations import LanguageTranslations
 from usdb_syncer.song_txt.tracks import replace_false_apostrophes_and_quotation_marks
 
 MINIMUM_BPM = 200.0
@@ -159,191 +160,6 @@ class Headers:
             self.medleyendbeat = func(self.medleyendbeat)
 
     def fix_language(self) -> None:
-        translations = {
-            # Arabic
-            "arabic": "Arabic",
-            "arabisch": "Arabic",
-            "arabe": "Arabic",
-            "árabe": "Arabic",
-            "arabo": "Arabic",
-            "arabski": "Arabic",
-            # Chinese
-            "chinese": "Chinese",
-            "chinesisch": "Chinese",
-            "chinois": "Chinese",
-            "chino": "Chinese",
-            "cinese": "Chinese",
-            "chinês": "Chinese",
-            "chiński": "Chinese",
-            # Croatian
-            "croatian": "Croatian",
-            "kroatisch": "Croatian",
-            "croate": "Croatian",
-            "croata": "Croatian",
-            "croato": "Croatian",
-            "chorwacki": "Croatian",
-            # Czech
-            "czech": "Czech",
-            "tschechisch": "Czech",
-            "tchèque": "Czech",
-            "ceco": "Czech",
-            "checo": "Czech",
-            "czeski": "Czech",
-            # Danish
-            "danish": "Danish",
-            "dänisch": "Danish",
-            "danois": "Danish",
-            "danés": "Danish",
-            "danese": "Danish",
-            "dinamarquês": "Danish",
-            "duński": "Danish",
-            # Dutch
-            "dutch": "Dutch",
-            "holländisch": "Dutch",
-            "hollandais": "Dutch",
-            "holandés": "Dutch",
-            "olandese": "Dutch",
-            "holandês": "Dutch",
-            "holenderski": "Dutch",
-            # English
-            "english": "English",
-            "englisch": "English",
-            "anglais": "English",
-            "inglés": "English",
-            "inglese": "English",
-            "inglês": "English",
-            "angielski": "English",
-            # Finnish
-            "finnish": "Finnish",
-            "finnisch": "Finnish",
-            "finois": "Finnish",
-            "finlandés": "Finnish",
-            "finlandese": "Finnish",
-            "finlandês": "Finnish",
-            "fiński": "Finnish",
-            # French
-            "french": "French",
-            "französisch": "French",
-            "français": "French",
-            "francés": "French",
-            "francese": "French",
-            "francês": "French",
-            "francuski": "French",
-            # German
-            "german": "German",
-            "deutsch": "German",
-            "allemand": "German",
-            "alemán": "German",
-            "tedesco": "German",
-            "alemão": "German",
-            "niemiecki": "German",
-            # Hindi
-            "hindi": "Hindi",
-            "indisch": "Hindi",
-            "indien": "Hindi",
-            "indio": "Hindi",
-            "indiano": "Hindi",
-            "indyjski": "Hindi",
-            # Italian
-            "italian": "Italian",
-            "italienisch": "Italian",
-            "italien": "Italian",
-            "italiano": "Italian",
-            "włoski": "Italian",
-            # Japanese
-            "japanese": "Japanese",
-            "japanisch": "Japanese",
-            "japonais": "Japanese",
-            "japonés": "Japanese",
-            "giapponese": "Japanese",
-            "japonês": "Japanese",
-            "japoński": "Japanese",
-            # Korean
-            "korean": "Korean",
-            "koreanisch": "Korean",
-            "coréen": "Korean",
-            "coreano": "Korean",
-            "koreański": "Korean",
-            # Latin
-            "lateinisch": "Latin",
-            "latin": "Latin",
-            "latino": "Latin",
-            "łacina": "Latin",
-            # Norwegian
-            "norwegian": "Norwegian",
-            "norwegisch": "Norwegian",
-            "norvégien": "Norwegian",
-            "noruego": "Norwegian",
-            "norvegese": "Norwegian",
-            "norueguês": "Norwegian",
-            "norweski": "Norwegian",
-            # Polish
-            "polish": "Polish",
-            "polnisch": "Polish",
-            "polonais": "Polish",
-            "polacco,": "Polish",
-            "polaco": "Polish",
-            "polski": "Polish",
-            # Portuguese
-            "portuguese": "Portuguese",
-            "portugiesisch": "Portuguese",
-            "portugais": "Portuguese",
-            "portugués": "Portuguese",
-            "portoghese": "Portuguese",
-            "português": "Portuguese",
-            "portugalski": "Portuguese",
-            # Romanian
-            "romanian": "Romanian",
-            "rumänisch": "Romanian",
-            "roumain": "Romanian",
-            "rumano": "Romanian",
-            "rumeno": "Romanian",
-            "romeno": "Romanian",
-            "rumuński": "Romanian",
-            # Russian
-            "russian": "Russian",
-            "russisch": "Russian",
-            "russe": "Russian",
-            "ruso": "Russian",
-            "russo": "Russian",
-            "rosyjski": "Russian",
-            "ruski": "Russian",
-            # Slovak
-            "slovak": "Slovak",
-            "slowakisch": "Slovak",
-            "slovaque": "Slovak",
-            "eslovaco": "Slovak",
-            "slovacco": "Slovak",
-            "słowacki": "Slovak",
-            # Slowenian
-            "slowenian": "Slowenian",
-            "slowenisch": "Slowenian",
-            "slovène": "Slowenian",
-            "esloveno": "Slowenian",
-            "sloveno": "Slowenian",
-            "słoweński": "Slowenian",
-            # Spanish
-            "spanish": "Spanish",
-            "spanisch": "Spanish",
-            "espagnol": "Spanish",
-            "español": "Spanish",
-            "spagnolo": "Spanish",
-            "espanhol": "Spanish",
-            "hiszpański": "Spanish",
-            # Swedish
-            "swedish": "Swedish",
-            "schwedisch": "Swedish",
-            "suédois": "Swedish",
-            "sueco": "Swedish",
-            "svedese": "Swedish",
-            "szwedzki": "Swedish",
-            # Turkish
-            "turkish": "Turkish",
-            "türkisch": "Turkish",
-            "turc": "Turkish",
-            "turco": "Turkish",
-            "turecki ": "Turkish",
-        }
 
         if self.language:
             languages = [
@@ -354,9 +170,9 @@ class Headers:
                 .split(",")
             ]
             languages = [
-                translations[language.lower()]
+                LanguageTranslations[language.lower()]
                 for language in languages
-                if language.lower() in translations
+                if language.lower() in LanguageTranslations
             ]
             self.language = ", ".join(languages)
 
