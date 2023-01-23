@@ -9,6 +9,7 @@ import attrs
 
 from usdb_syncer.logger import Log
 from usdb_syncer.song_txt.error import NotesParseError
+from usdb_syncer.song_txt.language_translations import LANGUAGE_TRANSLATIONS
 from usdb_syncer.song_txt.tracks import replace_false_apostrophes_and_quotation_marks
 
 MINIMUM_BPM = 200.0
@@ -157,6 +158,23 @@ class Headers:
             self.medleystartbeat = func(self.medleystartbeat)
         if self.medleyendbeat:
             self.medleyendbeat = func(self.medleyendbeat)
+
+    def fix_language(self) -> None:
+
+        if self.language:
+            languages = [
+                language.strip()
+                for language in self.language.replace(";", ",")
+                .replace("/", ",")
+                .replace("|", ",")
+                .split(",")
+            ]
+            languages = [
+                LANGUAGE_TRANSLATIONS[language.lower()]
+                for language in languages
+                if language.lower() in LANGUAGE_TRANSLATIONS
+            ]
+            self.language = ", ".join(languages)
 
 
 def _set_header_value(kwargs: dict[str, Any], header: str, value: str) -> None:

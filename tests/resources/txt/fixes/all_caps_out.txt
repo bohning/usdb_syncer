@@ -1,6 +1,6 @@
 #TITLE:Italiana
 #ARTIST:J-Ax & Fedez
-#LANGUAGE:Italian
+#LANGUAGE:Italian, English
 #MP3:J-Ax & Fedez - Italiana.mp3
 #BPM:244
 #GAP:3770
