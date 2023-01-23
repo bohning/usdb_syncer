@@ -80,6 +80,7 @@ class SongTxt:
         self.notes.fix_spaces()
         self.notes.fix_all_caps()
         self.notes.fix_first_words_capitalization()
+        self.headers.fix_language()
 
     def minimum_song_length(self) -> str:
         """Return the minimum song length based on last beat, BPM and GAP"""
