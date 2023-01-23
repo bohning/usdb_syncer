@@ -1,6 +1,6 @@
 """Dictionary of language names and their English translations"""
 
-LanguageTranslations = {
+LANGUAGE_TRANSLATIONS = {
     # Arabic
     "arabic": "Arabic",
     "arabisch": "Arabic",
