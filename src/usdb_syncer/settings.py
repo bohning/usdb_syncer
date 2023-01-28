@@ -100,6 +100,15 @@ class AudioFormat(Enum):
         # prefer best audio-only codec; otherwise take a video codec and extract later
         return f"bestaudio[ext={self.value}]/bestaudio/bestaudio*"
 
+    def ffmpeg_encoder(self) -> str:
+        match self:
+            case AudioFormat.M4A:
+                return "aac"
+            case AudioFormat.MP3:
+                return "libmp3lame"
+            case _ as unreachable:
+                assert_never(unreachable)
+
 
 class AudioBitrate(Enum):
     """Audio bitrate."""
@@ -115,6 +124,9 @@ class AudioBitrate(Enum):
 
     def ytdl_format(self) -> str:
         return self.value.removesuffix(" kbps")
+
+    def ffmpeg_format(self) -> int:
+        return int(self.value.removesuffix(" kbps")) * 1000  # in bits/s
 
 
 class Browser(Enum):
