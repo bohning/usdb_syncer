@@ -18,6 +18,7 @@ class AudioOptions:
     """Settings regarding the audio file to be downloaded."""
 
     format: settings.AudioFormat
+    bitrate: settings.AudioBitrate
 
     def ytdl_format(self) -> str:
         return self.format.ytdl_format()
@@ -92,7 +93,9 @@ def _txt_options() -> TxtOptions | None:
 def _audio_options() -> AudioOptions | None:
     if not settings.get_audio():
         return None
-    return AudioOptions(format=settings.get_audio_format())
+    return AudioOptions(
+        format=settings.get_audio_format(), bitrate=settings.get_audio_bitrate()
+    )
 
 
 def _video_options() -> VideoOptions | None:
