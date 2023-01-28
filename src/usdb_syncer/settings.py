@@ -27,6 +27,7 @@ class SettingKey(Enum):
     NEWLINE = "downloads/newline"
     AUDIO = "downloads/audio"
     AUDIO_FORMAT = "downloads/audio_format"
+    AUDIO_BITRATE = "downloads/audio_bitrate"
     VIDEO = "downloads/video"
     VIDEO_FORMAT = "downloads/video_format"
     VIDEO_REENCODE = "downloads/video_reencode"
@@ -98,6 +99,22 @@ class AudioFormat(Enum):
     def ytdl_format(self) -> str:
         # prefer best audio-only codec; otherwise take a video codec and extract later
         return f"bestaudio[ext={self.value}]/bestaudio/bestaudio*"
+
+
+class AudioBitrate(Enum):
+    """Audio bitrate."""
+
+    KBPS_128 = "128 kbps"
+    KBPS_160 = "160 kbps"
+    KBPS_192 = "192 kbps"
+    KBPS_256 = "256 kbps"
+    KBPS_320 = "320 kbps"
+
+    def __str__(self) -> str:
+        return self.value
+
+    def ytdl_format(self) -> str:
+        return self.value.removesuffix(" kbps")
 
 
 class Browser(Enum):
@@ -191,27 +208,47 @@ class VideoCodec(Enum):
 class VideoResolution(Enum):
     """Maximum video resolution."""
 
-    _1080P = "1080p"
-    _7200P = "720p"
+    P2160 = "2160p"
+    P1440 = "1440p"
+    P1080 = "1080p"
+    P720 = "720p"
+    P480 = "480p"
+    P360 = "360p"
 
     def __str__(self) -> str:
         return self.value
 
     def width(self) -> int:
         match self:
-            case VideoResolution._1080P:
+            case VideoResolution.P2160:
+                return 3840
+            case VideoResolution.P1440:
+                return 2560
+            case VideoResolution.P1080:
                 return 1920
-            case VideoResolution._7200P:
+            case VideoResolution.P720:
                 return 1280
+            case VideoResolution.P480:
+                return 854
+            case VideoResolution.P360:
+                return 640
             case _ as unreachable:
                 assert_never(unreachable)
 
     def height(self) -> int:
         match self:
-            case VideoResolution._1080P:
+            case VideoResolution.P2160:
+                return 2160
+            case VideoResolution.P1440:
+                return 1440
+            case VideoResolution.P1080:
                 return 1080
-            case VideoResolution._7200P:
+            case VideoResolution.P720:
                 return 720
+            case VideoResolution.P480:
+                return 480
+            case VideoResolution.P360:
+                return 360
             case _ as unreachable:
                 assert_never(unreachable)
 
@@ -219,8 +256,8 @@ class VideoResolution(Enum):
 class VideoFps(Enum):
     """Maximum frames per second."""
 
-    _60 = 60
-    _30 = 30
+    FPS_60 = 60
+    FPS_30 = 30
 
     def __str__(self) -> str:
         return str(self.value)
@@ -264,6 +301,14 @@ def get_audio_format() -> AudioFormat:
 
 def set_audio_format(value: AudioFormat) -> None:
     set_setting(SettingKey.AUDIO_FORMAT, value)
+
+
+def get_audio_bitrate() -> AudioBitrate:
+    return get_setting(SettingKey.AUDIO_BITRATE, AudioBitrate.KBPS_256)
+
+
+def set_audio_bitrate(value: AudioBitrate) -> None:
+    set_setting(SettingKey.AUDIO_BITRATE, value)
 
 
 def get_newline() -> Newline:
@@ -355,10 +400,7 @@ def set_video_format_new(value: VideoCodec) -> None:
 
 
 def get_video_resolution() -> VideoResolution:
-    return get_setting(
-        SettingKey.VIDEO_RESOLUTION_MAX,
-        VideoResolution._1080P,  # pylint: disable=protected-access
-    )
+    return get_setting(SettingKey.VIDEO_RESOLUTION_MAX, VideoResolution.P1080)
 
 
 def set_video_resolution(value: VideoResolution) -> None:
@@ -366,9 +408,7 @@ def set_video_resolution(value: VideoResolution) -> None:
 
 
 def get_video_fps() -> VideoFps:
-    return get_setting(
-        SettingKey.VIDEO_FPS_MAX, VideoFps._60  # pylint: disable=protected-access
-    )
+    return get_setting(SettingKey.VIDEO_FPS_MAX, VideoFps.FPS_60)
 
 
 def set_video_fps(value: VideoFps) -> None:

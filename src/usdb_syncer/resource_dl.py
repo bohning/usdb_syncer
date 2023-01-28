@@ -82,7 +82,7 @@ def download_video(
     if isinstance(options, AudioOptions):
         postprocessor = {
             "key": "FFmpegExtractAudio",
-            "preferredquality": "320",
+            "preferredquality": options.bitrate.ytdl_format(),
             "preferredcodec": options.format.value,
         }
         ydl_opts["postprocessors"] = [postprocessor]
