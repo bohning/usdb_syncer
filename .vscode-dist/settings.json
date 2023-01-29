@@ -1,17 +1,4 @@
 {
-  "cSpell.words": [
-    "Datensatz",
-    "gefunden",
-    "gettxt",
-    "lxml",
-    "nicht",
-    "nocover",
-    "onclick",
-    "PYINSTALLER",
-    "pyside",
-    "syncer",
-    "usdb"
-  ],
   "python.testing.unittestEnabled": false,
   "python.testing.pytestEnabled": true,
   "python.testing.pytestArgs": ["--no-cov"],
@@ -22,7 +9,5 @@
   "editor.codeActionsOnSave": {
     "source.organizeImports": true
   },
-  "python.languageServer": "Default",
-  "python.analysis.typeCheckingMode": "basic",
-  "editor.rulers": [120]
+  "editor.rulers": [88]
 }
