@@ -196,15 +196,14 @@ def _maybe_download_audio(ctx: Context) -> None:
             ctx.txt.headers.mp3 = os.path.basename(path)
             ctx.logger.info("Success! Downloaded audio.")
 
-            normalize = True  # introduce a setting to the GUI =)
-            if normalize:
+            if options.normalize:
                 normalizer = FFmpegNormalize(
-                    normalization_type="ebu",  # default
-                    target_level=-23,  # default
+                    normalization_type="ebu",  # default: "ebu"
+                    target_level=-23,  # default: -23
                     print_stats=True,  # set to False?
-                    keep_loudness_range_target=True,  # this is needed for linear norm.
-                    true_peak=-2,  # default
-                    dynamic=False,  # default
+                    keep_loudness_range_target=True,  # needed for linear normalization
+                    true_peak=-2,  # default: -2
+                    dynamic=False,  # default: False
                     audio_codec=options.format.ffmpeg_encoder(),
                     audio_bitrate=options.bitrate.ffmpeg_format(),
                     sample_rate=None,  # default

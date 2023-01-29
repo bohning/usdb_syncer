@@ -28,6 +28,7 @@ class SettingKey(Enum):
     AUDIO = "downloads/audio"
     AUDIO_FORMAT = "downloads/audio_format"
     AUDIO_BITRATE = "downloads/audio_bitrate"
+    AUDIO_NORMALIZE = "downloads/audio_normalize"
     VIDEO = "downloads/video"
     VIDEO_FORMAT = "downloads/video_format"
     VIDEO_REENCODE = "downloads/video_reencode"
@@ -321,6 +322,14 @@ def get_audio_bitrate() -> AudioBitrate:
 
 def set_audio_bitrate(value: AudioBitrate) -> None:
     set_setting(SettingKey.AUDIO_BITRATE, value)
+
+
+def get_audio_normalize() -> bool:
+    return get_setting(SettingKey.AUDIO_NORMALIZE, False)
+
+
+def set_audio_normalize(value: bool) -> None:
+    set_setting(SettingKey.AUDIO_NORMALIZE, value)
 
 
 def get_newline() -> Newline:
