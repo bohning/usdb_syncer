@@ -7,13 +7,14 @@
     "nicht",
     "nocover",
     "onclick",
+    "PYINSTALLER",
+    "pyside",
+    "syncer",
     "usdb"
   ],
   "python.testing.unittestEnabled": false,
   "python.testing.pytestEnabled": true,
-  "python.testing.pytestArgs": [
-    "--no-cov"
-  ],
+  "python.testing.pytestArgs": ["--no-cov"],
   "python.linting.mypyEnabled": true,
   "python.linting.pylintEnabled": true,
   "python.formatting.provider": "black",
@@ -23,7 +24,5 @@
   },
   "python.languageServer": "Default",
   "python.analysis.typeCheckingMode": "basic",
-  "editor.rulers": [
-    88
-  ]
+  "editor.rulers": [120]
 }
