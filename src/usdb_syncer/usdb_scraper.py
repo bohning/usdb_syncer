@@ -314,7 +314,7 @@ def _parse_details_table(details_table: BeautifulSoup, song_id: SongId) -> SongD
         golden_notes=details_table.find(string="Golden Notes").next.text,  # type: ignore
         song_check=details_table.find(string="Songcheck").next.text,  # type: ignore
         date_time=details_table.find(string="Date").next.text,  # type: ignore
-        uploader=details_table.find(string="Created by").next.text,  # type: ignore
+        uploader=details_table.find(string="Created by").next.text.rstrip(),  # type: ignore
         editors=editors,
         views=details_table.find(string="Views").next.text,  # type: ignore
         rating=sum("star.png" in s.get("src") for s in stars),
