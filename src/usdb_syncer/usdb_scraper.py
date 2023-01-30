@@ -254,7 +254,7 @@ def get_usdb_available_songs(
 
     regex = (
         r'<td onclick="show_detail\((\d+)\)">(.*)</td>\n'
-        r'<td onclick="show_detail\(\d+\)">(.*)</td>\n'
+        r'<td onclick="show_detail\(\d+\)"><a href=.*>(.*)</td>\n'
         r'<td onclick="show_detail\(\d+\)">(.*)</td>\n'
         r'<td onclick="show_detail\(\d+\)">(.*)</td>\n'
         r'<td onclick="show_detail\(\d+\)">(.*)</td>\n'
