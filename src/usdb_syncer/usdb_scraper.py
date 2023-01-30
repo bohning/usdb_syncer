@@ -20,7 +20,7 @@ from usdb_syncer.utils import extract_youtube_id
 
 _logger: logging.Logger = logging.getLogger(__file__)
 
-USDB_BASE_URL = "http://usdb.animux.de/"
+USDB_BASE_URL = "https://usdb.animux.de/"
 DATASET_NOT_FOUND_STRING = "Datensatz nicht gefunden"
 USDB_DATETIME_STRF = "%d.%m.%y - %H:%M"
 SUPPORTED_VIDEO_SOURCES_REGEX = re.compile(
