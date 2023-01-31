@@ -50,7 +50,7 @@ def test__parse_song_page_with_commented_embedded_video(resource_dir: str) -> No
     assert details.song_id == song_id
     assert details.artist == "Revolverheld"
     assert details.title == "Ich lass für dich das Licht an"
-    assert details.cover_url == "http://usdb.animux.de/images/coverflow/cover/26152.jpg"
+    assert details.cover_url == "https://usdb.animux.de/data/cover/26152.jpg"
     assert details.bpm == 276.17
     assert details.gap == 120000
     assert details.golden_notes
