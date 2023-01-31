@@ -2,7 +2,6 @@
 
 import logging
 import re
-import urllib.parse
 from datetime import datetime
 from enum import Enum
 from functools import wraps
@@ -123,7 +122,6 @@ class SongDetails:
     rating: int
     votes: int
     audio_sample: str | None
-    team_comment: str | None
     comments: list[SongComment]
 
     def __init__(  # pylint: disable=too-many-locals
@@ -144,7 +142,6 @@ class SongDetails:
         rating: int,
         votes: str,
         audio_sample: str,
-        team_comment: str,
     ) -> None:
         self.song_id = song_id
         self.artist = artist
@@ -161,7 +158,6 @@ class SongDetails:
         self.rating = rating
         self.votes = int(votes)
         self.audio_sample = audio_sample or None
-        self.team_comment = None if "No comment yet" in team_comment else team_comment
         self.comments = []
 
     def all_comment_videos(self) -> Iterator[str]:
@@ -245,7 +241,7 @@ def get_usdb_available_songs(
     Parameters:
         content_filter: filters response (e.g. {'artist': 'The Beatles'})
     """
-    available_songs = []
+    available_songs: list[UsdbSong] = []
     for start in range(0, 30000, 100):
         payload = {"order": "id", "ud": "desc", "limit": "100", "start": str(start)}
         payload.update(content_filter or {})
@@ -278,7 +274,6 @@ def get_usdb_available_songs(
             )
             for match in matches
         )
-        
     _logger.info(f"fetched {len(available_songs)} available songs")
     return available_songs
 
@@ -305,11 +300,6 @@ def _parse_details_table(details_table: BeautifulSoup, song_id: SongId) -> SongD
     audio_sample = ""
     if param := details_table.find("source"):
         audio_sample = param.get("src")
-        
-    # only captures first team comment (example of multiple needed!)
-    team_comment = ""
-    if tc := details_table.find(string="Team Comment"):  # type: ignore
-        team_comment=tc.next.next
 
     return SongDetails(
         song_id=song_id,
@@ -327,7 +317,6 @@ def _parse_details_table(details_table: BeautifulSoup, song_id: SongId) -> SongD
         rating=sum("star.png" in s.get("src") for s in stars),
         votes=votes_str.split("(")[1].split(")")[0],
         audio_sample=audio_sample,
-        team_comment=team_comment,  # type: ignore
     )
 
 
