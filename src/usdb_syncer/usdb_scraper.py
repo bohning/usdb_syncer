@@ -245,37 +245,40 @@ def get_usdb_available_songs(
     Parameters:
         content_filter: filters response (e.g. {'artist': 'The Beatles'})
     """
-    payload = {"limit": "50000", "order": "id", "ud": "desc"}
-    payload.update(content_filter or {})
+    available_songs = []
+    for start in range(0, 30000, 100):
+        payload = {"order": "id", "ud": "desc", "limit": "100", "start": str(start)}
+        payload.update(content_filter or {})
 
-    html = get_usdb_page(
-        "index.php", RequestMethod.POST, params={"link": "list"}, payload=payload
-    )
-
-    regex = (
-        r'<td onclick="show_detail\((\d+)\)">(.*)</td>\n'
-        r'<td onclick="show_detail\(\d+\)"><a href=.*>(.*)</td>\n'
-        r'<td onclick="show_detail\(\d+\)">(.*)</td>\n'
-        r'<td onclick="show_detail\(\d+\)">(.*)</td>\n'
-        r'<td onclick="show_detail\(\d+\)">(.*)</td>\n'
-        r'<td onclick="show_detail\(\d+\)">(.*)</td>\n'
-        r'<td onclick="show_detail\(\d+\)">(.*)</td>'
-    )
-    matches = re.finditer(regex, html)
-
-    available_songs = [
-        UsdbSong.from_html(
-            song_id=match[1],
-            artist=match[2],
-            title=match[3],
-            edition=match[4],
-            golden_notes=match[5],
-            language=match[6],
-            rating=match[7],
-            views=match[8],
+        html = get_usdb_page(
+            "index.php", RequestMethod.POST, params={"link": "list"}, payload=payload
         )
-        for match in matches
-    ]
+
+        regex = (
+            r'<td onclick="show_detail\((\d+)\)">(.*)</td>\n'
+            r'<td onclick="show_detail\(\d+\)"><a href=.*>(.*)</td>\n'
+            r'<td onclick="show_detail\(\d+\)">(.*)</td>\n'
+            r'<td onclick="show_detail\(\d+\)">(.*)</td>\n'
+            r'<td onclick="show_detail\(\d+\)">(.*)</td>\n'
+            r'<td onclick="show_detail\(\d+\)">(.*)</td>\n'
+            r'<td onclick="show_detail\(\d+\)">(.*)</td>'
+        )
+        matches = re.finditer(regex, html)
+
+        available_songs.extend(
+            UsdbSong.from_html(
+                song_id=match[1],
+                artist=match[2],
+                title=match[3],
+                edition=match[4],
+                golden_notes=match[5],
+                language=match[6],
+                rating=match[7],
+                views=match[8],
+            )
+            for match in matches
+        )
+        
     _logger.info(f"fetched {len(available_songs)} available songs")
     return available_songs
 
