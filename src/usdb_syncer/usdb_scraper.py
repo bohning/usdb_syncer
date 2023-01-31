@@ -300,9 +300,13 @@ def _parse_details_table(details_table: BeautifulSoup, song_id: SongId) -> SongD
     votes_str = details_table.find(string="Rating").next_element.text  # type: ignore
 
     audio_sample = ""
-    if param := details_table.find("param", attrs={"name": "FlashVars"}):
-        flash_vars = urllib.parse.parse_qs(param.get("value"))  # type: ignore
-        audio_sample = flash_vars["soundFile"][0]
+    if param := details_table.find("source"):
+        audio_sample = param.get("src")
+        
+    # only captures first team comment (example of multiple needed!)
+    team_comment = ""
+    if tc := details_table.find(string="Team Comment"):  # type: ignore
+        team_comment=tc.next.next
 
     return SongDetails(
         song_id=song_id,
@@ -320,8 +324,7 @@ def _parse_details_table(details_table: BeautifulSoup, song_id: SongId) -> SongD
         rating=sum("star.png" in s.get("src") for s in stars),
         votes=votes_str.split("(")[1].split(")")[0],
         audio_sample=audio_sample,
-        # only captures first team comment (example of multiple needed!)
-        team_comment=details_table.find(string="Team Comment").next.text,  # type: ignore
+        team_comment=team_comment,  # type: ignore
     )
 
 
