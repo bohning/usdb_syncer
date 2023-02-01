@@ -10,7 +10,7 @@ from typing import Any, Callable, Iterator
 import requests
 from bs4 import BeautifulSoup
 
-from usdb_syncer import SongId
+from usdb_syncer import SongId, settings
 from usdb_syncer.encoding import CodePage
 from usdb_syncer.logger import Log
 from usdb_syncer.typing_helpers import assert_never
@@ -19,7 +19,8 @@ from usdb_syncer.utils import extract_youtube_id
 
 _logger: logging.Logger = logging.getLogger(__file__)
 
-USDB_BASE_URL = "https://usdb.animux.de/"
+USDB_DOMAIN = "usdb.animux.de"
+USDB_BASE_URL = "https://" + USDB_DOMAIN
 DATASET_NOT_FOUND_STRING = "Datensatz nicht gefunden"
 USDB_DATETIME_STRF = "%d.%m.%y - %H:%M"
 SUPPORTED_VIDEO_SOURCES_REGEX = re.compile(
@@ -187,21 +188,27 @@ def get_usdb_page(
         payload: dict of data to send with request
         params: dict of params to send with request
     """
-    # wildcard login
-    _headers = {"Cookie": "PHPSESSID"}
-    if headers:
-        _headers.update(headers)
-
     url = USDB_BASE_URL + rel_url
 
     match method:
         case RequestMethod.GET:
             _logger.debug("get request for %s", url)
-            response = requests.get(url, headers=_headers, params=params, timeout=60)
+            response = requests.get(
+                url,
+                headers=headers,
+                params=params,
+                timeout=60,
+                cookies=settings.get_browser().cookies(),
+            )
         case RequestMethod.POST:
             _logger.debug("post request for %s", url)
             response = requests.post(
-                url, headers=_headers, data=payload, params=params, timeout=60
+                url,
+                headers=headers,
+                data=payload,
+                params=params,
+                timeout=60,
+                cookies=settings.get_browser().cookies(),
             )
         case _ as unreachable:
             assert_never(unreachable)
