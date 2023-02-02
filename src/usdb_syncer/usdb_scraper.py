@@ -21,7 +21,12 @@ _logger: logging.Logger = logging.getLogger(__file__)
 
 USDB_DOMAIN = "usdb.animux.de"
 USDB_BASE_URL = "https://" + USDB_DOMAIN + "/"
-DATASET_NOT_FOUND_STRING = "Datensatz nicht gefunden"
+USDB_DATASET_NOT_FOUND_STRING = "Datensatz nicht gefunden"
+USDB_GOLDEN_NOTES_STRING = "Golden Notes"
+USDB_SONGCHECK_STRING = "Songcheck"
+USDB_DATE_STRING = "Date"
+USDB_CREATED_BY_STRING = "Created by"
+USDB_VIEWS_STRING = "Views"
 USDB_DATETIME_STRF = "%d.%m.%y - %H:%M"
 SUPPORTED_VIDEO_SOURCES_REGEX = re.compile(
     r"""\b
@@ -228,7 +233,7 @@ def get_usdb_details(song_id: SongId) -> SongDetails | None:
         "index.php", params={"id": str(song_id.value), "link": "detail"}
     )
     soup = BeautifulSoup(html, "lxml")
-    if DATASET_NOT_FOUND_STRING in soup.get_text():
+    if USDB_DATASET_NOT_FOUND_STRING in soup.get_text():
         return None
     return _parse_song_page(soup, song_id)
 
@@ -315,12 +320,12 @@ def _parse_details_table(details_table: BeautifulSoup, song_id: SongId) -> SongD
         cover_url=details_table.img["src"],  # type: ignore
         bpm=details_table.find(string="BPM").next.text,  # type: ignore
         gap=details_table.find(string="GAP").next.text,  # type: ignore
-        golden_notes=details_table.find(string="Golden Notes").next.text,  # type: ignore
-        song_check=details_table.find(string="Songcheck").next.text,  # type: ignore
-        date_time=details_table.find(string="Date").next.text,  # type: ignore
-        uploader=details_table.find(string="Created by").next.text.rstrip(),  # type: ignore
+        golden_notes=details_table.find(string=USDB_GOLDEN_NOTES_STRING).next.text,  # type: ignore
+        song_check=details_table.find(string=USDB_SONGCHECK_STRING).next.text,  # type: ignore
+        date_time=details_table.find(string=USDB_DATE_STRING).next.text,  # type: ignore
+        uploader=details_table.find(string=USDB_CREATED_BY_STRING).next.text.rstrip(),  # type: ignore
         editors=editors,
-        views=details_table.find(string="Views").next.text,  # type: ignore
+        views=details_table.find(string=USDB_VIEWS_STRING).next.text,  # type: ignore
         rating=sum("star.png" in s.get("src") for s in stars),
         votes=votes_str.split("(")[1].split(")")[0],
         audio_sample=audio_sample,
