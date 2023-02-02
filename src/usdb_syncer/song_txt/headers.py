@@ -171,8 +171,9 @@ class Headers:
             ]
             languages = [
                 LANGUAGE_TRANSLATIONS[language.lower()]
-                for language in languages
                 if language.lower() in LANGUAGE_TRANSLATIONS
+                else language
+                for language in languages
             ]
             self.language = ", ".join(languages)
 
