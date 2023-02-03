@@ -37,6 +37,7 @@ disable = [
     "too-many-return-statements",
     "duplicate-code",
     "too-many-public-methods",
+    "line-too-long",
 ]
 
 [tool.mypy]
