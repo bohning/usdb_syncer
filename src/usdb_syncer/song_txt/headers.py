@@ -7,12 +7,11 @@ from typing import Any, Callable
 
 import attrs
 
+from usdb_syncer.constants import MINIMUM_BPM
 from usdb_syncer.logger import Log
 from usdb_syncer.song_txt.error import NotesParseError
 from usdb_syncer.song_txt.language_translations import LANGUAGE_TRANSLATIONS
 from usdb_syncer.song_txt.tracks import replace_false_apostrophes_and_quotation_marks
-
-MINIMUM_BPM = 200.0
 
 
 @attrs.define

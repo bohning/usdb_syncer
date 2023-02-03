@@ -14,8 +14,8 @@ from typing import Any, TypeVar, cast
 import browser_cookie3
 from PySide6.QtCore import QSettings
 
+from usdb_syncer.constants import USDB_DOMAIN
 from usdb_syncer.typing_helpers import assert_never
-from usdb_syncer.usdb_scraper import USDB_DOMAIN
 
 
 class SettingKey(Enum):

@@ -11,6 +11,19 @@ import requests
 from bs4 import BeautifulSoup
 
 from usdb_syncer import SongId, settings
+from usdb_syncer.constants import (
+    SUPPORTED_VIDEO_SOURCES_REGEX,
+    USDB_BASE_URL,
+    USDB_CREATED_BY_STRING,
+    USDB_DATASET_NOT_FOUND_STRING,
+    USDB_DATE_STRING,
+    USDB_DATETIME_STRF,
+    USDB_GOLDEN_NOTES_STRING,
+    USDB_SONG_EDITED_BY_STRING,
+    USDB_SONG_RATING_STRING,
+    USDB_SONGCHECK_STRING,
+    USDB_VIEWS_STRING,
+)
 from usdb_syncer.encoding import CodePage
 from usdb_syncer.logger import Log
 from usdb_syncer.typing_helpers import assert_never
@@ -18,36 +31,6 @@ from usdb_syncer.usdb_song import UsdbSong
 from usdb_syncer.utils import extract_youtube_id
 
 _logger: logging.Logger = logging.getLogger(__file__)
-
-USDB_DOMAIN = "usdb.animux.de"
-USDB_BASE_URL = "https://" + USDB_DOMAIN + "/"
-USDB_DATASET_NOT_FOUND_STRING = "Datensatz nicht gefunden"
-USDB_GOLDEN_NOTES_STRING = "Golden Notes"
-USDB_SONGCHECK_STRING = "Songcheck"
-USDB_DATE_STRING = "Date"
-USDB_CREATED_BY_STRING = "Created by"
-USDB_VIEWS_STRING = "Views"
-USDB_DATETIME_STRF = "%d.%m.%y - %H:%M"
-SUPPORTED_VIDEO_SOURCES_REGEX = re.compile(
-    r"""\b
-        (
-            (?:https?://)?
-            (?:www\.)?
-            (?:
-                youtube\.com
-                | youtube-nocookie\.com
-                | youtu\.be
-                | vimeo\.com
-                | archive\.org
-                | fb\.watch
-                | universal-music\.de
-                | dailymotion\.com
-            )
-            /\S+
-        )
-    """,
-    re.VERBOSE,
-)
 
 
 class RequestMethod(Enum):
@@ -298,7 +281,7 @@ def _parse_details_table(details_table: BeautifulSoup, song_id: SongId) -> SongD
         details_table: BeautifulSoup object of song details table
     """
     editors = []
-    pointer = details_table.find(string="Song edited by:")
+    pointer = details_table.find(string=USDB_SONG_EDITED_BY_STRING)
     while pointer is not None:
         pointer = pointer.find_next("td")
         if pointer.a is None:  # type: ignore
@@ -306,8 +289,8 @@ def _parse_details_table(details_table: BeautifulSoup, song_id: SongId) -> SongD
         editors.append(pointer.text.strip())  # type: ignore
         pointer = pointer.find_next("tr")  # type: ignore
 
-    stars = details_table.find(string="Rating").next.find_all("img")  # type: ignore
-    votes_str = details_table.find(string="Rating").next_element.text  # type: ignore
+    stars = details_table.find(string=USDB_SONG_RATING_STRING).next.find_all("img")  # type: ignore
+    votes_str = details_table.find(string=USDB_SONG_RATING_STRING).next_element.text  # type: ignore
 
     audio_sample = ""
     if param := details_table.find("source"):
