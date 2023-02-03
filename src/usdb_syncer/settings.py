@@ -14,7 +14,7 @@ from typing import Any, TypeVar, cast
 import browser_cookie3
 from PySide6.QtCore import QSettings
 
-from usdb_syncer.constants import USDB_DOMAIN
+from usdb_syncer.constants import Usdb
 from usdb_syncer.typing_helpers import assert_never
 
 
@@ -182,7 +182,7 @@ class Browser(Enum):
                 function = browser_cookie3.vivaldi
             case _ as unreachable:
                 assert_never(unreachable)
-        return function(domain_name=USDB_DOMAIN)
+        return function(domain_name=Usdb.DOMAIN)
 
 
 class VideoContainer(Enum):

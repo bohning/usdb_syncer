@@ -3,17 +3,22 @@
 import re
 
 MINIMUM_BPM = 200.0
-USDB_DOMAIN = "usdb.animux.de"
-USDB_BASE_URL = "https://" + USDB_DOMAIN + "/"
-USDB_DATASET_NOT_FOUND_STRING = "Datensatz nicht gefunden"
-USDB_SONG_EDITED_BY_STRING = "Song edited by:"
-USDB_SONG_RATING_STRING = "Rating"
-USDB_GOLDEN_NOTES_STRING = "Golden Notes"
-USDB_SONGCHECK_STRING = "Songcheck"
-USDB_DATE_STRING = "Date"
-USDB_CREATED_BY_STRING = "Created by"
-USDB_VIEWS_STRING = "Views"
-USDB_DATETIME_STRF = "%d.%m.%y - %H:%M"
+
+
+class Usdb:
+    DOMAIN = "usdb.animux.de"
+    BASE_URL = "https://" + DOMAIN + "/"
+    DATASET_NOT_FOUND_STRING = "Datensatz nicht gefunden"
+    SONG_EDITED_BY_STRING = "Song edited by:"
+    SONG_RATING_STRING = "Rating"
+    GOLDEN_NOTES_STRING = "Golden Notes"
+    SONGCHECK_STRING = "Songcheck"
+    DATE_STRING = "Date"
+    CREATED_BY_STRING = "Created by"
+    VIEWS_STRING = "Views"
+    DATETIME_STRF = "%d.%m.%y - %H:%M"
+
+
 SUPPORTED_VIDEO_SOURCES_REGEX = re.compile(
     r"""\b
         (

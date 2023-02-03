@@ -11,19 +11,7 @@ import requests
 from bs4 import BeautifulSoup
 
 from usdb_syncer import SongId, settings
-from usdb_syncer.constants import (
-    SUPPORTED_VIDEO_SOURCES_REGEX,
-    USDB_BASE_URL,
-    USDB_CREATED_BY_STRING,
-    USDB_DATASET_NOT_FOUND_STRING,
-    USDB_DATE_STRING,
-    USDB_DATETIME_STRF,
-    USDB_GOLDEN_NOTES_STRING,
-    USDB_SONG_EDITED_BY_STRING,
-    USDB_SONG_RATING_STRING,
-    USDB_SONGCHECK_STRING,
-    USDB_VIEWS_STRING,
-)
+from usdb_syncer.constants import SUPPORTED_VIDEO_SOURCES_REGEX, Usdb
 from usdb_syncer.encoding import CodePage
 from usdb_syncer.logger import Log
 from usdb_syncer.typing_helpers import assert_never
@@ -87,7 +75,7 @@ class SongComment:
     def __init__(
         self, *, date_time: str, author: str, contents: CommentContents
     ) -> None:
-        self.date_time = datetime.strptime(date_time, USDB_DATETIME_STRF)
+        self.date_time = datetime.strptime(date_time, Usdb.DATETIME_STRF)
         self.author = author
         self.contents = contents
 
@@ -135,12 +123,12 @@ class SongDetails:
         self.song_id = song_id
         self.artist = artist
         self.title = title
-        self.cover_url = None if "nocover" in cover_url else USDB_BASE_URL + cover_url
+        self.cover_url = None if "nocover" in cover_url else Usdb.BASE_URL + cover_url
         self.bpm = float(bpm.replace(",", "."))
         self.gap = float(gap.replace(",", ".") or 0)
         self.golden_notes = "Yes" in golden_notes
         self.song_check = "Yes" in song_check
-        self.date_time = datetime.strptime(date_time, USDB_DATETIME_STRF)
+        self.date_time = datetime.strptime(date_time, Usdb.DATETIME_STRF)
         self.uploader = uploader
         self.editors = editors
         self.views = int(views)
@@ -176,7 +164,7 @@ def get_usdb_page(
         payload: dict of data to send with request
         params: dict of params to send with request
     """
-    url = USDB_BASE_URL + rel_url
+    url = Usdb.BASE_URL + rel_url
 
     match method:
         case RequestMethod.GET:
@@ -216,7 +204,7 @@ def get_usdb_details(song_id: SongId) -> SongDetails | None:
         "index.php", params={"id": str(song_id.value), "link": "detail"}
     )
     soup = BeautifulSoup(html, "lxml")
-    if USDB_DATASET_NOT_FOUND_STRING in soup.get_text():
+    if Usdb.DATASET_NOT_FOUND_STRING in soup.get_text():
         return None
     return _parse_song_page(soup, song_id)
 
@@ -281,7 +269,7 @@ def _parse_details_table(details_table: BeautifulSoup, song_id: SongId) -> SongD
         details_table: BeautifulSoup object of song details table
     """
     editors = []
-    pointer = details_table.find(string=USDB_SONG_EDITED_BY_STRING)
+    pointer = details_table.find(string=Usdb.SONG_EDITED_BY_STRING)
     while pointer is not None:
         pointer = pointer.find_next("td")
         if pointer.a is None:  # type: ignore
@@ -289,8 +277,8 @@ def _parse_details_table(details_table: BeautifulSoup, song_id: SongId) -> SongD
         editors.append(pointer.text.strip())  # type: ignore
         pointer = pointer.find_next("tr")  # type: ignore
 
-    stars = details_table.find(string=USDB_SONG_RATING_STRING).next.find_all("img")  # type: ignore
-    votes_str = details_table.find(string=USDB_SONG_RATING_STRING).next_element.text  # type: ignore
+    stars = details_table.find(string=Usdb.SONG_RATING_STRING).next.find_all("img")  # type: ignore
+    votes_str = details_table.find(string=Usdb.SONG_RATING_STRING).next_element.text  # type: ignore
 
     audio_sample = ""
     if param := details_table.find("source"):
@@ -303,12 +291,12 @@ def _parse_details_table(details_table: BeautifulSoup, song_id: SongId) -> SongD
         cover_url=details_table.img["src"],  # type: ignore
         bpm=details_table.find(string="BPM").next.text,  # type: ignore
         gap=details_table.find(string="GAP").next.text,  # type: ignore
-        golden_notes=details_table.find(string=USDB_GOLDEN_NOTES_STRING).next.text,  # type: ignore
-        song_check=details_table.find(string=USDB_SONGCHECK_STRING).next.text,  # type: ignore
-        date_time=details_table.find(string=USDB_DATE_STRING).next.text,  # type: ignore
-        uploader=details_table.find(string=USDB_CREATED_BY_STRING).next.text.rstrip(),  # type: ignore
+        golden_notes=details_table.find(string=Usdb.GOLDEN_NOTES_STRING).next.text,  # type: ignore
+        song_check=details_table.find(string=Usdb.SONGCHECK_STRING).next.text,  # type: ignore
+        date_time=details_table.find(string=Usdb.DATE_STRING).next.text,  # type: ignore
+        uploader=details_table.find(string=Usdb.CREATED_BY_STRING).next.text.rstrip(),  # type: ignore
         editors=editors,
-        views=details_table.find(string=USDB_VIEWS_STRING).next.text,  # type: ignore
+        views=details_table.find(string=Usdb.VIEWS_STRING).next.text,  # type: ignore
         rating=sum("star.png" in s.get("src") for s in stars),
         votes=votes_str.split("(")[1].split(")")[0],
         audio_sample=audio_sample,
