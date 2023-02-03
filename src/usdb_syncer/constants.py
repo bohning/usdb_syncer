@@ -6,6 +6,8 @@ MINIMUM_BPM = 200.0
 
 
 class Usdb:
+    """Constants related to USDB."""
+
     DOMAIN = "usdb.animux.de"
     BASE_URL = "https://" + DOMAIN + "/"
     DATASET_NOT_FOUND_STRING = "Datensatz nicht gefunden"
