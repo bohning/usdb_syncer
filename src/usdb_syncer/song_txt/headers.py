@@ -159,7 +159,6 @@ class Headers:
             self.medleyendbeat = func(self.medleyendbeat)
 
     def fix_language(self) -> None:
-
         if self.language:
             languages = [
                 language.strip()
