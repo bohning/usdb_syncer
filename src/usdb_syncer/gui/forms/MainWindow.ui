@@ -397,7 +397,7 @@
      <x>0</x>
      <y>0</y>
      <width>1104</width>
-     <height>22</height>
+     <height>26</height>
     </rect>
    </property>
    <widget class="QMenu" name="menu_tools">
@@ -407,6 +407,7 @@
     <addaction name="action_settings"/>
     <addaction name="action_meta_tags"/>
     <addaction name="action_generate_song_pdf"/>
+    <addaction name="action_import"/>
    </widget>
    <widget class="QMenu" name="menu_sync">
     <property name="title">
@@ -458,6 +459,14 @@
   <action name="action_show_log">
    <property name="text">
     <string>Show Log</string>
+   </property>
+  </action>
+  <action name="action_import">
+   <property name="text">
+    <string>Import...</string>
+   </property>
+   <property name="toolTip">
+    <string>Importiere USDB IDs</string>
    </property>
   </action>
  </widget>

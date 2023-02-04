@@ -16,6 +16,7 @@ from PySide6.QtWidgets import (
 )
 
 from usdb_syncer import SongId, settings
+from usdb_syncer.exchange_format import get_song_ids_from_files
 from usdb_syncer.gui.debug_console import DebugConsole
 from usdb_syncer.gui.ffmpeg_dialog import check_ffmpeg
 from usdb_syncer.gui.forms.MainWindow import Ui_MainWindow
@@ -81,6 +82,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         self.action_meta_tags.triggered.connect(lambda: MetaTagsDialog(self).show())
         self.action_settings.triggered.connect(lambda: SettingsDialog(self).show())
         self.action_generate_song_pdf.triggered.connect(self._generate_song_pdf)
+        self.action_import.triggered.connect(self._import_ids_from_files)
         self.action_show_log.triggered.connect(
             lambda: open_file_explorer(os.path.dirname(AppPaths.log))
         )
@@ -260,6 +262,30 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         path = QFileDialog.getSaveFileName(self, dir=path, filter="PDF (*.pdf)")[0]
         if path:
             generate_song_pdf(self.table.all_local_songs(), path)
+
+    def _import_ids_from_files(self) -> None:
+        logger = logging.getLogger()
+        file_list = QFileDialog.getOpenFileNames(
+            self,
+            caption="Select one or more files to import USDB IDs from",
+            dir=os.getcwd(),
+            filter="CSV (*.csv); Weblink (*.url)",
+        )[0]
+        list_of_song_id_lists = [get_song_ids_from_files(path) for path in file_list]
+        song_ids = [id for sublist in list_of_song_id_lists for id in sublist]
+        unique_song_ids = list(set(song_ids))
+        logger.info(
+            f"read {len(file_list)} files, "
+            f"found USDB IDs: {[str(id) for id in unique_song_ids]}"
+        )
+        songs = [
+            DownloadInfo.from_song_data(song)
+            for song_id in unique_song_ids
+            if (song := self.table.get_data(song_id))
+        ]
+        download_songs(
+            songs, self.song_signals.started.emit, self.song_signals.finished.emit
+        )
 
 
 class LogSignal(QObject):
