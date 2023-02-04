@@ -350,6 +350,9 @@ def _all_urls_in_comment(contents: BeautifulSoup, text: str) -> Iterator[str]:
     for embed in contents.find_all("embed"):
         if src := embed.get("src"):
             yield src
+    for iframe in contents.find_all("iframe"):
+        if src := iframe.get("src"):
+            yield src
     for anchor in contents.find_all("a"):
         if href := anchor.get("href"):
             yield href
