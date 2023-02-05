@@ -15,7 +15,7 @@ def get_song_ids_from_files(path: str) -> list[SongId]:
             SongId(int(first_column))
             for line in [
                 re.sub(
-                    r"^.*https://usdb\.animux\.de/index\.php?.*id=(\d+).*$",
+                    r"^.*https?://usdb\.animux\.de/index\.php?.*id=(\d+).*$",
                     r"\1",
                     raw_line.strip(),
                 )

@@ -8,7 +8,14 @@ from usdb_syncer.exchange_format import get_song_ids_from_files
 ids_per_file: dict[str, list[SongId]] = {
     "youtube.url": [],
     "piano_man.url": [SongId(3327)],
-    "ids.csv": [SongId(1), SongId(29020), SongId(3), SongId(10396), SongId(11111)],
+    "ids.csv": [
+        SongId(1),
+        SongId(29020),
+        SongId(3),
+        SongId(10396),
+        SongId(117),
+        SongId(11111),
+    ],
     "empty.csv": [],
     "multi-column.csv": [SongId(1), SongId(29020), SongId(3)],
 }
