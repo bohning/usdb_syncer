@@ -12,14 +12,17 @@ def get_song_ids_from_files(path: str) -> list[SongId]:
 
     with open(path, encoding="utf-8") as file:
         return [
-            SongId(int(id))
-            for id in [
+            SongId(int(first_column))
+            for line in [
                 re.sub(
                     r"^.*https://usdb\.animux\.de/index\.php?.*id=(\d+).*$",
                     r"\1",
-                    line.strip(),
+                    raw_line.strip(),
                 )
-                for line in file.readlines()
+                for raw_line in file.readlines()
             ]
-            if re.match(r"^\d+$", id)
+            # support possible csv separators ",", ";" and "\t"
+            if re.match(
+                r"^\d+$", first_column := re.sub(r"^(\d+)[;,\t].*$", r"\1", line)
+            )
         ]
