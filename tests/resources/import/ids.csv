@@ -6,4 +6,5 @@ invalid lines should be skipped
 URL=https://some.link?id=17
 URL=https://usdb.animux.de/index.php?link=detail&id=10396
 URL=http://usdb.animux.de/index.php?link=detail&id=117
+URL=http://usdb.animux.de/index.phid=118
 11111
