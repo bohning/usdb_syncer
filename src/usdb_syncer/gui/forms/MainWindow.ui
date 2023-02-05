@@ -407,7 +407,8 @@
     <addaction name="action_settings"/>
     <addaction name="action_meta_tags"/>
     <addaction name="action_generate_song_pdf"/>
-    <addaction name="action_import"/>
+    <addaction name="action_import_usdb_ids"/>
+    <addaction name="action_export_usdb_ids"/>
    </widget>
    <widget class="QMenu" name="menu_sync">
     <property name="title">
@@ -461,12 +462,17 @@
     <string>Show Log</string>
    </property>
   </action>
-  <action name="action_import">
+  <action name="action_import_usdb_ids">
    <property name="text">
-    <string>Import...</string>
+    <string>Import USDB IDs</string>
    </property>
    <property name="toolTip">
-    <string>Importiere USDB IDs</string>
+    <string>Import USDB IDs</string>
+   </property>
+  </action>
+  <action name="action_export_usdb_ids">
+   <property name="text">
+    <string>Export USDB IDs</string>
    </property>
   </action>
  </widget>

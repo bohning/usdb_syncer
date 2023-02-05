@@ -16,7 +16,7 @@ from PySide6.QtWidgets import (
 )
 
 from usdb_syncer import SongId, settings
-from usdb_syncer.exchange_format import get_song_ids_from_files
+from usdb_syncer.exchange_format import get_song_ids_from_files, write_song_ids_to_file
 from usdb_syncer.gui.debug_console import DebugConsole
 from usdb_syncer.gui.ffmpeg_dialog import check_ffmpeg
 from usdb_syncer.gui.forms.MainWindow import Ui_MainWindow
@@ -82,7 +82,8 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         self.action_meta_tags.triggered.connect(lambda: MetaTagsDialog(self).show())
         self.action_settings.triggered.connect(lambda: SettingsDialog(self).show())
         self.action_generate_song_pdf.triggered.connect(self._generate_song_pdf)
-        self.action_import.triggered.connect(self._import_ids_from_files)
+        self.action_import_usdb_ids.triggered.connect(self._import_usdb_ids_from_files)
+        self.action_export_usdb_ids.triggered.connect(self._export_usdb_ids_to_file)
         self.action_show_log.triggered.connect(
             lambda: open_file_explorer(os.path.dirname(AppPaths.log))
         )
@@ -263,7 +264,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         if path:
             generate_song_pdf(self.table.all_local_songs(), path)
 
-    def _import_ids_from_files(self) -> None:
+    def _import_usdb_ids_from_files(self) -> None:
         logger = logging.getLogger()
         file_list = QFileDialog.getOpenFileNames(
             self,
@@ -286,6 +287,27 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         download_songs(
             songs, self.song_signals.started.emit, self.song_signals.finished.emit
         )
+
+    def _export_usdb_ids_to_file(self) -> None:
+        logger = logging.getLogger()
+        selected_ids = [song_id for song_id in self.table.selected_song_ids()]
+        if not selected_ids:
+            logger.error("skipping export: no songs selected")
+            return
+
+        # Note: automatically checks if file already exists
+        path = QFileDialog.getSaveFileName(
+            self,
+            caption="Select export file for USDB IDs",
+            dir=os.getcwd(),
+            filter="CSV (*.csv)",
+        )[0]
+        if not path:
+            logger.info("export aborted")
+            return
+
+        write_song_ids_to_file(path, selected_ids)
+        logger.info(f"exported {len(selected_ids)} USDB IDs to {path}")
 
 
 class LogSignal(QObject):
