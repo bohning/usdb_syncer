@@ -276,7 +276,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         song_ids = [id for sublist in list_of_song_id_lists for id in sublist]
         unique_song_ids = list(set(song_ids))
         logger.info(
-            f"read {len(file_list)} files, "
+            f"read {len(file_list)} file(s), "
             f"found USDB IDs: {[str(id) for id in unique_song_ids]}"
         )
         songs = [
