@@ -14,6 +14,7 @@ ids_per_file: dict[str, list[SongId]] = {
         SongId(3),
         SongId(10396),
         SongId(117),
+        SongId(1001),
         SongId(11111),
     ],
     "empty.csv": [],

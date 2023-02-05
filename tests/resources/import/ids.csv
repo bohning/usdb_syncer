@@ -7,4 +7,6 @@ URL=https://some.link?id=17
 URL=https://usdb.animux.de/index.php?link=detail&id=10396
 URL=http://usdb.animux.de/index.php?link=detail&id=117
 URL=http://usdb.animux.de/index.phid=118
+http://usdb.animux.de/index.php?id=1001
+http://usdb.animux.de/index.php?some=val https://wrong_domain.com?id=120
 11111
