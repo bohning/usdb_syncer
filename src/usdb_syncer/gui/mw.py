@@ -270,7 +270,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
             self,
             caption="Select one or more files to import USDB IDs from",
             dir=os.getcwd(),
-            filter="CSV (*.csv); Weblink (*.url)",
+            filter="CSV or Weblink (*.csv *.url)",
         )[0]
         list_of_song_id_lists = [get_song_ids_from_files(path) for path in file_list]
         song_ids = [id for sublist in list_of_song_id_lists for id in sublist]
