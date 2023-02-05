@@ -277,13 +277,22 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         unique_song_ids = list(set(song_ids))
         logger.info(
             f"read {len(file_list)} file(s), "
-            f"found USDB IDs: {[str(id) for id in unique_song_ids]}"
+            f"found {len(unique_song_ids)} "
+            f"USDB IDs: {[str(id) for id in unique_song_ids]}"
         )
         songs = [
             DownloadInfo.from_song_data(song)
             for song_id in unique_song_ids
             if (song := self.table.get_data(song_id))
         ]
+        if unavailable_songs := [
+            song_id for song_id in unique_song_ids if not self.table.get_data(song_id)
+        ]:
+            logger.warning(
+                "some imported USDB IDs are not available: "
+                f"{[str(song_id) for song_id in unavailable_songs]}"
+            )
+
         download_songs(
             songs, self.song_signals.started.emit, self.song_signals.finished.emit
         )
