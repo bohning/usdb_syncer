@@ -11,8 +11,10 @@ import os
 from enum import Enum
 from typing import Any, TypeVar, cast
 
+import browser_cookie3
 from PySide6.QtCore import QSettings
 
+from usdb_syncer.constants import Usdb
 from usdb_syncer.typing_helpers import assert_never
 
 
@@ -28,6 +30,7 @@ class SettingKey(Enum):
     AUDIO = "downloads/audio"
     AUDIO_FORMAT = "downloads/audio_format"
     AUDIO_BITRATE = "downloads/audio_bitrate"
+    AUDIO_NORMALIZE = "downloads/audio_normalize"
     VIDEO = "downloads/video"
     VIDEO_FORMAT = "downloads/video_format"
     VIDEO_REENCODE = "downloads/video_reencode"
@@ -100,6 +103,15 @@ class AudioFormat(Enum):
         # prefer best audio-only codec; otherwise take a video codec and extract later
         return f"bestaudio[ext={self.value}]/bestaudio/bestaudio*"
 
+    def ffmpeg_encoder(self) -> str:
+        match self:
+            case AudioFormat.M4A:
+                return "aac"
+            case AudioFormat.MP3:
+                return "libmp3lame"
+            case _ as unreachable:
+                assert_never(unreachable)
+
 
 class AudioBitrate(Enum):
     """Audio bitrate."""
@@ -115,6 +127,9 @@ class AudioBitrate(Enum):
 
     def ytdl_format(self) -> str:
         return self.value.removesuffix(" kbps")
+
+    def ffmpeg_format(self) -> int:
+        return int(self.value.removesuffix(" kbps")) * 1000  # in bits/s
 
 
 class Browser(Enum):
@@ -157,6 +172,30 @@ class Browser(Enum):
                 return ":/icons/vivaldi.png"
             case _ as unreachable:
                 assert_never(unreachable)
+
+    def cookies(self) -> browser_cookie3.CookieJar | None:
+        match self:
+            case Browser.NONE:
+                return None
+            case Browser.BRAVE:
+                function = browser_cookie3.brave
+            case Browser.CHROME:
+                function = browser_cookie3.chrome
+            case Browser.CHROMIUM:
+                function = browser_cookie3.chromium
+            case Browser.EDGE:
+                function = browser_cookie3.edge
+            case Browser.FIREFOX:
+                function = browser_cookie3.firefox
+            case Browser.OPERA:
+                function = browser_cookie3.opera
+            case Browser.SAFARI:
+                function = browser_cookie3.safari
+            case Browser.VIVALDI:
+                function = browser_cookie3.vivaldi
+            case _ as unreachable:
+                assert_never(unreachable)
+        return function(domain_name=Usdb.DOMAIN)
 
 
 class VideoContainer(Enum):
@@ -309,6 +348,14 @@ def get_audio_bitrate() -> AudioBitrate:
 
 def set_audio_bitrate(value: AudioBitrate) -> None:
     set_setting(SettingKey.AUDIO_BITRATE, value)
+
+
+def get_audio_normalize() -> bool:
+    return get_setting(SettingKey.AUDIO_NORMALIZE, False)
+
+
+def set_audio_normalize(value: bool) -> None:
+    set_setting(SettingKey.AUDIO_NORMALIZE, value)
 
 
 def get_newline() -> Newline:

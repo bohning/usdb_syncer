@@ -128,7 +128,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
 
     def _connect_search_filters(self) -> None:
         self.lineEdit_search.textChanged.connect(self.table.set_text_filter)
-        for (combo_box, setter) in (
+        for combo_box, setter in (
             (self.comboBox_artist, self.table.set_artist_filter),
             (self.comboBox_title, self.table.set_title_filter),
             (self.comboBox_language, self.table.set_language_filter),
@@ -230,7 +230,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
             if current_text != selector.currentText():
                 selector.currentIndexChanged.emit(new_index)  # type: ignore
 
-        for (selector, name) in (
+        for selector, name in (
             (self.comboBox_artist, "artist"),
             (self.comboBox_title, "title"),
             (self.comboBox_language, "language"),
