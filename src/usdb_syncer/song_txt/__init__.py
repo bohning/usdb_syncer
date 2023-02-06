@@ -113,7 +113,7 @@ class SongTxt:
 
         # remove #RELATIVE tag
         self.headers.relative = None
-        self.logger.info("FIX: Changed relative to absolute timings.")
+        self.logger.debug("FIX: Changed relative to absolute timings.")
 
     def fix_first_timestamp(self) -> None:
         """Shifts all notes such that the first note starts at beat zero and adjusts
@@ -130,7 +130,7 @@ class SongTxt:
         self.headers.apply_to_medley_tags(lambda beats: beats - offset)
         offset_ms = self.headers.bpm.beats_to_ms(offset)
         self.headers.gap = int(round(self.headers.gap + offset_ms, -1))
-        self.logger.info(
+        self.logger.debug(
             "FIX: Set first timestamp to zero and adjusted #GAP accordingly."
         )
 
@@ -146,4 +146,4 @@ class SongTxt:
         self.headers.apply_to_medley_tags(lambda beats: beats * factor)
         for line in self.notes.all_lines():
             line.multiply(factor)
-        self.logger.info(f"FIX: Increased BPM to {self.headers.bpm} (factor: {factor})")
+        self.logger.debug(f"FIX: Increased BPM to {self.headers.bpm} (factor: {factor})")
