@@ -50,7 +50,7 @@ def test__parse_song_page_with_commented_embedded_video(resource_dir: str) -> No
     assert details.song_id == song_id
     assert details.artist == "Revolverheld"
     assert details.title == "Ich lass für dich das Licht an"
-    assert details.cover_url == "http://usdb.animux.de/images/coverflow/cover/26152.jpg"
+    assert details.cover_url == "https://usdb.animux.de/data/cover/26152.jpg"
     assert details.bpm == 276.17
     assert details.gap == 120000
     assert details.golden_notes
@@ -62,7 +62,6 @@ def test__parse_song_page_with_commented_embedded_video(resource_dir: str) -> No
     assert details.rating == 5
     assert details.votes == 1
     assert details.audio_sample is None
-    assert details.team_comment is None
     assert len(details.comments) == 2
     assert details.comments[0].date_time == datetime(2022, 10, 11, 10, 46)
     assert details.comments[0].author == "sportgonzo"
@@ -103,5 +102,4 @@ def test__parse_song_page_without_comments_or_cover(resource_dir: str) -> None:
     assert details.rating == 0
     assert details.votes == 0
     assert details.audio_sample is None
-    assert details.team_comment is None
     assert len(details.comments) == 0

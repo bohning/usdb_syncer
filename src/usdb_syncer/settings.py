@@ -11,8 +11,10 @@ import os
 from enum import Enum
 from typing import Any, TypeVar, cast
 
+import browser_cookie3
 from PySide6.QtCore import QSettings
 
+from usdb_syncer.constants import Usdb
 from usdb_syncer.typing_helpers import assert_never
 
 
@@ -170,6 +172,30 @@ class Browser(Enum):
                 return ":/icons/vivaldi.png"
             case _ as unreachable:
                 assert_never(unreachable)
+
+    def cookies(self) -> browser_cookie3.CookieJar | None:
+        match self:
+            case Browser.NONE:
+                return None
+            case Browser.BRAVE:
+                function = browser_cookie3.brave
+            case Browser.CHROME:
+                function = browser_cookie3.chrome
+            case Browser.CHROMIUM:
+                function = browser_cookie3.chromium
+            case Browser.EDGE:
+                function = browser_cookie3.edge
+            case Browser.FIREFOX:
+                function = browser_cookie3.firefox
+            case Browser.OPERA:
+                function = browser_cookie3.opera
+            case Browser.SAFARI:
+                function = browser_cookie3.safari
+            case Browser.VIVALDI:
+                function = browser_cookie3.vivaldi
+            case _ as unreachable:
+                assert_never(unreachable)
+        return function(domain_name=Usdb.DOMAIN)
 
 
 class VideoContainer(Enum):

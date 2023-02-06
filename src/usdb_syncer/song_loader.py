@@ -180,7 +180,7 @@ def download_songs(
 def _maybe_download_audio(ctx: Context) -> None:
     if not (options := ctx.options.audio_options):
         return
-    for (idx, resource) in enumerate(ctx.all_audio_resources()):
+    for idx, resource in enumerate(ctx.all_audio_resources()):
         if idx > 9:
             break
         if ext := resource_dl.download_video(
@@ -205,7 +205,7 @@ def _maybe_download_audio(ctx: Context) -> None:
 def _maybe_download_video(ctx: Context) -> None:
     if not (options := ctx.options.video_options) or ctx.txt.meta_tags.is_audio_only():
         return
-    for (idx, resource) in enumerate(ctx.all_video_resources()):
+    for idx, resource in enumerate(ctx.all_video_resources()):
         if idx > 9:
             break
         if ext := resource_dl.download_video(

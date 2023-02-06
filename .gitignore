@@ -13,6 +13,7 @@ reports
 **/*/config.ini
 .pytest_cache
 *.log
+.vscode
 
 # generated locally
 src/usdb_syncer/gui/forms/*.py

@@ -64,7 +64,7 @@ FILENAME_REPLACEMENTS = (('?:"', ""), ("<", "("), (">", ")"), ("/\\|*", "-"))
 
 
 def sanitize_filename(fname: str) -> str:
-    for (old, new) in FILENAME_REPLACEMENTS:
+    for old, new in FILENAME_REPLACEMENTS:
         for char in old:
             fname = fname.replace(char, new)
     return fname
