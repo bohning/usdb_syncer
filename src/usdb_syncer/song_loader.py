@@ -194,6 +194,7 @@ def _maybe_download_audio(ctx: Context) -> None:
             ctx.sync_meta.set_audio_meta(path)
             ctx.txt.headers.mp3 = os.path.basename(path)
             ctx.logger.info("Success! Downloaded audio.")
+
             return
 
     ctx.logger.error(

@@ -7,6 +7,7 @@ from typing import Union
 import filetype
 import requests
 import yt_dlp
+from ffmpeg_normalize import FFmpegNormalize
 from PIL import Image, ImageEnhance, ImageOps
 
 from usdb_syncer.download_options import AudioOptions, VideoOptions
@@ -79,7 +80,7 @@ def download_video(
     }
     if browser.value:
         ydl_opts["cookiesfrombrowser"] = (browser.value,)
-    if isinstance(options, AudioOptions):
+    if isinstance(options, AudioOptions) and not options.normalize:
         postprocessor = {
             "key": "FFmpegExtractAudio",
             "preferredquality": options.bitrate.ytdl_format(),
@@ -96,6 +97,24 @@ def download_video(
         except yt_dlp.utils.YoutubeDLError:
             logger.debug(f"error downloading video url: {url}")
             return None
+
+    if isinstance(options, AudioOptions) and options.normalize:
+        normalizer = FFmpegNormalize(
+            normalization_type="ebu",  # default: "ebu"
+            target_level=-23,  # default: -23
+            print_stats=True,  # set to False?
+            keep_loudness_range_target=True,  # needed for linear normalization
+            true_peak=-2,  # default: -2
+            dynamic=False,  # default: False
+            audio_codec=options.format.ffmpeg_encoder(),
+            audio_bitrate=options.bitrate.ffmpeg_format(),
+            sample_rate=None,  # default
+            debug=True,  # set to False
+            progress=True,  # set to False?
+        )
+        ext = options.format.value
+        normalizer.add_media_file(filename, path_stem + "." + ext)
+        normalizer.run_normalization()
 
     return ext or os.path.splitext(filename)[1][1:]
 
