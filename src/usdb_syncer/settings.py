@@ -28,6 +28,7 @@ class SettingKey(Enum):
     AUDIO = "downloads/audio"
     AUDIO_FORMAT = "downloads/audio_format"
     AUDIO_BITRATE = "downloads/audio_bitrate"
+    AUDIO_NORMALIZE = "downloads/audio_normalize"
     VIDEO = "downloads/video"
     VIDEO_FORMAT = "downloads/video_format"
     VIDEO_REENCODE = "downloads/video_reencode"
@@ -100,6 +101,15 @@ class AudioFormat(Enum):
         # prefer best audio-only codec; otherwise take a video codec and extract later
         return f"bestaudio[ext={self.value}]/bestaudio/bestaudio*"
 
+    def ffmpeg_encoder(self) -> str:
+        match self:
+            case AudioFormat.M4A:
+                return "aac"
+            case AudioFormat.MP3:
+                return "libmp3lame"
+            case _ as unreachable:
+                assert_never(unreachable)
+
 
 class AudioBitrate(Enum):
     """Audio bitrate."""
@@ -115,6 +125,9 @@ class AudioBitrate(Enum):
 
     def ytdl_format(self) -> str:
         return self.value.removesuffix(" kbps")
+
+    def ffmpeg_format(self) -> int:
+        return int(self.value.removesuffix(" kbps")) * 1000  # in bits/s
 
 
 class Browser(Enum):
@@ -309,6 +322,14 @@ def get_audio_bitrate() -> AudioBitrate:
 
 def set_audio_bitrate(value: AudioBitrate) -> None:
     set_setting(SettingKey.AUDIO_BITRATE, value)
+
+
+def get_audio_normalize() -> bool:
+    return get_setting(SettingKey.AUDIO_NORMALIZE, False)
+
+
+def set_audio_normalize(value: bool) -> None:
+    set_setting(SettingKey.AUDIO_NORMALIZE, value)
 
 
 def get_newline() -> Newline:
