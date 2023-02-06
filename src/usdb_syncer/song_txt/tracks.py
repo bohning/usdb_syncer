@@ -249,21 +249,27 @@ class Tracks:
             char.islower() for note in self.all_notes() for char in note.text
         )
 
-    def fix_line_breaks(self) -> None:
+    def fix_line_breaks(self, logger: Log) -> None:
         for track in self.all_tracks():
             fix_line_breaks(track)
+        logger.info("FIX: Linebreaks corrected.")
 
-    def fix_touching_notes(self) -> None:
+    def fix_touching_notes(self, logger: Log) -> None:
+        notes_shortened = 0
         for track in self.all_tracks():
             for num_line, line in enumerate(track):
                 for num_note, note in enumerate(line.notes[:-1]):
                     if note.end() == line.notes[num_note + 1].start:
                         note.shorten()
+                        notes_shortened += 1
                 if not line.is_last():
                     if line.end() == track[num_line + 1].start():
                         line.notes[-1].shorten()
+                        notes_shortened += 1
+        if notes_shortened > 0:
+            logger.info(f"FIX: {notes_shortened} touching notes shortened.")
 
-    def fix_pitch_values(self) -> None:
+    def fix_pitch_values(self, logger: Log) -> None:
         min_pitch = min(note.pitch for note in self.all_notes())
         octave_shift = min_pitch // 12
 
@@ -271,12 +277,16 @@ class Tracks:
         if abs(octave_shift) >= 2:
             for note in self.all_notes():
                 note.pitch = note.pitch - octave_shift * 12
+            logger.info(
+                f"FIX: pitch values normalized (shifted by {octave_shift} octaves)."
+            )
 
-    def fix_apostrophes(self) -> None:
+    def fix_apostrophes(self, logger: Log) -> None:
         for note in self.all_notes():
             note.text = replace_false_apostrophes_and_quotation_marks(note.text)
+        logger.info("FIX: Apostrophes in lyrics corrected.")
 
-    def fix_spaces(self) -> None:
+    def fix_spaces(self, logger: Log) -> None:
         """Ensures
         1. no syllables start with whitespace,
         2. word-final syllables end with a single space,
@@ -297,14 +307,17 @@ class Tracks:
             # last syllable should end with a space, otherwise syllable highlighting
             # used to be incomplete in USDX, and it allows simple text concatenation
             line.notes[-1].right_trim_text_and_add_space()
+        logger.info("FIX: Inter-word spaces corrected.")
 
-    def fix_all_caps(self) -> None:
+    def fix_all_caps(self, logger: Log) -> None:
         if self.is_all_caps():
             for note in self.all_notes():
                 note.text = note.text.lower()
-            self.fix_first_words_capitalization()
+            self.fix_first_words_capitalization(logger)
+            logger.info("FIX: ALL CAPS lyrics corrected.")
 
-    def fix_first_words_capitalization(self) -> None:
+    def fix_first_words_capitalization(self, logger: Log) -> None:
+        lines_capitalized = 0
         for line in self.all_lines():
             # capitalize first capitalizable character
             # e.g. '"what time is it?"' -> '"What time is it?"'
@@ -314,7 +327,10 @@ class Tracks:
                         line.notes[0].text = line.notes[0].text.replace(
                             char, char.upper(), 1
                         )
+                        lines_capitalized += 1
                     break
+        if lines_capitalized > 0:
+            logger.info(f"FIX: Capitalization corrected for {lines_capitalized} lines.")
 
 
 def _player_lines(lines: list[str], logger: Log) -> list[Line]:

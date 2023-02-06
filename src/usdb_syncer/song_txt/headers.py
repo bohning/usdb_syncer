@@ -148,10 +148,11 @@ class Headers:
     def artist_title_str(self) -> str:
         return f"{self.artist} - {self.title}"
 
-    def fix_apostrophes(self) -> None:
+    def fix_apostrophes(self, logger: Log) -> None:
         for key in ("artist", "title", "language", "genre", "p1", "p2", "album"):
             if value := getattr(self, key):
                 setattr(self, key, replace_false_apostrophes_and_quotation_marks(value))
+        logger.info("FIX: Apostrophes in header corrected.")
 
     def apply_to_medley_tags(self, func: Callable[[int], int]) -> None:
         if self.medleystartbeat:
@@ -159,9 +160,8 @@ class Headers:
         if self.medleyendbeat:
             self.medleyendbeat = func(self.medleyendbeat)
 
-    def fix_language(self) -> None:
-
-        if self.language:
+    def fix_language(self, logger: Log) -> None:
+        if old_language := self.language:
             languages = [
                 language.strip()
                 for language in self.language.replace(";", ",")
@@ -175,6 +175,8 @@ class Headers:
                 if language.lower() in LANGUAGE_TRANSLATIONS
             ]
             self.language = ", ".join(languages)
+            if old_language != self.language:
+                logger.info(f"FIX: Language corrected to {self.language}.")
 
 
 def _set_header_value(kwargs: dict[str, Any], header: str, value: str) -> None:
