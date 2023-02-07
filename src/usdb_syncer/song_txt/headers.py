@@ -149,10 +149,15 @@ class Headers:
         return f"{self.artist} - {self.title}"
 
     def fix_apostrophes(self, logger: Log) -> None:
+        apostrophes_and_quotation_marks_fixed = False
         for key in ("artist", "title", "language", "genre", "p1", "p2", "album"):
             if value := getattr(self, key):
-                setattr(self, key, replace_false_apostrophes_and_quotation_marks(value))
-        logger.debug("FIX: Apostrophes in header corrected.")
+                corrected_value = replace_false_apostrophes_and_quotation_marks(value)
+                if value != corrected_value:
+                    setattr(self, key, corrected_value)
+                    apostrophes_and_quotation_marks_fixed = True
+        if apostrophes_and_quotation_marks_fixed:
+            logger.debug("FIX: Apostrophes in song header corrected.")
 
     def apply_to_medley_tags(self, func: Callable[[int], int]) -> None:
         if self.medleystartbeat:

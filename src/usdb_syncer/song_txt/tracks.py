@@ -282,9 +282,15 @@ class Tracks:
             )
 
     def fix_apostrophes(self, logger: Log) -> None:
+        note_text_fixed = 0
         for note in self.all_notes():
-            note.text = replace_false_apostrophes_and_quotation_marks(note.text)
-        logger.debug("FIX: Apostrophes in lyrics corrected.")
+            note_text_old = note.text
+            note.text = replace_false_apostrophes_and_quotation_marks(note_text_old)
+            if note_text_old != note.text:
+                note_text_fixed += 1
+        logger.debug(
+            f"FIX: {note_text_fixed} apostrophes/quotation marks in lyrics corrected."
+        )
 
     def fix_spaces(self, logger: Log) -> None:
         """Ensures
@@ -330,7 +336,9 @@ class Tracks:
                         lines_capitalized += 1
                     break
         if lines_capitalized > 0:
-            logger.debug(f"FIX: Capitalization corrected for {lines_capitalized} lines.")
+            logger.debug(
+                f"FIX: Capitalization corrected for {lines_capitalized} lines."
+            )
 
 
 def _player_lines(lines: list[str], logger: Log) -> list[Line]:
