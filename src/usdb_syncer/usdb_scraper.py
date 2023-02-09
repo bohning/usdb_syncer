@@ -225,8 +225,13 @@ def get_usdb_available_songs(
         content_filter: filters response (e.g. {'artist': 'The Beatles'})
     """
     available_songs: list[UsdbSong] = []
-    for start in range(0, 30000, 100):
-        payload = {"order": "id", "ud": "desc", "limit": "100", "start": str(start)}
+    for start in range(0, Usdb.MAX_SONG_ID, Usdb.MAX_SONGS_PER_PAGE):
+        payload = {
+            "order": "id",
+            "ud": "desc",
+            "limit": str(Usdb.MAX_SONGS_PER_PAGE),
+            "start": str(start),
+        }
         payload.update(content_filter or {})
 
         html = get_usdb_page(

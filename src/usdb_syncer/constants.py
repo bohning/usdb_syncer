@@ -10,6 +10,8 @@ class Usdb:
 
     DOMAIN = "usdb.animux.de"
     BASE_URL = "https://" + DOMAIN + "/"
+    MAX_SONG_ID = 30000
+    MAX_SONGS_PER_PAGE = 100
     DATASET_NOT_FOUND_STRING = "Datensatz nicht gefunden"
     SONG_EDITED_BY_STRING = "Song edited by:"
     SONG_RATING_STRING = "Rating"
