@@ -1,8 +1,8 @@
 """Utilities to parse and write meta tags."""
 
-# Characters that have special meaning for USDB or the meta tag syntax and therefore
+# Characters that have special meaning for the meta tag syntax and therefore
 # must be escaped. Escaping is done with percent encoding.
-META_TAG_ESCAPES = ((":", "%3A"), ("#", "%23"), (",", "%2C"))
+META_TAG_ESCAPES = (("=", "%3D"), (",", "%2C"))
 
 
 def encode_meta_tag_value(meta_tag: str) -> str:
