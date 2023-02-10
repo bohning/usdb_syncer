@@ -5,6 +5,14 @@ import re
 MINIMUM_BPM = 200.0
 
 
+class UsdbLanguage:
+    """Possible UI languages of usdb"""
+
+    ENGLISH = "English"
+    GERMAN = "German"
+    FRENCH = "French"
+
+
 class Usdb:
     """Constants related to USDB."""
 
@@ -13,13 +21,46 @@ class Usdb:
     MAX_SONG_ID = 30000
     MAX_SONGS_PER_PAGE = 100
     DATASET_NOT_FOUND_STRING = "Datensatz nicht gefunden"
-    SONG_EDITED_BY_STRING = "Song edited by:"
-    SONG_RATING_STRING = "Rating"
-    GOLDEN_NOTES_STRING = "Golden Notes"
-    SONGCHECK_STRING = "Songcheck"
-    DATE_STRING = "Date"
-    CREATED_BY_STRING = "Created by"
-    VIEWS_STRING = "Views"
+    WELCOME_STRING = {
+        UsdbLanguage.ENGLISH: "Welcome",
+        UsdbLanguage.GERMAN: "Willkommen",
+        UsdbLanguage.FRENCH: "Bienvenue",
+    }
+    SONG_EDITED_BY_STRING = {
+        UsdbLanguage.ENGLISH: "Song edited by:",
+        UsdbLanguage.GERMAN: "Song editiert von:",
+        UsdbLanguage.FRENCH: "Chanson modifiée par:",
+    }
+    SONG_RATING_STRING = {
+        UsdbLanguage.ENGLISH: "Rating",
+        UsdbLanguage.GERMAN: "Bewertung",
+        UsdbLanguage.FRENCH: "Classement",
+    }
+    GOLDEN_NOTES_STRING = {
+        UsdbLanguage.ENGLISH: "Golden Notes",
+        UsdbLanguage.GERMAN: "Goldene Noten",
+        UsdbLanguage.FRENCH: "Notes en or",
+    }
+    SONGCHECK_STRING = {
+        UsdbLanguage.ENGLISH: "Songcheck",
+        UsdbLanguage.GERMAN: "Songcheck",
+        UsdbLanguage.FRENCH: "Songcheck",
+    }
+    DATE_STRING = {
+        UsdbLanguage.ENGLISH: "Date",
+        UsdbLanguage.GERMAN: "Datum",
+        UsdbLanguage.FRENCH: "Date",
+    }
+    CREATED_BY_STRING = {
+        UsdbLanguage.ENGLISH: "Created by",
+        UsdbLanguage.GERMAN: "Erstellt von",
+        UsdbLanguage.FRENCH: "créé par",
+    }
+    VIEWS_STRING = {
+        UsdbLanguage.ENGLISH: "Views",
+        UsdbLanguage.GERMAN: "Aufrufe",
+        UsdbLanguage.FRENCH: "Affichages",
+    }
     DATETIME_STRF = "%d.%m.%y - %H:%M"
 
 
