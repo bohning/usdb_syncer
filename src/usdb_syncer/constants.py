@@ -5,12 +5,57 @@ import re
 MINIMUM_BPM = 200.0
 
 
-class UsdbLanguage:
-    """Possible UI languages of usdb"""
+class UsdbStrings:
+    """Relevant strings from USDB"""
 
-    ENGLISH = "English"
-    GERMAN = "German"
-    FRENCH = "French"
+    WELCOME: str
+    SONG_EDITED_BY: str
+    SONG_RATING: str
+    GOLDEN_NOTES: str
+    SONGCHECK: str
+    DATE: str
+    CREATED_BY: str
+    VIEWS: str
+    DATASET_NOT_FOUND = "Datensatz nicht gefunden"
+
+
+class UsdbStringsEnglish(UsdbStrings):
+    """Relevant strings from USDB"""
+
+    WELCOME = "Welcome"
+    SONG_EDITED_BY = "Song edited by:"
+    SONG_RATING = "Rating"
+    GOLDEN_NOTES = "Golden Notes"
+    SONGCHECK = "Songcheck"
+    DATE = "Date"
+    CREATED_BY = "Created by"
+    VIEWS = "Views"
+
+
+class UsdbStringsGerman(UsdbStrings):
+    """Relevant strings from USDB"""
+
+    WELCOME = "Willkommen"
+    SONG_EDITED_BY = "Song editiert von:"
+    SONG_RATING = "Bewertung"
+    GOLDEN_NOTES = "Goldene Noten"
+    SONGCHECK = "Songcheck"
+    DATE = "Datum"
+    CREATED_BY = "Erstellt von"
+    VIEWS = "Aufrufe"
+
+
+class UsdbStringsFrench(UsdbStrings):
+    """Relevant strings from USDB"""
+
+    WELCOME = "Bienvenue"
+    SONG_EDITED_BY = "Chanson modifiée par:"
+    SONG_RATING = "Classement"
+    GOLDEN_NOTES = "Notes en or"
+    SONGCHECK = "Songcheck"
+    DATE = "Date"
+    CREATED_BY = "créé par"
+    VIEWS = "Affichages"
 
 
 class Usdb:
@@ -20,47 +65,6 @@ class Usdb:
     BASE_URL = "https://" + DOMAIN + "/"
     MAX_SONG_ID = 30000
     MAX_SONGS_PER_PAGE = 100
-    DATASET_NOT_FOUND_STRING = "Datensatz nicht gefunden"
-    WELCOME_STRING = {
-        UsdbLanguage.ENGLISH: "Welcome",
-        UsdbLanguage.GERMAN: "Willkommen",
-        UsdbLanguage.FRENCH: "Bienvenue",
-    }
-    SONG_EDITED_BY_STRING = {
-        UsdbLanguage.ENGLISH: "Song edited by:",
-        UsdbLanguage.GERMAN: "Song editiert von:",
-        UsdbLanguage.FRENCH: "Chanson modifiée par:",
-    }
-    SONG_RATING_STRING = {
-        UsdbLanguage.ENGLISH: "Rating",
-        UsdbLanguage.GERMAN: "Bewertung",
-        UsdbLanguage.FRENCH: "Classement",
-    }
-    GOLDEN_NOTES_STRING = {
-        UsdbLanguage.ENGLISH: "Golden Notes",
-        UsdbLanguage.GERMAN: "Goldene Noten",
-        UsdbLanguage.FRENCH: "Notes en or",
-    }
-    SONGCHECK_STRING = {
-        UsdbLanguage.ENGLISH: "Songcheck",
-        UsdbLanguage.GERMAN: "Songcheck",
-        UsdbLanguage.FRENCH: "Songcheck",
-    }
-    DATE_STRING = {
-        UsdbLanguage.ENGLISH: "Date",
-        UsdbLanguage.GERMAN: "Datum",
-        UsdbLanguage.FRENCH: "Date",
-    }
-    CREATED_BY_STRING = {
-        UsdbLanguage.ENGLISH: "Created by",
-        UsdbLanguage.GERMAN: "Erstellt von",
-        UsdbLanguage.FRENCH: "créé par",
-    }
-    VIEWS_STRING = {
-        UsdbLanguage.ENGLISH: "Views",
-        UsdbLanguage.GERMAN: "Aufrufe",
-        UsdbLanguage.FRENCH: "Affichages",
-    }
     DATETIME_STRF = "%d.%m.%y - %H:%M"
 
 
