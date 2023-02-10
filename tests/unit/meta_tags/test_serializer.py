@@ -46,8 +46,8 @@ def test_fanart_url_shortening() -> None:
 
 def test_url_shortening_and_escaping() -> None:
     values = default_values()
-    values.cover_url = "https://www.website-with-strange-url.com/=,"
+    values.cover_url = "https://www.url-containing-commas.com/this,url,has,commas.jpg"
     assert (
         video_tag_from_values(values)
-        == "#VIDEO:co=www.website-with-strange-url.com/%3D%2C"
+        == "#VIDEO:co=www.url-containing-commas.com/this%2Curl%2Chas%2Ccommas.jpg"
     )
