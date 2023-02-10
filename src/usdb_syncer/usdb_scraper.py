@@ -5,13 +5,20 @@ import re
 from datetime import datetime
 from enum import Enum
 from functools import wraps
-from typing import Any, Callable, Iterator
+from typing import Any, Callable, Iterator, Type
 
 import requests
 from bs4 import BeautifulSoup
 
 from usdb_syncer import SongId, settings
-from usdb_syncer.constants import SUPPORTED_VIDEO_SOURCES_REGEX, Usdb
+from usdb_syncer.constants import (
+    SUPPORTED_VIDEO_SOURCES_REGEX,
+    Usdb,
+    UsdbStrings,
+    UsdbStringsEnglish,
+    UsdbStringsFrench,
+    UsdbStringsGerman,
+)
 from usdb_syncer.encoding import CodePage
 from usdb_syncer.logger import Log
 from usdb_syncer.typing_helpers import assert_never
@@ -84,6 +91,7 @@ class SongDetails:
     """Details about a song that USDB shows on a song's page, or are specified in the
     comment section."""
 
+    usdb_language: str
     song_id: SongId
     artist: str
     title: str
@@ -204,16 +212,32 @@ def get_usdb_details(song_id: SongId) -> SongDetails | None:
         "index.php", params={"id": str(song_id.value), "link": "detail"}
     )
     soup = BeautifulSoup(html, "lxml")
-    if Usdb.DATASET_NOT_FOUND_STRING in soup.get_text():
+    if UsdbStrings.DATASET_NOT_FOUND in soup.get_text():
         return None
     return _parse_song_page(soup, song_id)
 
 
 def _parse_song_page(soup: BeautifulSoup, song_id: SongId) -> SongDetails:
+    usdb_strings = _get_usdb_strings(soup)
     details_table, comments_table, *_ = soup.find_all("table", border="0", width="500")
-    details = _parse_details_table(details_table, song_id)
+    details = _parse_details_table(details_table, song_id, usdb_strings)
     details.comments = _parse_comments_table(comments_table)
     return details
+
+
+def _get_usdb_strings(soup: BeautifulSoup) -> Type[UsdbStrings]:
+    welcome_string = (
+        soup.find("span", class_="gen").text.split(" ", 1)[0].removesuffix(",")
+    )
+    match welcome_string:
+        case UsdbStringsEnglish.WELCOME:
+            return UsdbStringsEnglish
+        case UsdbStringsGerman.WELCOME:
+            return UsdbStringsGerman
+        case UsdbStringsFrench.WELCOME:
+            return UsdbStringsFrench
+        case _:
+            raise ParseException("Unknown USDB language.")
 
 
 def get_usdb_available_songs(
@@ -225,8 +249,13 @@ def get_usdb_available_songs(
         content_filter: filters response (e.g. {'artist': 'The Beatles'})
     """
     available_songs: list[UsdbSong] = []
-    for start in range(0, 30000, 100):
-        payload = {"order": "id", "ud": "desc", "limit": "100", "start": str(start)}
+    for start in range(0, Usdb.MAX_SONG_ID, Usdb.MAX_SONGS_PER_PAGE):
+        payload = {
+            "order": "id",
+            "ud": "desc",
+            "limit": str(Usdb.MAX_SONGS_PER_PAGE),
+            "start": str(start),
+        }
         payload.update(content_filter or {})
 
         html = get_usdb_page(
@@ -261,7 +290,9 @@ def get_usdb_available_songs(
     return available_songs
 
 
-def _parse_details_table(details_table: BeautifulSoup, song_id: SongId) -> SongDetails:
+def _parse_details_table(
+    details_table: BeautifulSoup, song_id: SongId, usdb_strings: Type[UsdbStrings]
+) -> SongDetails:
     """Parse song attributes from usdb page.
 
     Parameters:
@@ -269,7 +300,7 @@ def _parse_details_table(details_table: BeautifulSoup, song_id: SongId) -> SongD
         details_table: BeautifulSoup object of song details table
     """
     editors = []
-    pointer = details_table.find(string=Usdb.SONG_EDITED_BY_STRING)
+    pointer = details_table.find(string=usdb_strings.SONG_EDITED_BY)
     while pointer is not None:
         pointer = pointer.find_next("td")
         if pointer.a is None:  # type: ignore
@@ -277,8 +308,8 @@ def _parse_details_table(details_table: BeautifulSoup, song_id: SongId) -> SongD
         editors.append(pointer.text.strip())  # type: ignore
         pointer = pointer.find_next("tr")  # type: ignore
 
-    stars = details_table.find(string=Usdb.SONG_RATING_STRING).next.find_all("img")  # type: ignore
-    votes_str = details_table.find(string=Usdb.SONG_RATING_STRING).next_element.text  # type: ignore
+    stars = details_table.find(string=usdb_strings.SONG_RATING).next.find_all("img")  # type: ignore
+    votes_str = details_table.find(string=usdb_strings.SONG_RATING).next_element.text  # type: ignore
 
     audio_sample = ""
     if param := details_table.find("source"):
@@ -291,12 +322,12 @@ def _parse_details_table(details_table: BeautifulSoup, song_id: SongId) -> SongD
         cover_url=details_table.img["src"],  # type: ignore
         bpm=details_table.find(string="BPM").next.text,  # type: ignore
         gap=details_table.find(string="GAP").next.text,  # type: ignore
-        golden_notes=details_table.find(string=Usdb.GOLDEN_NOTES_STRING).next.text,  # type: ignore
-        song_check=details_table.find(string=Usdb.SONGCHECK_STRING).next.text,  # type: ignore
-        date_time=details_table.find(string=Usdb.DATE_STRING).next.text,  # type: ignore
-        uploader=details_table.find(string=Usdb.CREATED_BY_STRING).next.text.rstrip(),  # type: ignore
+        golden_notes=details_table.find(string=usdb_strings.GOLDEN_NOTES).next.text,  # type: ignore
+        song_check=details_table.find(string=usdb_strings.SONGCHECK).next.text,  # type: ignore
+        date_time=details_table.find(string=usdb_strings.DATE).next.text,  # type: ignore
+        uploader=details_table.find(string=usdb_strings.CREATED_BY).next.text.rstrip(),  # type: ignore
         editors=editors,
-        views=details_table.find(string=Usdb.VIEWS_STRING).next.text,  # type: ignore
+        views=details_table.find(string=usdb_strings.VIEWS).next.text,  # type: ignore
         rating=sum("star.png" in s.get("src") for s in stars),
         votes=votes_str.split("(")[1].split(")")[0],
         audio_sample=audio_sample,
