@@ -8,6 +8,7 @@ from usdb_syncer.exchange_format import get_song_ids_from_files
 ids_per_file: dict[str, list[SongId]] = {
     "youtube.url": [],
     "piano_man.url": [SongId(3327)],
+    "usdb_non_php.url": [SongId(26380)],
     "ids.csv": [
         SongId(1),
         SongId(29020),
