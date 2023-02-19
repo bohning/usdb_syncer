@@ -23,7 +23,7 @@ python3 -m venv venv
 # In Windows PowerShell run this instead: `.\venv\Scripts\Activate.ps1`
 # In Windows CMD run this instead: `.\venv\scripts\activate.bat`
 source venv/bin/activate
-pip install --upgrade pip tox
+pip install --upgrade pip tox setuptools
 pip install -e '.[dev]'
 ```
 

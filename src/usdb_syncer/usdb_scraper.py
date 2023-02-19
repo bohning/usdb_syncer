@@ -2,16 +2,23 @@
 
 import logging
 import re
-import urllib.parse
 from datetime import datetime
 from enum import Enum
 from functools import wraps
-from typing import Any, Callable, Iterator
+from typing import Any, Callable, Iterator, Type
 
 import requests
 from bs4 import BeautifulSoup
 
-from usdb_syncer import SongId
+from usdb_syncer import SongId, settings
+from usdb_syncer.constants import (
+    SUPPORTED_VIDEO_SOURCES_REGEX,
+    Usdb,
+    UsdbStrings,
+    UsdbStringsEnglish,
+    UsdbStringsFrench,
+    UsdbStringsGerman,
+)
 from usdb_syncer.encoding import CodePage
 from usdb_syncer.logger import Log
 from usdb_syncer.typing_helpers import assert_never
@@ -19,30 +26,6 @@ from usdb_syncer.usdb_song import UsdbSong
 from usdb_syncer.utils import extract_youtube_id
 
 _logger: logging.Logger = logging.getLogger(__file__)
-
-USDB_BASE_URL = "http://usdb.animux.de/"
-DATASET_NOT_FOUND_STRING = "Datensatz nicht gefunden"
-USDB_DATETIME_STRF = "%d.%m.%y - %H:%M"
-SUPPORTED_VIDEO_SOURCES_REGEX = re.compile(
-    r"""\b
-        (
-            (?:https?://)?
-            (?:www\.)?
-            (?:
-                youtube\.com
-                | youtube-nocookie\.com
-                | youtu\.be
-                | vimeo\.com
-                | archive\.org
-                | fb\.watch
-                | universal-music\.de
-                | dailymotion\.com
-            )
-            /\S+
-        )
-    """,
-    re.VERBOSE,
-)
 
 
 class RequestMethod(Enum):
@@ -99,7 +82,7 @@ class SongComment:
     def __init__(
         self, *, date_time: str, author: str, contents: CommentContents
     ) -> None:
-        self.date_time = datetime.strptime(date_time, USDB_DATETIME_STRF)
+        self.date_time = datetime.strptime(date_time, Usdb.DATETIME_STRF)
         self.author = author
         self.contents = contents
 
@@ -108,6 +91,7 @@ class SongDetails:
     """Details about a song that USDB shows on a song's page, or are specified in the
     comment section."""
 
+    usdb_language: str
     song_id: SongId
     artist: str
     title: str
@@ -123,7 +107,6 @@ class SongDetails:
     rating: int
     votes: int
     audio_sample: str | None
-    team_comment: str | None
     comments: list[SongComment]
 
     def __init__(  # pylint: disable=too-many-locals
@@ -144,24 +127,22 @@ class SongDetails:
         rating: int,
         votes: str,
         audio_sample: str,
-        team_comment: str,
     ) -> None:
         self.song_id = song_id
         self.artist = artist
         self.title = title
-        self.cover_url = None if "nocover" in cover_url else USDB_BASE_URL + cover_url
+        self.cover_url = None if "nocover" in cover_url else Usdb.BASE_URL + cover_url
         self.bpm = float(bpm.replace(",", "."))
         self.gap = float(gap.replace(",", ".") or 0)
         self.golden_notes = "Yes" in golden_notes
         self.song_check = "Yes" in song_check
-        self.date_time = datetime.strptime(date_time, USDB_DATETIME_STRF)
+        self.date_time = datetime.strptime(date_time, Usdb.DATETIME_STRF)
         self.uploader = uploader
         self.editors = editors
         self.views = int(views)
         self.rating = rating
         self.votes = int(votes)
         self.audio_sample = audio_sample or None
-        self.team_comment = None if "No comment yet" in team_comment else team_comment
         self.comments = []
 
     def all_comment_videos(self) -> Iterator[str]:
@@ -191,21 +172,27 @@ def get_usdb_page(
         payload: dict of data to send with request
         params: dict of params to send with request
     """
-    # wildcard login
-    _headers = {"Cookie": "PHPSESSID"}
-    if headers:
-        _headers.update(headers)
-
-    url = USDB_BASE_URL + rel_url
+    url = Usdb.BASE_URL + rel_url
 
     match method:
         case RequestMethod.GET:
             _logger.debug("get request for %s", url)
-            response = requests.get(url, headers=_headers, params=params, timeout=60)
+            response = requests.get(
+                url,
+                headers=headers,
+                params=params,
+                timeout=60,
+                cookies=settings.get_browser().cookies(),
+            )
         case RequestMethod.POST:
             _logger.debug("post request for %s", url)
             response = requests.post(
-                url, headers=_headers, data=payload, params=params, timeout=60
+                url,
+                headers=headers,
+                data=payload,
+                params=params,
+                timeout=60,
+                cookies=settings.get_browser().cookies(),
             )
         case _ as unreachable:
             assert_never(unreachable)
@@ -225,16 +212,32 @@ def get_usdb_details(song_id: SongId) -> SongDetails | None:
         "index.php", params={"id": str(song_id.value), "link": "detail"}
     )
     soup = BeautifulSoup(html, "lxml")
-    if DATASET_NOT_FOUND_STRING in soup.get_text():
+    if UsdbStrings.DATASET_NOT_FOUND in soup.get_text():
         return None
     return _parse_song_page(soup, song_id)
 
 
 def _parse_song_page(soup: BeautifulSoup, song_id: SongId) -> SongDetails:
+    usdb_strings = _get_usdb_strings(soup)
     details_table, comments_table, *_ = soup.find_all("table", border="0", width="500")
-    details = _parse_details_table(details_table, song_id)
+    details = _parse_details_table(details_table, song_id, usdb_strings)
     details.comments = _parse_comments_table(comments_table)
     return details
+
+
+def _get_usdb_strings(soup: BeautifulSoup) -> Type[UsdbStrings]:
+    welcome_string = (
+        soup.find("span", class_="gen").text.split(" ", 1)[0].removesuffix(",")
+    )
+    match welcome_string:
+        case UsdbStringsEnglish.WELCOME:
+            return UsdbStringsEnglish
+        case UsdbStringsGerman.WELCOME:
+            return UsdbStringsGerman
+        case UsdbStringsFrench.WELCOME:
+            return UsdbStringsFrench
+        case _:
+            raise ParseException("Unknown USDB language.")
 
 
 def get_usdb_available_songs(
@@ -245,42 +248,51 @@ def get_usdb_available_songs(
     Parameters:
         content_filter: filters response (e.g. {'artist': 'The Beatles'})
     """
-    payload = {"limit": "50000", "order": "id", "ud": "desc"}
-    payload.update(content_filter or {})
+    available_songs: list[UsdbSong] = []
+    for start in range(0, Usdb.MAX_SONG_ID, Usdb.MAX_SONGS_PER_PAGE):
+        payload = {
+            "order": "id",
+            "ud": "desc",
+            "limit": str(Usdb.MAX_SONGS_PER_PAGE),
+            "start": str(start),
+        }
+        payload.update(content_filter or {})
 
-    html = get_usdb_page(
-        "index.php", RequestMethod.POST, params={"link": "list"}, payload=payload
-    )
-
-    regex = (
-        r'<td onclick="show_detail\((\d+)\)">(.*)</td>\n'
-        r'<td onclick="show_detail\(\d+\)">(.*)</td>\n'
-        r'<td onclick="show_detail\(\d+\)">(.*)</td>\n'
-        r'<td onclick="show_detail\(\d+\)">(.*)</td>\n'
-        r'<td onclick="show_detail\(\d+\)">(.*)</td>\n'
-        r'<td onclick="show_detail\(\d+\)">(.*)</td>\n'
-        r'<td onclick="show_detail\(\d+\)">(.*)</td>'
-    )
-    matches = re.finditer(regex, html)
-
-    available_songs = [
-        UsdbSong.from_html(
-            song_id=match[1],
-            artist=match[2],
-            title=match[3],
-            edition=match[4],
-            golden_notes=match[5],
-            language=match[6],
-            rating=match[7],
-            views=match[8],
+        html = get_usdb_page(
+            "index.php", RequestMethod.POST, params={"link": "list"}, payload=payload
         )
-        for match in matches
-    ]
+
+        regex = (
+            r'<td onclick="show_detail\((\d+)\)">(.*)</td>\n'
+            r'<td onclick="show_detail\(\d+\)"><a href=.*>(.*)</td>\n'
+            r'<td onclick="show_detail\(\d+\)">(.*)</td>\n'
+            r'<td onclick="show_detail\(\d+\)">(.*)</td>\n'
+            r'<td onclick="show_detail\(\d+\)">(.*)</td>\n'
+            r'<td onclick="show_detail\(\d+\)">(.*)</td>\n'
+            r'<td onclick="show_detail\(\d+\)">(.*)</td>'
+        )
+        matches = re.finditer(regex, html)
+
+        available_songs.extend(
+            UsdbSong.from_html(
+                song_id=match[1],
+                artist=match[2],
+                title=match[3],
+                edition=match[4],
+                golden_notes=match[5],
+                language=match[6],
+                rating=match[7],
+                views=match[8],
+            )
+            for match in matches
+        )
     _logger.info(f"fetched {len(available_songs)} available songs")
     return available_songs
 
 
-def _parse_details_table(details_table: BeautifulSoup, song_id: SongId) -> SongDetails:
+def _parse_details_table(
+    details_table: BeautifulSoup, song_id: SongId, usdb_strings: Type[UsdbStrings]
+) -> SongDetails:
     """Parse song attributes from usdb page.
 
     Parameters:
@@ -288,7 +300,7 @@ def _parse_details_table(details_table: BeautifulSoup, song_id: SongId) -> SongD
         details_table: BeautifulSoup object of song details table
     """
     editors = []
-    pointer = details_table.find(string="Song edited by:")
+    pointer = details_table.find(string=usdb_strings.SONG_EDITED_BY)
     while pointer is not None:
         pointer = pointer.find_next("td")
         if pointer.a is None:  # type: ignore
@@ -296,13 +308,12 @@ def _parse_details_table(details_table: BeautifulSoup, song_id: SongId) -> SongD
         editors.append(pointer.text.strip())  # type: ignore
         pointer = pointer.find_next("tr")  # type: ignore
 
-    stars = details_table.find(string="Rating").next.find_all("img")  # type: ignore
-    votes_str = details_table.find(string="Rating").next_element.text  # type: ignore
+    stars = details_table.find(string=usdb_strings.SONG_RATING).next.find_all("img")  # type: ignore
+    votes_str = details_table.find(string=usdb_strings.SONG_RATING).next_element.text  # type: ignore
 
     audio_sample = ""
-    if param := details_table.find("param", attrs={"name": "FlashVars"}):
-        flash_vars = urllib.parse.parse_qs(param.get("value"))  # type: ignore
-        audio_sample = flash_vars["soundFile"][0]
+    if param := details_table.find("source"):
+        audio_sample = param.get("src")
 
     return SongDetails(
         song_id=song_id,
@@ -311,17 +322,15 @@ def _parse_details_table(details_table: BeautifulSoup, song_id: SongId) -> SongD
         cover_url=details_table.img["src"],  # type: ignore
         bpm=details_table.find(string="BPM").next.text,  # type: ignore
         gap=details_table.find(string="GAP").next.text,  # type: ignore
-        golden_notes=details_table.find(string="Golden Notes").next.text,  # type: ignore
-        song_check=details_table.find(string="Songcheck").next.text,  # type: ignore
-        date_time=details_table.find(string="Date").next.text,  # type: ignore
-        uploader=details_table.find(string="Created by").next.text,  # type: ignore
+        golden_notes=details_table.find(string=usdb_strings.GOLDEN_NOTES).next.text,  # type: ignore
+        song_check=details_table.find(string=usdb_strings.SONGCHECK).next.text,  # type: ignore
+        date_time=details_table.find(string=usdb_strings.DATE).next.text,  # type: ignore
+        uploader=details_table.find(string=usdb_strings.CREATED_BY).next.text.rstrip(),  # type: ignore
         editors=editors,
-        views=details_table.find(string="Views").next.text,  # type: ignore
+        views=details_table.find(string=usdb_strings.VIEWS).next.text,  # type: ignore
         rating=sum("star.png" in s.get("src") for s in stars),
         votes=votes_str.split("(")[1].split(")")[0],
         audio_sample=audio_sample,
-        # only captures first team comment (example of multiple needed!)
-        team_comment=details_table.find(string="Team Comment").next.text,  # type: ignore
     )
 
 
@@ -372,6 +381,9 @@ def _all_urls_in_comment(contents: BeautifulSoup, text: str) -> Iterator[str]:
     for embed in contents.find_all("embed"):
         if src := embed.get("src"):
             _logger.debug("video embed found. Consider embedding as iframe")
+            yield src
+    for iframe in contents.find_all("iframe"):
+        if src := iframe.get("src"):
             yield src
     for anchor in contents.find_all("a"):
         if href := anchor.get("href"):
