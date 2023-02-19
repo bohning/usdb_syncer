@@ -184,7 +184,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
                 if self.toolButton_infos.isChecked():
                     self.plainTextEdit.appendPlainText(message)
             case 10:
-                self._infos.append((message, created))
+                self._debugs.append((message, created))
                 if self.toolButton_debugs.isChecked():
                     self.plainTextEdit.appendPlainText(message)
 

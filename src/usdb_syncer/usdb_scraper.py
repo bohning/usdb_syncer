@@ -390,7 +390,7 @@ def _all_urls_in_comment(contents: BeautifulSoup, text: str) -> Iterator[str]:
             _logger.debug("video href found. Consider embedding as to iframe")
             yield href
     for match in SUPPORTED_VIDEO_SOURCES_REGEX.finditer(text):
-        _logger.debug("video plain url found. Consider embedding as imframe.")
+        _logger.debug("video plain url found. Consider embedding as iframe.")
         yield match.group(1)
 
 
