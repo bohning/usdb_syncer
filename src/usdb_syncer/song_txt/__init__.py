@@ -146,4 +146,6 @@ class SongTxt:
         self.headers.apply_to_medley_tags(lambda beats: beats * factor)
         for line in self.notes.all_lines():
             line.multiply(factor)
-        self.logger.debug(f"FIX: Increased BPM to {self.headers.bpm} (factor: {factor})")
+        self.logger.debug(
+            f"FIX: Increased BPM to {self.headers.bpm} (factor: {factor})"
+        )
