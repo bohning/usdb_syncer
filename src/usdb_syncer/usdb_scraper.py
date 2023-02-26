@@ -314,12 +314,18 @@ def _parse_details_table(
     audio_sample = ""
     if param := details_table.find("source"):
         audio_sample = param.get("src")
+    else:
+        _logger.debug("No audio sample found. Consider adding one!")
+
+    cover_url = details_table.img["src"]  # type: ignore
+    if "nocover" in cover_url:
+        _logger.debug("No USDB cover. Consider adding one!")
 
     return SongDetails(
         song_id=song_id,
         artist=details_table.find_next("td").text,  # type: ignore
         title=details_table.find_next("td").find_next("td").text,  # type: ignore
-        cover_url=details_table.img["src"],  # type: ignore
+        cover_url=cover_url,
         bpm=details_table.find(string="BPM").next.text,  # type: ignore
         gap=details_table.find(string="GAP").next.text,  # type: ignore
         golden_notes=details_table.find(string=usdb_strings.GOLDEN_NOTES).next.text,  # type: ignore
