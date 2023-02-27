@@ -18,7 +18,7 @@ from usdb_syncer.meta_tags.serializer import (
     video_tag_from_values,
 )
 
-MAX_LEN = 262
+MAX_LEN = 255
 URL_TAG_NAMES = ("cover_url", "background_url", "audio_url", "video_url")
 
 
