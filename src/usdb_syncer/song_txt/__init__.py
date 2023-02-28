@@ -58,7 +58,7 @@ class SongTxt:
 
     def write_to_file(self, path: str, encoding: str, newline: str) -> None:
         with open(
-            path, "w", encoding=encoding, newline=newline, errors="replace"
+            path, "w", encoding=encoding, newline=newline, errors="backslashreplace"
         ) as file:
             file.write(str(self))
 
