@@ -398,8 +398,12 @@ def fix_line_breaks(lines: list[Line]) -> None:
 
 def replace_false_apostrophes_and_quotation_marks(value: str) -> str:
     # two single upright quotation marks ('') by double upright quotation marks (")
-    # grave accent (`), acute accent (´) and upright apostrophe (')
+    # grave accent (`), acute accent (´), prime symbol (′) and upright apostrophe (')
     # by typographer’s apostrophe (’)
     return (
-        value.replace("''", '"').replace("`", "’").replace("´", "’").replace("'", "’")
+        value.replace("''", '"')
+        .replace("`", "’")
+        .replace("´", "’")
+        .replace("′", "’")
+        .replace("'", "’")
     )

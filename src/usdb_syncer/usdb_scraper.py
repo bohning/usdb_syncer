@@ -19,7 +19,6 @@ from usdb_syncer.constants import (
     UsdbStringsFrench,
     UsdbStringsGerman,
 )
-from usdb_syncer.encoding import CodePage
 from usdb_syncer.logger import Log
 from usdb_syncer.typing_helpers import assert_never
 from usdb_syncer.usdb_song import UsdbSong
@@ -400,7 +399,7 @@ def _all_urls_in_comment(contents: BeautifulSoup, text: str) -> Iterator[str]:
         yield match.group(1)
 
 
-def get_notes(song_id: SongId, expected_encoding: CodePage, logger: Log) -> str:
+def get_notes(song_id: SongId, logger: Log) -> str:
     """Retrieve notes for a song."""
     logger.debug(f"fetch notes for song {song_id}")
     html = get_usdb_page(
@@ -412,7 +411,7 @@ def get_notes(song_id: SongId, expected_encoding: CodePage, logger: Log) -> str:
     )
     soup = BeautifulSoup(html, "lxml")
     text = _parse_song_txt_from_txt_page(soup)
-    return expected_encoding.restore_text_from_cp1252(text)
+    return text
 
 
 def _parse_song_txt_from_txt_page(soup: BeautifulSoup) -> str:
