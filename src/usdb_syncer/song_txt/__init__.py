@@ -57,7 +57,9 @@ class SongTxt:
             self.headers.medleyendbeat = medley.end
 
     def write_to_file(self, path: str, encoding: str, newline: str) -> None:
-        with open(path, "w", encoding=encoding, newline=newline) as file:
+        with open(
+            path, "w", encoding=encoding, newline=newline, errors="replace"
+        ) as file:
             file.write(str(self))
 
     def sanitize(self) -> None:
