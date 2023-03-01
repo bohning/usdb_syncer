@@ -298,6 +298,20 @@
          <item>
           <layout class="QVBoxLayout" name="verticalLayout_3">
            <item>
+            <widget class="QToolButton" name="toolButton_debugs">
+             <property name="text">
+              <string>Debugs</string>
+             </property>
+             <property name="icon">
+              <iconset resource="../resources/resources.qrc">
+               <normaloff>:/icons/bug.png</normaloff>:/icons/bug.png</iconset>
+             </property>
+             <property name="checkable">
+              <bool>true</bool>
+             </property>
+            </widget>
+           </item>
+           <item>
             <widget class="QToolButton" name="toolButton_infos">
              <property name="toolTip">
               <string>Information</string>
@@ -397,7 +411,7 @@
      <x>0</x>
      <y>0</y>
      <width>1104</width>
-     <height>22</height>
+     <height>24</height>
     </rect>
    </property>
    <widget class="QMenu" name="menu_tools">

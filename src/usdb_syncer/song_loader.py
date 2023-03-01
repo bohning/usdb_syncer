@@ -98,11 +98,13 @@ class Context:
     def all_audio_resources(self) -> Iterator[str]:
         if self.txt.meta_tags.audio:
             yield self.txt.meta_tags.audio
+        self.logger.debug("No audio meta tag. Looking in comments.")
         yield from self.all_video_resources()
 
     def all_video_resources(self) -> Iterator[str]:
         if self.txt.meta_tags.video:
             yield self.txt.meta_tags.video
+        self.logger.debug("No video meta tag. Looking in comments.")
         yield from self.details.all_comment_videos()
 
 
