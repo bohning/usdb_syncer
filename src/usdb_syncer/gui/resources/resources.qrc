@@ -1,5 +1,6 @@
 <RCC>
   <qresource prefix="icons">
+    <file>bug.png</file>
     <file>error.png</file>
     <file>info.png</file>
     <file>warning.png</file>

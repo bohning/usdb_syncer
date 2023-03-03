@@ -19,7 +19,6 @@ from usdb_syncer.constants import (
     UsdbStringsFrench,
     UsdbStringsGerman,
 )
-from usdb_syncer.encoding import CodePage
 from usdb_syncer.logger import Log
 from usdb_syncer.typing_helpers import assert_never
 from usdb_syncer.usdb_song import UsdbSong
@@ -314,12 +313,18 @@ def _parse_details_table(
     audio_sample = ""
     if param := details_table.find("source"):
         audio_sample = param.get("src")
+    else:
+        _logger.debug("No audio sample found. Consider adding one!")
+
+    cover_url = details_table.img["src"]  # type: ignore
+    if "nocover" in cover_url:
+        _logger.debug("No USDB cover. Consider adding one!")
 
     return SongDetails(
         song_id=song_id,
         artist=details_table.find_next("td").text,  # type: ignore
         title=details_table.find_next("td").find_next("td").text,  # type: ignore
-        cover_url=details_table.img["src"],  # type: ignore
+        cover_url=cover_url,
         bpm=details_table.find(string="BPM").next.text,  # type: ignore
         gap=details_table.find(string="GAP").next.text,  # type: ignore
         golden_notes=details_table.find(string=usdb_strings.GOLDEN_NOTES).next.text,  # type: ignore
@@ -380,18 +385,21 @@ def _parse_comment_contents(contents: BeautifulSoup) -> CommentContents:
 def _all_urls_in_comment(contents: BeautifulSoup, text: str) -> Iterator[str]:
     for embed in contents.find_all("embed"):
         if src := embed.get("src"):
+            _logger.debug("video embed found. Consider embedding as iframe")
             yield src
     for iframe in contents.find_all("iframe"):
         if src := iframe.get("src"):
             yield src
     for anchor in contents.find_all("a"):
         if href := anchor.get("href"):
+            _logger.debug("video href found. Consider embedding as to iframe")
             yield href
     for match in SUPPORTED_VIDEO_SOURCES_REGEX.finditer(text):
+        _logger.debug("video plain url found. Consider embedding as iframe.")
         yield match.group(1)
 
 
-def get_notes(song_id: SongId, expected_encoding: CodePage, logger: Log) -> str:
+def get_notes(song_id: SongId, logger: Log) -> str:
     """Retrieve notes for a song."""
     logger.debug(f"fetch notes for song {song_id}")
     html = get_usdb_page(
@@ -403,7 +411,7 @@ def get_notes(song_id: SongId, expected_encoding: CodePage, logger: Log) -> str:
     )
     soup = BeautifulSoup(html, "lxml")
     text = _parse_song_txt_from_txt_page(soup)
-    return expected_encoding.restore_text_from_cp1252(text)
+    return text
 
 
 def _parse_song_txt_from_txt_page(soup: BeautifulSoup) -> str:

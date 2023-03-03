@@ -10,7 +10,6 @@ from PySide6.QtCore import QRunnable, QThreadPool
 
 from usdb_syncer import SongId, resource_dl, usdb_scraper
 from usdb_syncer.download_options import Options, download_options
-from usdb_syncer.encoding import CodePage
 from usdb_syncer.logger import Log, get_logger
 from usdb_syncer.resource_dl import ImageKind, download_and_process_image
 from usdb_syncer.song_data import LocalFiles, SongData
@@ -30,15 +29,10 @@ class DownloadInfo:
 
     song_id: SongId
     meta_path: str | None
-    encoding: CodePage
 
     @classmethod
     def from_song_data(cls, data: SongData) -> DownloadInfo:
-        return cls(
-            data.data.song_id,
-            data.local_files.usdb_path,
-            CodePage.from_language(data.data.language),
-        )
+        return cls(data.data.song_id, data.local_files.usdb_path)
 
 
 @attrs.define(kw_only=True)
@@ -89,7 +83,7 @@ class Context:
     def new(
         cls, details: SongDetails, options: Options, info: DownloadInfo, logger: Log
     ) -> Context:
-        txt_str = usdb_scraper.get_notes(details.song_id, info.encoding, logger)
+        txt_str = usdb_scraper.get_notes(details.song_id, logger)
         txt = SongTxt.parse(txt_str, logger)
         txt.sanitize()
         txt.headers.creator = txt.headers.creator or details.uploader or None
@@ -104,11 +98,13 @@ class Context:
     def all_audio_resources(self) -> Iterator[str]:
         if self.txt.meta_tags.audio:
             yield self.txt.meta_tags.audio
+        self.logger.debug("No audio meta tag. Looking in comments.")
         yield from self.all_video_resources()
 
     def all_video_resources(self) -> Iterator[str]:
         if self.txt.meta_tags.video:
             yield self.txt.meta_tags.video
+        self.logger.debug("No video meta tag. Looking in comments.")
         yield from self.details.all_comment_videos()
 
 

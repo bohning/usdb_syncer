@@ -20,6 +20,7 @@ class SongTxt:
     headers: Headers
     notes: Tracks
     meta_tags: MetaTags
+    logger: Log
 
     def __str__(self) -> str:
         return f"{self.headers}\n{self.notes}"
@@ -32,7 +33,7 @@ class SongTxt:
         notes = Tracks.parse(lines, logger)
         if lines:
             logger.warning(f"trailing text in song txt: '{lines}'")
-        return cls(headers=headers, meta_tags=meta_tags, notes=notes)
+        return cls(headers=headers, meta_tags=meta_tags, notes=notes, logger=logger)
 
     @classmethod
     def try_parse(cls, value: str, logger: Log) -> SongTxt | None:
@@ -57,7 +58,9 @@ class SongTxt:
             self.headers.medleyendbeat = medley.end
 
     def write_to_file(self, path: str, encoding: str, newline: str) -> None:
-        with open(path, "w", encoding=encoding, newline=newline) as file:
+        with open(
+            path, "w", encoding=encoding, newline=newline, errors="backslashreplace"
+        ) as file:
             file.write(str(self))
 
     def sanitize(self) -> None:
@@ -72,15 +75,15 @@ class SongTxt:
         self.restore_missing_headers()
         self.fix_first_timestamp()
         self.fix_low_bpm()
-        self.notes.fix_line_breaks()
-        self.notes.fix_touching_notes()
-        self.notes.fix_pitch_values()
-        self.notes.fix_apostrophes()
-        self.headers.fix_apostrophes()
-        self.notes.fix_spaces()
-        self.notes.fix_all_caps()
-        self.notes.fix_first_words_capitalization()
-        self.headers.fix_language()
+        self.notes.fix_line_breaks(self.logger)
+        self.notes.fix_touching_notes(self.logger)
+        self.notes.fix_pitch_values(self.logger)
+        self.notes.fix_apostrophes(self.logger)
+        self.headers.fix_apostrophes(self.logger)
+        self.notes.fix_spaces(self.logger)
+        self.notes.fix_all_caps(self.logger)
+        self.notes.fix_first_words_capitalization(self.logger)
+        self.headers.fix_language(self.logger)
 
     def minimum_song_length(self) -> str:
         """Return the minimum song length based on last beat, BPM and GAP"""
@@ -112,6 +115,7 @@ class SongTxt:
 
         # remove #RELATIVE tag
         self.headers.relative = None
+        self.logger.debug("FIX: Changed relative to absolute timings.")
 
     def fix_first_timestamp(self) -> None:
         """Shifts all notes such that the first note starts at beat zero and adjusts
@@ -128,6 +132,9 @@ class SongTxt:
         self.headers.apply_to_medley_tags(lambda beats: beats - offset)
         offset_ms = self.headers.bpm.beats_to_ms(offset)
         self.headers.gap = int(round(self.headers.gap + offset_ms, -1))
+        self.logger.debug(
+            "FIX: Set first timestamp to zero and adjusted #GAP accordingly."
+        )
 
     def fix_low_bpm(self) -> None:
         """(repeatedly) doubles BPM value and all note timings
@@ -141,3 +148,6 @@ class SongTxt:
         self.headers.apply_to_medley_tags(lambda beats: beats * factor)
         for line in self.notes.all_lines():
             line.multiply(factor)
+        self.logger.debug(
+            f"FIX: Increased BPM to {self.headers.bpm} (factor: {factor})"
+        )

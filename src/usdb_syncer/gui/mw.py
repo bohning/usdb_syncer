@@ -69,9 +69,11 @@ class MainWindow(Ui_MainWindow, QMainWindow):
 
     def _setup_log(self) -> None:
         self.plainTextEdit.setReadOnly(True)
+        self._debugs: list[tuple[str, float]] = []
         self._infos: list[tuple[str, float]] = []
         self._warnings: list[tuple[str, float]] = []
         self._errors: list[tuple[str, float]] = []
+        self.toolButton_debugs.toggled.connect(self._on_log_filter_changed)
         self.toolButton_infos.toggled.connect(self._on_log_filter_changed)
         self.toolButton_warnings.toggled.connect(self._on_log_filter_changed)
         self.toolButton_errors.toggled.connect(self._on_log_filter_changed)
@@ -153,6 +155,8 @@ class MainWindow(Ui_MainWindow, QMainWindow):
 
     def _on_log_filter_changed(self) -> None:
         messages = []
+        if self.toolButton_debugs.isChecked():
+            messages += self._debugs
         if self.toolButton_infos.isChecked():
             messages += self._infos
         if self.toolButton_warnings.isChecked():
@@ -181,6 +185,10 @@ class MainWindow(Ui_MainWindow, QMainWindow):
             case 20:
                 self._infos.append((message, created))
                 if self.toolButton_infos.isChecked():
+                    self.plainTextEdit.appendPlainText(message)
+            case 10:
+                self._debugs.append((message, created))
+                if self.toolButton_debugs.isChecked():
                     self.plainTextEdit.appendPlainText(message)
 
     def _setup_signals(self) -> None:
@@ -371,7 +379,7 @@ def _init_app() -> QApplication:
 
 def _configure_logging(mw: MainWindow) -> None:
     logging.basicConfig(
-        level=logging.INFO,
+        level=logging.DEBUG,
         style="{",
         format="{asctime} [{levelname}] {message}",
         datefmt="%Y-%m-%d %H:%M:%S",
