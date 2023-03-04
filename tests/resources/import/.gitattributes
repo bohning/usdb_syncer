@@ -1,0 +1,7 @@
+*.url             text  eol=crlf
+*.webloc          text  eol=lf
+*.desktop         text  eol=lf
+*.usdb_ids        text  eol=crlf
+ids_LF.usdb_ids   text  eol=lf
+*.json            text  eol=crlf
+ids_LF.json       text  eol=lf

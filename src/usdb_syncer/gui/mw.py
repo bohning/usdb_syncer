@@ -16,7 +16,7 @@ from PySide6.QtWidgets import (
 )
 
 from usdb_syncer import SongId, settings
-from usdb_syncer.exchange_format import get_song_ids_from_files, write_song_ids_to_file
+from usdb_syncer.exchange_format import USDBIDFileParser, write_song_ids_to_file
 from usdb_syncer.gui.debug_console import DebugConsole
 from usdb_syncer.gui.ffmpeg_dialog import check_ffmpeg
 from usdb_syncer.gui.forms.MainWindow import Ui_MainWindow
@@ -278,10 +278,18 @@ class MainWindow(Ui_MainWindow, QMainWindow):
             self,
             caption="Select one or more files to import USDB IDs from",
             dir=os.getcwd(),
-            filter="CSV or Weblink (*.csv *.url)",
+            filter="JSON, USDB IDs, Weblinks (*.json *.usdb_ids *.url *.webloc *.desktop)",
         )[0]
-        list_of_song_id_lists = [get_song_ids_from_files(path) for path in file_list]
-        song_ids = [id for sublist in list_of_song_id_lists for id in sublist]
+        file_parsers = [USDBIDFileParser(path) for path in file_list]
+        has_error = False
+        for parser in file_parsers:
+            if parser.errors:
+                logger.error(f"importing file {parser.filepath}: {parser.errors}")
+                has_error = True
+        # stop import if encounter errors
+        if has_error:
+            return
+        song_ids = [id for parser in file_parsers for id in parser.ids]
         unique_song_ids = list(set(song_ids))
         logger.info(
             f"read {len(file_list)} file(s), "
@@ -300,10 +308,11 @@ class MainWindow(Ui_MainWindow, QMainWindow):
                 "some imported USDB IDs are not available: "
                 f"{[str(song_id) for song_id in unavailable_songs]}"
             )
-
-        download_songs(
-            songs, self.song_signals.started.emit, self.song_signals.finished.emit
-        )
+            # TODO: select songs to prepare Download
+        else:
+            download_songs(
+                songs, self.song_signals.started.emit, self.song_signals.finished.emit
+            )
 
     def _export_usdb_ids_to_file(self) -> None:
         logger = logging.getLogger()
@@ -317,7 +326,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
             self,
             caption="Select export file for USDB IDs",
             dir=os.getcwd(),
-            filter="CSV (*.csv)",
+            filter="USDB ID File (*.usdb_ids)",
         )[0]
         if not path:
             logger.info("export aborted")
