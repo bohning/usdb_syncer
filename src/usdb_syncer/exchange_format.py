@@ -69,7 +69,7 @@ class USDBIDFileParser:
             self.errors.append("File does not contain a JSON array")
             return
 
-        if not filecontent:
+        if not parsed_json:
             self.errors.append("Empty JSON array")
             return
 
@@ -77,41 +77,38 @@ class USDBIDFileParser:
         try:
             self.ids = [SongId(int(element[key])) for element in parsed_json]
         except ValueError as exception:
-            self.errors.append("Invalid USDB ID in file")
+            self.errors.append("Invalid or missing USDB ID in file")
         except IndexError as exception:
             self.errors.append(f"Missing key '{key}': {exception}")
             return
         except Exception as exception:
             # handle any other exception
-            self.errors.append("Invalid USDB ID in file")
+            self.errors.append("Invalid or missing USDB ID in file")
+
+    def parse_ini_file(self, section: str, key: str) -> None:
+        config = configparser.ConfigParser()
+        try:
+            config.read(self.filepath)
+        except configparser.MissingSectionHeaderError:
+            self.errors.append("invalid file format: missing a section header")
+            return
+        except Exception:
+            self.errors.append(f"invalid file format: missing or dublicate option")
+            return
+        if section not in config:
+            self.errors.append(f"invalid file format: missing section '{section}'")
+            return
+        if key not in config[section]:
+            self.errors.append(f"invalid file format: missing key '{key}'")
+            return
+        url = config[section][key]
+        self.parse_url(url)
 
     def parse_url_file(self) -> None:
-        config = configparser.ConfigParser()
-        config.read(self.filepath)
-        section = "InternetShortcut"
-        if section not in config:
-            self.errors.append(f"Missing section '{section}'")
-            return
-        key = "URL"
-        if key not in config[section]:
-            self.errors.append(f"Missing key '{key}'")
-            return
-        url = config[section][key]
-        self.parse_url(url)
+        self.parse_ini_file(section="InternetShortcut", key="URL")
 
     def parse_desktop_file(self) -> None:
-        config = configparser.ConfigParser()
-        config.read(self.filepath)
-        section = "Desktop Entry"
-        if section not in config:
-            self.errors.append(f"Missing section '{section}'")
-            return
-        key = "URL"
-        if key not in config[section]:
-            self.errors.append(f"Missing key '{key}'")
-            return
-        url = config[section][key]
-        self.parse_url(url)
+        self.parse_ini_file(section="Desktop Entry", key="URL")
 
     def parse_webloc_file(self) -> None:
         try:
@@ -124,7 +121,32 @@ class USDBIDFileParser:
             self.errors.append(f"Unexcpected error reading file: {exception}")
             return
 
-        url = soup.find("plist").find("dict").find("string").get_text()
+        tag = "plist"
+        xml_plist = soup.find_all(tag)
+        if not xml_plist:
+            self.errors.append(f"invalid file format: missing tag '{tag}'")
+            return
+        if len(xml_plist) > 1:
+            self.errors.append(f"invalid file format: multiple tag '{tag}'")
+            return
+        tag = "dict"
+        xml_dict = xml_plist[0].find_all(tag)
+        if not xml_dict:
+            self.errors.append(f"invalid file format: missing tag '{tag}'")
+            return
+        if len(xml_dict) > 1:
+            self.errors.append(f"invalid file format: multiple tag '{tag}'")
+            return
+        tag = "string"
+        xml_string = xml_dict[0].find_all(tag)
+        if not xml_string:
+            self.errors.append(f"invalid file format: missing URL tag '{tag}'")
+            return
+        if len(xml_string) > 1:
+            self.errors.append(f"invalid file format: multiple URLs detected")
+            return
+
+        url = xml_string[0].get_text()
         self.parse_url(url)
 
     def parse_usdb_ids_file(self) -> None:

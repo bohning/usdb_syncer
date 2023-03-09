@@ -9,9 +9,18 @@ KEY_IDS = "ids"
 KEY_ERRORS = "errors"
 
 ids_per_file: dict[str, dict] = {
-    "broken_format.desktop": {KEY_IDS: [], KEY_ERRORS: ["broken format"]},
-    "broken_format.url": {KEY_IDS: [], KEY_ERRORS: ["broken format"]},
-    "broken_format.webloc": {KEY_IDS: [], KEY_ERRORS: ["broken format"]},
+    "broken_format.desktop": {
+        KEY_IDS: [],
+        KEY_ERRORS: ["invalid file format: missing a section header"],
+    },
+    "broken_format.url": {
+        KEY_IDS: [],
+        KEY_ERRORS: ["invalid file format: missing a section header"],
+    },
+    "broken_format.webloc": {
+        KEY_IDS: [],
+        KEY_ERRORS: ["invalid file format: missing tag 'plist'"],
+    },
     "broken_usdb_link.desktop": {
         KEY_IDS: [],
         KEY_ERRORS: [
@@ -30,15 +39,42 @@ ids_per_file: dict[str, dict] = {
             "Found URL has no query parameters: http://usdb.animux.de/index.phid=118"
         ],
     },
-    "dublicate_url_key.desktop": {KEY_IDS: [], KEY_ERRORS: ["multiple URLs detected"]},
-    "dublicate_url_key.url": {KEY_IDS: [], KEY_ERRORS: ["multiple URLs detected"]},
-    "dublicate_url_key.webloc": {KEY_IDS: [], KEY_ERRORS: ["multiple URLs detected"]},
-    "empty.desktop": {KEY_IDS: [], KEY_ERRORS: ["empty file"]},
-    "empty.url": {KEY_IDS: [], KEY_ERRORS: ["empty file"]},
-    "empty.webloc": {KEY_IDS: [], KEY_ERRORS: ["empty file"]},
-    "missing_url_key.desktop": {KEY_IDS: [], KEY_ERRORS: ["missing URL"]},
-    "missing_url_key.url": {KEY_IDS: [], KEY_ERRORS: ["missing URL"]},
-    "missing_url_key.webloc": {KEY_IDS: [], KEY_ERRORS: ["missing URL"]},
+    "dublicate_url_key.desktop": {
+        KEY_IDS: [],
+        KEY_ERRORS: ["invalid file format: missing or dublicate option"],
+    },
+    "dublicate_url_key.url": {
+        KEY_IDS: [],
+        KEY_ERRORS: ["invalid file format: missing or dublicate option"],
+    },
+    "dublicate_url_key.webloc": {
+        KEY_IDS: [],
+        KEY_ERRORS: ["invalid file format: multiple URLs detected"],
+    },
+    "empty.desktop": {
+        KEY_IDS: [],
+        KEY_ERRORS: ["invalid file format: missing section 'Desktop Entry'"],
+    },
+    "empty.url": {
+        KEY_IDS: [],
+        KEY_ERRORS: ["invalid file format: missing section 'InternetShortcut'"],
+    },
+    "empty.webloc": {
+        KEY_IDS: [],
+        KEY_ERRORS: ["invalid file format: missing tag 'plist'"],
+    },
+    "missing_url_key.desktop": {
+        KEY_IDS: [],
+        KEY_ERRORS: ["invalid file format: missing key 'URL'"],
+    },
+    "missing_url_key.url": {
+        KEY_IDS: [],
+        KEY_ERRORS: ["invalid file format: missing key 'URL'"],
+    },
+    "missing_url_key.webloc": {
+        KEY_IDS: [],
+        KEY_ERRORS: ["invalid file format: missing URL tag 'string'"],
+    },
     "piano_man.desktop": {KEY_IDS: [SongId(3327)], KEY_ERRORS: []},
     "piano_man.url": {KEY_IDS: [SongId(3327)], KEY_ERRORS: []},
     "piano_man.webloc": {KEY_IDS: [SongId(3327)], KEY_ERRORS: []},
@@ -51,10 +87,22 @@ ids_per_file: dict[str, dict] = {
     "usdb_short.desktop": {KEY_IDS: [SongId(1001)], KEY_ERRORS: []},
     "usdb_short.url": {KEY_IDS: [SongId(1001)], KEY_ERRORS: []},
     "usdb_short.webloc": {KEY_IDS: [SongId(1001)], KEY_ERRORS: []},
-    "wrong_middle_level.webloc": {KEY_IDS: [], KEY_ERRORS: ["missing tag dict"]},
-    "wrong_top_level.desktop": {KEY_IDS: [], KEY_ERRORS: ["missing tag Desktop Entry"]},
-    "wrong_top_level.url": {KEY_IDS: [], KEY_ERRORS: ["missing tag InternetShortcut"]},
-    "wrong_top_level.webloc": {KEY_IDS: [], KEY_ERRORS: ["missing tag plist"]},
+    "wrong_middle_level.webloc": {
+        KEY_IDS: [],
+        KEY_ERRORS: ["invalid file format: missing tag 'dict'"],
+    },
+    "wrong_top_level.desktop": {
+        KEY_IDS: [],
+        KEY_ERRORS: ["invalid file format: missing section 'Desktop Entry'"],
+    },
+    "wrong_top_level.url": {
+        KEY_IDS: [],
+        KEY_ERRORS: ["invalid file format: missing section 'InternetShortcut'"],
+    },
+    "wrong_top_level.webloc": {
+        KEY_IDS: [],
+        KEY_ERRORS: ["invalid file format: missing tag 'plist'"],
+    },
     "youtube.desktop": {
         KEY_IDS: [],
         KEY_ERRORS: ["Found URL has invalid domain: www.youtube.com"],
@@ -97,13 +145,21 @@ ids_per_file: dict[str, dict] = {
         KEY_ERRORS: [],
     },
     "multi-column.usdb_ids": {KEY_IDS: [], KEY_ERRORS: ["Invalid USDB ID in file"]},
-    "broken.json": {KEY_IDS: [], KEY_ERRORS: ["broken JSON format"]},
+    "broken.json": {
+        KEY_IDS: [],
+        KEY_ERRORS: [
+            "invalid JSON format: Expecting ',' delimiter: line 3 column 18 (char 23)"
+        ],
+    },
     "empty.json": {KEY_IDS: [], KEY_ERRORS: ["empty file"]},
-    "empty_array.json": {KEY_IDS: [], KEY_ERRORS: ["empty file"]},
+    "empty_array.json": {KEY_IDS: [], KEY_ERRORS: ["Empty JSON array"]},
     "ids.json": {KEY_IDS: [SongId(1), SongId(11586), SongId(3)], KEY_ERRORS: []},
     "ids_inline.json": {KEY_IDS: [SongId(1), SongId(29020), SongId(3)], KEY_ERRORS: []},
     "ids_LF.json": {KEY_IDS: [SongId(1), SongId(24112), SongId(3)], KEY_ERRORS: []},
-    "missing_id_key.json": {KEY_IDS: [], KEY_ERRORS: ["missing id key"]},
+    "missing_id_key.json": {
+        KEY_IDS: [],
+        KEY_ERRORS: ["Invalid or missing USDB ID in file"],
+    },
 }
 
 
