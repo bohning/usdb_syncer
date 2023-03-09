@@ -9,20 +9,65 @@ KEY_IDS = "ids"
 KEY_ERRORS = "errors"
 
 ids_per_file: dict[str, dict] = {
-    "youtube.url": {
+    "broken_format.desktop": {KEY_IDS: [], KEY_ERRORS: ["broken format"]},
+    "broken_format.url": {KEY_IDS: [], KEY_ERRORS: ["broken format"]},
+    "broken_format.webloc": {KEY_IDS: [], KEY_ERRORS: ["broken format"]},
+    "broken_usdb_link.desktop": {
         KEY_IDS: [],
-        KEY_ERRORS: ["Found URL has invalid domain: youtu.be"],
+        KEY_ERRORS: [
+            "Found URL has no query parameters: http://usdb.animux.de/index.phid=118"
+        ],
     },
-    "piano_man.url": {KEY_IDS: [SongId(3327)], KEY_ERRORS: []},
-    "usdb_non_php.url": {KEY_IDS: [SongId(26380)], KEY_ERRORS: []},
-    "usdb_http.url": {KEY_IDS: [SongId(279)], KEY_ERRORS: []},
-    "usdb_short.url": {KEY_IDS: [SongId(1001)], KEY_ERRORS: []},
     "broken_usdb_link.url": {
         KEY_IDS: [],
         KEY_ERRORS: [
             "Found URL has no query parameters: http://usdb.animux.de/index.phid=118"
         ],
     },
+    "broken_usdb_link.webloc": {
+        KEY_IDS: [],
+        KEY_ERRORS: [
+            "Found URL has no query parameters: http://usdb.animux.de/index.phid=118"
+        ],
+    },
+    "dublicate_url_key.desktop": {KEY_IDS: [], KEY_ERRORS: ["multiple URLs detected"]},
+    "dublicate_url_key.url": {KEY_IDS: [], KEY_ERRORS: ["multiple URLs detected"]},
+    "dublicate_url_key.webloc": {KEY_IDS: [], KEY_ERRORS: ["multiple URLs detected"]},
+    "empty.desktop": {KEY_IDS: [], KEY_ERRORS: ["empty file"]},
+    "empty.url": {KEY_IDS: [], KEY_ERRORS: ["empty file"]},
+    "empty.webloc": {KEY_IDS: [], KEY_ERRORS: ["empty file"]},
+    "missing_url_key.desktop": {KEY_IDS: [], KEY_ERRORS: ["missing URL"]},
+    "missing_url_key.url": {KEY_IDS: [], KEY_ERRORS: ["missing URL"]},
+    "missing_url_key.webloc": {KEY_IDS: [], KEY_ERRORS: ["missing URL"]},
+    "piano_man.desktop": {KEY_IDS: [SongId(3327)], KEY_ERRORS: []},
+    "piano_man.url": {KEY_IDS: [SongId(3327)], KEY_ERRORS: []},
+    "piano_man.webloc": {KEY_IDS: [SongId(3327)], KEY_ERRORS: []},
+    "usdb_non_php.desktop": {KEY_IDS: [SongId(17590)], KEY_ERRORS: []},
+    "usdb_non_php.url": {KEY_IDS: [SongId(26380)], KEY_ERRORS: []},
+    "usdb_non_php.webloc": {KEY_IDS: [SongId(25930)], KEY_ERRORS: []},
+    "usdb_http.desktop": {KEY_IDS: [SongId(279)], KEY_ERRORS: []},
+    "usdb_http.url": {KEY_IDS: [SongId(279)], KEY_ERRORS: []},
+    "usdb_http.webloc": {KEY_IDS: [SongId(279)], KEY_ERRORS: []},
+    "usdb_short.desktop": {KEY_IDS: [SongId(1001)], KEY_ERRORS: []},
+    "usdb_short.url": {KEY_IDS: [SongId(1001)], KEY_ERRORS: []},
+    "usdb_short.webloc": {KEY_IDS: [SongId(1001)], KEY_ERRORS: []},
+    "wrong_middle_level.webloc": {KEY_IDS: [], KEY_ERRORS: ["missing tag dict"]},
+    "wrong_top_level.desktop": {KEY_IDS: [], KEY_ERRORS: ["missing tag Desktop Entry"]},
+    "wrong_top_level.url": {KEY_IDS: [], KEY_ERRORS: ["missing tag InternetShortcut"]},
+    "wrong_top_level.webloc": {KEY_IDS: [], KEY_ERRORS: ["missing tag plist"]},
+    "youtube.desktop": {
+        KEY_IDS: [],
+        KEY_ERRORS: ["Found URL has invalid domain: www.youtube.com"],
+    },
+    "youtube.url": {
+        KEY_IDS: [],
+        KEY_ERRORS: ["Found URL has invalid domain: youtu.be"],
+    },
+    "youtube.webloc": {
+        KEY_IDS: [],
+        KEY_ERRORS: ["Found URL has invalid domain: www.youtube.com"],
+    },
+    "empty.usdb_ids": {KEY_IDS: [], KEY_ERRORS: ["empty file"]},
     "ids_and_other_stuff.usdb_ids": {
         KEY_IDS: [],
         KEY_ERRORS: ["Invalid USDB ID in file"],
@@ -51,13 +96,14 @@ ids_per_file: dict[str, dict] = {
         ],
         KEY_ERRORS: [],
     },
-    "empty.usdb_ids": {KEY_IDS: [], KEY_ERRORS: ["empty file"]},
     "multi-column.usdb_ids": {KEY_IDS: [], KEY_ERRORS: ["Invalid USDB ID in file"]},
+    "broken.json": {KEY_IDS: [], KEY_ERRORS: ["broken JSON format"]},
+    "empty.json": {KEY_IDS: [], KEY_ERRORS: ["empty file"]},
+    "empty_array.json": {KEY_IDS: [], KEY_ERRORS: ["empty file"]},
     "ids.json": {KEY_IDS: [SongId(1), SongId(11586), SongId(3)], KEY_ERRORS: []},
-    "ids_LF.json": {KEY_IDS: [SongId(1), SongId(24112), SongId(3)], KEY_ERRORS: []},
     "ids_inline.json": {KEY_IDS: [SongId(1), SongId(29020), SongId(3)], KEY_ERRORS: []},
-    "macos-weblink.webloc": {KEY_IDS: [SongId(25930)], KEY_ERRORS: []},
-    "linux-weblink.desktop": {KEY_IDS: [SongId(17590)], KEY_ERRORS: []},
+    "ids_LF.json": {KEY_IDS: [SongId(1), SongId(24112), SongId(3)], KEY_ERRORS: []},
+    "missing_id_key.json": {KEY_IDS: [], KEY_ERRORS: ["missing id key"]},
 }
 
 
