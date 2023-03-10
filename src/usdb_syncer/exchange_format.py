@@ -22,25 +22,21 @@ class UnexpectedUSDBIDFileParserError(USDBIDFileParserError):
     """Unknown cause while reading file"""
 
     def __init__(self, detail: str | None = None):
-        super(UnexpectedUSDBIDFileParserError, self).__init__(
-            "Unexpected error reading file", detail
-        )
+        super().__init__("Unexpected error reading file", detail)
 
 
 class USDBIDFileParserReadError(USDBIDFileParserError):
     """Error reading file from file system"""
 
     def __init__(self, detail: str | None = None):
-        super(USDBIDFileParserReadError, self).__init__("failed to read file", detail)
+        super().__init__("failed to read file", detail)
 
 
 class USDBIDFileParserInvalidFormatError(USDBIDFileParserError):
     """Invalid file format"""
 
     def __init__(self, message: str, detail: str | None = None):
-        super(USDBIDFileParserInvalidFormatError, self).__init__(
-            f"invalid file format: {message}", detail
-        )
+        super().__init__(f"invalid file format: {message}", detail)
 
 
 class USDBIDFileParser:
