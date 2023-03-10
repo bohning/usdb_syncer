@@ -2,14 +2,45 @@
 
 import configparser
 import json
-import logging
 import os
-import re
 from urllib.parse import parse_qs, urlparse
 
 from bs4 import BeautifulSoup
 
 from usdb_syncer import SongId
+
+
+class USDBIDFileParserError(Exception):
+    """Differentiate known from unknown exceptions"""
+
+    def __init__(self, message: str, detail: str | None = None):
+        self.message = message
+        self.detail = detail
+
+
+class UnexpectedUSDBIDFileParserError(USDBIDFileParserError):
+    """Unknown cause while reading file"""
+
+    def __init__(self, detail: str | None = None):
+        super(UnexpectedUSDBIDFileParserError, self).__init__(
+            "Unexpected error reading file", detail
+        )
+
+
+class USDBIDFileParserReadError(USDBIDFileParserError):
+    """Error reading file from file system"""
+
+    def __init__(self, detail: str | None = None):
+        super(USDBIDFileParserReadError, self).__init__("failed to read file", detail)
+
+
+class USDBIDFileParserInvalidFormatError(USDBIDFileParserError):
+    """Invalid file format"""
+
+    def __init__(self, message: str, detail: str | None = None):
+        super(USDBIDFileParserInvalidFormatError, self).__init__(
+            f"invalid file format: {message}", detail
+        )
 
 
 class USDBIDFileParser:
@@ -22,7 +53,10 @@ class USDBIDFileParser:
         self.filepath = filepath
         self.ids = []
         self.errors = []
-        self.parse()
+        try:
+            self.parse()
+        except USDBIDFileParserError as exception:
+            self.errors.append(exception.message)
 
     def parse(self) -> None:
         file_extension = os.path.splitext(self.filepath)[1]
@@ -37,70 +71,65 @@ class USDBIDFileParser:
         elif file_extension == ".usdb_ids":
             self.parse_usdb_ids_file()
         else:
-            self.errors.append(f"File extension is not supported: {file_extension}")
+            raise USDBIDFileParserError("file extension is not supported")
 
     def parse_json_file(self) -> None:
         filecontent: str
         try:
             with open(self.filepath, "r", encoding="utf-8") as file:
                 filecontent = file.read()
-        except OSError:
-            self.errors.append(f"Failed to read file")
-            return
+        except OSError as exception:
+            raise USDBIDFileParserReadError() from exception
         except Exception as exception:
-            self.errors.append(f"Unexcpected error reading file: {exception}")
-            return
+            raise UnexpectedUSDBIDFileParserError() from exception
 
         if not filecontent:
-            self.errors.append("empty file")
-            return
+            raise USDBIDFileParserError("empty file")
 
         parsed_json = None
         try:
             parsed_json = json.loads(filecontent)
         except json.decoder.JSONDecodeError as exception:
-            self.errors.append(f"invalid JSON format: {exception}")
-            return
+            raise USDBIDFileParserError("invalid JSON format") from exception
         except Exception as exception:
-            self.errors.append(f"Unexcpected error parsing file: {exception}")
-            return
+            raise UnexpectedUSDBIDFileParserError() from exception
 
         if not isinstance(parsed_json, list):
-            self.errors.append("File does not contain a JSON array")
-            return
+            raise USDBIDFileParserError("file does not contain a JSON array")
 
         if not parsed_json:
-            self.errors.append("Empty JSON array")
-            return
+            raise USDBIDFileParserError("empty JSON array")
 
         key = "id"
         try:
             self.ids = [SongId(int(element[key])) for element in parsed_json]
         except ValueError as exception:
-            self.errors.append("Invalid or missing USDB ID in file")
+            raise USDBIDFileParserError(
+                "Invalid or missing USDB ID in file"
+            ) from exception
         except IndexError as exception:
-            self.errors.append(f"Missing key '{key}': {exception}")
-            return
+            raise USDBIDFileParserError(f"missing key '{key}'") from exception
         except Exception as exception:
-            # handle any other exception
-            self.errors.append("Invalid or missing USDB ID in file")
+            raise USDBIDFileParserError(
+                "invalid or missing USDB ID in file"
+            ) from exception
 
     def parse_ini_file(self, section: str, key: str) -> None:
         config = configparser.ConfigParser()
         try:
             config.read(self.filepath)
-        except configparser.MissingSectionHeaderError:
-            self.errors.append("invalid file format: missing a section header")
-            return
-        except Exception:
-            self.errors.append(f"invalid file format: missing or dublicate option")
-            return
+        except configparser.MissingSectionHeaderError as exception:
+            raise USDBIDFileParserInvalidFormatError(
+                "missing a section header"
+            ) from exception
+        except Exception as exception:
+            raise USDBIDFileParserInvalidFormatError(
+                "missing or dublicate option"
+            ) from exception
         if section not in config:
-            self.errors.append(f"invalid file format: missing section '{section}'")
-            return
+            raise USDBIDFileParserInvalidFormatError(f"missing section '{section}'")
         if key not in config[section]:
-            self.errors.append(f"invalid file format: missing key '{key}'")
-            return
+            raise USDBIDFileParserInvalidFormatError(f"missing key '{key}'")
         url = config[section][key]
         self.parse_url(url)
 
@@ -114,37 +143,29 @@ class USDBIDFileParser:
         try:
             with open(self.filepath, "r", encoding="utf-8") as file:
                 soup = BeautifulSoup(file, features="lxml-xml")
-        except OSError:
-            self.errors.append(f"Failed to read file")
-            return
+        except OSError as exception:
+            raise USDBIDFileParserReadError() from exception
         except Exception as exception:
-            self.errors.append(f"Unexcpected error reading file: {exception}")
-            return
+            raise UnexpectedUSDBIDFileParserError() from exception
 
         tag = "plist"
         xml_plist = soup.find_all(tag)
         if not xml_plist:
-            self.errors.append(f"invalid file format: missing tag '{tag}'")
-            return
+            raise USDBIDFileParserInvalidFormatError(f"missing tag '{tag}'")
         if len(xml_plist) > 1:
-            self.errors.append(f"invalid file format: multiple tag '{tag}'")
-            return
+            raise USDBIDFileParserInvalidFormatError(f"multiple tag '{tag}'")
         tag = "dict"
         xml_dict = xml_plist[0].find_all(tag)
         if not xml_dict:
-            self.errors.append(f"invalid file format: missing tag '{tag}'")
-            return
+            raise USDBIDFileParserInvalidFormatError(f"missing tag '{tag}'")
         if len(xml_dict) > 1:
-            self.errors.append(f"invalid file format: multiple tag '{tag}'")
-            return
+            raise USDBIDFileParserInvalidFormatError(f"multiple tag '{tag}'")
         tag = "string"
         xml_string = xml_dict[0].find_all(tag)
         if not xml_string:
-            self.errors.append(f"invalid file format: missing URL tag '{tag}'")
-            return
+            raise USDBIDFileParserInvalidFormatError(f"missing URL tag '{tag}'")
         if len(xml_string) > 1:
-            self.errors.append(f"invalid file format: multiple URLs detected")
-            return
+            raise USDBIDFileParserInvalidFormatError("multiple URLs detected")
 
         url = xml_string[0].get_text()
         self.parse_url(url)
@@ -154,62 +175,54 @@ class USDBIDFileParser:
         try:
             with open(self.filepath, "r", encoding="utf-8") as file:
                 lines = file.readlines()
-        except OSError:
-            self.errors.append(f"Failed to read file")
-            return
+        except OSError as exception:
+            raise USDBIDFileParserReadError() from exception
         except Exception as exception:
-            self.errors.append(f"Unexcpected error reading file: {exception}")
-            return
+            raise UnexpectedUSDBIDFileParserError() from exception
 
         if not lines:
-            self.errors.append("empty file")
-            return
+            raise USDBIDFileParserError("empty file")
 
         try:
             self.ids = [SongId(int(line)) for line in lines]
         except ValueError as exception:
-            self.errors.append("Invalid USDB ID in file")
+            raise USDBIDFileParserError("invalid USDB ID in file") from exception
         except Exception as exception:
-            # handle any other exception
-            self.errors.append("Invalid USDB ID in file")
+            raise USDBIDFileParserError("invalid USDB ID in file") from exception
 
     def parse_url(self, url: str | None) -> None:
         if not url:
-            self.errors.append("No url found")
-            return
+            raise USDBIDFileParserError("no URL found")
         parsed_url = urlparse(url)
         if not parsed_url.netloc:
-            self.errors.append(f"Malformed URL: {url}")
-            return
+            raise USDBIDFileParserError(f"malformed URL: {url}")
         if parsed_url.netloc != "usdb.animux.de":
-            self.errors.append(f"Found URL has invalid domain: {parsed_url.netloc}")
-            return
+            raise USDBIDFileParserError(
+                f"found URL has invalid domain: {parsed_url.netloc}"
+            )
         if not parsed_url.query:
-            self.errors.append(f"Found URL has no query parameters: {url}")
-            return
+            raise USDBIDFileParserError(f"found URL has no query parameters: {url}")
         query_params = parse_qs(parsed_url.query)
         id_param = "id"
         if id_param not in query_params:
-            self.errors.append(
-                f"Missing '{id_param}' query parameter in found URL: {url}"
+            raise USDBIDFileParserError(
+                f"missing '{id_param}' query parameter in found URL: {url}"
             )
-            return
         if len(query_params[id_param]) > 1:
-            self.errors.append(
-                f"Multiple '{id_param}' query parameter in found URL: {url}"
+            raise USDBIDFileParserError(
+                f"multiple '{id_param}' query parameter in found URL: {url}"
             )
-            return
         try:
             self.ids = [SongId(int(query_params[id_param][0]))]
-        except ValueError:
-            self.errors.append(
-                f"Invalid '{id_param}' query parameter in found URL: {url}"
-            )
+        except ValueError as exception:
+            raise USDBIDFileParserError(
+                f"invalid '{id_param}' query parameter in found URL: {url}"
+            ) from exception
         except Exception as exception:
             # handle any other exception
-            self.errors.append(
-                f"Could not parse '{id_param}' query parameter in '{url}': {exception}"
-            )
+            raise USDBIDFileParserError(
+                f"could not parse '{id_param}' query parameter in '{url}': {exception}"
+            ) from exception
 
 
 def write_song_ids_to_file(path: str, song_ids: list[SongId]) -> None:

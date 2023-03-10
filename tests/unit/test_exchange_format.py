@@ -24,19 +24,19 @@ ids_per_file: dict[str, dict] = {
     "broken_usdb_link.desktop": {
         KEY_IDS: [],
         KEY_ERRORS: [
-            "Found URL has no query parameters: http://usdb.animux.de/index.phid=118"
+            "found URL has no query parameters: http://usdb.animux.de/index.phid=118"
         ],
     },
     "broken_usdb_link.url": {
         KEY_IDS: [],
         KEY_ERRORS: [
-            "Found URL has no query parameters: http://usdb.animux.de/index.phid=118"
+            "found URL has no query parameters: http://usdb.animux.de/index.phid=118"
         ],
     },
     "broken_usdb_link.webloc": {
         KEY_IDS: [],
         KEY_ERRORS: [
-            "Found URL has no query parameters: http://usdb.animux.de/index.phid=118"
+            "found URL has no query parameters: http://usdb.animux.de/index.phid=118"
         ],
     },
     "dublicate_url_key.desktop": {
@@ -105,20 +105,20 @@ ids_per_file: dict[str, dict] = {
     },
     "youtube.desktop": {
         KEY_IDS: [],
-        KEY_ERRORS: ["Found URL has invalid domain: www.youtube.com"],
+        KEY_ERRORS: ["found URL has invalid domain: www.youtube.com"],
     },
     "youtube.url": {
         KEY_IDS: [],
-        KEY_ERRORS: ["Found URL has invalid domain: youtu.be"],
+        KEY_ERRORS: ["found URL has invalid domain: youtu.be"],
     },
     "youtube.webloc": {
         KEY_IDS: [],
-        KEY_ERRORS: ["Found URL has invalid domain: www.youtube.com"],
+        KEY_ERRORS: ["found URL has invalid domain: www.youtube.com"],
     },
     "empty.usdb_ids": {KEY_IDS: [], KEY_ERRORS: ["empty file"]},
     "ids_and_other_stuff.usdb_ids": {
         KEY_IDS: [],
-        KEY_ERRORS: ["Invalid USDB ID in file"],
+        KEY_ERRORS: ["invalid USDB ID in file"],
     },
     "ids.usdb_ids": {
         KEY_IDS: [
@@ -144,21 +144,16 @@ ids_per_file: dict[str, dict] = {
         ],
         KEY_ERRORS: [],
     },
-    "multi-column.usdb_ids": {KEY_IDS: [], KEY_ERRORS: ["Invalid USDB ID in file"]},
-    "broken.json": {
-        KEY_IDS: [],
-        KEY_ERRORS: [
-            "invalid JSON format: Expecting ',' delimiter: line 3 column 18 (char 23)"
-        ],
-    },
+    "multi-column.usdb_ids": {KEY_IDS: [], KEY_ERRORS: ["invalid USDB ID in file"]},
+    "broken.json": {KEY_IDS: [], KEY_ERRORS: ["invalid JSON format"]},
     "empty.json": {KEY_IDS: [], KEY_ERRORS: ["empty file"]},
-    "empty_array.json": {KEY_IDS: [], KEY_ERRORS: ["Empty JSON array"]},
+    "empty_array.json": {KEY_IDS: [], KEY_ERRORS: ["empty JSON array"]},
     "ids.json": {KEY_IDS: [SongId(1), SongId(11586), SongId(3)], KEY_ERRORS: []},
     "ids_inline.json": {KEY_IDS: [SongId(1), SongId(29020), SongId(3)], KEY_ERRORS: []},
     "ids_LF.json": {KEY_IDS: [SongId(1), SongId(24112), SongId(3)], KEY_ERRORS: []},
     "missing_id_key.json": {
         KEY_IDS: [],
-        KEY_ERRORS: ["Invalid or missing USDB ID in file"],
+        KEY_ERRORS: ["invalid or missing USDB ID in file"],
     },
 }
 
