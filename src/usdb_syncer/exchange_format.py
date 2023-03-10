@@ -39,6 +39,13 @@ class USDBIDFileParserInvalidFormatError(USDBIDFileParserError):
         super().__init__(f"invalid file format: {message}", detail)
 
 
+class USDBIDFileParserEmptyFileError(USDBIDFileParserError):
+    """Files do not contain any USDB ID but were selected for import"""
+
+    def __init__(self, detail: str | None = None):
+        super().__init__("empty file", detail)
+
+
 class USDBIDFileParser:
     """file parser for USDB IDs"""
 
@@ -69,7 +76,7 @@ class USDBIDFileParser:
         else:
             raise USDBIDFileParserError("file extension is not supported")
 
-    def parse_json_file(self) -> None:
+    def get_json_file_content(self) -> str:
         filecontent: str
         try:
             with open(self.filepath, "r", encoding="utf-8") as file:
@@ -78,9 +85,12 @@ class USDBIDFileParser:
             raise USDBIDFileParserReadError() from exception
         except Exception as exception:
             raise UnexpectedUSDBIDFileParserError() from exception
-
         if not filecontent:
-            raise USDBIDFileParserError("empty file")
+            raise USDBIDFileParserEmptyFileError()
+        return filecontent
+
+    def parse_json_file(self) -> None:
+        filecontent = self.get_json_file_content()
 
         parsed_json = None
         try:
@@ -88,7 +98,9 @@ class USDBIDFileParser:
         except json.decoder.JSONDecodeError as exception:
             raise USDBIDFileParserError("invalid JSON format") from exception
         except Exception as exception:
-            raise UnexpectedUSDBIDFileParserError() from exception
+            raise USDBIDFileParserError(
+                "Unexpected error parsing file content"
+            ) from exception
 
         if not isinstance(parsed_json, list):
             raise USDBIDFileParserError("file does not contain a JSON array")
@@ -177,7 +189,7 @@ class USDBIDFileParser:
             raise UnexpectedUSDBIDFileParserError() from exception
 
         if not lines:
-            raise USDBIDFileParserError("empty file")
+            raise USDBIDFileParserEmptyFileError()
 
         try:
             self.ids = [SongId(int(line)) for line in lines]
