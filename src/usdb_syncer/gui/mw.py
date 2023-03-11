@@ -305,7 +305,8 @@ class MainWindow(Ui_MainWindow, QMainWindow):
             song_id for song_id in unique_song_ids if not self.table.get_data(song_id)
         ]:
             logger.warning(
-                "some imported USDB IDs are not available: "
+                f"{len(unavailable_song_ids)}/{len(unique_song_ids)} "
+                "imported USDB IDs are not available: "
                 f"{[str(song_id) for song_id in unavailable_song_ids]}"
             )
             # select available songs to prepare Download
@@ -315,7 +316,8 @@ class MainWindow(Ui_MainWindow, QMainWindow):
                 if song_id not in unavailable_song_ids
             ]
             logger.info(
-                "available USDB IDs are selected for Download: "
+                f"available {len(available_song_ids)}/{len(unique_song_ids)} "
+                "imported USDB IDs are selected for Download: "
                 f"{[str(song_id) for song_id in available_song_ids]}"
             )
             self.table.set_selection_to_song_ids(available_song_ids)
