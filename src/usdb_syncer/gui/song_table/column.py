@@ -1,6 +1,6 @@
 """Table model for song data."""
 
-from enum import Enum
+from enum import Enum, IntEnum
 from functools import cache
 
 from PySide6.QtCore import QModelIndex, QPersistentModelIndex
@@ -17,7 +17,7 @@ class CustomRole(int, Enum):
     ALL_DATA = 100
 
 
-class Column(Enum):
+class Column(IntEnum):
     """Table columns."""
 
     SONG_ID = 0
