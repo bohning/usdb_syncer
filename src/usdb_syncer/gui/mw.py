@@ -291,6 +291,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
             return
         song_ids = [id for parser in file_parsers for id in parser.ids]
         unique_song_ids = list(set(song_ids))
+        unique_song_ids.sort(key=lambda song_id: song_id.value)
         logger.info(
             f"read {len(file_list)} file(s), "
             f"found {len(unique_song_ids)} "
