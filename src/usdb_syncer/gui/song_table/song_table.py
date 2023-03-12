@@ -10,6 +10,7 @@ from PySide6.QtCore import QItemSelection, QItemSelectionModel, QModelIndex, QOb
 from PySide6.QtWidgets import QAbstractItemView, QHeaderView, QTableView
 
 from usdb_syncer import SongId
+from usdb_syncer.gui.song_table.column import Column
 from usdb_syncer.gui.song_table.sort_filter_proxy_model import SortFilterProxyModel
 from usdb_syncer.gui.song_table.table_model import CustomRole, TableModel
 from usdb_syncer.logger import get_logger
@@ -40,28 +41,32 @@ class SongTable:
     def _setup_table_header(self) -> None:
         header = self._view.horizontalHeader()
         header.setSectionResizeMode(QHeaderView.ResizeMode.ResizeToContents)
-        header.setSectionResizeMode(0, QHeaderView.ResizeMode.Fixed)
-        header.resizeSection(0, 84)
-        header.setSectionResizeMode(1, QHeaderView.ResizeMode.Interactive)
-        header.setSectionResizeMode(2, QHeaderView.ResizeMode.Interactive)
-        header.setSectionResizeMode(3, QHeaderView.ResizeMode.Interactive)
-        header.setSectionResizeMode(4, QHeaderView.ResizeMode.Interactive)
-        header.setSectionResizeMode(5, QHeaderView.ResizeMode.Fixed)
-        header.resizeSection(5, header.sectionSize(5))
-        header.setSectionResizeMode(6, QHeaderView.ResizeMode.Fixed)
-        header.resizeSection(6, header.sectionSize(6))
-        header.setSectionResizeMode(7, QHeaderView.ResizeMode.Fixed)
-        header.resizeSection(7, header.sectionSize(7))
-        header.setSectionResizeMode(8, QHeaderView.ResizeMode.Fixed)
-        header.resizeSection(8, 24)
-        header.setSectionResizeMode(9, QHeaderView.ResizeMode.Fixed)
-        header.resizeSection(9, 24)
-        header.setSectionResizeMode(10, QHeaderView.ResizeMode.Fixed)
-        header.resizeSection(10, 24)
-        header.setSectionResizeMode(11, QHeaderView.ResizeMode.Fixed)
-        header.resizeSection(11, 24)
-        header.setSectionResizeMode(12, QHeaderView.ResizeMode.Fixed)
-        header.resizeSection(12, 24)
+        header.setSectionResizeMode(Column.SONG_ID, QHeaderView.ResizeMode.Fixed)
+
+        font_metrics = header.fontMetrics()
+        header.resizeSection(Column.SONG_ID, font_metrics.horizontalAdvance("1234567"))
+        header.setSectionResizeMode(Column.ARTIST, QHeaderView.ResizeMode.Interactive)
+        header.setSectionResizeMode(Column.TITLE, QHeaderView.ResizeMode.Interactive)
+        header.setSectionResizeMode(Column.LANGUAGE, QHeaderView.ResizeMode.Interactive)
+        header.setSectionResizeMode(Column.EDITION, QHeaderView.ResizeMode.Interactive)
+        header.setSectionResizeMode(Column.GOLDEN_NOTES, QHeaderView.ResizeMode.Fixed)
+        header.resizeSection(
+            Column.GOLDEN_NOTES, header.sectionSize(Column.GOLDEN_NOTES)
+        )
+        header.setSectionResizeMode(Column.RATING, QHeaderView.ResizeMode.Fixed)
+        header.resizeSection(Column.RATING, header.sectionSize(Column.RATING))
+        header.setSectionResizeMode(Column.VIEWS, QHeaderView.ResizeMode.Fixed)
+        header.resizeSection(Column.VIEWS, header.sectionSize(Column.VIEWS))
+        header.setSectionResizeMode(Column.TXT, QHeaderView.ResizeMode.Fixed)
+        header.resizeSection(Column.TXT, 24)
+        header.setSectionResizeMode(Column.AUDIO, QHeaderView.ResizeMode.Fixed)
+        header.resizeSection(Column.AUDIO, 24)
+        header.setSectionResizeMode(Column.VIDEO, QHeaderView.ResizeMode.Fixed)
+        header.resizeSection(Column.VIDEO, 24)
+        header.setSectionResizeMode(Column.COVER, QHeaderView.ResizeMode.Fixed)
+        header.resizeSection(Column.COVER, 24)
+        header.setSectionResizeMode(Column.BACKGROUND, QHeaderView.ResizeMode.Fixed)
+        header.resizeSection(Column.BACKGROUND, 24)
 
     ### selection model
 
