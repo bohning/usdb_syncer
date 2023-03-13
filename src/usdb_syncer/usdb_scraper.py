@@ -399,7 +399,7 @@ def _all_urls_in_comment(contents: BeautifulSoup, text: str) -> Iterator[str]:
         yield match.group(1)
 
 
-def get_notes(song_id: SongId, logger: Log) -> str:
+def get_notes(song_id: SongId, logger: Log) -> tuple[str, bool]:
     """Retrieve notes for a song."""
     logger.debug(f"fetch notes for song {song_id}")
     html = get_usdb_page(
@@ -410,9 +410,11 @@ def get_notes(song_id: SongId, logger: Log) -> str:
         payload={"wd": "1"},
     )
     soup = BeautifulSoup(html, "lxml")
-    text = _parse_song_txt_from_txt_page(soup)
-    return text
+    text, success = _parse_song_txt_from_txt_page(soup)
+    return text, success
 
 
-def _parse_song_txt_from_txt_page(soup: BeautifulSoup) -> str:
-    return soup.find("textarea").string  # type: ignore
+def _parse_song_txt_from_txt_page(soup: BeautifulSoup) -> tuple[str, bool]:
+    if textarea := soup.find("textarea"):
+        return textarea.string, True  # type: ignore
+    return "", False

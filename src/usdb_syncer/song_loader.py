@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import os
-from typing import Callable, Iterator
+from typing import Callable, Iterator, Union
 
 import attrs
 from PySide6.QtCore import QRunnable, QThreadPool
@@ -82,8 +82,10 @@ class Context:
     @classmethod
     def new(
         cls, details: SongDetails, options: Options, info: DownloadInfo, logger: Log
-    ) -> Context:
-        txt_str = usdb_scraper.get_notes(details.song_id, logger)
+    ) -> Union[Context, None]:
+        txt_str, success = usdb_scraper.get_notes(details.song_id, logger)
+        if not success:
+            return None
         txt = SongTxt.parse(txt_str, logger)
         txt.sanitize()
         txt.headers.creator = txt.headers.creator or details.uploader or None
@@ -143,8 +145,13 @@ class SongLoader(QRunnable):
             return
         self.logger.info(f"Found '{details.artist} - {details.title}' on  USDB")
         ctx = Context.new(details, self.options, self.data, self.logger)
+        if not ctx:
+            self.logger.info(
+                "Aborted; not logged in. Log in to USDB in your browser and select the browser in the USDB Syncer settings. "
+            )
+            return
         if not ctx.new_src_txt:
-            ctx.logger.info("Aborted; song is already synchronized")
+            ctx.logger.info("Aborted; song is already synchronized.")
             return
         os.makedirs(ctx.locations.dir_path, exist_ok=True)
         _ensure_correct_folder_name(ctx.locations)
