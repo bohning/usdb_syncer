@@ -44,7 +44,7 @@ class SongTable:
         header.setSectionResizeMode(Column.SONG_ID, QHeaderView.ResizeMode.Fixed)
 
         font_metrics = header.fontMetrics()
-        header.resizeSection(Column.SONG_ID, font_metrics.horizontalAdvance("1234567"))
+        header.resizeSection(Column.SONG_ID, font_metrics.horizontalAdvance("12345678"))
         header.setSectionResizeMode(Column.ARTIST, QHeaderView.ResizeMode.Interactive)
         header.setSectionResizeMode(Column.TITLE, QHeaderView.ResizeMode.Interactive)
         header.setSectionResizeMode(Column.LANGUAGE, QHeaderView.ResizeMode.Interactive)
