@@ -15,7 +15,7 @@ from usdb_syncer.resource_dl import ImageKind, download_and_process_image
 from usdb_syncer.song_data import LocalFiles, SongData
 from usdb_syncer.song_txt import Headers, SongTxt
 from usdb_syncer.sync_meta import SyncMeta
-from usdb_syncer.usdb_scraper import SongDetails
+from usdb_syncer.usdb_scraper import RequestMethod, SongDetails, get_usdb_page
 from usdb_syncer.utils import (
     is_name_maybe_with_suffix,
     next_unique_directory,
@@ -154,6 +154,7 @@ class SongLoader(QRunnable):
         _maybe_download_background(ctx)
         _maybe_write_txt(ctx)
         _write_sync_meta(ctx)
+        _maybe_upload_txt(ctx)
         self.logger.info("All done!")
         self.on_finish(
             self.song_id,
@@ -271,6 +272,26 @@ def _maybe_write_txt(ctx: Context) -> None:
 
 def _write_sync_meta(ctx: Context) -> None:
     ctx.sync_meta.to_file(ctx.locations.dir_path)
+
+
+def _maybe_upload_txt(ctx: Context) -> None:
+    ctx.logger.info("\t- uploading to usdb...")
+
+    payload = {
+        "coverinput": "",
+        "sampleinput": "",
+        "txt": str(ctx.txt),  # re-insert meta-tags to #VIDEO!
+        "filename": ctx.locations.filename_stem + ".txt",
+    }
+
+    html = get_usdb_page(
+        "index.php",
+        RequestMethod.POST,
+        headers={"Content-Type": "application/x-www-form-urlencoded"},
+        params={"link": "editsongsupdate", "id": str(ctx.details.song_id.value)},
+        payload=payload,
+    )
+    ctx.logger.debug(html)
 
 
 def _ensure_correct_folder_name(locations: Locations) -> None:
