@@ -156,6 +156,19 @@ class MetaTags:
                 case _:
                     logger.warning(f"unknown key for meta tag: '{pair}'")
 
+    def __str__(self) -> str:
+        metatag_string = "#VIDEO:"
+        if self.audio:
+            metatag_string += f"a={self.audio},"
+        if self.video:
+            metatag_string += f"v={self.video},"
+        if self.cover:
+            metatag_string += f"co={self.cover.source},"
+        if self.background:
+            metatag_string += f"bg={self.background.source},"
+
+        return metatag_string.removesuffix(",")
+
     def is_audio_only(self) -> bool:
         """True if a resource is explicitly set for audio only."""
         return bool(self.audio and not self.video)

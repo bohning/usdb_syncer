@@ -193,10 +193,6 @@ def get_usdb_page(
                 timeout=60,
                 cookies=settings.get_browser().cookies(),
             )
-            _logger.debug(f"REQUEST method: {response.request.method}")
-            _logger.debug(f"REQUEST url: {response.request.url}")
-            _logger.debug(f"REQUEST headers: {response.request.headers}")
-            _logger.debug(f"REQUEST body: {response.request.body}")
         case _ as unreachable:
             assert_never(unreachable)
 

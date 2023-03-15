@@ -277,10 +277,12 @@ def _write_sync_meta(ctx: Context) -> None:
 def _maybe_upload_txt(ctx: Context) -> None:
     ctx.logger.info("\t- uploading to usdb...")
 
+    txt_to_upload = _prepare_txt_for_upload(ctx)
+
     payload = {
         "coverinput": "",
         "sampleinput": "",
-        "txt": str(ctx.txt),  # re-insert meta-tags to #VIDEO!
+        "txt": txt_to_upload,
         "filename": ctx.locations.filename_stem + ".txt",
     }
 
@@ -291,7 +293,15 @@ def _maybe_upload_txt(ctx: Context) -> None:
         params={"link": "editsongsupdate", "id": str(ctx.details.song_id.value)},
         payload=payload,
     )
-    ctx.logger.debug(html)
+
+
+def _prepare_txt_for_upload(ctx: Context) -> str:
+    lines = str(ctx.txt).splitlines()
+    lines_with_metatags = [
+        str(ctx.txt.meta_tags) if line.startswith("#VIDEO") else line for line in lines
+    ]
+    txt = "\r\n".join(lines_with_metatags)  # USDB expects \r\n
+    return txt
 
 
 def _ensure_correct_folder_name(locations: Locations) -> None:
