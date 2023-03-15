@@ -9,13 +9,14 @@ import attrs
 from PySide6.QtCore import QRunnable, QThreadPool
 
 from usdb_syncer import SongId, resource_dl, usdb_scraper
+from usdb_syncer.constants import Usdb
 from usdb_syncer.download_options import Options, download_options
 from usdb_syncer.logger import Log, get_logger
 from usdb_syncer.resource_dl import ImageKind, download_and_process_image
 from usdb_syncer.song_data import LocalFiles, SongData
 from usdb_syncer.song_txt import Headers, SongTxt
 from usdb_syncer.sync_meta import SyncMeta
-from usdb_syncer.usdb_scraper import SongDetails
+from usdb_syncer.usdb_scraper import SongDetails, get_usdb_login_status
 from usdb_syncer.utils import (
     is_name_maybe_with_suffix,
     next_unique_directory,
@@ -173,6 +174,15 @@ def download_songs(
     on_start: Callable[[SongId], None],
     on_finish: Callable[[SongId, LocalFiles], None],
 ) -> None:
+    logger = get_logger(__file__)
+    if not get_usdb_login_status():
+        logger.error(
+            f"Download(s) cancelled. You are not logged in at {Usdb.BASE_URL}. Log in with your browser and select it in the syncer settings."
+        )
+        return
+    logger.info(
+        f"You are logged in at {Usdb.BASE_URL}. Starting to process the download queue."
+    )
     options = download_options()
     threadpool = QThreadPool.globalInstance()
     for info in infos:
