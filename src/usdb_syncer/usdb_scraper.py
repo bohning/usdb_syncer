@@ -416,5 +416,5 @@ def get_notes(song_id: SongId, logger: Log) -> str | None:
 
 def _parse_song_txt_from_txt_page(soup: BeautifulSoup) -> str | None:
     if textarea := soup.find("textarea"):
-        return textarea.string, True  # type: ignore
+        return textarea.string  # type: ignore
     return None

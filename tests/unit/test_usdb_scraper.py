@@ -38,8 +38,8 @@ def test_encoding_and_decoding_song_meta() -> None:
 
 def test__parse_song_txt_from_txt_page(resource_dir: str) -> None:
     soup = get_soup(resource_dir, "txt_page.htm")
-    txt, success = _parse_song_txt_from_txt_page(soup)
-    assert success is True
+    txt = _parse_song_txt_from_txt_page(soup)
+    assert txt is not None
     assert txt.startswith("#ARTIST:")
     assert txt.endswith("\nE")
 
