@@ -17,6 +17,7 @@ class UsdbStrings:
     CREATED_BY: str
     VIEWS: str
     DATASET_NOT_FOUND = "Datensatz nicht gefunden"
+    WELCOME_PLEASE_LOGIN = "Welcome, Please login"
 
 
 class UsdbStringsEnglish(UsdbStrings):
