@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import os
-from typing import Callable, Iterator, Union
+from typing import Callable, Iterator
 
 import attrs
 from PySide6.QtCore import QRunnable, QThreadPool
@@ -82,9 +82,9 @@ class Context:
     @classmethod
     def new(
         cls, details: SongDetails, options: Options, info: DownloadInfo, logger: Log
-    ) -> Union[Context, None]:
-        txt_str, success = usdb_scraper.get_notes(details.song_id, logger)
-        if not success:
+    ) -> Context | None:
+        txt_str = usdb_scraper.get_notes(details.song_id, logger)
+        if not txt_str:
             return None
         txt = SongTxt.parse(txt_str, logger)
         txt.sanitize()
