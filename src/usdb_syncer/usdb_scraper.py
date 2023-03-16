@@ -224,6 +224,15 @@ def get_usdb_login_status() -> bool:
     return True
 
 
+def get_usdb_mod_status() -> bool:
+    html = get_usdb_page("index.php", params={"link": "home"})
+    soup = BeautifulSoup(html, "lxml")
+    usdb_strings = _get_usdb_strings(soup)
+    if usdb_strings.VERIFY_NEW_SONGS in soup.get_text():
+        return True
+    return False
+
+
 def _parse_song_page(soup: BeautifulSoup, song_id: SongId) -> SongDetails:
     usdb_strings = _get_usdb_strings(soup)
     details_table, comments_table, *_ = soup.find_all("table", border="0", width="500")

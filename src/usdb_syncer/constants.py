@@ -16,6 +16,7 @@ class UsdbStrings:
     DATE: str
     CREATED_BY: str
     VIEWS: str
+    VERIFY_NEW_SONGS: str
     DATASET_NOT_FOUND = "Datensatz nicht gefunden"
     WELCOME_PLEASE_LOGIN = "Welcome, Please login"
 
@@ -31,6 +32,7 @@ class UsdbStringsEnglish(UsdbStrings):
     DATE = "Date"
     CREATED_BY = "Created by"
     VIEWS = "Views"
+    VERIFY_NEW_SONGS = "Verify New Songs"
 
 
 class UsdbStringsGerman(UsdbStrings):
@@ -44,6 +46,7 @@ class UsdbStringsGerman(UsdbStrings):
     DATE = "Datum"
     CREATED_BY = "Erstellt von"
     VIEWS = "Aufrufe"
+    VERIFY_NEW_SONGS = "Neue Songs verifizieren"
 
 
 class UsdbStringsFrench(UsdbStrings):
@@ -57,6 +60,7 @@ class UsdbStringsFrench(UsdbStrings):
     DATE = "Date"
     CREATED_BY = "créé par"
     VIEWS = "Affichages"
+    VERIFY_NEW_SONGS = "Vérifier les nouvelles chansons"
 
 
 class Usdb:

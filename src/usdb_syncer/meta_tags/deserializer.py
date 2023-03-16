@@ -163,9 +163,35 @@ class MetaTags:
         if self.video:
             metatag_string += f"v={self.video},"
         if self.cover:
-            metatag_string += f"co={self.cover.source},"
+            if self.cover.source:
+                metatag_string += f"co={self.cover.source},"
+            if self.cover.protocol and self.cover.protocol != "https":
+                metatag_string += f"co-protocol={self.cover.protocol},"
+            if self.cover.rotate:
+                metatag_string += f"co-rotate={self.cover.rotate},"
+            if self.cover.crop:
+                metatag_string += f"co-crop={self.cover.crop.left}-{self.cover.crop.upper}-{self.cover.crop.right-self.cover.crop.left}-{self.cover.crop.lower-self.cover.crop.upper},"
+            if self.cover.resize:
+                metatag_string += (
+                    f"co-resize={self.cover.resize.width}-{self.cover.resize.height},"
+                )
+            if self.cover.contrast:
+                metatag_string += f"co-contrast={self.cover.contrast},"
         if self.background:
-            metatag_string += f"bg={self.background.source},"
+            if self.background.source:
+                metatag_string += f"bg={self.background.source},"
+            if self.background.crop:
+                metatag_string += f"bg-crop={self.background.crop.left}-{self.background.crop.upper}-{self.background.crop.right-self.background.crop.left}-{self.background.crop.lower-self.background.crop.upper},"
+            if self.background.resize:
+                metatag_string += f"bg-resize={self.background.resize.width}-{self.background.resize.height},"
+        if self.player1:
+            metatag_string += f"p1={self.player1},"
+        if self.player2:
+            metatag_string += f"p2={self.player2},"
+        if self.preview:
+            metatag_string += f"preview={self.preview},"
+        if self.medley:
+            metatag_string += f"medley={self.medley.start}-{self.medley.end},"
 
         return metatag_string.removesuffix(",")
 

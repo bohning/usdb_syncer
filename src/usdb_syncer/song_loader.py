@@ -20,6 +20,7 @@ from usdb_syncer.usdb_scraper import (
     RequestMethod,
     SongDetails,
     get_usdb_login_status,
+    get_usdb_mod_status,
     get_usdb_page,
 )
 from usdb_syncer.utils import (
@@ -297,12 +298,20 @@ def _write_sync_meta(ctx: Context) -> None:
 
 
 def _maybe_upload_txt(ctx: Context) -> None:
-    ctx.logger.info("\t- uploading to usdb...")
+    if not get_usdb_mod_status():
+        return
+    ctx.logger.info("You are logged in as a moderator - uploading song to usdb.")
 
+    if ctx.txt.meta_tags.cover and ctx.txt.meta_tags.cover.source.endswith(
+        (".jpg", ".jpeg")
+    ):
+        coverinput = ctx.txt.meta_tags.cover.source_url()
+    else:
+        coverinput = ""
     txt_to_upload = _prepare_txt_for_upload(ctx)
 
     payload = {
-        "coverinput": "",
+        "coverinput": coverinput,
         "sampleinput": "",
         "txt": txt_to_upload,
         "filename": ctx.locations.filename_stem + ".txt",
