@@ -216,6 +216,14 @@ def get_usdb_details(song_id: SongId) -> SongDetails | None:
     return _parse_song_page(soup, song_id)
 
 
+def get_usdb_login_status() -> bool:
+    html = get_usdb_page("index.php", params={"link": "home"})
+    soup = BeautifulSoup(html, "lxml")
+    if UsdbStrings.WELCOME_PLEASE_LOGIN in soup.get_text():
+        return False
+    return True
+
+
 def _parse_song_page(soup: BeautifulSoup, song_id: SongId) -> SongDetails:
     usdb_strings = _get_usdb_strings(soup)
     details_table, comments_table, *_ = soup.find_all("table", border="0", width="500")
@@ -399,7 +407,7 @@ def _all_urls_in_comment(contents: BeautifulSoup, text: str) -> Iterator[str]:
         yield match.group(1)
 
 
-def get_notes(song_id: SongId, logger: Log) -> str:
+def get_notes(song_id: SongId, logger: Log) -> str | None:
     """Retrieve notes for a song."""
     logger.debug(f"fetch notes for song {song_id}")
     html = get_usdb_page(
@@ -414,5 +422,7 @@ def get_notes(song_id: SongId, logger: Log) -> str:
     return text
 
 
-def _parse_song_txt_from_txt_page(soup: BeautifulSoup) -> str:
-    return soup.find("textarea").string  # type: ignore
+def _parse_song_txt_from_txt_page(soup: BeautifulSoup) -> str | None:
+    if textarea := soup.find("textarea"):
+        return textarea.string  # type: ignore
+    return None
