@@ -9,13 +9,19 @@ import attrs
 from PySide6.QtCore import QRunnable, QThreadPool
 
 from usdb_syncer import SongId, resource_dl, usdb_scraper
+from usdb_syncer.constants import Usdb
 from usdb_syncer.download_options import Options, download_options
 from usdb_syncer.logger import Log, get_logger
 from usdb_syncer.resource_dl import ImageKind, download_and_process_image
 from usdb_syncer.song_data import LocalFiles, SongData
 from usdb_syncer.song_txt import Headers, SongTxt
 from usdb_syncer.sync_meta import SyncMeta
-from usdb_syncer.usdb_scraper import RequestMethod, SongDetails, get_usdb_page
+from usdb_syncer.usdb_scraper import (
+    RequestMethod,
+    SongDetails,
+    get_usdb_login_status,
+    get_usdb_page,
+)
 from usdb_syncer.utils import (
     is_name_maybe_with_suffix,
     next_unique_directory,
@@ -82,8 +88,10 @@ class Context:
     @classmethod
     def new(
         cls, details: SongDetails, options: Options, info: DownloadInfo, logger: Log
-    ) -> Context:
+    ) -> Context | None:
         txt_str = usdb_scraper.get_notes(details.song_id, logger)
+        if not txt_str:
+            return None
         txt = SongTxt.parse(txt_str, logger)
         txt.sanitize()
         txt.headers.creator = txt.headers.creator or details.uploader or None
@@ -143,8 +151,13 @@ class SongLoader(QRunnable):
             return
         self.logger.info(f"Found '{details.artist} - {details.title}' on  USDB")
         ctx = Context.new(details, self.options, self.data, self.logger)
+        if not ctx:
+            self.logger.info(
+                "Aborted; not logged in. Log in to USDB in your browser and select the browser in the USDB Syncer settings. "
+            )
+            return
         if not ctx.new_src_txt:
-            ctx.logger.info("Aborted; song is already synchronized")
+            ctx.logger.info("Aborted; song is already synchronized.")
             return
         os.makedirs(ctx.locations.dir_path, exist_ok=True)
         _ensure_correct_folder_name(ctx.locations)
@@ -167,6 +180,15 @@ def download_songs(
     on_start: Callable[[SongId], None],
     on_finish: Callable[[SongId, LocalFiles], None],
 ) -> None:
+    logger = get_logger(__file__)
+    if not get_usdb_login_status():
+        logger.error(
+            f"Download(s) cancelled. You are not logged in at {Usdb.BASE_URL}. Log in with your browser and select it in the syncer settings."
+        )
+        return
+    logger.info(
+        f"You are logged in at {Usdb.BASE_URL}. Starting to process the download queue."
+    )
     options = download_options()
     threadpool = QThreadPool.globalInstance()
     for info in infos:
