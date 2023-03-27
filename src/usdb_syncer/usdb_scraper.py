@@ -22,7 +22,7 @@ from usdb_syncer.constants import (
 from usdb_syncer.logger import Log
 from usdb_syncer.typing_helpers import assert_never
 from usdb_syncer.usdb_song import UsdbSong
-from usdb_syncer.utils import extract_youtube_id
+from usdb_syncer.utils import extract_youtube_id, normalize
 
 _logger: logging.Logger = logging.getLogger(__file__)
 
@@ -162,7 +162,7 @@ def get_usdb_page(
     payload: dict[str, str] | None = None,
     params: dict[str, str] | None = None,
 ) -> str:
-    """Retrieve html subpage from usbd.
+    """Retrieve html subpage from usdb.
 
     Parameters:
         rel_url: relative url of page to retrieve
@@ -198,7 +198,7 @@ def get_usdb_page(
 
     response.raise_for_status()
     response.encoding = "utf-8"
-    return response.text
+    return normalize(response.text)
 
 
 def get_usdb_details(song_id: SongId) -> SongDetails | None:

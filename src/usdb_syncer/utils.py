@@ -4,6 +4,7 @@ import os
 import re
 import subprocess
 import sys
+import unicodedata
 
 from appdirs import AppDirs
 
@@ -101,3 +102,7 @@ def open_file_explorer(path: str) -> None:
 
 def add_to_system_path(path: str) -> None:
     os.environ["PATH"] = path + os.pathsep + os.environ["PATH"]
+
+
+def normalize(text: str) -> str:
+    return unicodedata.normalize("NFC", text)
