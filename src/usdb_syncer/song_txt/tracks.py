@@ -269,6 +269,21 @@ class Tracks:
         if notes_shortened > 0:
             logger.debug(f"FIX: {notes_shortened} touching notes shortened.")
 
+    def fix_overlapping_notes(self, logger: Log) -> None:
+        notes_shortened = 0
+        for track in self.all_tracks():
+            for num_line, line in enumerate(track):
+                for num_note, note in enumerate(line.notes[:-1]):
+                    if note.end() > line.notes[num_note + 1].start:
+                        note.shorten(note.end() - line.notes[num_note + 1].start)
+                        notes_shortened += 1
+                if not line.is_last():
+                    if line.end() > track[num_line + 1].start():
+                        line.notes[-1].shorten(line.end() - track[num_line + 1].start())
+                        notes_shortened += 1
+        if notes_shortened > 0:
+            logger.debug(f"FIX: {notes_shortened} overlapping notes shortened.")
+
     def fix_pitch_values(self, logger: Log) -> None:
         min_pitch = min(note.pitch for note in self.all_notes())
         octave_shift = min_pitch // 12
