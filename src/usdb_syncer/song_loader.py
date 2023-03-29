@@ -6,6 +6,21 @@ import os
 from typing import Callable, Iterator
 
 import attrs
+from mutagen.id3 import (
+    APIC,
+    COMM,
+    ID3,
+    SYLT,
+    TCON,
+    TDRC,
+    TIT2,
+    TPE1,
+    USLT,
+    Encoding,
+    ID3NoHeaderError,
+    PictureType,
+)
+from mutagen.mp4 import MP4, MP4Cover
 from PySide6.QtCore import QRunnable, QThreadPool
 
 from usdb_syncer import SongId, resource_dl, usdb_scraper
@@ -13,6 +28,7 @@ from usdb_syncer.constants import Usdb
 from usdb_syncer.download_options import Options, download_options
 from usdb_syncer.logger import Log, get_logger
 from usdb_syncer.resource_dl import ImageKind, download_and_process_image
+from usdb_syncer.settings import AudioFormat
 from usdb_syncer.song_data import LocalFiles, SongData
 from usdb_syncer.song_txt import Headers, SongTxt
 from usdb_syncer.sync_meta import SyncMeta
@@ -162,6 +178,7 @@ class SongLoader(QRunnable):
         _maybe_download_background(ctx)
         _maybe_write_txt(ctx)
         _write_sync_meta(ctx)
+        _maybe_write_audio_tags(ctx)
         self.logger.info("All done!")
         self.on_finish(
             self.song_id,
@@ -288,6 +305,125 @@ def _maybe_write_txt(ctx: Context) -> None:
 
 def _write_sync_meta(ctx: Context) -> None:
     ctx.sync_meta.to_file(ctx.locations.dir_path)
+
+
+def _maybe_write_audio_tags(ctx: Context) -> None:
+    if not (options := ctx.options.audio_options):
+        return
+
+    path = os.path.join(
+        ctx.locations.dir_path, f"{ctx.locations.filename_stem}.{options.format.value}"
+    )
+    match options.format.value:
+        case AudioFormat.M4A.value:
+            m4a = MP4(path)
+
+            if m4a.tags:
+                m4a.tags["\xa9ART"] = ctx.txt.headers.artist
+                m4a.tags["\xa9nam"] = ctx.txt.headers.title
+                if ctx.txt.headers.genre:
+                    m4a.tags["\xa9gen"] = ctx.txt.headers.genre
+                if ctx.txt.headers.year:
+                    m4a.tags["\xa9day"] = ctx.txt.headers.year
+                m4a.tags["\xa9lyr"] = str(ctx.txt)
+                m4a.tags[
+                    "\xa9cmt"
+                ] = f"https://www.youtube.com/watch?v={ctx.txt.meta_tags.audio or ctx.txt.meta_tags.video}"
+
+                if ctx.options.audio_options.embed_artwork and ctx.sync_meta.cover:
+                    with open(
+                        os.path.join(
+                            ctx.locations.dir_path,
+                            f"{ctx.locations.filename_stem} [CO].jpg",
+                        ),
+                        "rb",
+                    ) as cover:
+                        m4a.tags["covr"] = [
+                            MP4Cover(cover.read(), imageformat=MP4Cover.FORMAT_JPEG)
+                        ]
+
+                if ctx.options.audio_options.embed_artwork and ctx.sync_meta.background:
+                    with open(
+                        os.path.join(
+                            ctx.locations.dir_path,
+                            f"{ctx.locations.filename_stem} [BG].jpg",
+                        ),
+                        "rb",
+                    ) as background:
+                        m4a.tags["covr"].append(
+                            MP4Cover(
+                                background.read(), imageformat=MP4Cover.FORMAT_JPEG
+                            )
+                        )
+
+                m4a.tags.save(path)
+
+        case AudioFormat.MP3.value:
+            try:
+                tags = ID3(path)
+            except ID3NoHeaderError:
+                tags = ID3()
+
+            tags["TPE1"] = TPE1(encoding=3, text=ctx.txt.headers.artist)
+            tags["TIT2"] = TIT2(encoding=3, text=ctx.txt.headers.title)
+            if ctx.txt.headers.genre:
+                tags["TCON"] = TCON(encoding=3, text=ctx.txt.headers.genre)
+            if ctx.txt.headers.year:
+                tags["TDRC"] = TDRC(encoding=3, text=ctx.txt.headers.year)
+            tags["USLT::'eng'"] = USLT(
+                encoding=3, lang="eng", desc="desc", text=ctx.txt
+            )
+            sync_lrc = [
+                ("This is a test", 17640),
+                ("Of two synchronized lyrics lines.", 23640),
+            ]  # [(lrc, millisecond), ]
+            tags["SYLT"] = SYLT(
+                encoding=Encoding.UTF8, lang="eng", format=2, type=1, text=sync_lrc
+            )
+            tags["COMM"] = COMM(
+                encoding=3,
+                lang="eng",
+                desc="",
+                text=f"https://www.youtube.com/watch?v={ctx.txt.meta_tags.audio or ctx.txt.meta_tags.video}",
+            )
+
+            if ctx.options.audio_options.embed_artwork and ctx.sync_meta.cover:
+                with open(
+                    os.path.join(
+                        ctx.locations.dir_path,
+                        f"{ctx.locations.filename_stem} [CO].jpg",
+                    ),
+                    "rb",
+                ) as cover:
+                    tags.add(
+                        APIC(
+                            encoding=Encoding.UTF8,
+                            mime="image/jpeg",
+                            type=PictureType.COVER_FRONT,
+                            desc="Cover",
+                            data=cover.read(),
+                        )
+                    )
+
+            # if ctx.options.audio_options.embed_artwork and ctx.sync_meta.background:
+            #     with open(
+            #         os.path.join(
+            #             ctx.locations.dir_path,
+            #             f"{ctx.locations.filename_stem} [BG].jpg",
+            #         ),
+            #         "rb",
+            #     ) as background:
+            #         tags.add(
+            #             APIC(
+            #                 encoding=Encoding.UTF8,
+            #                 mime="image/jpeg",
+            #                 type=PictureType.ARTIST,
+            #                 desc="Background",
+            #                 data=background.read(),
+            #             )
+            #         )
+
+            tags.save(path)
 
 
 def _ensure_correct_folder_name(locations: Locations) -> None:
