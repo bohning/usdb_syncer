@@ -113,8 +113,6 @@ class SyncMetaEncoder(json.JSONEncoder):
     def default(self, o: Any) -> Any:
         if isinstance(o, (SyncMeta, FileMeta)):
             return attrs.asdict(o, recurse=False)
-        if isinstance(o, SongId):
-            return o.value
         if isinstance(o, MetaTags):
             return str(o)
         return super().default(o)

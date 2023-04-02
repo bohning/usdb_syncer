@@ -59,6 +59,4 @@ class UsdbSongEncoder(JSONEncoder):
     def default(self, o: Any) -> Any:
         if isinstance(o, UsdbSong):
             return attrs.asdict(o, recurse=False)
-        if isinstance(o, SongId):
-            return int(o.value)
         return super().default(o)
