@@ -208,7 +208,7 @@ def get_usdb_details(song_id: SongId) -> SongDetails | None:
         song_id: id of song to retrieve details for
     """
     html = get_usdb_page(
-        "index.php", params={"id": str(song_id.value), "link": "detail"}
+        "index.php", params={"id": str(int(song_id)), "link": "detail"}
     )
     soup = BeautifulSoup(html, "lxml")
     if UsdbStrings.DATASET_NOT_FOUND in soup.get_text():
@@ -414,7 +414,7 @@ def get_notes(song_id: SongId, logger: Log) -> str | None:
         "index.php",
         RequestMethod.POST,
         headers={"Content-Type": "application/x-www-form-urlencoded"},
-        params={"link": "gettxt", "id": str(song_id.value)},
+        params={"link": "gettxt", "id": str(int(song_id))},
         payload={"wd": "1"},
     )
     soup = BeautifulSoup(html, "lxml")

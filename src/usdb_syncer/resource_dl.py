@@ -12,7 +12,7 @@ from PIL import Image, ImageEnhance, ImageOps
 
 from usdb_syncer.download_options import AudioOptions, VideoOptions
 from usdb_syncer.logger import Log, get_logger
-from usdb_syncer.meta_tags.deserializer import ImageMetaTags
+from usdb_syncer.meta_tags import ImageMetaTags
 from usdb_syncer.settings import Browser
 from usdb_syncer.typing_helpers import assert_never
 from usdb_syncer.usdb_scraper import SongDetails
