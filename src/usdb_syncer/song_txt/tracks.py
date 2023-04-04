@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import re
 from enum import Enum
-from typing import Iterator
+from typing import Iterator, Tuple
 
 import attrs
 
@@ -263,51 +263,54 @@ class Tracks:
             fix_line_breaks(track)
         logger.debug("FIX: Linebreaks corrected.")
 
-    def fix_overlapping_and_touching_notes(self, logger: Log) -> None:
-        notes_fixed = 0
-        notes_not_fixed = 0
+    def consecutive_notes(self) -> Iterator[Tuple[Note, Note]]:
         for track in self.all_tracks():
             for num_line, line in enumerate(track):
                 for num_note, current_note in enumerate(line.notes):
                     if line.is_last() and num_note == len(line.notes) - 1:
-                        break
+                        return
                     if current_note == line.notes[-1]:
                         next_note = track[num_line + 1].notes[0]
                     else:
                         next_note = line.notes[num_note + 1]
+                    yield current_note, next_note
 
-                    # starts in sequence
-                    if current_note.start < next_note.start:
-                        # ends not in sequence -> shorten current note from end
-                        if current_note.end() >= next_note.start:
-                            current_note.shorten_from_end(
-                                current_note.end() - next_note.start + 1
-                            )
-                            logger.debug(
-                                f"FIX: Note starting at {current_note.start} shortened "
-                                "to avoid overlapping or touching notes."
-                            )
-                            notes_fixed += 1
-                    # starts out of sequence
-                    else:
-                        # notes overlap --> shorten next note from the start
-                        if next_note.end() > current_note.end():
-                            next_note.shorten_from_start(
-                                current_note.end() - next_note.start + 1
-                            )
-                            logger.debug(
-                                f"FIX: Note starting at {next_note.start} shifted and "
-                                "shortened to avoid overlapping or touching notes."
-                            )
-                            notes_fixed += 1
-                        # notes do not overlap --> swap start and duration
-                        else:
-                            current_note.swap_timings(next_note)
-                            logger.warning(
-                                f"FIX: Notes starting at {current_note.start} and "
-                                f"{next_note.start} swapped to be in sequence."
-                            )
-                            notes_not_fixed += 1
+    def fix_overlapping_and_touching_notes(self, logger: Log) -> None:
+        notes_fixed = 0
+        notes_not_fixed = 0
+        for current_note, next_note in self.consecutive_notes():
+            # starts in sequence
+            if current_note.start < next_note.start:
+                # ends not in sequence -> shorten current note from end
+                if current_note.end() >= next_note.start:
+                    current_note.shorten_from_end(
+                        current_note.end() - next_note.start + 1
+                    )
+                    logger.debug(
+                        f"FIX: Note starting at {current_note.start} shortened "
+                        "to avoid overlapping or touching notes."
+                    )
+                    notes_fixed += 1
+            # starts out of sequence
+            else:
+                # notes overlap --> shorten next note from the start
+                if next_note.end() > current_note.end():
+                    next_note.shorten_from_start(
+                        current_note.end() - next_note.start + 1
+                    )
+                    logger.debug(
+                        f"FIX: Note starting at {next_note.start} shifted and "
+                        "shortened to avoid overlapping or touching notes."
+                    )
+                    notes_fixed += 1
+                # notes do not overlap --> swap start and duration
+                else:
+                    current_note.swap_timings(next_note)
+                    logger.warning(
+                        f"FIX: Notes starting at {current_note.start} and "
+                        f"{next_note.start} swapped to be in sequence."
+                    )
+                    notes_not_fixed += 1
 
         if notes_fixed > 0:
             logger.debug(f"FIX: {notes_fixed} overlapping or touching notes shortened.")
