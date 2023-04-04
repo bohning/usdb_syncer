@@ -7,7 +7,7 @@
 : 4 4 4 old <-- touching subsequent note 
 : 8 7 6 heart 
 : 16 3 1 of 
-: 20 6 4 mine 
+: 20 10 4 mine <-- partially overlapping subsequent note (across lines) 
 - 27
 : 28 3 1 Been 
 : 32 3 4 broke 
