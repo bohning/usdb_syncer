@@ -60,9 +60,12 @@ class Note:
     def end(self) -> int:
         return self.start + self.duration
 
-    def shorten(self, beats: int = 1) -> None:
-        if self.duration > beats:
-            self.duration = self.duration - beats
+    def shorten_from_start(self, beats: int) -> None:
+        self.duration = max(self.duration - beats, 1)
+        self.start += beats
+
+    def shorten_from_end(self, beats: int = 1) -> None:
+        self.duration = max(self.duration - beats, 1)
 
     def left_trim_text(self) -> None:
         """Remove whitespace from the start of the note."""
@@ -254,35 +257,55 @@ class Tracks:
             fix_line_breaks(track)
         logger.debug("FIX: Linebreaks corrected.")
 
-    def fix_touching_notes(self, logger: Log) -> None:
-        notes_shortened = 0
+    def fix_overlapping_and_touching_notes(self, logger: Log) -> None:
+        notes_fixed = 0
+        notes_not_fixed = 0
         for track in self.all_tracks():
             for num_line, line in enumerate(track):
-                for num_note, note in enumerate(line.notes[:-1]):
-                    if note.end() == line.notes[num_note + 1].start:
-                        note.shorten()
-                        notes_shortened += 1
-                if not line.is_last():
-                    if line.end() == track[num_line + 1].start():
-                        line.notes[-1].shorten()
-                        notes_shortened += 1
-        if notes_shortened > 0:
-            logger.debug(f"FIX: {notes_shortened} touching notes shortened.")
+                for num_note, current_note in enumerate(line.notes):
+                    if line.is_last() and current_note == line.notes[-1]:
+                        break
+                    if current_note == line.notes[-1]:
+                        next_note = track[num_line + 1].notes[0]
+                    else:
+                        next_note = line.notes[num_note + 1]
 
-    def fix_overlapping_notes(self, logger: Log) -> None:
-        notes_shortened = 0
-        for track in self.all_tracks():
-            for num_line, line in enumerate(track):
-                for num_note, note in enumerate(line.notes[:-1]):
-                    if note.end() > line.notes[num_note + 1].start:
-                        note.shorten(note.end() - line.notes[num_note + 1].start)
-                        notes_shortened += 1
-                if not line.is_last():
-                    if line.end() > track[num_line + 1].start():
-                        line.notes[-1].shorten(line.end() - track[num_line + 1].start())
-                        notes_shortened += 1
-        if notes_shortened > 0:
-            logger.debug(f"FIX: {notes_shortened} overlapping notes shortened.")
+                    if current_note.start < next_note.start:  # starts in sequence
+                        if (
+                            current_note.end() >= next_note.start
+                        ):  # ends not in sequence -> shorten current note from end
+                            current_note.shorten_from_end(
+                                current_note.end() - next_note.start + 1
+                            )
+                            logger.debug(
+                                f"FIX: Note starting at {current_note.start} shortened to avoid overlapping or touching notes."
+                            )
+                            notes_fixed += 1
+                    else:  # starts out of sequence -> shorten next note from start
+                        if (next_note.end() - current_note.end()) > 1:
+                            next_note.shorten_from_start(
+                                current_note.end() - next_note.start + 1
+                            )
+                            logger.debug(
+                                f"FIX: Note starting at {next_note.start} shifted and shortened to avoid overlapping or touching notes."
+                            )
+                            notes_fixed += 1
+                        elif (next_note.end() - current_note.end()) == 1:
+                            next_note.shorten_from_start(
+                                current_note.end() - next_note.start
+                            )
+                            logger.debug(
+                                f"FIX: Note starting at {next_note.start} shifted and shortened to avoid overlapping notes."
+                            )
+                            notes_fixed += 1
+                        else:
+                            logger.warning(
+                                f"FIX: Note starting at {next_note.start} is out of sequence. This cannot be fixed automatically."
+                            )
+                            notes_not_fixed += 1
+
+        if notes_fixed > 0:
+            logger.debug(f"FIX: {notes_fixed} overlapping or touching notes shortened.")
 
     def fix_pitch_values(self, logger: Log) -> None:
         min_pitch = min(note.pitch for note in self.all_notes())
@@ -296,16 +319,17 @@ class Tracks:
                 f"FIX: pitch values normalized (shifted by {octave_shift} octaves)."
             )
 
-    def fix_apostrophes(self, logger: Log) -> None:
+    def fix_apostrophes_and_quotation_marks(self, logger: Log) -> None:
         note_text_fixed = 0
         for note in self.all_notes():
             note_text_old = note.text
             note.text = replace_false_apostrophes_and_quotation_marks(note_text_old)
             if note_text_old != note.text:
                 note_text_fixed += 1
-        logger.debug(
-            f"FIX: {note_text_fixed} apostrophes/quotation marks in lyrics corrected."
-        )
+        if note_text_fixed > 0:
+            logger.debug(
+                f"FIX: {note_text_fixed} apostrophes/quotation marks in lyrics corrected."
+            )
 
     def fix_spaces(self, logger: Log) -> None:
         """Ensures

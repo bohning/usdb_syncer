@@ -1,0 +1,38 @@
+#TITLE:This Old Heart Of Mine
+#ARTIST:Rod Stewart feat. Ronald Isley
+#MP3:Rod Stewart feat. Ronald Isley - This Old Heart Of Mine.mp3
+#BPM:239.65
+#GAP:19400
+: 0 3 1 This 
+: 4 3 4 old <-- touching subsequent note 
+: 8 7 6 heart 
+: 16 3 1 of 
+: 20 6 4 mine 
+- 27
+: 28 3 1 Been 
+: 32 3 4 broke 
+: 36 3 1 a <-- partially overlapping subsequent note 
+: 40 7 6 thou
+: 48 2 1 sand 
+: 52 4 4 times 
+- 58
+: 60 3 1 Each 
+: 64 3 4 time <-- fully overlapping subsequent note
+: 68 3 6 you 
+: 72 7 -1 break 
+: 80 3 -3 a
+: 84 6 -3 way 
+- 92
+: 96 3 -3 I 
+: 104 3 1 feel <-- out of sequence, but fixable
+: 107 1 4 you’re 
+: 108 6 6 gone 
+: 116 3 6 to 
+: 120 6 -3 stay 
+- 127
+: 128 3 1 Lone
+: 136 7 4 ly <-- out of sequence, but unfixable
+: 132 3 6 nights 
+: 144 3 1 that 
+: 148 6 4 come 
+E
