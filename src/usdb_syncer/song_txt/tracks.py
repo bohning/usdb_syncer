@@ -27,10 +27,10 @@ class Note:
     """Representation of a note, parsed from a string."""
 
     kind: NoteKind
-    start: int
-    duration: int
-    pitch: int
-    text: str
+    start: int = NotImplemented
+    duration: int = NotImplemented
+    pitch: int = NotImplemented
+    text: str = NotImplemented
 
     @classmethod
     def parse(cls, value: str) -> Note:
@@ -61,8 +61,9 @@ class Note:
         return self.start + self.duration
 
     def shorten_from_start(self, beats: int) -> None:
+        max_start = self.end() - 1
         self.duration = max(self.duration - beats, 1)
-        self.start += beats
+        self.start = min(self.start + beats, max_start)
 
     def shorten_from_end(self, beats: int = 1) -> None:
         self.duration = max(self.duration - beats, 1)
@@ -75,6 +76,11 @@ class Note:
         """Ensure the note ends with a single space."""
         self.text = self.text.rstrip() + " "
 
+    def swap_timings(self, other: Note) -> None:
+        """Swap start and duration of two notes"""
+        self.start, other.start = other.start, self.start
+        self.duration, other.duration = other.duration, self.duration
+
 
 @attrs.define
 class LineBreak:
@@ -82,8 +88,8 @@ class LineBreak:
     the next line start.
     """
 
-    previous_line_out_time: int
-    next_line_in_time: int | None
+    previous_line_out_time: int = NotImplemented
+    next_line_in_time: int | None = NotImplemented
 
     @classmethod
     def parse(cls, value: str) -> tuple[LineBreak, str | None]:
@@ -168,7 +174,7 @@ class Line:
 
     def shift(self, offset: int) -> None:
         for note in self.notes:
-            note.start += offset
+            note.start = note.start + offset
         if self.line_break:
             self.line_break.shift(offset)
 
@@ -263,44 +269,43 @@ class Tracks:
         for track in self.all_tracks():
             for num_line, line in enumerate(track):
                 for num_note, current_note in enumerate(line.notes):
-                    if line.is_last() and current_note == line.notes[-1]:
+                    if line.is_last() and num_note == len(line.notes) - 1:
                         break
                     if current_note == line.notes[-1]:
                         next_note = track[num_line + 1].notes[0]
                     else:
                         next_note = line.notes[num_note + 1]
 
-                    if current_note.start < next_note.start:  # starts in sequence
-                        if (
-                            current_note.end() >= next_note.start
-                        ):  # ends not in sequence -> shorten current note from end
+                    # starts in sequence
+                    if current_note.start < next_note.start:
+                        # ends not in sequence -> shorten current note from end
+                        if current_note.end() >= next_note.start:
                             current_note.shorten_from_end(
                                 current_note.end() - next_note.start + 1
                             )
                             logger.debug(
-                                f"FIX: Note starting at {current_note.start} shortened to avoid overlapping or touching notes."
+                                f"FIX: Note starting at {current_note.start} shortened "
+                                "to avoid overlapping or touching notes."
                             )
                             notes_fixed += 1
-                    else:  # starts out of sequence -> shorten next note from start
-                        if (next_note.end() - current_note.end()) > 1:
+                    # starts out of sequence
+                    else:
+                        # notes overlap --> shorten next note from the start
+                        if next_note.end() > current_note.end():
                             next_note.shorten_from_start(
                                 current_note.end() - next_note.start + 1
                             )
                             logger.debug(
-                                f"FIX: Note starting at {next_note.start} shifted and shortened to avoid overlapping or touching notes."
+                                f"FIX: Note starting at {next_note.start} shifted and "
+                                "shortened to avoid overlapping or touching notes."
                             )
                             notes_fixed += 1
-                        elif (next_note.end() - current_note.end()) == 1:
-                            next_note.shorten_from_start(
-                                current_note.end() - next_note.start
-                            )
-                            logger.debug(
-                                f"FIX: Note starting at {next_note.start} shifted and shortened to avoid overlapping notes."
-                            )
-                            notes_fixed += 1
+                        # notes do not overlap --> swap start and duration
                         else:
+                            current_note.swap_timings(next_note)
                             logger.warning(
-                                f"FIX: Note starting at {next_note.start} is out of sequence. This cannot be fixed automatically."
+                                f"FIX: Notes starting at {current_note.start} and "
+                                f"{next_note.start} swapped to be in sequence."
                             )
                             notes_not_fixed += 1
 

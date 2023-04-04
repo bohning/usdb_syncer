@@ -24,15 +24,15 @@
 : 84 6 -3 way 
 - 92
 : 96 3 -3 I 
-: 104 3 1 feel <-- out of sequence, but fixable
+: 104 3 1 feel <-- out of sequence and overlapping 
 : 107 1 4 you’re 
 : 108 6 6 gone 
 : 116 3 6 to 
 : 120 6 -3 stay 
 - 127
 : 128 3 1 Lone
-: 136 7 4 ly <-- out of sequence, but unfixable
-: 132 3 6 nights 
+: 132 3 4 ly <-- out of sequence, but not overlapping 
+: 136 7 6 nights 
 : 144 3 1 that 
 : 148 6 4 come 
 E
