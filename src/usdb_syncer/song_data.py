@@ -149,7 +149,7 @@ class SongData:
         col = Column(column)
         match col:
             case Column.SONG_ID:
-                return self.data.song_id.value
+                return self.data.song_id
             case Column.ARTIST:
                 return self.data.artist
             case Column.TITLE:

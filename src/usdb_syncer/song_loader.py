@@ -12,6 +12,7 @@ from usdb_syncer import SongId, resource_dl, usdb_scraper
 from usdb_syncer.constants import Usdb
 from usdb_syncer.download_options import Options, download_options
 from usdb_syncer.logger import Log, get_logger
+from usdb_syncer.meta_tags import MetaTags
 from usdb_syncer.resource_dl import ImageKind, download_and_process_image
 from usdb_syncer.song_data import LocalFiles, SongData
 from usdb_syncer.song_txt import Headers, SongTxt
@@ -94,7 +95,7 @@ class Context:
             details.song_id, options.song_dir, info.meta_path, txt.headers
         )
         sync_meta, new_src_txt = _load_sync_meta(
-            paths.meta_path, details.song_id, txt_str
+            paths.meta_path, details.song_id, txt_str, txt.meta_tags
         )
         return cls(details, options, txt, paths, sync_meta, new_src_txt, logger)
 
@@ -111,12 +112,14 @@ class Context:
         yield from self.details.all_comment_videos()
 
 
-def _load_sync_meta(path: str, song_id: SongId, new_txt: str) -> tuple[SyncMeta, bool]:
+def _load_sync_meta(
+    path: str, song_id: SongId, new_txt: str, meta_tags: MetaTags
+) -> tuple[SyncMeta, bool]:
     """True if new_txt is different to the last one (if any)."""
     if os.path.exists(path) and (meta := SyncMeta.try_from_file(path)):
         updated = meta.update_src_txt_hash(new_txt)
         return meta, updated
-    return SyncMeta.new(song_id, new_txt), True
+    return SyncMeta.new(song_id, new_txt, meta_tags), True
 
 
 class SongLoader(QRunnable):

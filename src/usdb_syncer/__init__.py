@@ -2,20 +2,19 @@
 
 from __future__ import annotations
 
-import attrs
 
+class SongId(int):
+    """Bounded int representing an id on USDB.
 
-@attrs.frozen(auto_attribs=True)
-class SongId:
-    """Dataclass for an id on USDB.
+    Use builtin str to get the canonical zero-padded five-digit str.
+    """
 
-    Use builtins int and str to get an integer or the canonical zero-padded five-digit
-    str respectively."""
-
-    value: int = attrs.field(validator=attrs.validators.in_(range(100_000)))
+    def __init__(self, value: int) -> None:
+        if value not in range(100_000):
+            raise ValueError("SongId out of range")
 
     def __str__(self) -> str:
-        return f"{self.value:05}"
+        return f"{self:05}"
 
     @classmethod
     def parse(cls, value: str) -> SongId:
