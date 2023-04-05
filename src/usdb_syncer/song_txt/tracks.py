@@ -58,14 +58,15 @@ class Note:
         )
 
     def end(self) -> int:
+        """Start beat + duration (NOT last beat of the note)"""
         return self.start + self.duration
 
-    def shorten_from_start(self, beats: int) -> None:
-        max_start = self.end() - 1
+    def shift_start(self, beats: int) -> None:
+        """Shift note start and shorten duration accordingly"""
+        self.start += beats
         self.duration = max(self.duration - beats, 1)
-        self.start = min(self.start + beats, max_start)
 
-    def shorten_from_end(self, beats: int = 1) -> None:
+    def shorten(self, beats: int = 1) -> None:
         self.duration = max(self.duration - beats, 1)
 
     def left_trim_text(self) -> None:
@@ -75,6 +76,10 @@ class Note:
     def right_trim_text_and_add_space(self) -> None:
         """Ensure the note ends with a single space."""
         self.text = self.text.rstrip() + " "
+
+    def gap(self, other: Note) -> int:
+        """Returns the number of empty beats between two notes"""
+        return other.start - self.end()
 
     def swap_timings(self, other: Note) -> None:
         """Swap start and duration of two notes"""
@@ -276,44 +281,20 @@ class Tracks:
                     yield current_note, next_note
 
     def fix_overlapping_and_touching_notes(self, logger: Log) -> None:
-        notes_fixed = 0
-        notes_not_fixed = 0
         for current_note, next_note in self.consecutive_notes():
-            # starts in sequence
-            if current_note.start < next_note.start:
-                # ends not in sequence -> shorten current note from end
-                if current_note.end() >= next_note.start:
-                    current_note.shorten_from_end(
-                        current_note.end() - next_note.start + 1
-                    )
-                    logger.debug(
-                        f"FIX: Note starting at {current_note.start} shortened "
-                        "to avoid overlapping or touching notes."
-                    )
-                    notes_fixed += 1
-            # starts out of sequence
-            else:
-                # notes overlap --> shorten next note from the start
-                if next_note.end() > current_note.end():
-                    next_note.shorten_from_start(
-                        current_note.end() - next_note.start + 1
-                    )
-                    logger.debug(
-                        f"FIX: Note starting at {next_note.start} shifted and "
-                        "shortened to avoid overlapping or touching notes."
-                    )
-                    notes_fixed += 1
-                # notes do not overlap --> swap start and duration
-                else:
-                    current_note.swap_timings(next_note)
-                    logger.warning(
-                        f"FIX: Notes starting at {current_note.start} and "
-                        f"{next_note.start} swapped to be in sequence."
-                    )
-                    notes_not_fixed += 1
-
-        if notes_fixed > 0:
-            logger.debug(f"FIX: {notes_fixed} overlapping or touching notes shortened.")
+            fixed = False
+            if current_note.start > next_note.start:
+                current_note.swap_timings(next_note)
+                fixed = True
+            if (gap := current_note.gap(next_note)) <= 0:
+                current_note.shorten(1 - gap)
+                fixed = True
+            if (gap := current_note.gap(next_note)) <= 0:
+                # current note cannot be shortened to leave a gap of one beat
+                next_note.shift_start(1 - gap)
+                fixed = True
+            if fixed:
+                logger.debug(f"FIX: Gap after note {current_note.start} fixed.")
 
     def fix_pitch_values(self, logger: Log) -> None:
         min_pitch = min(note.pitch for note in self.all_notes())

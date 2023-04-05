@@ -24,8 +24,8 @@
 : 84 6 -3 way 
 - 92
 : 96 3 -3 I 
-: 104 3 1 feel <-- out of sequence and overlapping 
-: 107 1 4 you’re 
+: 102 1 1 feel <-- out of sequence and overlapping 
+: 104 3 4 you’re 
 : 108 6 6 gone 
 : 116 3 6 to 
 : 120 6 -3 stay 
