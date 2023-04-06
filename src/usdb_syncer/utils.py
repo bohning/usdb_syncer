@@ -5,6 +5,7 @@ import re
 import subprocess
 import sys
 import unicodedata
+from pathlib import Path
 
 from appdirs import AppDirs
 
@@ -73,13 +74,13 @@ def sanitize_filename(fname: str) -> str:
     return fname
 
 
-def next_unique_directory(path: str) -> str:
+def next_unique_directory(path: Path) -> Path:
     """Ensures directory name is unique by adding a suffix if necessary."""
     out_path = path
     suffix = 0
-    while os.path.exists(out_path):
+    while out_path.exists():
         suffix += 1
-        out_path = f"{path} ({suffix})"
+        out_path = path.with_name(f"{path.name} ({suffix})")
     return out_path
 
 

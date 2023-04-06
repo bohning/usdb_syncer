@@ -2,6 +2,7 @@
 
 import os
 from enum import Enum
+from pathlib import Path
 from typing import Union
 
 import filetype
@@ -56,7 +57,7 @@ def download_video(
     resource: str,
     options: AudioOptions | VideoOptions,
     browser: Browser,
-    path_stem: str,
+    path_stem: Path,
     logger: Log,
 ) -> str | None:
     """Download video from resource to path and process it according to options.
@@ -113,7 +114,7 @@ def download_video(
             progress=True,  # set to False?
         )
         ext = options.format.value
-        normalizer.add_media_file(filename, path_stem + "." + ext)
+        normalizer.add_media_file(filename, str(path_stem.with_suffix(f".{ext}")))
         normalizer.run_normalization()
 
     return ext or os.path.splitext(filename)[1][1:]
@@ -148,7 +149,7 @@ def download_and_process_image(
     filename_stem: str,
     meta_tags: ImageMetaTags | None,
     details: SongDetails,
-    pathname: str,
+    pathname: Path,
     kind: ImageKind,
     max_width: int | None,
 ) -> str | None:
@@ -164,8 +165,8 @@ def download_and_process_image(
         return None
 
     fname = f"{filename_stem} [{kind.value}].jpg"
-    path = os.path.join(pathname, fname)
-    with open(path, "wb") as file:
+    path = pathname.joinpath(fname)
+    with path.open("wb") as file:
         file.write(img_bytes)
 
     _process_image(meta_tags, max_width, path)
@@ -190,7 +191,7 @@ def _get_image_url(
 
 
 def _process_image(
-    meta_tags: ImageMetaTags | None, max_width: int | None, path: str
+    meta_tags: ImageMetaTags | None, max_width: int | None, path: Path
 ) -> None:
     processed = False
     with Image.open(path).convert("RGB") as image:

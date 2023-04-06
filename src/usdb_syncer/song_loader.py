@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+from pathlib import Path
 from typing import Callable, Iterator
 
 import attrs
@@ -30,7 +31,7 @@ class DownloadInfo:
     """Data required to start a song download."""
 
     song_id: SongId
-    meta_path: str | None
+    meta_path: Path | None
 
     @classmethod
     def from_song_data(cls, data: SongData) -> DownloadInfo:
@@ -41,32 +42,32 @@ class DownloadInfo:
 class Locations:
     """Paths for downloading a song."""
 
-    meta_path: str
-    dir_path: str
+    meta_path: Path
+    dir_path: Path
     filename_stem: str
-    file_path_stem: str
+    file_path_stem: Path
 
     @classmethod
     def new(
-        cls, song_id: SongId, song_dir: str, meta_path: str | None, headers: Headers
+        cls, song_id: SongId, song_dir: Path, meta_path: Path | None, headers: Headers
     ) -> Locations:
         filename_stem = sanitize_filename(headers.artist_title_str())
         if meta_path:
-            dir_path = os.path.dirname(meta_path)
+            dir_path = meta_path.parent
         else:
-            dir_path = next_unique_directory(os.path.join(song_dir, filename_stem))
-            meta_path = os.path.join(dir_path, f"{song_id}.usdb")
+            dir_path = next_unique_directory(song_dir.joinpath(filename_stem))
+            meta_path = dir_path.joinpath(f"{song_id}.usdb")
         return cls(
             meta_path=meta_path,
             dir_path=dir_path,
             filename_stem=filename_stem,
-            file_path_stem=os.path.join(dir_path, filename_stem),
+            file_path_stem=dir_path.joinpath(filename_stem),
         )
 
-    def update_dir_path(self, dir_path: str) -> None:
+    def update_dir_path(self, dir_path: Path) -> None:
         self.dir_path = dir_path
-        self.meta_path = os.path.join(dir_path, os.path.basename(self.meta_path))
-        self.file_path_stem = os.path.join(dir_path, self.filename_stem)
+        self.meta_path = dir_path.joinpath(self.meta_path.name)
+        self.file_path_stem = dir_path.joinpath(self.filename_stem)
 
 
 @attrs.define
@@ -113,7 +114,7 @@ class Context:
 
 
 def _load_sync_meta(
-    path: str, song_id: SongId, new_txt: str, meta_tags: MetaTags
+    path: Path, song_id: SongId, new_txt: str, meta_tags: MetaTags
 ) -> tuple[SyncMeta, bool]:
     """True if new_txt is different to the last one (if any)."""
     if os.path.exists(path) and (meta := SyncMeta.try_from_file(path)):
@@ -206,7 +207,7 @@ def _maybe_download_audio(ctx: Context) -> None:
             ctx.locations.file_path_stem,
             ctx.logger,
         ):
-            path = f"{ctx.locations.file_path_stem}.{ext}"
+            path = ctx.locations.file_path_stem.with_suffix(f".{ext}")
             ctx.sync_meta.set_audio_meta(path)
             ctx.txt.headers.mp3 = os.path.basename(path)
             ctx.logger.info("Success! Downloaded audio.")
@@ -231,7 +232,7 @@ def _maybe_download_video(ctx: Context) -> None:
             ctx.locations.file_path_stem,
             ctx.logger,
         ):
-            path = f"{ctx.locations.file_path_stem}.{ext}"
+            path = ctx.locations.file_path_stem.with_suffix(f".{ext}")
             ctx.sync_meta.set_video_meta(path)
             ctx.txt.headers.video = os.path.basename(path)
             ctx.logger.info("Success! Downloaded video.")
@@ -252,7 +253,7 @@ def _maybe_download_cover(ctx: Context) -> None:
         max_width=ctx.options.cover.max_size,
     ):
         ctx.txt.headers.cover = filename
-        ctx.sync_meta.set_cover_meta(os.path.join(ctx.locations.dir_path, filename))
+        ctx.sync_meta.set_cover_meta(ctx.locations.dir_path.joinpath(filename))
         ctx.logger.info("Success! Downloaded cover.")
     else:
         ctx.logger.error("Failed to download cover!")
@@ -272,9 +273,7 @@ def _maybe_download_background(ctx: Context) -> None:
         max_width=None,
     ):
         ctx.txt.headers.background = filename
-        ctx.sync_meta.set_background_meta(
-            os.path.join(ctx.locations.dir_path, filename)
-        )
+        ctx.sync_meta.set_background_meta(ctx.locations.dir_path.joinpath(filename))
         ctx.logger.info("Success! Downloaded background.")
     else:
         ctx.logger.error("Failed to download background!")
@@ -283,7 +282,7 @@ def _maybe_download_background(ctx: Context) -> None:
 def _maybe_write_txt(ctx: Context) -> None:
     if not (options := ctx.options.txt_options):
         return
-    path = f"{ctx.locations.file_path_stem}.txt"
+    path = ctx.locations.file_path_stem.with_suffix(".txt")
     ctx.txt.write_to_file(path, options.encoding.value, options.newline.value)
     ctx.sync_meta.set_txt_meta(path)
     ctx.logger.info("Success! Created song txt.")
@@ -294,9 +293,8 @@ def _write_sync_meta(ctx: Context) -> None:
 
 
 def _ensure_correct_folder_name(locations: Locations) -> None:
-    folder_dir, folder_name = os.path.split(locations.dir_path)
-    if is_name_maybe_with_suffix(folder_name, locations.filename_stem):
+    if is_name_maybe_with_suffix(locations.dir_path.name, locations.filename_stem):
         return
-    new = next_unique_directory(os.path.join(folder_dir, locations.filename_stem))
-    os.rename(locations.dir_path, new)
+    new = next_unique_directory(locations.dir_path.with_name(locations.filename_stem))
+    locations.dir_path.rename(new)
     locations.update_dir_path(new)

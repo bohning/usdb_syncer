@@ -5,6 +5,7 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+from pathlib import Path
 from typing import Any
 
 import attrs
@@ -25,8 +26,8 @@ class FileMeta:
     mtime: float
 
     @classmethod
-    def from_path(cls, path: str) -> FileMeta:
-        return cls(os.path.basename(path), os.path.getmtime(path))
+    def from_path(cls, path: Path) -> FileMeta:
+        return cls(path.name, os.path.getmtime(path))
 
     @classmethod
     def from_nested_dict(cls, dct: Any) -> FileMeta | None:
@@ -55,8 +56,8 @@ class SyncMeta:
         return cls(song_id, hash_txt(txt), meta_tags)
 
     @classmethod
-    def try_from_file(cls, path: str) -> SyncMeta | None:
-        with open(path, encoding="utf8") as file:
+    def try_from_file(cls, path: Path) -> SyncMeta | None:
+        with path.open(encoding="utf8") as file:
             try:
                 return cls.from_dict(json.load(file))
             except (json.decoder.JSONDecodeError, TypeError, KeyError, ValueError):
@@ -73,9 +74,9 @@ class SyncMeta:
             txt=FileMeta.from_nested_dict(dct["txt"]),
         )
 
-    def to_file(self, directory: str) -> None:
-        path = os.path.join(directory, f"{self.song_id}.usdb")
-        with open(path, "w", encoding="utf8") as file:
+    def to_file(self, directory: Path) -> None:
+        path = directory.joinpath(f"{self.song_id}.usdb")
+        with path.open("w", encoding="utf8") as file:
             json.dump(self, file, cls=SyncMetaEncoder)
 
     def update_src_txt_hash(self, new_txt: str) -> bool:
@@ -85,19 +86,19 @@ class SyncMeta:
         self.src_txt_hash = new_hash
         return changed
 
-    def set_txt_meta(self, path: str) -> None:
+    def set_txt_meta(self, path: Path) -> None:
         self.txt = FileMeta.from_path(path)
 
-    def set_audio_meta(self, path: str) -> None:
+    def set_audio_meta(self, path: Path) -> None:
         self.audio = FileMeta.from_path(path)
 
-    def set_video_meta(self, path: str) -> None:
+    def set_video_meta(self, path: Path) -> None:
         self.video = FileMeta.from_path(path)
 
-    def set_cover_meta(self, path: str) -> None:
+    def set_cover_meta(self, path: Path) -> None:
         self.cover = FileMeta.from_path(path)
 
-    def set_background_meta(self, path: str) -> None:
+    def set_background_meta(self, path: Path) -> None:
         self.background = FileMeta.from_path(path)
 
 
