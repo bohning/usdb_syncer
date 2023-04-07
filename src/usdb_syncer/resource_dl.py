@@ -18,9 +18,6 @@ from usdb_syncer.settings import Browser
 from usdb_syncer.typing_helpers import assert_never
 from usdb_syncer.usdb_scraper import SongDetails
 
-# from moviepy.editor import VideoFileClip
-# import subprocess
-
 IMAGE_DOWNLOAD_HEADERS = {
     "User-Agent": (
         "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
@@ -146,6 +143,7 @@ def download_image(url: str, logger: Log) -> bytes | None:
 
 
 def download_and_process_image(
+    url: str,
     filename_stem: str,
     meta_tags: ImageMetaTags | None,
     details: SongDetails,
@@ -154,8 +152,6 @@ def download_and_process_image(
     max_width: int | None,
 ) -> str | None:
     logger = get_logger(__file__, details.song_id)
-    if not (url := _get_image_url(meta_tags, details, kind, logger)):
-        return None
     if not (img_bytes := download_image(url, logger)):
         logger.error(f"#{str(kind).upper()}: file does not exist at url: {url}")
         return None
@@ -171,23 +167,6 @@ def download_and_process_image(
 
     _process_image(meta_tags, max_width, path)
     return fname
-
-
-def _get_image_url(
-    meta_tags: ImageMetaTags | None, details: SongDetails, kind: ImageKind, logger: Log
-) -> str | None:
-    url = None
-    if meta_tags:
-        url = meta_tags.source_url()
-        logger.debug(f"downloading {kind} from #VIDEO params: {url}")
-    elif kind is ImageKind.COVER and details.cover_url:
-        url = details.cover_url
-        logger.warning(
-            "no cover resource in #VIDEO tag, so fallback to small usdb cover!"
-        )
-    else:
-        logger.warning(f"no {kind} resource found")
-    return url
 
 
 def _process_image(

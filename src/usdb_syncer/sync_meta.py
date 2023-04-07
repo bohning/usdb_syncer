@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import hashlib
 import json
 import os
 from pathlib import Path
@@ -24,10 +23,11 @@ class FileMeta:
 
     fname: str
     mtime: float
+    resource: str | None = None
 
     @classmethod
-    def from_path(cls, path: Path) -> FileMeta:
-        return cls(path.name, os.path.getmtime(path))
+    def new(cls, path: Path, resource: str | None = None) -> FileMeta:
+        return cls(path.name, os.path.getmtime(path), resource)
 
     @classmethod
     def from_nested_dict(cls, dct: Any) -> FileMeta | None:
@@ -41,8 +41,6 @@ class SyncMeta:
     """Meta data about the synchronization state of a USDB song."""
 
     song_id: SongId
-    # Sha1 hash as a hex str
-    src_txt_hash: str
     meta_tags: MetaTags
     txt: FileMeta | None = None
     audio: FileMeta | None = None
@@ -52,8 +50,8 @@ class SyncMeta:
     version: int = SYNC_META_VERSION
 
     @classmethod
-    def new(cls, song_id: SongId, txt: str, meta_tags: MetaTags) -> SyncMeta:
-        return cls(song_id, hash_txt(txt), meta_tags)
+    def new(cls, song_id: SongId, meta_tags: MetaTags) -> SyncMeta:
+        return cls(song_id, meta_tags)
 
     @classmethod
     def try_from_file(cls, path: Path) -> SyncMeta | None:
@@ -69,9 +67,12 @@ class SyncMeta:
             raise Exception("cannot read data written by a later version")
         return cls(
             SongId(dct["song_id"]),
-            src_txt_hash=dct["src_txt_hash"],
             meta_tags=MetaTags.parse(dct["meta_tags"], _logger),
             txt=FileMeta.from_nested_dict(dct["txt"]),
+            audio=FileMeta.from_nested_dict(dct["audio"]),
+            video=FileMeta.from_nested_dict(dct["video"]),
+            cover=FileMeta.from_nested_dict(dct["cover"]),
+            background=FileMeta.from_nested_dict(dct["background"]),
         )
 
     def to_file(self, directory: Path) -> None:
@@ -79,33 +80,43 @@ class SyncMeta:
         with path.open("w", encoding="utf8") as file:
             json.dump(self, file, cls=SyncMetaEncoder)
 
-    def update_src_txt_hash(self, new_txt: str) -> bool:
-        """True if hash was changed."""
-        new_hash = hash_txt(new_txt)
-        changed = self.src_txt_hash != new_hash
-        self.src_txt_hash = new_hash
-        return changed
-
     def set_txt_meta(self, path: Path) -> None:
-        self.txt = FileMeta.from_path(path)
+        self.txt = FileMeta.new(path)
 
-    def set_audio_meta(self, path: Path) -> None:
-        self.audio = FileMeta.from_path(path)
+    def set_audio_meta(self, path: Path, resource: str) -> None:
+        self.audio = FileMeta.new(path, resource)
 
-    def set_video_meta(self, path: Path) -> None:
-        self.video = FileMeta.from_path(path)
+    def set_video_meta(self, path: Path, resource: str) -> None:
+        self.video = FileMeta.new(path, resource)
 
-    def set_cover_meta(self, path: Path) -> None:
-        self.cover = FileMeta.from_path(path)
+    def set_cover_meta(self, path: Path, resource: str) -> None:
+        self.cover = FileMeta.new(path, resource)
 
-    def set_background_meta(self, path: Path) -> None:
-        self.background = FileMeta.from_path(path)
+    def set_background_meta(self, path: Path, resource: str) -> None:
+        self.background = FileMeta.new(path, resource)
+
+    def local_audio_resource(self, folder: Path) -> str | None:
+        return _local_resource(self.audio, folder)
+
+    def local_video_resource(self, folder: Path) -> str | None:
+        return _local_resource(self.video, folder)
+
+    def local_cover_resource(self, folder: Path) -> str | None:
+        return _local_resource(self.cover, folder)
+
+    def local_background_resource(self, folder: Path) -> str | None:
+        return _local_resource(self.background, folder)
 
 
-def hash_txt(txt: str) -> str:
-    hasher = hashlib.sha1()
-    hasher.update(txt.encode("raw_unicode_escape"))
-    return hasher.digest().hex()
+def _local_resource(meta: FileMeta | None, folder: Path) -> str | None:
+    """Returns the name of the resource, if it exists in the given folder
+    and is in sync.
+    """
+    if meta:
+        if (path := folder.joinpath(meta.fname)).exists():
+            if os.path.getmtime(path) == meta.mtime:
+                return meta.resource
+    return None
 
 
 class SyncMetaEncoder(json.JSONEncoder):

@@ -79,7 +79,6 @@ class Context:
     txt: SongTxt
     locations: Locations
     sync_meta: SyncMeta
-    new_src_txt: bool
     logger: Log
 
     @classmethod
@@ -95,10 +94,8 @@ class Context:
         paths = Locations.new(
             details.song_id, options.song_dir, info.meta_path, txt.headers
         )
-        sync_meta, new_src_txt = _load_sync_meta(
-            paths.meta_path, details.song_id, txt_str, txt.meta_tags
-        )
-        return cls(details, options, txt, paths, sync_meta, new_src_txt, logger)
+        sync_meta = _load_sync_meta(paths.meta_path, details.song_id, txt.meta_tags)
+        return cls(details, options, txt, paths, sync_meta, logger)
 
     def all_audio_resources(self) -> Iterator[str]:
         if self.txt.meta_tags.audio:
@@ -112,15 +109,31 @@ class Context:
             yield self.txt.meta_tags.video
         yield from self.details.all_comment_videos()
 
+    def cover_url(self) -> str | None:
+        url = None
+        if self.txt.meta_tags.cover:
+            url = self.txt.meta_tags.cover.source_url()
+            self.logger.debug(f"downloading cover from #VIDEO params: {url}")
+        elif self.details.cover_url:
+            url = self.details.cover_url
+            self.logger.warning(
+                "no cover resource in #VIDEO tag, so fallback to small usdb cover!"
+            )
+        return url
 
-def _load_sync_meta(
-    path: Path, song_id: SongId, new_txt: str, meta_tags: MetaTags
-) -> tuple[SyncMeta, bool]:
-    """True if new_txt is different to the last one (if any)."""
-    if os.path.exists(path) and (meta := SyncMeta.try_from_file(path)):
-        updated = meta.update_src_txt_hash(new_txt)
-        return meta, updated
-    return SyncMeta.new(song_id, new_txt, meta_tags), True
+    def background_url(self) -> str | None:
+        url = None
+        if self.txt.meta_tags.background:
+            url = self.txt.meta_tags.background.source_url()
+            self.logger.debug(f"downloading background from #VIDEO params: {url}")
+        return url
+
+
+def _load_sync_meta(path: Path, song_id: SongId, meta_tags: MetaTags) -> SyncMeta:
+    """Loads meta from path if valid or creates a new one."""
+    if path.exists() and (meta := SyncMeta.try_from_file(path)):
+        return meta
+    return SyncMeta.new(song_id, meta_tags)
 
 
 class SongLoader(QRunnable):
@@ -152,11 +165,9 @@ class SongLoader(QRunnable):
         ctx = Context.new(details, self.options, self.data, self.logger)
         if not ctx:
             self.logger.info(
-                "Aborted; not logged in. Log in to USDB in your browser and select the browser in the USDB Syncer settings. "
+                "Aborted; not logged in. Log in to USDB in your browser and select the "
+                "browser in the USDB Syncer settings. "
             )
-            return
-        if not ctx.new_src_txt:
-            ctx.logger.info("Aborted; song is already synchronized.")
             return
         os.makedirs(ctx.locations.dir_path, exist_ok=True)
         _ensure_correct_folder_name(ctx.locations)
@@ -181,7 +192,8 @@ def download_songs(
     logger = get_logger(__file__)
     if not get_usdb_login_status():
         logger.error(
-            f"Download(s) cancelled. You are not logged in at {Usdb.BASE_URL}. Log in with your browser and select it in the syncer settings."
+            f"Download(s) cancelled. You are not logged in at {Usdb.BASE_URL}. "
+            "Log in with your browser and select it in the syncer settings."
         )
         return
     logger.info(
@@ -197,7 +209,11 @@ def download_songs(
 def _maybe_download_audio(ctx: Context) -> None:
     if not (options := ctx.options.audio_options):
         return
+    old_resource = ctx.sync_meta.local_audio_resource(ctx.locations.dir_path)
     for idx, resource in enumerate(ctx.all_audio_resources()):
+        if old_resource == resource:
+            ctx.logger.info("Audio resource is unchanged.")
+            return
         if idx > 9:
             break
         if ext := resource_dl.download_video(
@@ -208,7 +224,7 @@ def _maybe_download_audio(ctx: Context) -> None:
             ctx.logger,
         ):
             path = ctx.locations.file_path_stem.with_suffix(f".{ext}")
-            ctx.sync_meta.set_audio_meta(path)
+            ctx.sync_meta.set_audio_meta(path, resource)
             ctx.txt.headers.mp3 = os.path.basename(path)
             ctx.logger.info("Success! Downloaded audio.")
 
@@ -222,7 +238,11 @@ def _maybe_download_audio(ctx: Context) -> None:
 def _maybe_download_video(ctx: Context) -> None:
     if not (options := ctx.options.video_options) or ctx.txt.meta_tags.is_audio_only():
         return
+    old_resource = ctx.sync_meta.local_video_resource(ctx.locations.dir_path)
     for idx, resource in enumerate(ctx.all_video_resources()):
+        if old_resource == resource:
+            ctx.logger.info("Video resource is unchanged.")
+            return
         if idx > 9:
             break
         if ext := resource_dl.download_video(
@@ -233,7 +253,7 @@ def _maybe_download_video(ctx: Context) -> None:
             ctx.logger,
         ):
             path = ctx.locations.file_path_stem.with_suffix(f".{ext}")
-            ctx.sync_meta.set_video_meta(path)
+            ctx.sync_meta.set_video_meta(path, resource)
             ctx.txt.headers.video = os.path.basename(path)
             ctx.logger.info("Success! Downloaded video.")
             return
@@ -243,8 +263,14 @@ def _maybe_download_video(ctx: Context) -> None:
 def _maybe_download_cover(ctx: Context) -> None:
     if not ctx.options.cover:
         return
-
+    if not (url := ctx.cover_url()):
+        ctx.logger.warning("No cover resource found.")
+        return
+    if ctx.sync_meta.local_cover_resource(ctx.locations.dir_path) == url:
+        ctx.logger.info("Cover resource is unchanged.")
+        return
     if filename := download_and_process_image(
+        url,
         ctx.locations.filename_stem,
         ctx.txt.meta_tags.cover,
         ctx.details,
@@ -253,7 +279,7 @@ def _maybe_download_cover(ctx: Context) -> None:
         max_width=ctx.options.cover.max_size,
     ):
         ctx.txt.headers.cover = filename
-        ctx.sync_meta.set_cover_meta(ctx.locations.dir_path.joinpath(filename))
+        ctx.sync_meta.set_cover_meta(ctx.locations.dir_path.joinpath(filename), url)
         ctx.logger.info("Success! Downloaded cover.")
     else:
         ctx.logger.error("Failed to download cover!")
@@ -264,7 +290,14 @@ def _maybe_download_background(ctx: Context) -> None:
         return
     if not options.download_background(bool(ctx.txt.headers.video)):
         return
-    if filename := download_and_process_image(
+    if not (url := ctx.background_url()):
+        ctx.logger.warning("No background resource found.")
+        return
+    if ctx.sync_meta.local_background_resource(ctx.locations.dir_path) == url:
+        ctx.logger.info("Background resource is unchanged.")
+        return
+    if fname := download_and_process_image(
+        url,
         ctx.locations.filename_stem,
         ctx.txt.meta_tags.background,
         ctx.details,
@@ -272,8 +305,8 @@ def _maybe_download_background(ctx: Context) -> None:
         ImageKind.BACKGROUND,
         max_width=None,
     ):
-        ctx.txt.headers.background = filename
-        ctx.sync_meta.set_background_meta(ctx.locations.dir_path.joinpath(filename))
+        ctx.txt.headers.background = fname
+        ctx.sync_meta.set_background_meta(ctx.locations.dir_path.joinpath(fname), url)
         ctx.logger.info("Success! Downloaded background.")
     else:
         ctx.logger.error("Failed to download background!")
