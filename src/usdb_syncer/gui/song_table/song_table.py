@@ -81,21 +81,25 @@ class SongTable:
         header.resizeSection(Column.COVER, 24)
         header.setSectionResizeMode(Column.BACKGROUND, QHeaderView.ResizeMode.Fixed)
         header.resizeSection(Column.BACKGROUND, 24)
-
-    def _setup_queue_table_header(self) -> None:
-        header = self._queue_view.horizontalHeader()
-        header.setSectionResizeMode(QHeaderView.ResizeMode.ResizeToContents)
-        header.setSectionResizeMode(Column.SONG_ID, QHeaderView.ResizeMode.Fixed)
-        font_metrics = header.fontMetrics()
-        header.resizeSection(Column.SONG_ID, font_metrics.horizontalAdvance("12345678"))
-        header.setSectionResizeMode(Column.ARTIST, QHeaderView.ResizeMode.Interactive)
-        header.setSectionResizeMode(Column.TITLE, QHeaderView.ResizeMode.Interactive)
         header.setSectionResizeMode(
             Column.DOWNLOAD_STATUS, QHeaderView.ResizeMode.Fixed
         )
         header.resizeSection(
             Column.DOWNLOAD_STATUS, font_metrics.horizontalAdvance("Downloading")
         )
+
+    def _setup_queue_table_header(self) -> None:
+        header = self._queue_view.horizontalHeader()
+        list_header = self._list_view.horizontalHeader()
+        header.setSectionResizeMode(QHeaderView.ResizeMode.ResizeToContents)
+        header.setSectionResizeMode(Column.SONG_ID, QHeaderView.ResizeMode.Fixed)
+        header.setSectionResizeMode(Column.ARTIST, QHeaderView.ResizeMode.Interactive)
+        header.setSectionResizeMode(Column.TITLE, QHeaderView.ResizeMode.Interactive)
+        header.setSectionResizeMode(
+            Column.DOWNLOAD_STATUS, QHeaderView.ResizeMode.Fixed
+        )
+        for column in Column:
+            header.resizeSection(column, list_header.sectionSize(column))
 
     ### selection model
 
