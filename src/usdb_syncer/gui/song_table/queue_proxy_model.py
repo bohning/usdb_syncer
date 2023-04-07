@@ -5,13 +5,11 @@ from PySide6.QtCore import (
     QObject,
     QPersistentModelIndex,
     QSortFilterProxyModel,
-    QTimer,
 )
-from usdb_syncer.gui.song_table.column import Column
 
+from usdb_syncer.gui.song_table.column import Column
 from usdb_syncer.gui.song_table.table_model import CustomRole
-from usdb_syncer.song_data import DownloadStatus, SongData, fuzz_text
-from usdb_syncer.song_txt import SongTxt
+from usdb_syncer.song_data import DownloadStatus, SongData
 
 QIndex = QModelIndex | QPersistentModelIndex
 

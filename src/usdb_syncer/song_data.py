@@ -95,16 +95,18 @@ class DownloadStatus(Enum):
     DOWNLOADING = 3
     DONE = 4
 
-    def __str__(self) -> str:
+    def __str__(self) -> str:  # pylint: disable=invalid-str-returned
         match self:
-            case self.NONE | self.STAGED:
+            case DownloadStatus.NONE | DownloadStatus.STAGED:
                 return ""
-            case self.PENDING:
+            case DownloadStatus.PENDING:
                 return "Pending"
-            case self.DOWNLOADING:
+            case DownloadStatus.DOWNLOADING:
                 return "Downloading"
-            case self.DONE:
+            case DownloadStatus.DONE:
                 return "Done"
+            case _ as unreachable:
+                assert_never(unreachable)
 
 
 @attrs.frozen(auto_attribs=True)
