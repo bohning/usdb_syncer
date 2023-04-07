@@ -5,6 +5,7 @@ plus information about locally existing files.
 from __future__ import annotations
 
 from functools import cache
+from pathlib import Path
 
 import attrs
 from PySide6.QtGui import QIcon
@@ -63,9 +64,9 @@ def fuzz_text(text: str) -> str:
 
 @attrs.define
 class LocalFiles:
-    """The path of a .usdb file and if which files exist in the same folder."""
+    """The path of a .usdb file and which files exist in the same folder."""
 
-    usdb_path: str | None = None
+    usdb_path: Path | None = None
     txt: bool = False
     audio: bool = False
     video: bool = False
@@ -73,7 +74,7 @@ class LocalFiles:
     background: bool = False
 
     @classmethod
-    def from_sync_meta(cls, usdb_path: str, sync_meta: SyncMeta) -> LocalFiles:
+    def from_sync_meta(cls, usdb_path: Path, sync_meta: SyncMeta) -> LocalFiles:
         return cls(
             usdb_path=usdb_path,
             txt=bool(sync_meta.txt),

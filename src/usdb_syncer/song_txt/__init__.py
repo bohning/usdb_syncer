@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import math
+from pathlib import Path
 
 import attrs
 
@@ -57,9 +58,9 @@ class SongTxt:
             self.headers.medleystartbeat = medley.start
             self.headers.medleyendbeat = medley.end
 
-    def write_to_file(self, path: str, encoding: str, newline: str) -> None:
-        with open(
-            path, "w", encoding=encoding, newline=newline, errors="backslashreplace"
+    def write_to_file(self, path: Path, encoding: str, newline: str) -> None:
+        with path.open(
+            "w", encoding=encoding, newline=newline, errors="backslashreplace"
         ) as file:
             file.write(str(self))
 

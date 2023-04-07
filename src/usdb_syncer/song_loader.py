@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+from pathlib import Path
 from typing import Callable, Iterator
 
 import attrs
@@ -21,6 +22,7 @@ from usdb_syncer.usdb_scraper import SongDetails, get_usdb_login_status
 from usdb_syncer.utils import (
     is_name_maybe_with_suffix,
     next_unique_directory,
+    resource_file_ending,
     sanitize_filename,
 )
 
@@ -30,7 +32,7 @@ class DownloadInfo:
     """Data required to start a song download."""
 
     song_id: SongId
-    meta_path: str | None
+    meta_path: Path | None
 
     @classmethod
     def from_song_data(cls, data: SongData) -> DownloadInfo:
@@ -41,32 +43,54 @@ class DownloadInfo:
 class Locations:
     """Paths for downloading a song."""
 
-    meta_path: str
-    dir_path: str
+    meta_path: Path
     filename_stem: str
-    file_path_stem: str
 
     @classmethod
     def new(
-        cls, song_id: SongId, song_dir: str, meta_path: str | None, headers: Headers
+        cls, song_id: SongId, song_dir: Path, meta_path: Path | None, headers: Headers
     ) -> Locations:
         filename_stem = sanitize_filename(headers.artist_title_str())
-        if meta_path:
-            dir_path = os.path.dirname(meta_path)
-        else:
-            dir_path = next_unique_directory(os.path.join(song_dir, filename_stem))
-            meta_path = os.path.join(dir_path, f"{song_id}.usdb")
-        return cls(
-            meta_path=meta_path,
-            dir_path=dir_path,
-            filename_stem=filename_stem,
-            file_path_stem=os.path.join(dir_path, filename_stem),
-        )
+        if not meta_path:
+            dir_path = next_unique_directory(song_dir.joinpath(filename_stem))
+            meta_path = dir_path.joinpath(f"{song_id}.usdb")
+        return cls(meta_path=meta_path, filename_stem=filename_stem)
 
-    def update_dir_path(self, dir_path: str) -> None:
-        self.dir_path = dir_path
-        self.meta_path = os.path.join(dir_path, os.path.basename(self.meta_path))
-        self.file_path_stem = os.path.join(dir_path, self.filename_stem)
+    def dir_path(self) -> Path:
+        """The song directory."""
+        return self.meta_path.parent
+
+    def file_path(self, file: str | None = None, ext: str | None = None) -> Path:
+        """Path to file in the song directory. The final path component is the generic
+        name or the provided file, optionally with the provided extension.
+        """
+        path = self.meta_path.with_name(file or self.filename_stem)
+        if ext:
+            path = path.with_suffix(f".{ext}")
+        return path
+
+    def ensure_correct_paths(self, sync_meta: SyncMeta) -> None:
+        """Ensure meta path and given resource paths match the generic filename."""
+        if is_name_maybe_with_suffix(self.dir_path().name, self.filename_stem):
+            return
+        self._fix_meta_path()
+        self._fix_resource_paths(sync_meta)
+
+    def _fix_meta_path(self) -> None:
+        new = next_unique_directory(self.dir_path().with_name(self.filename_stem))
+        self.dir_path().rename(new)
+        self.meta_path = new.joinpath(self.meta_path.name)
+
+    def _fix_resource_paths(self, sync_meta: SyncMeta) -> None:
+        for meta in sync_meta.file_metas():
+            old_path = self.file_path(file=meta.fname)
+            new_path = self.file_path(
+                file=self.filename_stem + resource_file_ending(meta.fname)
+            )
+            if old_path == new_path or new_path.exists() or not old_path.exists():
+                continue
+            old_path.rename(new_path)
+            meta.fname = new_path.name
 
 
 @attrs.define
@@ -78,7 +102,6 @@ class Context:
     txt: SongTxt
     locations: Locations
     sync_meta: SyncMeta
-    new_src_txt: bool
     logger: Log
 
     @classmethod
@@ -94,10 +117,8 @@ class Context:
         paths = Locations.new(
             details.song_id, options.song_dir, info.meta_path, txt.headers
         )
-        sync_meta, new_src_txt = _load_sync_meta(
-            paths.meta_path, details.song_id, txt_str, txt.meta_tags
-        )
-        return cls(details, options, txt, paths, sync_meta, new_src_txt, logger)
+        sync_meta = _load_sync_meta(paths.meta_path, details.song_id, txt.meta_tags)
+        return cls(details, options, txt, paths, sync_meta, logger)
 
     def all_audio_resources(self) -> Iterator[str]:
         if self.txt.meta_tags.audio:
@@ -111,15 +132,31 @@ class Context:
             yield self.txt.meta_tags.video
         yield from self.details.all_comment_videos()
 
+    def cover_url(self) -> str | None:
+        url = None
+        if self.txt.meta_tags.cover:
+            url = self.txt.meta_tags.cover.source_url()
+            self.logger.debug(f"downloading cover from #VIDEO params: {url}")
+        elif self.details.cover_url:
+            url = self.details.cover_url
+            self.logger.warning(
+                "no cover resource in #VIDEO tag, so fallback to small usdb cover!"
+            )
+        return url
 
-def _load_sync_meta(
-    path: str, song_id: SongId, new_txt: str, meta_tags: MetaTags
-) -> tuple[SyncMeta, bool]:
-    """True if new_txt is different to the last one (if any)."""
-    if os.path.exists(path) and (meta := SyncMeta.try_from_file(path)):
-        updated = meta.update_src_txt_hash(new_txt)
-        return meta, updated
-    return SyncMeta.new(song_id, new_txt, meta_tags), True
+    def background_url(self) -> str | None:
+        url = None
+        if self.txt.meta_tags.background:
+            url = self.txt.meta_tags.background.source_url()
+            self.logger.debug(f"downloading background from #VIDEO params: {url}")
+        return url
+
+
+def _load_sync_meta(path: Path, song_id: SongId, meta_tags: MetaTags) -> SyncMeta:
+    """Loads meta from path if valid or creates a new one."""
+    if path.exists() and (meta := SyncMeta.try_from_file(path)):
+        return meta
+    return SyncMeta.new(song_id, meta_tags)
 
 
 class SongLoader(QRunnable):
@@ -151,14 +188,12 @@ class SongLoader(QRunnable):
         ctx = Context.new(details, self.options, self.data, self.logger)
         if not ctx:
             self.logger.info(
-                "Aborted; not logged in. Log in to USDB in your browser and select the browser in the USDB Syncer settings. "
+                "Aborted; not logged in. Log in to USDB in your browser and select the "
+                "browser in the USDB Syncer settings. "
             )
             return
-        if not ctx.new_src_txt:
-            ctx.logger.info("Aborted; song is already synchronized.")
-            return
-        os.makedirs(ctx.locations.dir_path, exist_ok=True)
-        _ensure_correct_folder_name(ctx.locations)
+        ctx.locations.dir_path().mkdir(parents=True, exist_ok=True)
+        ctx.locations.ensure_correct_paths(ctx.sync_meta)
         _maybe_download_audio(ctx)
         _maybe_download_video(ctx)
         _maybe_download_cover(ctx)
@@ -180,7 +215,8 @@ def download_songs(
     logger = get_logger(__file__)
     if not get_usdb_login_status():
         logger.error(
-            f"Download(s) cancelled. You are not logged in at {Usdb.BASE_URL}. Log in with your browser and select it in the syncer settings."
+            f"Download(s) cancelled. You are not logged in at {Usdb.BASE_URL}. "
+            "Log in with your browser and select it in the syncer settings."
         )
         return
     logger.info(
@@ -196,18 +232,22 @@ def download_songs(
 def _maybe_download_audio(ctx: Context) -> None:
     if not (options := ctx.options.audio_options):
         return
+    old_resource = ctx.sync_meta.local_audio_resource(ctx.locations.dir_path())
     for idx, resource in enumerate(ctx.all_audio_resources()):
+        if old_resource == resource:
+            ctx.logger.info("Audio resource is unchanged.")
+            return
         if idx > 9:
             break
-        if ext := resource_dl.download_video(
+        if ext := resource_dl.download_audio(
             resource,
             options,
             ctx.options.browser,
-            ctx.locations.file_path_stem,
+            ctx.locations.file_path(),
             ctx.logger,
         ):
-            path = f"{ctx.locations.file_path_stem}.{ext}"
-            ctx.sync_meta.set_audio_meta(path)
+            path = ctx.locations.file_path(ext=ext)
+            ctx.sync_meta.set_audio_meta(path, resource)
             ctx.txt.headers.mp3 = os.path.basename(path)
             ctx.logger.info("Success! Downloaded audio.")
 
@@ -221,18 +261,22 @@ def _maybe_download_audio(ctx: Context) -> None:
 def _maybe_download_video(ctx: Context) -> None:
     if not (options := ctx.options.video_options) or ctx.txt.meta_tags.is_audio_only():
         return
+    old_resource = ctx.sync_meta.local_video_resource(ctx.locations.dir_path())
     for idx, resource in enumerate(ctx.all_video_resources()):
+        if old_resource == resource:
+            ctx.logger.info("Video resource is unchanged.")
+            return
         if idx > 9:
             break
         if ext := resource_dl.download_video(
             resource,
             options,
             ctx.options.browser,
-            ctx.locations.file_path_stem,
+            ctx.locations.file_path(),
             ctx.logger,
         ):
-            path = f"{ctx.locations.file_path_stem}.{ext}"
-            ctx.sync_meta.set_video_meta(path)
+            path = ctx.locations.file_path(ext=ext)
+            ctx.sync_meta.set_video_meta(path, resource)
             ctx.txt.headers.video = os.path.basename(path)
             ctx.logger.info("Success! Downloaded video.")
             return
@@ -242,17 +286,22 @@ def _maybe_download_video(ctx: Context) -> None:
 def _maybe_download_cover(ctx: Context) -> None:
     if not ctx.options.cover:
         return
-
-    if filename := download_and_process_image(
-        ctx.locations.filename_stem,
+    if not (url := ctx.cover_url()):
+        ctx.logger.warning("No cover resource found.")
+        return
+    if ctx.sync_meta.local_cover_resource(ctx.locations.dir_path()) == url:
+        ctx.logger.info("Cover resource is unchanged.")
+        return
+    if path := download_and_process_image(
+        url,
+        ctx.locations.file_path(),
         ctx.txt.meta_tags.cover,
         ctx.details,
-        ctx.locations.dir_path,
         ImageKind.COVER,
         max_width=ctx.options.cover.max_size,
     ):
-        ctx.txt.headers.cover = filename
-        ctx.sync_meta.set_cover_meta(os.path.join(ctx.locations.dir_path, filename))
+        ctx.txt.headers.cover = path.name
+        ctx.sync_meta.set_cover_meta(path, url)
         ctx.logger.info("Success! Downloaded cover.")
     else:
         ctx.logger.error("Failed to download cover!")
@@ -263,18 +312,22 @@ def _maybe_download_background(ctx: Context) -> None:
         return
     if not options.download_background(bool(ctx.txt.headers.video)):
         return
-    if filename := download_and_process_image(
-        ctx.locations.filename_stem,
+    if not (url := ctx.background_url()):
+        ctx.logger.warning("No background resource found.")
+        return
+    if ctx.sync_meta.local_background_resource(ctx.locations.dir_path()) == url:
+        ctx.logger.info("Background resource is unchanged.")
+        return
+    if path := download_and_process_image(
+        url,
+        ctx.locations.file_path(),
         ctx.txt.meta_tags.background,
         ctx.details,
-        ctx.locations.dir_path,
         ImageKind.BACKGROUND,
         max_width=None,
     ):
-        ctx.txt.headers.background = filename
-        ctx.sync_meta.set_background_meta(
-            os.path.join(ctx.locations.dir_path, filename)
-        )
+        ctx.txt.headers.background = path.name
+        ctx.sync_meta.set_background_meta(path, url)
         ctx.logger.info("Success! Downloaded background.")
     else:
         ctx.logger.error("Failed to download background!")
@@ -283,20 +336,11 @@ def _maybe_download_background(ctx: Context) -> None:
 def _maybe_write_txt(ctx: Context) -> None:
     if not (options := ctx.options.txt_options):
         return
-    path = f"{ctx.locations.file_path_stem}.txt"
+    path = ctx.locations.file_path(ext="txt")
     ctx.txt.write_to_file(path, options.encoding.value, options.newline.value)
     ctx.sync_meta.set_txt_meta(path)
     ctx.logger.info("Success! Created song txt.")
 
 
 def _write_sync_meta(ctx: Context) -> None:
-    ctx.sync_meta.to_file(ctx.locations.dir_path)
-
-
-def _ensure_correct_folder_name(locations: Locations) -> None:
-    folder_dir, folder_name = os.path.split(locations.dir_path)
-    if is_name_maybe_with_suffix(folder_name, locations.filename_stem):
-        return
-    new = next_unique_directory(os.path.join(folder_dir, locations.filename_stem))
-    os.rename(locations.dir_path, new)
-    locations.update_dir_path(new)
+    ctx.sync_meta.to_file(ctx.locations.dir_path())

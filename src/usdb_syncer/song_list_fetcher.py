@@ -3,6 +3,7 @@
 import json
 import os
 from glob import glob
+from pathlib import Path
 
 from usdb_syncer import SongId, settings
 from usdb_syncer.logger import get_logger
@@ -56,10 +57,10 @@ def dump_available_songs(available_songs: list[UsdbSong]) -> None:
 
 def find_local_files() -> dict[SongId, LocalFiles]:
     local_files: dict[SongId, LocalFiles] = {}
-    pattern = os.path.join(settings.get_song_dir(), "**", "*.usdb")
-    for path in glob(pattern, recursive=True):
-        if meta := SyncMeta.try_from_file(path):
-            local_files[meta.song_id] = files = LocalFiles(usdb_path=path)
+    pattern = settings.get_song_dir().joinpath("**", "*.usdb")
+    for path in glob(str(pattern), recursive=True):
+        if meta := SyncMeta.try_from_file(Path(path)):
+            local_files[meta.song_id] = files = LocalFiles(usdb_path=Path(path))
             folder = os.path.dirname(path)
             if txt := _get_song_txt(meta, folder):
                 files.txt = True

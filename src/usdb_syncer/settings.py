@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import os
 from enum import Enum
+from pathlib import Path
 from typing import Any, TypeVar, cast
 
 import browser_cookie3
@@ -406,12 +407,12 @@ def set_browser(value: Browser) -> None:
     set_setting(SettingKey.BROWSER, value)
 
 
-def get_song_dir() -> str:
-    return get_setting(SettingKey.SONG_DIR, os.path.join(os.getcwd(), "songs"))
+def get_song_dir() -> Path:
+    return get_setting(SettingKey.SONG_DIR, Path.cwd().joinpath("songs"))
 
 
 def set_song_dir(value: str) -> None:
-    set_setting(SettingKey.SONG_DIR, os.path.join(os.getcwd(), value))
+    set_setting(SettingKey.SONG_DIR, Path.cwd().joinpath(value))
 
 
 def get_video() -> bool:
