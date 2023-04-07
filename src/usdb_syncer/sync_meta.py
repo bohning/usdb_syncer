@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 import os
 from pathlib import Path
-from typing import Any
+from typing import Any, Iterator
 
 import attrs
 
@@ -106,6 +106,11 @@ class SyncMeta:
 
     def local_background_resource(self, folder: Path) -> str | None:
         return _local_resource(self.background, folder)
+
+    def file_metas(self) -> Iterator[FileMeta]:
+        for meta in (self.txt, self.audio, self.video, self.cover, self.background):
+            if meta:
+                yield meta
 
 
 def _local_resource(meta: FileMeta | None, folder: Path) -> str | None:

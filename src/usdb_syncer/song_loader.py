@@ -22,6 +22,7 @@ from usdb_syncer.usdb_scraper import SongDetails, get_usdb_login_status
 from usdb_syncer.utils import (
     is_name_maybe_with_suffix,
     next_unique_directory,
+    resource_file_ending,
     sanitize_filename,
 )
 
@@ -59,24 +60,37 @@ class Locations:
         """The song directory."""
         return self.meta_path.parent
 
-    def file_path(self, ext: str | None = None) -> Path:
+    def file_path(self, file: str | None = None, ext: str | None = None) -> Path:
         """Path to file in the song directory. The final path component is the generic
-        name with an optional extension.
+        name or the provided file, optionally with the provided extension.
         """
-        path = self.meta_path.with_name(self.filename_stem)
+        path = self.meta_path.with_name(file or self.filename_stem)
         if ext:
             path = path.with_suffix(f".{ext}")
         return path
 
-    def ensure_correct_folder_name(self) -> None:
-        """If necessary, renames the directory so that its name agrees with the
-        generic filename.
-        """
+    def ensure_correct_paths(self, sync_meta: SyncMeta) -> None:
+        """Ensure meta path and given resource paths match the generic filename."""
         if is_name_maybe_with_suffix(self.dir_path().name, self.filename_stem):
             return
+        self._fix_meta_path()
+        self._fix_resource_paths(sync_meta)
+
+    def _fix_meta_path(self) -> None:
         new = next_unique_directory(self.dir_path().with_name(self.filename_stem))
         self.dir_path().rename(new)
         self.meta_path = new.joinpath(self.meta_path.name)
+
+    def _fix_resource_paths(self, sync_meta: SyncMeta) -> None:
+        for meta in sync_meta.file_metas():
+            old_path = self.file_path(file=meta.fname)
+            new_path = self.file_path(
+                file=self.filename_stem + resource_file_ending(meta.fname)
+            )
+            if old_path == new_path or new_path.exists() or not old_path.exists():
+                continue
+            old_path.rename(new_path)
+            meta.fname = new_path.name
 
 
 @attrs.define
@@ -179,7 +193,7 @@ class SongLoader(QRunnable):
             )
             return
         ctx.locations.dir_path().mkdir(parents=True, exist_ok=True)
-        ctx.locations.ensure_correct_folder_name()
+        ctx.locations.ensure_correct_paths(ctx.sync_meta)
         _maybe_download_audio(ctx)
         _maybe_download_video(ctx)
         _maybe_download_cover(ctx)

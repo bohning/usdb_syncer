@@ -107,3 +107,11 @@ def add_to_system_path(path: str) -> None:
 
 def normalize(text: str) -> str:
     return unicodedata.normalize("NFC", text)
+
+
+def resource_file_ending(name: str) -> str:
+    """Return the suffix or name, including " [BG]" and " [CO]"."""
+    regex = re.compile(r".+?((?: \[(?:CO|BG)\])?\.[^.]+)")
+    if match := regex.fullmatch(name):
+        return match.group(1)
+    return ""
