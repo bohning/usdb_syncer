@@ -144,13 +144,12 @@ def download_image(url: str, logger: Log) -> bytes | None:
 
 def download_and_process_image(
     url: str,
-    filename_stem: str,
+    target_stem: Path,
     meta_tags: ImageMetaTags | None,
     details: SongDetails,
-    pathname: Path,
     kind: ImageKind,
     max_width: int | None,
-) -> str | None:
+) -> Path | None:
     logger = get_logger(__file__, details.song_id)
     if not (img_bytes := download_image(url, logger)):
         logger.error(f"#{str(kind).upper()}: file does not exist at url: {url}")
@@ -160,13 +159,12 @@ def download_and_process_image(
         logger.error(f"#{str(kind).upper()}: file at {url} is no image")
         return None
 
-    fname = f"{filename_stem} [{kind.value}].jpg"
-    path = pathname.joinpath(fname)
+    path = target_stem.with_name(f"{target_stem.name} [{kind.value}].jpg")
     with path.open("wb") as file:
         file.write(img_bytes)
 
     _process_image(meta_tags, max_width, path)
-    return fname
+    return path
 
 
 def _process_image(

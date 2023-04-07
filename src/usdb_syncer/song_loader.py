@@ -43,31 +43,40 @@ class Locations:
     """Paths for downloading a song."""
 
     meta_path: Path
-    dir_path: Path
     filename_stem: str
-    file_path_stem: Path
 
     @classmethod
     def new(
         cls, song_id: SongId, song_dir: Path, meta_path: Path | None, headers: Headers
     ) -> Locations:
         filename_stem = sanitize_filename(headers.artist_title_str())
-        if meta_path:
-            dir_path = meta_path.parent
-        else:
+        if not meta_path:
             dir_path = next_unique_directory(song_dir.joinpath(filename_stem))
             meta_path = dir_path.joinpath(f"{song_id}.usdb")
-        return cls(
-            meta_path=meta_path,
-            dir_path=dir_path,
-            filename_stem=filename_stem,
-            file_path_stem=dir_path.joinpath(filename_stem),
-        )
+        return cls(meta_path=meta_path, filename_stem=filename_stem)
 
-    def update_dir_path(self, dir_path: Path) -> None:
-        self.dir_path = dir_path
-        self.meta_path = dir_path.joinpath(self.meta_path.name)
-        self.file_path_stem = dir_path.joinpath(self.filename_stem)
+    def dir_path(self) -> Path:
+        """The song directory."""
+        return self.meta_path.parent
+
+    def file_path(self, ext: str | None = None) -> Path:
+        """Path to file in the song directory. The final path component is the generic
+        name with an optional extension.
+        """
+        path = self.meta_path.with_name(self.filename_stem)
+        if ext:
+            path = path.with_suffix(f".{ext}")
+        return path
+
+    def ensure_correct_folder_name(self) -> None:
+        """If necessary, renames the directory so that its name agrees with the
+        generic filename.
+        """
+        if is_name_maybe_with_suffix(self.dir_path().name, self.filename_stem):
+            return
+        new = next_unique_directory(self.dir_path().with_name(self.filename_stem))
+        self.dir_path().rename(new)
+        self.meta_path = new.joinpath(self.meta_path.name)
 
 
 @attrs.define
@@ -169,8 +178,8 @@ class SongLoader(QRunnable):
                 "browser in the USDB Syncer settings. "
             )
             return
-        os.makedirs(ctx.locations.dir_path, exist_ok=True)
-        _ensure_correct_folder_name(ctx.locations)
+        ctx.locations.dir_path().mkdir(parents=True, exist_ok=True)
+        ctx.locations.ensure_correct_folder_name()
         _maybe_download_audio(ctx)
         _maybe_download_video(ctx)
         _maybe_download_cover(ctx)
@@ -209,7 +218,7 @@ def download_songs(
 def _maybe_download_audio(ctx: Context) -> None:
     if not (options := ctx.options.audio_options):
         return
-    old_resource = ctx.sync_meta.local_audio_resource(ctx.locations.dir_path)
+    old_resource = ctx.sync_meta.local_audio_resource(ctx.locations.dir_path())
     for idx, resource in enumerate(ctx.all_audio_resources()):
         if old_resource == resource:
             ctx.logger.info("Audio resource is unchanged.")
@@ -220,10 +229,10 @@ def _maybe_download_audio(ctx: Context) -> None:
             resource,
             options,
             ctx.options.browser,
-            ctx.locations.file_path_stem,
+            ctx.locations.file_path(),
             ctx.logger,
         ):
-            path = ctx.locations.file_path_stem.with_suffix(f".{ext}")
+            path = ctx.locations.file_path(ext=ext)
             ctx.sync_meta.set_audio_meta(path, resource)
             ctx.txt.headers.mp3 = os.path.basename(path)
             ctx.logger.info("Success! Downloaded audio.")
@@ -238,7 +247,7 @@ def _maybe_download_audio(ctx: Context) -> None:
 def _maybe_download_video(ctx: Context) -> None:
     if not (options := ctx.options.video_options) or ctx.txt.meta_tags.is_audio_only():
         return
-    old_resource = ctx.sync_meta.local_video_resource(ctx.locations.dir_path)
+    old_resource = ctx.sync_meta.local_video_resource(ctx.locations.dir_path())
     for idx, resource in enumerate(ctx.all_video_resources()):
         if old_resource == resource:
             ctx.logger.info("Video resource is unchanged.")
@@ -249,10 +258,10 @@ def _maybe_download_video(ctx: Context) -> None:
             resource,
             options,
             ctx.options.browser,
-            ctx.locations.file_path_stem,
+            ctx.locations.file_path(),
             ctx.logger,
         ):
-            path = ctx.locations.file_path_stem.with_suffix(f".{ext}")
+            path = ctx.locations.file_path(ext=ext)
             ctx.sync_meta.set_video_meta(path, resource)
             ctx.txt.headers.video = os.path.basename(path)
             ctx.logger.info("Success! Downloaded video.")
@@ -266,20 +275,19 @@ def _maybe_download_cover(ctx: Context) -> None:
     if not (url := ctx.cover_url()):
         ctx.logger.warning("No cover resource found.")
         return
-    if ctx.sync_meta.local_cover_resource(ctx.locations.dir_path) == url:
+    if ctx.sync_meta.local_cover_resource(ctx.locations.dir_path()) == url:
         ctx.logger.info("Cover resource is unchanged.")
         return
-    if filename := download_and_process_image(
+    if path := download_and_process_image(
         url,
-        ctx.locations.filename_stem,
+        ctx.locations.file_path(),
         ctx.txt.meta_tags.cover,
         ctx.details,
-        ctx.locations.dir_path,
         ImageKind.COVER,
         max_width=ctx.options.cover.max_size,
     ):
-        ctx.txt.headers.cover = filename
-        ctx.sync_meta.set_cover_meta(ctx.locations.dir_path.joinpath(filename), url)
+        ctx.txt.headers.cover = path.name
+        ctx.sync_meta.set_cover_meta(path, url)
         ctx.logger.info("Success! Downloaded cover.")
     else:
         ctx.logger.error("Failed to download cover!")
@@ -293,20 +301,19 @@ def _maybe_download_background(ctx: Context) -> None:
     if not (url := ctx.background_url()):
         ctx.logger.warning("No background resource found.")
         return
-    if ctx.sync_meta.local_background_resource(ctx.locations.dir_path) == url:
+    if ctx.sync_meta.local_background_resource(ctx.locations.dir_path()) == url:
         ctx.logger.info("Background resource is unchanged.")
         return
-    if fname := download_and_process_image(
+    if path := download_and_process_image(
         url,
-        ctx.locations.filename_stem,
+        ctx.locations.file_path(),
         ctx.txt.meta_tags.background,
         ctx.details,
-        ctx.locations.dir_path,
         ImageKind.BACKGROUND,
         max_width=None,
     ):
-        ctx.txt.headers.background = fname
-        ctx.sync_meta.set_background_meta(ctx.locations.dir_path.joinpath(fname), url)
+        ctx.txt.headers.background = path.name
+        ctx.sync_meta.set_background_meta(path, url)
         ctx.logger.info("Success! Downloaded background.")
     else:
         ctx.logger.error("Failed to download background!")
@@ -315,19 +322,11 @@ def _maybe_download_background(ctx: Context) -> None:
 def _maybe_write_txt(ctx: Context) -> None:
     if not (options := ctx.options.txt_options):
         return
-    path = ctx.locations.file_path_stem.with_suffix(".txt")
+    path = ctx.locations.file_path(ext="txt")
     ctx.txt.write_to_file(path, options.encoding.value, options.newline.value)
     ctx.sync_meta.set_txt_meta(path)
     ctx.logger.info("Success! Created song txt.")
 
 
 def _write_sync_meta(ctx: Context) -> None:
-    ctx.sync_meta.to_file(ctx.locations.dir_path)
-
-
-def _ensure_correct_folder_name(locations: Locations) -> None:
-    if is_name_maybe_with_suffix(locations.dir_path.name, locations.filename_stem):
-        return
-    new = next_unique_directory(locations.dir_path.with_name(locations.filename_stem))
-    locations.dir_path.rename(new)
-    locations.update_dir_path(new)
+    ctx.sync_meta.to_file(ctx.locations.dir_path())
