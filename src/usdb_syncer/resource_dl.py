@@ -44,7 +44,7 @@ class ImageKind(Enum):
                 assert_never(unreachable)
 
 
-def _url_from_resouce(resource: str) -> str:
+def _url_from_resource(resource: str) -> str:
     if "://" in resource:
         return resource
     if "/" in resource:
@@ -136,7 +136,7 @@ def _ytdl_options(format_: str, browser: Browser, target_stem: Path) -> YtdlOpti
 
 
 def _download_resource(options: YtdlOptions, resource: str, logger: Log) -> str | None:
-    url = _url_from_resouce(resource)
+    url = _url_from_resource(resource)
     with yt_dlp.YoutubeDL(options) as ydl:
         try:
             return ydl.prepare_filename(ydl.extract_info(url))
