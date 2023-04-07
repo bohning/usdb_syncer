@@ -60,14 +60,14 @@ class Locations:
         """The song directory."""
         return self.meta_path.parent
 
-    def file_path(self, file: str | None = None, ext: str | None = None) -> Path:
+    def file_path(self, file: str = "", ext: str = "") -> Path:
         """Path to file in the song directory. The final path component is the generic
         name or the provided file, optionally with the provided extension.
         """
-        path = self.meta_path.with_name(file or self.filename_stem)
+        name = file or self.filename_stem
         if ext:
-            path = path.with_suffix(f".{ext}")
-        return path
+            name = f"{name}.{ext}"
+        return self.meta_path.with_name(name)
 
     def ensure_correct_paths(self, sync_meta: SyncMeta) -> None:
         """Ensure meta path and given resource paths match the generic filename."""

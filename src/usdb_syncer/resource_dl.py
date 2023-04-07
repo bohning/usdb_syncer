@@ -99,7 +99,7 @@ def _normalize(options: AudioOptions, path_stem: Path, filename: str) -> None:
         progress=True,  # set to False?
     )
     ext = options.format.value
-    normalizer.add_media_file(filename, str(path_stem.with_suffix(f".{ext}")))
+    normalizer.add_media_file(filename, f"{path_stem}.{ext}")
     normalizer.run_normalization()
 
 
