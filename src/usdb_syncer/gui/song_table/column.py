@@ -5,6 +5,8 @@ from functools import cache
 
 from PySide6.QtCore import QModelIndex, QPersistentModelIndex
 from PySide6.QtGui import QIcon
+from PySide6.QtWidgets import QHeaderView
+from usdb_syncer import SongId
 
 from usdb_syncer.typing_helpers import assert_never
 
@@ -99,3 +101,50 @@ class Column(IntEnum):
 
     def display_in_queue_view(self) -> bool:
         return self in (self.SONG_ID, self.ARTIST, self.TITLE, self.DOWNLOAD_STATUS)
+
+    def section_size(self, header: QHeaderView) -> int | None:
+        match self:
+            case Column.SONG_ID:
+                return header.fontMetrics().horizontalAdvance(str(SongId(0)))
+            case (
+                Column.ARTIST
+                | Column.TITLE
+                | Column.LANGUAGE
+                | Column.EDITION
+                | Column.GOLDEN_NOTES
+                | Column.RATING
+                | Column.VIEWS
+            ):
+                return None
+            case Column.DOWNLOAD_STATUS:
+                return header.fontMetrics().horizontalAdvance("Downloading")
+            case (
+                Column.TXT
+                | Column.AUDIO
+                | Column.VIDEO
+                | Column.COVER
+                | Column.BACKGROUND
+            ):
+                return 24
+            case _ as unreachable:
+                assert_never(unreachable)
+
+    def section_resize_mode(self) -> QHeaderView.ResizeMode:
+        match self:
+            case (
+                Column.SONG_ID
+                | Column.GOLDEN_NOTES
+                | Column.RATING
+                | Column.VIEWS
+                | Column.TXT
+                | Column.AUDIO
+                | Column.VIDEO
+                | Column.COVER
+                | Column.BACKGROUND
+                | Column.DOWNLOAD_STATUS
+            ):
+                return QHeaderView.ResizeMode.Fixed
+            case Column.ARTIST | Column.TITLE | Column.LANGUAGE | Column.EDITION:
+                return QHeaderView.ResizeMode.Interactive
+            case _ as unreachable:
+                assert_never(unreachable)

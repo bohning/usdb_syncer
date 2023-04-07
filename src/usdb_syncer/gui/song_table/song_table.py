@@ -6,7 +6,13 @@ import os
 from glob import glob
 from typing import Any, Callable, Iterator
 
-from PySide6.QtCore import QItemSelection, QItemSelectionModel, QModelIndex, QObject
+from PySide6.QtCore import (
+    QItemSelection,
+    QItemSelectionModel,
+    QModelIndex,
+    QObject,
+    QSortFilterProxyModel,
+)
 from PySide6.QtWidgets import QAbstractItemView, QHeaderView, QTableView
 
 from usdb_syncer import SongId
@@ -33,19 +39,18 @@ class SongTable:
         self._queue_view = queue_view
         self._model = TableModel(parent)
         self._list_proxy = ListProxyModel(parent)
-        self._list_proxy.setSourceModel(self._model)
-        self._list_proxy.setSortRole(CustomRole.SORT)
-        self._list_view.setModel(self._list_proxy)
-        self._list_view.setSelectionMode(
-            QAbstractItemView.SelectionMode.ExtendedSelection
-        )
         self._queue_proxy = QueueProxyModel(parent)
-        self._queue_proxy.setSourceModel(self._model)
-        self._queue_proxy.setSortRole(CustomRole.SORT)
-        self._queue_view.setModel(self._queue_proxy)
-        self._queue_view.setSelectionMode(
-            QAbstractItemView.SelectionMode.ExtendedSelection
-        )
+        self._setup_view(self._list_view, self._list_proxy)
+        self._setup_view(self._queue_view, self._queue_proxy)
+
+    def _setup_view(self, view: QTableView, model: QSortFilterProxyModel) -> None:
+        model.setSourceModel(self._model)
+        model.setSortRole(CustomRole.SORT)
+        view.setModel(model)
+        view.setSelectionMode(QAbstractItemView.SelectionMode.ExtendedSelection)
+        header = view.horizontalHeader()
+        # for resizable columns, use content size as the start value
+        header.setSectionResizeMode(QHeaderView.ResizeMode.ResizeToContents)
 
     def initialize(self, song_list: tuple[SongData, ...]) -> None:
         self._model.set_data(song_list)
@@ -54,51 +59,16 @@ class SongTable:
 
     def _setup_list_table_header(self) -> None:
         header = self._list_view.horizontalHeader()
-        header.setSectionResizeMode(QHeaderView.ResizeMode.ResizeToContents)
-        header.setSectionResizeMode(Column.SONG_ID, QHeaderView.ResizeMode.Fixed)
-
-        font_metrics = header.fontMetrics()
-        header.resizeSection(Column.SONG_ID, font_metrics.horizontalAdvance("12345678"))
-        header.setSectionResizeMode(Column.ARTIST, QHeaderView.ResizeMode.Interactive)
-        header.setSectionResizeMode(Column.TITLE, QHeaderView.ResizeMode.Interactive)
-        header.setSectionResizeMode(Column.LANGUAGE, QHeaderView.ResizeMode.Interactive)
-        header.setSectionResizeMode(Column.EDITION, QHeaderView.ResizeMode.Interactive)
-        header.setSectionResizeMode(Column.GOLDEN_NOTES, QHeaderView.ResizeMode.Fixed)
-        header.resizeSection(
-            Column.GOLDEN_NOTES, header.sectionSize(Column.GOLDEN_NOTES)
-        )
-        header.setSectionResizeMode(Column.RATING, QHeaderView.ResizeMode.Fixed)
-        header.resizeSection(Column.RATING, header.sectionSize(Column.RATING))
-        header.setSectionResizeMode(Column.VIEWS, QHeaderView.ResizeMode.Fixed)
-        header.resizeSection(Column.VIEWS, header.sectionSize(Column.VIEWS))
-        header.setSectionResizeMode(Column.TXT, QHeaderView.ResizeMode.Fixed)
-        header.resizeSection(Column.TXT, 24)
-        header.setSectionResizeMode(Column.AUDIO, QHeaderView.ResizeMode.Fixed)
-        header.resizeSection(Column.AUDIO, 24)
-        header.setSectionResizeMode(Column.VIDEO, QHeaderView.ResizeMode.Fixed)
-        header.resizeSection(Column.VIDEO, 24)
-        header.setSectionResizeMode(Column.COVER, QHeaderView.ResizeMode.Fixed)
-        header.resizeSection(Column.COVER, 24)
-        header.setSectionResizeMode(Column.BACKGROUND, QHeaderView.ResizeMode.Fixed)
-        header.resizeSection(Column.BACKGROUND, 24)
-        header.setSectionResizeMode(
-            Column.DOWNLOAD_STATUS, QHeaderView.ResizeMode.Fixed
-        )
-        header.resizeSection(
-            Column.DOWNLOAD_STATUS, font_metrics.horizontalAdvance("Downloading")
-        )
+        for column in Column:
+            size = column.section_size(header) or header.sectionSize(column)
+            header.setSectionResizeMode(column, column.section_resize_mode())
+            header.resizeSection(column, size)
 
     def _setup_queue_table_header(self) -> None:
         header = self._queue_view.horizontalHeader()
         list_header = self._list_view.horizontalHeader()
-        header.setSectionResizeMode(QHeaderView.ResizeMode.ResizeToContents)
-        header.setSectionResizeMode(Column.SONG_ID, QHeaderView.ResizeMode.Fixed)
-        header.setSectionResizeMode(Column.ARTIST, QHeaderView.ResizeMode.Interactive)
-        header.setSectionResizeMode(Column.TITLE, QHeaderView.ResizeMode.Interactive)
-        header.setSectionResizeMode(
-            Column.DOWNLOAD_STATUS, QHeaderView.ResizeMode.Fixed
-        )
         for column in Column:
+            header.setSectionResizeMode(column, list_header.sectionResizeMode(column))
             header.resizeSection(column, list_header.sectionSize(column))
 
     ### selection model
