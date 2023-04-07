@@ -4,7 +4,7 @@
 import logging
 import os
 from glob import glob
-from typing import Any, Callable, Iterator
+from typing import Any, Callable, Iterable, Iterator
 
 from PySide6.QtCore import (
     QItemSelection,
@@ -12,8 +12,10 @@ from PySide6.QtCore import (
     QModelIndex,
     QObject,
     QSortFilterProxyModel,
+    Qt,
 )
-from PySide6.QtWidgets import QAbstractItemView, QHeaderView, QTableView
+from PySide6.QtWidgets import QAbstractItemView, QHeaderView, QTableView, QMenu
+from PySide6.QtGui import QCursor
 
 from usdb_syncer import SongId
 from usdb_syncer.gui.song_table.column import Column
@@ -21,7 +23,7 @@ from usdb_syncer.gui.song_table.list_proxy_model import ListProxyModel
 from usdb_syncer.gui.song_table.queue_proxy_model import QueueProxyModel
 from usdb_syncer.gui.song_table.table_model import CustomRole, TableModel
 from usdb_syncer.logger import get_logger
-from usdb_syncer.song_data import SongData
+from usdb_syncer.song_data import DownloadStatus, SongData
 from usdb_syncer.song_txt import SongTxt
 from usdb_syncer.usdb_scraper import UsdbSong
 from usdb_syncer.utils import try_read_unknown_encoding
@@ -33,7 +35,12 @@ class SongTable:
     """Controller for the song table."""
 
     def __init__(
-        self, parent: QObject, list_view: QTableView, queue_view: QTableView
+        self,
+        parent: QObject,
+        list_view: QTableView,
+        queue_view: QTableView,
+        list_menu: QMenu,
+        queue_menu: QMenu,
     ) -> None:
         self._list_view = list_view
         self._queue_view = queue_view
@@ -42,6 +49,37 @@ class SongTable:
         self._queue_proxy = QueueProxyModel(parent)
         self._setup_view(self._list_view, self._list_proxy)
         self._setup_view(self._queue_view, self._queue_proxy)
+        self._list_view.customContextMenuRequested.connect(
+            lambda _: self._context_menu(list_menu)
+        )
+        self._queue_view.customContextMenuRequested.connect(
+            lambda _: self._context_menu(queue_menu)
+        )
+
+    def initialize(self, song_list: tuple[SongData, ...]) -> None:
+        self._model.set_data(song_list)
+        self._setup_list_table_header()
+        self._setup_queue_table_header()
+
+    def download_selection(self) -> None:
+        for idx in self._selected_indices():
+            data = self._model.songs[idx.row()]
+            if data.status is DownloadStatus.NONE:
+                data.status = DownloadStatus.PENDING
+        self._queue_proxy.invalidateRowsFilter()
+
+    def stage_selection(self) -> None:
+        for idx in self._selected_indices():
+            data = self._model.songs[idx.row()]
+            if data.status is DownloadStatus.NONE:
+                data.status = DownloadStatus.STAGED
+            self._model.index_changed(idx)
+
+    def unstage_selection(self) -> None:
+        for idx in self._selected_indices():
+            data = self._model.songs[idx.row()]
+            if data.status is DownloadStatus.NONE:
+                data.status = DownloadStatus.PENDING
 
     def _setup_view(self, view: QTableView, model: QSortFilterProxyModel) -> None:
         model.setSourceModel(self._model)
@@ -51,11 +89,15 @@ class SongTable:
         header = view.horizontalHeader()
         # for resizable columns, use content size as the start value
         header.setSectionResizeMode(QHeaderView.ResizeMode.ResizeToContents)
+        view.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
 
-    def initialize(self, song_list: tuple[SongData, ...]) -> None:
-        self._model.set_data(song_list)
-        self._setup_list_table_header()
-        self._setup_queue_table_header()
+    def _context_menu(self, base_menu: QMenu) -> None:
+        menu = QMenu()
+        for action in base_menu.actions():
+            menu.addAction(action)
+        menu.exec(QCursor.pos())
+
+    ### song list view
 
     def _setup_list_table_header(self) -> None:
         header = self._list_view.horizontalHeader()
@@ -64,12 +106,15 @@ class SongTable:
             header.setSectionResizeMode(column, column.section_resize_mode())
             header.resizeSection(column, size)
 
+    ### download queue view
+
     def _setup_queue_table_header(self) -> None:
         header = self._queue_view.horizontalHeader()
         list_header = self._list_view.horizontalHeader()
-        for column in Column:
-            header.setSectionResizeMode(column, list_header.sectionResizeMode(column))
-            header.resizeSection(column, list_header.sectionSize(column))
+        for col in Column:
+            if col.display_in_queue_view():
+                header.setSectionResizeMode(col, list_header.sectionResizeMode(col))
+                header.resizeSection(col, list_header.sectionSize(col))
 
     ### selection model
 
@@ -86,9 +131,11 @@ class SongTable:
         return len(self._list_view.selectionModel().selectedRows())
 
     def selected_song_ids(self) -> list[SongId]:
+        return self._model.ids_for_indices(self._selected_indices())
+
+    def _selected_indices(self) -> Iterable[QModelIndex]:
         selected_rows = self._list_view.selectionModel().selectedRows()
-        source_rows = map(self._list_proxy.mapToSource, selected_rows)
-        return self._model.ids_for_indices(source_rows)
+        return (self._list_proxy.mapToSource(row) for row in selected_rows)
 
     def select_local_songs(self, directory: str) -> None:
         txts = _parse_all_txts(directory)

@@ -109,7 +109,7 @@ class DownloadStatus(Enum):
                 assert_never(unreachable)
 
 
-@attrs.frozen(auto_attribs=True)
+@attrs.define
 class SongData:
     """Wrapper for song data from USDB, rendered for presentation in the song table,
     plus information about locally existing files.

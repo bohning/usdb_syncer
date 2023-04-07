@@ -59,7 +59,9 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         self._setup_signals()
 
     def _setup_table(self) -> None:
-        self.table = SongTable(self, self.view_list, self.view_queue)
+        self.table = SongTable(
+            self, self.view_list, self.view_queue, self.menu_songs, self.menu_batch
+        )
         self.table.connect_row_count_changed(
             lambda c: self.statusbar.showMessage(f"{c} songs found.")
         )
@@ -76,14 +78,18 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         self.toolButton_errors.toggled.connect(self._on_log_filter_changed)
 
     def _setup_toolbar(self) -> None:
-        self.action_select_local_songs.triggered.connect(self._select_local_songs)
-        self.action_refetch_song_list.triggered.connect(self._refetch_song_list)
-        self.action_meta_tags.triggered.connect(lambda: MetaTagsDialog(self).show())
-        self.action_settings.triggered.connect(lambda: SettingsDialog(self).show())
-        self.action_generate_song_pdf.triggered.connect(self._generate_song_pdf)
-        self.action_show_log.triggered.connect(
-            lambda: open_file_explorer(os.path.dirname(AppPaths.log))
-        )
+        for action, func in (
+            (self.action_songs_download, self.table.download_selection),
+            (self.action_songs_to_batch, self.table.stage_selection),
+            (self.action_batch_remove, self.table.unstage_selection),
+            (self.action_select_local_songs, self._select_local_songs),
+            (self.action_refetch_song_list, self._refetch_song_list),
+            (self.action_meta_tags, lambda: MetaTagsDialog(self).show()),
+            (self.action_settings, lambda: SettingsDialog(self).show()),
+            (self.action_generate_song_pdf, self._generate_song_pdf),
+            (self.action_show_log, lambda: open_file_explorer(AppPaths.log)),
+        ):
+            action.triggered.connect(func)
 
     def _setup_shortcuts(self) -> None:
         set_shortcut("Ctrl+.", self, lambda: DebugConsole(self).show())
@@ -93,7 +99,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         self.pushButton_select_song_dir.clicked.connect(self.select_song_dir)
 
     def _setup_download(self) -> None:
-        self.button_download.clicked.connect(self._download)
+        self.button_batch_download.clicked.connect(self._download)
 
     def _download(self) -> None:
         def _download_songs() -> None:

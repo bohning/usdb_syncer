@@ -1,7 +1,7 @@
 """Table model for song data."""
 
 from enum import Enum
-from typing import Any, Iterator
+from typing import Any, Iterable, Iterator
 
 from PySide6.QtCore import (
     QAbstractTableModel,
@@ -49,7 +49,7 @@ class TableModel(QAbstractTableModel):
         end_idx = self.index(idx, self.columnCount())
         self.dataChanged.emit(start_idx, end_idx)  # type:ignore
 
-    def ids_for_indices(self, indices: Iterator[QModelIndex]) -> list[SongId]:
+    def ids_for_indices(self, indices: Iterable[QModelIndex]) -> list[SongId]:
         return [self.songs[idx.row()].data.song_id for idx in indices]
 
     def item_for_id(self, song_id: SongId) -> SongData | None:
@@ -59,6 +59,12 @@ class TableModel(QAbstractTableModel):
 
     def all_local_songs(self) -> Iterator[UsdbSong]:
         return (song.data for song in self.songs if song.local_files.txt)
+
+    def index_changed(self, idx: QModelIndex) -> None:
+        row = idx.row()
+        start_idx = self.index(row, 0)
+        end_idx = self.index(row, self.columnCount())
+        self.dataChanged.emit(start_idx, end_idx)  # type:ignore
 
     ### QAbstractTableModel implementation
 

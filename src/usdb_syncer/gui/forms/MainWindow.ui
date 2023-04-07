@@ -403,7 +403,7 @@
          <number>6</number>
         </property>
         <item>
-         <widget class="QPushButton" name="button_download">
+         <widget class="QPushButton" name="button_batch_download">
           <property name="enabled">
            <bool>true</bool>
           </property>
@@ -418,7 +418,7 @@
          </widget>
         </item>
         <item>
-         <widget class="QPushButton" name="button_clear_queue">
+         <widget class="QPushButton" name="button_batch_clear">
           <property name="text">
            <string>Clear</string>
           </property>
@@ -585,6 +585,21 @@
     </property>
     <addaction name="action_show_log"/>
    </widget>
+   <widget class="QMenu" name="menu_songs">
+    <property name="title">
+     <string>Songs</string>
+    </property>
+    <addaction name="action_songs_download"/>
+    <addaction name="action_songs_to_batch"/>
+   </widget>
+   <widget class="QMenu" name="menu_batch">
+    <property name="title">
+     <string>Batch</string>
+    </property>
+    <addaction name="action_batch_remove"/>
+   </widget>
+   <addaction name="menu_songs"/>
+   <addaction name="menu_batch"/>
    <addaction name="menu_sync"/>
    <addaction name="menu_tools"/>
    <addaction name="menu_about"/>
@@ -622,6 +637,31 @@
   <action name="action_show_log">
    <property name="text">
     <string>Show Log</string>
+   </property>
+  </action>
+  <action name="action_songs_download">
+   <property name="text">
+    <string>Download</string>
+   </property>
+  </action>
+  <action name="action_songs_to_batch">
+   <property name="text">
+    <string>Add to Batch</string>
+   </property>
+  </action>
+  <action name="action_batch_remove">
+   <property name="text">
+    <string>Remove</string>
+   </property>
+  </action>
+  <action name="actionDownload_2">
+   <property name="text">
+    <string>Download Batch</string>
+   </property>
+  </action>
+  <action name="actionClear_Batch">
+   <property name="text">
+    <string>Clear Batch</string>
    </property>
   </action>
  </widget>
