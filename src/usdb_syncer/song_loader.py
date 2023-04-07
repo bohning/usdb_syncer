@@ -239,7 +239,7 @@ def _maybe_download_audio(ctx: Context) -> None:
             return
         if idx > 9:
             break
-        if ext := resource_dl.download_video(
+        if ext := resource_dl.download_audio(
             resource,
             options,
             ctx.options.browser,

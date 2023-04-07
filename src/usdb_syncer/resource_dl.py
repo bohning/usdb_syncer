@@ -25,6 +25,8 @@ IMAGE_DOWNLOAD_HEADERS = {
     )
 }
 
+YtdlOptions = dict[str, Union[str, bool, tuple, list]]
+
 
 class ImageKind(Enum):
     """Types of images used for songs."""
@@ -42,7 +44,7 @@ class ImageKind(Enum):
                 assert_never(unreachable)
 
 
-def url_from_video_resouce(resource: str) -> str:
+def _url_from_resouce(resource: str) -> str:
     if "://" in resource:
         return resource
     if "/" in resource:
@@ -50,12 +52,8 @@ def url_from_video_resouce(resource: str) -> str:
     return f"https://www.youtube.com/watch?v={resource}"
 
 
-def download_video(
-    resource: str,
-    options: AudioOptions | VideoOptions,
-    browser: Browser,
-    path_stem: Path,
-    logger: Log,
+def download_audio(
+    resource: str, options: AudioOptions, browser: Browser, path_stem: Path, logger: Log
 ) -> str | None:
     """Download video from resource to path and process it according to options.
 
@@ -68,53 +66,83 @@ def download_video(
     Returns:
         the extension of the successfully downloaded file or None
     """
-    url = url_from_video_resouce(resource)
-    ext = None
-    ydl_opts: dict[str, Union[str, bool, tuple, list]] = {
-        "format": options.ytdl_format(),
-        "outtmpl": f"{path_stem}.%(ext)s",
-        "keepvideo": False,
-        "verbose": False,
-    }
-    if browser.value:
-        ydl_opts["cookiesfrombrowser"] = (browser.value,)
-    if isinstance(options, AudioOptions) and not options.normalize:
+    ydl_opts = _ytdl_options(options.ytdl_format(), browser, path_stem)
+    if not options.normalize:
         postprocessor = {
             "key": "FFmpegExtractAudio",
             "preferredquality": options.bitrate.ytdl_format(),
             "preferredcodec": options.format.value,
         }
         ydl_opts["postprocessors"] = [postprocessor]
-        # `prepare_filename()` does not take into account postprocessing, so note the
-        # file extension
-        ext = options.format.value
 
-    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+    if not (filename := _download_resource(ydl_opts, resource, logger)):
+        return None
+
+    if options.normalize:
+        _normalize(options, path_stem, filename)
+
+    return options.format.value
+
+
+def _normalize(options: AudioOptions, path_stem: Path, filename: str) -> None:
+    normalizer = FFmpegNormalize(
+        normalization_type="ebu",  # default: "ebu"
+        target_level=-23,  # default: -23
+        print_stats=True,  # set to False?
+        keep_loudness_range_target=True,  # needed for linear normalization
+        true_peak=-2,  # default: -2
+        dynamic=False,  # default: False
+        audio_codec=options.format.ffmpeg_encoder(),
+        audio_bitrate=options.bitrate.ffmpeg_format(),
+        sample_rate=None,  # default
+        debug=True,  # set to False
+        progress=True,  # set to False?
+    )
+    ext = options.format.value
+    normalizer.add_media_file(filename, str(path_stem.with_suffix(f".{ext}")))
+    normalizer.run_normalization()
+
+
+def download_video(
+    resource: str, options: VideoOptions, browser: Browser, path_stem: Path, logger: Log
+) -> str | None:
+    """Download video from resource to path and process it according to options.
+
+    Parameters:
+        resource: URL or YouTube id
+        options: parameters for downloading and processing
+        browser: browser to use cookies from
+        path_stem: the target on the file system *without* an extension
+
+    Returns:
+        the extension of the successfully downloaded file or None
+    """
+    ydl_opts = _ytdl_options(options.ytdl_format(), browser, path_stem)
+    if filename := _download_resource(ydl_opts, resource, logger):
+        return os.path.splitext(filename)[1][1:]
+    return None
+
+
+def _ytdl_options(format_: str, browser: Browser, target_stem: Path) -> YtdlOptions:
+    options: YtdlOptions = {
+        "format": format_,
+        "outtmpl": f"{target_stem}.%(ext)s",
+        "keepvideo": False,
+        "verbose": False,
+    }
+    if browser.value:
+        options["cookiesfrombrowser"] = (browser.value,)
+    return options
+
+
+def _download_resource(options: YtdlOptions, resource: str, logger: Log) -> str | None:
+    url = _url_from_resouce(resource)
+    with yt_dlp.YoutubeDL(options) as ydl:
         try:
-            filename = ydl.prepare_filename(ydl.extract_info(f"{url}"))
+            return ydl.prepare_filename(ydl.extract_info(url))
         except yt_dlp.utils.YoutubeDLError:
             logger.debug(f"error downloading video url: {url}")
             return None
-
-    if isinstance(options, AudioOptions) and options.normalize:
-        normalizer = FFmpegNormalize(
-            normalization_type="ebu",  # default: "ebu"
-            target_level=-23,  # default: -23
-            print_stats=True,  # set to False?
-            keep_loudness_range_target=True,  # needed for linear normalization
-            true_peak=-2,  # default: -2
-            dynamic=False,  # default: False
-            audio_codec=options.format.ffmpeg_encoder(),
-            audio_bitrate=options.bitrate.ffmpeg_format(),
-            sample_rate=None,  # default
-            debug=True,  # set to False
-            progress=True,  # set to False?
-        )
-        ext = options.format.value
-        normalizer.add_media_file(filename, str(path_stem.with_suffix(f".{ext}")))
-        normalizer.run_normalization()
-
-    return ext or os.path.splitext(filename)[1][1:]
 
 
 def download_image(url: str, logger: Log) -> bytes | None:
