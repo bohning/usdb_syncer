@@ -4,6 +4,7 @@ plus information about locally existing files.
 
 from __future__ import annotations
 
+from enum import Enum
 from functools import cache
 from pathlib import Path
 
@@ -85,6 +86,27 @@ class LocalFiles:
         )
 
 
+class DownloadStatus(Enum):
+    """Status of song in download queue."""
+
+    NONE = 0
+    STAGED = 1
+    PENDING = 2
+    DOWNLOADING = 3
+    DONE = 4
+
+    def __str__(self) -> str:
+        match self:
+            case self.NONE | self.STAGED:
+                return ""
+            case self.PENDING:
+                return "Pending"
+            case self.DOWNLOADING:
+                return "Downloading"
+            case self.DONE:
+                return "Done"
+
+
 @attrs.frozen(auto_attribs=True)
 class SongData:
     """Wrapper for song data from USDB, rendered for presentation in the song table,
@@ -94,6 +116,7 @@ class SongData:
     data: UsdbSong
     fuzzy_text: FuzzySearchText
     local_files: LocalFiles
+    status: DownloadStatus = DownloadStatus.NONE
 
     @classmethod
     def from_usdb_song(cls, song: UsdbSong, local_files: LocalFiles) -> SongData:
@@ -121,8 +144,15 @@ class SongData:
                 return rating_str(self.data.rating)
             case Column.VIEWS:
                 return str(self.data.views)
-            case Column.TXT | Column.AUDIO | Column.VIDEO | Column.COVER | \
-                Column.BACKGROUND:  # fmt:skip
+            case Column.DOWNLOAD_STATUS:
+                return str(self.status)
+            case (
+                Column.TXT
+                | Column.AUDIO
+                | Column.VIDEO
+                | Column.COVER
+                | Column.BACKGROUND
+            ):
                 return None
             case _ as unreachable:
                 assert_never(unreachable)
@@ -130,8 +160,17 @@ class SongData:
     def decoration_data(self, column: int) -> QIcon | None:
         col = Column(column)
         match col:
-            case Column.SONG_ID | Column.ARTIST | Column.TITLE | Column.LANGUAGE | \
-                Column.EDITION | Column.GOLDEN_NOTES | Column.RATING | Column.VIEWS:  # fmt:skip
+            case (
+                Column.SONG_ID
+                | Column.ARTIST
+                | Column.TITLE
+                | Column.LANGUAGE
+                | Column.EDITION
+                | Column.GOLDEN_NOTES
+                | Column.RATING
+                | Column.VIEWS
+                | Column.DOWNLOAD_STATUS
+            ):
                 return None
             case Column.TXT:
                 return optional_check_icon(self.local_files.txt)
@@ -175,6 +214,8 @@ class SongData:
                 return self.local_files.cover
             case Column.BACKGROUND:
                 return self.local_files.background
+            case Column.DOWNLOAD_STATUS:
+                return self.status.value
             case _ as unreachable:
                 assert_never(unreachable)
 

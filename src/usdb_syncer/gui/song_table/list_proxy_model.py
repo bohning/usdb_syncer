@@ -15,7 +15,7 @@ from usdb_syncer.song_txt import SongTxt
 QIndex = QModelIndex | QPersistentModelIndex
 
 
-class SortFilterProxyModel(QSortFilterProxyModel):
+class ListProxyModel(QSortFilterProxyModel):
     """Proxy model for sorting and filtering data of a source model."""
 
     def __init__(self, parent: QObject) -> None:

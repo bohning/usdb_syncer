@@ -59,12 +59,10 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         self._setup_signals()
 
     def _setup_table(self) -> None:
-        self.table = SongTable(self, self.tableView_availableSongs)
+        self.table = SongTable(self, self.view_list, self.view_queue)
         self.table.connect_row_count_changed(
             lambda c: self.statusbar.showMessage(f"{c} songs found.")
         )
-        self.table.connect_selected_rows_changed(self._on_selected_rows_changed)
-        self._on_selected_rows_changed(self.table.selected_row_count())
 
     def _setup_log(self) -> None:
         self.plainTextEdit.setReadOnly(True)
@@ -95,11 +93,9 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         self.pushButton_select_song_dir.clicked.connect(self.select_song_dir)
 
     def _setup_download(self) -> None:
-        self.pushButton_downloadSelectedSongs.clicked.connect(
-            self._download_selected_songs
-        )
+        self.button_download.clicked.connect(self._download)
 
-    def _download_selected_songs(self) -> None:
+    def _download(self) -> None:
         def _download_songs() -> None:
             songs = [
                 DownloadInfo.from_song_data(song)
@@ -163,11 +159,6 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         messages.sort(key=lambda m: m[1])
         self.plainTextEdit.setPlainText("\n".join(m[0] for m in messages))
         scroll_to_bottom(self.plainTextEdit)
-
-    def _on_selected_rows_changed(self, count: int) -> None:
-        s__ = "" if count == 1 else "s"
-        self.pushButton_downloadSelectedSongs.setText(f"Download {count} song{s__}!")
-        self.pushButton_downloadSelectedSongs.setEnabled(bool(count))
 
     def log_to_text_edit(self, message: str, level: int, created: float) -> None:
         match level:

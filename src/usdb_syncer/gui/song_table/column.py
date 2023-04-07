@@ -33,6 +33,7 @@ class Column(IntEnum):
     VIDEO = 10
     COVER = 11
     BACKGROUND = 12
+    DOWNLOAD_STATUS = 13
 
     def display_data(self) -> str | None:
         match self:
@@ -44,10 +45,19 @@ class Column(IntEnum):
                 return "Language"
             case Column.EDITION:
                 return "Edition"
-            case Column.SONG_ID | Column.GOLDEN_NOTES | Column.RATING | Column.VIEWS | \
-                Column.TXT | Column.AUDIO | Column.VIDEO | Column.COVER:  # fmt:skip
-                return None
-            case Column.BACKGROUND:
+            case Column.DOWNLOAD_STATUS:
+                return "Status"
+            case (
+                Column.SONG_ID
+                | Column.GOLDEN_NOTES
+                | Column.RATING
+                | Column.VIEWS
+                | Column.TXT
+                | Column.AUDIO
+                | Column.VIDEO
+                | Column.COVER
+                | Column.BACKGROUND
+            ):
                 return None
             case _ as unreachable:
                 assert_never(unreachable)
@@ -82,5 +92,10 @@ class Column(IntEnum):
                 return QIcon(":/icons/cover.png")
             case Column.BACKGROUND:
                 return QIcon(":/icons/background.png")
+            case Column.DOWNLOAD_STATUS:
+                return QIcon(":/icons/status.png")
             case _ as unreachable:
                 assert_never(unreachable)
+
+    def display_in_queue_view(self) -> bool:
+        return self in (self.SONG_ID, self.ARTIST, self.TITLE, self.DOWNLOAD_STATUS)
