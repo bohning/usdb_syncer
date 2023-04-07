@@ -194,8 +194,8 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         self._update_dynamic_filters(songs)
 
     def _select_local_songs(self) -> None:
-        directory = QFileDialog.getExistingDirectory(self, "Select Song Directory")
-        self.table.select_local_songs(directory)
+        if directory := QFileDialog.getExistingDirectory(self, "Select Song Directory"):
+            self.table.select_local_songs(directory)
 
     def _refetch_song_list(self) -> None:
         run_with_progress(
