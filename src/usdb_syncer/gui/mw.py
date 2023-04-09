@@ -16,7 +16,7 @@ from PySide6.QtWidgets import (
 )
 
 from usdb_syncer import SongId, settings
-from usdb_syncer.exchange_format import USDBIDFileParser, write_song_ids_to_file
+from usdb_syncer.exchange_format import UsdbIdFileParser, write_song_ids_to_file
 from usdb_syncer.gui.debug_console import DebugConsole
 from usdb_syncer.gui.ffmpeg_dialog import check_ffmpeg
 from usdb_syncer.gui.forms.MainWindow import Ui_MainWindow
@@ -280,7 +280,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
             dir=os.getcwd(),
             filter="JSON, USDB IDs, Weblinks (*.json *.usdb_ids *.url *.webloc *.desktop)",
         )[0]
-        file_parsers = [USDBIDFileParser(path) for path in file_list]
+        file_parsers = [UsdbIdFileParser(path) for path in file_list]
         has_error = False
         for parser in file_parsers:
             if parser.errors:

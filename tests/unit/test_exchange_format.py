@@ -6,17 +6,17 @@ import pytest
 
 from usdb_syncer import SongId
 from usdb_syncer.exchange_format import (
-    USDBIDFileParser,
-    USDBIDFileParserEmptyFileError,
-    USDBIDFileParserEmptyJSONArrayError,
-    USDBIDFileParserInvalidFormatError,
-    USDBIDFileParserInvalidJSONError,
-    USDBIDFileParserInvalidURLError,
-    USDBIDFileParserInvalidUSDBIDError,
-    USDBIDFileParserMissingOrDublicateOptionFormatError,
-    USDBIDFileParserMissingSectionHeaderFormatError,
-    USDBIDFileParserMultipleURLsFormatError,
-    USDBIDFileParserNoJSONArrayError,
+    UsdbIdFileParser,
+    UsdbIdFileParserEmptyFileError,
+    UsdbIdFileParserEmptyJsonArrayError,
+    UsdbIdFileParserInvalidFormatError,
+    UsdbIdFileParserInvalidJsonError,
+    UsdbIdFileParserInvalidUrlError,
+    UsdbIdFileParserInvalidUsdbIdError,
+    UsdbIdFileParserMissingOrDublicateOptionFormatError,
+    UsdbIdFileParserMissingSectionHeaderFormatError,
+    UsdbIdFileParserMultipleUrlsFormatError,
+    UsdbIdFileParserNoJsonArrayError,
 )
 
 
@@ -68,7 +68,7 @@ def test_valid_song_id_imports_from_files(
     resource_dir: str, file: str, expected_ids: list[SongId]
 ) -> None:
     path = os.path.join(resource_dir, "import", file)
-    parser = USDBIDFileParser(path)
+    parser = UsdbIdFileParser(path)
     assert not parser.errors, f"should have no errors from {file}"
     assert parser.ids == expected_ids, f"wrong songids from {file}"
 
@@ -78,84 +78,84 @@ def test_valid_song_id_imports_from_files(
     [
         (
             "broken_format.desktop",
-            [USDBIDFileParserMissingSectionHeaderFormatError],
+            [UsdbIdFileParserMissingSectionHeaderFormatError],
             [""],
         ),
-        ("broken_format.url", [USDBIDFileParserMissingSectionHeaderFormatError], [""]),
-        ("broken_format.webloc", [USDBIDFileParserInvalidFormatError], ["plist"]),
+        ("broken_format.url", [UsdbIdFileParserMissingSectionHeaderFormatError], [""]),
+        ("broken_format.webloc", [UsdbIdFileParserInvalidFormatError], ["plist"]),
         (
             "broken_usdb_link.desktop",
-            [USDBIDFileParserInvalidURLError],
+            [UsdbIdFileParserInvalidUrlError],
             ["http://usdb.animux.de/index.phid=118"],
         ),
         (
             "broken_usdb_link.url",
-            [USDBIDFileParserInvalidURLError],
+            [UsdbIdFileParserInvalidUrlError],
             ["http://usdb.animux.de/index.phid=118"],
         ),
         (
             "broken_usdb_link.webloc",
-            [USDBIDFileParserInvalidURLError],
+            [UsdbIdFileParserInvalidUrlError],
             ["http://usdb.animux.de/index.phid=118"],
         ),
         (
             "dublicate_url_key.desktop",
-            [USDBIDFileParserMissingOrDublicateOptionFormatError],
+            [UsdbIdFileParserMissingOrDublicateOptionFormatError],
             [""],
         ),
         (
             "dublicate_url_key.url",
-            [USDBIDFileParserMissingOrDublicateOptionFormatError],
+            [UsdbIdFileParserMissingOrDublicateOptionFormatError],
             [""],
         ),
-        ("dublicate_url_key.webloc", [USDBIDFileParserMultipleURLsFormatError], [""]),
-        ("empty.desktop", [USDBIDFileParserEmptyFileError], [""]),
-        ("empty.url", [USDBIDFileParserEmptyFileError], [""]),
-        ("empty.webloc", [USDBIDFileParserEmptyFileError], [""]),
-        ("missing_url_key.desktop", [USDBIDFileParserInvalidFormatError], ["URL"]),
-        ("missing_url_key.url", [USDBIDFileParserInvalidFormatError], ["URL"]),
-        ("missing_url_key.webloc", [USDBIDFileParserInvalidFormatError], ["string"]),
-        ("wrong_middle_level.webloc", [USDBIDFileParserInvalidFormatError], ["dict"]),
+        ("dublicate_url_key.webloc", [UsdbIdFileParserMultipleUrlsFormatError], [""]),
+        ("empty.desktop", [UsdbIdFileParserEmptyFileError], [""]),
+        ("empty.url", [UsdbIdFileParserEmptyFileError], [""]),
+        ("empty.webloc", [UsdbIdFileParserEmptyFileError], [""]),
+        ("missing_url_key.desktop", [UsdbIdFileParserInvalidFormatError], ["URL"]),
+        ("missing_url_key.url", [UsdbIdFileParserInvalidFormatError], ["URL"]),
+        ("missing_url_key.webloc", [UsdbIdFileParserInvalidFormatError], ["string"]),
+        ("wrong_middle_level.webloc", [UsdbIdFileParserInvalidFormatError], ["dict"]),
         (
             "wrong_top_level.desktop",
-            [USDBIDFileParserInvalidFormatError],
+            [UsdbIdFileParserInvalidFormatError],
             ["Desktop Entry"],
         ),
         (
             "wrong_top_level.url",
-            [USDBIDFileParserInvalidFormatError],
+            [UsdbIdFileParserInvalidFormatError],
             ["InternetShortcut"],
         ),
-        ("wrong_top_level.webloc", [USDBIDFileParserInvalidFormatError], ["plist"]),
-        ("youtube.desktop", [USDBIDFileParserInvalidURLError], ["www.youtube.com"]),
-        ("youtube.url", [USDBIDFileParserInvalidURLError], ["youtu.be"]),
-        ("youtube.webloc", [USDBIDFileParserInvalidURLError], ["www.youtube.com"]),
-        ("empty.usdb_ids", [USDBIDFileParserEmptyFileError], [""]),
-        ("ids_and_other_stuff.usdb_ids", [USDBIDFileParserInvalidUSDBIDError], [""]),
-        ("multi-column.usdb_ids", [USDBIDFileParserInvalidUSDBIDError], [""]),
-        ("broken.json", [USDBIDFileParserInvalidJSONError], [""]),
-        ("empty.json", [USDBIDFileParserEmptyFileError], [""]),
-        ("empty_array.json", [USDBIDFileParserEmptyJSONArrayError], [""]),
-        ("no_array.json", [USDBIDFileParserNoJSONArrayError], [""]),
-        ("missing_id_key.json", [USDBIDFileParserInvalidUSDBIDError], [""]),
+        ("wrong_top_level.webloc", [UsdbIdFileParserInvalidFormatError], ["plist"]),
+        ("youtube.desktop", [UsdbIdFileParserInvalidUrlError], ["www.youtube.com"]),
+        ("youtube.url", [UsdbIdFileParserInvalidUrlError], ["youtu.be"]),
+        ("youtube.webloc", [UsdbIdFileParserInvalidUrlError], ["www.youtube.com"]),
+        ("empty.usdb_ids", [UsdbIdFileParserEmptyFileError], [""]),
+        ("ids_and_other_stuff.usdb_ids", [UsdbIdFileParserInvalidUsdbIdError], [""]),
+        ("multi-column.usdb_ids", [UsdbIdFileParserInvalidUsdbIdError], [""]),
+        ("broken.json", [UsdbIdFileParserInvalidJsonError], [""]),
+        ("empty.json", [UsdbIdFileParserEmptyFileError], [""]),
+        ("empty_array.json", [UsdbIdFileParserEmptyJsonArrayError], [""]),
+        ("no_array.json", [UsdbIdFileParserNoJsonArrayError], [""]),
+        ("missing_id_key.json", [UsdbIdFileParserInvalidUsdbIdError], [""]),
     ],
 )
 def test_invalid_song_id_imports_from_files(
     resource_dir: str,
     file: str,
     expected_error_instances: list[
-        USDBIDFileParserEmptyFileError
-        | USDBIDFileParserEmptyJSONArrayError
-        | USDBIDFileParserInvalidFormatError
-        | USDBIDFileParserInvalidJSONError
-        | USDBIDFileParserInvalidURLError
-        | USDBIDFileParserInvalidUSDBIDError
-        | USDBIDFileParserNoJSONArrayError
+        UsdbIdFileParserEmptyFileError
+        | UsdbIdFileParserEmptyJsonArrayError
+        | UsdbIdFileParserInvalidFormatError
+        | UsdbIdFileParserInvalidJsonError
+        | UsdbIdFileParserInvalidUrlError
+        | UsdbIdFileParserInvalidUsdbIdError
+        | UsdbIdFileParserNoJsonArrayError
     ],
     expected_error_info: list[str],
 ) -> None:
     path = os.path.join(resource_dir, "import", file)
-    parser = USDBIDFileParser(path)
+    parser = UsdbIdFileParser(path)
     assert len(expected_error_instances) == len(
         expected_error_info
     ), f"array missmatch in test parameters for {file}"
