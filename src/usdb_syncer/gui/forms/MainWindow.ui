@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1104</width>
-    <height>667</height>
+    <width>1100</width>
+    <height>658</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -65,11 +65,6 @@
           <widget class="QPushButton" name="pushButton_select_song_dir">
            <property name="enabled">
             <bool>true</bool>
-           </property>
-           <property name="font">
-            <font>
-             <pointsize>16</pointsize>
-            </font>
            </property>
            <property name="text">
             <string>Select song folder</string>
@@ -369,6 +364,11 @@
     </item>
     <item>
      <widget class="QTableView" name="view_list">
+      <property name="font">
+       <font>
+        <pointsize>9</pointsize>
+       </font>
+      </property>
       <property name="editTriggers">
        <set>QAbstractItemView::NoEditTriggers</set>
       </property>
@@ -376,7 +376,7 @@
        <bool>true</bool>
       </property>
       <property name="selectionMode">
-       <enum>QAbstractItemView::MultiSelection</enum>
+       <enum>QAbstractItemView::ExtendedSelection</enum>
       </property>
       <property name="selectionBehavior">
        <enum>QAbstractItemView::SelectRows</enum>
@@ -440,7 +440,28 @@
        </layout>
       </item>
       <item>
-       <widget class="QTableView" name="view_queue"/>
+       <widget class="QTableView" name="view_queue">
+        <property name="font">
+         <font>
+          <pointsize>9</pointsize>
+         </font>
+        </property>
+        <property name="alternatingRowColors">
+         <bool>true</bool>
+        </property>
+        <property name="selectionBehavior">
+         <enum>QAbstractItemView::SelectRows</enum>
+        </property>
+        <property name="sortingEnabled">
+         <bool>true</bool>
+        </property>
+        <attribute name="verticalHeaderVisible">
+         <bool>false</bool>
+        </attribute>
+        <attribute name="verticalHeaderDefaultSectionSize">
+         <number>24</number>
+        </attribute>
+       </widget>
       </item>
       <item>
        <widget class="QGroupBox" name="groupBox_5">
@@ -560,7 +581,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1104</width>
+     <width>1100</width>
      <height>22</height>
     </rect>
    </property>
