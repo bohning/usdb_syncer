@@ -101,14 +101,10 @@ class SongTable:
     def _process_rows(
         self, rows: Iterable[int], processor: Callable[[SongData], bool]
     ) -> None:
-        invalidate = False
         for row in rows:
             data = self._model.songs[row]
             if processor(data):
-                invalidate = True
                 self._model.row_changed(row)
-        if invalidate:
-            self._queue_proxy.invalidateRowsFilter()
 
     def stage_selection(self) -> None:
         def process(data: SongData) -> bool:
@@ -129,17 +125,13 @@ class SongTable:
         self._process_rows(self._queue_rows(selected_only=True), process)
 
     def clear_batch(self) -> None:
-        data_rows = [
-            (row, data)
-            for row in self._queue_proxy.source_rows()
-            if (data := self._model.songs[row]).status.can_be_unstaged()
-        ]
-        if not data_rows:
-            return
-        for row, data in data_rows:
-            data.status = DownloadStatus.NONE
-            self._model.row_changed(row)
-        self._queue_proxy.invalidateRowsFilter()
+        def process(data: SongData) -> bool:
+            if data.status.can_be_unstaged():
+                data.status = DownloadStatus.NONE
+                return True
+            return False
+
+        self._process_rows(self._queue_rows(), process)
 
     def _setup_view(self, view: QTableView, model: QSortFilterProxyModel) -> None:
         model.setSourceModel(self._model)

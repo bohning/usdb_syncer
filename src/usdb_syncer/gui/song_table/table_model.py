@@ -65,7 +65,7 @@ class TableModel(QAbstractTableModel):
 
     def row_changed(self, row: int) -> None:
         start_idx = self.index(row, 0)
-        end_idx = self.index(row, self.columnCount())
+        end_idx = self.index(row, self.columnCount() - 1)
         self.dataChanged.emit(start_idx, end_idx)  # type:ignore
 
     ### QAbstractTableModel implementation
