@@ -284,7 +284,10 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         has_error = False
         for parser in file_parsers:
             if parser.errors:
-                logger.error(f"importing file {parser.filepath}: {parser.errors}")
+                logger.error(
+                    f"importing file {parser.filepath}: "
+                    f"{', '.join(err.message for err in parser.errors)}"
+                )
                 has_error = True
         # stop import if encounter errors
         if has_error:
@@ -295,7 +298,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         logger.info(
             f"read {len(file_list)} file(s), "
             f"found {len(unique_song_ids)} "
-            f"USDB IDs: {[str(id) for id in unique_song_ids]}"
+            f"USDB IDs: {', '.join(str(id) for id in unique_song_ids)}"
         )
         songs = [
             DownloadInfo.from_song_data(song)
@@ -308,7 +311,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
             logger.warning(
                 f"{len(unavailable_song_ids)}/{len(unique_song_ids)} "
                 "imported USDB IDs are not available: "
-                f"{[str(song_id) for song_id in unavailable_song_ids]}"
+                f"{', '.join(str(song_id) for song_id in unavailable_song_ids)}"
             )
             if len(unavailable_song_ids) < len(unique_song_ids):
                 # select available songs to prepare Download
@@ -320,7 +323,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
                 logger.info(
                     f"available {len(available_song_ids)}/{len(unique_song_ids)} "
                     "imported USDB IDs are selected for Download: "
-                    f"{[str(song_id) for song_id in available_song_ids]}"
+                    f"{', '.join(str(song_id) for song_id in available_song_ids)}"
                 )
                 self.table.set_selection_to_song_ids(available_song_ids)
         else:
