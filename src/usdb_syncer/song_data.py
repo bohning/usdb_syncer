@@ -12,6 +12,7 @@ import attrs
 from PySide6.QtGui import QIcon
 from unidecode import unidecode
 
+from usdb_syncer import SongId
 from usdb_syncer.gui.song_table.column import Column
 from usdb_syncer.sync_meta import SyncMeta
 from usdb_syncer.typing_helpers import assert_never
@@ -64,6 +65,14 @@ def fuzz_text(text: str) -> str:
 
 
 @attrs.define
+class DownloadResult:
+    """Result of a song download to be passed by signal."""
+
+    song_id: SongId
+    files: LocalFiles | None = None
+
+
+@attrs.define
 class LocalFiles:
     """The path of a .usdb file and which files exist in the same folder."""
 
@@ -94,6 +103,7 @@ class DownloadStatus(Enum):
     PENDING = 2
     DOWNLOADING = 3
     DONE = 4
+    FAILED = 5
 
     def __str__(self) -> str:  # pylint: disable=invalid-str-returned
         match self:
@@ -105,14 +115,24 @@ class DownloadStatus(Enum):
                 return "Downloading"
             case DownloadStatus.DONE:
                 return "Done"
+            case DownloadStatus.FAILED:
+                return "Failed"
             case _ as unreachable:
                 assert_never(unreachable)
 
     def can_be_unstaged(self) -> bool:
-        return self in (DownloadStatus.STAGED, DownloadStatus.DONE)
+        return self in (
+            DownloadStatus.STAGED,
+            DownloadStatus.DONE,
+            DownloadStatus.FAILED,
+        )
 
     def can_be_downloaded(self) -> bool:
-        return self in (DownloadStatus.NONE, DownloadStatus.STAGED)
+        return self in (
+            DownloadStatus.NONE,
+            DownloadStatus.STAGED,
+            DownloadStatus.FAILED,
+        )
 
 
 @attrs.define

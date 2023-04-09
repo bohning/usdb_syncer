@@ -24,7 +24,7 @@ from usdb_syncer.gui.song_table.list_proxy_model import ListProxyModel
 from usdb_syncer.gui.song_table.queue_proxy_model import QueueProxyModel
 from usdb_syncer.gui.song_table.table_model import CustomRole, TableModel
 from usdb_syncer.logger import get_logger
-from usdb_syncer.song_data import DownloadStatus, LocalFiles, SongData
+from usdb_syncer.song_data import DownloadResult, DownloadStatus, SongData
 from usdb_syncer.song_loader import DownloadInfo, download_songs
 from usdb_syncer.song_txt import SongTxt
 from usdb_syncer.usdb_scraper import UsdbSong
@@ -37,7 +37,7 @@ class SongSignals(QObject):
     """Signals relating to songs."""
 
     started = Signal(SongId)
-    finished = Signal(SongId, LocalFiles)
+    finished = Signal(DownloadResult)
 
 
 class SongTable:
@@ -163,12 +163,15 @@ class SongTable:
         data.status = DownloadStatus.DOWNLOADING
         self._model.row_changed(row)
 
-    def _on_download_finished(self, song_id: SongId, files: LocalFiles) -> None:
-        if not (row := self._model.rows.get(song_id)):
+    def _on_download_finished(self, result: DownloadResult) -> None:
+        if not (row := self._model.rows.get(result.song_id)):
             return
         data = self._model.songs[row]
-        data.status = DownloadStatus.DONE
-        data.local_files = files
+        if result.files:
+            data.status = DownloadStatus.DONE
+            data.local_files = result.files
+        else:
+            data.status = DownloadStatus.FAILED
         self._model.row_changed(row)
 
     ### song list view
