@@ -330,7 +330,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
 
     def _export_usdb_ids_to_file(self) -> None:
         logger = logging.getLogger()
-        selected_ids = list(self.table.selected_song_ids())
+        selected_ids = self.table.selected_song_ids()
         if not selected_ids:
             logger.error("skipping export: no songs selected")
             return
