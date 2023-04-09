@@ -4,10 +4,10 @@ from enum import Enum, IntEnum
 from functools import cache
 
 from PySide6.QtCore import QModelIndex, QPersistentModelIndex
-from PySide6.QtGui import QIcon
+from PySide6.QtGui import QIcon, QPaintDevice
 from PySide6.QtWidgets import QHeaderView
-from usdb_syncer import SongId
 
+from usdb_syncer import SongId
 from usdb_syncer.typing_helpers import assert_never
 
 QIndex = QModelIndex | QPersistentModelIndex
@@ -102,10 +102,10 @@ class Column(IntEnum):
     def display_in_queue_view(self) -> bool:
         return self in (self.SONG_ID, self.ARTIST, self.TITLE, self.DOWNLOAD_STATUS)
 
-    def section_size(self, header: QHeaderView) -> int | None:
+    def section_size(self, header: QHeaderView, window: QPaintDevice) -> int | None:
         match self:
             case Column.SONG_ID:
-                return header.fontMetrics().horizontalAdvance(str(SongId(0)))
+                return _horizontal_size(str(SongId(0)), header, window)
             case (
                 Column.ARTIST
                 | Column.TITLE
@@ -117,7 +117,7 @@ class Column(IntEnum):
             ):
                 return None
             case Column.DOWNLOAD_STATUS:
-                return header.fontMetrics().horizontalAdvance("Downloading")
+                return _horizontal_size("Downloading", header, window)
             case (
                 Column.TXT
                 | Column.AUDIO
@@ -148,3 +148,7 @@ class Column(IntEnum):
                 return QHeaderView.ResizeMode.Interactive
             case _ as unreachable:
                 assert_never(unreachable)
+
+
+def _horizontal_size(text: str, header: QHeaderView, window: QPaintDevice) -> int:
+    return int(header.fontMetrics().horizontalAdvance(text) * window.devicePixelRatio())

@@ -14,8 +14,8 @@ from PySide6.QtCore import (
     QSortFilterProxyModel,
     Qt,
 )
-from PySide6.QtWidgets import QAbstractItemView, QHeaderView, QTableView, QMenu
 from PySide6.QtGui import QCursor
+from PySide6.QtWidgets import QAbstractItemView, QHeaderView, QMenu, QTableView, QWidget
 
 from usdb_syncer import SongId
 from usdb_syncer.gui.song_table.column import Column
@@ -36,12 +36,13 @@ class SongTable:
 
     def __init__(
         self,
-        parent: QObject,
+        parent: QWidget,
         list_view: QTableView,
         queue_view: QTableView,
         list_menu: QMenu,
         queue_menu: QMenu,
     ) -> None:
+        self._parent = parent
         self._list_view = list_view
         self._queue_view = queue_view
         self._model = TableModel(parent)
@@ -102,7 +103,9 @@ class SongTable:
     def _setup_list_table_header(self) -> None:
         header = self._list_view.horizontalHeader()
         for column in Column:
-            size = column.section_size(header) or header.sectionSize(column)
+            size = column.section_size(header, self._parent) or header.sectionSize(
+                column
+            )
             header.setSectionResizeMode(column, column.section_resize_mode())
             header.resizeSection(column, size)
 
