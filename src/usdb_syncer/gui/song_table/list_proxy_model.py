@@ -1,5 +1,7 @@
 """Proxy model for sorting and filtering data of a source model."""
 
+from typing import Iterable
+
 from PySide6.QtCore import (
     QModelIndex,
     QObject,
@@ -36,6 +38,11 @@ class ListProxyModel(QSortFilterProxyModel):
         )
 
         super().__init__(parent)
+
+    def source_rows(self, subset: list[QModelIndex] | None = None) -> Iterable[int]:
+        """Returns the source rows of the provided or all rows in the model."""
+        indices = subset or (self.index(row, 0) for row in range(self.rowCount()))
+        return (self.mapToSource(idx).row() for idx in indices)
 
     def find_rows_for_song_txts(
         self, song_txts: list[SongTxt]

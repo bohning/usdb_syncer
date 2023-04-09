@@ -13,9 +13,10 @@ from PySide6.QtCore import (
     QObject,
     QSortFilterProxyModel,
     Qt,
+    Signal,
 )
 from PySide6.QtGui import QCursor
-from PySide6.QtWidgets import QAbstractItemView, QHeaderView, QMenu, QTableView, QWidget
+from PySide6.QtWidgets import QHeaderView, QMenu, QTableView, QWidget
 
 from usdb_syncer import SongId
 from usdb_syncer.gui.song_table.column import Column
@@ -23,12 +24,20 @@ from usdb_syncer.gui.song_table.list_proxy_model import ListProxyModel
 from usdb_syncer.gui.song_table.queue_proxy_model import QueueProxyModel
 from usdb_syncer.gui.song_table.table_model import CustomRole, TableModel
 from usdb_syncer.logger import get_logger
-from usdb_syncer.song_data import DownloadStatus, SongData
+from usdb_syncer.song_data import DownloadStatus, LocalFiles, SongData
+from usdb_syncer.song_loader import DownloadInfo, download_songs
 from usdb_syncer.song_txt import SongTxt
 from usdb_syncer.usdb_scraper import UsdbSong
 from usdb_syncer.utils import try_read_unknown_encoding
 
 _logger = logging.getLogger(__file__)
+
+
+class SongSignals(QObject):
+    """Signals relating to songs."""
+
+    started = Signal(SongId)
+    finished = Signal(SongId, LocalFiles)
 
 
 class SongTable:
@@ -56,6 +65,9 @@ class SongTable:
         self._queue_view.customContextMenuRequested.connect(
             lambda _: self._context_menu(queue_menu)
         )
+        self._signals = SongSignals()
+        self._signals.started.connect(self._on_download_started)
+        self._signals.finished.connect(self._on_download_finished)
 
     def initialize(self, song_list: tuple[SongData, ...]) -> None:
         self._model.set_data(song_list)
@@ -63,30 +75,76 @@ class SongTable:
         self._setup_queue_table_header()
 
     def download_selection(self) -> None:
-        for idx in self._selected_indices():
-            data = self._model.songs[idx.row()]
-            if data.status is DownloadStatus.NONE:
+        self._download(self._list_rows(selected_only=True))
+
+    def download_batch(self) -> None:
+        self._download(self._queue_rows())
+
+    def _download(self, rows: Iterable[int]) -> None:
+        to_download = []
+
+        def process(data: SongData) -> bool:
+            if data.status.can_be_downloaded():
                 data.status = DownloadStatus.PENDING
-        self._queue_proxy.invalidateRowsFilter()
+                to_download.append(data)
+                return True
+            return False
+
+        self._process_rows(rows, process)
+        if to_download:
+            download_songs(
+                map(DownloadInfo.from_song_data, to_download),
+                self._signals.started.emit,
+                self._signals.finished.emit,
+            )
+
+    def _process_rows(
+        self, rows: Iterable[int], processor: Callable[[SongData], bool]
+    ) -> None:
+        invalidate = False
+        for row in rows:
+            data = self._model.songs[row]
+            if processor(data):
+                invalidate = True
+                self._model.row_changed(row)
+        if invalidate:
+            self._queue_proxy.invalidateRowsFilter()
 
     def stage_selection(self) -> None:
-        for idx in self._selected_indices():
-            data = self._model.songs[idx.row()]
+        def process(data: SongData) -> bool:
             if data.status is DownloadStatus.NONE:
                 data.status = DownloadStatus.STAGED
-            self._model.index_changed(idx)
+                return True
+            return False
+
+        self._process_rows(self._list_rows(selected_only=True), process)
 
     def unstage_selection(self) -> None:
-        for idx in self._selected_indices():
-            data = self._model.songs[idx.row()]
-            if data.status is DownloadStatus.NONE:
-                data.status = DownloadStatus.PENDING
+        def process(data: SongData) -> bool:
+            if data.status.can_be_unstaged():
+                data.status = DownloadStatus.NONE
+                return True
+            return False
+
+        self._process_rows(self._queue_rows(selected_only=True), process)
+
+    def clear_batch(self) -> None:
+        data_rows = [
+            (row, data)
+            for row in self._queue_proxy.source_rows()
+            if (data := self._model.songs[row]).status.can_be_unstaged()
+        ]
+        if not data_rows:
+            return
+        for row, data in data_rows:
+            data.status = DownloadStatus.NONE
+            self._model.row_changed(row)
+        self._queue_proxy.invalidateRowsFilter()
 
     def _setup_view(self, view: QTableView, model: QSortFilterProxyModel) -> None:
         model.setSourceModel(self._model)
         model.setSortRole(CustomRole.SORT)
         view.setModel(model)
-        view.setSelectionMode(QAbstractItemView.SelectionMode.ExtendedSelection)
         header = view.horizontalHeader()
         # for resizable columns, use content size as the start value
         header.setSectionResizeMode(QHeaderView.ResizeMode.ResizeToContents)
@@ -97,6 +155,21 @@ class SongTable:
         for action in base_menu.actions():
             menu.addAction(action)
         menu.exec(QCursor.pos())
+
+    def _on_download_started(self, song_id: SongId) -> None:
+        if not (row := self._model.rows.get(song_id)):
+            return
+        data = self._model.songs[row]
+        data.status = DownloadStatus.DOWNLOADING
+        self._model.row_changed(row)
+
+    def _on_download_finished(self, song_id: SongId, files: LocalFiles) -> None:
+        if not (row := self._model.rows.get(song_id)):
+            return
+        data = self._model.songs[row]
+        data.status = DownloadStatus.DONE
+        data.local_files = files
+        self._model.row_changed(row)
 
     ### song list view
 
@@ -133,12 +206,15 @@ class SongTable:
     def selected_row_count(self) -> int:
         return len(self._list_view.selectionModel().selectedRows())
 
-    def selected_song_ids(self) -> list[SongId]:
-        return self._model.ids_for_indices(self._selected_indices())
+    def _list_rows(self, selected_only: bool = False) -> Iterable[int]:
+        return self._list_proxy.source_rows(
+            self._list_view.selectionModel().selectedRows() if selected_only else None
+        )
 
-    def _selected_indices(self) -> Iterable[QModelIndex]:
-        selected_rows = self._list_view.selectionModel().selectedRows()
-        return (self._list_proxy.mapToSource(row) for row in selected_rows)
+    def _queue_rows(self, selected_only: bool = False) -> Iterable[int]:
+        return self._queue_proxy.source_rows(
+            self._queue_view.selectionModel().selectedRows() if selected_only else None
+        )
 
     def select_local_songs(self, directory: str) -> None:
         txts = _parse_all_txts(directory)

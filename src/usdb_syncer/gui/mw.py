@@ -15,7 +15,7 @@ from PySide6.QtWidgets import (
     QSplashScreen,
 )
 
-from usdb_syncer import SongId, settings
+from usdb_syncer import settings
 from usdb_syncer.gui.debug_console import DebugConsole
 from usdb_syncer.gui.ffmpeg_dialog import check_ffmpeg
 from usdb_syncer.gui.forms.MainWindow import Ui_MainWindow
@@ -25,18 +25,10 @@ from usdb_syncer.gui.settings_dialog import SettingsDialog
 from usdb_syncer.gui.song_table.song_table import SongTable
 from usdb_syncer.gui.utils import scroll_to_bottom, set_shortcut
 from usdb_syncer.pdf import generate_song_pdf
-from usdb_syncer.song_data import LocalFiles, SongData
+from usdb_syncer.song_data import SongData
 from usdb_syncer.song_filters import GoldenNotesFilter, RatingFilter, ViewsFilter
 from usdb_syncer.song_list_fetcher import get_all_song_data, resync_song_data
-from usdb_syncer.song_loader import DownloadInfo, download_songs
 from usdb_syncer.utils import AppPaths, open_file_explorer
-
-
-class SongSignals(QObject):
-    """Signals relating to songs."""
-
-    started = Signal(SongId)
-    finished = Signal(SongId, LocalFiles)
 
 
 class MainWindow(Ui_MainWindow, QMainWindow):
@@ -55,8 +47,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         self._setup_shortcuts()
         self._setup_song_dir()
         self._setup_search()
-        self._setup_download()
-        self._setup_signals()
+        self._setup_buttons()
 
     def _setup_table(self) -> None:
         self.table = SongTable(
@@ -79,7 +70,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
 
     def _setup_toolbar(self) -> None:
         for action, func in (
-            (self.action_songs_download, self.table.download_selection),
+            (self.action_songs_download, self._download_selection),
             (self.action_songs_to_batch, self.table.stage_selection),
             (self.action_batch_remove, self.table.unstage_selection),
             (self.action_select_local_songs, self._select_local_songs),
@@ -91,6 +82,12 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         ):
             action.triggered.connect(func)
 
+    def _download_selection(self) -> None:
+        check_ffmpeg(self, self.table.download_selection)
+
+    def _download_batch(self) -> None:
+        check_ffmpeg(self, self.table.download_batch)
+
     def _setup_shortcuts(self) -> None:
         set_shortcut("Ctrl+.", self, lambda: DebugConsole(self).show())
 
@@ -98,21 +95,9 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         self.lineEdit_song_dir.setText(str(settings.get_song_dir()))
         self.pushButton_select_song_dir.clicked.connect(self.select_song_dir)
 
-    def _setup_download(self) -> None:
-        self.button_batch_download.clicked.connect(self._download)
-
-    def _download(self) -> None:
-        def _download_songs() -> None:
-            songs = [
-                DownloadInfo.from_song_data(song)
-                for song_id in self.table.selected_song_ids()
-                if (song := self.table.get_data(song_id))
-            ]
-            download_songs(
-                songs, self.song_signals.started.emit, self.song_signals.finished.emit
-            )
-
-        check_ffmpeg(self, _download_songs)
+    def _setup_buttons(self) -> None:
+        self.button_batch_download.clicked.connect(self._download_batch)
+        self.button_batch_clear.clicked.connect(self.table.clear_batch)
 
     def _setup_search(self) -> None:
         self._populate_search_filters()
@@ -184,15 +169,6 @@ class MainWindow(Ui_MainWindow, QMainWindow):
                 self._debugs.append((message, created))
                 if self.toolButton_debugs.isChecked():
                     self.plainTextEdit.appendPlainText(message)
-
-    def _setup_signals(self) -> None:
-        self.song_signals = SongSignals()
-        self.song_signals.finished.connect(self._update_downloaded_song)
-
-    def _update_downloaded_song(self, song_id: SongId, files: LocalFiles) -> None:
-        if old := self.table.get_data(song_id):
-            new = old.with_local_files(files)
-            self.table.update_item(new)
 
     def initialize_song_table(self, songs: tuple[SongData, ...]) -> None:
         self.table.initialize(songs)

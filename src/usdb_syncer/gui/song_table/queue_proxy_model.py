@@ -1,11 +1,8 @@
 """Proxy model for sorting and filtering data of a source model."""
 
-from PySide6.QtCore import (
-    QModelIndex,
-    QObject,
-    QPersistentModelIndex,
-    QSortFilterProxyModel,
-)
+from typing import Iterable
+
+from PySide6.QtCore import QModelIndex, QPersistentModelIndex, QSortFilterProxyModel
 
 from usdb_syncer.gui.song_table.column import Column
 from usdb_syncer.gui.song_table.table_model import CustomRole
@@ -17,8 +14,12 @@ QIndex = QModelIndex | QPersistentModelIndex
 class QueueProxyModel(QSortFilterProxyModel):
     """Proxy model for sorting and filtering data of a source model."""
 
-    def __init__(self, parent: QObject) -> None:
-        super().__init__(parent)
+    def source_rows(self, subset: list[QModelIndex] | None = None) -> Iterable[int]:
+        """Returns the source rows of the provided or all rows in the model."""
+        indices = subset or (self.index(row, 0) for row in range(self.rowCount()))
+        return (self.mapToSource(idx).row() for idx in indices)
+
+    ### QSortFilterProxyModel implementation
 
     def filterAcceptsRow(self, source_row: int, source_parent: QIndex) -> bool:
         model = self.sourceModel()

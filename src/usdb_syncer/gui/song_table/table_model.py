@@ -30,38 +30,40 @@ class TableModel(QAbstractTableModel):
     """Table model for song data."""
 
     songs: tuple[SongData, ...] = tuple()
-    _rows: dict[SongId, int]
+    rows: dict[SongId, int]
 
     def __init__(self, parent: QObject) -> None:
-        self._rows = {}
+        self.rows = {}
         super().__init__(parent)
 
     def set_data(self, songs: tuple[SongData, ...]) -> None:
         self.beginResetModel()
         self.songs = songs
-        self._rows = {song.data.song_id: idx for idx, song in enumerate(songs)}
+        self.rows = {song.data.song_id: idx for idx, song in enumerate(songs)}
         self.endResetModel()
 
     def update_item(self, new: SongData) -> None:
-        idx = self._rows[new.data.song_id]
+        idx = self.rows[new.data.song_id]
         self.songs = self.songs[:idx] + (new,) + self.songs[idx + 1 :]
         start_idx = self.index(idx, 0)
         end_idx = self.index(idx, self.columnCount())
         self.dataChanged.emit(start_idx, end_idx)  # type:ignore
 
-    def ids_for_indices(self, indices: Iterable[QModelIndex]) -> list[SongId]:
-        return [self.songs[idx.row()].data.song_id for idx in indices]
+    def ids_for_rows(self, rows: Iterable[int]) -> list[SongId]:
+        return [self.songs[row].data.song_id for row in rows]
 
     def item_for_id(self, song_id: SongId) -> SongData | None:
-        if (idx := self._rows.get(song_id)) is not None:
+        if (idx := self.rows.get(song_id)) is not None:
             return self.songs[idx]
         return None
+
+    def row_for_id(self, song_id: SongId) -> int | None:
+        return self.rows.get(song_id)
 
     def all_local_songs(self) -> Iterator[UsdbSong]:
         return (song.data for song in self.songs if song.local_files.txt)
 
-    def index_changed(self, idx: QModelIndex) -> None:
-        row = idx.row()
+    def row_changed(self, row: int) -> None:
         start_idx = self.index(row, 0)
         end_idx = self.index(row, self.columnCount())
         self.dataChanged.emit(start_idx, end_idx)  # type:ignore

@@ -108,6 +108,12 @@ class DownloadStatus(Enum):
             case _ as unreachable:
                 assert_never(unreachable)
 
+    def can_be_unstaged(self) -> bool:
+        return self in (DownloadStatus.STAGED, DownloadStatus.DONE)
+
+    def can_be_downloaded(self) -> bool:
+        return self in (DownloadStatus.NONE, DownloadStatus.STAGED)
+
 
 @attrs.define
 class SongData:

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import os
 from pathlib import Path
-from typing import Callable, Iterator
+from typing import Callable, Iterable, Iterator
 
 import attrs
 from PySide6.QtCore import QRunnable, QThreadPool
@@ -208,7 +208,7 @@ class SongLoader(QRunnable):
 
 
 def download_songs(
-    infos: list[DownloadInfo],
+    infos: Iterable[DownloadInfo],
     on_start: Callable[[SongId], None],
     on_finish: Callable[[SongId, LocalFiles], None],
 ) -> None:
