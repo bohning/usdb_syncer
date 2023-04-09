@@ -183,7 +183,7 @@ class UsdbIdFileParser:
 
         key = "id"
         try:
-            self.ids = [SongId(int(element[key])) for element in parsed_json]
+            self.ids = [SongId.parse(element[key]) for element in parsed_json]
         except ValueError as exception:
             raise UsdbIdFileParserInvalidUsdbIdError() from exception
         except IndexError as exception:
@@ -263,7 +263,7 @@ class UsdbIdFileParser:
             raise UsdbIdFileParserEmptyFileError()
 
         try:
-            self.ids = [SongId(int(line)) for line in lines]
+            self.ids = [SongId.parse(line) for line in lines]
         except ValueError as exception:
             raise UsdbIdFileParserInvalidUsdbIdError() from exception
         except Exception as exception:
@@ -294,7 +294,7 @@ class UsdbIdFileParser:
                 f"repeated query parameter '{id_param}' in found URL: {url}"
             )
         try:
-            self.ids = [SongId(int(query_params[id_param][0]))]
+            self.ids = [SongId.parse(query_params[id_param][0])]
         except ValueError as exception:
             raise UsdbIdFileParserInvalidUrlError(
                 f"invalid '{id_param}' query parameter in found URL: {url}"
