@@ -68,7 +68,7 @@ class USDBIDFileParserMultipleURLsFormatError(USDBIDFileParserInvalidFormatError
     """Invalid file format with multiple URLs"""
 
     def __init__(self, detail: str | None = None):
-        super().__init__("multiple URLs detected", detail)
+        super().__init__("file contains multiple URLs", detail)
 
 
 class USDBIDFileParserEmptyFileError(USDBIDFileParserError):
@@ -232,13 +232,13 @@ class USDBIDFileParser:
         if not xml_plist:
             raise USDBIDFileParserInvalidFormatError(f"missing tag '{tag}'")
         if len(xml_plist) > 1:
-            raise USDBIDFileParserInvalidFormatError(f"multiple tag '{tag}'")
+            raise USDBIDFileParserInvalidFormatError(f"multiple tags '{tag}'")
         tag = "dict"
         xml_dict = xml_plist[0].find_all(tag)
         if not xml_dict:
             raise USDBIDFileParserInvalidFormatError(f"missing tag '{tag}'")
         if len(xml_dict) > 1:
-            raise USDBIDFileParserInvalidFormatError(f"multiple tag '{tag}'")
+            raise USDBIDFileParserInvalidFormatError(f"multiple tags '{tag}'")
         tag = "string"
         xml_string = xml_dict[0].find_all(tag)
         if not xml_string:
@@ -291,7 +291,7 @@ class USDBIDFileParser:
             )
         if len(query_params[id_param]) > 1:
             raise USDBIDFileParserInvalidURLError(
-                f"multiple '{id_param}' query parameter in found URL: {url}"
+                f"repeated query parameter '{id_param}' in found URL: {url}"
             )
         try:
             self.ids = [SongId(int(query_params[id_param][0]))]
