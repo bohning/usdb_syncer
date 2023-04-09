@@ -595,10 +595,10 @@
   </action>
   <action name="action_import_usdb_ids">
    <property name="text">
-    <string>Import USDB IDs</string>
+    <string>Download IDs From File(s)</string>
    </property>
    <property name="toolTip">
-    <string>Import USDB IDs</string>
+    <string>Download Multiple USDB songs defined by IDs in files and/or weblinks</string>
    </property>
   </action>
   <action name="action_export_usdb_ids">
