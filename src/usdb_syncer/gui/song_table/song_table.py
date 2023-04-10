@@ -6,6 +6,7 @@ import os
 from glob import glob
 from typing import Any, Callable, Iterable, Iterator
 
+import attrs
 from PySide6.QtCore import (
     QByteArray,
     QItemSelection,
@@ -17,7 +18,14 @@ from PySide6.QtCore import (
     Signal,
 )
 from PySide6.QtGui import QCursor
-from PySide6.QtWidgets import QHeaderView, QMenu, QTableView, QWidget
+from PySide6.QtWidgets import (
+    QHeaderView,
+    QLabel,
+    QMenu,
+    QProgressBar,
+    QTableView,
+    QWidget,
+)
 
 from usdb_syncer import SongId, settings
 from usdb_syncer.gui.song_table.column import Column
@@ -42,6 +50,31 @@ class SongSignals(QObject):
     finished = Signal(DownloadResult)
 
 
+@attrs.define
+class Progress:
+    """Progress bar controller."""
+
+    _bar: QProgressBar
+    _label: QLabel
+    _running: int = 0
+    _finished: int = 0
+
+    def start(self, count: int) -> None:
+        if self._running == self._finished:
+            self._running = 0
+            self._finished = 0
+        self._running += count
+        self._update()
+
+    def finish(self, count: int) -> None:
+        self._finished += count
+        self._update()
+
+    def _update(self) -> None:
+        self._label.setText(f"{self._finished}/{self._running}")
+        self._bar.setValue(int((self._finished + 1) / (self._running + 1) * 100))
+
+
 class SongTable:
     """Controller for the song table."""
 
@@ -52,6 +85,8 @@ class SongTable:
         queue_view: QTableView,
         list_menu: QMenu,
         queue_menu: QMenu,
+        progress_bar: QProgressBar,
+        progress_label: QLabel,
     ) -> None:
         self._parent = parent
         self._list_view = list_view
@@ -74,6 +109,7 @@ class SongTable:
         self._signals = SongSignals()
         self._signals.started.connect(self._on_download_started)
         self._signals.finished.connect(self._on_download_finished)
+        self._progress = Progress(progress_bar, progress_label)
 
     def initialize(self, song_list: tuple[SongData, ...]) -> None:
         self._model.set_data(song_list)
@@ -96,6 +132,7 @@ class SongTable:
 
         self._process_rows(rows, process)
         if to_download:
+            self._progress.start(len(to_download))
             download_songs(
                 map(DownloadInfo.from_song_data, to_download),
                 self._signals.started.emit,
@@ -183,6 +220,7 @@ class SongTable:
         else:
             data.status = DownloadStatus.FAILED
         self._model.row_changed(row)
+        self._progress.finish(1)
 
     def save_state(self) -> None:
         settings.set_list_view_header_state(

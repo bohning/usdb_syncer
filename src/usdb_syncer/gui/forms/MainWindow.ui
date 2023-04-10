@@ -466,6 +466,26 @@
            </property>
           </spacer>
          </item>
+         <item>
+          <widget class="QProgressBar" name="bar_download_progress">
+           <property name="value">
+            <number>0</number>
+           </property>
+           <property name="textVisible">
+            <bool>false</bool>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QLabel" name="label_download_progress">
+           <property name="text">
+            <string>0/0</string>
+           </property>
+           <property name="alignment">
+            <set>Qt::AlignCenter</set>
+           </property>
+          </widget>
+         </item>
         </layout>
        </widget>
        <widget class="QTableView" name="view_queue">

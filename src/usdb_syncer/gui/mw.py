@@ -52,7 +52,13 @@ class MainWindow(Ui_MainWindow, QMainWindow):
 
     def _setup_table(self) -> None:
         self.table = SongTable(
-            self, self.view_list, self.view_queue, self.menu_songs, self.menu_batch
+            self,
+            self.view_list,
+            self.view_queue,
+            self.menu_songs,
+            self.menu_batch,
+            self.bar_download_progress,
+            self.label_download_progress,
         )
         self.table.connect_row_count_changed(
             lambda c: self.statusbar.showMessage(f"{c} songs found.")
