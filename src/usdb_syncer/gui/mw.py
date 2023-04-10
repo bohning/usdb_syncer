@@ -283,11 +283,8 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         file_parsers = [UsdbIdFileParser(path) for path in file_list]
         has_error = False
         for parser in file_parsers:
-            if parser.errors:
-                logger.error(
-                    f"importing file {parser.filepath}: "
-                    f"{', '.join(err.message for err in parser.errors)}"
-                )
+            if parser.error:
+                logger.error(f"importing file {parser.filepath}: {str(parser.error)}")
                 has_error = True
         # stop import if encounter errors
         if has_error:

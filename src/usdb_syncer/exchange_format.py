@@ -55,7 +55,7 @@ class UsdbIdFileParserMissingSectionHeaderFormatError(
     """Invalid file format with missing section header"""
 
     def __str__(self) -> str:
-        return f"{str(super())}: missing a section header"
+        return f"{super().__str__()}: missing a section header"
 
 
 @attrs.define
@@ -65,7 +65,7 @@ class UsdbIdFileParserMissingOrDublicateOptionFormatError(
     """Invalid file format with missing or dublicate option"""
 
     def __str__(self) -> str:
-        return f"{str(super())}: missing or dublicate option"
+        return f"{super().__str__()}: missing or dublicate option"
 
 
 @attrs.define
@@ -73,7 +73,7 @@ class UsdbIdFileParserMultipleUrlsFormatError(UsdbIdFileParserInvalidFormatError
     """Invalid file format with multiple URLs"""
 
     def __str__(self) -> str:
-        return f"{str(super())}: file contains multiple URLs"
+        return f"{super().__str__()}: file contains multiple URLs"
 
 
 @attrs.define
@@ -83,7 +83,7 @@ class UsdbIdFileParserMissingKeyFormatError(UsdbIdFileParserInvalidFormatError):
     missing_key: str
 
     def __str__(self) -> str:
-        return f"{str(super())}: missing key '{self.missing_key}'"
+        return f"{super().__str__()}: missing key '{self.missing_key}'"
 
 
 @attrs.define
@@ -93,7 +93,7 @@ class UsdbIdFileParserMissingSectionFormatError(UsdbIdFileParserInvalidFormatErr
     missing_section: str
 
     def __str__(self) -> str:
-        return f"{str(super())}: missing section '{self.missing_section}'"
+        return f"{super().__str__()}: missing section '{self.missing_section}'"
 
 
 @attrs.define
@@ -103,7 +103,7 @@ class UsdbIdFileParserMissingTagFormatError(UsdbIdFileParserInvalidFormatError):
     missing_tag: str
 
     def __str__(self) -> str:
-        return f"{str(super())}: missing tag '{self.missing_tag}'"
+        return f"{super().__str__()}: missing tag '{self.missing_tag}'"
 
 
 @attrs.define
@@ -113,7 +113,7 @@ class UsdbIdFileParserMultipleTagsFormatError(UsdbIdFileParserInvalidFormatError
     multiple_tag: str
 
     def __str__(self) -> str:
-        return f"{str(super())}: multiple tags '{self.multiple_tag}'"
+        return f"{super().__str__()}: multiple tags '{self.multiple_tag}'"
 
 
 @attrs.define
@@ -123,7 +123,7 @@ class UsdbIdFileParserMissingUrlTagFormatError(UsdbIdFileParserInvalidFormatErro
     missing_tag: str
 
     def __str__(self) -> str:
-        return f"{str(super())}: missing URL tag '{self.missing_tag}'"
+        return f"{super().__str__()}: missing URL tag '{self.missing_tag}'"
 
 
 @attrs.define
@@ -133,7 +133,7 @@ class UsdbIdFileParserMalformedUrlFormatError(UsdbIdFileParserInvalidFormatError
     bad_url: str
 
     def __str__(self) -> str:
-        return f"{str(super())}: malformed URL: {self.bad_url}"
+        return f"{super().__str__()}: malformed URL '{self.bad_url}'"
 
 
 @attrs.define
@@ -146,7 +146,7 @@ class UsdbIdFileParserInvalidDomainMalformedUrlFormatError(
     bad_url: str
 
     def __str__(self) -> str:
-        return f"{str(super())}: has invalid domain: {self.bad_domain}"
+        return f"{super().__str__()}: has invalid domain '{self.bad_domain}'"
 
 
 @attrs.define
@@ -158,7 +158,7 @@ class UsdbIdFileParserNoParametersMalformedUrlFormatError(
     bad_url: str
 
     def __str__(self) -> str:
-        return f"{str(super())}: has no query parameters"
+        return f"{super().__str__()}: has no query parameters"
 
 
 @attrs.define
@@ -171,7 +171,9 @@ class UsdbIdFileParserMissingQueryParameterMalformedUrlFormatError(
     bad_url: str
 
     def __str__(self) -> str:
-        return f"{str(super())}: missing query parameter '{self.missing_parameter}'"
+        return (
+            f"{super().__str__()}: missing query parameter '{self.missing_parameter}'"
+        )
 
 
 @attrs.define
@@ -184,7 +186,9 @@ class UsdbIdFileParserRepeatedQueryParameterMalformedUrlFormatError(
     bad_url: str
 
     def __str__(self) -> str:
-        return f"{str(super())}: repeated query parameter '{self.repeated_parameter}'"
+        return (
+            f"{super().__str__()}: repeated query parameter '{self.repeated_parameter}'"
+        )
 
 
 @attrs.define
@@ -197,7 +201,9 @@ class UsdbIdFileParserInvalidQueryParameterMalformedUrlFormatError(
     bad_url: str
 
     def __str__(self) -> str:
-        return f"{str(super())}: invalid query parameter '{self.invalid_parameter}'"
+        return (
+            f"{super().__str__()}: invalid query parameter '{self.invalid_parameter}'"
+        )
 
 
 @attrs.define
@@ -211,7 +217,7 @@ class UsdbIdFileParserUnparsableQueryParameterMalformedUrlFormatError(
 
     def __str__(self) -> str:
         return (
-            f"{str(super())}: could not parse query parameter "
+            f"{super().__str__()}: could not parse query parameter "
             f"'{self.unparsable_parameter}'"
         )
 
