@@ -370,7 +370,7 @@ class UsdbIdFile:
         return cls._parse_ini_file(filepath, section="Desktop Entry", key="URL")
 
     @classmethod
-    def _parse_webloc_file(cls, filepath: str) -> SongId:
+    def _get_soup(cls, filepath: str) -> BeautifulSoup:
         try:
             with open(filepath, "r", encoding="utf-8") as file:
                 soup = BeautifulSoup(file, features="lxml-xml")
@@ -381,6 +381,11 @@ class UsdbIdFile:
 
         if soup.is_empty_element:
             raise UsdbIdFileEmptyFileError()
+        return soup
+
+    @classmethod
+    def _parse_webloc_file(cls, filepath: str) -> SongId:
+        soup = cls._get_soup(filepath)
         tag = "plist"
         xml_plist = soup.find_all(tag)
         if not xml_plist:
