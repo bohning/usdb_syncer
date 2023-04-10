@@ -3,11 +3,12 @@
 from __future__ import annotations
 
 import math
+from pathlib import Path
 
 import attrs
 
 from usdb_syncer.logger import Log
-from usdb_syncer.meta_tags.deserializer import MetaTags
+from usdb_syncer.meta_tags import MetaTags
 from usdb_syncer.song_txt.error import NotesParseError
 from usdb_syncer.song_txt.headers import Headers
 from usdb_syncer.song_txt.tracks import Tracks
@@ -29,7 +30,7 @@ class SongTxt:
     def parse(cls, value: str, logger: Log) -> SongTxt:
         lines = [line for line in value.splitlines() if line]
         headers = Headers.parse(lines, logger)
-        meta_tags = MetaTags(headers.video or "", logger)
+        meta_tags = MetaTags.parse(headers.video or "", logger)
         notes = Tracks.parse(lines, logger)
         if lines:
             logger.warning(f"trailing text in song txt: '{lines}'")
@@ -57,9 +58,9 @@ class SongTxt:
             self.headers.medleystartbeat = medley.start
             self.headers.medleyendbeat = medley.end
 
-    def write_to_file(self, path: str, encoding: str, newline: str) -> None:
-        with open(
-            path, "w", encoding=encoding, newline=newline, errors="backslashreplace"
+    def write_to_file(self, path: Path, encoding: str, newline: str) -> None:
+        with path.open(
+            "w", encoding=encoding, newline=newline, errors="backslashreplace"
         ) as file:
             file.write(str(self))
 
@@ -75,10 +76,10 @@ class SongTxt:
         self.restore_missing_headers()
         self.fix_first_timestamp()
         self.fix_low_bpm()
+        self.notes.fix_overlapping_and_touching_notes(self.logger)
         self.notes.fix_line_breaks(self.logger)
-        self.notes.fix_touching_notes(self.logger)
         self.notes.fix_pitch_values(self.logger)
-        self.notes.fix_apostrophes(self.logger)
+        self.notes.fix_apostrophes_and_quotation_marks(self.logger)
         self.headers.fix_apostrophes(self.logger)
         self.notes.fix_spaces(self.logger)
         self.notes.fix_all_caps(self.logger)

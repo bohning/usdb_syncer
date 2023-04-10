@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import re
 from enum import Enum
-from typing import Iterator
+from typing import Iterator, Tuple
 
 import attrs
 
@@ -27,10 +27,10 @@ class Note:
     """Representation of a note, parsed from a string."""
 
     kind: NoteKind
-    start: int
-    duration: int
-    pitch: int
-    text: str
+    start: int = NotImplemented
+    duration: int = NotImplemented
+    pitch: int = NotImplemented
+    text: str = NotImplemented
 
     @classmethod
     def parse(cls, value: str) -> Note:
@@ -58,11 +58,16 @@ class Note:
         )
 
     def end(self) -> int:
+        """Start beat + duration (NOT last beat of the note)"""
         return self.start + self.duration
 
+    def shift_start(self, beats: int) -> None:
+        """Shift note start and shorten duration accordingly"""
+        self.start += beats
+        self.duration = max(self.duration - beats, 1)
+
     def shorten(self, beats: int = 1) -> None:
-        if self.duration > beats:
-            self.duration = self.duration - beats
+        self.duration = max(self.duration - beats, 1)
 
     def left_trim_text(self) -> None:
         """Remove whitespace from the start of the note."""
@@ -72,6 +77,15 @@ class Note:
         """Ensure the note ends with a single space."""
         self.text = self.text.rstrip() + " "
 
+    def gap(self, other: Note) -> int:
+        """Returns the number of empty beats between two notes"""
+        return other.start - self.end()
+
+    def swap_timings(self, other: Note) -> None:
+        """Swap start and duration of two notes"""
+        self.start, other.start = other.start, self.start
+        self.duration, other.duration = other.duration, self.duration
+
 
 @attrs.define
 class LineBreak:
@@ -79,8 +93,8 @@ class LineBreak:
     the next line start.
     """
 
-    previous_line_out_time: int
-    next_line_in_time: int | None
+    previous_line_out_time: int = NotImplemented
+    next_line_in_time: int | None = NotImplemented
 
     @classmethod
     def parse(cls, value: str) -> tuple[LineBreak, str | None]:
@@ -165,7 +179,7 @@ class Line:
 
     def shift(self, offset: int) -> None:
         for note in self.notes:
-            note.start += offset
+            note.start = note.start + offset
         if self.line_break:
             self.line_break.shift(offset)
 
@@ -254,20 +268,33 @@ class Tracks:
             fix_line_breaks(track)
         logger.debug("FIX: Linebreaks corrected.")
 
-    def fix_touching_notes(self, logger: Log) -> None:
-        notes_shortened = 0
+    def consecutive_notes(self) -> Iterator[Tuple[Note, Note]]:
         for track in self.all_tracks():
             for num_line, line in enumerate(track):
-                for num_note, note in enumerate(line.notes[:-1]):
-                    if note.end() == line.notes[num_note + 1].start:
-                        note.shorten()
-                        notes_shortened += 1
-                if not line.is_last():
-                    if line.end() == track[num_line + 1].start():
-                        line.notes[-1].shorten()
-                        notes_shortened += 1
-        if notes_shortened > 0:
-            logger.debug(f"FIX: {notes_shortened} touching notes shortened.")
+                for num_note, current_note in enumerate(line.notes):
+                    if line.is_last() and num_note == len(line.notes) - 1:
+                        return
+                    if current_note == line.notes[-1]:
+                        next_note = track[num_line + 1].notes[0]
+                    else:
+                        next_note = line.notes[num_note + 1]
+                    yield current_note, next_note
+
+    def fix_overlapping_and_touching_notes(self, logger: Log) -> None:
+        for current_note, next_note in self.consecutive_notes():
+            fixed = False
+            if current_note.start > next_note.start:
+                current_note.swap_timings(next_note)
+                fixed = True
+            if (gap := current_note.gap(next_note)) <= 0:
+                current_note.shorten(1 - gap)
+                fixed = True
+            if (gap := current_note.gap(next_note)) <= 0:
+                # current note cannot be shortened to leave a gap of one beat
+                next_note.shift_start(1 - gap)
+                fixed = True
+            if fixed:
+                logger.debug(f"FIX: Gap after note {current_note.start} fixed.")
 
     def fix_pitch_values(self, logger: Log) -> None:
         min_pitch = min(note.pitch for note in self.all_notes())
@@ -281,16 +308,17 @@ class Tracks:
                 f"FIX: pitch values normalized (shifted by {octave_shift} octaves)."
             )
 
-    def fix_apostrophes(self, logger: Log) -> None:
+    def fix_apostrophes_and_quotation_marks(self, logger: Log) -> None:
         note_text_fixed = 0
         for note in self.all_notes():
             note_text_old = note.text
             note.text = replace_false_apostrophes_and_quotation_marks(note_text_old)
             if note_text_old != note.text:
                 note_text_fixed += 1
-        logger.debug(
-            f"FIX: {note_text_fixed} apostrophes/quotation marks in lyrics corrected."
-        )
+        if note_text_fixed > 0:
+            logger.debug(
+                f"FIX: {note_text_fixed} apostrophes/quotation marks in lyrics corrected."
+            )
 
     def fix_spaces(self, logger: Log) -> None:
         """Ensures
