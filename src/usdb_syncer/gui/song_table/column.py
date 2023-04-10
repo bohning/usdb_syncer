@@ -1,6 +1,6 @@
 """Table model for song data."""
 
-from enum import Enum, IntEnum
+from enum import IntEnum
 from functools import cache
 
 from PySide6.QtCore import QModelIndex, QPersistentModelIndex
@@ -11,12 +11,6 @@ from usdb_syncer import SongId
 from usdb_syncer.typing_helpers import assert_never
 
 QIndex = QModelIndex | QPersistentModelIndex
-
-
-class CustomRole(int, Enum):
-    """Custom values expanding Qt.QItemDataRole."""
-
-    ALL_DATA = 100
 
 
 class Column(IntEnum):
@@ -106,18 +100,20 @@ class Column(IntEnum):
         match self:
             case Column.SONG_ID:
                 return _horizontal_size(str(SongId(0)), header, window)
+            case Column.VIEWS:
+                return _horizontal_size("99999", header, window)
+            case Column.RATING:
+                return _horizontal_size("★★★★★", header, window)
+            case Column.GOLDEN_NOTES:
+                return _horizontal_size("Yes", header, window)
             case (
                 Column.ARTIST
                 | Column.TITLE
                 | Column.LANGUAGE
                 | Column.EDITION
-                | Column.GOLDEN_NOTES
-                | Column.RATING
-                | Column.VIEWS
+                | Column.DOWNLOAD_STATUS
             ):
                 return None
-            case Column.DOWNLOAD_STATUS:
-                return _horizontal_size("Downloading", header, window)
             case (
                 Column.TXT
                 | Column.AUDIO
@@ -129,26 +125,12 @@ class Column(IntEnum):
             case _ as unreachable:
                 assert_never(unreachable)
 
-    def section_resize_mode(self) -> QHeaderView.ResizeMode:
-        match self:
-            case (
-                Column.SONG_ID
-                | Column.GOLDEN_NOTES
-                | Column.RATING
-                | Column.VIEWS
-                | Column.TXT
-                | Column.AUDIO
-                | Column.VIDEO
-                | Column.COVER
-                | Column.BACKGROUND
-                | Column.DOWNLOAD_STATUS
-            ):
-                return QHeaderView.ResizeMode.Fixed
-            case Column.ARTIST | Column.TITLE | Column.LANGUAGE | Column.EDITION:
-                return QHeaderView.ResizeMode.Interactive
-            case _ as unreachable:
-                assert_never(unreachable)
-
 
 def _horizontal_size(text: str, header: QHeaderView, window: QPaintDevice) -> int:
-    return int(header.fontMetrics().horizontalAdvance(text) * window.devicePixelRatio())
+    return (
+        int(header.fontMetrics().horizontalAdvance(text) * window.devicePixelRatio())
+        # for rounding down
+        + 1
+        # for cell padding
+        + 2 * 3
+    )

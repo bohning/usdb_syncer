@@ -71,8 +71,6 @@ class SongTable:
 
     def initialize(self, song_list: tuple[SongData, ...]) -> None:
         self._model.set_data(song_list)
-        self._setup_list_table_header()
-        self._setup_queue_table_header()
 
     def download_selection(self) -> None:
         self._download(self._list_rows(selected_only=True))
@@ -137,10 +135,16 @@ class SongTable:
         model.setSourceModel(self._model)
         model.setSortRole(CustomRole.SORT)
         view.setModel(model)
-        header = view.horizontalHeader()
-        # for resizable columns, use content size as the start value
-        header.setSectionResizeMode(QHeaderView.ResizeMode.ResizeToContents)
         view.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
+        header = view.horizontalHeader()
+        for column in Column:
+            if not model.filterAcceptsColumn(column, QModelIndex()):
+                continue
+            if size := column.section_size(header, self._parent):
+                header.setSectionResizeMode(column, QHeaderView.ResizeMode.Fixed)
+                header.resizeSection(column, size)
+            else:
+                header.setSectionResizeMode(column, QHeaderView.ResizeMode.Interactive)
 
     def _context_menu(self, base_menu: QMenu) -> None:
         menu = QMenu()
@@ -165,27 +169,6 @@ class SongTable:
         else:
             data.status = DownloadStatus.FAILED
         self._model.row_changed(row)
-
-    ### song list view
-
-    def _setup_list_table_header(self) -> None:
-        header = self._list_view.horizontalHeader()
-        for column in Column:
-            size = column.section_size(header, self._parent) or header.sectionSize(
-                column
-            )
-            header.setSectionResizeMode(column, column.section_resize_mode())
-            header.resizeSection(column, size)
-
-    ### download queue view
-
-    def _setup_queue_table_header(self) -> None:
-        header = self._queue_view.horizontalHeader()
-        list_header = self._list_view.horizontalHeader()
-        for col in Column:
-            if col.display_in_queue_view():
-                header.setSectionResizeMode(col, list_header.sectionResizeMode(col))
-                header.resizeSection(col, list_header.sectionSize(col))
 
     ### selection model
 
