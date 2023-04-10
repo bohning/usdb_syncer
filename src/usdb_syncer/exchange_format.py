@@ -1,8 +1,11 @@
 """Import and export lists of USDB IDs from file system."""
 
+from __future__ import annotations
+
 import configparser
 import json
 import os
+from dataclasses import dataclass, field
 from urllib.parse import parse_qs, urlparse
 
 import attrs
@@ -278,40 +281,39 @@ class UsdbIdFileParserNoUrlFoundError(UsdbIdFileParserError):
         return "no URL found"
 
 
+@dataclass
 class UsdbIdFileParser:
     """file parser for USDB IDs"""
 
-    ids: list[SongId] = []
+    ids: list[SongId] = field(default_factory=list)
     error: UsdbIdFileParserError | None = None
 
-    def __init__(self, filepath: str):
-        self.filepath = filepath
-        self.ids = []
-        self.error = None
+    @classmethod
+    def parse(cls, filepath: str) -> UsdbIdFileParser:
         try:
-            self.parse()
+            file_extension = os.path.splitext(filepath)[1]
+            song_ids: list[SongId] = []
+            if file_extension == ".json":
+                song_ids = cls._parse_json_file(filepath)
+            elif file_extension == ".url":
+                song_ids = [cls._parse_url_file(filepath)]
+            elif file_extension == ".desktop":
+                song_ids = [cls._parse_desktop_file(filepath)]
+            elif file_extension == ".webloc":
+                song_ids = [cls._parse_webloc_file(filepath)]
+            elif file_extension == ".usdb_ids":
+                song_ids = cls._parse_usdb_ids_file(filepath)
+            else:
+                raise UsdbIdFileParserUnsupportedExtensionError()
+            return cls(song_ids)
         except UsdbIdFileParserError as exception:
-            self.error = exception
+            return cls([], exception)
 
-    def parse(self) -> None:
-        file_extension = os.path.splitext(self.filepath)[1]
-        if file_extension == ".json":
-            self.parse_json_file()
-        elif file_extension == ".url":
-            self.parse_url_file()
-        elif file_extension == ".desktop":
-            self.parse_desktop_file()
-        elif file_extension == ".webloc":
-            self.parse_webloc_file()
-        elif file_extension == ".usdb_ids":
-            self.parse_usdb_ids_file()
-        else:
-            raise UsdbIdFileParserUnsupportedExtensionError()
-
-    def get_json_file_content(self) -> str:
+    @classmethod
+    def _get_json_file_content(cls, filepath: str) -> str:
         filecontent: str
         try:
-            with open(self.filepath, "r", encoding="utf-8") as file:
+            with open(filepath, "r", encoding="utf-8") as file:
                 filecontent = file.read()
         except OSError as exception:
             raise UsdbIdFileParserReadError() from exception
@@ -321,8 +323,9 @@ class UsdbIdFileParser:
             raise UsdbIdFileParserEmptyFileError()
         return filecontent
 
-    def parse_json_file(self) -> None:
-        filecontent = self.get_json_file_content()
+    @classmethod
+    def _parse_json_file(cls, filepath: str) -> list[SongId]:
+        filecontent = cls._get_json_file_content(filepath)
 
         parsed_json = None
         try:
@@ -340,7 +343,7 @@ class UsdbIdFileParser:
 
         key = "id"
         try:
-            self.ids = [SongId.parse(element[key]) for element in parsed_json]
+            return [SongId.parse(element[key]) for element in parsed_json]
         except ValueError as exception:
             raise UsdbIdFileParserInvalidUsdbIdError() from exception
         except (KeyError, IndexError) as exception:
@@ -350,10 +353,11 @@ class UsdbIdFileParser:
         except Exception as exception:
             raise UnexpectedUsdbIdFileParserInvalidUsdbIdError() from exception
 
-    def parse_ini_file(self, section: str, key: str) -> None:
+    @classmethod
+    def _parse_ini_file(cls, filepath: str, section: str, key: str) -> SongId:
         config = configparser.ConfigParser()
         try:
-            config.read(self.filepath)
+            config.read(filepath)
         except configparser.MissingSectionHeaderError as exception:
             raise UsdbIdFileParserMissingSectionHeaderFormatError() from exception
         except Exception as exception:
@@ -365,17 +369,20 @@ class UsdbIdFileParser:
         if key not in config[section]:
             raise UsdbIdFileParserMissingKeyFormatError(key)
         url = config[section][key]
-        self.parse_url(url)
+        return cls._parse_url(url)
 
-    def parse_url_file(self) -> None:
-        self.parse_ini_file(section="InternetShortcut", key="URL")
+    @classmethod
+    def _parse_url_file(cls, filepath: str) -> SongId:
+        return cls._parse_ini_file(filepath, section="InternetShortcut", key="URL")
 
-    def parse_desktop_file(self) -> None:
-        self.parse_ini_file(section="Desktop Entry", key="URL")
+    @classmethod
+    def _parse_desktop_file(cls, filepath: str) -> SongId:
+        return cls._parse_ini_file(filepath, section="Desktop Entry", key="URL")
 
-    def parse_webloc_file(self) -> None:
+    @classmethod
+    def _parse_webloc_file(cls, filepath: str) -> SongId:
         try:
-            with open(self.filepath, "r", encoding="utf-8") as file:
+            with open(filepath, "r", encoding="utf-8") as file:
                 soup = BeautifulSoup(file, features="lxml-xml")
         except OSError as exception:
             raise UsdbIdFileParserReadError() from exception
@@ -404,12 +411,13 @@ class UsdbIdFileParser:
             raise UsdbIdFileParserMultipleUrlsFormatError()
 
         url = xml_string[0].get_text()
-        self.parse_url(url)
+        return cls._parse_url(url)
 
-    def parse_usdb_ids_file(self) -> None:
+    @classmethod
+    def _parse_usdb_ids_file(cls, filepath: str) -> list[SongId]:
         lines: list[str] = []
         try:
-            with open(self.filepath, "r", encoding="utf-8") as file:
+            with open(filepath, "r", encoding="utf-8") as file:
                 lines = file.readlines()
         except OSError as exception:
             raise UsdbIdFileParserReadError() from exception
@@ -420,13 +428,14 @@ class UsdbIdFileParser:
             raise UsdbIdFileParserEmptyFileError()
 
         try:
-            self.ids = [SongId.parse(line) for line in lines]
+            return [SongId.parse(line) for line in lines]
         except ValueError as exception:
             raise UsdbIdFileParserInvalidUsdbIdError() from exception
         except Exception as exception:
             raise UnexpectedUsdbIdFileParserInvalidUsdbIdError() from exception
 
-    def parse_url(self, url: str | None) -> None:
+    @classmethod
+    def _parse_url(cls, url: str | None) -> SongId:
         if not url:
             raise UsdbIdFileParserNoUrlFoundError()
         parsed_url = urlparse(url)
@@ -449,7 +458,7 @@ class UsdbIdFileParser:
                 url, id_param
             )
         try:
-            self.ids = [SongId.parse(query_params[id_param][0])]
+            return SongId.parse(query_params[id_param][0])
         except ValueError as exception:
             raise UsdbIdFileParserInvalidQueryParameterMalformedUrlFormatError(
                 url, id_param
@@ -460,7 +469,6 @@ class UsdbIdFileParser:
                 url, id_param
             ) from exception
 
-
-def write_song_ids_to_file(path: str, song_ids: list[SongId]) -> None:
-    with open(path, encoding="utf-8", mode="w") as file:
-        file.write("\n".join(str(id) for id in song_ids))
+    def write(self, filepath: str) -> None:
+        with open(filepath, encoding="utf-8", mode="w") as file:
+            file.write("\n".join(str(id) for id in self.ids))

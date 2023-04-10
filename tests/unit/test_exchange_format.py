@@ -73,9 +73,9 @@ def test_valid_song_id_imports_from_files(
     resource_dir: str, file: str, expected_ids: list[SongId]
 ) -> None:
     path = os.path.join(resource_dir, "import", file)
-    parser = UsdbIdFileParser(path)
-    assert not parser.error, f"should have no error from {file}"
-    assert parser.ids == expected_ids, f"wrong songids from {file}"
+    id_file = UsdbIdFileParser.parse(path)
+    assert not id_file.error, f"should have no error from {file}"
+    assert id_file.ids == expected_ids, f"wrong songids from {file}"
 
 
 @pytest.mark.parametrize(
@@ -159,6 +159,6 @@ def test_invalid_song_id_imports_from_files(
     resource_dir: str, file: str, expected_error: UsdbIdFileParserError
 ) -> None:
     path = os.path.join(resource_dir, "import", file)
-    parser = UsdbIdFileParser(path)
-    assert repr(parser.error) == repr(expected_error), f"wrong error from {file}"
-    assert not parser.ids, f"should have no songids from {file}"
+    id_file = UsdbIdFileParser.parse(path)
+    assert repr(id_file.error) == repr(expected_error), f"wrong error from {file}"
+    assert not id_file.ids, f"should have no songids from {file}"
