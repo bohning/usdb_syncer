@@ -100,15 +100,7 @@ class SongTable:
         self.set_selection_to_rows(idx for row_list in rows for idx in row_list)
 
     def set_selection_to_song_ids(self, select_song_ids: list[SongId]) -> None:
-        all_indices = [
-            self._model.index(row, 0) for row in range(self._model.rowCount())
-        ]
-        all_song_ids = self._model.ids_for_indices(all_indices)
-        select_indices = [
-            all_indices[i]
-            for i in range(len(all_indices))
-            if all_song_ids[i] in select_song_ids
-        ]
+        select_indices = self._model.indices_for_ids(select_song_ids)
         self.set_selection_to_rows(iter(select_indices))
 
     def set_selection_to_rows(self, rows: Iterator[QModelIndex]) -> None:

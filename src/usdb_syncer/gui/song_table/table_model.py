@@ -52,6 +52,13 @@ class TableModel(QAbstractTableModel):
     def ids_for_indices(self, indices: Iterable[QModelIndex]) -> list[SongId]:
         return [self.songs[idx.row()].data.song_id for idx in indices]
 
+    def indices_for_ids(self, ids: Iterable[SongId]) -> list[QModelIndex]:
+        return [
+            self.index(row, 0)
+            for song_id in ids
+            if (row := self._rows.get(song_id, None)) is not None
+        ]
+
     def item_for_id(self, song_id: SongId) -> SongData | None:
         if (idx := self._rows.get(song_id)) is not None:
             return self.songs[idx]
