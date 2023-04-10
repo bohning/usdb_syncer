@@ -363,7 +363,7 @@
      </widget>
     </item>
     <item>
-     <widget class="QSplitter" name="splitter_2">
+     <widget class="QSplitter" name="splitter_main">
       <property name="orientation">
        <enum>Qt::Vertical</enum>
       </property>
@@ -404,7 +404,7 @@
         <number>24</number>
        </attribute>
       </widget>
-      <widget class="QSplitter" name="splitter">
+      <widget class="QSplitter" name="splitter_bottom">
        <property name="sizePolicy">
         <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
          <horstretch>0</horstretch>

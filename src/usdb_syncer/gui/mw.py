@@ -6,7 +6,7 @@ import os
 import sys
 
 from PySide6.QtCore import QObject, Qt, QThreadPool, QTimer, Signal
-from PySide6.QtGui import QPixmap
+from PySide6.QtGui import QCloseEvent, QPixmap
 from PySide6.QtWidgets import (
     QApplication,
     QComboBox,
@@ -48,6 +48,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         self._setup_song_dir()
         self._setup_search()
         self._setup_buttons()
+        self._restore_state()
 
     def _setup_table(self) -> None:
         self.table = SongTable(
@@ -242,6 +243,20 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         if path:
             generate_song_pdf(self.table.all_local_songs(), path)
 
+    def closeEvent(self, event: QCloseEvent) -> None:
+        self._save_state()
+        event.accept()
+
+    def _restore_state(self) -> None:
+        self.restoreGeometry(settings.get_geometry_main_window())
+        self.splitter_main.restoreState(settings.get_state_splitter_main())
+        self.splitter_bottom.restoreState(settings.get_state_splitter_bottom())
+
+    def _save_state(self) -> None:
+        settings.set_geometry_main_window(self.saveGeometry())
+        settings.set_state_splitter_main(self.splitter_main.saveState())
+        settings.set_state_splitter_bottom(self.splitter_bottom.saveState())
+
 
 class LogSignal(QObject):
     """Signal used by the logger."""
@@ -281,7 +296,7 @@ def _load_main_window(mw: MainWindow) -> None:
         f"Song database successfully loaded with {mw.len_song_list} songs.",
         color=Qt.GlobalColor.gray,
     )
-    mw.showMaximized()
+    mw.show()
     logging.info("Application successfully loaded.")
     splash.finish(mw)
 
