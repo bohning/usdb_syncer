@@ -16,7 +16,6 @@ from PySide6.QtWidgets import (
 )
 
 from usdb_syncer import SongId, settings
-from usdb_syncer.exchange_format import UsdbIdFileParser
 from usdb_syncer.gui.debug_console import DebugConsole
 from usdb_syncer.gui.ffmpeg_dialog import check_ffmpeg
 from usdb_syncer.gui.forms.MainWindow import Ui_MainWindow
@@ -30,6 +29,7 @@ from usdb_syncer.song_data import LocalFiles, SongData
 from usdb_syncer.song_filters import GoldenNotesFilter, RatingFilter, ViewsFilter
 from usdb_syncer.song_list_fetcher import get_all_song_data, resync_song_data
 from usdb_syncer.song_loader import DownloadInfo, download_songs
+from usdb_syncer.usdb_id_file import UsdbIdFile
 from usdb_syncer.utils import AppPaths, open_file_explorer
 
 
@@ -280,7 +280,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
             dir=os.getcwd(),
             filter="JSON, USDB IDs, Weblinks (*.json *.usdb_ids *.url *.webloc *.desktop)",
         )[0]
-        file_parsers = [UsdbIdFileParser.parse(path) for path in file_list]
+        file_parsers = [UsdbIdFile.parse(path) for path in file_list]
         has_error = False
         for count, parser in enumerate(file_parsers):
             if parser.error:
@@ -346,7 +346,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
             logger.info("export aborted")
             return
 
-        id_file = UsdbIdFileParser(selected_ids)
+        id_file = UsdbIdFile(selected_ids)
         id_file.write(path)
         logger.info(f"exported {len(selected_ids)} USDB IDs to {path}")
 
