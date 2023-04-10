@@ -284,7 +284,9 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         has_error = False
         for count, parser in enumerate(file_parsers):
             if parser.error:
-                logger.error(f"importing file {file_list[count]}: {str(parser.error)}")
+                logger.error(
+                    f"failed importing file {file_list[count]}: {str(parser.error)}"
+                )
                 has_error = True
         # stop import if encounter errors
         if has_error:
@@ -322,7 +324,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         logger = logging.getLogger(__file__)
         selected_ids = self.table.selected_song_ids()
         if not selected_ids:
-            logger.error("skipping export: no songs selected")
+            logger.info("skipping export: no songs selected")
             return
 
         # Note: automatically checks if file already exists
