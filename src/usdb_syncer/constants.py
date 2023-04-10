@@ -64,7 +64,7 @@ class Usdb:
 
     DOMAIN = "usdb.animux.de"
     BASE_URL = "https://" + DOMAIN + "/"
-    MAX_SONG_ID = 30000
+    MAX_SONG_ID = 100_000
     MAX_SONGS_PER_PAGE = 100
     DATETIME_STRF = "%d.%m.%y - %H:%M"
 

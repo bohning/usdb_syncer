@@ -278,7 +278,7 @@ def get_usdb_available_songs(
             r'<td onclick="show_detail\(\d+\)">(.*)</td>\n'
             r'<td onclick="show_detail\(\d+\)">(.*)</td>'
         )
-        matches = re.finditer(regex, html)
+        matches = list(re.finditer(regex, html))
 
         available_songs.extend(
             UsdbSong.from_html(
@@ -293,6 +293,10 @@ def get_usdb_available_songs(
             )
             for match in matches
         )
+
+        if len(matches) < Usdb.MAX_SONGS_PER_PAGE:
+            break
+
     _logger.info(f"fetched {len(available_songs)} available songs")
     return available_songs
 
