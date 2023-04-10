@@ -5,136 +5,287 @@ import json
 import os
 from urllib.parse import parse_qs, urlparse
 
+import attrs
 from bs4 import BeautifulSoup
 
 from usdb_syncer import SongId
 
 
+@attrs.define
 class UsdbIdFileParserError(Exception):
-    """Differentiate known from unknown exceptions"""
-
-    def __init__(self, message: str, detail: str | None = None):
-        self.message = message
-        self.detail = detail
+    """USDB File Parser root exception"""
 
 
+@attrs.define
 class UsdbIdFileParserUnsupportedExtensionError(UsdbIdFileParserError):
     """file extension is not supported for parsing"""
 
-    def __init__(self, detail: str | None = None):
-        super().__init__("file extension is not supported", detail)
+    def __str__(self) -> str:
+        return "file extension is not supported"
 
 
+@attrs.define
 class UnexpectedUsdbIdFileParserError(UsdbIdFileParserError):
     """Unknown cause while reading file"""
 
-    def __init__(self, detail: str | None = None):
-        super().__init__("Unexpected error reading file", detail)
+    def __str__(self) -> str:
+        return "Unexpected error reading file"
 
 
+@attrs.define
 class UsdbIdFileParserReadError(UsdbIdFileParserError):
     """Error reading file from file system"""
 
-    def __init__(self, detail: str | None = None):
-        super().__init__("failed to read file", detail)
+    def __str__(self) -> str:
+        return "failed to read file"
 
 
+@attrs.define
 class UsdbIdFileParserInvalidFormatError(UsdbIdFileParserError):
     """Invalid file format"""
 
-    def __init__(self, message: str, detail: str | None = None):
-        super().__init__(f"invalid file format: {message}", detail)
+    def __str__(self) -> str:
+        return "invalid file format"
 
 
+@attrs.define
 class UsdbIdFileParserMissingSectionHeaderFormatError(
     UsdbIdFileParserInvalidFormatError
 ):
     """Invalid file format with missing section header"""
 
-    def __init__(self, detail: str | None = None):
-        super().__init__("missing a section header", detail)
+    def __str__(self) -> str:
+        return f"{str(super())}: missing a section header"
 
 
+@attrs.define
 class UsdbIdFileParserMissingOrDublicateOptionFormatError(
     UsdbIdFileParserInvalidFormatError
 ):
     """Invalid file format with missing or dublicate option"""
 
-    def __init__(self, detail: str | None = None):
-        super().__init__("missing or dublicate option", detail)
+    def __str__(self) -> str:
+        return f"{str(super())}: missing or dublicate option"
 
 
+@attrs.define
 class UsdbIdFileParserMultipleUrlsFormatError(UsdbIdFileParserInvalidFormatError):
     """Invalid file format with multiple URLs"""
 
-    def __init__(self, detail: str | None = None):
-        super().__init__("file contains multiple URLs", detail)
+    def __str__(self) -> str:
+        return f"{str(super())}: file contains multiple URLs"
 
 
+@attrs.define
+class UsdbIdFileParserMissingKeyFormatError(UsdbIdFileParserInvalidFormatError):
+    """Invalid file format with missing key in file"""
+
+    missing_key: str
+
+    def __str__(self) -> str:
+        return f"{str(super())}: missing key '{self.missing_key}'"
+
+
+@attrs.define
+class UsdbIdFileParserMissingSectionFormatError(UsdbIdFileParserInvalidFormatError):
+    """Invalid file format with missing section in file"""
+
+    missing_section: str
+
+    def __str__(self) -> str:
+        return f"{str(super())}: missing section '{self.missing_section}'"
+
+
+@attrs.define
+class UsdbIdFileParserMissingTagFormatError(UsdbIdFileParserInvalidFormatError):
+    """Invalid file format with missing tag in file"""
+
+    missing_tag: str
+
+    def __str__(self) -> str:
+        return f"{str(super())}: missing tag '{self.missing_tag}'"
+
+
+@attrs.define
+class UsdbIdFileParserMultipleTagsFormatError(UsdbIdFileParserInvalidFormatError):
+    """Invalid file format with a tag occurring multiple times instead of just once"""
+
+    multiple_tag: str
+
+    def __str__(self) -> str:
+        return f"{str(super())}: multiple tags '{self.multiple_tag}'"
+
+
+@attrs.define
+class UsdbIdFileParserMissingUrlTagFormatError(UsdbIdFileParserInvalidFormatError):
+    """Invalid file format with missing tag for URL in file"""
+
+    missing_tag: str
+
+    def __str__(self) -> str:
+        return f"{str(super())}: missing URL tag '{self.missing_tag}'"
+
+
+@attrs.define
+class UsdbIdFileParserMalformedUrlFormatError(UsdbIdFileParserInvalidFormatError):
+    """Invalid file format with URL in bad format"""
+
+    bad_url: str
+
+    def __str__(self) -> str:
+        return f"{str(super())}: malformed URL: {self.bad_url}"
+
+
+@attrs.define
+class UsdbIdFileParserInvalidDomainMalformedUrlFormatError(
+    UsdbIdFileParserMalformedUrlFormatError
+):
+    """Invalid file format with URL containing bad domain"""
+
+    bad_domain: str
+    bad_url: str
+
+    def __str__(self) -> str:
+        return f"{str(super())}: has invalid domain: {self.bad_domain}"
+
+
+@attrs.define
+class UsdbIdFileParserNoParametersMalformedUrlFormatError(
+    UsdbIdFileParserMalformedUrlFormatError
+):
+    """Invalid file format with URL having no query parameters"""
+
+    bad_url: str
+
+    def __str__(self) -> str:
+        return f"{str(super())}: has no query parameters"
+
+
+@attrs.define
+class UsdbIdFileParserMissingQueryParameterMalformedUrlFormatError(
+    UsdbIdFileParserMalformedUrlFormatError
+):
+    """Invalid file format with URL missing a specific query parameter"""
+
+    missing_parameter: str
+    bad_url: str
+
+    def __str__(self) -> str:
+        return f"{str(super())}: missing query parameter '{self.missing_parameter}'"
+
+
+@attrs.define
+class UsdbIdFileParserRepeatedQueryParameterMalformedUrlFormatError(
+    UsdbIdFileParserMalformedUrlFormatError
+):
+    """Invalid file format with URL specific query parameter occurring multiple times"""
+
+    repeated_parameter: str
+    bad_url: str
+
+    def __str__(self) -> str:
+        return f"{str(super())}: repeated query parameter '{self.repeated_parameter}'"
+
+
+@attrs.define
+class UsdbIdFileParserInvalidQueryParameterMalformedUrlFormatError(
+    UsdbIdFileParserMalformedUrlFormatError
+):
+    """Invalid file format with URL having an invalid query parameter"""
+
+    invalid_parameter: str
+    bad_url: str
+
+    def __str__(self) -> str:
+        return f"{str(super())}: invalid query parameter '{self.invalid_parameter}'"
+
+
+@attrs.define
+class UsdbIdFileParserUnparsableQueryParameterMalformedUrlFormatError(
+    UsdbIdFileParserMalformedUrlFormatError
+):
+    """Invalid file format with URL having a query parameter that cannot be parsed"""
+
+    unparsable_parameter: str
+    bad_url: str
+
+    def __str__(self) -> str:
+        return (
+            f"{str(super())}: could not parse query parameter "
+            f"'{self.unparsable_parameter}'"
+        )
+
+
+@attrs.define
 class UsdbIdFileParserEmptyFileError(UsdbIdFileParserError):
     """Files do not contain any USDB ID but were selected for import"""
 
-    def __init__(self, detail: str | None = None):
-        super().__init__("empty file", detail)
+    def __str__(self) -> str:
+        return "empty file"
 
 
+@attrs.define
 class UsdbIdFileParserInvalidJsonError(UsdbIdFileParserError):
     """failed to interpret file content as JSON"""
 
-    def __init__(self, detail: str | None = None):
-        super().__init__("invalid JSON format", detail)
+    def __str__(self) -> str:
+        return "invalid JSON format"
 
 
+@attrs.define
 class UsdbIdFileParserEmptyJsonArrayError(UsdbIdFileParserError):
     """file content is an emty JSON array"""
 
-    def __init__(self, detail: str | None = None):
-        super().__init__("empty JSON array", detail)
+    def __str__(self) -> str:
+        return "empty JSON array"
 
 
+@attrs.define
 class UsdbIdFileParserNoJsonArrayError(UsdbIdFileParserError):
     """file content is valid JSON, but not an array"""
 
-    def __init__(self, detail: str | None = None):
-        super().__init__("file does not contain a JSON array", detail)
+    def __str__(self) -> str:
+        return "file does not contain a JSON array"
 
 
+@attrs.define
 class UsdbIdFileParserInvalidUsdbIdError(UsdbIdFileParserError):
     """expected USDB ID string cannot be converted correctly"""
 
-    def __init__(self, detail: str | None = None):
-        super().__init__("invalid USDB ID in file", detail)
+    def __str__(self) -> str:
+        return "invalid USDB ID in file"
 
 
+@attrs.define
 class UnexpectedUsdbIdFileParserInvalidUsdbIdError(UsdbIdFileParserInvalidUsdbIdError):
     """some unknown error around parsing an USDB ID string"""
 
+    def __str__(self) -> str:
+        return "unexpected error when parsing USDB ID(s)"
 
+
+@attrs.define
 class UsdbIdFileParserNoUrlFoundError(UsdbIdFileParserError):
     """parser could not find an URL in file content"""
 
-    def __init__(self, detail: str | None = None):
-        super().__init__("no URL found", detail)
-
-
-class UsdbIdFileParserInvalidUrlError(UsdbIdFileParserError):
-    """URL in file cannot be parsed properly"""
+    def __str__(self) -> str:
+        return "no URL found"
 
 
 class UsdbIdFileParser:
     """file parser for USDB IDs"""
 
     ids: list[SongId] = []
-    errors: list[UsdbIdFileParserError] = []
+    error: UsdbIdFileParserError | None = None
 
     def __init__(self, filepath: str):
         self.filepath = filepath
         self.ids = []
-        self.errors = []
+        self.error = None
         try:
             self.parse()
         except UsdbIdFileParserError as exception:
-            self.errors.append(exception)
+            self.error = exception
 
     def parse(self) -> None:
         file_extension = os.path.splitext(self.filepath)[1]
@@ -186,9 +337,9 @@ class UsdbIdFileParser:
             self.ids = [SongId.parse(element[key]) for element in parsed_json]
         except ValueError as exception:
             raise UsdbIdFileParserInvalidUsdbIdError() from exception
-        except IndexError as exception:
-            raise UsdbIdFileParserInvalidFormatError(
-                f"missing key '{key}'"
+        except (KeyError, IndexError) as exception:
+            raise UsdbIdFileParserMissingKeyFormatError(
+                exception.args[0]
             ) from exception
         except Exception as exception:
             raise UnexpectedUsdbIdFileParserInvalidUsdbIdError() from exception
@@ -204,9 +355,9 @@ class UsdbIdFileParser:
         if not config.sections():
             raise UsdbIdFileParserEmptyFileError()
         if section not in config:
-            raise UsdbIdFileParserInvalidFormatError(f"missing section '{section}'")
+            raise UsdbIdFileParserMissingSectionFormatError(section)
         if key not in config[section]:
-            raise UsdbIdFileParserInvalidFormatError(f"missing key '{key}'")
+            raise UsdbIdFileParserMissingKeyFormatError(key)
         url = config[section][key]
         self.parse_url(url)
 
@@ -230,19 +381,19 @@ class UsdbIdFileParser:
         tag = "plist"
         xml_plist = soup.find_all(tag)
         if not xml_plist:
-            raise UsdbIdFileParserInvalidFormatError(f"missing tag '{tag}'")
+            raise UsdbIdFileParserMissingTagFormatError(tag)
         if len(xml_plist) > 1:
-            raise UsdbIdFileParserInvalidFormatError(f"multiple tags '{tag}'")
+            raise UsdbIdFileParserMultipleTagsFormatError(tag)
         tag = "dict"
         xml_dict = xml_plist[0].find_all(tag)
         if not xml_dict:
-            raise UsdbIdFileParserInvalidFormatError(f"missing tag '{tag}'")
+            raise UsdbIdFileParserMissingTagFormatError(tag)
         if len(xml_dict) > 1:
-            raise UsdbIdFileParserInvalidFormatError(f"multiple tags '{tag}'")
+            raise UsdbIdFileParserMultipleTagsFormatError(tag)
         tag = "string"
         xml_string = xml_dict[0].find_all(tag)
         if not xml_string:
-            raise UsdbIdFileParserInvalidFormatError(f"missing URL tag '{tag}'")
+            raise UsdbIdFileParserMissingUrlTagFormatError(tag)
         if len(xml_string) > 1:
             raise UsdbIdFileParserMultipleUrlsFormatError()
 
@@ -274,35 +425,33 @@ class UsdbIdFileParser:
             raise UsdbIdFileParserNoUrlFoundError()
         parsed_url = urlparse(url)
         if not parsed_url.netloc:
-            raise UsdbIdFileParserInvalidUrlError(f"malformed URL: {url}")
+            raise UsdbIdFileParserMalformedUrlFormatError(url)
         if parsed_url.netloc != "usdb.animux.de":
-            raise UsdbIdFileParserInvalidUrlError(
-                f"found URL has invalid domain: {parsed_url.netloc}"
+            raise UsdbIdFileParserInvalidDomainMalformedUrlFormatError(
+                url, parsed_url.netloc
             )
         if not parsed_url.query:
-            raise UsdbIdFileParserInvalidUrlError(
-                f"found URL has no query parameters: {url}"
-            )
+            raise UsdbIdFileParserNoParametersMalformedUrlFormatError(url)
         query_params = parse_qs(parsed_url.query)
         id_param = "id"
         if id_param not in query_params:
-            raise UsdbIdFileParserInvalidUrlError(
-                f"missing '{id_param}' query parameter in found URL: {url}"
+            raise UsdbIdFileParserMissingQueryParameterMalformedUrlFormatError(
+                url, id_param
             )
         if len(query_params[id_param]) > 1:
-            raise UsdbIdFileParserInvalidUrlError(
-                f"repeated query parameter '{id_param}' in found URL: {url}"
+            raise UsdbIdFileParserRepeatedQueryParameterMalformedUrlFormatError(
+                url, id_param
             )
         try:
             self.ids = [SongId.parse(query_params[id_param][0])]
         except ValueError as exception:
-            raise UsdbIdFileParserInvalidUrlError(
-                f"invalid '{id_param}' query parameter in found URL: {url}"
+            raise UsdbIdFileParserInvalidQueryParameterMalformedUrlFormatError(
+                url, id_param
             ) from exception
         except Exception as exception:
             # handle any other exception
-            raise UsdbIdFileParserInvalidUrlError(
-                f"could not parse '{id_param}' query parameter in '{url}': {exception}"
+            raise UsdbIdFileParserUnparsableQueryParameterMalformedUrlFormatError(
+                url, id_param
             ) from exception
 
 

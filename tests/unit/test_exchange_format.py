@@ -10,14 +10,18 @@ from usdb_syncer.exchange_format import (
     UsdbIdFileParserEmptyFileError,
     UsdbIdFileParserEmptyJsonArrayError,
     UsdbIdFileParserError,
-    UsdbIdFileParserInvalidFormatError,
+    UsdbIdFileParserInvalidDomainMalformedUrlFormatError,
     UsdbIdFileParserInvalidJsonError,
-    UsdbIdFileParserInvalidUrlError,
     UsdbIdFileParserInvalidUsdbIdError,
+    UsdbIdFileParserMissingKeyFormatError,
     UsdbIdFileParserMissingOrDublicateOptionFormatError,
+    UsdbIdFileParserMissingSectionFormatError,
     UsdbIdFileParserMissingSectionHeaderFormatError,
+    UsdbIdFileParserMissingTagFormatError,
+    UsdbIdFileParserMissingUrlTagFormatError,
     UsdbIdFileParserMultipleUrlsFormatError,
     UsdbIdFileParserNoJsonArrayError,
+    UsdbIdFileParserNoParametersMalformedUrlFormatError,
 )
 
 
@@ -70,96 +74,91 @@ def test_valid_song_id_imports_from_files(
 ) -> None:
     path = os.path.join(resource_dir, "import", file)
     parser = UsdbIdFileParser(path)
-    assert not parser.errors, f"should have no errors from {file}"
+    assert not parser.error, f"should have no error from {file}"
     assert parser.ids == expected_ids, f"wrong songids from {file}"
 
 
 @pytest.mark.parametrize(
-    "file,expected_error_instances,expected_error_info",
+    "file,expected_error",
     [
-        (
-            "broken_format.desktop",
-            [UsdbIdFileParserMissingSectionHeaderFormatError],
-            [""],
-        ),
-        ("broken_format.url", [UsdbIdFileParserMissingSectionHeaderFormatError], [""]),
-        ("broken_format.webloc", [UsdbIdFileParserInvalidFormatError], ["plist"]),
+        ("broken_format.desktop", UsdbIdFileParserMissingSectionHeaderFormatError()),
+        ("broken_format.url", UsdbIdFileParserMissingSectionHeaderFormatError()),
+        ("broken_format.webloc", UsdbIdFileParserMissingTagFormatError("plist")),
         (
             "broken_usdb_link.desktop",
-            [UsdbIdFileParserInvalidUrlError],
-            ["http://usdb.animux.de/index.phid=118"],
+            UsdbIdFileParserNoParametersMalformedUrlFormatError(
+                "http://usdb.animux.de/index.phid=118"
+            ),
         ),
         (
             "broken_usdb_link.url",
-            [UsdbIdFileParserInvalidUrlError],
-            ["http://usdb.animux.de/index.phid=118"],
+            UsdbIdFileParserNoParametersMalformedUrlFormatError(
+                "http://usdb.animux.de/index.phid=118"
+            ),
         ),
         (
             "broken_usdb_link.webloc",
-            [UsdbIdFileParserInvalidUrlError],
-            ["http://usdb.animux.de/index.phid=118"],
+            UsdbIdFileParserNoParametersMalformedUrlFormatError(
+                "http://usdb.animux.de/index.phid=118"
+            ),
         ),
         (
             "dublicate_url_key.desktop",
-            [UsdbIdFileParserMissingOrDublicateOptionFormatError],
-            [""],
+            UsdbIdFileParserMissingOrDublicateOptionFormatError(),
         ),
         (
             "dublicate_url_key.url",
-            [UsdbIdFileParserMissingOrDublicateOptionFormatError],
-            [""],
+            UsdbIdFileParserMissingOrDublicateOptionFormatError(),
         ),
-        ("dublicate_url_key.webloc", [UsdbIdFileParserMultipleUrlsFormatError], [""]),
-        ("empty.desktop", [UsdbIdFileParserEmptyFileError], [""]),
-        ("empty.url", [UsdbIdFileParserEmptyFileError], [""]),
-        ("empty.webloc", [UsdbIdFileParserEmptyFileError], [""]),
-        ("missing_url_key.desktop", [UsdbIdFileParserInvalidFormatError], ["URL"]),
-        ("missing_url_key.url", [UsdbIdFileParserInvalidFormatError], ["URL"]),
-        ("missing_url_key.webloc", [UsdbIdFileParserInvalidFormatError], ["string"]),
-        ("wrong_middle_level.webloc", [UsdbIdFileParserInvalidFormatError], ["dict"]),
+        ("dublicate_url_key.webloc", UsdbIdFileParserMultipleUrlsFormatError()),
+        ("empty.desktop", UsdbIdFileParserEmptyFileError()),
+        ("empty.url", UsdbIdFileParserEmptyFileError()),
+        ("empty.webloc", UsdbIdFileParserEmptyFileError()),
+        ("missing_url_key.desktop", UsdbIdFileParserMissingKeyFormatError("URL")),
+        ("missing_url_key.url", UsdbIdFileParserMissingKeyFormatError("URL")),
+        ("missing_url_key.webloc", UsdbIdFileParserMissingUrlTagFormatError("string")),
+        ("wrong_middle_level.webloc", UsdbIdFileParserMissingTagFormatError("dict")),
         (
             "wrong_top_level.desktop",
-            [UsdbIdFileParserInvalidFormatError],
-            ["Desktop Entry"],
+            UsdbIdFileParserMissingSectionFormatError("Desktop Entry"),
         ),
         (
             "wrong_top_level.url",
-            [UsdbIdFileParserInvalidFormatError],
-            ["InternetShortcut"],
+            UsdbIdFileParserMissingSectionFormatError("InternetShortcut"),
         ),
-        ("wrong_top_level.webloc", [UsdbIdFileParserInvalidFormatError], ["plist"]),
-        ("youtube.desktop", [UsdbIdFileParserInvalidUrlError], ["www.youtube.com"]),
-        ("youtube.url", [UsdbIdFileParserInvalidUrlError], ["youtu.be"]),
-        ("youtube.webloc", [UsdbIdFileParserInvalidUrlError], ["www.youtube.com"]),
-        ("empty.usdb_ids", [UsdbIdFileParserEmptyFileError], [""]),
-        ("ids_and_other_stuff.usdb_ids", [UsdbIdFileParserInvalidUsdbIdError], [""]),
-        ("multi-column.usdb_ids", [UsdbIdFileParserInvalidUsdbIdError], [""]),
-        ("broken.json", [UsdbIdFileParserInvalidJsonError], [""]),
-        ("empty.json", [UsdbIdFileParserEmptyFileError], [""]),
-        ("empty_array.json", [UsdbIdFileParserEmptyJsonArrayError], [""]),
-        ("no_array.json", [UsdbIdFileParserNoJsonArrayError], [""]),
-        ("missing_id_key.json", [UsdbIdFileParserInvalidUsdbIdError], [""]),
+        ("wrong_top_level.webloc", UsdbIdFileParserMissingTagFormatError("plist")),
+        (
+            "youtube.desktop",
+            UsdbIdFileParserInvalidDomainMalformedUrlFormatError(
+                "https://www.youtube.com/watch?v=IkLpSgnEqw4", "www.youtube.com"
+            ),
+        ),
+        (
+            "youtube.url",
+            UsdbIdFileParserInvalidDomainMalformedUrlFormatError(
+                "https://youtu.be/StZcUAPRRac", "youtu.be"
+            ),
+        ),
+        (
+            "youtube.webloc",
+            UsdbIdFileParserInvalidDomainMalformedUrlFormatError(
+                "https://www.youtube.com/watch?v=IkLpSgnEqw4", "www.youtube.com"
+            ),
+        ),
+        ("empty.usdb_ids", UsdbIdFileParserEmptyFileError()),
+        ("ids_and_other_stuff.usdb_ids", UsdbIdFileParserInvalidUsdbIdError()),
+        ("multi-column.usdb_ids", UsdbIdFileParserInvalidUsdbIdError()),
+        ("broken.json", UsdbIdFileParserInvalidJsonError()),
+        ("empty.json", UsdbIdFileParserEmptyFileError()),
+        ("empty_array.json", UsdbIdFileParserEmptyJsonArrayError()),
+        ("no_array.json", UsdbIdFileParserNoJsonArrayError()),
+        ("missing_id_key.json", UsdbIdFileParserMissingKeyFormatError("id")),
     ],
 )
 def test_invalid_song_id_imports_from_files(
-    resource_dir: str,
-    file: str,
-    expected_error_instances: list[UsdbIdFileParserError],
-    expected_error_info: list[str],
+    resource_dir: str, file: str, expected_error: UsdbIdFileParserError
 ) -> None:
     path = os.path.join(resource_dir, "import", file)
     parser = UsdbIdFileParser(path)
-    assert len(expected_error_instances) == len(
-        expected_error_info
-    ), f"array missmatch in test parameters for {file}"
-    assert len(parser.errors) == len(
-        expected_error_instances
-    ), f"unexpected error length in {file}"
-    for count, error in enumerate(parser.errors):
-        assert isinstance(
-            error, expected_error_instances[count]
-        ), f"wrong {count}. error from {file}"
-        assert (
-            expected_error_info[count] in error.message
-        ), f"missing specific info in error message from {file}"
+    assert repr(parser.error) == repr(expected_error), f"wrong error from {file}"
     assert not parser.ids, f"should have no songids from {file}"
