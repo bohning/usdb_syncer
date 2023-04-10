@@ -103,7 +103,7 @@ class SongTable:
         all_indices = [
             self._model.index(row, 0) for row in range(self._model.rowCount())
         ]
-        all_song_ids = self._model.ids_for_indices(iter(all_indices))
+        all_song_ids = self._model.ids_for_indices(all_indices)
         select_indices = [
             all_indices[i]
             for i in range(len(all_indices))
