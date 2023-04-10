@@ -297,11 +297,6 @@ class MainWindow(Ui_MainWindow, QMainWindow):
             f"found {len(unique_song_ids)} "
             f"USDB IDs: {', '.join(str(id) for id in unique_song_ids)}"
         )
-        songs = [
-            DownloadInfo.from_song_data(song)
-            for song_id in unique_song_ids
-            if (song := self.table.get_data(song_id))
-        ]
         if unavailable_song_ids := [
             song_id for song_id in unique_song_ids if not self.table.get_data(song_id)
         ]:
@@ -310,23 +305,18 @@ class MainWindow(Ui_MainWindow, QMainWindow):
                 "imported USDB IDs are not available: "
                 f"{', '.join(str(song_id) for song_id in unavailable_song_ids)}"
             )
-            if len(unavailable_song_ids) < len(unique_song_ids):
-                # select available songs to prepare Download
-                available_song_ids = [
-                    song_id
-                    for song_id in unique_song_ids
-                    if song_id not in unavailable_song_ids
-                ]
-                logger.info(
-                    f"available {len(available_song_ids)}/{len(unique_song_ids)} "
-                    "imported USDB IDs are selected for Download: "
-                    f"{', '.join(str(song_id) for song_id in available_song_ids)}"
-                )
-                self.table.set_selection_to_song_ids(available_song_ids)
-        else:
-            download_songs(
-                songs, self.song_signals.started.emit, self.song_signals.finished.emit
+        if available_song_ids := [
+            song_id
+            for song_id in unique_song_ids
+            if song_id not in unavailable_song_ids
+        ]:
+            # select available songs to prepare Download
+            logger.info(
+                f"available {len(available_song_ids)}/{len(unique_song_ids)} "
+                "imported USDB IDs are selected for Download: "
+                f"{', '.join(str(song_id) for song_id in available_song_ids)}"
             )
+            self.table.set_selection_to_song_ids(available_song_ids)
 
     def _export_usdb_ids_to_file(self) -> None:
         logger = logging.getLogger(__file__)
