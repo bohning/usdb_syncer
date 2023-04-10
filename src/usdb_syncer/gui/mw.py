@@ -273,7 +273,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
             generate_song_pdf(self.table.all_local_songs(), path)
 
     def _import_usdb_ids_from_files(self) -> None:
-        logger = logging.getLogger()
+        logger = logging.getLogger(__file__)
         file_list = QFileDialog.getOpenFileNames(
             self,
             caption="Select one or more files to import USDB IDs from",
@@ -329,7 +329,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
             )
 
     def _export_usdb_ids_to_file(self) -> None:
-        logger = logging.getLogger()
+        logger = logging.getLogger(__file__)
         selected_ids = self.table.selected_song_ids()
         if not selected_ids:
             logger.error("skipping export: no songs selected")
