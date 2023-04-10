@@ -7,6 +7,7 @@ from glob import glob
 from typing import Any, Callable, Iterable, Iterator
 
 from PySide6.QtCore import (
+    QByteArray,
     QItemSelection,
     QItemSelectionModel,
     QModelIndex,
@@ -18,7 +19,7 @@ from PySide6.QtCore import (
 from PySide6.QtGui import QCursor
 from PySide6.QtWidgets import QHeaderView, QMenu, QTableView, QWidget
 
-from usdb_syncer import SongId
+from usdb_syncer import SongId, settings
 from usdb_syncer.gui.song_table.column import Column
 from usdb_syncer.gui.song_table.list_proxy_model import ListProxyModel
 from usdb_syncer.gui.song_table.queue_proxy_model import QueueProxyModel
@@ -31,6 +32,7 @@ from usdb_syncer.usdb_scraper import UsdbSong
 from usdb_syncer.utils import try_read_unknown_encoding
 
 _logger = logging.getLogger(__file__)
+DEFAULT_COLUMN_WIDTH = 300
 
 
 class SongSignals(QObject):
@@ -57,8 +59,12 @@ class SongTable:
         self._model = TableModel(parent)
         self._list_proxy = ListProxyModel(parent)
         self._queue_proxy = QueueProxyModel(parent)
-        self._setup_view(self._list_view, self._list_proxy)
-        self._setup_view(self._queue_view, self._queue_proxy)
+        self._setup_view(
+            self._list_view, self._list_proxy, settings.get_list_view_header_state()
+        )
+        self._setup_view(
+            self._queue_view, self._queue_proxy, settings.get_queue_view_header_state()
+        )
         self._list_view.customContextMenuRequested.connect(
             lambda _: self._context_menu(list_menu)
         )
@@ -131,19 +137,27 @@ class SongTable:
 
         self._process_rows(self._queue_rows(), process)
 
-    def _setup_view(self, view: QTableView, model: QSortFilterProxyModel) -> None:
+    def _setup_view(
+        self, view: QTableView, model: QSortFilterProxyModel, state: QByteArray
+    ) -> None:
         model.setSourceModel(self._model)
         model.setSortRole(CustomRole.SORT)
         view.setModel(model)
         view.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
         header = view.horizontalHeader()
+        if not state.isEmpty():
+            header.restoreState(state)
+            return
         for column in Column:
             if not model.filterAcceptsColumn(column, QModelIndex()):
                 continue
-            if size := column.section_size(header, self._parent):
+            if size := column.fixed_size(header, self._parent):
                 header.setSectionResizeMode(column, QHeaderView.ResizeMode.Fixed)
                 header.resizeSection(column, size)
-            else:
+            # setting a (default) width on the last, stretching column seems to cause
+            # issues, so we set it manually on the other columns
+            elif column is not max(Column):
+                header.resizeSection(column, DEFAULT_COLUMN_WIDTH)
                 header.setSectionResizeMode(column, QHeaderView.ResizeMode.Interactive)
 
     def _context_menu(self, base_menu: QMenu) -> None:
@@ -169,6 +183,14 @@ class SongTable:
         else:
             data.status = DownloadStatus.FAILED
         self._model.row_changed(row)
+
+    def save_state(self) -> None:
+        settings.set_list_view_header_state(
+            self._list_view.horizontalHeader().saveState()
+        )
+        settings.set_queue_view_header_state(
+            self._queue_view.horizontalHeader().saveState()
+        )
 
     ### selection model
 

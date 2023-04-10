@@ -394,8 +394,11 @@
        <property name="sortingEnabled">
         <bool>true</bool>
        </property>
+       <attribute name="horizontalHeaderMinimumSectionSize">
+        <number>20</number>
+       </attribute>
        <attribute name="horizontalHeaderDefaultSectionSize">
-        <number>300</number>
+        <number>20</number>
        </attribute>
        <attribute name="horizontalHeaderHighlightSections">
         <bool>false</bool>
@@ -489,8 +492,11 @@
         <property name="sortingEnabled">
          <bool>true</bool>
         </property>
+        <attribute name="horizontalHeaderMinimumSectionSize">
+         <number>20</number>
+        </attribute>
         <attribute name="horizontalHeaderDefaultSectionSize">
-         <number>300</number>
+         <number>20</number>
         </attribute>
         <attribute name="horizontalHeaderHighlightSections">
          <bool>false</bool>

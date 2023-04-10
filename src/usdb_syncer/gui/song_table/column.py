@@ -96,7 +96,7 @@ class Column(IntEnum):
     def display_in_queue_view(self) -> bool:
         return self in (self.SONG_ID, self.ARTIST, self.TITLE, self.DOWNLOAD_STATUS)
 
-    def section_size(self, header: QHeaderView, window: QPaintDevice) -> int | None:
+    def fixed_size(self, header: QHeaderView, window: QPaintDevice) -> int | None:
         match self:
             case Column.SONG_ID:
                 return _horizontal_size(str(SongId(0)), header, window)

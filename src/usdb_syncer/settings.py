@@ -45,6 +45,8 @@ class SettingKey(Enum):
     MAIN_WINDOW_GEOMETRY = "geometry/main_window"
     MAIN_WINDOW_SPLITTER_MAIN_STATE = "main_window/splitter_main/state"
     MAIN_WINDOW_SPLITTER_BOTTOM_STATE = "main_window/splitter_bottom/state"
+    LIST_VIEW_HEADER_STATE = "list_view/header/state"
+    QUEUE_VIEW_HEADER_STATE = "queue_view/header/state"
 
 
 class Encoding(Enum):
@@ -502,13 +504,29 @@ def get_state_splitter_main() -> QByteArray:
     return get_setting(SettingKey.MAIN_WINDOW_SPLITTER_MAIN_STATE, QByteArray())
 
 
-def set_state_splitter_main(geometry: QByteArray) -> None:
-    set_setting(SettingKey.MAIN_WINDOW_SPLITTER_MAIN_STATE, geometry)
+def set_state_splitter_main(state: QByteArray) -> None:
+    set_setting(SettingKey.MAIN_WINDOW_SPLITTER_MAIN_STATE, state)
 
 
 def get_state_splitter_bottom() -> QByteArray:
     return get_setting(SettingKey.MAIN_WINDOW_SPLITTER_BOTTOM_STATE, QByteArray())
 
 
-def set_state_splitter_bottom(geometry: QByteArray) -> None:
-    set_setting(SettingKey.MAIN_WINDOW_SPLITTER_BOTTOM_STATE, geometry)
+def set_state_splitter_bottom(state: QByteArray) -> None:
+    set_setting(SettingKey.MAIN_WINDOW_SPLITTER_BOTTOM_STATE, state)
+
+
+def get_list_view_header_state() -> QByteArray:
+    return get_setting(SettingKey.LIST_VIEW_HEADER_STATE, QByteArray())
+
+
+def set_list_view_header_state(state: QByteArray) -> None:
+    set_setting(SettingKey.LIST_VIEW_HEADER_STATE, state)
+
+
+def get_queue_view_header_state() -> QByteArray:
+    return get_setting(SettingKey.QUEUE_VIEW_HEADER_STATE, QByteArray())
+
+
+def set_queue_view_header_state(state: QByteArray) -> None:
+    set_setting(SettingKey.QUEUE_VIEW_HEADER_STATE, state)

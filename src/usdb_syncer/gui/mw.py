@@ -244,6 +244,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
             generate_song_pdf(self.table.all_local_songs(), path)
 
     def closeEvent(self, event: QCloseEvent) -> None:
+        self.table.save_state()
         self._save_state()
         event.accept()
 
