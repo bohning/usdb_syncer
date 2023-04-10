@@ -9,6 +9,7 @@ from usdb_syncer.exchange_format import (
     UsdbIdFileParser,
     UsdbIdFileParserEmptyFileError,
     UsdbIdFileParserEmptyJsonArrayError,
+    UsdbIdFileParserError,
     UsdbIdFileParserInvalidFormatError,
     UsdbIdFileParserInvalidJsonError,
     UsdbIdFileParserInvalidUrlError,
@@ -143,15 +144,7 @@ def test_valid_song_id_imports_from_files(
 def test_invalid_song_id_imports_from_files(
     resource_dir: str,
     file: str,
-    expected_error_instances: list[
-        UsdbIdFileParserEmptyFileError
-        | UsdbIdFileParserEmptyJsonArrayError
-        | UsdbIdFileParserInvalidFormatError
-        | UsdbIdFileParserInvalidJsonError
-        | UsdbIdFileParserInvalidUrlError
-        | UsdbIdFileParserInvalidUsdbIdError
-        | UsdbIdFileParserNoJsonArrayError
-    ],
+    expected_error_instances: list[UsdbIdFileParserError],
     expected_error_info: list[str],
 ) -> None:
     path = os.path.join(resource_dir, "import", file)
