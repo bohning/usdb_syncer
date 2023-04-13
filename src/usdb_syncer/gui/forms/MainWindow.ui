@@ -374,11 +374,6 @@
          <verstretch>3</verstretch>
         </sizepolicy>
        </property>
-       <property name="font">
-        <font>
-         <pointsize>9</pointsize>
-        </font>
-       </property>
        <property name="editTriggers">
         <set>QAbstractItemView::NoEditTriggers</set>
        </property>
@@ -436,11 +431,6 @@
            <property name="enabled">
             <bool>true</bool>
            </property>
-           <property name="font">
-            <font>
-             <pointsize>9</pointsize>
-            </font>
-           </property>
            <property name="text">
             <string>Download</string>
            </property>
@@ -494,11 +484,6 @@
           <horstretch>3</horstretch>
           <verstretch>0</verstretch>
          </sizepolicy>
-        </property>
-        <property name="font">
-         <font>
-          <pointsize>9</pointsize>
-         </font>
         </property>
         <property name="editTriggers">
          <set>QAbstractItemView::NoEditTriggers</set>
