@@ -16,6 +16,8 @@ class UsdbStrings:
     DATE: str
     CREATED_BY: str
     VIEWS: str
+    YES: str
+    NO: str
     DATASET_NOT_FOUND = "Datensatz nicht gefunden"
     WELCOME_PLEASE_LOGIN = "Welcome, Please login"
 
@@ -31,6 +33,8 @@ class UsdbStringsEnglish(UsdbStrings):
     DATE = "Date"
     CREATED_BY = "Created by"
     VIEWS = "Views"
+    YES = "Yes"
+    NO = "No"
 
 
 class UsdbStringsGerman(UsdbStrings):
@@ -44,6 +48,8 @@ class UsdbStringsGerman(UsdbStrings):
     DATE = "Datum"
     CREATED_BY = "Erstellt von"
     VIEWS = "Aufrufe"
+    YES = "Ja"
+    NO = "Nein"
 
 
 class UsdbStringsFrench(UsdbStrings):
@@ -57,6 +63,8 @@ class UsdbStringsFrench(UsdbStrings):
     DATE = "Date"
     CREATED_BY = "créé par"
     VIEWS = "Affichages"
+    YES = "Oui"
+    NO = "Non"
 
 
 class Usdb:
