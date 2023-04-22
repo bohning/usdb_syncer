@@ -272,9 +272,9 @@ class Tracks:
         for track in self.all_tracks():
             for num_line, line in enumerate(track):
                 for num_note, current_note in enumerate(line.notes):
-                    if line.is_last() and num_note == len(line.notes) - 1:
-                        return
-                    if current_note == line.notes[-1]:
+                    if num_note == len(line.notes) - 1:
+                        if line.is_last():
+                            return
                         next_note = track[num_line + 1].notes[0]
                     else:
                         next_note = line.notes[num_note + 1]
