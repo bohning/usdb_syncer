@@ -11,6 +11,7 @@ from PySide6.QtWidgets import (
     QApplication,
     QComboBox,
     QFileDialog,
+    QLabel,
     QMainWindow,
     QSplashScreen,
 )
@@ -35,13 +36,13 @@ class MainWindow(Ui_MainWindow, QMainWindow):
     """The app's main window and entry point to the GUI."""
 
     _search_timer: QTimer
-    len_song_list = 0
 
     def __init__(self) -> None:
         super().__init__()
         self.setupUi(self)
         self.threadpool = QThreadPool(self)
         self._setup_table()
+        self._setup_statusbar()
         self._setup_log()
         self._setup_toolbar()
         self._setup_shortcuts()
@@ -60,9 +61,18 @@ class MainWindow(Ui_MainWindow, QMainWindow):
             self.bar_download_progress,
             self.label_download_progress,
         )
-        self.table.connect_row_count_changed(
-            lambda c: self.statusbar.showMessage(f"{c} songs found.")
-        )
+
+    def _setup_statusbar(self) -> None:
+        self._status_label = QLabel(self)
+        self.statusbar.addWidget(self._status_label)
+
+        def on_count_changed(list_count: int, batch_count: int) -> None:
+            total = len(self.table.get_all_data())
+            self._status_label.setText(
+                f"{list_count} out of {total} songs shown. {batch_count} in batch."
+            )
+
+        self.table.connect_row_count_changed(on_count_changed)
 
     def _setup_log(self) -> None:
         self.plainTextEdit.setReadOnly(True)
@@ -179,7 +189,6 @@ class MainWindow(Ui_MainWindow, QMainWindow):
 
     def initialize_song_table(self, songs: tuple[SongData, ...]) -> None:
         self.table.initialize(songs)
-        self.len_song_list = len(songs)
         self._update_dynamic_filters(songs)
 
     def _stage_local_songs(self) -> None:
@@ -195,7 +204,6 @@ class MainWindow(Ui_MainWindow, QMainWindow):
 
     def _on_song_list_fetched(self, songs: tuple[SongData, ...]) -> None:
         self.table.set_data(songs)
-        self.len_song_list = len(songs)
         self._update_dynamic_filters(songs)
 
     def _update_dynamic_filters(self, songs: tuple[SongData, ...]) -> None:
@@ -300,7 +308,7 @@ def _load_main_window(mw: MainWindow) -> None:
     songs = get_all_song_data(False)
     mw.initialize_song_table(songs)
     splash.showMessage(
-        f"Song database successfully loaded with {mw.len_song_list} songs.",
+        f"Song database successfully loaded with {len(songs)} songs.",
         color=Qt.GlobalColor.gray,
     )
     mw.show()

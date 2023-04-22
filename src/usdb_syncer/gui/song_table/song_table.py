@@ -283,17 +283,16 @@ class SongTable:
 
     ### sort and filter model
 
-    def connect_row_count_changed(self, func: Callable[[int], None]) -> None:
-        """Calls `func` with the new row count."""
+    def connect_row_count_changed(self, func: Callable[[int, int], None]) -> None:
+        """Calls `func` with the new list and batch row counts."""
 
         def wrapped(*_: Any) -> None:
-            func(self._list_proxy.rowCount())
+            func(self._list_proxy.rowCount(), self._queue_proxy.rowCount())
 
-        self._list_proxy.rowsInserted.connect(wrapped)  # type:ignore
-        self._list_proxy.rowsRemoved.connect(wrapped)  # type:ignore
-
-    def row_count(self) -> int:
-        return self._list_proxy.rowCount()
+        self._model.modelReset.connect(wrapped)  # type:ignore
+        for model in (self._list_proxy, self._queue_proxy):
+            model.rowsInserted.connect(wrapped)  # type:ignore
+            model.rowsRemoved.connect(wrapped)  # type:ignore
 
     def set_text_filter(self, text: str) -> None:
         self._list_proxy.set_text_filter(text)
