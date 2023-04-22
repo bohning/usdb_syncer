@@ -280,8 +280,8 @@ def _maybe_download_cover(ctx: Context) -> None:
     if not (url := ctx.cover_url()):
         ctx.logger.warning("No cover resource found.")
         return
-    if meta := ctx.sync_meta.synced_cover(ctx.locations.dir_path()):
-        if meta.resource == url:
+    if ctx.sync_meta.meta_tags.cover == ctx.txt.meta_tags.cover:
+        if meta := ctx.sync_meta.synced_cover(ctx.locations.dir_path()):
             ctx.txt.headers.cover = meta.fname
             ctx.logger.info("Cover resource is unchanged.")
             return
@@ -308,8 +308,8 @@ def _maybe_download_background(ctx: Context) -> None:
     if not (url := ctx.background_url()):
         ctx.logger.warning("No background resource found.")
         return
-    if meta := ctx.sync_meta.synced_background(ctx.locations.dir_path()):
-        if meta.resource == url:
+    if ctx.sync_meta.meta_tags.background == ctx.txt.meta_tags.background:
+        if meta := ctx.sync_meta.synced_background(ctx.locations.dir_path()):
             ctx.txt.headers.background = meta.fname
             ctx.logger.info("Background resource is unchanged.")
             return
