@@ -7,8 +7,9 @@ from enum import Enum
 from functools import wraps
 from typing import Any, Callable, Iterator, Type
 
+import attrs
 import requests
-from bs4 import BeautifulSoup
+from bs4 import BeautifulSoup, NavigableString, Tag
 
 from usdb_syncer import SongId, settings
 from usdb_syncer.constants import (
@@ -86,11 +87,11 @@ class SongComment:
         self.contents = contents
 
 
+@attrs.define
 class SongDetails:
     """Details about a song that USDB shows on a song's page, or are specified in the
     comment section."""
 
-    usdb_language: str
     song_id: SongId
     artist: str
     title: str
@@ -106,43 +107,7 @@ class SongDetails:
     rating: int
     votes: int
     audio_sample: str | None
-    comments: list[SongComment]
-
-    def __init__(  # pylint: disable=too-many-locals
-        self,
-        *,
-        song_id: SongId,
-        artist: str,
-        title: str,
-        cover_url: str,
-        bpm: str,
-        gap: str,
-        golden_notes: str,
-        song_check: str,
-        date_time: str,
-        uploader: str,
-        editors: list[str],
-        views: str,
-        rating: int,
-        votes: str,
-        audio_sample: str,
-    ) -> None:
-        self.song_id = song_id
-        self.artist = artist
-        self.title = title
-        self.cover_url = None if "nocover" in cover_url else Usdb.BASE_URL + cover_url
-        self.bpm = float(bpm.replace(",", "."))
-        self.gap = float(gap.replace(",", ".") or 0)
-        self.golden_notes = "Yes" in golden_notes
-        self.song_check = "Yes" in song_check
-        self.date_time = datetime.strptime(date_time, Usdb.DATETIME_STRF)
-        self.uploader = uploader
-        self.editors = editors
-        self.views = int(views)
-        self.rating = rating
-        self.votes = int(votes)
-        self.audio_sample = audio_sample or None
-        self.comments = []
+    comments: list[SongComment] = attrs.field(factory=list)
 
     def all_comment_videos(self) -> Iterator[str]:
         """Yields all parsed URLs and YouTube ids. Order is latest to earliest, then ids
@@ -336,19 +301,30 @@ def _parse_details_table(
         song_id=song_id,
         artist=details_table.find_next("td").text,  # type: ignore
         title=details_table.find_next("td").find_next("td").text,  # type: ignore
-        cover_url=cover_url,
-        bpm=details_table.find(string="BPM").next.text,  # type: ignore
-        gap=details_table.find(string="GAP").next.text,  # type: ignore
-        golden_notes=details_table.find(string=usdb_strings.GOLDEN_NOTES).next.text,  # type: ignore
-        song_check=details_table.find(string=usdb_strings.SONGCHECK).next.text,  # type: ignore
-        date_time=details_table.find(string=usdb_strings.DATE).next.text,  # type: ignore
-        uploader=details_table.find(string=usdb_strings.CREATED_BY).next.text.rstrip(),  # type: ignore
+        cover_url=None if "nocover" in cover_url else Usdb.BASE_URL + cover_url,
+        bpm=float(_find_text_after(details_table, "BPM").replace(",", ".")),
+        gap=float(_find_text_after(details_table, "GAP").replace(",", ".") or 0),
+        golden_notes=_find_text_after(details_table, usdb_strings.GOLDEN_NOTES)
+        == usdb_strings.YES,
+        song_check=_find_text_after(details_table, usdb_strings.SONGCHECK)
+        == usdb_strings.YES,
+        date_time=datetime.strptime(
+            _find_text_after(details_table, usdb_strings.DATE), Usdb.DATETIME_STRF
+        ),
+        uploader=_find_text_after(details_table, usdb_strings.CREATED_BY),
         editors=editors,
-        views=details_table.find(string=usdb_strings.VIEWS).next.text,  # type: ignore
+        views=int(_find_text_after(details_table, usdb_strings.VIEWS)),
         rating=sum("star.png" in s.get("src") for s in stars),
-        votes=votes_str.split("(")[1].split(")")[0],
-        audio_sample=audio_sample,
+        votes=int(votes_str.split("(")[1].split(")")[0]),
+        audio_sample=audio_sample or None,
     )
+
+
+def _find_text_after(details_table: BeautifulSoup, label: str) -> str:
+    if isinstance((tag := details_table.find(string=label)), NavigableString):
+        if isinstance(tag.next, Tag):
+            return tag.next.text.strip()
+    raise ParseException(f"Text after {label} not found.")
 
 
 def _parse_comments_table(comments_table: BeautifulSoup) -> list[SongComment]:
