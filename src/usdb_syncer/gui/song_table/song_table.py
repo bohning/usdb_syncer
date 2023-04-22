@@ -28,9 +28,9 @@ from PySide6.QtWidgets import (
 )
 
 from usdb_syncer import SongId, settings
+from usdb_syncer.gui.song_table.batch_model import BatchModel
 from usdb_syncer.gui.song_table.column import Column
-from usdb_syncer.gui.song_table.list_proxy_model import ListProxyModel
-from usdb_syncer.gui.song_table.queue_proxy_model import QueueProxyModel
+from usdb_syncer.gui.song_table.list_model import ListModel
 from usdb_syncer.gui.song_table.table_model import CustomRole, TableModel
 from usdb_syncer.logger import get_logger
 from usdb_syncer.song_data import DownloadResult, DownloadStatus, SongData
@@ -82,29 +82,29 @@ class SongTable:
         self,
         parent: QWidget,
         list_view: QTableView,
-        queue_view: QTableView,
+        batch_view: QTableView,
         list_menu: QMenu,
-        queue_menu: QMenu,
+        batch_menu: QMenu,
         progress_bar: QProgressBar,
         progress_label: QLabel,
     ) -> None:
         self._parent = parent
         self._list_view = list_view
-        self._queue_view = queue_view
+        self._batch_view = batch_view
         self._model = TableModel(parent)
-        self._list_proxy = ListProxyModel(parent)
-        self._queue_proxy = QueueProxyModel(parent)
+        self._list_model = ListModel(parent)
+        self._batch_model = BatchModel(parent)
         self._setup_view(
-            self._list_view, self._list_proxy, settings.get_list_view_header_state()
+            self._list_view, self._list_model, settings.get_list_view_header_state()
         )
         self._setup_view(
-            self._queue_view, self._queue_proxy, settings.get_queue_view_header_state()
+            self._batch_view, self._batch_model, settings.get_batch_view_header_state()
         )
         self._list_view.customContextMenuRequested.connect(
             lambda _: self._context_menu(list_menu)
         )
-        self._queue_view.customContextMenuRequested.connect(
-            lambda _: self._context_menu(queue_menu)
+        self._batch_view.customContextMenuRequested.connect(
+            lambda _: self._context_menu(batch_menu)
         )
         self._signals = SongSignals()
         self._signals.started.connect(self._on_download_started)
@@ -118,7 +118,7 @@ class SongTable:
         self._download(self._list_rows(selected_only=True))
 
     def download_batch(self) -> None:
-        self._download(self._queue_rows())
+        self._download(self._batch_rows())
 
     def _download(self, rows: Iterable[int]) -> None:
         to_download = []
@@ -166,7 +166,7 @@ class SongTable:
                 return True
             return False
 
-        self._process_rows(self._queue_rows(selected_only=True), process)
+        self._process_rows(self._batch_rows(selected_only=True), process)
 
     def clear_batch(self) -> None:
         def process(data: SongData) -> bool:
@@ -175,7 +175,7 @@ class SongTable:
                 return True
             return False
 
-        self._process_rows(self._queue_rows(), process)
+        self._process_rows(self._batch_rows(), process)
 
     def _setup_view(
         self, view: QTableView, model: QSortFilterProxyModel, state: QByteArray
@@ -229,8 +229,8 @@ class SongTable:
         settings.set_list_view_header_state(
             self._list_view.horizontalHeader().saveState()
         )
-        settings.set_queue_view_header_state(
-            self._queue_view.horizontalHeader().saveState()
+        settings.set_batch_view_header_state(
+            self._batch_view.horizontalHeader().saveState()
         )
 
     ### selection model
@@ -248,18 +248,18 @@ class SongTable:
         return len(self._list_view.selectionModel().selectedRows())
 
     def _list_rows(self, selected_only: bool = False) -> Iterable[int]:
-        return self._list_proxy.source_rows(
+        return self._list_model.source_rows(
             self._list_view.selectionModel().selectedRows() if selected_only else None
         )
 
-    def _queue_rows(self, selected_only: bool = False) -> Iterable[int]:
-        return self._queue_proxy.source_rows(
-            self._queue_view.selectionModel().selectedRows() if selected_only else None
+    def _batch_rows(self, selected_only: bool = False) -> Iterable[int]:
+        return self._batch_model.source_rows(
+            self._batch_view.selectionModel().selectedRows() if selected_only else None
         )
 
     def stage_local_songs(self, directory: str) -> None:
         txts = _parse_all_txts(directory)
-        matches = self._list_proxy.find_rows_for_song_txts(txts)
+        matches = self._list_model.find_rows_for_song_txts(txts)
         for idx, song_rows in enumerate(matches):
             if not song_rows:
                 name = txts[idx].headers.artist_title_str()
@@ -287,36 +287,36 @@ class SongTable:
         """Calls `func` with the new list and batch row counts."""
 
         def wrapped(*_: Any) -> None:
-            func(self._list_proxy.rowCount(), self._queue_proxy.rowCount())
+            func(self._list_model.rowCount(), self._batch_model.rowCount())
 
         self._model.modelReset.connect(wrapped)  # type:ignore
-        for model in (self._list_proxy, self._queue_proxy):
+        for model in (self._list_model, self._batch_model):
             model.rowsInserted.connect(wrapped)  # type:ignore
             model.rowsRemoved.connect(wrapped)  # type:ignore
 
     def set_text_filter(self, text: str) -> None:
-        self._list_proxy.set_text_filter(text)
+        self._list_model.set_text_filter(text)
 
     def set_artist_filter(self, artist: str) -> None:
-        self._list_proxy.set_artist_filter(artist)
+        self._list_model.set_artist_filter(artist)
 
     def set_title_filter(self, title: str) -> None:
-        self._list_proxy.set_title_filter(title)
+        self._list_model.set_title_filter(title)
 
     def set_language_filter(self, language: str) -> None:
-        self._list_proxy.set_language_filter(language)
+        self._list_model.set_language_filter(language)
 
     def set_edition_filter(self, edition: str) -> None:
-        self._list_proxy.set_edition_filter(edition)
+        self._list_model.set_edition_filter(edition)
 
     def set_golden_notes_filter(self, golden_notes: bool | None) -> None:
-        self._list_proxy.set_golden_notes_filter(golden_notes)
+        self._list_model.set_golden_notes_filter(golden_notes)
 
     def set_rating_filter(self, rating: int, exact: bool) -> None:
-        self._list_proxy.set_rating_filter(rating, exact)
+        self._list_model.set_rating_filter(rating, exact)
 
     def set_views_filter(self, min_views: int) -> None:
-        self._list_proxy.set_views_filter(min_views)
+        self._list_model.set_views_filter(min_views)
 
     ### data model
 

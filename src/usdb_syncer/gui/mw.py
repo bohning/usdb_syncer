@@ -55,7 +55,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         self.table = SongTable(
             self,
             self.view_list,
-            self.view_queue,
+            self.view_batch,
             self.menu_songs,
             self.menu_batch,
             self.bar_download_progress,

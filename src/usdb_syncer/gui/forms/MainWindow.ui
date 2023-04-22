@@ -478,7 +478,7 @@
          </item>
         </layout>
        </widget>
-       <widget class="QTableView" name="view_queue">
+       <widget class="QTableView" name="view_batch">
         <property name="sizePolicy">
          <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
           <horstretch>3</horstretch>

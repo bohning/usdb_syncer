@@ -9,7 +9,7 @@ from usdb_syncer.song_data import DownloadStatus, SongData
 QIndex = QModelIndex | QPersistentModelIndex
 
 
-class QueueProxyModel(QSortFilterProxyModel):
+class BatchModel(QSortFilterProxyModel):
     """Proxy model for sorting and filtering data of a source model."""
 
     def source_rows(self, subset: list[QModelIndex] | None = None) -> list[int]:
@@ -26,4 +26,4 @@ class QueueProxyModel(QSortFilterProxyModel):
         return song.status is not DownloadStatus.NONE
 
     def filterAcceptsColumn(self, source_column: int, _source_parent: QIndex) -> bool:
-        return Column(source_column).display_in_queue_view()
+        return Column(source_column).display_in_batch_view()
