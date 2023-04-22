@@ -27,6 +27,16 @@ from usdb_syncer.utils import extract_youtube_id, normalize
 
 _logger: logging.Logger = logging.getLogger(__file__)
 
+SONG_LIST_ROW_REGEX = re.compile(
+    r'<td onclick="show_detail\((\d+)\)">(.*)</td>\n'
+    r'<td onclick="show_detail\(\d+\)"><a href=.*>(.*)</td>\n'
+    r'<td onclick="show_detail\(\d+\)">(.*)</td>\n'
+    r'<td onclick="show_detail\(\d+\)">(.*)</td>\n'
+    r'<td onclick="show_detail\(\d+\)">(.*)</td>\n'
+    r'<td onclick="show_detail\(\d+\)">(.*)</td>\n'
+    r'<td onclick="show_detail\(\d+\)">(.*)</td>'
+)
+
 
 class RequestMethod(Enum):
     """Supported HTTP requests."""
@@ -213,39 +223,23 @@ def _get_usdb_strings(soup: BeautifulSoup) -> Type[UsdbStrings]:
 
 
 def get_usdb_available_songs(
-    content_filter: dict[str, str] | None = None
+    max_skip_id: SongId, content_filter: dict[str, str] | None = None
 ) -> list[UsdbSong]:
     """Return a list of all available songs.
 
     Parameters:
+        max_skip_id: only fetch ids larger than this
         content_filter: filters response (e.g. {'artist': 'The Beatles'})
     """
     available_songs: list[UsdbSong] = []
+    payload = {"order": "id", "ud": "desc", "limit": str(Usdb.MAX_SONGS_PER_PAGE)}
+    payload.update(content_filter or {})
     for start in range(0, Usdb.MAX_SONG_ID, Usdb.MAX_SONGS_PER_PAGE):
-        payload = {
-            "order": "id",
-            "ud": "desc",
-            "limit": str(Usdb.MAX_SONGS_PER_PAGE),
-            "start": str(start),
-        }
-        payload.update(content_filter or {})
-
+        payload["start"] = str(start)
         html = get_usdb_page(
             "index.php", RequestMethod.POST, params={"link": "list"}, payload=payload
         )
-
-        regex = (
-            r'<td onclick="show_detail\((\d+)\)">(.*)</td>\n'
-            r'<td onclick="show_detail\(\d+\)"><a href=.*>(.*)</td>\n'
-            r'<td onclick="show_detail\(\d+\)">(.*)</td>\n'
-            r'<td onclick="show_detail\(\d+\)">(.*)</td>\n'
-            r'<td onclick="show_detail\(\d+\)">(.*)</td>\n'
-            r'<td onclick="show_detail\(\d+\)">(.*)</td>\n'
-            r'<td onclick="show_detail\(\d+\)">(.*)</td>'
-        )
-        matches = list(re.finditer(regex, html))
-
-        available_songs.extend(
+        songs = list(
             UsdbSong.from_html(
                 song_id=match[1],
                 artist=match[2],
@@ -256,13 +250,15 @@ def get_usdb_available_songs(
                 rating=match[7],
                 views=match[8],
             )
-            for match in matches
+            for match in SONG_LIST_ROW_REGEX.finditer(html)
+            if SongId.parse(match[1]) > max_skip_id
         )
+        available_songs.extend(songs)
 
-        if len(matches) < Usdb.MAX_SONGS_PER_PAGE:
+        if len(songs) < Usdb.MAX_SONGS_PER_PAGE:
             break
 
-    _logger.info(f"fetched {len(available_songs)} available songs")
+    _logger.info(f"Fetched {len(available_songs)} new songs from USDB.")
     return available_songs
 
 

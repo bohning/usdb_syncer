@@ -33,13 +33,18 @@ def resync_song_data(data: tuple[SongData, ...]) -> tuple[SongData, ...]:
 
 
 def get_available_songs(force_reload: bool) -> list[UsdbSong]:
-    if force_reload or not (available_songs := load_available_songs()):
-        available_songs = get_usdb_available_songs()
-        dump_available_songs(available_songs)
+    if force_reload:
+        cached_songs = []
+        max_skip_id = SongId(0)
+    else:
+        cached_songs = load_cached_songs() or []
+        max_skip_id = max(song.song_id for song in cached_songs)
+    available_songs = cached_songs + get_usdb_available_songs(max_skip_id)
+    dump_available_songs(available_songs)
     return available_songs
 
 
-def load_available_songs() -> list[UsdbSong] | None:
+def load_cached_songs() -> list[UsdbSong] | None:
     if not AppPaths.song_list.exists():
         return None
     with AppPaths.song_list.open(encoding="utf8") as file:
