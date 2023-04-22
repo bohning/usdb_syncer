@@ -396,16 +396,16 @@ def _parse_comment_contents(contents: BeautifulSoup) -> CommentContents:
 
 def _all_urls_in_comment(contents: BeautifulSoup, text: str) -> Iterator[str]:
     for embed in contents.find_all("embed"):
-        if src := embed.get("src"):
+        if (src := embed.get("src")) and SUPPORTED_VIDEO_SOURCES_REGEX.fullmatch(src):
             _logger.debug("video embed found. Consider embedding as iframe")
             yield src
     for iframe in contents.find_all("iframe"):
-        if src := iframe.get("src"):
+        if (src := iframe.get("src")) and SUPPORTED_VIDEO_SOURCES_REGEX.fullmatch(src):
             yield src
     for anchor in contents.find_all("a"):
-        if href := anchor.get("href"):
-            _logger.debug("video href found. Consider embedding as to iframe")
-            yield href
+        if (url := anchor.get("href")) and SUPPORTED_VIDEO_SOURCES_REGEX.fullmatch(url):
+            _logger.debug("video href found. Consider embedding as iframe")
+            yield url
     for match in SUPPORTED_VIDEO_SOURCES_REGEX.finditer(text):
         _logger.debug("video plain url found. Consider embedding as iframe.")
         yield match.group(1)
