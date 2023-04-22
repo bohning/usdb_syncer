@@ -6,16 +6,17 @@ import os
 import sys
 
 from PySide6.QtCore import QObject, Qt, QThreadPool, QTimer, Signal
-from PySide6.QtGui import QPixmap
+from PySide6.QtGui import QCloseEvent, QPixmap
 from PySide6.QtWidgets import (
     QApplication,
     QComboBox,
     QFileDialog,
+    QLabel,
     QMainWindow,
     QSplashScreen,
 )
 
-from usdb_syncer import SongId, settings
+from usdb_syncer import settings
 from usdb_syncer.gui.debug_console import DebugConsole
 from usdb_syncer.gui.ffmpeg_dialog import check_ffmpeg
 from usdb_syncer.gui.forms.MainWindow import Ui_MainWindow
@@ -25,46 +26,53 @@ from usdb_syncer.gui.settings_dialog import SettingsDialog
 from usdb_syncer.gui.song_table.song_table import SongTable
 from usdb_syncer.gui.utils import scroll_to_bottom, set_shortcut
 from usdb_syncer.pdf import generate_song_pdf
-from usdb_syncer.song_data import LocalFiles, SongData
+from usdb_syncer.song_data import SongData
 from usdb_syncer.song_filters import GoldenNotesFilter, RatingFilter, ViewsFilter
 from usdb_syncer.song_list_fetcher import get_all_song_data, resync_song_data
-from usdb_syncer.song_loader import DownloadInfo, download_songs
 from usdb_syncer.utils import AppPaths, open_file_explorer
-
-
-class SongSignals(QObject):
-    """Signals relating to songs."""
-
-    started = Signal(SongId)
-    finished = Signal(SongId, LocalFiles)
 
 
 class MainWindow(Ui_MainWindow, QMainWindow):
     """The app's main window and entry point to the GUI."""
 
     _search_timer: QTimer
-    len_song_list = 0
 
     def __init__(self) -> None:
         super().__init__()
         self.setupUi(self)
         self.threadpool = QThreadPool(self)
         self._setup_table()
+        self._setup_statusbar()
         self._setup_log()
         self._setup_toolbar()
         self._setup_shortcuts()
         self._setup_song_dir()
         self._setup_search()
-        self._setup_download()
-        self._setup_signals()
+        self._setup_buttons()
+        self._restore_state()
 
     def _setup_table(self) -> None:
-        self.table = SongTable(self, self.tableView_availableSongs)
-        self.table.connect_row_count_changed(
-            lambda c: self.statusbar.showMessage(f"{c} songs found.")
+        self.table = SongTable(
+            self,
+            self.view_list,
+            self.view_batch,
+            self.menu_songs,
+            self.menu_batch,
+            self.bar_download_progress,
+            self.label_download_progress,
         )
-        self.table.connect_selected_rows_changed(self._on_selected_rows_changed)
-        self._on_selected_rows_changed(self.table.selected_row_count())
+
+    def _setup_statusbar(self) -> None:
+        self._status_label = QLabel(self)
+        self.statusbar.addWidget(self._status_label)
+
+        def on_count_changed(list_count: int, batch_count: int) -> None:
+            total = len(self.table.get_all_data())
+            self._status_label.setText(
+                f"{list_count} out of {total} songs shown. {batch_count} in batch."
+            )
+
+        self.table.connect_row_count_changed(on_count_changed)
 
     def _setup_log(self) -> None:
         self.plainTextEdit.setReadOnly(True)
@@ -78,14 +86,24 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         self.toolButton_errors.toggled.connect(self._on_log_filter_changed)
 
     def _setup_toolbar(self) -> None:
-        self.action_select_local_songs.triggered.connect(self._select_local_songs)
-        self.action_refetch_song_list.triggered.connect(self._refetch_song_list)
-        self.action_meta_tags.triggered.connect(lambda: MetaTagsDialog(self).show())
-        self.action_settings.triggered.connect(lambda: SettingsDialog(self).show())
-        self.action_generate_song_pdf.triggered.connect(self._generate_song_pdf)
-        self.action_show_log.triggered.connect(
-            lambda: open_file_explorer(os.path.dirname(AppPaths.log))
-        )
+        for action, func in (
+            (self.action_songs_download, self._download_selection),
+            (self.action_songs_to_batch, self.table.stage_selection),
+            (self.action_batch_remove, self.table.unstage_selection),
+            (self.action_find_local_songs, self._stage_local_songs),
+            (self.action_refetch_song_list, self._refetch_song_list),
+            (self.action_meta_tags, lambda: MetaTagsDialog(self).show()),
+            (self.action_settings, lambda: SettingsDialog(self).show()),
+            (self.action_generate_song_pdf, self._generate_song_pdf),
+            (self.action_show_log, lambda: open_file_explorer(AppPaths.log)),
+        ):
+            action.triggered.connect(func)
+
+    def _download_selection(self) -> None:
+        check_ffmpeg(self, self.table.download_selection)
+
+    def _download_batch(self) -> None:
+        check_ffmpeg(self, self.table.download_batch)
 
     def _setup_shortcuts(self) -> None:
         set_shortcut("Ctrl+.", self, lambda: DebugConsole(self).show())
@@ -94,23 +112,9 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         self.lineEdit_song_dir.setText(str(settings.get_song_dir()))
         self.pushButton_select_song_dir.clicked.connect(self.select_song_dir)
 
-    def _setup_download(self) -> None:
-        self.pushButton_downloadSelectedSongs.clicked.connect(
-            self._download_selected_songs
-        )
-
-    def _download_selected_songs(self) -> None:
-        def _download_songs() -> None:
-            songs = [
-                DownloadInfo.from_song_data(song)
-                for song_id in self.table.selected_song_ids()
-                if (song := self.table.get_data(song_id))
-            ]
-            download_songs(
-                songs, self.song_signals.started.emit, self.song_signals.finished.emit
-            )
-
-        check_ffmpeg(self, _download_songs)
+    def _setup_buttons(self) -> None:
+        self.button_batch_download.clicked.connect(self._download_batch)
+        self.button_batch_clear.clicked.connect(self.table.clear_batch)
 
     def _setup_search(self) -> None:
         self._populate_search_filters()
@@ -164,11 +168,6 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         self.plainTextEdit.setPlainText("\n".join(m[0] for m in messages))
         scroll_to_bottom(self.plainTextEdit)
 
-    def _on_selected_rows_changed(self, count: int) -> None:
-        s__ = "" if count == 1 else "s"
-        self.pushButton_downloadSelectedSongs.setText(f"Download {count} song{s__}!")
-        self.pushButton_downloadSelectedSongs.setEnabled(bool(count))
-
     def log_to_text_edit(self, message: str, level: int, created: float) -> None:
         match level:
             case 40:
@@ -188,23 +187,13 @@ class MainWindow(Ui_MainWindow, QMainWindow):
                 if self.toolButton_debugs.isChecked():
                     self.plainTextEdit.appendPlainText(message)
 
-    def _setup_signals(self) -> None:
-        self.song_signals = SongSignals()
-        self.song_signals.finished.connect(self._update_downloaded_song)
-
-    def _update_downloaded_song(self, song_id: SongId, files: LocalFiles) -> None:
-        if old := self.table.get_data(song_id):
-            new = old.with_local_files(files)
-            self.table.update_item(new)
-
     def initialize_song_table(self, songs: tuple[SongData, ...]) -> None:
         self.table.initialize(songs)
-        self.len_song_list = len(songs)
         self._update_dynamic_filters(songs)
 
-    def _select_local_songs(self) -> None:
-        directory = QFileDialog.getExistingDirectory(self, "Select Song Directory")
-        self.table.select_local_songs(directory)
+    def _stage_local_songs(self) -> None:
+        if directory := QFileDialog.getExistingDirectory(self, "Select Song Directory"):
+            self.table.stage_local_songs(directory)
 
     def _refetch_song_list(self) -> None:
         run_with_progress(
@@ -215,7 +204,6 @@ class MainWindow(Ui_MainWindow, QMainWindow):
 
     def _on_song_list_fetched(self, songs: tuple[SongData, ...]) -> None:
         self.table.set_data(songs)
-        self.len_song_list = len(songs)
         self._update_dynamic_filters(songs)
 
     def _update_dynamic_filters(self, songs: tuple[SongData, ...]) -> None:
@@ -269,6 +257,21 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         if path:
             generate_song_pdf(self.table.all_local_songs(), path)
 
+    def closeEvent(self, event: QCloseEvent) -> None:
+        self.table.save_state()
+        self._save_state()
+        event.accept()
+
+    def _restore_state(self) -> None:
+        self.restoreGeometry(settings.get_geometry_main_window())
+        self.splitter_main.restoreState(settings.get_state_splitter_main())
+        self.splitter_bottom.restoreState(settings.get_state_splitter_bottom())
+
+    def _save_state(self) -> None:
+        settings.set_geometry_main_window(self.saveGeometry())
+        settings.set_state_splitter_main(self.splitter_main.saveState())
+        settings.set_state_splitter_bottom(self.splitter_bottom.saveState())
+
 
 class LogSignal(QObject):
     """Signal used by the logger."""
@@ -305,10 +308,10 @@ def _load_main_window(mw: MainWindow) -> None:
     songs = get_all_song_data(False)
     mw.initialize_song_table(songs)
     splash.showMessage(
-        f"Song database successfully loaded with {mw.len_song_list} songs.",
+        f"Song database successfully loaded with {len(songs)} songs.",
         color=Qt.GlobalColor.gray,
     )
-    mw.showMaximized()
+    mw.show()
     logging.info("Application successfully loaded.")
     splash.finish(mw)
 

@@ -13,7 +13,7 @@ from pathlib import Path
 from typing import Any, TypeVar, cast
 
 import browser_cookie3
-from PySide6.QtCore import QSettings
+from PySide6.QtCore import QByteArray, QSettings
 
 from usdb_syncer.constants import Usdb
 from usdb_syncer.typing_helpers import assert_never
@@ -42,6 +42,11 @@ class SettingKey(Enum):
     COVER_MAX_SIZE = "downloads/cover_max_size"
     BACKGROUND = "downloads/background"
     BACKGROUND_ALWAYS = "downloads/background_always"
+    MAIN_WINDOW_GEOMETRY = "geometry/main_window"
+    MAIN_WINDOW_SPLITTER_MAIN_STATE = "main_window/splitter_main/state"
+    MAIN_WINDOW_SPLITTER_BOTTOM_STATE = "main_window/splitter_bottom/state"
+    LIST_VIEW_HEADER_STATE = "list_view/header/state"
+    BATCH_VIEW_HEADER_STATE = "batch_view/header/state"
 
 
 class Encoding(Enum):
@@ -485,3 +490,43 @@ def get_ffmpeg_dir() -> str:
 
 def set_ffmpeg_dir(value: str) -> None:
     set_setting(SettingKey.FFMPEG_DIR, value)
+
+
+def get_geometry_main_window() -> QByteArray:
+    return get_setting(SettingKey.MAIN_WINDOW_GEOMETRY, QByteArray())
+
+
+def set_geometry_main_window(geometry: QByteArray) -> None:
+    set_setting(SettingKey.MAIN_WINDOW_GEOMETRY, geometry)
+
+
+def get_state_splitter_main() -> QByteArray:
+    return get_setting(SettingKey.MAIN_WINDOW_SPLITTER_MAIN_STATE, QByteArray())
+
+
+def set_state_splitter_main(state: QByteArray) -> None:
+    set_setting(SettingKey.MAIN_WINDOW_SPLITTER_MAIN_STATE, state)
+
+
+def get_state_splitter_bottom() -> QByteArray:
+    return get_setting(SettingKey.MAIN_WINDOW_SPLITTER_BOTTOM_STATE, QByteArray())
+
+
+def set_state_splitter_bottom(state: QByteArray) -> None:
+    set_setting(SettingKey.MAIN_WINDOW_SPLITTER_BOTTOM_STATE, state)
+
+
+def get_list_view_header_state() -> QByteArray:
+    return get_setting(SettingKey.LIST_VIEW_HEADER_STATE, QByteArray())
+
+
+def set_list_view_header_state(state: QByteArray) -> None:
+    set_setting(SettingKey.LIST_VIEW_HEADER_STATE, state)
+
+
+def get_batch_view_header_state() -> QByteArray:
+    return get_setting(SettingKey.BATCH_VIEW_HEADER_STATE, QByteArray())
+
+
+def set_batch_view_header_state(state: QByteArray) -> None:
+    set_setting(SettingKey.BATCH_VIEW_HEADER_STATE, state)

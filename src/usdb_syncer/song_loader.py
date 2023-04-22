@@ -4,21 +4,20 @@ from __future__ import annotations
 
 import os
 from pathlib import Path
-from typing import Callable, Iterator
+from typing import Callable, Iterable, Iterator
 
 import attrs
 from PySide6.QtCore import QRunnable, QThreadPool
 
 from usdb_syncer import SongId, resource_dl, usdb_scraper
-from usdb_syncer.constants import Usdb
 from usdb_syncer.download_options import Options, download_options
 from usdb_syncer.logger import Log, get_logger
 from usdb_syncer.meta_tags import MetaTags
 from usdb_syncer.resource_dl import ImageKind, download_and_process_image
-from usdb_syncer.song_data import LocalFiles, SongData
+from usdb_syncer.song_data import DownloadResult, LocalFiles, SongData
 from usdb_syncer.song_txt import Headers, SongTxt
 from usdb_syncer.sync_meta import SyncMeta
-from usdb_syncer.usdb_scraper import SongDetails, get_usdb_login_status
+from usdb_syncer.usdb_scraper import SongDetails
 from usdb_syncer.utils import (
     is_name_maybe_with_suffix,
     next_unique_directory,
@@ -167,7 +166,7 @@ class SongLoader(QRunnable):
         info: DownloadInfo,
         options: Options,
         on_start: Callable[[SongId], None],
-        on_finish: Callable[[SongId, LocalFiles], None],
+        on_finish: Callable[[DownloadResult], None],
     ) -> None:
         super().__init__()
         self.song_id = info.song_id
@@ -183,6 +182,7 @@ class SongLoader(QRunnable):
         if details is None:
             # song was deleted from usdb in the meantime, TODO: uncheck/remove from model
             self.logger.error("Could not find song on USDB!")
+            self.on_finish(DownloadResult(self.song_id))
             return
         self.logger.info(f"Found '{details.artist} - {details.title}' on  USDB")
         ctx = Context.new(details, self.options, self.data, self.logger)
@@ -191,6 +191,7 @@ class SongLoader(QRunnable):
                 "Aborted; not logged in. Log in to USDB in your browser and select the "
                 "browser in the USDB Syncer settings. "
             )
+            self.on_finish(DownloadResult(self.song_id))
             return
         ctx.locations.dir_path().mkdir(parents=True, exist_ok=True)
         ctx.locations.ensure_correct_paths(ctx.sync_meta)
@@ -201,27 +202,15 @@ class SongLoader(QRunnable):
         _maybe_write_txt(ctx)
         _write_sync_meta(ctx)
         self.logger.info("All done!")
-        self.on_finish(
-            self.song_id,
-            LocalFiles.from_sync_meta(ctx.locations.meta_path, ctx.sync_meta),
-        )
+        files = LocalFiles.from_sync_meta(ctx.locations.meta_path, ctx.sync_meta)
+        self.on_finish(DownloadResult(self.song_id, files))
 
 
 def download_songs(
-    infos: list[DownloadInfo],
+    infos: Iterable[DownloadInfo],
     on_start: Callable[[SongId], None],
-    on_finish: Callable[[SongId, LocalFiles], None],
+    on_finish: Callable[[DownloadResult], None],
 ) -> None:
-    logger = get_logger(__file__)
-    if not get_usdb_login_status():
-        logger.error(
-            f"Download(s) cancelled. You are not logged in at {Usdb.BASE_URL}. "
-            "Log in with your browser and select it in the syncer settings."
-        )
-        return
-    logger.info(
-        f"You are logged in at {Usdb.BASE_URL}. Starting to process the download queue."
-    )
     options = download_options()
     threadpool = QThreadPool.globalInstance()
     for info in infos:
@@ -232,9 +221,10 @@ def download_songs(
 def _maybe_download_audio(ctx: Context) -> None:
     if not (options := ctx.options.audio_options):
         return
-    old_resource = ctx.sync_meta.local_audio_resource(ctx.locations.dir_path())
+    meta = ctx.sync_meta.synced_audio(ctx.locations.dir_path())
     for idx, resource in enumerate(ctx.all_audio_resources()):
-        if old_resource == resource:
+        if meta and meta.resource == resource:
+            ctx.txt.headers.mp3 = meta.fname
             ctx.logger.info("Audio resource is unchanged.")
             return
         if idx > 9:
@@ -261,9 +251,10 @@ def _maybe_download_audio(ctx: Context) -> None:
 def _maybe_download_video(ctx: Context) -> None:
     if not (options := ctx.options.video_options) or ctx.txt.meta_tags.is_audio_only():
         return
-    old_resource = ctx.sync_meta.local_video_resource(ctx.locations.dir_path())
+    meta = ctx.sync_meta.synced_video(ctx.locations.dir_path())
     for idx, resource in enumerate(ctx.all_video_resources()):
-        if old_resource == resource:
+        if meta and meta.resource == resource:
+            ctx.txt.headers.video = meta.fname
             ctx.logger.info("Video resource is unchanged.")
             return
         if idx > 9:
@@ -289,9 +280,11 @@ def _maybe_download_cover(ctx: Context) -> None:
     if not (url := ctx.cover_url()):
         ctx.logger.warning("No cover resource found.")
         return
-    if ctx.sync_meta.local_cover_resource(ctx.locations.dir_path()) == url:
-        ctx.logger.info("Cover resource is unchanged.")
-        return
+    if ctx.sync_meta.meta_tags.cover == ctx.txt.meta_tags.cover:
+        if meta := ctx.sync_meta.synced_cover(ctx.locations.dir_path()):
+            ctx.txt.headers.cover = meta.fname
+            ctx.logger.info("Cover resource is unchanged.")
+            return
     if path := download_and_process_image(
         url,
         ctx.locations.file_path(),
@@ -315,9 +308,11 @@ def _maybe_download_background(ctx: Context) -> None:
     if not (url := ctx.background_url()):
         ctx.logger.warning("No background resource found.")
         return
-    if ctx.sync_meta.local_background_resource(ctx.locations.dir_path()) == url:
-        ctx.logger.info("Background resource is unchanged.")
-        return
+    if ctx.sync_meta.meta_tags.background == ctx.txt.meta_tags.background:
+        if meta := ctx.sync_meta.synced_background(ctx.locations.dir_path()):
+            ctx.txt.headers.background = meta.fname
+            ctx.logger.info("Background resource is unchanged.")
+            return
     if path := download_and_process_image(
         url,
         ctx.locations.file_path(),
