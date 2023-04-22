@@ -224,7 +224,7 @@ class MetaTags:
 
 
 def _key_value_str(key: str, value: str | float | None) -> str | None:
-    return None if value is None else f"{key}={value}"
+    return None if value is None else f"{key}={encode_meta_tag_value(str(value))}"
 
 
 def _join_tags(*tags: str | None) -> str:
