@@ -9,7 +9,7 @@ from typing import Any, Callable, Iterator, Type
 
 import attrs
 import requests
-from bs4 import BeautifulSoup, Tag
+from bs4 import BeautifulSoup, NavigableString, Tag
 
 from usdb_syncer import SongId, settings
 from usdb_syncer.constants import (
@@ -321,7 +321,7 @@ def _parse_details_table(
 
 
 def _find_text_after(details_table: BeautifulSoup, label: str) -> str:
-    if isinstance((tag := details_table.find(string=label)), Tag):
+    if isinstance((tag := details_table.find(string=label)), NavigableString):
         if isinstance(tag.next, Tag):
             return tag.next.text.strip()
     raise ParseException(f"Text after {label} not found.")
