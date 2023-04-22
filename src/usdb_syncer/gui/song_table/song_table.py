@@ -95,16 +95,16 @@ class SongTable:
         self._list_model = ListModel(parent)
         self._batch_model = BatchModel(parent)
         self._setup_view(
-            self._list_view, self._list_model, settings.get_list_view_header_state()
+            self._list_view,
+            self._list_model,
+            list_menu,
+            settings.get_list_view_header_state(),
         )
         self._setup_view(
-            self._batch_view, self._batch_model, settings.get_batch_view_header_state()
-        )
-        self._list_view.customContextMenuRequested.connect(
-            lambda _: self._context_menu(list_menu)
-        )
-        self._batch_view.customContextMenuRequested.connect(
-            lambda _: self._context_menu(batch_menu)
+            self._batch_view,
+            self._batch_model,
+            batch_menu,
+            settings.get_batch_view_header_state(),
         )
         self._signals = SongSignals()
         self._signals.started.connect(self._on_download_started)
@@ -178,12 +178,17 @@ class SongTable:
         self._process_rows(self._batch_rows(), process)
 
     def _setup_view(
-        self, view: QTableView, model: QSortFilterProxyModel, state: QByteArray
+        self,
+        view: QTableView,
+        model: QSortFilterProxyModel,
+        menu: QMenu,
+        state: QByteArray,
     ) -> None:
         model.setSourceModel(self._model)
         model.setSortRole(CustomRole.SORT)
         view.setModel(model)
         view.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
+        view.customContextMenuRequested.connect(lambda _: self._context_menu(menu))  # type: ignore
         header = view.horizontalHeader()
         if not state.isEmpty():
             header.restoreState(state)
