@@ -650,7 +650,7 @@
      <string>Synchronize</string>
     </property>
     <addaction name="action_refetch_song_list"/>
-    <addaction name="action_select_local_songs"/>
+    <addaction name="action_find_local_songs"/>
    </widget>
    <widget class="QMenu" name="menu_about">
     <property name="title">
@@ -702,9 +702,9 @@
     <string>Check USDB Song List</string>
    </property>
   </action>
-  <action name="action_select_local_songs">
+  <action name="action_find_local_songs">
    <property name="text">
-    <string>Select local Songs</string>
+    <string>Find Local Songs</string>
    </property>
   </action>
   <action name="action_show_log">

@@ -148,13 +148,16 @@ class SongTable:
                 self._model.row_changed(row)
 
     def stage_selection(self) -> None:
+        self._stage_rows(self._list_rows(selected_only=True))
+
+    def _stage_rows(self, rows: Iterable[int]) -> None:
         def process(data: SongData) -> bool:
             if data.status is DownloadStatus.NONE:
                 data.status = DownloadStatus.STAGED
                 return True
             return False
 
-        self._process_rows(self._list_rows(selected_only=True), process)
+        self._process_rows(rows, process)
 
     def unstage_selection(self) -> None:
         def process(data: SongData) -> bool:
@@ -254,17 +257,19 @@ class SongTable:
             self._queue_view.selectionModel().selectedRows() if selected_only else None
         )
 
-    def select_local_songs(self, directory: str) -> None:
+    def stage_local_songs(self, directory: str) -> None:
         txts = _parse_all_txts(directory)
-        rows = self._list_proxy.find_rows_for_song_txts(txts)
-        for idx, song_rows in enumerate(rows):
+        matches = self._list_proxy.find_rows_for_song_txts(txts)
+        for idx, song_rows in enumerate(matches):
             if not song_rows:
                 name = txts[idx].headers.artist_title_str()
                 _logger.warning(f"no matches for '{name}'")
             if len(song_rows) > 1:
                 name = txts[idx].headers.artist_title_str()
                 _logger.info(f"{len(song_rows)} matches for '{name}'")
-        self.set_selection_to_rows(idx for row_list in rows for idx in row_list)
+        rows = [idx.row() for row_list in matches for idx in row_list]
+        self._stage_rows(rows)
+        _logger.info(f"Added {len(rows)} songs to batch.")
 
     def set_selection_to_rows(self, rows: Iterator[QModelIndex]) -> None:
         selection = QItemSelection()

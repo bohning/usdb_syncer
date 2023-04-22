@@ -80,7 +80,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
             (self.action_songs_download, self._download_selection),
             (self.action_songs_to_batch, self.table.stage_selection),
             (self.action_batch_remove, self.table.unstage_selection),
-            (self.action_select_local_songs, self._select_local_songs),
+            (self.action_find_local_songs, self._stage_local_songs),
             (self.action_refetch_song_list, self._refetch_song_list),
             (self.action_meta_tags, lambda: MetaTagsDialog(self).show()),
             (self.action_settings, lambda: SettingsDialog(self).show()),
@@ -182,9 +182,9 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         self.len_song_list = len(songs)
         self._update_dynamic_filters(songs)
 
-    def _select_local_songs(self) -> None:
+    def _stage_local_songs(self) -> None:
         if directory := QFileDialog.getExistingDirectory(self, "Select Song Directory"):
-            self.table.select_local_songs(directory)
+            self.table.stage_local_songs(directory)
 
     def _refetch_song_list(self) -> None:
         run_with_progress(
