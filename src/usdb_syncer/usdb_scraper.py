@@ -195,11 +195,8 @@ def get_usdb_details(song_id: SongId) -> SongDetails | None:
 
 
 def get_usdb_login_status() -> bool:
-    html = get_usdb_page("index.php", params={"link": "home"})
-    soup = BeautifulSoup(html, "lxml")
-    if UsdbStrings.WELCOME_PLEASE_LOGIN in soup.get_text():
-        return False
-    return True
+    html = get_usdb_page("index.php", params={"link": "profil"})
+    return UsdbStrings.WELCOME_PLEASE_LOGIN not in html
 
 
 def _parse_song_page(soup: BeautifulSoup, song_id: SongId) -> SongDetails:
