@@ -9,14 +9,28 @@ from __future__ import annotations
 
 import os
 from enum import Enum
+from http.cookiejar import CookieJar
 from pathlib import Path
-from typing import Any, TypeVar, cast
+from typing import Any, Tuple, TypeVar, cast
 
 import browser_cookie3
+import keyring
 from PySide6.QtCore import QByteArray, QSettings
 
 from usdb_syncer.constants import Usdb
 from usdb_syncer.typing_helpers import assert_never
+
+
+def get_usdb_auth() -> Tuple[str, str] | None:
+    username = get_setting(SettingKey.USDB_USER_NAME, "")
+    if username and (password := keyring.get_password("USDB Syncer", username)):
+        return (username, password)
+    return None
+
+
+def set_usdb_auth(username: str, password: str) -> None:
+    set_setting(SettingKey.USDB_USER_NAME, username)
+    keyring.set_password("USDB Syncer", username, password)
 
 
 class SettingKey(Enum):
@@ -48,6 +62,7 @@ class SettingKey(Enum):
     MAIN_WINDOW_SPLITTER_BOTTOM_STATE = "main_window/splitter_bottom/state"
     LIST_VIEW_HEADER_STATE = "list_view/header/state"
     BATCH_VIEW_HEADER_STATE = "batch_view/header/state"
+    USDB_USER_NAME = "usdb/username"
 
 
 class Encoding(Enum):

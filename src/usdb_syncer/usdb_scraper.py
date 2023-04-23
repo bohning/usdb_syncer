@@ -45,7 +45,25 @@ def _create_session() -> Session:
     if cookies := settings.get_browser().cookies():
         for cookie in cookies:
             session.cookies.set_cookie(cookie)
+    if not _get_usdb_login_status(session):
+        _try_login_to_usdb(session)
     return session
+
+
+def _get_usdb_login_status(session: Session) -> bool:
+    response = session.get(Usdb.BASE_URL, timeout=10, params={"link": "profil"})
+    response.raise_for_status()
+    return UsdbStrings.WELCOME_PLEASE_LOGIN not in response.text
+
+
+def _try_login_to_usdb(session: Session) -> None:
+    if auth := settings.get_usdb_auth():
+        response = session.post(
+            Usdb.BASE_URL,
+            timeout=10,
+            data={"user": auth[0], "pass": auth[1], "login": "Login"},
+        )
+        response.raise_for_status()
 
 
 _session: Session = _create_session()
@@ -189,12 +207,6 @@ def get_usdb_details(song_id: SongId) -> SongDetails | None:
     if UsdbStrings.DATASET_NOT_FOUND in soup.get_text():
         return None
     return _parse_song_page(soup, song_id)
-
-
-def _get_usdb_login_status(session: Session) -> bool:
-    response = session.get(Usdb.BASE_URL, timeout=10, params={"link": "profil"})
-    response.raise_for_status()
-    return UsdbStrings.WELCOME_PLEASE_LOGIN not in response.text
 
 
 def _parse_song_page(soup: BeautifulSoup, song_id: SongId) -> SongDetails:
