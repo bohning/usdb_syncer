@@ -280,6 +280,9 @@ class MainWindow(Ui_MainWindow, QMainWindow):
             dir=os.getcwd(),
             filter="JSON, USDB IDs, Weblinks (*.json *.usdb_ids *.url *.webloc *.desktop)",
         )[0]
+        if not file_list:
+            logger.info("no files selected to import USDB IDs from")
+            return
         file_parsers = [UsdbIdFile.parse(path) for path in file_list]
         has_error = False
         for count, parser in enumerate(file_parsers):
