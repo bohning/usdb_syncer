@@ -49,6 +49,9 @@ class TableModel(QAbstractTableModel):
         end_idx = self.index(idx, self.columnCount())
         self.dataChanged.emit(start_idx, end_idx)  # type:ignore
 
+    def remove_row(self, row: int) -> None:
+        self.set_data(self.songs[:row] + self.songs[row + 1 :])
+
     def ids_for_rows(self, rows: Iterable[int]) -> list[SongId]:
         return [self.songs[row].data.song_id for row in rows]
 

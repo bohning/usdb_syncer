@@ -33,7 +33,12 @@ from usdb_syncer.gui.song_table.column import Column
 from usdb_syncer.gui.song_table.list_model import ListModel
 from usdb_syncer.gui.song_table.table_model import CustomRole, TableModel
 from usdb_syncer.logger import get_logger
-from usdb_syncer.song_data import DownloadResult, DownloadStatus, SongData
+from usdb_syncer.song_data import (
+    DownloadErrorReason,
+    DownloadResult,
+    DownloadStatus,
+    SongData,
+)
 from usdb_syncer.song_loader import DownloadInfo, download_songs
 from usdb_syncer.song_txt import SongTxt
 from usdb_syncer.usdb_scraper import UsdbSong
@@ -233,16 +238,20 @@ class SongTable:
         self._model.row_changed(row)
 
     def _on_download_finished(self, result: DownloadResult) -> None:
-        if not (row := self._model.rows.get(result.song_id)):
-            return
-        data = self._model.songs[row]
-        if result.files:
-            data.status = DownloadStatus.DONE
-            data.local_files = result.files
-        else:
-            data.status = DownloadStatus.FAILED
-        self._model.row_changed(row)
         self._progress.finish(1)
+        logger = get_logger(__file__, result.song_id)
+        if result.error is not None:
+            if (row := self._model.row_for_id(result.song_id)) is None:
+                raise Exception(f"Unexpected id: {result.song_id}!")
+            if result.error is DownloadErrorReason.NOT_FOUND:
+                self._model.remove_row(row)
+            else:
+                self._model.songs[row].status = DownloadStatus.FAILED
+                self._model.row_changed(row)
+            logger.error(result.error.message())
+        elif result.data:
+            self._model.update_item(result.data)
+            logger.info("All done!")
 
     def save_state(self) -> None:
         settings.set_list_view_header_state(

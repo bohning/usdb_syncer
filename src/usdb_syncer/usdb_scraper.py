@@ -270,7 +270,7 @@ def get_usdb_available_songs(
         if len(songs) < Usdb.MAX_SONGS_PER_PAGE:
             break
 
-    _logger.info(f"Fetched {len(available_songs)} new songs from USDB.")
+    _logger.info(f"Fetched {len(available_songs)} new song(s) from USDB.")
     return available_songs
 
 

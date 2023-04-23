@@ -17,10 +17,17 @@ from usdb_syncer.download_options import Options, download_options
 from usdb_syncer.logger import Log, get_logger
 from usdb_syncer.meta_tags import MetaTags
 from usdb_syncer.resource_dl import ImageKind, download_and_process_image
-from usdb_syncer.song_data import DownloadResult, LocalFiles, SongData
+from usdb_syncer.song_data import (
+    DownloadErrorReason,
+    DownloadResult,
+    DownloadStatus,
+    LocalFiles,
+    SongData,
+)
 from usdb_syncer.song_txt import Headers, SongTxt
 from usdb_syncer.sync_meta import FileMeta, SyncMeta
 from usdb_syncer.usdb_scraper import SongDetails
+from usdb_syncer.usdb_song import UsdbSong
 from usdb_syncer.utils import (
     is_name_maybe_with_suffix,
     next_unique_directory,
@@ -153,6 +160,25 @@ class Context:
             self.logger.debug(f"downloading background from #VIDEO params: {url}")
         return url
 
+    def usdb_song(self) -> UsdbSong:
+        return UsdbSong(
+            song_id=self.sync_meta.song_id,
+            artist=self.details.artist,
+            title=self.details.title,
+            language=self.txt.headers.language or "",
+            edition=self.txt.headers.edition or "",
+            golden_notes=self.details.golden_notes,
+            rating=self.details.rating,
+            views=self.details.views,
+        )
+
+    def finished_song_data(self) -> SongData:
+        return SongData.from_usdb_song(
+            self.usdb_song(),
+            LocalFiles.from_sync_meta(self.locations.meta_path, self.sync_meta),
+            DownloadStatus.DONE,
+        )
+
 
 def _load_sync_meta(path: Path, song_id: SongId, meta_tags: MetaTags) -> SyncMeta:
     """Loads meta from path if valid or creates a new one."""
@@ -183,18 +209,16 @@ class SongLoader(QRunnable):
         self.on_start(self.song_id)
         details = usdb_scraper.get_usdb_details(self.song_id)
         if details is None:
-            # song was deleted from usdb in the meantime, TODO: uncheck/remove from model
-            self.logger.error("Could not find song on USDB!")
-            self.on_finish(DownloadResult(self.song_id))
+            self.on_finish(
+                DownloadResult(self.song_id, error=DownloadErrorReason.NOT_FOUND)
+            )
             return
         self.logger.info(f"Found '{details.artist} - {details.title}' on  USDB")
         ctx = Context.new(details, self.options, self.data, self.logger)
         if not ctx:
-            self.logger.info(
-                "Aborted; not logged in. Log in to USDB in your browser and select the "
-                "browser in the USDB Syncer settings. "
+            self.on_finish(
+                DownloadResult(self.song_id, error=DownloadErrorReason.NOT_LOGGED_IN)
             )
-            self.on_finish(DownloadResult(self.song_id))
             return
         ctx.locations.dir_path().mkdir(parents=True, exist_ok=True)
         ctx.locations.ensure_correct_paths(ctx.sync_meta)
@@ -205,9 +229,7 @@ class SongLoader(QRunnable):
         _maybe_write_txt(ctx)
         _write_sync_meta(ctx)
         _maybe_write_audio_tags(ctx)
-        self.logger.info("All done!")
-        files = LocalFiles.from_sync_meta(ctx.locations.meta_path, ctx.sync_meta)
-        self.on_finish(DownloadResult(self.song_id, files))
+        self.on_finish(DownloadResult(self.song_id, data=ctx.finished_song_data()))
 
 
 def download_songs(

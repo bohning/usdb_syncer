@@ -4,6 +4,7 @@ plus information about locally existing files.
 
 from __future__ import annotations
 
+import enum
 from enum import Enum
 from functools import cache
 from pathlib import Path
@@ -64,12 +65,32 @@ def fuzz_text(text: str) -> str:
     return text
 
 
+class DownloadErrorReason(Enum):
+    """Reason for a failed song download."""
+
+    NOT_LOGGED_IN = enum.auto()
+    NOT_FOUND = enum.auto()
+
+    def message(self) -> str:
+        match self:
+            case DownloadErrorReason.NOT_LOGGED_IN:
+                return (
+                    "Aborted; not logged in. Log in to USDB in your browser and "
+                    "select the browser in the USDB Syncer settings."
+                )
+            case DownloadErrorReason.NOT_FOUND:
+                return "Could not find song on USDB!"
+            case _ as unreachable:
+                assert_never(unreachable)
+
+
 @attrs.define
 class DownloadResult:
     """Result of a song download to be passed by signal."""
 
     song_id: SongId
-    files: LocalFiles | None = None
+    data: SongData | None = None
+    error: DownloadErrorReason | None = None
 
 
 @attrs.define
@@ -144,14 +165,19 @@ class SongData:
     data: UsdbSong
     fuzzy_text: FuzzySearchText
     local_files: LocalFiles
-    status: DownloadStatus = DownloadStatus.NONE
+    status: DownloadStatus
 
     @classmethod
-    def from_usdb_song(cls, song: UsdbSong, local_files: LocalFiles) -> SongData:
-        return cls(song, FuzzySearchText(song), local_files)
+    def from_usdb_song(
+        cls,
+        song: UsdbSong,
+        local_files: LocalFiles,
+        status: DownloadStatus = DownloadStatus.NONE,
+    ) -> SongData:
+        return cls(song, FuzzySearchText(song), local_files, status)
 
     def with_local_files(self, local_files: LocalFiles) -> SongData:
-        return SongData(self.data, self.fuzzy_text, local_files)
+        return SongData(self.data, self.fuzzy_text, local_files, self.status)
 
     def display_data(self, column: int) -> str | None:
         col = Column(column)
