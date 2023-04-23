@@ -60,11 +60,11 @@ class UsdbIdFileMissingSectionHeaderFormatError(UsdbIdFileInvalidFormatError):
 
 
 @attrs.define
-class UsdbIdFileMissingOrDublicateOptionFormatError(UsdbIdFileInvalidFormatError):
-    """Invalid file format with missing or dublicate option"""
+class UsdbIdFileMissingOrDuplicateOptionFormatError(UsdbIdFileInvalidFormatError):
+    """Invalid file format with missing or duplicate option"""
 
     def __str__(self) -> str:
-        return f"{super().__str__()}: missing or dublicate option"
+        return f"{super().__str__()}: missing or duplicate option"
 
 
 @attrs.define
@@ -351,7 +351,7 @@ class UsdbIdFile:
         except configparser.MissingSectionHeaderError as exception:
             raise UsdbIdFileMissingSectionHeaderFormatError() from exception
         except Exception as exception:
-            raise UsdbIdFileMissingOrDublicateOptionFormatError() from exception
+            raise UsdbIdFileMissingOrDuplicateOptionFormatError() from exception
         if not config.sections():
             raise UsdbIdFileEmptyFileError()
         if section not in config:
