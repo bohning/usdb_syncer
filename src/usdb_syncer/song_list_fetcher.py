@@ -40,7 +40,6 @@ def get_available_songs(force_reload: bool) -> list[UsdbSong]:
         cached_songs = load_cached_songs() or []
         max_skip_id = max(song.song_id for song in cached_songs)
     available_songs = cached_songs + get_usdb_available_songs(max_skip_id)
-    dump_available_songs(available_songs)
     return available_songs
 
 

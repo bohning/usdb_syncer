@@ -28,7 +28,11 @@ from usdb_syncer.gui.utils import scroll_to_bottom, set_shortcut
 from usdb_syncer.pdf import generate_song_pdf
 from usdb_syncer.song_data import SongData
 from usdb_syncer.song_filters import GoldenNotesFilter, RatingFilter, ViewsFilter
-from usdb_syncer.song_list_fetcher import get_all_song_data, resync_song_data
+from usdb_syncer.song_list_fetcher import (
+    dump_available_songs,
+    get_all_song_data,
+    resync_song_data,
+)
 from usdb_syncer.utils import AppPaths, open_file_explorer
 
 
@@ -260,6 +264,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
     def closeEvent(self, event: QCloseEvent) -> None:
         self.table.save_state()
         self._save_state()
+        dump_available_songs(list(s.data for s in self.table.get_all_data()))
         event.accept()
 
     def _restore_state(self) -> None:
