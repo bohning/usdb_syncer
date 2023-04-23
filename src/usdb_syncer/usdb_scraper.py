@@ -6,9 +6,8 @@ from datetime import datetime
 from enum import Enum
 from functools import wraps
 from typing import Any, Callable, Iterator, Type
-
+from requests import Session
 import attrs
-import requests
 from bs4 import BeautifulSoup, NavigableString, Tag
 
 from usdb_syncer import SongId, settings
@@ -39,6 +38,17 @@ SONG_LIST_ROW_REGEX = re.compile(
 WELCOME_REGEX = re.compile(
     r"<td class='row3' colspan='2'>\s*<span class='gen'>([^<]+) <b>"
 )
+
+
+def _create_session() -> Session:
+    session = Session()
+    if cookies := settings.get_browser().cookies():
+        for cookie in cookies:
+            session.cookies.set_cookie(cookie)
+    return session
+
+
+_session: Session = _create_session()
 
 
 class RequestMethod(Enum):
@@ -150,30 +160,17 @@ def get_usdb_page(
         params: dict of params to send with request
     """
     url = Usdb.BASE_URL + rel_url
-
     match method:
         case RequestMethod.GET:
-            _logger.debug("get request for %s", url)
-            response = requests.get(
-                url,
-                headers=headers,
-                params=params,
-                timeout=60,
-                cookies=settings.get_browser().cookies(),
-            )
+            _logger.debug(f"Get request for {url}")
+            response = _session.get(url, headers=headers, params=params, timeout=10)
         case RequestMethod.POST:
-            _logger.debug("post request for %s", url)
-            response = requests.post(
-                url,
-                headers=headers,
-                data=payload,
-                params=params,
-                timeout=60,
-                cookies=settings.get_browser().cookies(),
+            _logger.debug(f"Post request for {url}")
+            response = _session.post(
+                url, headers=headers, data=payload, params=params, timeout=10
             )
         case _ as unreachable:
             assert_never(unreachable)
-
     response.raise_for_status()
     response.encoding = "utf-8"
     return normalize(response.text)
@@ -194,9 +191,10 @@ def get_usdb_details(song_id: SongId) -> SongDetails | None:
     return _parse_song_page(soup, song_id)
 
 
-def get_usdb_login_status() -> bool:
-    html = get_usdb_page("index.php", params={"link": "profil"})
-    return UsdbStrings.WELCOME_PLEASE_LOGIN not in html
+def _get_usdb_login_status(session: Session) -> bool:
+    response = session.get(Usdb.BASE_URL, timeout=10, params={"link": "profil"})
+    response.raise_for_status()
+    return UsdbStrings.WELCOME_PLEASE_LOGIN not in response.text
 
 
 def _parse_song_page(soup: BeautifulSoup, song_id: SongId) -> SongDetails:

@@ -180,7 +180,7 @@ class Browser(Enum):
             case _ as unreachable:
                 assert_never(unreachable)
 
-    def cookies(self) -> browser_cookie3.CookieJar | None:
+    def cookies(self) -> CookieJar | None:
         match self:
             case Browser.NONE:
                 return None
