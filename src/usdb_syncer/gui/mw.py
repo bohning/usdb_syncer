@@ -24,6 +24,7 @@ from usdb_syncer.gui.progress import run_with_progress
 from usdb_syncer.gui.settings_dialog import SettingsDialog
 from usdb_syncer.gui.song_table.song_table import SongTable
 from usdb_syncer.gui.utils import scroll_to_bottom, set_shortcut
+from usdb_syncer.logger import get_logger
 from usdb_syncer.pdf import generate_song_pdf
 from usdb_syncer.song_data import LocalFiles, SongData
 from usdb_syncer.song_filters import GoldenNotesFilter, RatingFilter, ViewsFilter
@@ -58,6 +59,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         self._setup_search()
         self._setup_download()
         self._setup_signals()
+        self.logger = get_logger(__file__)
 
     def _setup_table(self) -> None:
         self.table = SongTable(self, self.tableView_availableSongs)
@@ -273,7 +275,6 @@ class MainWindow(Ui_MainWindow, QMainWindow):
             generate_song_pdf(self.table.all_local_songs(), path)
 
     def _import_usdb_ids_from_files(self) -> None:
-        logger = logging.getLogger(__file__)
         file_list = QFileDialog.getOpenFileNames(
             self,
             caption="Select one or more files to import USDB IDs from",
@@ -281,13 +282,13 @@ class MainWindow(Ui_MainWindow, QMainWindow):
             filter="JSON, USDB IDs, Weblinks (*.json *.usdb_ids *.url *.webloc *.desktop)",
         )[0]
         if not file_list:
-            logger.info("no files selected to import USDB IDs from")
+            self.logger.info("no files selected to import USDB IDs from")
             return
         file_parsers = [UsdbIdFile.parse(path) for path in file_list]
         has_error = False
         for count, parser in enumerate(file_parsers):
             if parser.error:
-                logger.error(
+                self.logger.error(
                     f"failed importing file {file_list[count]}: {str(parser.error)}"
                 )
                 has_error = True
@@ -297,7 +298,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         song_ids = [id for parser in file_parsers for id in parser.ids]
         unique_song_ids = list(set(song_ids))
         unique_song_ids.sort()
-        logger.info(
+        self.logger.info(
             f"read {len(file_list)} file(s), "
             f"found {len(unique_song_ids)} "
             f"USDB IDs: {', '.join(str(id) for id in unique_song_ids)}"
@@ -305,7 +306,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         if unavailable_song_ids := [
             song_id for song_id in unique_song_ids if not self.table.get_data(song_id)
         ]:
-            logger.warning(
+            self.logger.warning(
                 f"{len(unavailable_song_ids)}/{len(unique_song_ids)} "
                 "imported USDB IDs are not available: "
                 f"{', '.join(str(song_id) for song_id in unavailable_song_ids)}"
@@ -316,7 +317,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
             if song_id not in unavailable_song_ids
         ]:
             # select available songs to prepare Download
-            logger.info(
+            self.logger.info(
                 f"available {len(available_song_ids)}/{len(unique_song_ids)} "
                 "imported USDB IDs are selected for Download: "
                 f"{', '.join(str(song_id) for song_id in available_song_ids)}"
@@ -324,10 +325,9 @@ class MainWindow(Ui_MainWindow, QMainWindow):
             self.table.set_selection_to_song_ids(available_song_ids)
 
     def _export_usdb_ids_to_file(self) -> None:
-        logger = logging.getLogger(__file__)
         selected_ids = self.table.selected_song_ids()
         if not selected_ids:
-            logger.info("skipping export: no songs selected")
+            self.logger.info("skipping export: no songs selected")
             return
 
         # Note: automatically checks if file already exists
@@ -338,12 +338,12 @@ class MainWindow(Ui_MainWindow, QMainWindow):
             filter="USDB ID File (*.usdb_ids)",
         )[0]
         if not path:
-            logger.info("export aborted")
+            self.logger.info("export aborted")
             return
 
         id_file = UsdbIdFile(selected_ids)
         id_file.write(path)
-        logger.info(f"exported {len(selected_ids)} USDB IDs to {path}")
+        self.logger.info(f"exported {len(selected_ids)} USDB IDs to {path}")
 
 
 class LogSignal(QObject):
