@@ -140,7 +140,6 @@ class UsdbIdFileInvalidDomainMalformedUrlFormatError(UsdbIdFileMalformedUrlForma
     """Invalid file format with URL containing bad domain"""
 
     bad_domain: str
-    bad_url: str
 
     def __str__(self) -> str:
         return f"{super().__str__()}: has invalid domain '{self.bad_domain}'"
@@ -149,8 +148,6 @@ class UsdbIdFileInvalidDomainMalformedUrlFormatError(UsdbIdFileMalformedUrlForma
 @attrs.define
 class UsdbIdFileNoParametersMalformedUrlFormatError(UsdbIdFileMalformedUrlFormatError):
     """Invalid file format with URL having no query parameters"""
-
-    bad_url: str
 
     def __str__(self) -> str:
         return f"{super().__str__()}: has no query parameters"
@@ -163,7 +160,6 @@ class UsdbIdFileMissingQueryParameterMalformedUrlFormatError(
     """Invalid file format with URL missing a specific query parameter"""
 
     missing_parameter: str
-    bad_url: str
 
     def __str__(self) -> str:
         return (
@@ -178,7 +174,6 @@ class UsdbIdFileRepeatedQueryParameterMalformedUrlFormatError(
     """Invalid file format with URL specific query parameter occurring multiple times"""
 
     repeated_parameter: str
-    bad_url: str
 
     def __str__(self) -> str:
         return (
@@ -193,7 +188,6 @@ class UsdbIdFileInvalidQueryParameterMalformedUrlFormatError(
     """Invalid file format with URL having an invalid query parameter"""
 
     invalid_parameter: str
-    bad_url: str
 
     def __str__(self) -> str:
         return (
@@ -208,7 +202,6 @@ class UsdbIdFileUnparsableQueryParameterMalformedUrlFormatError(
     """Invalid file format with URL having a query parameter that cannot be parsed"""
 
     unparsable_parameter: str
-    bad_url: str
 
     def __str__(self) -> str:
         return (
