@@ -75,12 +75,10 @@ class MetaTagsDialog(Ui_Dialog, QDialog):
         return _sanitize_video_url(source)
 
     def _cover_meta_tags(self) -> ImageMetaTags | None:
-        cover_source, cover_protocol = _sanitize_image_url(self.cover_url.text())
-        if not cover_source:
+        if not (cover_source := _sanitize_image_url(self.cover_url.text())):
             return None
         return ImageMetaTags(
             source=cover_source,
-            protocol="http" if cover_protocol else "https",
             rotate=self.cover_rotation.value() or None,
             crop=self._cover_crop_meta_tag(),
             resize=self._cover_resize_meta_tag(),
@@ -106,12 +104,10 @@ class MetaTagsDialog(Ui_Dialog, QDialog):
         return None
 
     def _background_meta_tags(self) -> ImageMetaTags | None:
-        bg_source, bg_protocol = _sanitize_image_url(self.background_url.text())
-        if not bg_source:
+        if not (bg_source := _sanitize_image_url(self.background_url.text())):
             return None
         return ImageMetaTags(
             source=bg_source,
-            protocol="http" if bg_protocol else "https",
             crop=self._background_crop_meta_tag(),
             resize=self._background_resize_meta_tag(),
         )
@@ -227,16 +223,9 @@ def _try_shorten_url(url: str) -> str:
 
 def _sanitize_video_url(url: str) -> str:
     """Returns a YouTube id or sanitized URL."""
-    return extract_youtube_id(url) or _sanitize_url(url)
+    return extract_youtube_id(url) or url
 
 
-def _sanitize_image_url(url: str) -> tuple[str, bool]:
+def _sanitize_image_url(url: str) -> str:
     """Returns a fanart id or sanitized URL and whether it uses HTTP."""
-    http = url.startswith("http://")
-    url = url.removeprefix("http://").removeprefix("https://images.fanart.tv/fanart/")
-    return _sanitize_url(url), http
-
-
-def _sanitize_url(url: str) -> str:
-    """Remove or escape characters with special meaning or which USDB can't handle."""
-    return url.removeprefix("https://")
+    return url.removeprefix("https://images.fanart.tv/fanart/")

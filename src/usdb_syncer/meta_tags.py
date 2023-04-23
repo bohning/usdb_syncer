@@ -85,7 +85,6 @@ class ImageMetaTags:
     """Meta tags relating to the cover or background image."""
 
     source: str
-    protocol: str = "https"
     rotate: float | None = None
     crop: CropMetaTags | None = None
     resize: ResizeMetaTags | None = None
@@ -95,8 +94,8 @@ class ImageMetaTags:
         if "://" in self.source:
             return self.source
         if "/" in self.source:
-            return f"{self.protocol}://{self.source}"
-        return f"{self.protocol}://images.fanart.tv/fanart/{self.source}"
+            return f"https://{self.source}"
+        return f"https://images.fanart.tv/fanart/{self.source}"
 
     def image_processing(self) -> bool:
         """True if there is data for image processing."""
@@ -105,9 +104,6 @@ class ImageMetaTags:
     def to_str(self, prefix: str) -> str:
         return _join_tags(
             _key_value_str(prefix, self.source),
-            _key_value_str(f"{prefix}-protocol", self.protocol)
-            if self.protocol != "https"
-            else None,
             _key_value_str(f"{prefix}-rotate", self.rotate),
             self.crop.to_str(prefix) if self.crop else None,
             self.resize.to_str(prefix) if self.resize else None,
@@ -170,15 +166,12 @@ class MetaTags:
         match key:
             case "v":
                 self.video = value
-            case "v-trim" | "v-crop":
-                # currently not used
-                pass
+            case "v-trim" | "v-crop" | "co-protocol" | "bg-protocol":
+                logger.debug(f"Unused meta tag found: {key}={value}")
             case "a":
                 self.audio = value
             case "co":
                 self.cover = ImageMetaTags(source=value)
-            case "co-protocol" if self.cover:
-                self.cover.protocol = value
             case "co-rotate" if self.cover:
                 self.cover.rotate = _try_parse_float(value, logger)
             case "co-crop" if self.cover:
@@ -189,8 +182,6 @@ class MetaTags:
                 self.cover.contrast = _try_parse_contrast(value, logger)
             case "bg":
                 self.background = ImageMetaTags(source=value)
-            case "bg-protocol" if self.background:
-                self.background.protocol = value
             case "bg-crop" if self.background:
                 self.background.crop = CropMetaTags.try_parse(value, logger)
             case "bg-resize" if self.background:
