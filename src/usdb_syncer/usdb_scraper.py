@@ -36,6 +36,9 @@ SONG_LIST_ROW_REGEX = re.compile(
     r'<td onclick="show_detail\(\d+\)">(.*)</td>\n'
     r'<td onclick="show_detail\(\d+\)">(.*)</td>'
 )
+WELCOME_REGEX = re.compile(
+    r"<td class='row3' colspan='2'>\s*<span class='gen'>([^<]+) <b>"
+)
 
 
 class RequestMethod(Enum):
@@ -200,17 +203,26 @@ def get_usdb_login_status() -> bool:
 
 
 def _parse_song_page(soup: BeautifulSoup, song_id: SongId) -> SongDetails:
-    usdb_strings = _get_usdb_strings(soup)
+    usdb_strings = _usdb_strings_from_soup(soup)
     details_table, comments_table, *_ = soup.find_all("table", border="0", width="500")
     details = _parse_details_table(details_table, song_id, usdb_strings)
     details.comments = _parse_comments_table(comments_table)
     return details
 
 
-def _get_usdb_strings(soup: BeautifulSoup) -> Type[UsdbStrings]:
-    welcome_string = (
+def _usdb_strings_from_soup(soup: BeautifulSoup) -> Type[UsdbStrings]:
+    return _usdb_strings_from_welcome(
         soup.find("span", class_="gen").text.split(" ", 1)[0].removesuffix(",")
     )
+
+
+def _usdb_strings_from_html(html: str) -> Type[UsdbStrings]:
+    if match := WELCOME_REGEX.search(html):
+        return _usdb_strings_from_welcome(match.group(1))
+    raise ParseException("welcome string not found")
+
+
+def _usdb_strings_from_welcome(welcome_string: str) -> Type[UsdbStrings]:
     match welcome_string:
         case UsdbStringsEnglish.WELCOME:
             return UsdbStringsEnglish
@@ -218,8 +230,7 @@ def _get_usdb_strings(soup: BeautifulSoup) -> Type[UsdbStrings]:
             return UsdbStringsGerman
         case UsdbStringsFrench.WELCOME:
             return UsdbStringsFrench
-        case _:
-            raise ParseException("Unknown USDB language.")
+    raise ParseException("Unknown USDB language.")
 
 
 def get_usdb_available_songs(
@@ -241,6 +252,7 @@ def get_usdb_available_songs(
         )
         songs = list(
             UsdbSong.from_html(
+                _usdb_strings_from_html(html),
                 song_id=match[1],
                 artist=match[2],
                 title=match[3],
