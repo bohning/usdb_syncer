@@ -189,6 +189,7 @@ class SongTable:
         view.setModel(model)
         view.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
         view.customContextMenuRequested.connect(lambda _: self._context_menu(menu))  # type: ignore
+        view.doubleClicked.connect(lambda idx: self._on_double_clicked(idx, model))  # type: ignore
         header = view.horizontalHeader()
         if not state.isEmpty():
             header.restoreState(state)
@@ -210,6 +211,19 @@ class SongTable:
         for action in base_menu.actions():
             menu.addAction(action)
         menu.exec(QCursor.pos())
+
+    def _on_double_clicked(
+        self, index: QModelIndex, model: QSortFilterProxyModel
+    ) -> None:
+        row = model.mapToSource(index).row()
+        data = self._model.songs[row]
+        if model is self._batch_model and data.status.can_be_unstaged():
+            data.status = DownloadStatus.NONE
+        elif model is self._list_model and data.status is DownloadStatus.NONE:
+            data.status = DownloadStatus.STAGED
+        else:
+            return
+        self._model.row_changed(row)
 
     def _on_download_started(self, song_id: SongId) -> None:
         if not (row := self._model.rows.get(song_id)):
