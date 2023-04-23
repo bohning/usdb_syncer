@@ -35,6 +35,11 @@ class FileMeta:
             return cls(**dct)
         return None
 
+    def is_in_sync(self, folder: Path) -> bool:
+        """True if this file exists in the given folder and is in sync."""
+        path = folder.joinpath(self.fname)
+        return path.exists() and os.path.getmtime(path) == self.mtime
+
 
 @attrs.define
 class SyncMeta:
@@ -95,33 +100,30 @@ class SyncMeta:
     def set_background_meta(self, path: Path, resource: str) -> None:
         self.background = FileMeta.new(path, resource)
 
-    def local_audio_resource(self, folder: Path) -> str | None:
-        return _local_resource(self.audio, folder)
+    def synced_audio(self, folder: Path) -> FileMeta | None:
+        if self.audio and self.audio.is_in_sync(folder):
+            return self.audio
+        return None
 
-    def local_video_resource(self, folder: Path) -> str | None:
-        return _local_resource(self.video, folder)
+    def synced_video(self, folder: Path) -> FileMeta | None:
+        if self.video and self.video.is_in_sync(folder):
+            return self.video
+        return None
 
-    def local_cover_resource(self, folder: Path) -> str | None:
-        return _local_resource(self.cover, folder)
+    def synced_cover(self, folder: Path) -> FileMeta | None:
+        if self.cover and self.cover.is_in_sync(folder):
+            return self.cover
+        return None
 
-    def local_background_resource(self, folder: Path) -> str | None:
-        return _local_resource(self.background, folder)
+    def synced_background(self, folder: Path) -> FileMeta | None:
+        if self.background and self.background.is_in_sync(folder):
+            return self.background
+        return None
 
     def file_metas(self) -> Iterator[FileMeta]:
         for meta in (self.txt, self.audio, self.video, self.cover, self.background):
             if meta:
                 yield meta
-
-
-def _local_resource(meta: FileMeta | None, folder: Path) -> str | None:
-    """Returns the name of the resource, if it exists in the given folder
-    and is in sync.
-    """
-    if meta:
-        if (path := folder.joinpath(meta.fname)).exists():
-            if os.path.getmtime(path) == meta.mtime:
-                return meta.resource
-    return None
 
 
 class SyncMetaEncoder(json.JSONEncoder):

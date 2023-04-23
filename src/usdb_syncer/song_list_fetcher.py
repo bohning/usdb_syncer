@@ -40,10 +40,9 @@ def get_available_songs(force_reload: bool) -> list[UsdbSong]:
 
 
 def load_available_songs() -> list[UsdbSong] | None:
-    path = AppPaths.song_list
-    if not os.path.exists(path):
+    if not AppPaths.song_list.exists():
         return None
-    with open(path, encoding="utf8") as file:
+    with AppPaths.song_list.open(encoding="utf8") as file:
         try:
             return json.load(file, object_hook=UsdbSong.from_json)
         except (json.decoder.JSONDecodeError, TypeError, KeyError):
@@ -51,7 +50,7 @@ def load_available_songs() -> list[UsdbSong] | None:
 
 
 def dump_available_songs(available_songs: list[UsdbSong]) -> None:
-    with open(AppPaths.song_list, "w", encoding="utf8") as file:
+    with AppPaths.song_list.open("w", encoding="utf8") as file:
         json.dump(available_songs, file, cls=UsdbSongEncoder)
 
 

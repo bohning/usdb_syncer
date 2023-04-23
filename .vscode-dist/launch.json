@@ -5,10 +5,10 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "Python: Current File",
+      "name": "GUI",
       "type": "python",
       "request": "launch",
-      "program": "${file}",
+      "program": "${workspaceFolder}/src/usdb_syncer/main.py",
       "console": "internalConsole",
       "justMyCode": true,
       "env": {}

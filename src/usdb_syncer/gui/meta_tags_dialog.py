@@ -19,7 +19,6 @@ from usdb_syncer.meta_tags import (
     MedleyTag,
     MetaTags,
     ResizeMetaTags,
-    encode_meta_tag_value,
 )
 from usdb_syncer.utils import extract_youtube_id
 
@@ -142,12 +141,12 @@ class MetaTagsDialog(Ui_Dialog, QDialog):
 
     def _p1_meta_tag(self) -> str | None:
         if self.duet.isChecked():
-            return encode_meta_tag_value(self.duet_p1.text()) or "P1"
+            return self.duet_p1.text() or "P1"
         return None
 
     def _p2_meta_tag(self) -> str | None:
         if self.duet.isChecked():
-            return encode_meta_tag_value(self.duet_p2.text()) or "P2"
+            return self.duet_p2.text() or "P2"
         return None
 
     def _meta_tags(self) -> MetaTags:
@@ -240,4 +239,4 @@ def _sanitize_image_url(url: str) -> tuple[str, bool]:
 
 def _sanitize_url(url: str) -> str:
     """Remove or escape characters with special meaning or which USDB can't handle."""
-    return encode_meta_tag_value(url.removeprefix("https://"))
+    return url.removeprefix("https://")
