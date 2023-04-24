@@ -53,9 +53,9 @@ def load_cached_songs() -> list[UsdbSong] | None:
             return None
 
 
-def dump_available_songs(available_songs: list[UsdbSong]) -> None:
-    with AppPaths.song_list.open("w", encoding="utf8") as file:
-        json.dump(available_songs, file, cls=UsdbSongEncoder)
+def dump_available_songs(songs: list[UsdbSong], target: Path | None = None) -> None:
+    with (target or AppPaths.song_list).open("w", encoding="utf8") as file:
+        json.dump(songs, file, cls=UsdbSongEncoder)
 
 
 def find_local_files() -> dict[SongId, LocalFiles]:

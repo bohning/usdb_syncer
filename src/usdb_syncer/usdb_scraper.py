@@ -6,9 +6,10 @@ from datetime import datetime
 from enum import Enum
 from functools import wraps
 from typing import Any, Callable, Iterator, Type
-from requests import Session
+
 import attrs
 from bs4 import BeautifulSoup, NavigableString, Tag
+from requests import Session
 
 from usdb_syncer import SongId, settings
 from usdb_syncer.constants import (
@@ -40,6 +41,16 @@ WELCOME_REGEX = re.compile(
 )
 
 
+_SESSION: Session | None = None
+
+
+def _session() -> Session:
+    global _SESSION  # pylint: disable=global-statement
+    if _SESSION is None:
+        _SESSION = _create_session()
+    return _SESSION
+
+
 def _create_session() -> Session:
     session = Session()
     if cookies := settings.get_browser().cookies():
@@ -64,9 +75,6 @@ def _try_login_to_usdb(session: Session) -> None:
             data={"user": auth[0], "pass": auth[1], "login": "Login"},
         )
         response.raise_for_status()
-
-
-_session: Session = _create_session()
 
 
 class RequestMethod(Enum):
@@ -181,10 +189,10 @@ def get_usdb_page(
     match method:
         case RequestMethod.GET:
             _logger.debug(f"Get request for {url}")
-            response = _session.get(url, headers=headers, params=params, timeout=10)
+            response = _session().get(url, headers=headers, params=params, timeout=10)
         case RequestMethod.POST:
             _logger.debug(f"Post request for {url}")
-            response = _session.post(
+            response = _session().post(
                 url, headers=headers, data=payload, params=params, timeout=10
             )
         case _ as unreachable:

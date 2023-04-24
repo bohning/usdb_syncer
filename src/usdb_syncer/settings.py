@@ -20,17 +20,19 @@ from PySide6.QtCore import QByteArray, QSettings
 from usdb_syncer.constants import Usdb
 from usdb_syncer.typing_helpers import assert_never
 
+SYSTEM_USDB = "USDB Syncer/USDB"
+
 
 def get_usdb_auth() -> Tuple[str, str] | None:
     username = get_setting(SettingKey.USDB_USER_NAME, "")
-    if username and (password := keyring.get_password("USDB Syncer", username)):
+    if username and (password := keyring.get_password(SYSTEM_USDB, username)):
         return (username, password)
     return None
 
 
 def set_usdb_auth(username: str, password: str) -> None:
     set_setting(SettingKey.USDB_USER_NAME, username)
-    keyring.set_password("USDB Syncer", username, password)
+    keyring.set_password(SYSTEM_USDB, username, password)
 
 
 class SettingKey(Enum):
