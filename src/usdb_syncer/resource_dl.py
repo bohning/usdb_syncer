@@ -89,7 +89,8 @@ def _normalize(options: AudioOptions, path_stem: Path, filename: str) -> None:
         normalization_type="ebu",  # default: "ebu"
         target_level=-23,  # default: -23
         print_stats=True,  # set to False?
-        keep_loudness_range_target=True,  # needed for linear normalization
+        keep_lra_above_loudness_range_target=True,  # needed for linear normalization
+        loudness_range_target=7,  # default: 7.0
         true_peak=-2,  # default: -2
         dynamic=False,  # default: False
         audio_codec=options.format.ffmpeg_encoder(),
