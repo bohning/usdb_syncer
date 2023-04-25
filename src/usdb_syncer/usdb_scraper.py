@@ -37,7 +37,7 @@ SONG_LIST_ROW_REGEX = re.compile(
     r'<td onclick="show_detail\(\d+\)">(.*)</td>'
 )
 WELCOME_REGEX = re.compile(
-    r"<td class='row3' colspan='2'>\s*<span class='gen'>([^<]+) <b>"
+    r"<td class='row3' colspan='2'>\s*<span class='gen'>([^<]+) <b>([^<]+)</b>"
 )
 
 
@@ -56,18 +56,22 @@ def _create_session() -> Session:
     if cookies := settings.get_browser().cookies():
         for cookie in cookies:
             session.cookies.set_cookie(cookie)
-    if not _get_usdb_login_status(session):
+    if user := _get_logged_in_usdb_user(session):
+        _logger.info(f"Using existing login of USDB user '{user}'.")
+    else:
         _try_login_to_usdb(session)
     return session
 
 
-def _get_usdb_login_status(session: Session) -> bool:
+def _get_logged_in_usdb_user(session: Session) -> str | None:
     response = session.get(Usdb.BASE_URL, timeout=10, params={"link": "profil"})
     response.raise_for_status()
-    return UsdbStrings.WELCOME_PLEASE_LOGIN not in response.text
+    if match := WELCOME_REGEX.search(response.text):
+        return match.group(2)
+    return None
 
 
-def _try_login_to_usdb(session: Session) -> None:
+def _try_login_to_usdb(session: Session) -> bool:
     if auth := settings.get_usdb_auth():
         response = session.post(
             Usdb.BASE_URL,
@@ -75,6 +79,13 @@ def _try_login_to_usdb(session: Session) -> None:
             data={"user": auth[0], "pass": auth[1], "login": "Login"},
         )
         response.raise_for_status()
+        if UsdbStrings.LOGIN_INVALID not in response.text:
+            _logger.info(f"Successfully logged in to USDB with user '{auth[0]}'.")
+            return True
+        _logger.error(f"Login to USDB with user '{auth[0]}' failed.")
+    else:
+        _logger.warning("Cannot log in to USDB; missing credentials.")
+    return False
 
 
 class RequestMethod(Enum):
