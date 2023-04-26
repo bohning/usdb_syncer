@@ -86,6 +86,13 @@
       </widget>
      </item>
      <item>
+      <widget class="QPushButton" name="button_log_out">
+       <property name="text">
+        <string>Log Out</string>
+       </property>
+      </widget>
+     </item>
+     <item>
       <widget class="QDialogButtonBox" name="buttonBox">
        <property name="orientation">
         <enum>Qt::Horizontal</enum>

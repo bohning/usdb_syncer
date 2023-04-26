@@ -10,6 +10,7 @@ from usdb_syncer.usdb_scraper import (
     create_session,
     get_logged_in_usdb_user,
     login_to_usdb,
+    log_out_of_usdb,
 )
 
 
@@ -21,6 +22,7 @@ class UsdbLoginDialog(Ui_Dialog, QDialog):
         self._parent = parent
         self.setupUi(self)
         self.button_check_login.pressed.connect(self._on_check_login)
+        self.button_log_out.pressed.connect(self._on_log_out)
         self._load_settings()
 
     def _load_settings(self) -> None:
@@ -54,3 +56,6 @@ class UsdbLoginDialog(Ui_Dialog, QDialog):
         else:
             message = "No existing session found!"
         QMessageBox.information(self._parent, "Login Result", message)
+
+    def _on_log_out(self) -> None:
+        log_out_of_usdb(create_session(self.combobox_browser.currentData()))

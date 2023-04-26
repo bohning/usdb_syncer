@@ -87,6 +87,10 @@ def login_to_usdb(session: Session, user: str, password: str) -> bool:
     return UsdbStrings.LOGIN_INVALID not in response.text
 
 
+def log_out_of_usdb(session: Session) -> None:
+    session.post(Usdb.BASE_URL, timeout=10, params={"link": "logout"})
+
+
 class RequestMethod(Enum):
     """Supported HTTP requests."""
 
