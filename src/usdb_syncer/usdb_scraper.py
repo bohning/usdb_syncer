@@ -47,23 +47,28 @@ _SESSION: Session | None = None
 def _session() -> Session:
     global _SESSION  # pylint: disable=global-statement
     if _SESSION is None:
-        _SESSION = _create_session()
+        _SESSION = create_session(settings.get_browser())
+        if user := get_logged_in_usdb_user(_SESSION):
+            _logger.info(f"Using existing login of USDB user '{user}'.")
+        elif auth := settings.get_usdb_auth():
+            if login_to_usdb(_SESSION, *auth):
+                _logger.info(f"Successfully logged in to USDB with user '{auth[0]}'.")
+            else:
+                _logger.error(f"Login to USDB with user '{auth[0]}' failed.")
+        else:
+            _logger.warning("Cannot log in to USDB; missing credentials.")
     return _SESSION
 
 
-def _create_session() -> Session:
+def create_session(browser: settings.Browser) -> Session:
     session = Session()
-    if cookies := settings.get_browser().cookies():
+    if cookies := browser.cookies():
         for cookie in cookies:
             session.cookies.set_cookie(cookie)
-    if user := _get_logged_in_usdb_user(session):
-        _logger.info(f"Using existing login of USDB user '{user}'.")
-    else:
-        _try_login_to_usdb(session)
     return session
 
 
-def _get_logged_in_usdb_user(session: Session) -> str | None:
+def get_logged_in_usdb_user(session: Session) -> str | None:
     response = session.get(Usdb.BASE_URL, timeout=10, params={"link": "profil"})
     response.raise_for_status()
     if match := WELCOME_REGEX.search(response.text):
@@ -71,21 +76,15 @@ def _get_logged_in_usdb_user(session: Session) -> str | None:
     return None
 
 
-def _try_login_to_usdb(session: Session) -> bool:
-    if auth := settings.get_usdb_auth():
-        response = session.post(
-            Usdb.BASE_URL,
-            timeout=10,
-            data={"user": auth[0], "pass": auth[1], "login": "Login"},
-        )
-        response.raise_for_status()
-        if UsdbStrings.LOGIN_INVALID not in response.text:
-            _logger.info(f"Successfully logged in to USDB with user '{auth[0]}'.")
-            return True
-        _logger.error(f"Login to USDB with user '{auth[0]}' failed.")
-    else:
-        _logger.warning("Cannot log in to USDB; missing credentials.")
-    return False
+def login_to_usdb(session: Session, user: str, password: str) -> bool:
+    """True if success."""
+    response = session.post(
+        Usdb.BASE_URL,
+        timeout=10,
+        data={"user": user, "pass": password, "login": "Login"},
+    )
+    response.raise_for_status()
+    return UsdbStrings.LOGIN_INVALID not in response.text
 
 
 class RequestMethod(Enum):
