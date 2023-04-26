@@ -11,6 +11,7 @@ from usdb_syncer.usdb_scraper import (
     get_logged_in_usdb_user,
     login_to_usdb,
     log_out_of_usdb,
+    reset_session,
 )
 
 
@@ -40,7 +41,8 @@ class UsdbLoginDialog(Ui_Dialog, QDialog):
         settings.set_usdb_auth(
             self.line_edit_username.text(), self.line_edit_password.text()
         )
-        return super().accept()
+        reset_session()
+        super().accept()
 
     def _on_check_login(self) -> None:
         session = create_session(self.combobox_browser.currentData())

@@ -44,6 +44,11 @@ WELCOME_REGEX = re.compile(
 _SESSION: Session | None = None
 
 
+def reset_session() -> None:
+    global _SESSION  # pylint: disable=global-statement
+    _SESSION = None
+
+
 def _session() -> Session:
     global _SESSION  # pylint: disable=global-statement
     if _SESSION is None:
