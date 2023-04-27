@@ -15,15 +15,15 @@ jobs:
           - os: ubuntu-latest
             TARGET: Linux
             APP_NAME: "USDBSyncer"
-            PYINSTALLER_ARGS: "--onefile"
+            PYINSTALLER_ARGS: "--onefile --add-data 'data/song_list.json:data'"
           - os: macos-latest
             TARGET: macOS
             APP_NAME: "USDBSyncer.app"
-            PYINSTALLER_ARGS: "--windowed --icon .github/media/usdb_syncer.icns"
+            PYINSTALLER_ARGS: "--windowed --icon .github/media/usdb_syncer.icns --add-data 'data/song_list.json:data'"
           - os: windows-latest
             TARGET: Windows
             APP_NAME: "USDBSyncer.exe"
-            PYINSTALLER_ARGS: "--onefile --icon .github/media/usdb_syncer.ico"
+            PYINSTALLER_ARGS: "--onefile --icon .github/media/usdb_syncer.ico --add-data 'data/song_list.json;data'"
     steps:
       - uses: actions/checkout@v3
       - name: Install Qt
@@ -41,6 +41,8 @@ jobs:
           python -m pip install '.[dev]'
       - name: Generate GUI elements
         run: generate_pyside_files
+      - name: Scrape USDB song list to ship with the bundle
+        run: generate_song_list_json -t 'data/song_list.json' -u '${{ secrets.USDB_USER }}' -p '${{ secrets.USDB_PASSWORD }}'
       - name: Build with pyinstaller for ${{matrix.os}}
         run: pyinstaller -n 'USDBSyncer' ${{matrix.PYINSTALLER_ARGS}} src/usdb_syncer/main.py
       - name: Archive application for upload

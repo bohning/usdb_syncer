@@ -12,11 +12,23 @@ from appdirs import AppDirs
 _app_dirs = AppDirs("usdb_syncer", "bohning")
 
 
+def _root() -> Path:
+    """Returns source root folder or temprory bundle folder if running as such.
+
+    https://pyinstaller.org/en/stable/runtime-information.html#run-time-information
+    """
+    if getattr(sys, "frozen", False) and (bundle := getattr(sys, "_MEIPASS", None)):
+        return Path(bundle)
+    return Path(__file__).parent.parent.parent.absolute()
+
+
 class AppPaths:
     """App data paths."""
 
     log = Path(_app_dirs.user_data_dir, "usdb_syncer.log")
     song_list = Path(_app_dirs.user_cache_dir, "available_songs.json")
+    root = _root()
+    fallback_song_list = Path(root, "data", "song_list.json")
 
     @classmethod
     def make_dirs(cls) -> None:

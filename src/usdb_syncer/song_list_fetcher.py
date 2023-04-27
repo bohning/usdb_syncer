@@ -50,9 +50,13 @@ def get_available_songs(
 
 
 def load_cached_songs() -> list[UsdbSong] | None:
-    if not AppPaths.song_list.exists():
+    if AppPaths.song_list.exists():
+        path = AppPaths.song_list
+    elif AppPaths.fallback_song_list.exists():
+        path = AppPaths.fallback_song_list
+    else:
         return None
-    with AppPaths.song_list.open(encoding="utf8") as file:
+    with path.open(encoding="utf8") as file:
         try:
             return json.load(file, object_hook=UsdbSong.from_json)
         except (json.decoder.JSONDecodeError, TypeError, KeyError):
