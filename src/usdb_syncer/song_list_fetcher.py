@@ -5,6 +5,8 @@ import os
 from glob import glob
 from pathlib import Path
 
+from requests import Session
+
 from usdb_syncer import SongId, settings
 from usdb_syncer.logger import get_logger
 from usdb_syncer.song_data import LocalFiles, SongData
@@ -32,14 +34,18 @@ def resync_song_data(data: tuple[SongData, ...]) -> tuple[SongData, ...]:
     )
 
 
-def get_available_songs(force_reload: bool) -> list[UsdbSong]:
+def get_available_songs(
+    force_reload: bool, session: Session | None = None
+) -> list[UsdbSong]:
     if force_reload:
         cached_songs = []
         max_skip_id = SongId(0)
     else:
         cached_songs = load_cached_songs() or []
         max_skip_id = max(song.song_id for song in cached_songs)
-    available_songs = cached_songs + get_usdb_available_songs(max_skip_id)
+    available_songs = cached_songs + get_usdb_available_songs(
+        max_skip_id, session=session
+    )
     return available_songs
 
 

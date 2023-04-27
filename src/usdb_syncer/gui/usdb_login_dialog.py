@@ -9,8 +9,8 @@ from usdb_syncer.gui.forms.UsdbLoginDialog import Ui_Dialog
 from usdb_syncer.usdb_scraper import (
     create_session,
     get_logged_in_usdb_user,
-    login_to_usdb,
     log_out_of_usdb,
+    login_to_usdb,
     reset_session,
 )
 

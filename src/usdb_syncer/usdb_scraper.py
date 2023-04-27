@@ -194,6 +194,7 @@ def get_usdb_page(
     headers: dict[str, str] | None = None,
     payload: dict[str, str] | None = None,
     params: dict[str, str] | None = None,
+    session: Session | None = None,
 ) -> str:
     """Retrieve html subpage from usdb.
 
@@ -204,14 +205,15 @@ def get_usdb_page(
         payload: dict of data to send with request
         params: dict of params to send with request
     """
+    session = session or _session()
     url = Usdb.BASE_URL + rel_url
     match method:
         case RequestMethod.GET:
             _logger.debug(f"Get request for {url}")
-            response = _session().get(url, headers=headers, params=params, timeout=10)
+            response = session.get(url, headers=headers, params=params, timeout=10)
         case RequestMethod.POST:
             _logger.debug(f"Post request for {url}")
-            response = _session().post(
+            response = session.post(
                 url, headers=headers, data=payload, params=params, timeout=10
             )
         case _ as unreachable:
@@ -268,7 +270,9 @@ def _usdb_strings_from_welcome(welcome_string: str) -> Type[UsdbStrings]:
 
 
 def get_usdb_available_songs(
-    max_skip_id: SongId, content_filter: dict[str, str] | None = None
+    max_skip_id: SongId,
+    content_filter: dict[str, str] | None = None,
+    session: Session | None = None,
 ) -> list[UsdbSong]:
     """Return a list of all available songs.
 
@@ -282,7 +286,11 @@ def get_usdb_available_songs(
     for start in range(0, Usdb.MAX_SONG_ID, Usdb.MAX_SONGS_PER_PAGE):
         payload["start"] = str(start)
         html = get_usdb_page(
-            "index.php", RequestMethod.POST, params={"link": "list"}, payload=payload
+            "index.php",
+            RequestMethod.POST,
+            params={"link": "list"},
+            payload=payload,
+            session=session,
         )
         songs = list(
             UsdbSong.from_html(
