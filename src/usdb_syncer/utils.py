@@ -5,6 +5,7 @@ import re
 import subprocess
 import sys
 import unicodedata
+from pathlib import Path
 
 from appdirs import AppDirs
 
@@ -14,13 +15,13 @@ _app_dirs = AppDirs("usdb_syncer", "bohning")
 class AppPaths:
     """App data paths."""
 
-    log = os.path.join(_app_dirs.user_data_dir, "usdb_syncer.log")
-    song_list = os.path.join(_app_dirs.user_cache_dir, "available_songs.json")
+    log = Path(_app_dirs.user_data_dir, "usdb_syncer.log")
+    song_list = Path(_app_dirs.user_cache_dir, "available_songs.json")
 
     @classmethod
     def make_dirs(cls) -> None:
-        os.makedirs(os.path.dirname(cls.log), exist_ok=True)
-        os.makedirs(os.path.dirname(cls.song_list), exist_ok=True)
+        cls.log.parent.mkdir(parents=True, exist_ok=True)
+        cls.song_list.parent.mkdir(parents=True, exist_ok=True)
 
 
 def extract_youtube_id(url: str) -> str | None:
@@ -73,13 +74,13 @@ def sanitize_filename(fname: str) -> str:
     return fname
 
 
-def next_unique_directory(path: str) -> str:
+def next_unique_directory(path: Path) -> Path:
     """Ensures directory name is unique by adding a suffix if necessary."""
     out_path = path
     suffix = 0
-    while os.path.exists(out_path):
+    while out_path.exists():
         suffix += 1
-        out_path = f"{path} ({suffix})"
+        out_path = path.with_name(f"{path.name} ({suffix})")
     return out_path
 
 
@@ -91,13 +92,13 @@ def is_name_maybe_with_suffix(text: str, name: str) -> bool:
     return not tail or re.fullmatch(r" \(\d+\)", tail) is not None
 
 
-def open_file_explorer(path: str) -> None:
+def open_file_explorer(path: Path) -> None:
     if sys.platform == "win32":
         os.startfile(path)
     elif sys.platform == "linux":
-        subprocess.run(["xdg-open", path], check=True)
+        subprocess.run(["xdg-open", str(path)], check=True)
     else:
-        subprocess.run(["open", path], check=True)
+        subprocess.run(["open", str(path)], check=True)
 
 
 def add_to_system_path(path: str) -> None:
@@ -106,3 +107,11 @@ def add_to_system_path(path: str) -> None:
 
 def normalize(text: str) -> str:
     return unicodedata.normalize("NFC", text)
+
+
+def resource_file_ending(name: str) -> str:
+    """Return the suffix or name, including " [BG]" and " [CO]"."""
+    regex = re.compile(r".+?((?: \[(?:CO|BG)\])?\.[^.]+)")
+    if match := regex.fullmatch(name):
+        return match.group(1)
+    return ""

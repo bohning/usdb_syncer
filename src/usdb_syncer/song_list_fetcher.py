@@ -3,6 +3,7 @@
 import json
 import os
 from glob import glob
+from pathlib import Path
 
 from usdb_syncer import SongId, settings
 from usdb_syncer.logger import get_logger
@@ -39,10 +40,9 @@ def get_available_songs(force_reload: bool) -> list[UsdbSong]:
 
 
 def load_available_songs() -> list[UsdbSong] | None:
-    path = AppPaths.song_list
-    if not os.path.exists(path):
+    if not AppPaths.song_list.exists():
         return None
-    with open(path, encoding="utf8") as file:
+    with AppPaths.song_list.open(encoding="utf8") as file:
         try:
             return json.load(file, object_hook=UsdbSong.from_json)
         except (json.decoder.JSONDecodeError, TypeError, KeyError):
@@ -50,16 +50,16 @@ def load_available_songs() -> list[UsdbSong] | None:
 
 
 def dump_available_songs(available_songs: list[UsdbSong]) -> None:
-    with open(AppPaths.song_list, "w", encoding="utf8") as file:
+    with AppPaths.song_list.open("w", encoding="utf8") as file:
         json.dump(available_songs, file, cls=UsdbSongEncoder)
 
 
 def find_local_files() -> dict[SongId, LocalFiles]:
     local_files: dict[SongId, LocalFiles] = {}
-    pattern = os.path.join(settings.get_song_dir(), "**", "*.usdb")
-    for path in glob(pattern, recursive=True):
-        if meta := SyncMeta.try_from_file(path):
-            local_files[meta.song_id] = files = LocalFiles(usdb_path=path)
+    pattern = settings.get_song_dir().joinpath("**", "*.usdb")
+    for path in glob(str(pattern), recursive=True):
+        if meta := SyncMeta.try_from_file(Path(path)):
+            local_files[meta.song_id] = files = LocalFiles(usdb_path=Path(path))
             folder = os.path.dirname(path)
             if txt := _get_song_txt(meta, folder):
                 files.txt = True

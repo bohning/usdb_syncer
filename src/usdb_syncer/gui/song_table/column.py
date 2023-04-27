@@ -1,20 +1,16 @@
 """Table model for song data."""
 
-from enum import Enum, IntEnum
+from enum import IntEnum
 from functools import cache
 
 from PySide6.QtCore import QModelIndex, QPersistentModelIndex
-from PySide6.QtGui import QIcon
+from PySide6.QtGui import QIcon, QPaintDevice
+from PySide6.QtWidgets import QHeaderView
 
+from usdb_syncer import SongId
 from usdb_syncer.typing_helpers import assert_never
 
 QIndex = QModelIndex | QPersistentModelIndex
-
-
-class CustomRole(int, Enum):
-    """Custom values expanding Qt.QItemDataRole."""
-
-    ALL_DATA = 100
 
 
 class Column(IntEnum):
@@ -33,6 +29,7 @@ class Column(IntEnum):
     VIDEO = 10
     COVER = 11
     BACKGROUND = 12
+    DOWNLOAD_STATUS = 13
 
     def display_data(self) -> str | None:
         match self:
@@ -44,10 +41,19 @@ class Column(IntEnum):
                 return "Language"
             case Column.EDITION:
                 return "Edition"
-            case Column.SONG_ID | Column.GOLDEN_NOTES | Column.RATING | Column.VIEWS | \
-                Column.TXT | Column.AUDIO | Column.VIDEO | Column.COVER:  # fmt:skip
-                return None
-            case Column.BACKGROUND:
+            case Column.DOWNLOAD_STATUS:
+                return "Status"
+            case (
+                Column.SONG_ID
+                | Column.GOLDEN_NOTES
+                | Column.RATING
+                | Column.VIEWS
+                | Column.TXT
+                | Column.AUDIO
+                | Column.VIDEO
+                | Column.COVER
+                | Column.BACKGROUND
+            ):
                 return None
             case _ as unreachable:
                 assert_never(unreachable)
@@ -82,5 +88,49 @@ class Column(IntEnum):
                 return QIcon(":/icons/cover.png")
             case Column.BACKGROUND:
                 return QIcon(":/icons/background.png")
+            case Column.DOWNLOAD_STATUS:
+                return QIcon(":/icons/status.png")
             case _ as unreachable:
                 assert_never(unreachable)
+
+    def display_in_batch_view(self) -> bool:
+        return self in (self.SONG_ID, self.ARTIST, self.TITLE, self.DOWNLOAD_STATUS)
+
+    def fixed_size(self, header: QHeaderView, window: QPaintDevice) -> int | None:
+        match self:
+            case Column.SONG_ID:
+                return _horizontal_size(str(SongId(0)), header, window)
+            case Column.VIEWS:
+                return _horizontal_size("99999", header, window)
+            case Column.RATING:
+                return _horizontal_size("★★★★★", header, window)
+            case Column.GOLDEN_NOTES:
+                return _horizontal_size("Yes", header, window)
+            case (
+                Column.ARTIST
+                | Column.TITLE
+                | Column.LANGUAGE
+                | Column.EDITION
+                | Column.DOWNLOAD_STATUS
+            ):
+                return None
+            case (
+                Column.TXT
+                | Column.AUDIO
+                | Column.VIDEO
+                | Column.COVER
+                | Column.BACKGROUND
+            ):
+                return 24
+            case _ as unreachable:
+                assert_never(unreachable)
+
+
+def _horizontal_size(text: str, header: QHeaderView, window: QPaintDevice) -> int:
+    return (
+        int(header.fontMetrics().horizontalAdvance(text) * window.devicePixelRatio())
+        # for rounding down
+        + 1
+        # for cell padding
+        + 2 * 3
+    )

@@ -27,6 +27,7 @@
     <file>language.png</file>
     <file>title.png</file>
     <file>views.png</file>
+    <file>status.png</file>
   </qresource>
   <qresource prefix="splash">
     <file>splash.png</file>

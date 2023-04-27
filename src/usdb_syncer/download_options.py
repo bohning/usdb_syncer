@@ -1,6 +1,7 @@
 """Options for downloading songs."""
 
 from dataclasses import dataclass
+from pathlib import Path
 
 from usdb_syncer import settings
 
@@ -65,7 +66,7 @@ class BackgroundOptions:
 class Options:
     """Settings for downloading songs."""
 
-    song_dir: str
+    song_dir: Path
     txt_options: TxtOptions | None
     audio_options: AudioOptions | None
     browser: settings.Browser
