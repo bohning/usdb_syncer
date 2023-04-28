@@ -266,9 +266,6 @@ class Tracks:
             char.islower() for note in self.all_notes() for char in note.text
         )
 
-    def unsynchronized_lyrics(self) -> str:
-        return "\n".join(line.text().rstrip() for line in self.all_lines())
-
     def fix_line_breaks(self, logger: Log) -> None:
         for track in self.all_tracks():
             fix_line_breaks(track)

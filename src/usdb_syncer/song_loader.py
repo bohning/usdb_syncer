@@ -384,7 +384,7 @@ def _write_m4a_tags(audiofile: Path, ctx: Context, embed_artwork: bool) -> None:
             m4a.tags["\xa9gen"] = ctx.txt.headers.genre
         if ctx.txt.headers.year:
             m4a.tags["\xa9day"] = ctx.txt.headers.year
-        m4a.tags["\xa9lyr"] = ctx.txt.notes.unsynchronized_lyrics()
+        m4a.tags["\xa9lyr"] = ctx.txt.unsynchronized_lyrics()
         m4a.tags["\xa9cmt"] = ctx.sync_meta.audio.resource
 
         m4a.tags["covr"] = []
@@ -416,17 +416,14 @@ def _write_mp3_tags(audiofile: Path, ctx: Context, embed_artwork: bool) -> None:
         encoding=Encoding.UTF8,
         lang=lang,
         desc="Lyrics",
-        text=ctx.txt.notes.unsynchronized_lyrics(),
+        text=ctx.txt.unsynchronized_lyrics(),
     )
     tags["SYLT"] = SYLT(
         encoding=Encoding.UTF8,
         lang=Lang(ctx.txt.headers.main_language()).pt2b,  # ISO 639-2B
         format=2,  # milliseconds as units
         type=1,  # lyrics
-        text=[  # format: list of tuples (lrc, millisecond)
-            (line.text(), round(ctx.txt.headers.bpm.beats_to_ms(line.start())))
-            for line in ctx.txt.notes.all_lines()
-        ],
+        text=ctx.txt.synchronized_lyrics(),
     )
     tags["COMM"] = COMM(
         encoding=Encoding.UTF8,

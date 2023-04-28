@@ -26,6 +26,23 @@ class SongTxt:
     def __str__(self) -> str:
         return f"{self.headers}\n{self.notes}"
 
+    def unsynchronized_lyrics(self) -> str:
+        track_1 = "\n".join(line.text().rstrip() for line in self.notes.track_1)
+        if self.notes.track_2:
+            track_2 = "\n".join(line.text().rstrip() for line in self.notes.track_2)
+            return f"[{self.headers.p1}]:\n{track_1}\n\n[{self.headers.p2}]:\n{track_2}"
+        return track_1
+
+    def synchronized_lyrics(self) -> list[tuple[str, int]]:
+        # format: list of tuples (lrc, millisecond)
+        return [
+            (
+                line.text(),
+                round(self.headers.bpm.beats_to_ms(line.start()) + self.headers.gap),
+            )
+            for line in self.notes.all_lines()
+        ]
+
     @classmethod
     def parse(cls, value: str, logger: Log) -> SongTxt:
         lines = [line for line in value.splitlines() if line]
