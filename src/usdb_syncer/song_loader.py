@@ -16,6 +16,7 @@ from mutagen.id3 import (
     TCON,
     TDRC,
     TIT2,
+    TLAN,
     TPE1,
     USLT,
     Encoding,
@@ -403,16 +404,17 @@ def _write_m4a_tags(audiofile: Path, ctx: Context, embed_artwork: bool) -> None:
 def _write_mp3_tags(audiofile: Path, ctx: Context, embed_artwork: bool) -> None:
     tags = ID3()
 
-    lang = Lang(ctx.txt.headers.main_language()).pt2b
+    lang = Lang(ctx.txt.headers.main_language()).pt2b  # ISO 639-2B
     tags["TPE1"] = TPE1(encoding=Encoding.UTF8, text=ctx.txt.headers.artist)
     tags["TIT2"] = TIT2(encoding=Encoding.UTF8, text=ctx.txt.headers.title)
-    if ctx.txt.headers.genre:
-        tags["TCON"] = TCON(encoding=Encoding.UTF8, text=ctx.txt.headers.genre)
-    if ctx.txt.headers.year:
-        tags["TDRC"] = TDRC(encoding=Encoding.UTF8, text=ctx.txt.headers.year)
+    tags["TLAN"] = TLAN(encoding=Encoding.UTF8, text=lang)
+    if genre := ctx.txt.headers.genre:
+        tags["TCON"] = TCON(encoding=Encoding.UTF8, text=genre)
+    if year := ctx.txt.headers.year:
+        tags["TDRC"] = TDRC(encoding=Encoding.UTF8, text=year)
     tags[f"USLT::'{lang}'"] = USLT(
         encoding=Encoding.UTF8,
-        lang=lang,  # ISO 639-2B
+        lang=lang,
         desc="Lyrics",
         text=ctx.txt.notes.unsynchronized_lyrics(),
     )
@@ -440,7 +442,7 @@ def _write_mp3_tags(audiofile: Path, ctx: Context, embed_artwork: bool) -> None:
                 mime="image/jpeg",
                 type=PictureType.COVER_FRONT,
                 desc=f"Source: {ctx.sync_meta.cover.resource}",
-                data=ctx.locations.file_path(ctx.sync_meta.cover).read_bytes(),
+                data=ctx.locations.file_path(ctx.sync_meta.cover.fname).read_bytes(),
             )
         )
 
