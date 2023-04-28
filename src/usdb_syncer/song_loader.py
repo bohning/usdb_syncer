@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Callable, Iterable, Iterator
 
 import attrs
+from iso639 import Lang
 from mutagen.id3 import (
     APIC,
     COMM,
@@ -359,128 +360,88 @@ def _write_sync_meta(ctx: Context) -> None:
 
 
 def _maybe_write_audio_tags(ctx: Context) -> None:
-    if not (options := ctx.options.audio_options):
+    if not (options := ctx.options.audio_options) or not (meta := ctx.sync_meta.audio):
         return
 
-    path = os.path.join(
-        ctx.locations.dir_path, f"{ctx.locations.filename_stem}.{options.format.value}"
-    )
-    match options.format.value:
-        case AudioFormat.M4A.value:
-            m4a = MP4(path)
+    audiofile = ctx.locations.file_path(meta.fname)
 
-            if m4a.tags:
-                m4a.tags["\xa9ART"] = ctx.txt.headers.artist
-                m4a.tags["\xa9nam"] = ctx.txt.headers.title
-                if ctx.txt.headers.genre:
-                    m4a.tags["\xa9gen"] = ctx.txt.headers.genre
-                if ctx.txt.headers.year:
-                    m4a.tags["\xa9day"] = ctx.txt.headers.year
-                m4a.tags["\xa9lyr"] = str(ctx.txt)
-                m4a.tags[
-                    "\xa9cmt"
-                ] = f"https://www.youtube.com/watch?v={ctx.txt.meta_tags.audio or ctx.txt.meta_tags.video}"
+    match audiofile.suffix:
+        case ".m4a":
+            _write_m4a_tags(audiofile, ctx, options.embed_artwork)
 
-                if ctx.options.audio_options.embed_artwork and ctx.sync_meta.cover:
-                    with open(
-                        os.path.join(
-                            ctx.locations.dir_path,
-                            f"{ctx.locations.filename_stem} [CO].jpg",
-                        ),
-                        "rb",
-                    ) as cover:
-                        m4a.tags["covr"] = [
-                            MP4Cover(cover.read(), imageformat=MP4Cover.FORMAT_JPEG)
-                        ]
+        case ".mp3":
+            _write_mp3_tags(audiofile, ctx, options.embed_artwork)
 
-                if ctx.options.audio_options.embed_artwork and ctx.sync_meta.background:
-                    with open(
-                        os.path.join(
-                            ctx.locations.dir_path,
-                            f"{ctx.locations.filename_stem} [BG].jpg",
-                        ),
-                        "rb",
-                    ) as background:
-                        m4a.tags["covr"].append(
-                            MP4Cover(
-                                background.read(), imageformat=MP4Cover.FORMAT_JPEG
-                            )
-                        )
 
-                m4a.tags.save(path)
+def _write_m4a_tags(audiofile: Path, ctx: Context, embed_artwork: bool) -> None:
+    m4a = MP4(audiofile)
 
-        case AudioFormat.MP3.value:
-            try:
-                tags = ID3(path)
-            except ID3NoHeaderError:
-                tags = ID3()
+    if m4a.tags:
+        m4a.tags["\xa9ART"] = ctx.txt.headers.artist
+        m4a.tags["\xa9nam"] = ctx.txt.headers.title
+        if ctx.txt.headers.genre:
+            m4a.tags["\xa9gen"] = ctx.txt.headers.genre
+        if ctx.txt.headers.year:
+            m4a.tags["\xa9day"] = ctx.txt.headers.year
+        m4a.tags["\xa9lyr"] = ctx.txt.notes.unsynchronized_lyrics()
+        m4a.tags["\xa9cmt"] = ctx.sync_meta.audio.resource
 
-            tags["TPE1"] = TPE1(encoding=3, text=ctx.txt.headers.artist)
-            tags["TIT2"] = TIT2(encoding=3, text=ctx.txt.headers.title)
-            if ctx.txt.headers.genre:
-                tags["TCON"] = TCON(encoding=3, text=ctx.txt.headers.genre)
-            if ctx.txt.headers.year:
-                tags["TDRC"] = TDRC(encoding=3, text=ctx.txt.headers.year)
-            tags["USLT::'eng'"] = USLT(
-                encoding=3, lang="eng", desc="desc", text=ctx.txt
-            )
-            sync_lrc = [
-                ("This is a test", 17640),
-                ("Of two synchronized lyrics lines.", 23640),
-            ]  # [(lrc, millisecond), ]
-            tags["SYLT"] = SYLT(
-                encoding=Encoding.UTF8, lang="eng", format=2, type=1, text=sync_lrc
-            )
-            tags["COMM"] = COMM(
-                encoding=3,
-                lang="eng",
-                desc="",
-                text=f"https://www.youtube.com/watch?v={ctx.txt.meta_tags.audio or ctx.txt.meta_tags.video}",
-            )
-
-            if ctx.options.audio_options.embed_artwork and ctx.sync_meta.cover:
-                with open(
-                    os.path.join(
-                        ctx.locations.dir_path,
-                        f"{ctx.locations.filename_stem} [CO].jpg",
-                    ),
-                    "rb",
-                ) as cover:
-                    tags.add(
-                        APIC(
-                            encoding=Encoding.UTF8,
-                            mime="image/jpeg",
-                            type=PictureType.COVER_FRONT,
-                            desc="Cover",
-                            data=cover.read(),
+        m4a.tags["covr"] = []
+        if embed_artwork:
+            for image in (ctx.sync_meta.cover, ctx.sync_meta.background):
+                if image:
+                    m4a.tags["covr"].append(
+                        MP4Cover(
+                            ctx.locations.file_path(image.fname).read_bytes(),
+                            imageformat=MP4Cover.FORMAT_JPEG,
                         )
                     )
 
-            # if ctx.options.audio_options.embed_artwork and ctx.sync_meta.background:
-            #     with open(
-            #         os.path.join(
-            #             ctx.locations.dir_path,
-            #             f"{ctx.locations.filename_stem} [BG].jpg",
-            #         ),
-            #         "rb",
-            #     ) as background:
-            #         tags.add(
-            #             APIC(
-            #                 encoding=Encoding.UTF8,
-            #                 mime="image/jpeg",
-            #                 type=PictureType.ARTIST,
-            #                 desc="Background",
-            #                 data=background.read(),
-            #             )
-            #         )
-
-            tags.save(path)
+        m4a.tags.save(audiofile)
 
 
-def _ensure_correct_folder_name(locations: Locations) -> None:
-    folder_dir, folder_name = os.path.split(locations.dir_path)
-    if is_name_maybe_with_suffix(folder_name, locations.filename_stem):
-        return
-    new = next_unique_directory(os.path.join(folder_dir, locations.filename_stem))
-    os.rename(locations.dir_path, new)
-    locations.update_dir_path(new)
+def _write_mp3_tags(audiofile: Path, ctx: Context, embed_artwork: bool) -> None:
+    tags = ID3()
+
+    lang = Lang(ctx.txt.headers.main_language()).pt2b
+    tags["TPE1"] = TPE1(encoding=Encoding.UTF8, text=ctx.txt.headers.artist)
+    tags["TIT2"] = TIT2(encoding=Encoding.UTF8, text=ctx.txt.headers.title)
+    if ctx.txt.headers.genre:
+        tags["TCON"] = TCON(encoding=Encoding.UTF8, text=ctx.txt.headers.genre)
+    if ctx.txt.headers.year:
+        tags["TDRC"] = TDRC(encoding=Encoding.UTF8, text=ctx.txt.headers.year)
+    tags[f"USLT::'{lang}'"] = USLT(
+        encoding=Encoding.UTF8,
+        lang=lang,  # ISO 639-2B
+        desc="Lyrics",
+        text=ctx.txt.notes.unsynchronized_lyrics(),
+    )
+    tags["SYLT"] = SYLT(
+        encoding=Encoding.UTF8,
+        lang=Lang(ctx.txt.headers.main_language()).pt2b,  # ISO 639-2B
+        format=2,  # milliseconds as units
+        type=1,  # lyrics
+        text=[  # format: list of tuples (lrc, millisecond)
+            (line.text(), round(ctx.txt.headers.bpm.beats_to_ms(line.start())))
+            for line in ctx.txt.notes.all_lines()
+        ],
+    )
+    tags["COMM"] = COMM(
+        encoding=Encoding.UTF8,
+        lang="eng",
+        desc="Audio Source",
+        text=ctx.sync_meta.audio.resource,
+    )
+
+    if embed_artwork and ctx.sync_meta.cover:
+        tags.add(
+            APIC(
+                encoding=Encoding.UTF8,
+                mime="image/jpeg",
+                type=PictureType.COVER_FRONT,
+                desc=f"Source: {ctx.sync_meta.cover.resource}",
+                data=ctx.locations.file_path(ctx.sync_meta.cover).read_bytes(),
+            )
+        )
+
+    tags.save(audiofile)
