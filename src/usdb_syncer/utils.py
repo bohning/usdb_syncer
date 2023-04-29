@@ -4,11 +4,13 @@ import os
 import re
 import subprocess
 import sys
+import time
 import unicodedata
 from pathlib import Path
 
 from appdirs import AppDirs
 
+CACHE_LIFETIME = 60 * 60
 _app_dirs = AppDirs("usdb_syncer", "bohning")
 
 
@@ -34,6 +36,25 @@ class AppPaths:
     def make_dirs(cls) -> None:
         cls.log.parent.mkdir(parents=True, exist_ok=True)
         cls.song_list.parent.mkdir(parents=True, exist_ok=True)
+
+
+class DirectoryCache:
+    """Helper to keep track of directories.
+
+    This is to avoid a race condition when two songs requiring the same folder name
+    are downloaded concurrently.
+    """
+
+    _cache: dict[Path, float] = {}
+
+    @classmethod
+    def insert(cls, path: Path) -> bool:
+        """True if path was not in the cache (or the entry had expired)."""
+        now = time.time()
+        if cls._cache.get(path, 0) + CACHE_LIFETIME < now:
+            cls._cache[path] = now
+            return True
+        return False
 
 
 def extract_youtube_id(url: str) -> str | None:
@@ -90,7 +111,7 @@ def next_unique_directory(path: Path) -> Path:
     """Ensures directory name is unique by adding a suffix if necessary."""
     out_path = path
     suffix = 0
-    while out_path.exists():
+    while not DirectoryCache.insert(out_path) or out_path.exists():
         suffix += 1
         out_path = path.with_name(f"{path.name} ({suffix})")
     return out_path
