@@ -429,7 +429,7 @@ def set_cover_max_size(value: int) -> None:
 
 
 def get_browser() -> Browser:
-    return get_setting(SettingKey.BROWSER, Browser.NONE)
+    return get_setting(SettingKey.BROWSER, Browser.CHROME)
 
 
 def set_browser(value: Browser) -> None:
