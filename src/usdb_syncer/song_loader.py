@@ -20,7 +20,6 @@ from mutagen.id3 import (
     TPE1,
     USLT,
     Encoding,
-    ID3NoHeaderError,
     PictureType,
 )
 from mutagen.mp4 import MP4, MP4Cover
@@ -31,7 +30,6 @@ from usdb_syncer.download_options import Options, download_options
 from usdb_syncer.logger import Log, get_logger
 from usdb_syncer.meta_tags import MetaTags
 from usdb_syncer.resource_dl import ImageKind, download_and_process_image
-from usdb_syncer.settings import AudioFormat
 from usdb_syncer.song_data import DownloadResult, LocalFiles, SongData
 from usdb_syncer.song_txt import Headers, SongTxt
 from usdb_syncer.sync_meta import FileMeta, SyncMeta
