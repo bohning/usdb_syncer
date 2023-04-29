@@ -23,11 +23,9 @@ from usdb_syncer.typing_helpers import assert_never
 SYSTEM_USDB = "USDB Syncer/USDB"
 
 
-def get_usdb_auth() -> Tuple[str, str] | None:
+def get_usdb_auth() -> Tuple[str, str]:
     username = get_setting(SettingKey.USDB_USER_NAME, "")
-    if username and (password := keyring.get_password(SYSTEM_USDB, username)):
-        return (username, password)
-    return None
+    return (username, keyring.get_password(SYSTEM_USDB, username) or "")
 
 
 def set_usdb_auth(username: str, password: str) -> None:

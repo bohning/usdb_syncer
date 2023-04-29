@@ -32,7 +32,7 @@ class UsdbLoginDialog(Ui_Dialog, QDialog):
         self.combobox_browser.setCurrentIndex(
             self.combobox_browser.findData(settings.get_browser())
         )
-        user, password = settings.get_usdb_auth() or ("", "")
+        user, password = settings.get_usdb_auth()
         self.line_edit_username.setText(user)
         self.line_edit_password.setText(password)
 

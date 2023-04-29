@@ -46,7 +46,7 @@ def establish_usdb_login(session: Session) -> bool:
     if user := get_logged_in_usdb_user(session):
         _logger.info(f"Using existing login of USDB user '{user}'.")
         return True
-    if auth := settings.get_usdb_auth():
+    if (auth := settings.get_usdb_auth())[0] and auth[1]:
         if login_to_usdb(session, *auth):
             _logger.info(f"Successfully logged in to USDB with user '{auth[0]}'.")
             return True
