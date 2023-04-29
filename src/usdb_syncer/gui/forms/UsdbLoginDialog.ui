@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>257</width>
-    <height>158</height>
+    <width>294</width>
+    <height>214</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -50,7 +50,7 @@
      <item row="0" column="0">
       <widget class="QLabel" name="label_5">
        <property name="text">
-        <string>Cookies:</string>
+        <string>Browser cookies:</string>
        </property>
       </widget>
      </item>
@@ -58,6 +58,33 @@
       <widget class="QComboBox" name="combobox_browser">
        <property name="toolTip">
         <string>Select your browser in order to reuse an existing USDB session.</string>
+       </property>
+      </widget>
+     </item>
+    </layout>
+   </item>
+   <item>
+    <layout class="QHBoxLayout" name="horizontalLayout_2">
+     <item>
+      <spacer name="horizontalSpacer">
+       <property name="orientation">
+        <enum>Qt::Horizontal</enum>
+       </property>
+       <property name="sizeHint" stdset="0">
+        <size>
+         <width>40</width>
+         <height>20</height>
+        </size>
+       </property>
+      </spacer>
+     </item>
+     <item>
+      <widget class="QCommandLinkButton" name="command_link_register">
+       <property name="text">
+        <string>No account?</string>
+       </property>
+       <property name="description">
+        <string>Register on USDB</string>
        </property>
       </widget>
      </item>
