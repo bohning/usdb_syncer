@@ -7,22 +7,9 @@ from pathlib import Path
 from typing import Callable, Iterable, Iterator
 
 import attrs
-from iso639 import Lang
-from mutagen.id3 import (
-    APIC,
-    COMM,
-    ID3,
-    SYLT,
-    TCON,
-    TDRC,
-    TIT2,
-    TLAN,
-    TPE1,
-    USLT,
-    Encoding,
-    PictureType,
-)
-from mutagen.mp4 import MP4, MP4Cover
+import iso639
+import mutagen.mp4
+from mutagen import id3
 from PySide6.QtCore import QRunnable, QThreadPool
 
 from usdb_syncer import SongId, resource_dl, usdb_scraper
@@ -373,7 +360,7 @@ def _maybe_write_audio_tags(ctx: Context) -> None:
 
 def _write_m4a_tags(audio_meta: FileMeta, ctx: Context, embed_artwork: bool) -> None:
     path = ctx.locations.file_path(audio_meta.fname)
-    m4a = MP4(path)
+    m4a = mutagen.mp4.MP4(path)
 
     if m4a.tags:
         m4a.tags["\xa9ART"] = ctx.txt.headers.artist
@@ -387,9 +374,9 @@ def _write_m4a_tags(audio_meta: FileMeta, ctx: Context, embed_artwork: bool) -> 
 
         if embed_artwork:
             m4a.tags["covr"] = [
-                MP4Cover(
+                mutagen.mp4.MP4Cover(
                     ctx.locations.file_path(image.fname).read_bytes(),
-                    imageformat=MP4Cover.FORMAT_JPEG,
+                    imageformat=mutagen.mp4.MP4Cover.FORMAT_JPEG,
                 )
                 for image in (ctx.sync_meta.cover, ctx.sync_meta.background)
                 if image
@@ -399,31 +386,31 @@ def _write_m4a_tags(audio_meta: FileMeta, ctx: Context, embed_artwork: bool) -> 
 
 
 def _write_mp3_tags(audio_meta: FileMeta, ctx: Context, embed_artwork: bool) -> None:
-    tags = ID3()
+    tags = id3.ID3()
 
-    lang = Lang(ctx.txt.headers.main_language()).pt2b  # ISO 639-2B
-    tags["TPE1"] = TPE1(encoding=Encoding.UTF8, text=ctx.txt.headers.artist)
-    tags["TIT2"] = TIT2(encoding=Encoding.UTF8, text=ctx.txt.headers.title)
-    tags["TLAN"] = TLAN(encoding=Encoding.UTF8, text=lang)
+    lang = iso639.Lang(ctx.txt.headers.main_language()).pt2b  # ISO 639-2B
+    tags["TPE1"] = id3.TPE1(encoding=id3.Encoding.UTF8, text=ctx.txt.headers.artist)
+    tags["TIT2"] = id3.TIT2(encoding=id3.Encoding.UTF8, text=ctx.txt.headers.title)
+    tags["TLAN"] = id3.TLAN(encoding=id3.Encoding.UTF8, text=lang)
     if genre := ctx.txt.headers.genre:
-        tags["TCON"] = TCON(encoding=Encoding.UTF8, text=genre)
+        tags["TCON"] = id3.TCON(encoding=id3.Encoding.UTF8, text=genre)
     if year := ctx.txt.headers.year:
-        tags["TDRC"] = TDRC(encoding=Encoding.UTF8, text=year)
-    tags[f"USLT::'{lang}'"] = USLT(
-        encoding=Encoding.UTF8,
+        tags["TDRC"] = id3.TDRC(encoding=id3.Encoding.UTF8, text=year)
+    tags[f"USLT::'{lang}'"] = id3.USLT(
+        encoding=id3.Encoding.UTF8,
         lang=lang,
         desc="Lyrics",
         text=ctx.txt.unsynchronized_lyrics(),
     )
-    tags["SYLT"] = SYLT(
-        encoding=Encoding.UTF8,
-        lang=Lang(ctx.txt.headers.main_language()).pt2b,  # ISO 639-2B
+    tags["SYLT"] = id3.SYLT(
+        encoding=id3.Encoding.UTF8,
+        lang=iso639.Lang(ctx.txt.headers.main_language()).pt2b,  # ISO 639-2B
         format=2,  # milliseconds as units
         type=1,  # lyrics
         text=ctx.txt.synchronized_lyrics(),
     )
-    tags["COMM"] = COMM(
-        encoding=Encoding.UTF8,
+    tags["COMM"] = id3.COMM(
+        encoding=id3.Encoding.UTF8,
         lang="eng",
         desc="Audio Source",
         text=audio_meta.resource,
@@ -431,10 +418,10 @@ def _write_mp3_tags(audio_meta: FileMeta, ctx: Context, embed_artwork: bool) -> 
 
     if embed_artwork and ctx.sync_meta.cover:
         tags.add(
-            APIC(
-                encoding=Encoding.UTF8,
+            id3.APIC(
+                encoding=id3.Encoding.UTF8,
                 mime="image/jpeg",
-                type=PictureType.COVER_FRONT,
+                type=id3.PictureType.COVER_FRONT,
                 desc=f"Source: {ctx.sync_meta.cover.resource}",
                 data=ctx.locations.file_path(ctx.sync_meta.cover.fname).read_bytes(),
             )
