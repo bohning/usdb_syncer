@@ -17,6 +17,7 @@ class SettingsDialog(Ui_Dialog, QDialog):
         self._populate_comboboxes()
         self._load_settings()
         self._browser = self.comboBox_browser.currentData()
+        self.groupBox_reencode_video.setVisible(False)
 
     def _populate_comboboxes(self) -> None:
         for encoding in settings.Encoding:
