@@ -14,15 +14,12 @@ jobs:
         include:
           - os: ubuntu-latest
             TARGET: Linux
-            APP_NAME: "USDBSyncer"
             PYINSTALLER_ARGS: "--onefile --add-data 'data/song_list.json:data'"
           - os: macos-latest
             TARGET: macOS
-            APP_NAME: "USDBSyncer.app"
             PYINSTALLER_ARGS: "--windowed --icon .github/media/usdb_syncer.icns --add-data 'data/song_list.json:data'"
           - os: windows-latest
             TARGET: Windows
-            APP_NAME: "USDBSyncer.exe"
             PYINSTALLER_ARGS: "--onefile --icon .github/media/usdb_syncer.ico --add-data 'data/song_list.json;data'"
     steps:
       - uses: actions/checkout@v3
@@ -44,18 +41,21 @@ jobs:
       - name: Scrape USDB song list to ship with the bundle
         run: generate_song_list_json -t 'data/song_list.json' -u '${{ secrets.USDB_USER }}' -p '${{ secrets.USDB_PASSWORD }}'
       - name: Build with pyinstaller for ${{matrix.os}}
-        run: pyinstaller -n 'USDBSyncer' ${{matrix.PYINSTALLER_ARGS}} src/usdb_syncer/main.py
+        run: pyinstaller -n 'USDB_Syncer-${{github.ref_name}}-${{matrix.TARGET}}' ${{matrix.PYINSTALLER_ARGS}} src/usdb_syncer/main.py
       - name: Archive application for upload
+        if: matrix.TARGET == 'macOS'
         uses: thedoctor0/zip-release@main
         with:
           type: "zip"
           directory: dist
-          path: ${{matrix.APP_NAME}}
-          filename: "USDBSyncer-${{github.ref_name}}-${{matrix.TARGET}}.zip"
+          path: "USDB_Syncer-${{github.ref_name}}-${{matrix.TARGET}}.app"
+          filename: "USDB_Syncer-${{github.ref_name}}-${{matrix.TARGET}}.zip"
       - uses: actions/upload-artifact@v3
         with:
           name: artifacts
-          path: "dist/*.zip"
+          path: |
+            dist/*
+            !dist/*.app
 
   release:
     name: Create release
@@ -67,4 +67,4 @@ jobs:
       - uses: actions/download-artifact@v3
       - uses: ncipollo/release-action@v1
         with:
-          artifacts: "artifacts/*.zip"
+          artifacts: "artifacts/*"
