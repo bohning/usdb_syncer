@@ -245,10 +245,10 @@ class SongTable:
                 raise Exception(f"Unexpected id: {result.song_id}!")
             if result.error is DownloadErrorReason.NOT_FOUND:
                 self._model.remove_row(row)
+                logger.info("Removed song from local database.")
             else:
                 self._model.songs[row].status = DownloadStatus.FAILED
                 self._model.row_changed(row)
-            logger.error(result.error.message())
         elif result.data:
             self._model.update_item(result.data)
             logger.info("All done!")

@@ -70,18 +70,7 @@ class DownloadErrorReason(Enum):
 
     NOT_LOGGED_IN = enum.auto()
     NOT_FOUND = enum.auto()
-
-    def message(self) -> str:
-        match self:
-            case DownloadErrorReason.NOT_LOGGED_IN:
-                return (
-                    "Aborted; not logged in. Log in to USDB in your browser and "
-                    "select the browser in the USDB Syncer settings."
-                )
-            case DownloadErrorReason.NOT_FOUND:
-                return "Could not find song on USDB!"
-            case _ as unreachable:
-                assert_never(unreachable)
+    UNKNOWN = enum.auto()
 
 
 @attrs.define

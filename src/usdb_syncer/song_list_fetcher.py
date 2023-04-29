@@ -12,9 +12,11 @@ from usdb_syncer.logger import get_logger
 from usdb_syncer.song_data import LocalFiles, SongData
 from usdb_syncer.song_txt import SongTxt
 from usdb_syncer.sync_meta import SyncMeta
-from usdb_syncer.usdb_scraper import get_usdb_available_songs
+from usdb_syncer.usdb_scraper import UsdbLoginError, get_usdb_available_songs
 from usdb_syncer.usdb_song import UsdbSong, UsdbSongEncoder
 from usdb_syncer.utils import AppPaths, try_read_unknown_encoding
+
+_logger = get_logger(__file__)
 
 
 def get_all_song_data(force_reload: bool) -> tuple[SongData, ...]:
@@ -38,15 +40,16 @@ def get_available_songs(
     force_reload: bool, session: Session | None = None
 ) -> list[UsdbSong]:
     if force_reload:
-        cached_songs = []
+        songs = []
         max_skip_id = SongId(0)
     else:
-        cached_songs = load_cached_songs() or []
-        max_skip_id = max(song.song_id for song in cached_songs)
-    available_songs = cached_songs + get_usdb_available_songs(
-        max_skip_id, session=session
-    )
-    return available_songs
+        songs = load_cached_songs() or []
+        max_skip_id = max(song.song_id for song in songs)
+    try:
+        songs += get_usdb_available_songs(max_skip_id, session=session)
+    except UsdbLoginError:
+        _logger.debug("Skipping fetching new songs as there is no login.")
+    return songs
 
 
 def load_cached_songs() -> list[UsdbSong] | None:

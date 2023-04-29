@@ -26,7 +26,7 @@ from usdb_syncer.song_data import (
 )
 from usdb_syncer.song_txt import Headers, SongTxt
 from usdb_syncer.sync_meta import FileMeta, SyncMeta
-from usdb_syncer.usdb_scraper import SongDetails
+from usdb_syncer.usdb_scraper import SongDetails, UsdbLoginError, UsdbNotFoundError
 from usdb_syncer.usdb_song import UsdbSong
 from usdb_syncer.utils import (
     is_name_maybe_with_suffix,
@@ -116,10 +116,8 @@ class Context:
     @classmethod
     def new(
         cls, details: SongDetails, options: Options, info: DownloadInfo, logger: Log
-    ) -> Context | None:
+    ) -> Context:
         txt_str = usdb_scraper.get_notes(details.song_id, logger)
-        if not txt_str:
-            return None
         txt = SongTxt.parse(txt_str, logger)
         txt.sanitize()
         txt.headers.creator = txt.headers.creator or details.uploader or None
@@ -206,20 +204,29 @@ class SongLoader(QRunnable):
         self.logger = get_logger(__file__, info.song_id)
 
     def run(self) -> None:
+        result = DownloadResult(self.song_id)
+        try:
+            result.data = self._run_inner()
+        except UsdbLoginError:
+            self.logger.error("Aborted; download requires login.")
+            result.error = DownloadErrorReason.NOT_LOGGED_IN
+        except UsdbNotFoundError:
+            self.logger.error("Song seems to have been deleted from USDB.")
+            result.error = DownloadErrorReason.NOT_FOUND
+        except Exception as exception:  # pylint: disable=broad-except
+            self.logger.debug(exception)
+            self.logger.error(
+                "Failed to finish download due to an unexpected error. "
+                "See debug log for more information."
+            )
+            result.error = DownloadErrorReason.UNKNOWN
+        self.on_finish(result)
+
+    def _run_inner(self) -> SongData:
         self.on_start(self.song_id)
         details = usdb_scraper.get_usdb_details(self.song_id)
-        if details is None:
-            self.on_finish(
-                DownloadResult(self.song_id, error=DownloadErrorReason.NOT_FOUND)
-            )
-            return
         self.logger.info(f"Found '{details.artist} - {details.title}' on  USDB")
         ctx = Context.new(details, self.options, self.data, self.logger)
-        if not ctx:
-            self.on_finish(
-                DownloadResult(self.song_id, error=DownloadErrorReason.NOT_LOGGED_IN)
-            )
-            return
         ctx.locations.dir_path().mkdir(parents=True, exist_ok=True)
         ctx.locations.ensure_correct_paths(ctx.sync_meta)
         _maybe_download_audio(ctx)
@@ -229,7 +236,7 @@ class SongLoader(QRunnable):
         _maybe_write_txt(ctx)
         _write_sync_meta(ctx)
         _maybe_write_audio_tags(ctx)
-        self.on_finish(DownloadResult(self.song_id, data=ctx.finished_song_data()))
+        return ctx.finished_song_data()
 
 
 def download_songs(

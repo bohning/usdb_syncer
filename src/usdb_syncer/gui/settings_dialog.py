@@ -5,7 +5,7 @@ from PySide6.QtWidgets import QDialog, QWidget
 
 from usdb_syncer import settings
 from usdb_syncer.gui.forms.SettingsDialog import Ui_Dialog
-from usdb_syncer.usdb_scraper import reset_session
+from usdb_syncer.usdb_scraper import SessionManager
 
 
 class SettingsDialog(Ui_Dialog, QDialog):
@@ -16,6 +16,7 @@ class SettingsDialog(Ui_Dialog, QDialog):
         self.setupUi(self)
         self._populate_comboboxes()
         self._load_settings()
+        self._browser = self.comboBox_browser.currentData()
 
     def _populate_comboboxes(self) -> None:
         for encoding in settings.Encoding:
@@ -78,7 +79,8 @@ class SettingsDialog(Ui_Dialog, QDialog):
 
     def accept(self) -> None:
         self._save_settings()
-        reset_session()
+        if self._browser != self.comboBox_browser.currentData():
+            SessionManager.reset_session()
         super().accept()
 
     def _save_settings(self) -> None:

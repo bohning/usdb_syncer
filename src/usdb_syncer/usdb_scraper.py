@@ -4,10 +4,10 @@ import logging
 import re
 from datetime import datetime
 from enum import Enum
-from functools import wraps
-from typing import Any, Callable, Iterator, Type
+from typing import Iterator, Type
 
 import attrs
+import requests
 from bs4 import BeautifulSoup, NavigableString, Tag
 from requests import Session
 
@@ -41,36 +41,69 @@ WELCOME_REGEX = re.compile(
 )
 
 
-_SESSION: Session | None = None
+def establish_usdb_login(session: Session) -> bool:
+    """Tries to log in to USDB if necessary. Returns final login status."""
+    if user := get_logged_in_usdb_user(session):
+        _logger.info(f"Using existing login of USDB user '{user}'.")
+        return True
+    if auth := settings.get_usdb_auth():
+        if login_to_usdb(session, *auth):
+            _logger.info(f"Successfully logged in to USDB with user '{auth[0]}'.")
+            return True
+        _logger.error(f"Login to USDB with user '{auth[0]}' failed!")
+    else:
+        _logger.warning(
+            "Not logged in to USDB. Please go to 'Synchronize > USDB Login', then "
+            "select the browser you are logged in with and/or enter your credentials."
+        )
+    return False
 
 
-def reset_session() -> None:
-    global _SESSION  # pylint: disable=global-statement
-    _SESSION = None
-
-
-def _session() -> Session:
-    global _SESSION  # pylint: disable=global-statement
-    if _SESSION is None:
-        _SESSION = create_session(settings.get_browser())
-        if user := get_logged_in_usdb_user(_SESSION):
-            _logger.info(f"Using existing login of USDB user '{user}'.")
-        elif auth := settings.get_usdb_auth():
-            if login_to_usdb(_SESSION, *auth):
-                _logger.info(f"Successfully logged in to USDB with user '{auth[0]}'.")
-            else:
-                _logger.error(f"Login to USDB with user '{auth[0]}' failed.")
-        else:
-            _logger.warning("Cannot log in to USDB; missing credentials.")
-    return _SESSION
-
-
-def create_session(browser: settings.Browser) -> Session:
+def new_session_with_cookies(browser: settings.Browser) -> Session:
     session = Session()
     if cookies := browser.cookies():
         for cookie in cookies:
             session.cookies.set_cookie(cookie)
     return session
+
+
+class SessionManager:
+    """Singleton for managing the global session instance."""
+
+    _session: Session | None = None
+
+    @classmethod
+    def session(cls) -> Session:
+        if cls._session is None:
+            cls._session = new_session_with_cookies(settings.get_browser())
+            establish_usdb_login(cls._session)
+        return cls._session
+
+    @classmethod
+    def reset_session(cls) -> None:
+        if cls._session:
+            cls._session.close()
+            cls._session = None
+
+    @classmethod
+    def has_session(cls) -> bool:
+        return cls._session is not None
+
+
+class UsdbError(Exception):
+    """Super class for errors relating to USDB."""
+
+
+class UsdbParseError(UsdbError):
+    """Raised when HTML from USDB has unexpected format."""
+
+
+class UsdbLoginError(UsdbError):
+    """Raised when login was required, but not possible."""
+
+
+class UsdbNotFoundError(UsdbError):
+    """Raised when a requested USDB record is missing."""
 
 
 def get_logged_in_usdb_user(session: Session) -> str | None:
@@ -101,30 +134,6 @@ class RequestMethod(Enum):
 
     GET = "GET"
     POST = "POST"
-
-
-class ParseException(Exception):
-    """Raised when HTML from USDB has unexpected format."""
-
-
-def raises_parse_exception(func: Callable) -> Callable:
-    """Converts certain errors of annotated functions that indicate wrong assumptions
-    about the parsed HTML into ParseErrors.
-    This can be used with '# type: ignore' and an outer try-except clause to parse HTML
-    concisely, but safely.
-    """
-
-    @wraps(func)
-    def wrapped(*args: Any, **kwargs: Any) -> Any:
-        try:
-            return func(*args, **kwargs)
-        except (AttributeError, IndexError, ValueError) as exception:
-            # AttributeError: not existing attribute (e.g. because the object is None)
-            # IndexError: list index out of bounds
-            # ValueError: too many values to unpack
-            raise ParseException from exception
-
-    return wrapped
 
 
 class CommentContents:
@@ -196,7 +205,7 @@ def get_usdb_page(
     params: dict[str, str] | None = None,
     session: Session | None = None,
 ) -> str:
-    """Retrieve html subpage from usdb.
+    """Retrieve HTML subpage from USDB.
 
     Parameters:
         rel_url: relative url of page to retrieve
@@ -204,8 +213,43 @@ def get_usdb_page(
         headers: dict of headers to send with request
         payload: dict of data to send with request
         params: dict of params to send with request
+        session: Session to use instead of the global one
     """
-    session = session or _session()
+    existing_session = SessionManager.has_session()
+
+    def page() -> str:
+        return _get_usdb_page_inner(
+            session or SessionManager.session(),
+            rel_url,
+            method=method,
+            headers=headers,
+            payload=payload,
+            params=params,
+        )
+
+    try:
+        return page()
+    except requests.ConnectionError:
+        _logger.debug("Connection failed; session may have expired; retrying ...")
+    except UsdbLoginError:
+        # skip login retry if custom or just created session
+        if session or not existing_session:
+            raise
+        _logger.debug(f"Page '{rel_url}' is private; trying to log in ...")
+    if not session:
+        SessionManager.reset_session()
+    return page()
+
+
+def _get_usdb_page_inner(
+    session: Session,
+    rel_url: str,
+    method: RequestMethod = RequestMethod.GET,
+    headers: dict[str, str] | None = None,
+    payload: dict[str, str] | None = None,
+    params: dict[str, str] | None = None,
+) -> str:
+    session = session or SessionManager.session()
     url = Usdb.BASE_URL + rel_url
     match method:
         case RequestMethod.GET:
@@ -220,10 +264,14 @@ def get_usdb_page(
             assert_never(unreachable)
     response.raise_for_status()
     response.encoding = "utf-8"
-    return normalize(response.text)
+    if UsdbStrings.NOT_LOGGED_IN in (page := normalize(response.text)):
+        raise UsdbLoginError
+    if UsdbStrings.DATASET_NOT_FOUND in page:
+        raise UsdbNotFoundError
+    return page
 
 
-def get_usdb_details(song_id: SongId) -> SongDetails | None:
+def get_usdb_details(song_id: SongId) -> SongDetails:
     """Retrieve song details from usdb webpage, if song exists.
 
     Parameters:
@@ -232,10 +280,7 @@ def get_usdb_details(song_id: SongId) -> SongDetails | None:
     html = get_usdb_page(
         "index.php", params={"id": str(int(song_id)), "link": "detail"}
     )
-    soup = BeautifulSoup(html, "lxml")
-    if UsdbStrings.DATASET_NOT_FOUND in soup.get_text():
-        return None
-    return _parse_song_page(soup, song_id)
+    return _parse_song_page(BeautifulSoup(html, "lxml"), song_id)
 
 
 def _parse_song_page(soup: BeautifulSoup, song_id: SongId) -> SongDetails:
@@ -255,7 +300,7 @@ def _usdb_strings_from_soup(soup: BeautifulSoup) -> Type[UsdbStrings]:
 def _usdb_strings_from_html(html: str) -> Type[UsdbStrings]:
     if match := WELCOME_REGEX.search(html):
         return _usdb_strings_from_welcome(match.group(1))
-    raise ParseException("welcome string not found")
+    raise UsdbParseError("welcome string not found")
 
 
 def _usdb_strings_from_welcome(welcome_string: str) -> Type[UsdbStrings]:
@@ -266,7 +311,7 @@ def _usdb_strings_from_welcome(welcome_string: str) -> Type[UsdbStrings]:
             return UsdbStringsGerman
         case UsdbStringsFrench.WELCOME:
             return UsdbStringsFrench
-    raise ParseException("Unknown USDB language.")
+    raise UsdbParseError("Unknown USDB language.")
 
 
 def get_usdb_available_songs(
@@ -374,7 +419,7 @@ def _find_text_after(details_table: BeautifulSoup, label: str) -> str:
     if isinstance((tag := details_table.find(string=label)), NavigableString):
         if isinstance(tag.next, Tag):
             return tag.next.text.strip()
-    raise ParseException(f"Text after {label} not found.")
+    raise UsdbParseError(f"Text after {label} not found.")
 
 
 def _parse_comments_table(comments_table: BeautifulSoup) -> list[SongComment]:
@@ -437,7 +482,7 @@ def _all_urls_in_comment(contents: BeautifulSoup, text: str) -> Iterator[str]:
         yield match.group(1)
 
 
-def get_notes(song_id: SongId, logger: Log) -> str | None:
+def get_notes(song_id: SongId, logger: Log) -> str:
     """Retrieve notes for a song."""
     logger.debug(f"fetch notes for song {song_id}")
     html = get_usdb_page(
@@ -447,12 +492,10 @@ def get_notes(song_id: SongId, logger: Log) -> str | None:
         params={"link": "gettxt", "id": str(int(song_id))},
         payload={"wd": "1"},
     )
-    soup = BeautifulSoup(html, "lxml")
-    text = _parse_song_txt_from_txt_page(soup)
-    return text
+    return _parse_song_txt_from_txt_page(BeautifulSoup(html, "lxml"))
 
 
-def _parse_song_txt_from_txt_page(soup: BeautifulSoup) -> str | None:
-    if textarea := soup.find("textarea"):
-        return textarea.string  # type: ignore
-    return None
+def _parse_song_txt_from_txt_page(soup: BeautifulSoup) -> str:
+    if isinstance(textarea := soup.find("textarea"), Tag):
+        return textarea.string or ""
+    raise UsdbParseError("textarea for notes not found")

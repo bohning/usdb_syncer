@@ -4,12 +4,14 @@ import argparse
 import sys
 from pathlib import Path
 
-from usdb_syncer import settings, song_list_fetcher
-from usdb_syncer.usdb_scraper import create_session, login_to_usdb
+from requests import Session
+
+from usdb_syncer import song_list_fetcher
+from usdb_syncer.usdb_scraper import login_to_usdb
 
 
 def main(target: Path, user: str, password: str) -> None:
-    session = create_session(settings.Browser.NONE)
+    session = Session()
     if not login_to_usdb(session, user, password):
         print("Invalid credentials!")
         sys.exit(1)

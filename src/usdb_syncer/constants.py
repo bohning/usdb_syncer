@@ -21,6 +21,7 @@ class UsdbStrings:
     DATASET_NOT_FOUND = "Datensatz nicht gefunden"
     WELCOME_PLEASE_LOGIN = "Welcome, Please login"
     LOGIN_INVALID = "Login or Password invalid, please try again."
+    NOT_LOGGED_IN = "You are not logged in. Login to use this function."
 
 
 class UsdbStringsEnglish(UsdbStrings):
