@@ -34,7 +34,7 @@ from usdb_syncer.resource_dl import ImageKind, download_and_process_image
 from usdb_syncer.settings import AudioFormat
 from usdb_syncer.song_data import DownloadResult, LocalFiles, SongData
 from usdb_syncer.song_txt import Headers, SongTxt
-from usdb_syncer.sync_meta import SyncMeta
+from usdb_syncer.sync_meta import FileMeta, SyncMeta
 from usdb_syncer.usdb_scraper import SongDetails
 from usdb_syncer.utils import (
     is_name_maybe_with_suffix,
@@ -368,14 +368,14 @@ def _maybe_write_audio_tags(ctx: Context) -> None:
 
     match audiofile.suffix:
         case ".m4a":
-            _write_m4a_tags(audiofile, ctx, options.embed_artwork)
-
+            _write_m4a_tags(meta, ctx, options.embed_artwork)
         case ".mp3":
-            _write_mp3_tags(audiofile, ctx, options.embed_artwork)
+            _write_mp3_tags(meta, ctx, options.embed_artwork)
 
 
-def _write_m4a_tags(audiofile: Path, ctx: Context, embed_artwork: bool) -> None:
-    m4a = MP4(audiofile)
+def _write_m4a_tags(audio_meta: FileMeta, ctx: Context, embed_artwork: bool) -> None:
+    path = ctx.locations.file_path(audio_meta.fname)
+    m4a = MP4(path)
 
     if m4a.tags:
         m4a.tags["\xa9ART"] = ctx.txt.headers.artist
@@ -385,23 +385,22 @@ def _write_m4a_tags(audiofile: Path, ctx: Context, embed_artwork: bool) -> None:
         if ctx.txt.headers.year:
             m4a.tags["\xa9day"] = ctx.txt.headers.year
         m4a.tags["\xa9lyr"] = ctx.txt.unsynchronized_lyrics()
-        m4a.tags["\xa9cmt"] = ctx.sync_meta.audio.resource
+        m4a.tags["\xa9cmt"] = audio_meta.resource
 
-        m4a.tags["covr"] = []
         if embed_artwork:
-            for image in (ctx.sync_meta.cover, ctx.sync_meta.background):
-                if image:
-                    m4a.tags["covr"].append(
-                        MP4Cover(
-                            ctx.locations.file_path(image.fname).read_bytes(),
-                            imageformat=MP4Cover.FORMAT_JPEG,
-                        )
-                    )
+            m4a.tags["covr"] = [
+                MP4Cover(
+                    ctx.locations.file_path(image.fname).read_bytes(),
+                    imageformat=MP4Cover.FORMAT_JPEG,
+                )
+                for image in (ctx.sync_meta.cover, ctx.sync_meta.background)
+                if image
+            ]
 
-        m4a.tags.save(audiofile)
+        m4a.tags.save(path)
 
 
-def _write_mp3_tags(audiofile: Path, ctx: Context, embed_artwork: bool) -> None:
+def _write_mp3_tags(audio_meta: FileMeta, ctx: Context, embed_artwork: bool) -> None:
     tags = ID3()
 
     lang = Lang(ctx.txt.headers.main_language()).pt2b  # ISO 639-2B
@@ -429,7 +428,7 @@ def _write_mp3_tags(audiofile: Path, ctx: Context, embed_artwork: bool) -> None:
         encoding=Encoding.UTF8,
         lang="eng",
         desc="Audio Source",
-        text=ctx.sync_meta.audio.resource,
+        text=audio_meta.resource,
     )
 
     if embed_artwork and ctx.sync_meta.cover:
@@ -443,4 +442,4 @@ def _write_mp3_tags(audiofile: Path, ctx: Context, embed_artwork: bool) -> None:
             )
         )
 
-    tags.save(audiofile)
+    tags.save(ctx.locations.file_path(audio_meta.fname))
