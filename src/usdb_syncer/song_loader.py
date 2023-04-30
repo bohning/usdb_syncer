@@ -359,30 +359,28 @@ def _maybe_write_audio_tags(ctx: Context) -> None:
 
 
 def _write_m4a_tags(audio_meta: FileMeta, ctx: Context, embed_artwork: bool) -> None:
-    path = ctx.locations.file_path(audio_meta.fname)
-    m4a = mutagen.mp4.MP4(path)
+    tags = mutagen.mp4.MP4Tags()
 
-    if m4a.tags:
-        m4a.tags["\xa9ART"] = ctx.txt.headers.artist
-        m4a.tags["\xa9nam"] = ctx.txt.headers.title
-        if ctx.txt.headers.genre:
-            m4a.tags["\xa9gen"] = ctx.txt.headers.genre
-        if ctx.txt.headers.year:
-            m4a.tags["\xa9day"] = ctx.txt.headers.year
-        m4a.tags["\xa9lyr"] = ctx.txt.unsynchronized_lyrics()
-        m4a.tags["\xa9cmt"] = audio_meta.resource
+    tags["\xa9ART"] = ctx.txt.headers.artist
+    tags["\xa9nam"] = ctx.txt.headers.title
+    if ctx.txt.headers.genre:
+        tags["\xa9gen"] = ctx.txt.headers.genre
+    if ctx.txt.headers.year:
+        tags["\xa9day"] = ctx.txt.headers.year
+    tags["\xa9lyr"] = ctx.txt.unsynchronized_lyrics()
+    tags["\xa9cmt"] = audio_meta.resource
 
-        if embed_artwork:
-            m4a.tags["covr"] = [
-                mutagen.mp4.MP4Cover(
-                    ctx.locations.file_path(image.fname).read_bytes(),
-                    imageformat=mutagen.mp4.MP4Cover.FORMAT_JPEG,
-                )
-                for image in (ctx.sync_meta.cover, ctx.sync_meta.background)
-                if image
-            ]
+    if embed_artwork:
+        tags["covr"] = [
+            mutagen.mp4.MP4Cover(
+                ctx.locations.file_path(image.fname).read_bytes(),
+                imageformat=mutagen.mp4.MP4Cover.FORMAT_JPEG,
+            )
+            for image in (ctx.sync_meta.cover, ctx.sync_meta.background)
+            if image
+        ]
 
-        m4a.tags.save(path)
+    tags.save(ctx.locations.file_path(audio_meta.fname))
 
 
 def _write_mp3_tags(audio_meta: FileMeta, ctx: Context, embed_artwork: bool) -> None:
