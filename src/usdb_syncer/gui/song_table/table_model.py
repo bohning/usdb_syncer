@@ -1,6 +1,7 @@
 """Table model for song data."""
 
 from enum import Enum
+from functools import cache
 from typing import Any, Iterable, Iterator
 
 from PySide6.QtCore import (
@@ -10,10 +11,12 @@ from PySide6.QtCore import (
     QPersistentModelIndex,
     Qt,
 )
+from PySide6.QtGui import QIcon
 
 from usdb_syncer import SongId
 from usdb_syncer.gui.song_table.column import Column
 from usdb_syncer.song_data import SongData
+from usdb_syncer.typing_helpers import assert_never
 from usdb_syncer.usdb_scraper import UsdbSong
 
 QIndex = QModelIndex | QPersistentModelIndex
@@ -83,13 +86,13 @@ class TableModel(QAbstractTableModel):
         if not index.isValid():
             return None
         if role == Qt.ItemDataRole.DisplayRole:
-            return self.songs[index.row()].display_data(index.column())
+            return _display_data(self.songs[index.row()], index.column())
         if role == Qt.ItemDataRole.DecorationRole:
-            return self.songs[index.row()].decoration_data(index.column())
+            return _decoration_data(self.songs[index.row()], index.column())
         if role == CustomRole.ALL_DATA:
             return self.songs[index.row()]
         if role == CustomRole.SORT:
-            return self.songs[index.row()].sort_data(index.column())
+            return _sort_data(self.songs[index.row()], index.column())
         return None
 
     def headerData(
@@ -105,3 +108,113 @@ class TableModel(QAbstractTableModel):
         if role == Qt.ItemDataRole.DisplayRole:
             return Column(section).display_data()
         return None
+
+
+def _display_data(song: SongData, column: int) -> str | None:
+    col = Column(column)
+    match col:
+        case Column.SONG_ID:
+            return str(song.data.song_id)
+        case Column.ARTIST:
+            return song.data.artist
+        case Column.TITLE:
+            return song.data.title
+        case Column.LANGUAGE:
+            return song.data.language
+        case Column.EDITION:
+            return song.data.edition
+        case Column.GOLDEN_NOTES:
+            return yes_no_str(song.data.golden_notes)
+        case Column.RATING:
+            return rating_str(song.data.rating)
+        case Column.VIEWS:
+            return str(song.data.views)
+        case Column.DOWNLOAD_STATUS:
+            return str(song.status)
+        case (
+            Column.TXT | Column.AUDIO | Column.VIDEO | Column.COVER | Column.BACKGROUND
+        ):
+            return None
+        case _ as unreachable:
+            assert_never(unreachable)
+
+
+def _decoration_data(song: SongData, column: int) -> QIcon | None:
+    col = Column(column)
+    match col:
+        case (
+            Column.SONG_ID
+            | Column.ARTIST
+            | Column.TITLE
+            | Column.LANGUAGE
+            | Column.EDITION
+            | Column.GOLDEN_NOTES
+            | Column.RATING
+            | Column.VIEWS
+            | Column.DOWNLOAD_STATUS
+        ):
+            return None
+        case Column.TXT:
+            return optional_check_icon(song.local_files.txt)
+        case Column.AUDIO:
+            return optional_check_icon(song.local_files.audio)
+        case Column.VIDEO:
+            return optional_check_icon(song.local_files.video)
+        case Column.COVER:
+            return optional_check_icon(song.local_files.cover)
+        case Column.BACKGROUND:
+            return optional_check_icon(song.local_files.background)
+        case _ as unreachable:
+            assert_never(unreachable)
+
+
+def _sort_data(song: SongData, column: int) -> int | str | bool:
+    col = Column(column)
+    match col:
+        case Column.SONG_ID:
+            return int(song.data.song_id)
+        case Column.ARTIST:
+            return song.data.artist
+        case Column.TITLE:
+            return song.data.title
+        case Column.LANGUAGE:
+            return song.data.language
+        case Column.EDITION:
+            return song.data.edition
+        case Column.GOLDEN_NOTES:
+            return song.data.golden_notes
+        case Column.RATING:
+            return song.data.rating
+        case Column.VIEWS:
+            return song.data.views
+        case Column.TXT:
+            return song.local_files.txt
+        case Column.AUDIO:
+            return song.local_files.audio
+        case Column.VIDEO:
+            return song.local_files.video
+        case Column.COVER:
+            return song.local_files.cover
+        case Column.BACKGROUND:
+            return song.local_files.background
+        case Column.DOWNLOAD_STATUS:
+            return song.status.value
+        case _ as unreachable:
+            assert_never(unreachable)
+
+
+@cache
+def rating_str(rating: int) -> str:
+    return rating * "★"
+
+
+def yes_no_str(yes: bool) -> str:
+    return "Yes" if yes else "No"
+
+
+# Creating a QIcon without a QApplication gives a runtime error, so we can't put it
+# in a global, but we also don't want to keep recreating it.
+# So we store it in this convenience function.
+@cache
+def optional_check_icon(yes: bool) -> QIcon | None:
+    return QIcon(":/icons/tick.png") if yes else None
