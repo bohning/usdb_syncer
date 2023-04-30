@@ -181,6 +181,11 @@ class Headers:
             if old_language != self.language:
                 logger.debug(f"FIX: Language corrected to {self.language}.")
 
+    def main_language(self) -> str:
+        if self.language:
+            return self.language.split(",", maxsplit=1)[0].removesuffix(" (romanized)")
+        return ""
+
 
 def _set_header_value(kwargs: dict[str, Any], header: str, value: str) -> None:
     header = "creator" if header == "AUTHOR" else header.lower()

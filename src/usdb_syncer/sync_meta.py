@@ -10,6 +10,7 @@ from typing import Any, Iterator
 import attrs
 
 from usdb_syncer import SongId
+from usdb_syncer.constants import Usdb
 from usdb_syncer.logger import get_logger
 from usdb_syncer.meta_tags import MetaTags
 
@@ -23,10 +24,10 @@ class FileMeta:
 
     fname: str
     mtime: float
-    resource: str | None = None
+    resource: str
 
     @classmethod
-    def new(cls, path: Path, resource: str | None = None) -> FileMeta:
+    def new(cls, path: Path, resource: str) -> FileMeta:
         return cls(path.name, os.path.getmtime(path), resource)
 
     @classmethod
@@ -86,7 +87,7 @@ class SyncMeta:
             json.dump(self, file, cls=SyncMetaEncoder)
 
     def set_txt_meta(self, path: Path) -> None:
-        self.txt = FileMeta.new(path)
+        self.txt = FileMeta.new(path, Usdb.BASE_URL + f"?link=gettxt&id={self.song_id}")
 
     def set_audio_meta(self, path: Path, resource: str) -> None:
         self.audio = FileMeta.new(path, resource)

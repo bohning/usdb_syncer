@@ -7,6 +7,9 @@ from pathlib import Path
 from typing import Callable, Iterable, Iterator
 
 import attrs
+import iso639
+import mutagen.mp4
+from mutagen import id3
 from PySide6.QtCore import QRunnable, QThreadPool
 
 from usdb_syncer import SongId, resource_dl, usdb_scraper
@@ -16,7 +19,7 @@ from usdb_syncer.meta_tags import MetaTags
 from usdb_syncer.resource_dl import ImageKind, download_and_process_image
 from usdb_syncer.song_data import DownloadResult, LocalFiles, SongData
 from usdb_syncer.song_txt import Headers, SongTxt
-from usdb_syncer.sync_meta import SyncMeta
+from usdb_syncer.sync_meta import FileMeta, SyncMeta
 from usdb_syncer.usdb_scraper import SongDetails
 from usdb_syncer.utils import (
     is_name_maybe_with_suffix,
@@ -201,6 +204,7 @@ class SongLoader(QRunnable):
         _maybe_download_background(ctx)
         _maybe_write_txt(ctx)
         _write_sync_meta(ctx)
+        _maybe_write_audio_tags(ctx)
         self.logger.info("All done!")
         files = LocalFiles.from_sync_meta(ctx.locations.meta_path, ctx.sync_meta)
         self.on_finish(DownloadResult(self.song_id, files))
@@ -339,3 +343,86 @@ def _maybe_write_txt(ctx: Context) -> None:
 
 def _write_sync_meta(ctx: Context) -> None:
     ctx.sync_meta.to_file(ctx.locations.dir_path())
+
+
+def _maybe_write_audio_tags(ctx: Context) -> None:
+    if not (options := ctx.options.audio_options) or not (meta := ctx.sync_meta.audio):
+        return
+
+    audiofile = ctx.locations.file_path(meta.fname)
+
+    match audiofile.suffix:
+        case ".m4a":
+            _write_m4a_tags(meta, ctx, options.embed_artwork)
+        case ".mp3":
+            _write_mp3_tags(meta, ctx, options.embed_artwork)
+
+
+def _write_m4a_tags(audio_meta: FileMeta, ctx: Context, embed_artwork: bool) -> None:
+    tags = mutagen.mp4.MP4Tags()
+
+    tags["\xa9ART"] = ctx.txt.headers.artist
+    tags["\xa9nam"] = ctx.txt.headers.title
+    if ctx.txt.headers.genre:
+        tags["\xa9gen"] = ctx.txt.headers.genre
+    if ctx.txt.headers.year:
+        tags["\xa9day"] = ctx.txt.headers.year
+    tags["\xa9lyr"] = ctx.txt.unsynchronized_lyrics()
+    tags["\xa9cmt"] = audio_meta.resource
+
+    if embed_artwork:
+        tags["covr"] = [
+            mutagen.mp4.MP4Cover(
+                ctx.locations.file_path(image.fname).read_bytes(),
+                imageformat=mutagen.mp4.MP4Cover.FORMAT_JPEG,
+            )
+            for image in (ctx.sync_meta.cover, ctx.sync_meta.background)
+            if image
+        ]
+
+    tags.save(ctx.locations.file_path(audio_meta.fname))
+
+
+def _write_mp3_tags(audio_meta: FileMeta, ctx: Context, embed_artwork: bool) -> None:
+    tags = id3.ID3()
+
+    lang = iso639.Lang(ctx.txt.headers.main_language()).pt2b  # ISO 639-2B
+    tags["TPE1"] = id3.TPE1(encoding=id3.Encoding.UTF8, text=ctx.txt.headers.artist)
+    tags["TIT2"] = id3.TIT2(encoding=id3.Encoding.UTF8, text=ctx.txt.headers.title)
+    tags["TLAN"] = id3.TLAN(encoding=id3.Encoding.UTF8, text=lang)
+    if genre := ctx.txt.headers.genre:
+        tags["TCON"] = id3.TCON(encoding=id3.Encoding.UTF8, text=genre)
+    if year := ctx.txt.headers.year:
+        tags["TDRC"] = id3.TDRC(encoding=id3.Encoding.UTF8, text=year)
+    tags[f"USLT::'{lang}'"] = id3.USLT(
+        encoding=id3.Encoding.UTF8,
+        lang=lang,
+        desc="Lyrics",
+        text=ctx.txt.unsynchronized_lyrics(),
+    )
+    tags["SYLT"] = id3.SYLT(
+        encoding=id3.Encoding.UTF8,
+        lang=iso639.Lang(ctx.txt.headers.main_language()).pt2b,  # ISO 639-2B
+        format=2,  # milliseconds as units
+        type=1,  # lyrics
+        text=ctx.txt.synchronized_lyrics(),
+    )
+    tags["COMM"] = id3.COMM(
+        encoding=id3.Encoding.UTF8,
+        lang="eng",
+        desc="Audio Source",
+        text=audio_meta.resource,
+    )
+
+    if embed_artwork and ctx.sync_meta.cover:
+        tags.add(
+            id3.APIC(
+                encoding=id3.Encoding.UTF8,
+                mime="image/jpeg",
+                type=id3.PictureType.COVER_FRONT,
+                desc=f"Source: {ctx.sync_meta.cover.resource}",
+                data=ctx.locations.file_path(ctx.sync_meta.cover.fname).read_bytes(),
+            )
+        )
+
+    tags.save(ctx.locations.file_path(audio_meta.fname))

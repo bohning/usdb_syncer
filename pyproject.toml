@@ -47,6 +47,8 @@ follow_imports = "silent"
 exclude = ["src/usdb_syncer/gui/forms", "src/usdb_syncer/gui/resources"]
 
 [tool.pyright]
+# generates a lot of false positives for mutagen
+reportPrivateImportUsage = false
 exclude = [
     "src/usdb_syncer/gui/forms",
     "src/usdb_syncer/gui/resources",

@@ -21,6 +21,7 @@ class AudioOptions:
     format: settings.AudioFormat
     bitrate: settings.AudioBitrate
     normalize: bool
+    embed_artwork: bool
 
     def ytdl_format(self) -> str:
         return self.format.ytdl_format()
@@ -99,6 +100,7 @@ def _audio_options() -> AudioOptions | None:
         format=settings.get_audio_format(),
         bitrate=settings.get_audio_bitrate(),
         normalize=settings.get_audio_normalize(),
+        embed_artwork=settings.get_audio_embed_artwork(),
     )
 
 
