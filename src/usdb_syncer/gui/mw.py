@@ -24,11 +24,16 @@ from usdb_syncer.gui.meta_tags_dialog import MetaTagsDialog
 from usdb_syncer.gui.progress import run_with_progress
 from usdb_syncer.gui.settings_dialog import SettingsDialog
 from usdb_syncer.gui.song_table.song_table import SongTable
+from usdb_syncer.gui.usdb_login_dialog import UsdbLoginDialog
 from usdb_syncer.gui.utils import scroll_to_bottom, set_shortcut
 from usdb_syncer.pdf import generate_song_pdf
 from usdb_syncer.song_data import SongData
 from usdb_syncer.song_filters import GoldenNotesFilter, RatingFilter, ViewsFilter
-from usdb_syncer.song_list_fetcher import get_all_song_data, resync_song_data
+from usdb_syncer.song_list_fetcher import (
+    dump_available_songs,
+    get_all_song_data,
+    resync_song_data,
+)
 from usdb_syncer.utils import AppPaths, open_file_explorer
 
 
@@ -92,6 +97,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
             (self.action_batch_remove, self.table.unstage_selection),
             (self.action_find_local_songs, self._stage_local_songs),
             (self.action_refetch_song_list, self._refetch_song_list),
+            (self.action_usdb_login, lambda: UsdbLoginDialog(self).show()),
             (self.action_meta_tags, lambda: MetaTagsDialog(self).show()),
             (self.action_settings, lambda: SettingsDialog(self).show()),
             (self.action_generate_song_pdf, self._generate_song_pdf),
@@ -260,6 +266,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
     def closeEvent(self, event: QCloseEvent) -> None:
         self.table.save_state()
         self._save_state()
+        dump_available_songs(list(s.data for s in self.table.get_all_data()))
         event.accept()
 
     def _restore_state(self) -> None:

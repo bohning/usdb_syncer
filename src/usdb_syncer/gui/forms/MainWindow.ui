@@ -649,6 +649,7 @@
     <property name="title">
      <string>Synchronize</string>
     </property>
+    <addaction name="action_usdb_login"/>
     <addaction name="action_refetch_song_list"/>
     <addaction name="action_find_local_songs"/>
    </widget>
@@ -735,6 +736,11 @@
   <action name="actionClear_Batch">
    <property name="text">
     <string>Clear Batch</string>
+   </property>
+  </action>
+  <action name="action_usdb_login">
+   <property name="text">
+    <string>USDB Login</string>
    </property>
   </action>
  </widget>
