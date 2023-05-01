@@ -332,7 +332,14 @@ def generate_splashscreen() -> QSplashScreen:
     font.setPointSize(24)
     painter.setFont(font)
     version = "0.1.0"
-    painter.drawText(300, 112, 130, 100, Qt.AlignmentFlag.AlignRight, version)
+    painter.drawText(
+        0,
+        0,
+        428,
+        140,
+        Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignBottom,
+        version,
+    )
     painter.end()
     return QSplashScreen(canvas)
 
