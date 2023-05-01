@@ -190,7 +190,6 @@ class Headers:
 def _set_header_value(kwargs: dict[str, Any], header: str, value: str) -> None:
     header = "creator" if header == "AUTHOR" else header.lower()
     if header in (
-        "title",
         "artist",
         "language",
         "edition",
@@ -210,6 +209,8 @@ def _set_header_value(kwargs: dict[str, Any], header: str, value: str) -> None:
         "resolution",
     ):
         kwargs[header] = value
+    elif header == "title":
+        kwargs[header] = value.removesuffix(" [DUET]")
     # these are given in (fractional) seconds, thus may have a decimal comma or point
     elif header in ("videogap", "start", "previewstart"):
         kwargs[header] = float(value.replace(",", "."))

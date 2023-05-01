@@ -1,4 +1,4 @@
-#TITLE:Pool Mashup [DUET]
+#TITLE:Pool Mashup
 #ARTIST:The Barden Bellas
 #LANGUAGE:English
 #EDITION:UAS

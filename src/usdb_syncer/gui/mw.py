@@ -6,7 +6,7 @@ import os
 import sys
 
 from PySide6.QtCore import QObject, Qt, QThreadPool, QTimer, Signal
-from PySide6.QtGui import QCloseEvent, QPixmap
+from PySide6.QtGui import QCloseEvent, QColor, QFont, QPainter, QPixmap
 from PySide6.QtWidgets import (
     QApplication,
     QComboBox,
@@ -308,7 +308,7 @@ def main() -> None:
 
 
 def _load_main_window(mw: MainWindow) -> None:
-    splash = QSplashScreen(QPixmap(":/splash/splash.png"))
+    splash = generate_splashscreen()
     splash.show()
     QApplication.processEvents()
     splash.showMessage("Loading song database from usdb...", color=Qt.GlobalColor.gray)
@@ -321,6 +321,27 @@ def _load_main_window(mw: MainWindow) -> None:
     mw.show()
     logging.info("Application successfully loaded.")
     splash.finish(mw)
+
+
+def generate_splashscreen() -> QSplashScreen:
+    canvas = QPixmap(":/splash/splash.png")
+    painter = QPainter(canvas)
+    painter.setPen(QColor(0, 174, 239))  # light blue
+    font = QFont()
+    font.setFamily("Kozuka Gothic Pro")
+    font.setPointSize(24)
+    painter.setFont(font)
+    version = "0.1.0"
+    painter.drawText(
+        0,
+        0,
+        428,
+        140,
+        Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignBottom,
+        version,
+    )
+    painter.end()
+    return QSplashScreen(canvas)
 
 
 def _init_app() -> QApplication:
