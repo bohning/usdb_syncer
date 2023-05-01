@@ -44,7 +44,7 @@ def get_available_songs(
         max_skip_id = SongId(0)
     else:
         songs = load_cached_songs() or []
-        max_skip_id = max(song.song_id for song in songs)
+        max_skip_id = max((song.song_id for song in songs), default=SongId(0))
     try:
         songs += get_usdb_available_songs(max_skip_id, session=session)
     except UsdbLoginError:
