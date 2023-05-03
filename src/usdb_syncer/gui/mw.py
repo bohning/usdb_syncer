@@ -35,6 +35,7 @@ from usdb_syncer.utils import AppPaths, open_file_explorer
 
 _logger = get_logger(__file__)
 
+
 class MainWindow(Ui_MainWindow, QMainWindow):
     """The app's main window and entry point to the GUI."""
 
@@ -329,9 +330,9 @@ class MainWindow(Ui_MainWindow, QMainWindow):
             _logger.info("export aborted")
             return
 
-        id_file = UsdbIdFile(selected_ids)
+        id_file = UsdbIdFile(list(selected_ids))
         id_file.write(path)
-        _logger.info(f"exported {len(selected_ids)} USDB IDs to {path}")
+        _logger.info(f"exported {len(list(selected_ids))} USDB IDs to {path}")
 
     def closeEvent(self, event: QCloseEvent) -> None:
         self.table.save_state()

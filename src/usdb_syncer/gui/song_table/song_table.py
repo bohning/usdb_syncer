@@ -258,7 +258,7 @@ class SongTable:
         )
 
     def batch_ids(self) -> Iterable[SongId]:
-        return (self._model.ids_for_rows(self._batch_rows()))
+        return self._model.ids_for_rows(self._batch_rows())
 
     def _batch_rows(self, selected_only: bool = False) -> Iterable[int]:
         return self._batch_model.source_rows(
@@ -280,7 +280,7 @@ class SongTable:
         _logger.info(f"Added {len(rows)} songs to batch.")
 
     def stage_song_ids(self, song_ids: list[SongId]) -> None:
-        self._stage_rows(self._model.row_for_id(id) for id in song_ids)
+        self._stage_rows(row for id in song_ids if (row := self._model.row_for_id(id)))
 
     def set_selection_to_song_ids(self, select_song_ids: list[SongId]) -> None:
         select_indices = self._model.indices_for_ids(select_song_ids)
