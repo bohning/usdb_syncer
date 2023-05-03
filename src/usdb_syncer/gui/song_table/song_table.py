@@ -257,6 +257,9 @@ class SongTable:
             self._list_view.selectionModel().selectedRows() if selected_only else None
         )
 
+    def batch_ids(self) -> Iterable[SongId]:
+        return (self._model.ids_for_rows(self._batch_rows()))
+
     def _batch_rows(self, selected_only: bool = False) -> Iterable[int]:
         return self._batch_model.source_rows(
             self._batch_view.selectionModel().selectedRows() if selected_only else None

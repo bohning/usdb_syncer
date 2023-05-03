@@ -313,9 +313,9 @@ class MainWindow(Ui_MainWindow, QMainWindow):
             self.table.set_selection_to_song_ids(available_song_ids)
 
     def _export_usdb_ids_to_file(self) -> None:
-        selected_ids = self.table.selected_song_ids()
+        selected_ids = self.table.batch_ids()
         if not selected_ids:
-            _logger.info("skipping export: no songs selected")
+            _logger.info("skipping export: no songs in Batch")
             return
 
         # Note: automatically checks if file already exists
