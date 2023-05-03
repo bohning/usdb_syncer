@@ -719,7 +719,7 @@
     <string>Add IDs from File(s)</string>
    </property>
    <property name="toolTip">
-    <string>Download Multiple USDB songs defined by IDs in files and/or weblinks</string>
+    <string>Stage Multiple USDB songs for download that are defined by IDs in files and/or weblinks</string>
    </property>
   </action>
   <action name="action_export_usdb_ids">
