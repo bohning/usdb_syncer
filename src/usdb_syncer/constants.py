@@ -20,6 +20,8 @@ class UsdbStrings:
     NO: str
     DATASET_NOT_FOUND = "Datensatz nicht gefunden"
     WELCOME_PLEASE_LOGIN = "Welcome, Please login"
+    LOGIN_INVALID = "Login or Password invalid, please try again."
+    NOT_LOGGED_IN = "You are not logged in. Login to use this function."
 
 
 class UsdbStringsEnglish(UsdbStrings):
@@ -72,6 +74,7 @@ class Usdb:
 
     DOMAIN = "usdb.animux.de"
     BASE_URL = "https://" + DOMAIN + "/"
+    REGISTER_URL = BASE_URL + "index.php?link=register"
     MAX_SONG_ID = 100_000
     MAX_SONGS_PER_PAGE = 100
     DATETIME_STRF = "%d.%m.%y - %H:%M"

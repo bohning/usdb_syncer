@@ -4,16 +4,14 @@ plus information about locally existing files.
 
 from __future__ import annotations
 
+import enum
 from enum import Enum
-from functools import cache
 from pathlib import Path
 
 import attrs
-from PySide6.QtGui import QIcon
 from unidecode import unidecode
 
 from usdb_syncer import SongId
-from usdb_syncer.gui.song_table.column import Column
 from usdb_syncer.sync_meta import SyncMeta
 from usdb_syncer.typing_helpers import assert_never
 from usdb_syncer.usdb_scraper import UsdbSong
@@ -64,12 +62,21 @@ def fuzz_text(text: str) -> str:
     return text
 
 
+class DownloadErrorReason(Enum):
+    """Reason for a failed song download."""
+
+    NOT_LOGGED_IN = enum.auto()
+    NOT_FOUND = enum.auto()
+    UNKNOWN = enum.auto()
+
+
 @attrs.define
 class DownloadResult:
     """Result of a song download to be passed by signal."""
 
     song_id: SongId
-    files: LocalFiles | None = None
+    data: SongData | None = None
+    error: DownloadErrorReason | None = None
 
 
 @attrs.define
@@ -144,122 +151,16 @@ class SongData:
     data: UsdbSong
     fuzzy_text: FuzzySearchText
     local_files: LocalFiles
-    status: DownloadStatus = DownloadStatus.NONE
+    status: DownloadStatus
 
     @classmethod
-    def from_usdb_song(cls, song: UsdbSong, local_files: LocalFiles) -> SongData:
-        return cls(song, FuzzySearchText(song), local_files)
+    def from_usdb_song(
+        cls,
+        song: UsdbSong,
+        local_files: LocalFiles,
+        status: DownloadStatus = DownloadStatus.NONE,
+    ) -> SongData:
+        return cls(song, FuzzySearchText(song), local_files, status)
 
     def with_local_files(self, local_files: LocalFiles) -> SongData:
-        return SongData(self.data, self.fuzzy_text, local_files)
-
-    def display_data(self, column: int) -> str | None:
-        col = Column(column)
-        match col:
-            case Column.SONG_ID:
-                return str(self.data.song_id)
-            case Column.ARTIST:
-                return self.data.artist
-            case Column.TITLE:
-                return self.data.title
-            case Column.LANGUAGE:
-                return self.data.language
-            case Column.EDITION:
-                return self.data.edition
-            case Column.GOLDEN_NOTES:
-                return yes_no_str(self.data.golden_notes)
-            case Column.RATING:
-                return rating_str(self.data.rating)
-            case Column.VIEWS:
-                return str(self.data.views)
-            case Column.DOWNLOAD_STATUS:
-                return str(self.status)
-            case (
-                Column.TXT
-                | Column.AUDIO
-                | Column.VIDEO
-                | Column.COVER
-                | Column.BACKGROUND
-            ):
-                return None
-            case _ as unreachable:
-                assert_never(unreachable)
-
-    def decoration_data(self, column: int) -> QIcon | None:
-        col = Column(column)
-        match col:
-            case (
-                Column.SONG_ID
-                | Column.ARTIST
-                | Column.TITLE
-                | Column.LANGUAGE
-                | Column.EDITION
-                | Column.GOLDEN_NOTES
-                | Column.RATING
-                | Column.VIEWS
-                | Column.DOWNLOAD_STATUS
-            ):
-                return None
-            case Column.TXT:
-                return optional_check_icon(self.local_files.txt)
-            case Column.AUDIO:
-                return optional_check_icon(self.local_files.audio)
-            case Column.VIDEO:
-                return optional_check_icon(self.local_files.video)
-            case Column.COVER:
-                return optional_check_icon(self.local_files.cover)
-            case Column.BACKGROUND:
-                return optional_check_icon(self.local_files.background)
-            case _ as unreachable:
-                assert_never(unreachable)
-
-    def sort_data(self, column: int) -> int | str | bool:
-        col = Column(column)
-        match col:
-            case Column.SONG_ID:
-                return int(self.data.song_id)
-            case Column.ARTIST:
-                return self.data.artist
-            case Column.TITLE:
-                return self.data.title
-            case Column.LANGUAGE:
-                return self.data.language
-            case Column.EDITION:
-                return self.data.edition
-            case Column.GOLDEN_NOTES:
-                return self.data.golden_notes
-            case Column.RATING:
-                return self.data.rating
-            case Column.VIEWS:
-                return self.data.views
-            case Column.TXT:
-                return self.local_files.txt
-            case Column.AUDIO:
-                return self.local_files.audio
-            case Column.VIDEO:
-                return self.local_files.video
-            case Column.COVER:
-                return self.local_files.cover
-            case Column.BACKGROUND:
-                return self.local_files.background
-            case Column.DOWNLOAD_STATUS:
-                return self.status.value
-            case _ as unreachable:
-                assert_never(unreachable)
-
-
-@cache
-def rating_str(rating: int) -> str:
-    return rating * "★"
-
-
-def yes_no_str(yes: bool) -> str:
-    return "Yes" if yes else "No"
-
-
-# Creating a QIcon without a QApplication gives a runtime error, so we can't put it
-# in a global, but we also don't want to keep recreating it.
-# So we store it in this convenience function.
-@cache
-def optional_check_icon(yes: bool) -> QIcon | None:
-    return QIcon(":/icons/tick.png") if yes else None
+        return SongData(self.data, self.fuzzy_text, local_files, self.status)

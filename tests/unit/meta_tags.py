@@ -25,18 +25,17 @@ def test_audio_meta_tags() -> None:
 
 
 def test_cover_meta_tags() -> None:
-    """Test that a cover URL, protocol, rotation, crop, contrast and resize values are
+    """Test that a cover URL, rotation, crop, contrast and resize values are
     parsed. Resizes should be quadratic, but we use different values to check parse
     order anyway.
     """
     tag = (
         "co=m.media-amazon.com/images/I/91UzQS12wXL._SL1500_.jpg,co-rotate=0.8,"
-        "co-crop=30-22-1468-1468,co-contrast=1.5,co-resize=1920-1921,co-protocol=http"
+        "co-crop=30-22-1468-1468,co-contrast=1.5,co-resize=1920-1921"
     )
     meta = MetaTags.parse(tag, _logger)
     assert meta.cover
     assert meta.cover.source == "m.media-amazon.com/images/I/91UzQS12wXL._SL1500_.jpg"
-    assert meta.cover.protocol == "http"
     assert meta.cover.rotate == 0.8
     assert meta.cover.crop
     assert meta.cover.crop.left == 30
@@ -50,7 +49,7 @@ def test_cover_meta_tags() -> None:
 
 
 def test_background_meta_tags() -> None:
-    """Test that a background URL, protocol, rotation, crop, contrast and resize values
+    """Test that a background URL, rotation, crop, contrast and resize values
     are parsed.
     """
     tag = (
@@ -64,7 +63,6 @@ def test_background_meta_tags() -> None:
         == "static.universal-music.de/asset_new/403774/195/view/Jon-Bellion-2016.jpg"
     )
     assert meta.background.crop
-    assert meta.background.protocol == "https"
     assert meta.background.crop.left == 0
     assert meta.background.crop.upper == 80
     assert meta.background.crop.right == 1920

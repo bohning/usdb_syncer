@@ -6,7 +6,7 @@ import os
 import sys
 
 from PySide6.QtCore import QObject, Qt, QThreadPool, QTimer, Signal
-from PySide6.QtGui import QCloseEvent, QPixmap
+from PySide6.QtGui import QCloseEvent, QColor, QFont, QPainter, QPixmap
 from PySide6.QtWidgets import (
     QApplication,
     QComboBox,
@@ -24,12 +24,17 @@ from usdb_syncer.gui.meta_tags_dialog import MetaTagsDialog
 from usdb_syncer.gui.progress import run_with_progress
 from usdb_syncer.gui.settings_dialog import SettingsDialog
 from usdb_syncer.gui.song_table.song_table import SongTable
+from usdb_syncer.gui.usdb_login_dialog import UsdbLoginDialog
 from usdb_syncer.gui.utils import scroll_to_bottom, set_shortcut
 from usdb_syncer.logger import get_logger
 from usdb_syncer.pdf import generate_song_pdf
 from usdb_syncer.song_data import SongData
 from usdb_syncer.song_filters import GoldenNotesFilter, RatingFilter, ViewsFilter
-from usdb_syncer.song_list_fetcher import get_all_song_data, resync_song_data
+from usdb_syncer.song_list_fetcher import (
+    dump_available_songs,
+    get_all_song_data,
+    resync_song_data,
+)
 from usdb_syncer.usdb_id_file import UsdbIdFile
 from usdb_syncer.utils import AppPaths, open_file_explorer
 
@@ -96,6 +101,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
             (self.action_batch_remove, self.table.unstage_selection),
             (self.action_find_local_songs, self._stage_local_songs),
             (self.action_refetch_song_list, self._refetch_song_list),
+            (self.action_usdb_login, lambda: UsdbLoginDialog(self).show()),
             (self.action_meta_tags, lambda: MetaTagsDialog(self).show()),
             (self.action_settings, lambda: SettingsDialog(self).show()),
             (self.action_generate_song_pdf, self._generate_song_pdf),
@@ -337,6 +343,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
     def closeEvent(self, event: QCloseEvent) -> None:
         self.table.save_state()
         self._save_state()
+        dump_available_songs(list(s.data for s in self.table.get_all_data()))
         event.accept()
 
     def _restore_state(self) -> None:
@@ -378,7 +385,7 @@ def main() -> None:
 
 
 def _load_main_window(mw: MainWindow) -> None:
-    splash = QSplashScreen(QPixmap(":/splash/splash.png"))
+    splash = generate_splashscreen()
     splash.show()
     QApplication.processEvents()
     splash.showMessage("Loading song database from usdb...", color=Qt.GlobalColor.gray)
@@ -391,6 +398,27 @@ def _load_main_window(mw: MainWindow) -> None:
     mw.show()
     logging.info("Application successfully loaded.")
     splash.finish(mw)
+
+
+def generate_splashscreen() -> QSplashScreen:
+    canvas = QPixmap(":/splash/splash.png")
+    painter = QPainter(canvas)
+    painter.setPen(QColor(0, 174, 239))  # light blue
+    font = QFont()
+    font.setFamily("Kozuka Gothic Pro")
+    font.setPointSize(24)
+    painter.setFont(font)
+    version = "0.1.0"
+    painter.drawText(
+        0,
+        0,
+        428,
+        140,
+        Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignBottom,
+        version,
+    )
+    painter.end()
+    return QSplashScreen(canvas)
 
 
 def _init_app() -> QApplication:

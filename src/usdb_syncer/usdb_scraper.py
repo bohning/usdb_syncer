@@ -4,12 +4,12 @@ import logging
 import re
 from datetime import datetime
 from enum import Enum
-from functools import wraps
-from typing import Any, Callable, Iterator, Type
+from typing import Iterator, Type
 
 import attrs
 import requests
 from bs4 import BeautifulSoup, NavigableString, Tag
+from requests import Session
 
 from usdb_syncer import SongId, settings
 from usdb_syncer.constants import (
@@ -27,36 +27,113 @@ from usdb_syncer.utils import extract_youtube_id, normalize
 
 _logger: logging.Logger = logging.getLogger(__file__)
 
+SONG_LIST_ROW_REGEX = re.compile(
+    r'<td onclick="show_detail\((\d+)\)">(.*)</td>\n'
+    r'<td onclick="show_detail\(\d+\)"><a href=.*>(.*)</td>\n'
+    r'<td onclick="show_detail\(\d+\)">(.*)</td>\n'
+    r'<td onclick="show_detail\(\d+\)">(.*)</td>\n'
+    r'<td onclick="show_detail\(\d+\)">(.*)</td>\n'
+    r'<td onclick="show_detail\(\d+\)">(.*)</td>\n'
+    r'<td onclick="show_detail\(\d+\)">(.*)</td>'
+)
+WELCOME_REGEX = re.compile(
+    r"<td class='row3' colspan='2'>\s*<span class='gen'>([^<]+) <b>([^<]+)</b>"
+)
+
+
+def establish_usdb_login(session: Session) -> bool:
+    """Tries to log in to USDB if necessary. Returns final login status."""
+    if user := get_logged_in_usdb_user(session):
+        _logger.info(f"Using existing login of USDB user '{user}'.")
+        return True
+    if (auth := settings.get_usdb_auth())[0] and auth[1]:
+        if login_to_usdb(session, *auth):
+            _logger.info(f"Successfully logged in to USDB with user '{auth[0]}'.")
+            return True
+        _logger.error(f"Login to USDB with user '{auth[0]}' failed!")
+    else:
+        _logger.warning(
+            "Not logged in to USDB. Please go to 'Synchronize > USDB Login', then "
+            "select the browser you are logged in with and/or enter your credentials."
+        )
+    return False
+
+
+def new_session_with_cookies(browser: settings.Browser) -> Session:
+    session = Session()
+    if cookies := browser.cookies():
+        for cookie in cookies:
+            session.cookies.set_cookie(cookie)
+    return session
+
+
+class SessionManager:
+    """Singleton for managing the global session instance."""
+
+    _session: Session | None = None
+
+    @classmethod
+    def session(cls) -> Session:
+        if cls._session is None:
+            cls._session = new_session_with_cookies(settings.get_browser())
+            establish_usdb_login(cls._session)
+        return cls._session
+
+    @classmethod
+    def reset_session(cls) -> None:
+        if cls._session:
+            cls._session.close()
+            cls._session = None
+
+    @classmethod
+    def has_session(cls) -> bool:
+        return cls._session is not None
+
+
+class UsdbError(Exception):
+    """Super class for errors relating to USDB."""
+
+
+class UsdbParseError(UsdbError):
+    """Raised when HTML from USDB has unexpected format."""
+
+
+class UsdbLoginError(UsdbError):
+    """Raised when login was required, but not possible."""
+
+
+class UsdbNotFoundError(UsdbError):
+    """Raised when a requested USDB record is missing."""
+
+
+def get_logged_in_usdb_user(session: Session) -> str | None:
+    response = session.get(Usdb.BASE_URL, timeout=10, params={"link": "profil"})
+    response.raise_for_status()
+    if match := WELCOME_REGEX.search(response.text):
+        return match.group(2)
+    return None
+
+
+def login_to_usdb(session: Session, user: str, password: str) -> bool:
+    """True if success."""
+    response = session.post(
+        Usdb.BASE_URL,
+        timeout=10,
+        data={"user": user, "pass": password, "login": "Login"},
+    )
+    response.raise_for_status()
+    return UsdbStrings.LOGIN_INVALID not in response.text
+
+
+def log_out_of_usdb(session: Session) -> None:
+    session.post(Usdb.BASE_URL, timeout=10, params={"link": "logout"})
+
 
 class RequestMethod(Enum):
     """Supported HTTP requests."""
 
     GET = "GET"
     POST = "POST"
-
-
-class ParseException(Exception):
-    """Raised when HTML from USDB has unexpected format."""
-
-
-def raises_parse_exception(func: Callable) -> Callable:
-    """Converts certain errors of annotated functions that indicate wrong assumptions
-    about the parsed HTML into ParseErrors.
-    This can be used with '# type: ignore' and an outer try-except clause to parse HTML
-    concisely, but safely.
-    """
-
-    @wraps(func)
-    def wrapped(*args: Any, **kwargs: Any) -> Any:
-        try:
-            return func(*args, **kwargs)
-        except (AttributeError, IndexError, ValueError) as exception:
-            # AttributeError: not existing attribute (e.g. because the object is None)
-            # IndexError: list index out of bounds
-            # ValueError: too many values to unpack
-            raise ParseException from exception
-
-    return wrapped
 
 
 class CommentContents:
@@ -126,8 +203,9 @@ def get_usdb_page(
     headers: dict[str, str] | None = None,
     payload: dict[str, str] | None = None,
     params: dict[str, str] | None = None,
+    session: Session | None = None,
 ) -> str:
-    """Retrieve html subpage from usdb.
+    """Retrieve HTML subpage from USDB.
 
     Parameters:
         rel_url: relative url of page to retrieve
@@ -135,38 +213,65 @@ def get_usdb_page(
         headers: dict of headers to send with request
         payload: dict of data to send with request
         params: dict of params to send with request
+        session: Session to use instead of the global one
     """
-    url = Usdb.BASE_URL + rel_url
+    existing_session = SessionManager.has_session()
 
+    def page() -> str:
+        return _get_usdb_page_inner(
+            session or SessionManager.session(),
+            rel_url,
+            method=method,
+            headers=headers,
+            payload=payload,
+            params=params,
+        )
+
+    try:
+        return page()
+    except requests.ConnectionError:
+        _logger.debug("Connection failed; session may have expired; retrying ...")
+    except UsdbLoginError:
+        # skip login retry if custom or just created session
+        if session or not existing_session:
+            raise
+        _logger.debug(f"Page '{rel_url}' is private; trying to log in ...")
+    if not session:
+        SessionManager.reset_session()
+    return page()
+
+
+def _get_usdb_page_inner(
+    session: Session,
+    rel_url: str,
+    method: RequestMethod = RequestMethod.GET,
+    headers: dict[str, str] | None = None,
+    payload: dict[str, str] | None = None,
+    params: dict[str, str] | None = None,
+) -> str:
+    session = session or SessionManager.session()
+    url = Usdb.BASE_URL + rel_url
     match method:
         case RequestMethod.GET:
-            _logger.debug("get request for %s", url)
-            response = requests.get(
-                url,
-                headers=headers,
-                params=params,
-                timeout=60,
-                cookies=settings.get_browser().cookies(),
-            )
+            _logger.debug(f"Get request for {url}")
+            response = session.get(url, headers=headers, params=params, timeout=10)
         case RequestMethod.POST:
-            _logger.debug("post request for %s", url)
-            response = requests.post(
-                url,
-                headers=headers,
-                data=payload,
-                params=params,
-                timeout=60,
-                cookies=settings.get_browser().cookies(),
+            _logger.debug(f"Post request for {url}")
+            response = session.post(
+                url, headers=headers, data=payload, params=params, timeout=10
             )
         case _ as unreachable:
             assert_never(unreachable)
-
     response.raise_for_status()
     response.encoding = "utf-8"
-    return normalize(response.text)
+    if UsdbStrings.NOT_LOGGED_IN in (page := normalize(response.text)):
+        raise UsdbLoginError
+    if UsdbStrings.DATASET_NOT_FOUND in page:
+        raise UsdbNotFoundError
+    return page
 
 
-def get_usdb_details(song_id: SongId) -> SongDetails | None:
+def get_usdb_details(song_id: SongId) -> SongDetails:
     """Retrieve song details from usdb webpage, if song exists.
 
     Parameters:
@@ -175,32 +280,30 @@ def get_usdb_details(song_id: SongId) -> SongDetails | None:
     html = get_usdb_page(
         "index.php", params={"id": str(int(song_id)), "link": "detail"}
     )
-    soup = BeautifulSoup(html, "lxml")
-    if UsdbStrings.DATASET_NOT_FOUND in soup.get_text():
-        return None
-    return _parse_song_page(soup, song_id)
-
-
-def get_usdb_login_status() -> bool:
-    html = get_usdb_page("index.php", params={"link": "home"})
-    soup = BeautifulSoup(html, "lxml")
-    if UsdbStrings.WELCOME_PLEASE_LOGIN in soup.get_text():
-        return False
-    return True
+    return _parse_song_page(BeautifulSoup(html, "lxml"), song_id)
 
 
 def _parse_song_page(soup: BeautifulSoup, song_id: SongId) -> SongDetails:
-    usdb_strings = _get_usdb_strings(soup)
+    usdb_strings = _usdb_strings_from_soup(soup)
     details_table, comments_table, *_ = soup.find_all("table", border="0", width="500")
     details = _parse_details_table(details_table, song_id, usdb_strings)
     details.comments = _parse_comments_table(comments_table)
     return details
 
 
-def _get_usdb_strings(soup: BeautifulSoup) -> Type[UsdbStrings]:
-    welcome_string = (
+def _usdb_strings_from_soup(soup: BeautifulSoup) -> Type[UsdbStrings]:
+    return _usdb_strings_from_welcome(
         soup.find("span", class_="gen").text.split(" ", 1)[0].removesuffix(",")
     )
+
+
+def _usdb_strings_from_html(html: str) -> Type[UsdbStrings]:
+    if match := WELCOME_REGEX.search(html):
+        return _usdb_strings_from_welcome(match.group(1))
+    raise UsdbParseError("welcome string not found")
+
+
+def _usdb_strings_from_welcome(welcome_string: str) -> Type[UsdbStrings]:
     match welcome_string:
         case UsdbStringsEnglish.WELCOME:
             return UsdbStringsEnglish
@@ -208,45 +311,35 @@ def _get_usdb_strings(soup: BeautifulSoup) -> Type[UsdbStrings]:
             return UsdbStringsGerman
         case UsdbStringsFrench.WELCOME:
             return UsdbStringsFrench
-        case _:
-            raise ParseException("Unknown USDB language.")
+    raise UsdbParseError("Unknown USDB language.")
 
 
 def get_usdb_available_songs(
-    content_filter: dict[str, str] | None = None
+    max_skip_id: SongId,
+    content_filter: dict[str, str] | None = None,
+    session: Session | None = None,
 ) -> list[UsdbSong]:
     """Return a list of all available songs.
 
     Parameters:
+        max_skip_id: only fetch ids larger than this
         content_filter: filters response (e.g. {'artist': 'The Beatles'})
     """
     available_songs: list[UsdbSong] = []
+    payload = {"order": "id", "ud": "desc", "limit": str(Usdb.MAX_SONGS_PER_PAGE)}
+    payload.update(content_filter or {})
     for start in range(0, Usdb.MAX_SONG_ID, Usdb.MAX_SONGS_PER_PAGE):
-        payload = {
-            "order": "id",
-            "ud": "desc",
-            "limit": str(Usdb.MAX_SONGS_PER_PAGE),
-            "start": str(start),
-        }
-        payload.update(content_filter or {})
-
+        payload["start"] = str(start)
         html = get_usdb_page(
-            "index.php", RequestMethod.POST, params={"link": "list"}, payload=payload
+            "index.php",
+            RequestMethod.POST,
+            params={"link": "list"},
+            payload=payload,
+            session=session,
         )
-
-        regex = (
-            r'<td onclick="show_detail\((\d+)\)">(.*)</td>\n'
-            r'<td onclick="show_detail\(\d+\)"><a href=.*>(.*)</td>\n'
-            r'<td onclick="show_detail\(\d+\)">(.*)</td>\n'
-            r'<td onclick="show_detail\(\d+\)">(.*)</td>\n'
-            r'<td onclick="show_detail\(\d+\)">(.*)</td>\n'
-            r'<td onclick="show_detail\(\d+\)">(.*)</td>\n'
-            r'<td onclick="show_detail\(\d+\)">(.*)</td>'
-        )
-        matches = list(re.finditer(regex, html))
-
-        available_songs.extend(
+        songs = list(
             UsdbSong.from_html(
+                _usdb_strings_from_html(html),
                 song_id=match[1],
                 artist=match[2],
                 title=match[3],
@@ -256,13 +349,15 @@ def get_usdb_available_songs(
                 rating=match[7],
                 views=match[8],
             )
-            for match in matches
+            for match in SONG_LIST_ROW_REGEX.finditer(html)
+            if SongId.parse(match[1]) > max_skip_id
         )
+        available_songs.extend(songs)
 
-        if len(matches) < Usdb.MAX_SONGS_PER_PAGE:
+        if len(songs) < Usdb.MAX_SONGS_PER_PAGE:
             break
 
-    _logger.info(f"fetched {len(available_songs)} available songs")
+    _logger.info(f"Fetched {len(available_songs)} new song(s) from USDB.")
     return available_songs
 
 
@@ -324,7 +419,7 @@ def _find_text_after(details_table: BeautifulSoup, label: str) -> str:
     if isinstance((tag := details_table.find(string=label)), NavigableString):
         if isinstance(tag.next, Tag):
             return tag.next.text.strip()
-    raise ParseException(f"Text after {label} not found.")
+    raise UsdbParseError(f"Text after {label} not found.")
 
 
 def _parse_comments_table(comments_table: BeautifulSoup) -> list[SongComment]:
@@ -387,7 +482,7 @@ def _all_urls_in_comment(contents: BeautifulSoup, text: str) -> Iterator[str]:
         yield match.group(1)
 
 
-def get_notes(song_id: SongId, logger: Log) -> str | None:
+def get_notes(song_id: SongId, logger: Log) -> str:
     """Retrieve notes for a song."""
     logger.debug(f"fetch notes for song {song_id}")
     html = get_usdb_page(
@@ -397,12 +492,10 @@ def get_notes(song_id: SongId, logger: Log) -> str | None:
         params={"link": "gettxt", "id": str(int(song_id))},
         payload={"wd": "1"},
     )
-    soup = BeautifulSoup(html, "lxml")
-    text = _parse_song_txt_from_txt_page(soup)
-    return text
+    return _parse_song_txt_from_txt_page(BeautifulSoup(html, "lxml"))
 
 
-def _parse_song_txt_from_txt_page(soup: BeautifulSoup) -> str | None:
-    if textarea := soup.find("textarea"):
-        return textarea.string  # type: ignore
-    return None
+def _parse_song_txt_from_txt_page(soup: BeautifulSoup) -> str:
+    if isinstance(textarea := soup.find("textarea"), Tag):
+        return textarea.string or ""
+    raise UsdbParseError("textarea for notes not found")

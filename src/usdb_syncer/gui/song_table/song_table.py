@@ -33,7 +33,12 @@ from usdb_syncer.gui.song_table.column import Column
 from usdb_syncer.gui.song_table.list_model import ListModel
 from usdb_syncer.gui.song_table.table_model import CustomRole, TableModel
 from usdb_syncer.logger import get_logger
-from usdb_syncer.song_data import DownloadResult, DownloadStatus, SongData
+from usdb_syncer.song_data import (
+    DownloadErrorReason,
+    DownloadResult,
+    DownloadStatus,
+    SongData,
+)
 from usdb_syncer.song_loader import DownloadInfo, download_songs
 from usdb_syncer.song_txt import SongTxt
 from usdb_syncer.usdb_scraper import UsdbSong
@@ -189,6 +194,7 @@ class SongTable:
         view.setModel(model)
         view.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
         view.customContextMenuRequested.connect(lambda _: self._context_menu(menu))  # type: ignore
+        view.doubleClicked.connect(lambda idx: self._on_double_clicked(idx, model))  # type: ignore
         header = view.horizontalHeader()
         if not state.isEmpty():
             header.restoreState(state)
@@ -211,6 +217,19 @@ class SongTable:
             menu.addAction(action)
         menu.exec(QCursor.pos())
 
+    def _on_double_clicked(
+        self, index: QModelIndex, model: QSortFilterProxyModel
+    ) -> None:
+        row = model.mapToSource(index).row()
+        data = self._model.songs[row]
+        if model is self._batch_model and data.status.can_be_unstaged():
+            data.status = DownloadStatus.NONE
+        elif model is self._list_model and data.status is DownloadStatus.NONE:
+            data.status = DownloadStatus.STAGED
+        else:
+            return
+        self._model.row_changed(row)
+
     def _on_download_started(self, song_id: SongId) -> None:
         if not (row := self._model.rows.get(song_id)):
             return
@@ -219,16 +238,20 @@ class SongTable:
         self._model.row_changed(row)
 
     def _on_download_finished(self, result: DownloadResult) -> None:
-        if not (row := self._model.rows.get(result.song_id)):
-            return
-        data = self._model.songs[row]
-        if result.files:
-            data.status = DownloadStatus.DONE
-            data.local_files = result.files
-        else:
-            data.status = DownloadStatus.FAILED
-        self._model.row_changed(row)
         self._progress.finish(1)
+        logger = get_logger(__file__, result.song_id)
+        if result.error is not None:
+            if (row := self._model.row_for_id(result.song_id)) is None:
+                raise Exception(f"Unexpected id: {result.song_id}!")
+            if result.error is DownloadErrorReason.NOT_FOUND:
+                self._model.remove_row(row)
+                logger.info("Removed song from local database.")
+            else:
+                self._model.songs[row].status = DownloadStatus.FAILED
+                self._model.row_changed(row)
+        elif result.data:
+            self._model.update_item(result.data)
+            logger.info("All done!")
 
     def save_state(self) -> None:
         settings.set_list_view_header_state(

@@ -3,11 +3,12 @@
 from __future__ import annotations
 
 from json import JSONEncoder
-from typing import Any
+from typing import Any, Type
 
 import attrs
 
 from usdb_syncer import SongId
+from usdb_syncer.constants import UsdbStrings
 
 
 @attrs.frozen(auto_attribs=True, kw_only=True)
@@ -31,6 +32,7 @@ class UsdbSong:
     @classmethod
     def from_html(
         cls,
+        strings: Type[UsdbStrings],
         *,
         song_id: str,
         artist: str,
@@ -47,7 +49,7 @@ class UsdbSong:
             title=title,
             language=language,
             edition=edition,
-            golden_notes=golden_notes == "Yes",
+            golden_notes=golden_notes == strings.YES,
             rating=rating.count("star.png"),
             views=int(views),
         )

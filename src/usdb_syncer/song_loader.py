@@ -7,6 +7,9 @@ from pathlib import Path
 from typing import Callable, Iterable, Iterator
 
 import attrs
+import iso639
+import mutagen.mp4
+from mutagen import id3
 from PySide6.QtCore import QRunnable, QThreadPool
 
 from usdb_syncer import SongId, resource_dl, usdb_scraper
@@ -14,10 +17,17 @@ from usdb_syncer.download_options import Options, download_options
 from usdb_syncer.logger import Log, get_logger
 from usdb_syncer.meta_tags import MetaTags
 from usdb_syncer.resource_dl import ImageKind, download_and_process_image
-from usdb_syncer.song_data import DownloadResult, LocalFiles, SongData
+from usdb_syncer.song_data import (
+    DownloadErrorReason,
+    DownloadResult,
+    DownloadStatus,
+    LocalFiles,
+    SongData,
+)
 from usdb_syncer.song_txt import Headers, SongTxt
-from usdb_syncer.sync_meta import SyncMeta
-from usdb_syncer.usdb_scraper import SongDetails
+from usdb_syncer.sync_meta import FileMeta, SyncMeta
+from usdb_syncer.usdb_scraper import SongDetails, UsdbLoginError, UsdbNotFoundError
+from usdb_syncer.usdb_song import UsdbSong
 from usdb_syncer.utils import (
     is_name_maybe_with_suffix,
     next_unique_directory,
@@ -106,10 +116,8 @@ class Context:
     @classmethod
     def new(
         cls, details: SongDetails, options: Options, info: DownloadInfo, logger: Log
-    ) -> Context | None:
+    ) -> Context:
         txt_str = usdb_scraper.get_notes(details.song_id, logger)
-        if not txt_str:
-            return None
         txt = SongTxt.parse(txt_str, logger)
         txt.sanitize()
         txt.headers.creator = txt.headers.creator or details.uploader or None
@@ -150,6 +158,25 @@ class Context:
             self.logger.debug(f"downloading background from #VIDEO params: {url}")
         return url
 
+    def usdb_song(self) -> UsdbSong:
+        return UsdbSong(
+            song_id=self.sync_meta.song_id,
+            artist=self.details.artist,
+            title=self.details.title,
+            language=self.txt.headers.language or "",
+            edition=self.txt.headers.edition or "",
+            golden_notes=self.details.golden_notes,
+            rating=self.details.rating,
+            views=self.details.views,
+        )
+
+    def finished_song_data(self) -> SongData:
+        return SongData.from_usdb_song(
+            self.usdb_song(),
+            LocalFiles.from_sync_meta(self.locations.meta_path, self.sync_meta),
+            DownloadStatus.DONE,
+        )
+
 
 def _load_sync_meta(path: Path, song_id: SongId, meta_tags: MetaTags) -> SyncMeta:
     """Loads meta from path if valid or creates a new one."""
@@ -177,22 +204,29 @@ class SongLoader(QRunnable):
         self.logger = get_logger(__file__, info.song_id)
 
     def run(self) -> None:
+        result = DownloadResult(self.song_id)
+        try:
+            result.data = self._run_inner()
+        except UsdbLoginError:
+            self.logger.error("Aborted; download requires login.")
+            result.error = DownloadErrorReason.NOT_LOGGED_IN
+        except UsdbNotFoundError:
+            self.logger.error("Song seems to have been deleted from USDB.")
+            result.error = DownloadErrorReason.NOT_FOUND
+        except Exception as exception:  # pylint: disable=broad-except
+            self.logger.debug(exception)
+            self.logger.error(
+                "Failed to finish download due to an unexpected error. "
+                "See debug log for more information."
+            )
+            result.error = DownloadErrorReason.UNKNOWN
+        self.on_finish(result)
+
+    def _run_inner(self) -> SongData:
         self.on_start(self.song_id)
         details = usdb_scraper.get_usdb_details(self.song_id)
-        if details is None:
-            # song was deleted from usdb in the meantime, TODO: uncheck/remove from model
-            self.logger.error("Could not find song on USDB!")
-            self.on_finish(DownloadResult(self.song_id))
-            return
         self.logger.info(f"Found '{details.artist} - {details.title}' on  USDB")
         ctx = Context.new(details, self.options, self.data, self.logger)
-        if not ctx:
-            self.logger.info(
-                "Aborted; not logged in. Log in to USDB in your browser and select the "
-                "browser in the USDB Syncer settings. "
-            )
-            self.on_finish(DownloadResult(self.song_id))
-            return
         ctx.locations.dir_path().mkdir(parents=True, exist_ok=True)
         ctx.locations.ensure_correct_paths(ctx.sync_meta)
         _maybe_download_audio(ctx)
@@ -201,9 +235,8 @@ class SongLoader(QRunnable):
         _maybe_download_background(ctx)
         _maybe_write_txt(ctx)
         _write_sync_meta(ctx)
-        self.logger.info("All done!")
-        files = LocalFiles.from_sync_meta(ctx.locations.meta_path, ctx.sync_meta)
-        self.on_finish(DownloadResult(self.song_id, files))
+        _maybe_write_audio_tags(ctx)
+        return ctx.finished_song_data()
 
 
 def download_songs(
@@ -339,3 +372,86 @@ def _maybe_write_txt(ctx: Context) -> None:
 
 def _write_sync_meta(ctx: Context) -> None:
     ctx.sync_meta.to_file(ctx.locations.dir_path())
+
+
+def _maybe_write_audio_tags(ctx: Context) -> None:
+    if not (options := ctx.options.audio_options) or not (meta := ctx.sync_meta.audio):
+        return
+
+    audiofile = ctx.locations.file_path(meta.fname)
+
+    match audiofile.suffix:
+        case ".m4a":
+            _write_m4a_tags(meta, ctx, options.embed_artwork)
+        case ".mp3":
+            _write_mp3_tags(meta, ctx, options.embed_artwork)
+
+
+def _write_m4a_tags(audio_meta: FileMeta, ctx: Context, embed_artwork: bool) -> None:
+    tags = mutagen.mp4.MP4Tags()
+
+    tags["\xa9ART"] = ctx.txt.headers.artist
+    tags["\xa9nam"] = ctx.txt.headers.title
+    if ctx.txt.headers.genre:
+        tags["\xa9gen"] = ctx.txt.headers.genre
+    if ctx.txt.headers.year:
+        tags["\xa9day"] = ctx.txt.headers.year
+    tags["\xa9lyr"] = ctx.txt.unsynchronized_lyrics()
+    tags["\xa9cmt"] = audio_meta.resource
+
+    if embed_artwork:
+        tags["covr"] = [
+            mutagen.mp4.MP4Cover(
+                ctx.locations.file_path(image.fname).read_bytes(),
+                imageformat=mutagen.mp4.MP4Cover.FORMAT_JPEG,
+            )
+            for image in (ctx.sync_meta.cover, ctx.sync_meta.background)
+            if image
+        ]
+
+    tags.save(ctx.locations.file_path(audio_meta.fname))
+
+
+def _write_mp3_tags(audio_meta: FileMeta, ctx: Context, embed_artwork: bool) -> None:
+    tags = id3.ID3()
+
+    lang = iso639.Lang(ctx.txt.headers.main_language()).pt2b  # ISO 639-2B
+    tags["TPE1"] = id3.TPE1(encoding=id3.Encoding.UTF8, text=ctx.txt.headers.artist)
+    tags["TIT2"] = id3.TIT2(encoding=id3.Encoding.UTF8, text=ctx.txt.headers.title)
+    tags["TLAN"] = id3.TLAN(encoding=id3.Encoding.UTF8, text=lang)
+    if genre := ctx.txt.headers.genre:
+        tags["TCON"] = id3.TCON(encoding=id3.Encoding.UTF8, text=genre)
+    if year := ctx.txt.headers.year:
+        tags["TDRC"] = id3.TDRC(encoding=id3.Encoding.UTF8, text=year)
+    tags[f"USLT::'{lang}'"] = id3.USLT(
+        encoding=id3.Encoding.UTF8,
+        lang=lang,
+        desc="Lyrics",
+        text=ctx.txt.unsynchronized_lyrics(),
+    )
+    tags["SYLT"] = id3.SYLT(
+        encoding=id3.Encoding.UTF8,
+        lang=iso639.Lang(ctx.txt.headers.main_language()).pt2b,  # ISO 639-2B
+        format=2,  # milliseconds as units
+        type=1,  # lyrics
+        text=ctx.txt.synchronized_lyrics(),
+    )
+    tags["COMM"] = id3.COMM(
+        encoding=id3.Encoding.UTF8,
+        lang="eng",
+        desc="Audio Source",
+        text=audio_meta.resource,
+    )
+
+    if embed_artwork and ctx.sync_meta.cover:
+        tags.add(
+            id3.APIC(
+                encoding=id3.Encoding.UTF8,
+                mime="image/jpeg",
+                type=id3.PictureType.COVER_FRONT,
+                desc=f"Source: {ctx.sync_meta.cover.resource}",
+                data=ctx.locations.file_path(ctx.sync_meta.cover.fname).read_bytes(),
+            )
+        )
+
+    tags.save(ctx.locations.file_path(audio_meta.fname))

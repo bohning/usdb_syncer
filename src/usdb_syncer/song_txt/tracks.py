@@ -190,6 +190,9 @@ class Line:
         if self.line_break:
             self.line_break.multiply(factor)
 
+    def text(self) -> str:
+        return "".join(note.text.replace("~", "") for note in self.notes)
+
 
 @attrs.define
 class Tracks:

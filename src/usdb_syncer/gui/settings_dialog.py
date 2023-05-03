@@ -5,6 +5,7 @@ from PySide6.QtWidgets import QDialog, QWidget
 
 from usdb_syncer import settings
 from usdb_syncer.gui.forms.SettingsDialog import Ui_Dialog
+from usdb_syncer.usdb_scraper import SessionManager
 
 
 class SettingsDialog(Ui_Dialog, QDialog):
@@ -15,7 +16,8 @@ class SettingsDialog(Ui_Dialog, QDialog):
         self.setupUi(self)
         self._populate_comboboxes()
         self._load_settings()
-        self.accepted.connect(self._save_settings)  # type: ignore
+        self._browser = self.comboBox_browser.currentData()
+        self.groupBox_reencode_video.setVisible(False)
 
     def _populate_comboboxes(self) -> None:
         for encoding in settings.Encoding:
@@ -58,6 +60,7 @@ class SettingsDialog(Ui_Dialog, QDialog):
             self.comboBox_audio_bitrate.findData(settings.get_audio_bitrate())
         )
         self.checkBox_audio_normalize.setChecked(settings.get_audio_normalize())
+        self.checkBox_audio_embed_artwork.setChecked(settings.get_audio_embed_artwork())
         self.groupBox_video.setChecked(settings.get_video())
         self.comboBox_videocontainer.setCurrentIndex(
             self.comboBox_videocontainer.findData(settings.get_video_format())
@@ -75,6 +78,12 @@ class SettingsDialog(Ui_Dialog, QDialog):
         self.groupBox_background.setChecked(settings.get_background())
         self.checkBox_background_always.setChecked(settings.get_background_always())
 
+    def accept(self) -> None:
+        self._save_settings()
+        if self._browser != self.comboBox_browser.currentData():
+            SessionManager.reset_session()
+        super().accept()
+
     def _save_settings(self) -> None:
         settings.set_browser(self.comboBox_browser.currentData())
         settings.set_cover(self.groupBox_cover.isChecked())
@@ -86,6 +95,7 @@ class SettingsDialog(Ui_Dialog, QDialog):
         settings.set_audio_format(self.comboBox_audio_format.currentData())
         settings.set_audio_bitrate(self.comboBox_audio_bitrate.currentData())
         settings.set_audio_normalize(self.checkBox_audio_normalize.isChecked())
+        settings.set_audio_embed_artwork(self.checkBox_audio_embed_artwork.isChecked())
         settings.set_video(self.groupBox_video.isChecked())
         settings.set_video_format(self.comboBox_videocontainer.currentData())
         settings.set_video_format_new(self.comboBox_videoencoder.currentData())
