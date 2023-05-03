@@ -6,7 +6,7 @@ import os
 import sys
 
 from PySide6.QtCore import QObject, Qt, QThreadPool, QTimer, Signal
-from PySide6.QtGui import QCloseEvent, QColor, QFont, QPainter, QPixmap
+from PySide6.QtGui import QCloseEvent, QColor, QFont, QIcon, QPainter, QPixmap
 from PySide6.QtWidgets import (
     QApplication,
     QComboBox,
@@ -360,6 +360,7 @@ def _init_app() -> QApplication:
     app = QApplication(sys.argv)
     app.setOrganizationName("bohning")
     app.setApplicationName("usdb_syncer")
+    app.setWindowIcon(QIcon(":/app/appicon_128x128.png"))
     return app
 
 

@@ -1,21 +1,17 @@
 #!/bin/sh
-# Create a folder (named dmg) to prepare our DMG in (if it doesn't already exist).
-mkdir -p dist/dmg
-# Empty the dmg folder.
-rm -r dist/dmg/*
-# Copy the app bundle to the dmg folder.
-cp -r "dist/USDB Download & Sync.app" dist/dmg
 # If the DMG already exists, delete it.
-test -f "dist/usdb_dl.dmg" && rm "dist/usdb_dl.dmg"
+test -f "dist/USDBSyncer.dmg" && rm "dist/USDBSyncer.dmg"
 create-dmg \
-  --volname "USDB Download & Sync" \
-  --volicon "usdb_dl.icns" \
+  --volname "USDB Syncer" \
+  --volicon "src/usdb_syncer/gui/resources/appicon_128x128.png" \
   --window-pos 200 120 \
   --window-size 600 300 \
-  --icon-size 100 \
-  --icon "usdb_dl.icns" 175 120 \
-  --hide-extension "USDB Download & Sync.app" \
+  --icon-size 128 \
+  --text-size 14 \
+  --icon "USDBSyncer.app" 175 120 \
+  --hide-extension "USDBSyncer.app" \
   --app-drop-link 425 120 \
+  --hdiutil-quiet \
   --no-internet-enable  \
-  "dist/usdb_dl.dmg" \
-  "dist/dmg/"
+  "dist/USDBSyncer.dmg" \
+  "dist/USDBSyncer.app"
