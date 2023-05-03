@@ -279,6 +279,9 @@ class SongTable:
         self._stage_rows(rows)
         _logger.info(f"Added {len(rows)} songs to batch.")
 
+    def stage_song_ids(self, song_ids: list[SongId]) -> None:
+        self._stage_rows(self._model.row_for_id(id) for id in song_ids)
+
     def set_selection_to_song_ids(self, select_song_ids: list[SongId]) -> None:
         select_indices = self._model.indices_for_ids(select_song_ids)
         self.set_selection_to_rows(iter(select_indices))

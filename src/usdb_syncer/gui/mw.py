@@ -307,10 +307,10 @@ class MainWindow(Ui_MainWindow, QMainWindow):
             # select available songs to prepare Download
             _logger.info(
                 f"available {len(available_song_ids)}/{len(unique_song_ids)} "
-                "imported USDB IDs are selected for Download: "
+                "imported USDB IDs are added to Batch: "
                 f"{', '.join(str(song_id) for song_id in available_song_ids)}"
             )
-            self.table.set_selection_to_song_ids(available_song_ids)
+            self.table.stage_song_ids(available_song_ids)
 
     def _export_usdb_ids_to_file(self) -> None:
         selected_ids = self.table.batch_ids()

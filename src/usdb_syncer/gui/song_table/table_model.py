@@ -59,7 +59,7 @@ class TableModel(QAbstractTableModel):
         return [
             self.index(row, 0)
             for song_id in ids
-            if (row := self._rows.get(song_id, None)) is not None
+            if (row := self.rows.get(song_id, None)) is not None
         ]
 
     def item_for_id(self, song_id: SongId) -> SongData | None:
