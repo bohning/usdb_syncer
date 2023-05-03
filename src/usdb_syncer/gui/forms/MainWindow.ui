@@ -644,8 +644,6 @@
     <addaction name="action_settings"/>
     <addaction name="action_meta_tags"/>
     <addaction name="action_generate_song_pdf"/>
-    <addaction name="action_import_usdb_ids"/>
-    <addaction name="action_export_usdb_ids"/>
    </widget>
    <widget class="QMenu" name="menu_sync">
     <property name="title">
@@ -671,6 +669,8 @@
     <property name="title">
      <string>Batch</string>
     </property>
+    <addaction name="action_import_usdb_ids"/>
+    <addaction name="action_export_usdb_ids"/>
     <addaction name="action_batch_remove"/>
    </widget>
    <addaction name="menu_songs"/>
@@ -716,7 +716,7 @@
   </action>
   <action name="action_import_usdb_ids">
    <property name="text">
-    <string>Download IDs From File(s)</string>
+    <string>Add IDs from File(s)</string>
    </property>
    <property name="toolTip">
     <string>Download Multiple USDB songs defined by IDs in files and/or weblinks</string>
@@ -724,7 +724,7 @@
   </action>
   <action name="action_export_usdb_ids">
    <property name="text">
-    <string>Export USDB IDs</string>
+    <string>Export IDs to File</string>
    </property>
   </action>
   <action name="action_songs_download">
