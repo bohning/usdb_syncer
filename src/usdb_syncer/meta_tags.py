@@ -95,7 +95,7 @@ class ImageMetaTags:
             return self.source
         if "/" in self.source:
             return f"https://{self.source}"
-        return f"https://images.fanart.tv/fanart/{self.source}"
+        return f"https://assets.fanart.tv/fanart/{self.source}"
 
     def image_processing(self) -> bool:
         """True if there is data for image processing."""
