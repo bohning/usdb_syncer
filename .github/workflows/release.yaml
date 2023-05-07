@@ -36,6 +36,8 @@ jobs:
         run: |
           python -m pip install --upgrade pip wheel
           python -m pip install '.[dev]'
+      - name: Write version and commit hash
+        run: write_release_info -p src/usdb_syncer/constants.py -v ${{ github.ref_name }} -c ${{ github.workflow_sha }}
       - name: Generate GUI elements
         run: generate_pyside_files
       - name: Scrape USDB song list to ship with the bundle
