@@ -18,7 +18,10 @@ import keyring
 from PySide6.QtCore import QByteArray, QSettings
 
 from usdb_syncer.constants import Usdb
+from usdb_syncer.logger import get_logger
 from usdb_syncer.typing_helpers import assert_never
+
+_logger = get_logger(__file__)
 
 SYSTEM_USDB = "USDB Syncer/USDB"
 
@@ -217,7 +220,11 @@ class Browser(Enum):
                 function = browser_cookie3.vivaldi
             case _ as unreachable:
                 assert_never(unreachable)
-        return function(domain_name=Usdb.DOMAIN)
+        try:
+            return function(domain_name=Usdb.DOMAIN)
+        except browser_cookie3.BrowserCookieError:
+            _logger.debug(f"Failed to retrieve {str(self).capitalize()} cookies.")
+        return None
 
 
 class VideoContainer(Enum):
