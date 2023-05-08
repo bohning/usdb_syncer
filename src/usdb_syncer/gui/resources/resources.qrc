@@ -1,5 +1,17 @@
 <RCC>
   <qresource prefix="icons">
+    <file>broom.png</file>
+    <file>folder_note.png</file>
+    <file>clipboard-empty.png</file>
+    <file>tag-hash.png</file>
+    <file>clipboard--minus.png</file>
+    <file>clipboard--plus.png</file>
+    <file>drive-download.png</file>
+    <file>database.png</file>
+    <file>check_for_update.png</file>
+    <file>report.png</file>
+    <file>cog.png</file>
+    <file>log.png</file>
     <file>bug.png</file>
     <file>error.png</file>
     <file>info.png</file>
