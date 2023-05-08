@@ -69,6 +69,10 @@
            <property name="text">
             <string>Select song folder</string>
            </property>
+           <property name="icon">
+            <iconset resource="../resources/resources.qrc">
+             <normaloff>:/icons/folder_note.png</normaloff>:/icons/folder_note.png</iconset>
+           </property>
           </widget>
          </item>
         </layout>
@@ -89,6 +93,10 @@
        <widget class="QPushButton" name="clear_filters">
         <property name="text">
          <string>Clear filters</string>
+        </property>
+        <property name="icon">
+         <iconset resource="../resources/resources.qrc">
+          <normaloff>:/icons/broom.png</normaloff>:/icons/broom.png</iconset>
         </property>
        </widget>
       </item>
@@ -434,12 +442,20 @@
            <property name="text">
             <string>Download</string>
            </property>
+           <property name="icon">
+            <iconset resource="../resources/resources.qrc">
+             <normaloff>:/icons/drive-download.png</normaloff>:/icons/drive-download.png</iconset>
+           </property>
           </widget>
          </item>
          <item>
           <widget class="QPushButton" name="button_batch_clear">
            <property name="text">
             <string>Clear</string>
+           </property>
+           <property name="icon">
+            <iconset resource="../resources/resources.qrc">
+             <normaloff>:/icons/clipboard-empty.png</normaloff>:/icons/clipboard-empty.png</iconset>
            </property>
           </widget>
          </item>
@@ -634,7 +650,7 @@
      <x>0</x>
      <y>0</y>
      <width>1100</width>
-     <height>22</height>
+     <height>24</height>
     </rect>
    </property>
    <widget class="QMenu" name="menu_tools">
@@ -680,16 +696,28 @@
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
   <action name="action_meta_tags">
+   <property name="icon">
+    <iconset resource="../resources/resources.qrc">
+     <normaloff>:/icons/tag-hash.png</normaloff>:/icons/tag-hash.png</iconset>
+   </property>
    <property name="text">
     <string>Create Meta Tags</string>
    </property>
   </action>
   <action name="action_settings">
+   <property name="icon">
+    <iconset resource="../resources/resources.qrc">
+     <normaloff>:/icons/cog.png</normaloff>:/icons/cog.png</iconset>
+   </property>
    <property name="text">
     <string>Settings</string>
    </property>
   </action>
   <action name="action_generate_song_pdf">
+   <property name="icon">
+    <iconset resource="../resources/resources.qrc">
+     <normaloff>:/icons/report.png</normaloff>:/icons/report.png</iconset>
+   </property>
    <property name="text">
     <string>Generate Song List (PDF)...</string>
    </property>
@@ -697,33 +725,53 @@
   <action name="action_refetch_song_list">
    <property name="icon">
     <iconset resource="../resources/resources.qrc">
-     <normaloff>:/icons/faviconUSDB.ico</normaloff>:/icons/faviconUSDB.ico</iconset>
+     <normaloff>:/icons/check_for_update.png</normaloff>:/icons/check_for_update.png</iconset>
    </property>
    <property name="text">
     <string>Check USDB Song List</string>
    </property>
   </action>
   <action name="action_find_local_songs">
+   <property name="icon">
+    <iconset resource="../resources/resources.qrc">
+     <normaloff>:/icons/database.png</normaloff>:/icons/database.png</iconset>
+   </property>
    <property name="text">
     <string>Find Local Songs</string>
    </property>
   </action>
   <action name="action_show_log">
+   <property name="icon">
+    <iconset resource="../resources/resources.qrc">
+     <normaloff>:/icons/log.png</normaloff>:/icons/log.png</iconset>
+   </property>
    <property name="text">
     <string>Show Log</string>
    </property>
   </action>
   <action name="action_songs_download">
+   <property name="icon">
+    <iconset resource="../resources/resources.qrc">
+     <normaloff>:/icons/drive-download.png</normaloff>:/icons/drive-download.png</iconset>
+   </property>
    <property name="text">
     <string>Download</string>
    </property>
   </action>
   <action name="action_songs_to_batch">
+   <property name="icon">
+    <iconset resource="../resources/resources.qrc">
+     <normaloff>:/icons/clipboard--plus.png</normaloff>:/icons/clipboard--plus.png</iconset>
+   </property>
    <property name="text">
     <string>Add to Batch</string>
    </property>
   </action>
   <action name="action_batch_remove">
+   <property name="icon">
+    <iconset resource="../resources/resources.qrc">
+     <normaloff>:/icons/clipboard--minus.png</normaloff>:/icons/clipboard--minus.png</iconset>
+   </property>
    <property name="text">
     <string>Remove</string>
    </property>
@@ -739,6 +787,10 @@
    </property>
   </action>
   <action name="action_usdb_login">
+   <property name="icon">
+    <iconset resource="../resources/resources.qrc">
+     <normaloff>:/icons/faviconUSDB.ico</normaloff>:/icons/faviconUSDB.ico</iconset>
+   </property>
    <property name="text">
     <string>USDB Login</string>
    </property>
