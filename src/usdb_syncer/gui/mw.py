@@ -18,6 +18,7 @@ from PySide6.QtWidgets import (
 
 from usdb_syncer import settings
 from usdb_syncer.constants import VERSION
+from usdb_syncer.gui.about_dialog import AboutDialog
 from usdb_syncer.gui.debug_console import DebugConsole
 from usdb_syncer.gui.ffmpeg_dialog import check_ffmpeg
 from usdb_syncer.gui.forms.MainWindow import Ui_MainWindow
@@ -101,6 +102,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
             (self.action_usdb_login, lambda: UsdbLoginDialog(self).show()),
             (self.action_meta_tags, lambda: MetaTagsDialog(self).show()),
             (self.action_settings, lambda: SettingsDialog(self).show()),
+            (self.action_about, lambda: AboutDialog(self).show()),
             (self.action_generate_song_pdf, self._generate_song_pdf),
             (self.action_show_log, lambda: open_file_explorer(AppPaths.log)),
         ):

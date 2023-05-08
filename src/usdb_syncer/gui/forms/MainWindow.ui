@@ -671,9 +671,10 @@
    </widget>
    <widget class="QMenu" name="menu_about">
     <property name="title">
-     <string>About</string>
+     <string>Help</string>
     </property>
     <addaction name="action_show_log"/>
+    <addaction name="action_about"/>
    </widget>
    <widget class="QMenu" name="menu_songs">
     <property name="title">
@@ -701,7 +702,7 @@
      <normaloff>:/icons/tag-hash.png</normaloff>:/icons/tag-hash.png</iconset>
    </property>
    <property name="text">
-    <string>Create Meta Tags</string>
+    <string>Create Meta Tags...</string>
    </property>
   </action>
   <action name="action_settings">
@@ -710,7 +711,7 @@
      <normaloff>:/icons/cog.png</normaloff>:/icons/cog.png</iconset>
    </property>
    <property name="text">
-    <string>Settings</string>
+    <string>Settings...</string>
    </property>
   </action>
   <action name="action_generate_song_pdf">
@@ -737,7 +738,7 @@
      <normaloff>:/icons/database.png</normaloff>:/icons/database.png</iconset>
    </property>
    <property name="text">
-    <string>Find Local Songs</string>
+    <string>Find Local Songs...</string>
    </property>
   </action>
   <action name="action_show_log">
@@ -746,7 +747,7 @@
      <normaloff>:/icons/log.png</normaloff>:/icons/log.png</iconset>
    </property>
    <property name="text">
-    <string>Show Log</string>
+    <string>Show Log...</string>
    </property>
   </action>
   <action name="action_songs_download">
@@ -792,7 +793,22 @@
      <normaloff>:/icons/faviconUSDB.ico</normaloff>:/icons/faviconUSDB.ico</iconset>
    </property>
    <property name="text">
-    <string>USDB Login</string>
+    <string>USDB Login...</string>
+   </property>
+  </action>
+  <action name="actionHelp">
+   <property name="text">
+    <string>Help...</string>
+   </property>
+  </action>
+  <action name="action_about">
+   <property name="text">
+    <string>About...</string>
+   </property>
+  </action>
+  <action name="actionHelp_2">
+   <property name="text">
+    <string>Help...</string>
    </property>
   </action>
  </widget>
