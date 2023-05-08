@@ -17,6 +17,7 @@ from PySide6.QtWidgets import (
 )
 
 from usdb_syncer import settings
+from usdb_syncer.constants import VERSION
 from usdb_syncer.gui.debug_console import DebugConsole
 from usdb_syncer.gui.ffmpeg_dialog import check_ffmpeg
 from usdb_syncer.gui.forms.MainWindow import Ui_MainWindow
@@ -331,14 +332,13 @@ def generate_splashscreen() -> QSplashScreen:
     font.setFamily("Kozuka Gothic Pro")
     font.setPointSize(24)
     painter.setFont(font)
-    version = "0.1.0"
     painter.drawText(
         0,
         0,
         428,
         140,
         Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignBottom,
-        version,
+        VERSION,
     )
     painter.end()
     return QSplashScreen(canvas)
