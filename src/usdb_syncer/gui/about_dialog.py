@@ -55,8 +55,8 @@ class AboutDialog(Ui_Dialog, QDialog):
         credits_text += "<b>Copyright © 2023</b></center>"
 
         self.credits.setHtml(credits_text)
-        self.credits.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
-        self.credits.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        self.credits.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self.credits.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
 
         self._reset_text()
 
