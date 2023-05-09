@@ -17,6 +17,8 @@ from PySide6.QtWidgets import (
 )
 
 from usdb_syncer import settings
+from usdb_syncer.constants import COMMIT_HASH, VERSION
+from usdb_syncer.gui.about_dialog import AboutDialog
 from usdb_syncer.gui.debug_console import DebugConsole
 from usdb_syncer.gui.ffmpeg_dialog import check_ffmpeg
 from usdb_syncer.gui.forms.MainWindow import Ui_MainWindow
@@ -100,6 +102,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
             (self.action_usdb_login, lambda: UsdbLoginDialog(self).show()),
             (self.action_meta_tags, lambda: MetaTagsDialog(self).show()),
             (self.action_settings, lambda: SettingsDialog(self).show()),
+            (self.action_about, lambda: AboutDialog(self).show()),
             (self.action_generate_song_pdf, self._generate_song_pdf),
             (self.action_show_log, lambda: open_file_explorer(AppPaths.log)),
         ):
@@ -331,14 +334,23 @@ def generate_splashscreen() -> QSplashScreen:
     font.setFamily("Kozuka Gothic Pro")
     font.setPointSize(24)
     painter.setFont(font)
-    version = "0.1.0"
     painter.drawText(
         0,
         0,
         428,
         140,
         Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignBottom,
-        version,
+        VERSION,
+    )
+    font.setPointSize(12)
+    painter.setFont(font)
+    painter.drawText(
+        0,
+        0,
+        428,
+        155,
+        Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignBottom,
+        COMMIT_HASH,
     )
     painter.end()
     return QSplashScreen(canvas)

@@ -232,6 +232,8 @@ class SongTable:
 
     def _on_download_started(self, song_id: SongId) -> None:
         if not (row := self._model.rows.get(song_id)):
+            logger = get_logger(__file__, song_id)
+            logger.error("Unknown id. Ignoring download start signal.")
             return
         data = self._model.songs[row]
         data.status = DownloadStatus.DOWNLOADING
@@ -242,7 +244,8 @@ class SongTable:
         logger = get_logger(__file__, result.song_id)
         if result.error is not None:
             if (row := self._model.row_for_id(result.song_id)) is None:
-                raise Exception(f"Unexpected id: {result.song_id}!")
+                logger.error("Unknown id. Ignoring download finish signal.")
+                return
             if result.error is DownloadErrorReason.NOT_FOUND:
                 self._model.remove_row(row)
                 logger.info("Removed song from local database.")
