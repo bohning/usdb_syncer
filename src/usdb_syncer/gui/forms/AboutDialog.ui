@@ -37,10 +37,10 @@
   <widget class="QTextBrowser" name="credits">
    <property name="geometry">
     <rect>
-     <x>30</x>
-     <y>130</y>
-     <width>281</width>
-     <height>91</height>
+     <x>20</x>
+     <y>20</y>
+     <width>211</width>
+     <height>201</height>
     </rect>
    </property>
    <property name="sizePolicy">
@@ -151,6 +151,48 @@ li.checked::marker { content: &quot;\2612&quot;; }
    </property>
    <property name="openExternalLinks">
     <bool>true</bool>
+   </property>
+  </widget>
+  <widget class="QLabel" name="label_version">
+   <property name="geometry">
+    <rect>
+     <x>0</x>
+     <y>0</y>
+     <width>428</width>
+     <height>140</height>
+    </rect>
+   </property>
+   <property name="styleSheet">
+    <string notr="true">background-image: url(); 
+color: rgb(0, 174, 238);
+font: 24pt &quot;Kozuka Gothic Pro&quot;;</string>
+   </property>
+   <property name="text">
+    <string>VERSION</string>
+   </property>
+   <property name="alignment">
+    <set>Qt::AlignBottom|Qt::AlignRight|Qt::AlignTrailing</set>
+   </property>
+  </widget>
+  <widget class="QLabel" name="label_commit">
+   <property name="geometry">
+    <rect>
+     <x>0</x>
+     <y>0</y>
+     <width>428</width>
+     <height>155</height>
+    </rect>
+   </property>
+   <property name="styleSheet">
+    <string notr="true">background-image: url(); 
+color: rgb(0, 174, 238);
+font: 12pt &quot;Kozuka Gothic Pro&quot;;</string>
+   </property>
+   <property name="text">
+    <string>COMMIT HASH</string>
+   </property>
+   <property name="alignment">
+    <set>Qt::AlignBottom|Qt::AlignRight|Qt::AlignTrailing</set>
    </property>
   </widget>
  </widget>
