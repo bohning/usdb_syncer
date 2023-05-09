@@ -2,8 +2,8 @@
 
 from PySide6.QtCore import QTimer
 from PySide6.QtWidgets import QDialog, QWidget
-from usdb_syncer.constants import COMMIT_HASH, VERSION
 
+from usdb_syncer.constants import COMMIT_HASH, VERSION
 from usdb_syncer.gui.forms.AboutDialog import Ui_Dialog
 
 RESET_GAP = 4000
