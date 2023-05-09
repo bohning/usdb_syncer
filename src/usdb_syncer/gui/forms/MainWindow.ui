@@ -802,6 +802,10 @@
    </property>
   </action>
   <action name="action_about">
+   <property name="icon">
+    <iconset resource="../resources/resources.qrc">
+     <normaloff>:/app/appicon_128x128.png</normaloff>:/app/appicon_128x128.png</iconset>
+   </property>
    <property name="text">
     <string>About...</string>
    </property>

@@ -17,10 +17,10 @@ jobs:
             PYINSTALLER_ARGS: "--onefile --add-data 'data/song_list.json:data'"
           - os: macos-latest
             TARGET: macOS
-            PYINSTALLER_ARGS: "--windowed --icon .github/media/usdb_syncer.icns --add-data 'data/song_list.json:data'"
+            PYINSTALLER_ARGS: "--windowed --icon src/usdb_syncer/gui/resources/appicon_128x128.png --add-data 'data/song_list.json:data'"
           - os: windows-latest
             TARGET: Windows
-            PYINSTALLER_ARGS: "--onefile --icon .github/media/usdb_syncer.ico --add-data 'data/song_list.json;data'"
+            PYINSTALLER_ARGS: "--onefile --icon src/usdb_syncer/gui/resources/appicon_128x128.png --add-data 'data/song_list.json;data'"
     steps:
       - uses: actions/checkout@v3
       - name: Install Qt
@@ -44,14 +44,24 @@ jobs:
         run: generate_song_list_json -t 'data/song_list.json' -u '${{ secrets.USDB_USER }}' -p '${{ secrets.USDB_PASSWORD }}'
       - name: Build with pyinstaller for ${{matrix.os}}
         run: pyinstaller -n 'USDB_Syncer-${{github.ref_name}}-${{matrix.TARGET}}' ${{matrix.PYINSTALLER_ARGS}} src/usdb_syncer/main.py
-      - name: Archive application for upload
+      - name: Create DMG
         if: matrix.TARGET == 'macOS'
-        uses: thedoctor0/zip-release@main
-        with:
-          type: "zip"
-          directory: dist
-          path: "USDB_Syncer-${{github.ref_name}}-${{matrix.TARGET}}.app"
-          filename: "USDB_Syncer-${{github.ref_name}}-${{matrix.TARGET}}.zip"
+        run: |
+          brew install create-dmg
+          create-dmg \
+            --volname "USDB Syncer" \
+            --volicon "src/usdb_syncer/gui/resources/appicon_128x128.png" \
+            --window-pos 200 120 \
+            --window-size 600 300 \
+            --icon-size 128 \
+            --text-size 14 \
+            --icon "USDB_Syncer-${{github.ref_name}}-${{matrix.TARGET}}.app" 175 120 \
+            --hide-extension "USDB_Syncer-${{github.ref_name}}-${{matrix.TARGET}}.app" \
+            --app-drop-link 425 120 \
+            --hdiutil-quiet \
+            --no-internet-enable \
+            "dist/USDB_Syncer-${{github.ref_name}}-${{matrix.TARGET}}.dmg" \
+            "dist/USDB_Syncer-${{github.ref_name}}-${{matrix.TARGET}}.app"
       - uses: actions/upload-artifact@v3
         with:
           name: artifacts
