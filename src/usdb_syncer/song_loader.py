@@ -7,12 +7,12 @@ from pathlib import Path
 from typing import Callable, Iterable, Iterator
 
 import attrs
-import iso639
 import mutagen.mp4
 from mutagen import id3
 from PySide6.QtCore import QRunnable, QThreadPool
 
 from usdb_syncer import SongId, resource_dl, usdb_scraper
+from usdb_syncer.constants import ISO_639_2B_LANGUAGE_CODES
 from usdb_syncer.download_options import Options, download_options
 from usdb_syncer.logger import Log, get_logger
 from usdb_syncer.meta_tags import MetaTags
@@ -415,7 +415,7 @@ def _write_m4a_tags(audio_meta: FileMeta, ctx: Context, embed_artwork: bool) -> 
 def _write_mp3_tags(audio_meta: FileMeta, ctx: Context, embed_artwork: bool) -> None:
     tags = id3.ID3()
 
-    lang = iso639.Lang(ctx.txt.headers.main_language()).pt2b  # ISO 639-2B
+    lang = ISO_639_2B_LANGUAGE_CODES.get(ctx.txt.headers.main_language(), "XXX")
     tags["TPE1"] = id3.TPE1(encoding=id3.Encoding.UTF8, text=ctx.txt.headers.artist)
     tags["TIT2"] = id3.TIT2(encoding=id3.Encoding.UTF8, text=ctx.txt.headers.title)
     tags["TLAN"] = id3.TLAN(encoding=id3.Encoding.UTF8, text=lang)
@@ -431,7 +431,7 @@ def _write_mp3_tags(audio_meta: FileMeta, ctx: Context, embed_artwork: bool) -> 
     )
     tags["SYLT"] = id3.SYLT(
         encoding=id3.Encoding.UTF8,
-        lang=iso639.Lang(ctx.txt.headers.main_language()).pt2b,  # ISO 639-2B
+        lang=lang,
         format=2,  # milliseconds as units
         type=1,  # lyrics
         text=ctx.txt.synchronized_lyrics(),
