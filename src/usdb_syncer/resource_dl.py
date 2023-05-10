@@ -24,7 +24,7 @@ IMAGE_DOWNLOAD_HEADERS = {
     )
 }
 
-YtdlOptions = dict[str, Union[str, bool, tuple, list]]
+YtdlOptions = dict[str, Union[str, bool, tuple, list, int]]
 
 
 class ImageKind(Enum):
@@ -129,6 +129,8 @@ def _ytdl_options(format_: str, browser: Browser, target_stem: Path) -> YtdlOpti
         "outtmpl": f"{target_stem}.%(ext)s",
         "keepvideo": False,
         "verbose": False,
+        # suppresses download of playlists, channels and search results
+        "playlistend": 0,
     }
     if browser.value:
         options["cookiesfrombrowser"] = (browser.value,)
