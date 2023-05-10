@@ -3,7 +3,7 @@
 from PySide6.QtCore import QTimer
 from PySide6.QtWidgets import QDialog, QWidget
 
-from usdb_syncer.constants import COMMIT_HASH, VERSION
+from usdb_syncer.constants import SHORT_COMMIT_HASH, VERSION
 from usdb_syncer.gui.forms.AboutDialog import Ui_Dialog
 
 RESET_GAP = 4000
@@ -18,7 +18,7 @@ class AboutDialog(Ui_Dialog, QDialog):
         super().__init__(parent=parent)
         self.setupUi(self)
         self.label_version.setText(VERSION)
-        self.label_commit.setText(COMMIT_HASH)
+        self.label_commit.setText(SHORT_COMMIT_HASH)
         self._reset_text()
 
     def _scroll_down(self) -> None:

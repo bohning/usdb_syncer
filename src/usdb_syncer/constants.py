@@ -5,6 +5,7 @@ import re
 # set in the release workflow
 VERSION = "dev"
 COMMIT_HASH = "dev"
+SHORT_COMMIT_HASH = COMMIT_HASH[:7]
 
 MINIMUM_BPM = 200.0
 

@@ -17,7 +17,7 @@ from PySide6.QtWidgets import (
 )
 
 from usdb_syncer import SongId, settings
-from usdb_syncer.constants import COMMIT_HASH, VERSION
+from usdb_syncer.constants import SHORT_COMMIT_HASH, VERSION
 from usdb_syncer.gui.about_dialog import AboutDialog
 from usdb_syncer.gui.debug_console import DebugConsole
 from usdb_syncer.gui.ffmpeg_dialog import check_ffmpeg
@@ -440,7 +440,7 @@ def generate_splashscreen() -> QSplashScreen:
         428,
         155,
         Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignBottom,
-        COMMIT_HASH,
+        SHORT_COMMIT_HASH,
     )
     painter.end()
     return QSplashScreen(canvas)
