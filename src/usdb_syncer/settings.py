@@ -11,7 +11,7 @@ import os
 from enum import Enum
 from http.cookiejar import CookieJar
 from pathlib import Path
-from typing import Any, Tuple, TypeVar, cast
+from typing import Any, Tuple, TypeVar, assert_never, cast
 
 import browser_cookie3
 import keyring
@@ -19,7 +19,6 @@ from PySide6.QtCore import QByteArray, QSettings
 
 from usdb_syncer.constants import Usdb
 from usdb_syncer.logger import get_logger
-from usdb_syncer.typing_helpers import assert_never
 
 _logger = get_logger(__file__)
 

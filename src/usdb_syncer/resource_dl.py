@@ -3,7 +3,7 @@
 import os
 from enum import Enum
 from pathlib import Path
-from typing import Union
+from typing import Union, assert_never
 
 import filetype
 import requests
@@ -15,7 +15,6 @@ from usdb_syncer.download_options import AudioOptions, VideoOptions
 from usdb_syncer.logger import Log, get_logger
 from usdb_syncer.meta_tags import ImageMetaTags
 from usdb_syncer.settings import Browser
-from usdb_syncer.typing_helpers import assert_never
 from usdb_syncer.usdb_scraper import SongDetails
 
 IMAGE_DOWNLOAD_HEADERS = {

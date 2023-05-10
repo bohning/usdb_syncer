@@ -4,7 +4,7 @@ import logging
 import re
 from datetime import datetime
 from enum import Enum
-from typing import Iterator, Type
+from typing import Iterator, Type, assert_never
 
 import attrs
 import requests
@@ -21,7 +21,6 @@ from usdb_syncer.constants import (
     UsdbStringsGerman,
 )
 from usdb_syncer.logger import Log
-from usdb_syncer.typing_helpers import assert_never
 from usdb_syncer.usdb_song import UsdbSong
 from usdb_syncer.utils import extract_youtube_id, normalize
 

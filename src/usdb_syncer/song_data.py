@@ -7,13 +7,13 @@ from __future__ import annotations
 import enum
 from enum import Enum
 from pathlib import Path
+from typing import assert_never
 
 import attrs
 from unidecode import unidecode
 
 from usdb_syncer import SongId
 from usdb_syncer.sync_meta import SyncMeta
-from usdb_syncer.typing_helpers import assert_never
 from usdb_syncer.usdb_scraper import UsdbSong
 
 
