@@ -6,7 +6,6 @@ import pytest
 
 from usdb_syncer import SongId
 from usdb_syncer.usdb_id_file import (
-    UsdbIdFile,
     UsdbIdFileEmptyFileError,
     UsdbIdFileEmptyJsonArrayError,
     UsdbIdFileError,
@@ -22,6 +21,7 @@ from usdb_syncer.usdb_id_file import (
     UsdbIdFileMultipleUrlsFormatError,
     UsdbIdFileNoJsonArrayError,
     UsdbIdFileNoParametersMalformedUrlFormatError,
+    parse_usdb_id_file,
 )
 
 
@@ -73,9 +73,8 @@ def test_valid_song_id_imports_from_files(
     resource_dir: str, file: str, expected_ids: list[SongId]
 ) -> None:
     path = os.path.join(resource_dir, "import", file)
-    id_file = UsdbIdFile.parse(path)
-    assert not id_file.error, f"should have no error from {file}"
-    assert id_file.ids == expected_ids, f"wrong songids from {file}"
+    song_ids = parse_usdb_id_file(path)
+    assert song_ids == expected_ids, f"wrong songids from {file}"
 
 
 @pytest.mark.parametrize(
@@ -153,6 +152,7 @@ def test_invalid_song_id_imports_from_files(
     resource_dir: str, file: str, expected_error: UsdbIdFileError
 ) -> None:
     path = os.path.join(resource_dir, "import", file)
-    id_file = UsdbIdFile.parse(path)
-    assert repr(id_file.error) == repr(expected_error), f"wrong error from {file}"
-    assert not id_file.ids, f"should have no songids from {file}"
+    with pytest.raises(type(expected_error)) as exc_info:
+        song_ids = parse_usdb_id_file(path)
+        assert exc_info.getrepr() == repr(expected_error), f"wrong error from {file}"
+        assert not song_ids, f"should have no songids from {file}"

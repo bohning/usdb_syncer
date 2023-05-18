@@ -35,7 +35,10 @@ from usdb_syncer.song_list_fetcher import (
     get_all_song_data,
     resync_song_data,
 )
-from usdb_syncer.usdb_id_file import UsdbIdFile
+from usdb_syncer.usdb_id_file import (
+    get_available_song_ids_from_files,
+    write_usdb_id_file,
+)
 from usdb_syncer.utils import AppPaths, open_file_explorer
 
 _logger = get_logger(__file__)
@@ -279,44 +282,10 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         if not file_list:
             _logger.info("no files selected to import USDB IDs from")
             return
-        file_parsers = [UsdbIdFile.parse(path) for path in file_list]
-        has_error = False
-        for count, parser in enumerate(file_parsers):
-            if parser.error:
-                _logger.error(
-                    f"failed importing file {file_list[count]}: {str(parser.error)}"
-                )
-                has_error = True
-        # stop import if encounter errors
-        if has_error:
-            return
-        song_ids = [id for parser in file_parsers for id in parser.ids]
-        unique_song_ids = list(set(song_ids))
-        unique_song_ids.sort()
-        _logger.info(
-            f"read {len(file_list)} file(s), "
-            f"found {len(unique_song_ids)} "
-            f"USDB IDs: {', '.join(str(id) for id in unique_song_ids)}"
-        )
-        if unavailable_song_ids := [
-            song_id for song_id in unique_song_ids if not self.table.get_data(song_id)
-        ]:
-            _logger.warning(
-                f"{len(unavailable_song_ids)}/{len(unique_song_ids)} "
-                "imported USDB IDs are not available: "
-                f"{', '.join(str(song_id) for song_id in unavailable_song_ids)}"
-            )
-        if available_song_ids := [
-            song_id
-            for song_id in unique_song_ids
-            if song_id not in unavailable_song_ids
-        ]:
+        if available_song_ids := get_available_song_ids_from_files(
+            file_list, self.table, _logger
+        ):
             # select available songs to prepare Download
-            _logger.info(
-                f"available {len(available_song_ids)}/{len(unique_song_ids)} "
-                "imported USDB IDs are added to Batch: "
-                f"{', '.join(str(song_id) for song_id in available_song_ids)}"
-            )
             self.table.stage_song_ids(available_song_ids)
 
     def _export_usdb_ids_to_file(self) -> None:
@@ -336,8 +305,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
             _logger.info("export aborted")
             return
 
-        id_file = UsdbIdFile(selected_ids)
-        id_file.write(path)
+        write_usdb_id_file(path, selected_ids)
         _logger.info(f"exported {len(selected_ids)} USDB IDs to {path}")
 
     def closeEvent(self, event: QCloseEvent) -> None:

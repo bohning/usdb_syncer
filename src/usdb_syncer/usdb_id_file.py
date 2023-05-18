@@ -12,6 +12,8 @@ import attrs
 from bs4 import BeautifulSoup
 
 from usdb_syncer import SongId
+from usdb_syncer.gui.song_table.song_table import SongTable
+from usdb_syncer.logger import Log
 
 
 @attrs.define
@@ -423,34 +425,69 @@ def _parse_url(url: str | None) -> SongId:
         ) from exception
 
 
-@dataclass
-class UsdbIdFile:
-    """file parser for USDB IDs"""
+def parse_usdb_id_file(filepath: str) -> list[SongId]:
+    """parses files for USDB IDs"""
+    file_extension = os.path.splitext(filepath)[1]
+    song_ids: list[SongId] = []
+    if file_extension == ".json":
+        song_ids = _parse_json_file(filepath)
+    elif file_extension == ".url":
+        song_ids = [_parse_url_file(filepath)]
+    elif file_extension == ".desktop":
+        song_ids = [_parse_desktop_file(filepath)]
+    elif file_extension == ".webloc":
+        song_ids = [_parse_webloc_file(filepath)]
+    elif file_extension == ".usdb_ids":
+        song_ids = _parse_usdb_ids_file(filepath)
+    else:
+        raise UsdbIdFileUnsupportedExtensionError()
+    return song_ids
 
-    ids: list[SongId] = field(default_factory=list)
-    error: UsdbIdFileError | None = None
 
-    @classmethod
-    def parse(cls, filepath: str) -> UsdbIdFile:
+def get_available_song_ids_from_files(
+    file_list: list[str], song_table: SongTable, logger: Log
+) -> list[SongId]:
+    song_ids: list[SongId] = []
+    has_error = False
+    for path in file_list:
         try:
-            file_extension = os.path.splitext(filepath)[1]
-            song_ids: list[SongId] = []
-            if file_extension == ".json":
-                song_ids = _parse_json_file(filepath)
-            elif file_extension == ".url":
-                song_ids = [_parse_url_file(filepath)]
-            elif file_extension == ".desktop":
-                song_ids = [_parse_desktop_file(filepath)]
-            elif file_extension == ".webloc":
-                song_ids = [_parse_webloc_file(filepath)]
-            elif file_extension == ".usdb_ids":
-                song_ids = _parse_usdb_ids_file(filepath)
-            else:
-                raise UsdbIdFileUnsupportedExtensionError()
-            return cls(song_ids)
-        except UsdbIdFileError as exception:
-            return cls([], exception)
+            song_ids += parse_usdb_id_file(path)
+        except UsdbIdFileError as error:
+            logger.error(f"failed importing file {path}: {str(error)}")
+            has_error = True
 
-    def write(self, filepath: str) -> None:
-        with open(filepath, encoding="utf-8", mode="w") as file:
-            file.write("\n".join(str(id) for id in self.ids))
+    # stop import if encounter errors
+    if has_error:
+        return []
+
+    unique_song_ids = list(set(song_ids))
+    unique_song_ids.sort()
+    logger.info(
+        f"read {len(file_list)} file(s), "
+        f"found {len(unique_song_ids)} "
+        f"USDB IDs: {', '.join(str(id) for id in unique_song_ids)}"
+    )
+    if unavailable_song_ids := [
+        song_id for song_id in unique_song_ids if not song_table.get_data(song_id)
+    ]:
+        logger.warning(
+            f"{len(unavailable_song_ids)}/{len(unique_song_ids)} "
+            "imported USDB IDs are not available: "
+            f"{', '.join(str(song_id) for song_id in unavailable_song_ids)}"
+        )
+
+    if available_song_ids := [
+        song_id for song_id in unique_song_ids if song_id not in unavailable_song_ids
+    ]:
+        logger.info(
+            f"available {len(available_song_ids)}/{len(unique_song_ids)} "
+            "imported USDB IDs are added to Batch: "
+            f"{', '.join(str(song_id) for song_id in available_song_ids)}"
+        )
+
+    return available_song_ids
+
+
+def write_usdb_id_file(filepath: str, song_ids: list[SongId]) -> None:
+    with open(filepath, encoding="utf-8", mode="w") as file:
+        file.write("\n".join(str(id) for id in song_ids))
