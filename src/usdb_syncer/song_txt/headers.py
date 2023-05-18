@@ -18,7 +18,7 @@ from usdb_syncer.song_txt.tracks import replace_false_apostrophes_and_quotation_
 class BeatsPerMinute:
     """New type for beats per minute float."""
 
-    value: float
+    value: float = NotImplemented
 
     def __str__(self) -> str:
         return f"{round(self.value, 2):g}"

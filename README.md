@@ -9,8 +9,8 @@
 ## Development
 
 **USDB Syncer** is written in Python.
-The following explains how to set up a development environment. A Python installation with
-version 3.10 or later is assumed.
+The following explains how to set up a development environment.
+A Python 3.11 installation is assumed.
 
 ### Python Setup
 
@@ -49,11 +49,11 @@ The following tools are part of the test pipeline:
 
 If you don’t want to run the whole test pipeline, you can also use single commands from the pipeline, e.g., `pytest`. The tools will automatically pick up the correct configuration from the `pyproject.toml` file.
 
-
 ### Building
 
 **USDB Syncer** uses [pyinstaller](https://github.com/pyinstaller/pyinstaller) for creating
 executables. In order to build **USDB Syncer**, run the following command
+
 ```bash
 # On Linux
 pyinstaller --name "USDBSyncer" --onefile src/usdb_syncer/main.py
@@ -65,7 +65,6 @@ pyinstaller --name "USDBSyncer" --windowed src/usdb_syncer/main.py
 pyinstaller --name "USDBSyncer" --onefile src/usdb_syncer/main.py
 ```
 
-
 ## Versioning
 
 **USDB Syncer** uses [semantic versioning (semver)](https://semver.org/) as versioning scheme.
@@ -73,10 +72,9 @@ However, since **USDB Syncer** is not a library/API but a user-facing applicatio
 versions according to the following scheme:
 
 - `MAJOR` version increments mean a breaking change for the end user, be it the need to install additional
-(3rd party) tools or changes that make it necessary to make changes to the already downloaded songs.
+  (3rd party) tools or changes that make it necessary to make changes to the already downloaded songs.
 - `MINOR` version increments only involve adding backward compatible features.
 - `PATCH` version increments bring bugfixes.
-
 
 We will try to avoid `MAJOR` version increments whenever possible, but since the project is still in the
 startup phase, they cannot be completely ruled out.

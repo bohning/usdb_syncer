@@ -18,6 +18,13 @@ SYNC_META_VERSION = 1
 _logger = get_logger(__file__)
 
 
+class SyncMetaTooNewError(Exception):
+    """Raised when trying to decode meta info from an incompatible future release."""
+
+    def __str__(self) -> str:
+        return "cannot read sync meta written by a future release"
+
+
 @attrs.define
 class FileMeta:
     """Meta data about a local file."""
@@ -70,7 +77,7 @@ class SyncMeta:
     @classmethod
     def from_dict(cls, dct: Any) -> SyncMeta:
         if int(dct["version"]) > SYNC_META_VERSION:
-            raise Exception("cannot read data written by a later version")
+            raise SyncMetaTooNewError
         return cls(
             SongId(dct["song_id"]),
             meta_tags=MetaTags.parse(dct["meta_tags"], _logger),
