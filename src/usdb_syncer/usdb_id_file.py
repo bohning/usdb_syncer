@@ -5,7 +5,6 @@ from __future__ import annotations
 import configparser
 import json
 import os
-from dataclasses import dataclass, field
 from urllib.parse import parse_qs, urlparse
 
 import attrs
