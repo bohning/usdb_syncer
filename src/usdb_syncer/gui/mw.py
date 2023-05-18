@@ -320,7 +320,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
             self.table.stage_song_ids(available_song_ids)
 
     def _export_usdb_ids_to_file(self) -> None:
-        selected_ids = self.table.batch_ids()
+        selected_ids = list(self.table.batch_ids())
         if not selected_ids:
             _logger.info("skipping export: no songs in Batch")
             return
@@ -336,9 +336,9 @@ class MainWindow(Ui_MainWindow, QMainWindow):
             _logger.info("export aborted")
             return
 
-        id_file = UsdbIdFile(list(selected_ids))
+        id_file = UsdbIdFile(selected_ids)
         id_file.write(path)
-        _logger.info(f"exported {len(list(selected_ids))} USDB IDs to {path}")
+        _logger.info(f"exported {len(selected_ids)} USDB IDs to {path}")
 
     def closeEvent(self, event: QCloseEvent) -> None:
         self.table.save_state()
