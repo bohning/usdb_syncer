@@ -37,10 +37,8 @@ from usdb_syncer.song_list_fetcher import (
     get_all_song_data,
     resync_song_data,
 )
-from usdb_syncer.usdb_id_file import (
-    get_available_song_ids_from_files,
-    write_usdb_id_file,
-)
+from usdb_syncer.usdb_id_file import write_usdb_id_file
+from usdb_syncer.usdb_id_file_wrapper import get_available_song_ids_from_files
 from usdb_syncer.utils import AppPaths, open_file_explorer
 
 _logger = get_logger(__file__)
