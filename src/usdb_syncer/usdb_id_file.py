@@ -11,8 +11,9 @@ import attrs
 from bs4 import BeautifulSoup
 
 from usdb_syncer import SongId
-from usdb_syncer.gui.song_table.song_table import SongTable
 from usdb_syncer.logger import Log
+
+from .gui.song_table.song_table import SongTable
 
 
 @attrs.define
