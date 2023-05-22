@@ -16,7 +16,7 @@ from PySide6.QtWidgets import (
     QSplashScreen,
 )
 
-from usdb_syncer import settings
+from usdb_syncer import SongId, settings
 from usdb_syncer.constants import COMMIT_HASH, VERSION
 from usdb_syncer.gui.about_dialog import AboutDialog
 from usdb_syncer.gui.debug_console import DebugConsole
@@ -37,11 +37,58 @@ from usdb_syncer.song_list_fetcher import (
     get_all_song_data,
     resync_song_data,
 )
-from usdb_syncer.usdb_id_file import write_usdb_id_file
-from usdb_syncer.usdb_id_file_wrapper import get_available_song_ids_from_files
+from usdb_syncer.usdb_id_file import (
+    UsdbIdFileError,
+    parse_usdb_id_file,
+    write_usdb_id_file,
+)
 from usdb_syncer.utils import AppPaths, open_file_explorer
 
 _logger = get_logger(__file__)
+
+
+def get_available_song_ids_from_files(
+    file_list: list[str], song_table: SongTable
+) -> list[SongId]:
+    song_ids: list[SongId] = []
+    has_error = False
+    for path in file_list:
+        try:
+            song_ids += parse_usdb_id_file(path)
+        except UsdbIdFileError as error:
+            _logger.error(f"failed importing file {path}: {str(error)}")
+            has_error = True
+
+    # stop import if encounter errors
+    if has_error:
+        return []
+
+    unique_song_ids = list(set(song_ids))
+    unique_song_ids.sort()
+    _logger.info(
+        f"read {len(file_list)} file(s), "
+        f"found {len(unique_song_ids)} "
+        f"USDB IDs: {', '.join(str(id) for id in unique_song_ids)}"
+    )
+    if unavailable_song_ids := [
+        song_id for song_id in unique_song_ids if not song_table.get_data(song_id)
+    ]:
+        _logger.warning(
+            f"{len(unavailable_song_ids)}/{len(unique_song_ids)} "
+            "imported USDB IDs are not available: "
+            f"{', '.join(str(song_id) for song_id in unavailable_song_ids)}"
+        )
+
+    if available_song_ids := [
+        song_id for song_id in unique_song_ids if song_id not in unavailable_song_ids
+    ]:
+        _logger.info(
+            f"available {len(available_song_ids)}/{len(unique_song_ids)} "
+            "imported USDB IDs are added to Batch: "
+            f"{', '.join(str(song_id) for song_id in available_song_ids)}"
+        )
+
+    return available_song_ids
 
 
 class MainWindow(Ui_MainWindow, QMainWindow):
@@ -284,7 +331,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
             _logger.info("no files selected to import USDB IDs from")
             return
         if available_song_ids := get_available_song_ids_from_files(
-            file_list, self.table, _logger
+            file_list, self.table
         ):
             # select available songs to prepare Download
             self.table.stage_song_ids(available_song_ids)
