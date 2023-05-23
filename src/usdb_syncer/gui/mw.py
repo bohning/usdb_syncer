@@ -16,7 +16,7 @@ from PySide6.QtWidgets import (
     QSplashScreen,
 )
 
-from usdb_syncer import settings
+from usdb_syncer import SongId, settings
 from usdb_syncer.constants import COMMIT_HASH, VERSION
 from usdb_syncer.gui.about_dialog import AboutDialog
 from usdb_syncer.gui.debug_console import DebugConsole
@@ -28,6 +28,7 @@ from usdb_syncer.gui.settings_dialog import SettingsDialog
 from usdb_syncer.gui.song_table.song_table import SongTable
 from usdb_syncer.gui.usdb_login_dialog import UsdbLoginDialog
 from usdb_syncer.gui.utils import scroll_to_bottom, set_shortcut
+from usdb_syncer.logger import get_logger
 from usdb_syncer.pdf import generate_song_pdf
 from usdb_syncer.song_data import SongData
 from usdb_syncer.song_filters import GoldenNotesFilter, RatingFilter, ViewsFilter
@@ -36,7 +37,58 @@ from usdb_syncer.song_list_fetcher import (
     get_all_song_data,
     resync_song_data,
 )
+from usdb_syncer.usdb_id_file import (
+    UsdbIdFileError,
+    parse_usdb_id_file,
+    write_usdb_id_file,
+)
 from usdb_syncer.utils import AppPaths, open_file_explorer
+
+_logger = get_logger(__file__)
+
+
+def get_available_song_ids_from_files(
+    file_list: list[str], song_table: SongTable
+) -> list[SongId]:
+    song_ids: list[SongId] = []
+    has_error = False
+    for path in file_list:
+        try:
+            song_ids += parse_usdb_id_file(path)
+        except UsdbIdFileError as error:
+            _logger.error(f"failed importing file {path}: {str(error)}")
+            has_error = True
+
+    # stop import if encounter errors
+    if has_error:
+        return []
+
+    unique_song_ids = list(set(song_ids))
+    unique_song_ids.sort()
+    _logger.info(
+        f"read {len(file_list)} file(s), "
+        f"found {len(unique_song_ids)} "
+        f"USDB IDs: {', '.join(str(id) for id in unique_song_ids)}"
+    )
+    if unavailable_song_ids := [
+        song_id for song_id in unique_song_ids if not song_table.get_data(song_id)
+    ]:
+        _logger.warning(
+            f"{len(unavailable_song_ids)}/{len(unique_song_ids)} "
+            "imported USDB IDs are not available: "
+            f"{', '.join(str(song_id) for song_id in unavailable_song_ids)}"
+        )
+
+    if available_song_ids := [
+        song_id for song_id in unique_song_ids if song_id not in unavailable_song_ids
+    ]:
+        _logger.info(
+            f"available {len(available_song_ids)}/{len(unique_song_ids)} "
+            "imported USDB IDs are added to Batch: "
+            f"{', '.join(str(song_id) for song_id in available_song_ids)}"
+        )
+
+    return available_song_ids
 
 
 class MainWindow(Ui_MainWindow, QMainWindow):
@@ -104,6 +156,8 @@ class MainWindow(Ui_MainWindow, QMainWindow):
             (self.action_settings, lambda: SettingsDialog(self).show()),
             (self.action_about, lambda: AboutDialog(self).show()),
             (self.action_generate_song_pdf, self._generate_song_pdf),
+            (self.action_import_usdb_ids, self._import_usdb_ids_from_files),
+            (self.action_export_usdb_ids, self._export_usdb_ids_to_file),
             (self.action_show_log, lambda: open_file_explorer(AppPaths.log)),
         ):
             action.triggered.connect(func)
@@ -265,6 +319,42 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         path = QFileDialog.getSaveFileName(self, dir=path, filter="PDF (*.pdf)")[0]
         if path:
             generate_song_pdf(self.table.all_local_songs(), path)
+
+    def _import_usdb_ids_from_files(self) -> None:
+        file_list = QFileDialog.getOpenFileNames(
+            self,
+            caption="Select one or more files to import USDB IDs from",
+            dir=os.getcwd(),
+            filter="JSON, USDB IDs, Weblinks (*.json *.usdb_ids *.url *.webloc *.desktop)",
+        )[0]
+        if not file_list:
+            _logger.info("no files selected to import USDB IDs from")
+            return
+        if available_song_ids := get_available_song_ids_from_files(
+            file_list, self.table
+        ):
+            # select available songs to prepare Download
+            self.table.stage_song_ids(available_song_ids)
+
+    def _export_usdb_ids_to_file(self) -> None:
+        selected_ids = list(self.table.batch_ids())
+        if not selected_ids:
+            _logger.info("skipping export: no songs in Batch")
+            return
+
+        # Note: automatically checks if file already exists
+        path = QFileDialog.getSaveFileName(
+            self,
+            caption="Select export file for USDB IDs",
+            dir=os.getcwd(),
+            filter="USDB ID File (*.usdb_ids)",
+        )[0]
+        if not path:
+            _logger.info("export aborted")
+            return
+
+        write_usdb_id_file(path, selected_ids)
+        _logger.info(f"exported {len(selected_ids)} USDB IDs to {path}")
 
     def closeEvent(self, event: QCloseEvent) -> None:
         self.table.save_state()

@@ -55,8 +55,18 @@ class TableModel(QAbstractTableModel):
     def remove_row(self, row: int) -> None:
         self.set_data(self.songs[:row] + self.songs[row + 1 :])
 
+    def ids_for_indices(self, indices: Iterable[QModelIndex]) -> list[SongId]:
+        return [self.songs[idx.row()].data.song_id for idx in indices]
+
     def ids_for_rows(self, rows: Iterable[int]) -> list[SongId]:
         return [self.songs[row].data.song_id for row in rows]
+
+    def indices_for_ids(self, ids: Iterable[SongId]) -> list[QModelIndex]:
+        return [
+            self.index(row, 0)
+            for song_id in ids
+            if (row := self.rows.get(song_id, None)) is not None
+        ]
 
     def item_for_id(self, song_id: SongId) -> SongData | None:
         if (idx := self.rows.get(song_id)) is not None:

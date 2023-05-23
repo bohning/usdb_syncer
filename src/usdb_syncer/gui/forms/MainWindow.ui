@@ -687,6 +687,8 @@
     <property name="title">
      <string>Batch</string>
     </property>
+    <addaction name="action_import_usdb_ids"/>
+    <addaction name="action_export_usdb_ids"/>
     <addaction name="action_batch_remove"/>
    </widget>
    <addaction name="menu_songs"/>
@@ -748,6 +750,19 @@
    </property>
    <property name="text">
     <string>Show Log...</string>
+   </property>
+  </action>
+  <action name="action_import_usdb_ids">
+   <property name="text">
+    <string>Add IDs from File(s)</string>
+   </property>
+   <property name="toolTip">
+    <string>Stage Multiple USDB songs for download that are defined by IDs in files and/or weblinks</string>
+   </property>
+  </action>
+  <action name="action_export_usdb_ids">
+   <property name="text">
+    <string>Export IDs to File</string>
    </property>
   </action>
   <action name="action_songs_download">
