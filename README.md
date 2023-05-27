@@ -6,6 +6,15 @@
 [![Release](https://github.com/bohning/usdb_syncer/actions/workflows/release.yaml/badge.svg)](https://github.com/bohning/usdb_syncer/actions/workflows/release.yaml)
 [![tox](https://github.com/bohning/usdb_syncer/actions/workflows/tox.yaml/badge.svg)](https://github.com/bohning/usdb_syncer/actions/workflows/tox.yaml)
 
+## Install (Linux)
+
+requires extra packages on Linux
+
+``` bash
+apt update
+apt install libdbus-1-3
+```
+
 ## Development
 
 **USDB Syncer** is written in Python.
@@ -13,6 +22,13 @@ The following explains how to set up a development environment.
 A Python 3.11 installation is assumed.
 
 ### Python Setup
+
+requires extra packages when developing **on Linux**
+
+``` bash
+apt install -y gcc python3-dev libdbus-1-dev
+pkg-config --cflags --libs dbus-1
+```
 
 [tox](https://github.com/tox-dev/tox) makes it easy to run the full CI pipeline on your local machine, i.e., if the pipeline passes on your machine there is a good chance it will also pass on the build server.
 The minimal setup to develop your package is to create a virtual environment and install the package and its runtime requirements:

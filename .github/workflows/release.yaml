@@ -23,6 +23,11 @@ jobs:
             PYINSTALLER_ARGS: "--onefile --icon src/usdb_syncer/gui/resources/appicon_128x128.png --add-data 'data/song_list.json;data'"
     steps:
       - uses: actions/checkout@v3
+      - name: Install Linux specific dependencies for dbus-python
+        if: matrix.TARGET == 'Linux'
+        run: |
+          sudo apt install -y gcc python3-dev libdbus-1-dev
+          pkg-config --cflags --libs dbus-1
       - name: Install Qt
         uses: jurplel/install-qt-action@v3
         with:
