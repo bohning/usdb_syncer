@@ -15,6 +15,14 @@ apt update
 apt install libdbus-1-3
 ```
 
+### Troubleshooting
+
+- The `keyring` package auto-detects an appropriate installed keyring backend (see [PyPI - keyring](https://pypi.org/project/keyring/)). Thus may require following additional package if no backend can be detected, see #136
+
+  ``` bash
+  apt install gnome-keyring
+  ```
+
 ## Development
 
 **USDB Syncer** is written in Python.
