@@ -8,10 +8,11 @@ and getters should be added to this module.
 from __future__ import annotations
 
 import os
+import sqlite3
 from enum import Enum
 from http.cookiejar import CookieJar
 from pathlib import Path
-from typing import Any, Tuple, TypeVar, cast
+from typing import Any, Tuple, TypeVar, assert_never, cast
 
 import browser_cookie3
 import keyring
@@ -19,7 +20,6 @@ from PySide6.QtCore import QByteArray, QSettings
 
 from usdb_syncer.constants import Usdb
 from usdb_syncer.logger import get_logger
-from usdb_syncer.typing_helpers import assert_never
 
 _logger = get_logger(__file__)
 
@@ -222,8 +222,9 @@ class Browser(Enum):
                 assert_never(unreachable)
         try:
             return function(domain_name=Usdb.DOMAIN)
-        except browser_cookie3.BrowserCookieError:
-            _logger.debug(f"Failed to retrieve {str(self).capitalize()} cookies.")
+        except (browser_cookie3.BrowserCookieError, sqlite3.Error) as error:
+            _logger.debug(error)
+        _logger.warning(f"Failed to retrieve {str(self).capitalize()} cookies.")
         return None
 
 

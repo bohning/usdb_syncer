@@ -3,19 +3,19 @@
 import os
 from enum import Enum
 from pathlib import Path
-from typing import Union
+from typing import Union, assert_never
 
 import filetype
 import requests
 import yt_dlp
 from ffmpeg_normalize import FFmpegNormalize
 from PIL import Image, ImageEnhance, ImageOps
+from PIL.Image import Resampling
 
 from usdb_syncer.download_options import AudioOptions, VideoOptions
 from usdb_syncer.logger import Log, get_logger
 from usdb_syncer.meta_tags import ImageMetaTags
 from usdb_syncer.settings import Browser
-from usdb_syncer.typing_helpers import assert_never
 from usdb_syncer.usdb_scraper import SongDetails
 
 IMAGE_DOWNLOAD_HEADERS = {
@@ -25,7 +25,7 @@ IMAGE_DOWNLOAD_HEADERS = {
     )
 }
 
-YtdlOptions = dict[str, Union[str, bool, tuple, list]]
+YtdlOptions = dict[str, Union[str, bool, tuple, list, int]]
 
 
 class ImageKind(Enum):
@@ -130,6 +130,8 @@ def _ytdl_options(format_: str, browser: Browser, target_stem: Path) -> YtdlOpti
         "outtmpl": f"{target_stem}.%(ext)s",
         "keepvideo": False,
         "verbose": False,
+        # suppresses download of playlists, channels and search results
+        "playlistend": 0,
     }
     if browser.value:
         options["cookiesfrombrowser"] = (browser.value,)
@@ -204,12 +206,12 @@ def _process_image(
         if meta_tags and meta_tags.image_processing():
             processed = True
             if rotate := meta_tags.rotate:
-                image = image.rotate(rotate, resample=Image.BICUBIC, expand=True)
+                image = image.rotate(rotate, resample=Resampling.BICUBIC, expand=True)
             if crop := meta_tags.crop:
                 image = image.crop((crop.left, crop.upper, crop.right, crop.lower))
             if resize := meta_tags.resize:
                 image = image.resize(
-                    (resize.width, resize.height), resample=Image.LANCZOS
+                    (resize.width, resize.height), resample=Resampling.LANCZOS
                 )
             if meta_tags.contrast == "auto":
                 image = ImageOps.autocontrast(image, cutoff=5)
@@ -218,7 +220,7 @@ def _process_image(
         if max_width and max_width < image.width:
             processed = True
             height = round(image.height * max_width / image.width)
-            image = image.resize((max_width, height), resample=Image.LANCZOS)
+            image = image.resize((max_width, height), resample=Resampling.LANCZOS)
 
         if processed:
             image.save(path, "jpeg", quality=100, subsampling=0)

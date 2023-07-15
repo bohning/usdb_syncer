@@ -2,7 +2,7 @@
 
 from enum import Enum
 from functools import cache
-from typing import Any, Iterable, Iterator
+from typing import Any, Iterable, Iterator, assert_never
 
 from PySide6.QtCore import (
     QAbstractTableModel,
@@ -16,7 +16,6 @@ from PySide6.QtGui import QIcon
 from usdb_syncer import SongId
 from usdb_syncer.gui.song_table.column import Column
 from usdb_syncer.song_data import SongData
-from usdb_syncer.typing_helpers import assert_never
 from usdb_syncer.usdb_scraper import UsdbSong
 
 QIndex = QModelIndex | QPersistentModelIndex
