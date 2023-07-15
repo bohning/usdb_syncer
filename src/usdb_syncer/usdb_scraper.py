@@ -2,6 +2,7 @@
 
 import logging
 import re
+import time
 from datetime import datetime
 from enum import Enum
 from typing import Iterator, Type, assert_never
@@ -70,12 +71,19 @@ class SessionManager:
     """Singleton for managing the global session instance."""
 
     _session: Session | None = None
+    _connecting: bool = False
 
     @classmethod
     def session(cls) -> Session:
+        while cls._connecting:
+            time.sleep(0.1)
         if cls._session is None:
-            cls._session = new_session_with_cookies(settings.get_browser())
-            establish_usdb_login(cls._session)
+            cls._connecting = True
+            try:
+                cls._session = new_session_with_cookies(settings.get_browser())
+                establish_usdb_login(cls._session)
+            finally:
+                cls._connecting = False
         return cls._session
 
     @classmethod
