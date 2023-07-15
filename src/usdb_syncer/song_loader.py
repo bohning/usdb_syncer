@@ -415,7 +415,7 @@ def _write_m4a_tags(audio_meta: FileMeta, ctx: Context, embed_artwork: bool) -> 
 def _write_mp3_tags(audio_meta: FileMeta, ctx: Context, embed_artwork: bool) -> None:
     tags = id3.ID3()
 
-    lang = ISO_639_2B_LANGUAGE_CODES.get(ctx.txt.headers.main_language(), "XXX")
+    lang = ISO_639_2B_LANGUAGE_CODES.get(ctx.txt.headers.main_language(), "und")
     tags["TPE1"] = id3.TPE1(encoding=id3.Encoding.UTF8, text=ctx.txt.headers.artist)
     tags["TIT2"] = id3.TIT2(encoding=id3.Encoding.UTF8, text=ctx.txt.headers.title)
     tags["TLAN"] = id3.TLAN(encoding=id3.Encoding.UTF8, text=lang)
