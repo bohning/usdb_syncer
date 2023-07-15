@@ -10,6 +10,7 @@ import requests
 import yt_dlp
 from ffmpeg_normalize import FFmpegNormalize
 from PIL import Image, ImageEnhance, ImageOps
+from PIL.Image import Resampling
 
 from usdb_syncer.download_options import AudioOptions, VideoOptions
 from usdb_syncer.logger import Log, get_logger
@@ -205,12 +206,12 @@ def _process_image(
         if meta_tags and meta_tags.image_processing():
             processed = True
             if rotate := meta_tags.rotate:
-                image = image.rotate(rotate, resample=Image.BICUBIC, expand=True)
+                image = image.rotate(rotate, resample=Resampling.BICUBIC, expand=True)
             if crop := meta_tags.crop:
                 image = image.crop((crop.left, crop.upper, crop.right, crop.lower))
             if resize := meta_tags.resize:
                 image = image.resize(
-                    (resize.width, resize.height), resample=Image.LANCZOS
+                    (resize.width, resize.height), resample=Resampling.LANCZOS
                 )
             if meta_tags.contrast == "auto":
                 image = ImageOps.autocontrast(image, cutoff=5)
@@ -219,7 +220,7 @@ def _process_image(
         if max_width and max_width < image.width:
             processed = True
             height = round(image.height * max_width / image.width)
-            image = image.resize((max_width, height), resample=Image.LANCZOS)
+            image = image.resize((max_width, height), resample=Resampling.LANCZOS)
 
         if processed:
             image.save(path, "jpeg", quality=100, subsampling=0)
