@@ -6,16 +6,54 @@
 [![Release](https://github.com/bohning/usdb_syncer/actions/workflows/release.yaml/badge.svg)](https://github.com/bohning/usdb_syncer/actions/workflows/release.yaml)
 [![tox](https://github.com/bohning/usdb_syncer/actions/workflows/tox.yaml/badge.svg)](https://github.com/bohning/usdb_syncer/actions/workflows/tox.yaml)
 
-## Install (Linux)
+## Linux Distributions
 
-requires extra packages on Linux
+Linux Build are generated on `Ubuntu:latest`, should run on `Ubuntu >=23.04`
 
-``` bash
-apt update
-apt install libdbus-1-3
-```
+known requirements:
+
+- package `glibc >= 2.35`
+
+  Therefore the following table (based on https://pkgs.org/search/?q=glibc, 8.7.2023) summarizes different Linux Distributions for having greater or equal version of `glibc`. For (likely) supported distributions the minimum OS Version is given that has a required glibc version. For (likely) unsupported distributions the recent highest Versions (if known) of Linux Distributions with its highest glibc version is given:
+
+  |                    | OS                  | OS Version       | glibc     |
+  |:------------------:|:-------------------:|:----------------:|:---------:|
+  | :x:                | AlmaLinux           | 9                | 2.34 |
+  | :x:                | ALT Linux           | P10              | 2.32 |
+  | :x:                | Amazon Linux        | 2                | 2.26 |
+  | :white_check_mark: | Arch Linux          |                  | 2.37 |
+  | :x:                | CentOS              | 9                | 2.34 |
+  | :x:                | Enterprise Linux    | 7                | 2.24 |
+  | :white_check_mark: | Debian              | 12 "Bookworm"    | 2.36 |
+  | :white_check_mark: | Fedora              | 38               | 2.37 |
+  | :white_check_mark: | KaOS                |                  | 2.36 |
+  | :white_check_mark: | Mageia              | Cauldron         | 2.36 |
+  | :white_check_mark: | OpenMandriva        | Rolling & Cooker | 2.37 |
+  | :white_check_mark: | openSUSE Tumbleweed |                  | 2.37 |
+  | :x:                | Oracle Linux        | 9                | 2.34 |
+  | :white_check_mark: | PCLinuxOS           |                  | 2.36 |
+  | :x:                | Rocky Linux         | 9                | 2.34 |
+  | :white_check_mark: | Slackware           |                  | 2.37 |
+  | :white_check_mark: | Solus               |                  | 2.36 |
+  | :white_check_mark: | Ubuntu              | 23.04            | 2.35 |
+  | :white_check_mark: | Void Linux          |                  | 2.36 |
+
+  :x: pretty sure not working
+
+  :white_check_mark: should work
+
+confirmed support:
+
+- Ubuntu 23.04
 
 ### Troubleshooting
+
+- may require extra packages on Linux
+
+  ``` bash
+  apt update
+  apt install libdbus-1-3
+  ```
 
 - The `keyring` package auto-detects an appropriate installed keyring backend (see [PyPI - keyring](https://pypi.org/project/keyring/)). Thus may require following additional package if no backend can be detected, see #136
 
