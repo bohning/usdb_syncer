@@ -10,7 +10,6 @@ from PySide6.QtCore import (
 
 from usdb_syncer.gui.song_table.table_model import CustomRole
 from usdb_syncer.song_data import SongData, fuzz_text
-from usdb_syncer.song_txt import SongTxt
 
 QIndex = QModelIndex | QPersistentModelIndex
 
@@ -41,17 +40,6 @@ class ListModel(QSortFilterProxyModel):
         """Returns the source rows of the provided or all rows in the model."""
         indices = subset or (self.index(row, 0) for row in range(self.rowCount()))
         return [self.mapToSource(idx).row() for idx in indices]
-
-    def find_rows_for_song_txts(
-        self, song_txts: list[SongTxt]
-    ) -> tuple[list[QModelIndex], ...]:
-        comparer = FuzzyComparer(song_txts)
-        model = self.sourceModel()
-        for row in range(self.rowCount()):
-            index = self.index(row, 0)
-            data: SongData = model.data(self.mapToSource(index), CustomRole.ALL_DATA)
-            comparer.check(data, index)
-        return comparer.results
 
     def set_text_filter(self, text: str) -> None:
         self._text_filter = fuzz_text(text).split()
@@ -108,23 +96,3 @@ class ListModel(QSortFilterProxyModel):
         if song.data.views < self._views_filter:
             return False
         return all(word in song.fuzzy_text for word in self._text_filter)
-
-
-class FuzzyComparer:
-    """Helper to find rows matching txts."""
-
-    results: tuple[list[QModelIndex], ...]
-
-    def __init__(self, song_txts: list[SongTxt]) -> None:
-        self._len = len(song_txts)
-        self.artists = tuple(fuzz_text(txt.headers.artist) for txt in song_txts)
-        self.titles = tuple(fuzz_text(txt.headers.title) for txt in song_txts)
-        self.results = tuple([] for _ in range(self._len))
-
-    def check(self, data: SongData, index: QModelIndex) -> None:
-        for idx in range(self._len):
-            if (
-                data.fuzzy_text.artist == self.artists[idx]
-                and data.fuzzy_text.title == self.titles[idx]
-            ):
-                self.results[idx].append(index)

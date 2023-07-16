@@ -85,7 +85,7 @@ def extract_youtube_id(url: str) -> str | None:
     return None
 
 
-def try_read_unknown_encoding(path: str) -> str | None:
+def try_read_unknown_encoding(path: Path) -> str | None:
     for codec in ["utf-8-sig", "cp1252"]:
         try:
             with open(path, encoding=codec) as file:

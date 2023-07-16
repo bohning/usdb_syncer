@@ -4,6 +4,7 @@ import datetime
 import logging
 import os
 import sys
+from pathlib import Path
 
 from PySide6.QtCore import QObject, Qt, QThreadPool, QTimer, Signal
 from PySide6.QtGui import QCloseEvent, QColor, QFont, QIcon, QPainter, QPixmap
@@ -256,7 +257,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
 
     def _stage_local_songs(self) -> None:
         if directory := QFileDialog.getExistingDirectory(self, "Select Song Directory"):
-            self.table.stage_local_songs(directory)
+            self.table.stage_local_songs(Path(directory))
 
     def _refetch_song_list(self) -> None:
         run_with_progress(
