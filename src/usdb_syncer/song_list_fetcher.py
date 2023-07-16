@@ -1,8 +1,6 @@
 """Runnable for getting the available songs from USDB or the local cache."""
 
 import json
-import os
-from glob import glob
 from pathlib import Path
 
 from requests import Session
@@ -73,31 +71,29 @@ def dump_available_songs(songs: list[UsdbSong], target: Path | None = None) -> N
 
 def find_local_files() -> dict[SongId, LocalFiles]:
     local_files: dict[SongId, LocalFiles] = {}
-    pattern = settings.get_song_dir().joinpath("**", "*.usdb")
-    for path in glob(str(pattern), recursive=True):
-        if meta := SyncMeta.try_from_file(Path(path)):
-            local_files[meta.song_id] = files = LocalFiles(usdb_path=Path(path))
-            folder = os.path.dirname(path)
-            if txt := _get_song_txt(meta, folder):
+    for path in settings.get_song_dir().glob("**/*.usdb"):
+        if meta := SyncMeta.try_from_file(path):
+            local_files[meta.song_id] = files = LocalFiles(usdb_path=path)
+            if txt := _get_song_txt(meta, path.parent):
                 files.txt = True
-                files.audio = _file_exists(folder, txt.headers.mp3)
-                files.video = _file_exists(folder, txt.headers.video)
-                files.cover = _file_exists(folder, txt.headers.cover)
-                files.background = _file_exists(folder, txt.headers.background)
+                files.audio = _file_exists(path.parent, txt.headers.mp3)
+                files.video = _file_exists(path.parent, txt.headers.video)
+                files.cover = _file_exists(path.parent, txt.headers.cover)
+                files.background = _file_exists(path.parent, txt.headers.background)
     return local_files
 
 
-def _get_song_txt(meta: SyncMeta, folder: str) -> SongTxt | None:
+def _get_song_txt(meta: SyncMeta, folder: Path) -> SongTxt | None:
     if not meta.txt:
         return None
-    txt_path = os.path.join(folder, meta.txt.fname)
+    txt_path = folder.joinpath(meta.txt.fname)
     logger = get_logger(__file__, meta.song_id)
-    if os.path.exists(txt_path) and (contents := try_read_unknown_encoding(txt_path)):
+    if txt_path.exists() and (contents := try_read_unknown_encoding(txt_path)):
         return SongTxt.try_parse(contents, logger)
     return None
 
 
-def _file_exists(folder: str, fname: str | None) -> bool:
+def _file_exists(folder: Path, fname: str | None) -> bool:
     if not fname:
         return False
-    return os.path.exists(os.path.join(folder, fname))
+    return folder.joinpath(fname).exists()

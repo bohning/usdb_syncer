@@ -1,9 +1,10 @@
 """Controller for the song table."""
 
+from __future__ import annotations
 
 import logging
-import os
-from glob import glob
+from collections import defaultdict
+from pathlib import Path
 from typing import Any, Callable, Iterable, Iterator
 
 import attrs
@@ -38,13 +39,18 @@ from usdb_syncer.song_data import (
     DownloadResult,
     DownloadStatus,
     SongData,
+    fuzz_text,
 )
 from usdb_syncer.song_loader import DownloadInfo, download_songs
 from usdb_syncer.song_txt import SongTxt
+from usdb_syncer.song_txt.headers import Headers
 from usdb_syncer.usdb_scraper import UsdbSong
 from usdb_syncer.utils import try_read_unknown_encoding
 
 _logger = logging.getLogger(__file__)
+_err_logger = get_logger(__file__ + "[errors]")
+_err_logger.setLevel(logging.ERROR)
+
 DEFAULT_COLUMN_WIDTH = 300
 
 
@@ -291,19 +297,22 @@ class SongTable:
             self._batch_view.selectionModel().selectedRows() if selected_only else None
         )
 
-    def stage_local_songs(self, directory: str) -> None:
-        txts = _parse_all_txts(directory)
-        matches = self._list_model.find_rows_for_song_txts(txts)
-        for idx, song_rows in enumerate(matches):
-            if not song_rows:
-                name = txts[idx].headers.artist_title_str()
-                _logger.warning(f"no matches for '{name}'")
-            if len(song_rows) > 1:
-                name = txts[idx].headers.artist_title_str()
-                _logger.info(f"{len(song_rows)} matches for '{name}'")
-        rows = [idx.row() for row_list in matches for idx in row_list]
-        self._stage_rows(rows)
-        _logger.info(f"Added {len(rows)} songs to batch.")
+    def stage_local_songs(self, directory: Path) -> None:
+        song_map: defaultdict[tuple[str, str], list[int]] = defaultdict(list)
+        for row, song in enumerate(self._model.songs):
+            song_map[fuzzy_key(song.data)].append(row)
+        matched_rows: set[int] = set()
+        for path in directory.glob("**/*.txt"):
+            if txt := try_parse_txt(path):
+                name = txt.headers.artist_title_str()
+                if matches := song_map[fuzzy_key(txt.headers)]:
+                    plural = "es" if len(matches) > 1 else ""
+                    _logger.info(f"{len(matches)} match{plural} for '{name}'.")
+                    matched_rows.update(matches)
+                else:
+                    _logger.warning(f"No matches for '{name}'.")
+        self._stage_rows(matched_rows)
+        _logger.info(f"Added {len(matched_rows)} songs to batch.")
 
     def stage_song_ids(self, song_ids: list[SongId]) -> None:
         self._stage_rows(
@@ -379,12 +388,11 @@ class SongTable:
         self._model.update_item(new)
 
 
-def _parse_all_txts(directory: str) -> list[SongTxt]:
-    err_logger = get_logger(__file__ + "[errors]")
-    err_logger.setLevel(logging.ERROR)
-    txts: list[SongTxt] = []
-    for path in glob(os.path.join(directory, "**", "*.txt"), recursive=True):
-        contents = try_read_unknown_encoding(path)
-        if contents and (txt := SongTxt.try_parse(contents, err_logger)):
-            txts.append(txt)
-    return txts
+def fuzzy_key(data: UsdbSong | Headers) -> tuple[str, str]:
+    return fuzz_text(data.artist), fuzz_text(data.title)
+
+
+def try_parse_txt(path: Path) -> SongTxt | None:
+    if contents := try_read_unknown_encoding(path):
+        return SongTxt.try_parse(contents, _err_logger)
+    return None
