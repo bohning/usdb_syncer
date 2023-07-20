@@ -47,6 +47,10 @@ jobs:
         run: generate_pyside_files
       - name: Scrape USDB song list to ship with the bundle
         run: generate_song_list_json -t 'data/song_list.json' -u '${{ secrets.USDB_USER }}' -p '${{ secrets.USDB_PASSWORD }}'
+      - name: add dependencies for xcb support
+        if: matrix.TARGET == 'Linux'
+        run: |
+          sudo apt install libxcb-cursor0
       - name: Build with pyinstaller for ${{matrix.os}}
         run: pyinstaller -n 'USDB_Syncer-${{github.ref_name}}-${{matrix.TARGET}}' ${{matrix.PYINSTALLER_ARGS}} src/usdb_syncer/main.py
       - name: Create DMG
