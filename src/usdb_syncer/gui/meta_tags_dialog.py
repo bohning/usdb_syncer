@@ -2,13 +2,13 @@
 
 from typing import Callable, Literal
 
-from pyshorteners.shorteners import tinyurl
 from pyshorteners.exceptions import (
     BadAPIResponseException,
     BadURLException,
     ExpandingErrorException,
     ShorteningErrorException,
 )
+from pyshorteners.shorteners import tinyurl
 from PySide6.QtGui import QGuiApplication
 from PySide6.QtWidgets import QDialog, QWidget
 
