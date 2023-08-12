@@ -8,6 +8,16 @@ from pyshorteners.exceptions import (
     ExpandingErrorException,
     ShorteningErrorException,
 )
+
+# Note: prevent import error in production by importing shorteners directoy instead of
+#
+#         from pyshorteners import Shortener
+#
+#       which loads all shorteners from all python modules from its subfolder. Creating
+#       a build with pyinstaller seems to leave the submodules out, because submodules
+#       can then not be imported in a production build with error
+#
+#         ModuleNotFoundError: No module named 'pyshorteners.shorteners'
 from pyshorteners.shorteners import tinyurl
 from PySide6.QtGui import QGuiApplication
 from PySide6.QtWidgets import QDialog, QWidget
