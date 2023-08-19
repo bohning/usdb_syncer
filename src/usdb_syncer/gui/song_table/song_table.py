@@ -272,6 +272,11 @@ class SongTable:
 
     ### selection model
 
+    def current_list_song(self) -> SongData | None:
+        idx = self._list_view.selectionModel().currentIndex()
+        row = self._list_model.source_rows([idx])[0]
+        return self._model.songs[row] if row != -1 else None
+
     def connect_selected_rows_changed(self, func: Callable[[int], None]) -> None:
         """Calls `func` with the new count of selected rows. The new count is not
         necessarily different.

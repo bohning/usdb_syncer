@@ -4,6 +4,7 @@ import datetime
 import logging
 import os
 import sys
+import webbrowser
 from pathlib import Path
 
 from PySide6.QtCore import QObject, Qt, QThreadPool, QTimer, Signal
@@ -18,7 +19,7 @@ from PySide6.QtWidgets import (
 )
 
 from usdb_syncer import SongId, settings
-from usdb_syncer.constants import SHORT_COMMIT_HASH, VERSION
+from usdb_syncer.constants import SHORT_COMMIT_HASH, VERSION, Usdb
 from usdb_syncer.gui.about_dialog import AboutDialog
 from usdb_syncer.gui.debug_console import DebugConsole
 from usdb_syncer.gui.ffmpeg_dialog import check_ffmpeg
@@ -160,6 +161,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
             (self.action_import_usdb_ids, self._import_usdb_ids_from_files),
             (self.action_export_usdb_ids, self._export_usdb_ids_to_file),
             (self.action_show_log, lambda: open_file_explorer(AppPaths.log)),
+            (self.action_show_in_usdb, self._show_current_song_in_usdb),
         ):
             action.triggered.connect(func)
 
@@ -356,6 +358,13 @@ class MainWindow(Ui_MainWindow, QMainWindow):
 
         write_usdb_id_file(path, selected_ids)
         _logger.info(f"exported {len(selected_ids)} USDB IDs to {path}")
+
+    def _show_current_song_in_usdb(self) -> None:
+        if song := self.table.current_list_song():
+            _logger.debug(f"Opening song page #{song.data.song_id} in webbrowser.")
+            webbrowser.open(f"{Usdb.BASE_URL}?link=detail&id={int(song.data.song_id)}")
+        else:
+            _logger.info("No current song to show.")
 
     def closeEvent(self, event: QCloseEvent) -> None:
         self.table.save_state()
