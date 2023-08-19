@@ -10,6 +10,10 @@ from pathlib import Path
 
 from appdirs import AppDirs
 
+from usdb_syncer.logger import get_logger
+
+_logger = get_logger(__file__)
+
 CACHE_LIFETIME = 60 * 60
 _app_dirs = AppDirs("usdb_syncer", "bohning")
 
@@ -126,6 +130,7 @@ def is_name_maybe_with_suffix(text: str, name: str) -> bool:
 
 
 def open_file_explorer(path: Path) -> None:
+    _logger.debug(f"Opening '{path}' with file explorer.")
     if sys.platform == "win32":
         os.startfile(path)
     elif sys.platform == "linux":

@@ -650,7 +650,7 @@
      <x>0</x>
      <y>0</y>
      <width>1100</width>
-     <height>24</height>
+     <height>22</height>
     </rect>
    </property>
    <widget class="QMenu" name="menu_tools">
@@ -682,6 +682,8 @@
     </property>
     <addaction name="action_songs_download"/>
     <addaction name="action_songs_to_batch"/>
+    <addaction name="action_show_in_usdb"/>
+    <addaction name="action_open_song_folder"/>
    </widget>
    <widget class="QMenu" name="menu_batch">
     <property name="title">
@@ -828,6 +830,24 @@
   <action name="actionHelp_2">
    <property name="text">
     <string>Help...</string>
+   </property>
+  </action>
+  <action name="action_show_in_usdb">
+   <property name="icon">
+    <iconset resource="../resources/resources.qrc">
+     <normaloff>:/icons/faviconUSDB.ico</normaloff>:/icons/faviconUSDB.ico</iconset>
+   </property>
+   <property name="text">
+    <string>Show in USDB</string>
+   </property>
+  </action>
+  <action name="action_open_song_folder">
+   <property name="icon">
+    <iconset resource="../resources/resources.qrc">
+     <normaloff>:/icons/folder_note.png</normaloff>:/icons/folder_note.png</iconset>
+   </property>
+   <property name="text">
+    <string>Open Song Folder</string>
    </property>
   </action>
  </widget>
