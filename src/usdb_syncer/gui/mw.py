@@ -162,6 +162,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
             (self.action_export_usdb_ids, self._export_usdb_ids_to_file),
             (self.action_show_log, lambda: open_file_explorer(AppPaths.log)),
             (self.action_show_in_usdb, self._show_current_song_in_usdb),
+            (self.action_open_song_folder, self._open_current_song_folder),
         ):
             action.triggered.connect(func)
 
@@ -364,7 +365,16 @@ class MainWindow(Ui_MainWindow, QMainWindow):
             _logger.debug(f"Opening song page #{song.data.song_id} in webbrowser.")
             webbrowser.open(f"{Usdb.BASE_URL}?link=detail&id={int(song.data.song_id)}")
         else:
-            _logger.info("No current song to show.")
+            _logger.info("No current song.")
+
+    def _open_current_song_folder(self) -> None:
+        if song := self.table.current_list_song():
+            if song.local_files.usdb_path:
+                open_file_explorer(song.local_files.usdb_path.parent)
+            else:
+                _logger.info("Song does not exist locally.")
+        else:
+            _logger.info("No current song.")
 
     def closeEvent(self, event: QCloseEvent) -> None:
         self.table.save_state()

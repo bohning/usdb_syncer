@@ -683,6 +683,7 @@
     <addaction name="action_songs_download"/>
     <addaction name="action_songs_to_batch"/>
     <addaction name="action_show_in_usdb"/>
+    <addaction name="action_open_song_folder"/>
    </widget>
    <widget class="QMenu" name="menu_batch">
     <property name="title">
@@ -838,6 +839,15 @@
    </property>
    <property name="text">
     <string>Show in USDB</string>
+   </property>
+  </action>
+  <action name="action_open_song_folder">
+   <property name="icon">
+    <iconset resource="../resources/resources.qrc">
+     <normaloff>:/icons/folder_note.png</normaloff>:/icons/folder_note.png</iconset>
+   </property>
+   <property name="text">
+    <string>Open Song Folder</string>
    </property>
   </action>
  </widget>
