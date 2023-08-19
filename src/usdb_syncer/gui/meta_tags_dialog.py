@@ -1,6 +1,6 @@
 """Dialog to create meta tags."""
 
-from typing import Callable
+from typing import Callable, Literal
 
 from pyshorteners import Shortener
 from pyshorteners.exceptions import (
@@ -79,13 +79,18 @@ class MetaTagsDialog(Ui_Dialog, QDialog):
             return None
         return ImageMetaTags(
             source=cover_source,
-            rotate=self.cover_rotation.value() or None,
+            rotate=round(self.cover_rotation.value(), 2) or None,
             crop=self._cover_crop_meta_tag(),
             resize=self._cover_resize_meta_tag(),
-            contrast="auto"
-            if self.cover_contrast_auto.isChecked()
-            else self.cover_contrast.value() or None,
+            contrast=self._contrast(),
         )
+
+    def _contrast(self) -> Literal["auto"] | float | None:
+        if self.cover_contrast_auto.isChecked():
+            return "auto"
+        if (contrast := round(self.cover_contrast.value(), 2)) == 1:
+            return None
+        return contrast
 
     def _cover_crop_meta_tag(self) -> CropMetaTags | None:
         if not (width := self.cover_crop_width.value()) or not (
@@ -153,7 +158,7 @@ class MetaTagsDialog(Ui_Dialog, QDialog):
             background=self._background_meta_tags(),
             player1=self._p1_meta_tag(),
             player2=self._p2_meta_tag(),
-            preview=self.preview_start.value() or None,
+            preview=round(self.preview_start.value(), 3) or None,
             medley=self._medley_tag(),
         )
 
