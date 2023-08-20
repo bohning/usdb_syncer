@@ -213,7 +213,7 @@ def _urls_and_setters(tags: MetaTags) -> list[tuple[str, Callable[[str], None]]]
 
 def _try_shorten_url(url: str) -> str:
     try:
-        short = tinyurl.Shortener().short(url).removeprefix("https://")
+        short = tinyurl.Shortener().short(url)
     except (
         BadAPIResponseException,
         BadURLException,
