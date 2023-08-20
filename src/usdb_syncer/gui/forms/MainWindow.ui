@@ -650,7 +650,7 @@
      <x>0</x>
      <y>0</y>
      <width>1100</width>
-     <height>22</height>
+     <height>24</height>
     </rect>
    </property>
    <widget class="QMenu" name="menu_tools">
@@ -755,6 +755,10 @@
    </property>
   </action>
   <action name="action_import_usdb_ids">
+   <property name="icon">
+    <iconset resource="../resources/resources.qrc">
+     <normaloff>:/icons/document-export.png</normaloff>:/icons/document-export.png</iconset>
+   </property>
    <property name="text">
     <string>Add IDs from File(s)</string>
    </property>
@@ -763,6 +767,10 @@
    </property>
   </action>
   <action name="action_export_usdb_ids">
+   <property name="icon">
+    <iconset resource="../resources/resources.qrc">
+     <normaloff>:/icons/document-import.png</normaloff>:/icons/document-import.png</iconset>
+   </property>
    <property name="text">
     <string>Export IDs to File</string>
    </property>
