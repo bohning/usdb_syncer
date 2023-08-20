@@ -2,13 +2,13 @@
 
 from typing import Callable, Literal
 
-from pyshorteners import Shortener
 from pyshorteners.exceptions import (
     BadAPIResponseException,
     BadURLException,
     ExpandingErrorException,
     ShorteningErrorException,
 )
+from pyshorteners.shorteners import tinyurl
 from PySide6.QtGui import QGuiApplication
 from PySide6.QtWidgets import QDialog, QWidget
 
@@ -213,7 +213,7 @@ def _urls_and_setters(tags: MetaTags) -> list[tuple[str, Callable[[str], None]]]
 
 def _try_shorten_url(url: str) -> str:
     try:
-        short = Shortener().tinyurl.short(url).removeprefix("https://")
+        short = tinyurl.Shortener().short(url).removeprefix("https://")
     except (
         BadAPIResponseException,
         BadURLException,
