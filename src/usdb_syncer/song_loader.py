@@ -225,7 +225,7 @@ class SongLoader(QRunnable):
     def _run_inner(self) -> SongData:
         self.on_start(self.song_id)
         details = usdb_scraper.get_usdb_details(self.song_id)
-        self.logger.info(f"Found '{details.artist} - {details.title}' on  USDB")
+        self.logger.info(f"Found '{details.artist} - {details.title}' on USDB")
         ctx = Context.new(details, self.options, self.data, self.logger)
         ctx.locations.dir_path().mkdir(parents=True, exist_ok=True)
         ctx.locations.ensure_correct_paths(ctx.sync_meta)

@@ -1,5 +1,7 @@
 <RCC>
   <qresource prefix="icons">
+    <file>document-import.png</file>
+    <file>document-export.png</file>
     <file>broom.png</file>
     <file>folder_note.png</file>
     <file>clipboard-empty.png</file>
