@@ -78,6 +78,7 @@ jobs:
             dist/*Linux
             dist/*.dmg
             dist/*.exe
+            CHANGELOG.md
 
   release:
     name: Create release
@@ -87,6 +88,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/download-artifact@v3
+      - name: Extract Release Notes
+        id: extract_notes
+        run: |
+          awk 'BEGIN { RS="<!-- [0-9]+\\.[0-9]+\\.[0-9]+ -->\\s*"; ORS=""; } NR==2 { print $0; exit; }' artifacts/CHANGELOG.md >CHANGELOG.md
+        shell: bash
       - uses: ncipollo/release-action@v1
         with:
-          artifacts: "artifacts/*"
+          artifacts: "artifacts/dist/*"
+          bodyFile: "CHANGELOG.md"
