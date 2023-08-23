@@ -8,7 +8,6 @@ and getters should be added to this module.
 from __future__ import annotations
 
 import os
-import sqlite3
 from enum import Enum
 from http.cookiejar import CookieJar
 from pathlib import Path
@@ -222,7 +221,7 @@ class Browser(Enum):
                 assert_never(unreachable)
         try:
             return function(domain_name=Usdb.DOMAIN)
-        except (browser_cookie3.BrowserCookieError, sqlite3.Error) as error:
+        except Exception as error:  # pylint: disable=broad-exception-caught
             _logger.debug(error)
         _logger.warning(f"Failed to retrieve {str(self).capitalize()} cookies.")
         return None
