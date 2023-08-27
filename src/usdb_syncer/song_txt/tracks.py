@@ -273,15 +273,7 @@ class Tracks:
 
     def consecutive_notes(self) -> Iterator[Tuple[Note, Note]]:
         for track in self.all_tracks():
-            for num_line, line in enumerate(track):
-                for num_note, current_note in enumerate(line.notes):
-                    if num_note == len(line.notes) - 1:
-                        if line.is_last():
-                            return
-                        next_note = track[num_line + 1].notes[0]
-                    else:
-                        next_note = line.notes[num_note + 1]
-                    yield current_note, next_note
+            yield from _consecutive_notes(track)
 
     def fix_overlapping_and_touching_notes(self, logger: Log) -> None:
         for current_note, next_note in self.consecutive_notes():
@@ -438,3 +430,15 @@ def replace_false_apostrophes_and_quotation_marks(value: str) -> str:
         .replace("′", "’")
         .replace("'", "’")
     )
+
+
+def _consecutive_notes(track: list[Line]) -> Iterator[Tuple[Note, Note]]:
+    for num_line, line in enumerate(track):
+        for num_note, current_note in enumerate(line.notes):
+            if num_note == len(line.notes) - 1:
+                if line.is_last():
+                    return
+                next_note = track[num_line + 1].notes[0]
+            else:
+                next_note = line.notes[num_note + 1]
+            yield current_note, next_note
