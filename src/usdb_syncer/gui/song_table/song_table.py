@@ -122,9 +122,6 @@ class SongTable:
         self._signals.finished.connect(self._on_download_finished)
         self._progress = Progress(progress_bar, progress_label)
 
-    def initialize(self, song_list: tuple[SongData, ...]) -> None:
-        self._model.set_data(song_list)
-
     def download_selection(self) -> None:
         self._download(self._list_rows(selected_only=True))
 
@@ -237,7 +234,7 @@ class SongTable:
         self._model.row_changed(row)
 
     def _on_download_started(self, song_id: SongId) -> None:
-        if not (row := self._model.rows.get(song_id)):
+        if (row := self._model.rows.get(song_id)) is None:
             logger = get_logger(__file__, song_id)
             logger.error("Unknown id. Ignoring download start signal.")
             return
