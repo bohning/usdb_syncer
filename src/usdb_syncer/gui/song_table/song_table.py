@@ -122,9 +122,6 @@ class SongTable:
         self._signals.finished.connect(self._on_download_finished)
         self._progress = Progress(progress_bar, progress_label)
 
-    def initialize(self, song_list: tuple[SongData, ...]) -> None:
-        self._model.set_data(song_list)
-
     def download_selection(self) -> None:
         self._download(self._list_rows(selected_only=True))
 

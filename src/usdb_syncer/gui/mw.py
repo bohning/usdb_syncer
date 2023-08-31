@@ -255,7 +255,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
                     self.plainTextEdit.appendPlainText(message)
 
     def initialize_song_table(self, songs: tuple[SongData, ...]) -> None:
-        self.table.initialize(songs)
+        self.table.set_data(songs)
         self._update_dynamic_filters(songs)
 
     def _stage_local_songs(self) -> None:
@@ -266,12 +266,8 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         run_with_progress(
             "Fetching song list...",
             lambda _: get_all_song_data(True),
-            self._on_song_list_fetched,
+            self.initialize_song_table,
         )
-
-    def _on_song_list_fetched(self, songs: tuple[SongData, ...]) -> None:
-        self.table.set_data(songs)
-        self._update_dynamic_filters(songs)
 
     def _update_dynamic_filters(self, songs: tuple[SongData, ...]) -> None:
         def update_filter(selector: QComboBox, attribute: str) -> None:
