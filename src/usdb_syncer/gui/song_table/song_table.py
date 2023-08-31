@@ -234,7 +234,7 @@ class SongTable:
         self._model.row_changed(row)
 
     def _on_download_started(self, song_id: SongId) -> None:
-        if not (row := self._model.rows.get(song_id)):
+        if (row := self._model.rows.get(song_id)) is None:
             logger = get_logger(__file__, song_id)
             logger.error("Unknown id. Ignoring download start signal.")
             return
