@@ -80,22 +80,16 @@ pkg-config --cflags --libs dbus-1
 The minimal setup to develop your package is to create a virtual environment and install the package and its runtime requirements:
 
 ```bash
-# Your Python installation may instead be available under `py` or `python`.
-python3 -m venv venv
-# In Windows PowerShell run this instead: `.\venv\Scripts\Activate.ps1`
-# In Windows CMD run this instead: `.\venv\scripts\activate.bat`
-source venv/bin/activate
-pip install --upgrade pip tox setuptools
-pip install -e '.[dev]'
+pipenv install --dev
 ```
 
 ### Run usdb_syncer
 
-The package has a defined entry point for the GUI. Simply type in `usdb_syncer` in your terminal. Make sure that your venv is activated.
+The package has a defined entry point for the GUI. Simply type in `pipenv run usdb_syncer` in your terminal.
 
 ### Run tests
 
-Run `tox` to execute the test pipeline. The tox pipelines are configured in the tox.ini file. Configurations for specific tools in the pipeline are maintained in the `pyproject.toml` file. Tox is configured to create its own virtual environments, install test dependencies and the package you are developing, and run all tests. If you changed the test requirements or want to perform a clean run for some reason, you can run `tox -r` to recreate tox's virtual environment.
+Run `tox` to execute the test pipeline. The tox pipelines are configured in the tox.ini file. Configurations for specific tools in the pipeline are maintained in the `pyproject.toml` file. Tox is configured to create its own virtual environments, install test dependencies and the package you are developing, and run all tests. If you changed the test requirements or want to perform a clean run for some reason, you can run `pipenv run tox -r` to recreate tox's virtual environment.
 
 The following tools are part of the test pipeline:
 
@@ -118,13 +112,13 @@ executables. In order to build **USDB Syncer**, run the following command
 
 ```bash
 # On Linux
-pyinstaller --name "USDBSyncer" --onefile src/usdb_syncer/main.py
+pipenv run pyinstaller --name "USDBSyncer" --onefile src/usdb_syncer/main.py
 
 # On macOS
-pyinstaller --name "USDBSyncer" --windowed src/usdb_syncer/main.py
+pipenv run pyinstaller --name "USDBSyncer" --windowed src/usdb_syncer/main.py
 
 # On Windows
-pyinstaller --name "USDBSyncer" --onefile src/usdb_syncer/main.py
+pipenv run pyinstaller --name "USDBSyncer" --onefile src/usdb_syncer/main.py
 ```
 
 ## Versioning
