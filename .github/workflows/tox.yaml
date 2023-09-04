@@ -23,9 +23,12 @@ jobs:
         uses: actions/setup-python@v4
         with:
           python-version: ${{ matrix.python-version }}
+      - name: Install Pipenv
+        run: |
+          python -m pip install pipenv
       - name: Install dependencies
         run: |
-          python -m pip install --upgrade pip
-          python -m pip install tox tox-gh-actions
+          pipenv install --dev --deploy
+          pipenv install tox-gh-actions
       - name: Test with tox
-        run: tox
+        run: pipenv run tox

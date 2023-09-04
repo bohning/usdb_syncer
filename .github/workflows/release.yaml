@@ -37,22 +37,24 @@ jobs:
         uses: actions/setup-python@v4
         with:
           python-version: "3.11"
+      - name: Install Pipenv
+        run: |
+          python -m pip install pipenv
       - name: Install dependencies
         run: |
-          python -m pip install --upgrade pip wheel
-          python -m pip install '.[dev]'
+          pipenv install --dev --deploy
       - name: Write version and commit hash
-        run: write_release_info -p src/usdb_syncer/constants.py -v ${{ github.ref_name }} -c ${{ github.workflow_sha }}
+        run: pipenv run write_release_info -p src/usdb_syncer/constants.py -v ${{ github.ref_name }} -c ${{ github.workflow_sha }}
       - name: Generate GUI elements
-        run: generate_pyside_files
+        run: pipenv run generate_pyside_files
       - name: Scrape USDB song list to ship with the bundle
-        run: generate_song_list_json -t 'data/song_list.json' -u '${{ secrets.USDB_USER }}' -p '${{ secrets.USDB_PASSWORD }}'
+        run: pipenv run generate_song_list_json -t 'data/song_list.json' -u '${{ secrets.USDB_USER }}' -p '${{ secrets.USDB_PASSWORD }}'
       - name: add dependencies for xcb support
         if: matrix.TARGET == 'Linux'
         run: |
           sudo apt install libxcb-cursor0
       - name: Build with pyinstaller for ${{matrix.os}}
-        run: pyinstaller -n 'USDB_Syncer-${{github.ref_name}}-${{matrix.TARGET}}' ${{matrix.PYINSTALLER_ARGS}} src/usdb_syncer/main.py
+        run: pipenv run pyinstaller -n 'USDB_Syncer-${{github.ref_name}}-${{matrix.TARGET}}' ${{matrix.PYINSTALLER_ARGS}} src/usdb_syncer/main.py
       - name: Create DMG
         if: matrix.TARGET == 'macOS'
         run: |
