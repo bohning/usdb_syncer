@@ -38,6 +38,8 @@ pytest = "~=7.4, >=7.4.1"
 # build
 pyinstaller = "~=5.13, >=5.13.2"
 pyinstaller-hooks-contrib = ">=2023.8"
+# specifically required for pyinstaller (Note: darwin -> macos)
+macholib = {version = "*", markers="sys_platform == 'darwin'"}
 # entry points
 usdb-syncer = {editable = true, path = "."}
 
