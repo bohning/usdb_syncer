@@ -23,6 +23,11 @@ requests = "~=2.31"
 unidecode = "~=1.3, >=1.3.6"
 yt_dlp = ">=2023.7.6"
 wheel = "~=0.41, >=0.41.2"
+# build
+pyinstaller = "~=5.13, >=5.13.2"
+pyinstaller-hooks-contrib = ">=2023.8"
+# specifically required for pyinstaller (Note: darwin -> macos)
+macholib = {version = "*", markers="sys_platform == 'darwin'"}
 
 [dev-packages]
 tox = "~=4.11, >=4.11.1"
@@ -35,11 +40,6 @@ types-setuptools = "~=68.1, >=68.1.0.1"
 types-requests = "~=2.31, >=2.31.0.2"
 # test
 pytest = "~=7.4, >=7.4.1"
-# build
-pyinstaller = "~=5.13, >=5.13.2"
-pyinstaller-hooks-contrib = ">=2023.8"
-# specifically required for pyinstaller (Note: darwin -> macos)
-macholib = {version = "*", markers="sys_platform == 'darwin'"}
 # entry points
 usdb-syncer = {editable = true, path = "."}
 
