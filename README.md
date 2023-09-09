@@ -81,11 +81,13 @@ The minimal setup to develop your package is to create a virtual environment and
 
 ```bash
 pipenv install --dev
+# activate venv
+pipenv shell
 ```
 
 ### Run usdb_syncer
 
-The package has a defined entry point for the GUI. Simply type in `pipenv run usdb_syncer` in your terminal.
+The package has a defined entry point for the GUI. Simply type in `usdb_syncer` in your terminal.
 
 ### Run tests
 
