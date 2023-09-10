@@ -43,6 +43,13 @@ jobs:
       - name: Install dependencies
         run: |
           pipenv sync
+      - name: Prepend src to PYTHONPATH
+        run: |
+          if [[ "${{ matrix.TARGET }}" == "Windows" ]]; then
+            $env:PYTHONPATH = "$(pwd)/src;" + $env:PYTHONPATH
+          else
+            export PYTHONPATH="$(pwd)/src:$PYTHONPATH"
+          fi
       - name: Write version and commit hash
         run: python -m src.tools.write_release_info -p src/usdb_syncer/constants.py -v ${{ github.ref_name }} -c ${{ github.workflow_sha }}
       - name: Generate GUI elements
