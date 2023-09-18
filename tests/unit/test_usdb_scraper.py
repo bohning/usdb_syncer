@@ -8,8 +8,11 @@ from io import StringIO
 from bs4 import BeautifulSoup
 
 from usdb_syncer import SongId
+from usdb_syncer.logger import get_logger
 from usdb_syncer.usdb_scraper import _parse_song_page, _parse_song_txt_from_txt_page
 from usdb_syncer.usdb_song import UsdbSong, UsdbSongEncoder
+
+_logger = get_logger(__file__)
 
 
 def get_soup(resource_dir: str, resource: str) -> BeautifulSoup:
@@ -47,7 +50,7 @@ def test__parse_song_txt_from_txt_page(resource_dir: str) -> None:
 def test__parse_song_page_with_commented_embedded_video(resource_dir: str) -> None:
     song_id = SongId(26152)
     soup = get_soup(resource_dir, "song_page_with_embedded_video.htm")
-    details = _parse_song_page(soup, song_id)
+    details = _parse_song_page(soup, song_id, _logger)
     assert details.song_id == song_id
     assert details.artist == "Revolverheld"
     assert details.title == "Ich lass für dich das Licht an"
@@ -79,7 +82,7 @@ def test__parse_song_page_with_commented_embedded_video(resource_dir: str) -> No
 def test__parse_song_page_with_commented_unembedded_video(resource_dir: str) -> None:
     song_id = SongId(16575)
     soup = get_soup(resource_dir, "song_page_with_unembedded_video.htm")
-    details = _parse_song_page(soup, song_id)
+    details = _parse_song_page(soup, song_id, _logger)
     assert len(details.comments) == 1
     assert details.comments[0].contents.youtube_ids == ["WIAvMiUcCgw"]
 
@@ -87,7 +90,7 @@ def test__parse_song_page_with_commented_unembedded_video(resource_dir: str) -> 
 def test__parse_song_page_without_comments_or_cover(resource_dir: str) -> None:
     song_id = SongId(26244)
     soup = get_soup(resource_dir, "song_page_without_comments_or_cover.htm")
-    details = _parse_song_page(soup, song_id)
+    details = _parse_song_page(soup, song_id, _logger)
     assert details.song_id == song_id
     assert details.artist == "The Used"
     assert details.title == "River Stay"

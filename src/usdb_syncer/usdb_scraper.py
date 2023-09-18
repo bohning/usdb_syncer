@@ -290,9 +290,7 @@ def get_usdb_details(song_id: SongId, logger: Log) -> SongDetails:
     return _parse_song_page(BeautifulSoup(html, "lxml"), song_id, logger)
 
 
-def _parse_song_page(
-    soup: BeautifulSoup, song_id: SongId, logger: Log = _logger
-) -> SongDetails:
+def _parse_song_page(soup: BeautifulSoup, song_id: SongId, logger: Log) -> SongDetails:
     usdb_strings = _usdb_strings_from_soup(soup)
     details_table, comments_table, *_ = soup.find_all("table", border="0", width="500")
     details = _parse_details_table(details_table, song_id, usdb_strings, logger)
