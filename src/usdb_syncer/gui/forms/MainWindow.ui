@@ -684,6 +684,7 @@
     <addaction name="action_songs_to_batch"/>
     <addaction name="action_show_in_usdb"/>
     <addaction name="action_open_song_folder"/>
+    <addaction name="action_delete_song_folder"/>
    </widget>
    <widget class="QMenu" name="menu_batch">
     <property name="title">
@@ -856,6 +857,15 @@
    </property>
    <property name="text">
     <string>Open Song Folder</string>
+   </property>
+  </action>
+  <action name="action_delete_song_folder">
+   <property name="icon">
+    <iconset resource="../resources/resources.qrc">
+     <normaloff>:/icons/minus-circle.png</normaloff>:/icons/minus-circle.png</iconset>
+   </property>
+   <property name="text">
+    <string>Delete Song Folder</string>
    </property>
   </action>
  </widget>

@@ -3,6 +3,7 @@
 import datetime
 import logging
 import os
+import shutil
 import sys
 import webbrowser
 from pathlib import Path
@@ -163,6 +164,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
             (self.action_show_log, lambda: open_file_explorer(AppPaths.log)),
             (self.action_show_in_usdb, self._show_current_song_in_usdb),
             (self.action_open_song_folder, self._open_current_song_folder),
+            (self.action_delete_song_folder, self._delete_current_song_folder),
         ):
             action.triggered.connect(func)
 
@@ -367,6 +369,17 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         if song := self.table.current_list_song():
             if song.local_files.usdb_path:
                 open_file_explorer(song.local_files.usdb_path.parent)
+            else:
+                _logger.info("Song does not exist locally.")
+        else:
+            _logger.info("No current song.")
+
+    def _delete_current_song_folder(self) -> None:
+        if song := self.table.current_list_song():
+            if song.local_files.usdb_path:
+                # TODO: needs some kind of popup to confirm/cancel delete operation
+                shutil.rmtree(song.local_files.usdb_path.parent)
+                # TODO: remove checkmarks in table
             else:
                 _logger.info("Song does not exist locally.")
         else:
