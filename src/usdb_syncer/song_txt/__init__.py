@@ -69,7 +69,7 @@ class SongTxt:
         if self.notes.track_2:
             self.headers.p1 = self.meta_tags.player1 or "P1"
             self.headers.p2 = self.meta_tags.player2 or "P2"
-        if self.meta_tags.preview is not None:
+        if self.meta_tags.preview is not None and self.meta_tags.preview != 0.0:
             self.headers.previewstart = self.meta_tags.preview
         if medley := self.meta_tags.medley:
             self.headers.medleystartbeat = medley.start

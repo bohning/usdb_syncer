@@ -213,7 +213,8 @@ def _set_header_value(kwargs: dict[str, Any], header: str, value: str) -> None:
         kwargs[header] = value.removesuffix(" [DUET]")
     # these are given in (fractional) seconds, thus may have a decimal comma or point
     elif header in ("videogap", "start", "previewstart"):
-        kwargs[header] = float(value.replace(",", "."))
+        if (val := float(value.replace(",", "."))) != 0.0:
+            kwargs[header] = val
     # these are given in milliseconds, but may have a decimal point or comma in usdb
     elif header in ("gap", "end"):
         kwargs[header] = round(float(value.replace(",", ".")))
