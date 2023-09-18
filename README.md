@@ -99,11 +99,11 @@ pipenv shell
 
 ### Run usdb_syncer
 
-The package has a defined entry point for the GUI. Simply type in `usdb_syncer` in your terminal.
+The package has a defined entry point for the GUI. Simply type in `usdb_syncer` in your terminal. Make sure that your venv is activated.
 
 ### Run tests
 
-Run `tox` to execute the test pipeline. The tox pipelines are configured in the tox.ini file. Configurations for specific tools in the pipeline are maintained in the `pyproject.toml` file. Tox is configured to create its own virtual environments, install test dependencies and the package you are developing, and run all tests. If you changed the test requirements or want to perform a clean run for some reason, you can run `pipenv run tox -r` to recreate tox's virtual environment.
+Run `tox` to execute the test pipeline. The tox pipelines are configured in the tox.ini file. Configurations for specific tools in the pipeline are maintained in the `pyproject.toml` file. Tox is configured to create its own virtual environments, install test dependencies and the package you are developing, and run all tests. If you changed the test requirements or want to perform a clean run for some reason, you can run `tox -r` to recreate tox's virtual environment.
 
 The following tools are part of the test pipeline:
 
@@ -126,13 +126,13 @@ executables. In order to build **USDB Syncer**, run the following command
 
 ```bash
 # On Linux
-pipenv run pyinstaller --name "USDBSyncer" --onefile src/usdb_syncer/main.py
+pyinstaller --name "USDBSyncer" --onefile src/usdb_syncer/main.py
 
 # On macOS
-pipenv run pyinstaller --name "USDBSyncer" --windowed src/usdb_syncer/main.py
+pyinstaller --name "USDBSyncer" --windowed src/usdb_syncer/main.py
 
 # On Windows
-pipenv run pyinstaller --name "USDBSyncer" --onefile src/usdb_syncer/main.py
+pyinstaller --name "USDBSyncer" --onefile src/usdb_syncer/main.py
 ```
 
 ## Versioning
