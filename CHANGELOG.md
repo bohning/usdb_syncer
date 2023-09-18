@@ -1,3 +1,15 @@
+<!-- 0.3.0 -->
+
+# Changes
+
+## Fixes
+
+- Fixed downloading updated resources (overwrite existing files).
+
+## Features
+
+- Vimeo IDs are now supported for audio/video metatags (e.g. #VIDEO:v=123456789).
+
 <!-- 0.2.1 -->
 
 # Changes
