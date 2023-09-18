@@ -500,7 +500,7 @@ def _all_urls_in_comment(
 
 def get_notes(song_id: SongId, logger: Log) -> str:
     """Retrieve notes for a song."""
-    logger.debug(f"fetching notes")
+    logger.debug("fetching notes")
     html = get_usdb_page(
         "index.php",
         RequestMethod.POST,
