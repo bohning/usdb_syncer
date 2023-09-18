@@ -21,7 +21,7 @@ from usdb_syncer.constants import (
     UsdbStringsFrench,
     UsdbStringsGerman,
 )
-from usdb_syncer.logger import Log
+from usdb_syncer.logger import Log, get_logger
 from usdb_syncer.usdb_song import UsdbSong
 from usdb_syncer.utils import extract_youtube_id, normalize
 
@@ -278,7 +278,7 @@ def _get_usdb_page_inner(
     return page
 
 
-def get_usdb_details(song_id: SongId, logger: Log) -> SongDetails:
+def get_usdb_details(song_id: SongId) -> SongDetails:
     """Retrieve song details from usdb webpage, if song exists.
 
     Parameters:
@@ -287,10 +287,11 @@ def get_usdb_details(song_id: SongId, logger: Log) -> SongDetails:
     html = get_usdb_page(
         "index.php", params={"id": str(int(song_id)), "link": "detail"}
     )
-    return _parse_song_page(BeautifulSoup(html, "lxml"), song_id, logger)
+    return _parse_song_page(BeautifulSoup(html, "lxml"), song_id)
 
 
-def _parse_song_page(soup: BeautifulSoup, song_id: SongId, logger: Log) -> SongDetails:
+def _parse_song_page(soup: BeautifulSoup, song_id: SongId) -> SongDetails:
+    logger = get_logger(__file__, song_id)
     usdb_strings = _usdb_strings_from_soup(soup)
     details_table, comments_table, *_ = soup.find_all("table", border="0", width="500")
     details = _parse_details_table(details_table, song_id, usdb_strings, logger)
