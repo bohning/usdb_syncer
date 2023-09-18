@@ -278,7 +278,7 @@ def _get_usdb_page_inner(
     return page
 
 
-def get_usdb_details(song_id: SongId) -> SongDetails:
+def get_usdb_details(song_id: SongId, logger: Log) -> SongDetails:
     """Retrieve song details from usdb webpage, if song exists.
 
     Parameters:
@@ -287,14 +287,14 @@ def get_usdb_details(song_id: SongId) -> SongDetails:
     html = get_usdb_page(
         "index.php", params={"id": str(int(song_id)), "link": "detail"}
     )
-    return _parse_song_page(BeautifulSoup(html, "lxml"), song_id)
+    return _parse_song_page(BeautifulSoup(html, "lxml"), song_id, logger)
 
 
-def _parse_song_page(soup: BeautifulSoup, song_id: SongId) -> SongDetails:
+def _parse_song_page(soup: BeautifulSoup, song_id: SongId, logger: Log) -> SongDetails:
     usdb_strings = _usdb_strings_from_soup(soup)
     details_table, comments_table, *_ = soup.find_all("table", border="0", width="500")
-    details = _parse_details_table(details_table, song_id, usdb_strings)
-    details.comments = _parse_comments_table(comments_table)
+    details = _parse_details_table(details_table, song_id, usdb_strings, logger)
+    details.comments = _parse_comments_table(comments_table, logger)
     return details
 
 
@@ -369,7 +369,10 @@ def get_usdb_available_songs(
 
 
 def _parse_details_table(
-    details_table: BeautifulSoup, song_id: SongId, usdb_strings: Type[UsdbStrings]
+    details_table: BeautifulSoup,
+    song_id: SongId,
+    usdb_strings: Type[UsdbStrings],
+    logger: Log,
 ) -> SongDetails:
     """Parse song attributes from usdb page.
 
@@ -393,11 +396,11 @@ def _parse_details_table(
     if param := details_table.find("source"):
         audio_sample = param.get("src")
     else:
-        _logger.debug("No audio sample found. Consider adding one!")
+        logger.debug("No audio sample found. Consider adding one!")
 
     cover_url = details_table.img["src"]  # type: ignore
     if "nocover" in cover_url:
-        _logger.debug("No USDB cover. Consider adding one!")
+        logger.debug("No USDB cover. Consider adding one!")
 
     return SongDetails(
         song_id=song_id,
@@ -429,7 +432,9 @@ def _find_text_after(details_table: BeautifulSoup, label: str) -> str:
     raise UsdbParseError(f"Text after {label} not found.")
 
 
-def _parse_comments_table(comments_table: BeautifulSoup) -> list[SongComment]:
+def _parse_comments_table(
+    comments_table: BeautifulSoup, logger: Log
+) -> list[SongComment]:
     """Parse the table into individual comments, extracting potential video links,
     GAP and BPM values.
 
@@ -445,7 +450,7 @@ def _parse_comments_table(comments_table: BeautifulSoup) -> list[SongComment]:
             # header is just the placeholder element
             break
         date_time, author = meta.removeprefix("[del] [edit] ").split(" | ")
-        contents = _parse_comment_contents(header.next_sibling)
+        contents = _parse_comment_contents(header.next_sibling, logger)
         comments.append(
             SongComment(date_time=date_time, author=author, contents=contents)
         )
@@ -453,7 +458,7 @@ def _parse_comments_table(comments_table: BeautifulSoup) -> list[SongComment]:
     return comments
 
 
-def _parse_comment_contents(contents: BeautifulSoup) -> CommentContents:
+def _parse_comment_contents(contents: BeautifulSoup, logger: Log) -> CommentContents:
     td_element = contents.find("td")
     for emoji in td_element.find_all("img"):
         emoji.replaceWith(emoji.get("title"))
@@ -463,7 +468,7 @@ def _parse_comment_contents(contents: BeautifulSoup) -> CommentContents:
     urls: list[str] = []
     youtube_ids: list[str] = []
 
-    for url in _all_urls_in_comment(contents, text):
+    for url in _all_urls_in_comment(contents, text, logger):
         if yt_id := extract_youtube_id(url):
             youtube_ids.append(yt_id)
         else:
@@ -472,26 +477,28 @@ def _parse_comment_contents(contents: BeautifulSoup) -> CommentContents:
     return CommentContents(text=text, urls=urls, youtube_ids=youtube_ids)
 
 
-def _all_urls_in_comment(contents: BeautifulSoup, text: str) -> Iterator[str]:
+def _all_urls_in_comment(
+    contents: BeautifulSoup, text: str, logger: Log
+) -> Iterator[str]:
     for embed in contents.find_all("embed"):
         if (src := embed.get("src")) and SUPPORTED_VIDEO_SOURCES_REGEX.fullmatch(src):
-            _logger.debug("video embed found. Consider embedding as iframe")
+            logger.debug("video embed found. Consider embedding as iframe")
             yield src
     for iframe in contents.find_all("iframe"):
         if (src := iframe.get("src")) and SUPPORTED_VIDEO_SOURCES_REGEX.fullmatch(src):
             yield src
     for anchor in contents.find_all("a"):
         if (url := anchor.get("href")) and SUPPORTED_VIDEO_SOURCES_REGEX.fullmatch(url):
-            _logger.debug("video href found. Consider embedding as iframe")
+            logger.debug("video href found. Consider embedding as iframe")
             yield url
     for match in SUPPORTED_VIDEO_SOURCES_REGEX.finditer(text):
-        _logger.debug("video plain url found. Consider embedding as iframe.")
+        logger.debug("video plain url found. Consider embedding as iframe.")
         yield match.group(1)
 
 
 def get_notes(song_id: SongId, logger: Log) -> str:
     """Retrieve notes for a song."""
-    logger.debug(f"fetch notes for song {song_id}")
+    logger.debug(f"fetching notes")
     html = get_usdb_page(
         "index.php",
         RequestMethod.POST,
