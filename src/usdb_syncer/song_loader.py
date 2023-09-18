@@ -131,7 +131,7 @@ class Context:
         if self.txt.meta_tags.audio:
             yield self.txt.meta_tags.audio
         if not self.txt.meta_tags.video:
-            self.logger.debug("No audio/video meta tag. Looking in comments.")
+            self.logger.debug("No valid audio/video meta tag. Looking in comments.")
         yield from self.all_video_resources()
 
     def all_video_resources(self) -> Iterator[str]:
