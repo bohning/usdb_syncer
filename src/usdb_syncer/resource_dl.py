@@ -139,6 +139,7 @@ def _ytdl_options(format_: str, browser: Browser, target_stem: Path) -> YtdlOpti
         "verbose": False,
         # suppresses download of playlists, channels and search results
         "playlistend": 0,
+        "overwrites": True,
     }
     if browser.value:
         options["cookiesfrombrowser"] = (browser.value,)
