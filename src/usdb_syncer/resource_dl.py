@@ -1,6 +1,7 @@
 """Functions for downloading and processing media."""
 
 import os
+import re
 from enum import Enum
 from pathlib import Path
 from typing import Union, assert_never
@@ -44,12 +45,18 @@ class ImageKind(Enum):
                 assert_never(unreachable)
 
 
-def _url_from_resource(resource: str) -> str:
+def _url_from_resource(resource: str) -> str | None:
     if "://" in resource:
         return resource
     if "/" in resource:
         return f"https://{resource}"
-    return f"https://www.youtube.com/watch?v={resource}"
+    vimeo_id_pattern = r"\d{2,10}"
+    if re.match(vimeo_id_pattern, resource):
+        return f"https://vimeo.com/{resource}"
+    yt_id_pattern = r"^[A-Za-z0-9_-]{11}$"
+    if re.match(yt_id_pattern, resource):
+        return f"https://www.youtube.com/watch?v={resource}"
+    return None
 
 
 def download_audio(
@@ -139,7 +146,10 @@ def _ytdl_options(format_: str, browser: Browser, target_stem: Path) -> YtdlOpti
 
 
 def _download_resource(options: YtdlOptions, resource: str, logger: Log) -> str | None:
-    url = _url_from_resource(resource)
+    if (url := _url_from_resource(resource)) is None:
+        logger.debug(f"invalid audio/video resource: {resource}")
+        return None
+
     with yt_dlp.YoutubeDL(options) as ydl:
         try:
             return ydl.prepare_filename(ydl.extract_info(url))
