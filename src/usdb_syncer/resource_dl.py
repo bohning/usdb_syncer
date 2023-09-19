@@ -50,7 +50,7 @@ def _url_from_resource(resource: str) -> str | None:
         return resource
     if "/" in resource:
         return f"https://{resource}"
-    vimeo_id_pattern = r"\d{2,10}"
+    vimeo_id_pattern = r"^\d{2,10}$"
     if re.match(vimeo_id_pattern, resource):
         return f"https://vimeo.com/{resource}"
     yt_id_pattern = r"^[A-Za-z0-9_-]{11}$"
