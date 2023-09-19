@@ -92,7 +92,7 @@ pkg-config --cflags --libs dbus-1
 The minimal setup to develop your package is to create a virtual environment and install the package and its runtime requirements:
 
 ```bash
-pipenv install --dev
+pipenv sync --dev
 # activate venv
 pipenv shell
 ```

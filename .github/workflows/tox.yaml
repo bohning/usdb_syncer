@@ -28,7 +28,7 @@ jobs:
           python -m pip install pipenv
       - name: Install dependencies
         run: |
-          pipenv install --dev --deploy
-          pipenv install tox-gh-actions
+          pipenv sync --dev
+          pipenv run pip install tox-gh-actions
       - name: Test with tox
         run: pipenv run tox
