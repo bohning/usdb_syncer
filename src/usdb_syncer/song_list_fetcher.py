@@ -74,7 +74,9 @@ def find_local_files() -> dict[SongId, LocalFiles]:
     for path in settings.get_song_dir().glob("**/*.usdb"):
         if meta := SyncMeta.try_from_file(path):
             local_files[meta.song_id] = files = LocalFiles(usdb_path=path)
-            if txt := _get_song_txt(meta, path.parent):
+            if txt := _get_song_txt(
+                meta=meta, folder=path.parent, parse_meta_tags=False
+            ):
                 files.txt = True
                 files.audio = _file_exists(path.parent, txt.headers.mp3)
                 files.video = _file_exists(path.parent, txt.headers.video)
@@ -83,13 +85,15 @@ def find_local_files() -> dict[SongId, LocalFiles]:
     return local_files
 
 
-def _get_song_txt(meta: SyncMeta, folder: Path) -> SongTxt | None:
+def _get_song_txt(
+    meta: SyncMeta, folder: Path, parse_meta_tags: bool = True
+) -> SongTxt | None:
     if not meta.txt:
         return None
     txt_path = folder.joinpath(meta.txt.fname)
     logger = get_logger(__file__, meta.song_id)
     if txt_path.exists() and (contents := try_read_unknown_encoding(txt_path)):
-        return SongTxt.try_parse(contents, logger)
+        return SongTxt.try_parse(contents, logger, parse_meta_tags)
     return None
 
 

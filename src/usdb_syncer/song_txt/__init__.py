@@ -44,19 +44,25 @@ class SongTxt:
         ]
 
     @classmethod
-    def parse(cls, value: str, logger: Log) -> SongTxt:
+    def parse(cls, value: str, logger: Log, parse_meta_tags: bool = True) -> SongTxt:
         lines = [line for line in value.splitlines() if line]
         headers = Headers.parse(lines, logger)
-        meta_tags = MetaTags.parse(headers.video or "", logger)
+        meta_tags = meta_tags = (
+            MetaTags.parse(headers.video or "", logger)
+            if parse_meta_tags
+            else MetaTags()
+        )
         notes = Tracks.parse(lines, logger)
         if lines:
             logger.warning(f"trailing text in song txt: '{lines}'")
         return cls(headers=headers, meta_tags=meta_tags, notes=notes, logger=logger)
 
     @classmethod
-    def try_parse(cls, value: str, logger: Log) -> SongTxt | None:
+    def try_parse(
+        cls, value: str, logger: Log, parse_meta_tags: bool = True
+    ) -> SongTxt | None:
         try:
-            return cls.parse(value, logger)
+            return cls.parse(value, logger, parse_meta_tags)
         except NotesParseError:
             return None
 
