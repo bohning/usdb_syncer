@@ -19,7 +19,7 @@ class UsdbStrings:
     GOLDEN_NOTES: str
     SONGCHECK: str
     DATE: str
-    CREATED_BY: str
+    UPLOADED_BY: str
     VIEWS: str
     YES: str
     NO: str
@@ -38,7 +38,7 @@ class UsdbStringsEnglish(UsdbStrings):
     GOLDEN_NOTES = "Golden Notes"
     SONGCHECK = "Songcheck"
     DATE = "Date"
-    CREATED_BY = "Created by"
+    UPLOADED_BY = "Uploaded by"
     VIEWS = "Views"
     YES = "Yes"
     NO = "No"
@@ -53,7 +53,7 @@ class UsdbStringsGerman(UsdbStrings):
     GOLDEN_NOTES = "Goldene Noten"
     SONGCHECK = "Songcheck"
     DATE = "Datum"
-    CREATED_BY = "Erstellt von"
+    UPLOADED_BY = "Hochgeladen von"
     VIEWS = "Aufrufe"
     YES = "Ja"
     NO = "Nein"
@@ -68,7 +68,7 @@ class UsdbStringsFrench(UsdbStrings):
     GOLDEN_NOTES = "Notes en or"
     SONGCHECK = "Songcheck"
     DATE = "Date"
-    CREATED_BY = "créé par"
+    UPLOADED_BY = "Téléchargé par"
     VIEWS = "Affichages"
     YES = "Oui"
     NO = "Non"
