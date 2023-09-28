@@ -21,7 +21,7 @@ pyshorteners = "*"
 PySide6 = "==6.5.*"
 requests = "*"
 unidecode = "*"
-yt_dlp = ">=2023.7.6"
+yt_dlp = "*"
 wheel = "*"
 # build
 pyinstaller = "*"
