@@ -417,7 +417,7 @@ def _parse_details_table(
         date_time=datetime.strptime(
             _find_text_after(details_table, usdb_strings.DATE), Usdb.DATETIME_STRF
         ),
-        uploader=_find_text_after(details_table, usdb_strings.CREATED_BY),
+        uploader=_find_text_after(details_table, usdb_strings.UPLOADED_BY),
         editors=editors,
         views=int(_find_text_after(details_table, usdb_strings.VIEWS)),
         rating=sum("star.png" in s.get("src") for s in stars),
