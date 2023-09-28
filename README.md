@@ -14,7 +14,7 @@ known requirements:
 
 - package `glibc >= 2.35`
 
-  Therefore the following table (based on https://pkgs.org/search/?q=glibc, 8.7.2023) summarizes different Linux Distributions for having greater or equal version of `glibc`. For (likely) supported distributions the minimum OS Version is given that has a required glibc version. For (likely) unsupported distributions the recent highest Versions (if known) of Linux Distributions with its highest glibc version is given:
+  Therefore the following table (based on <https://pkgs.org/search/?q=glibc>, 8.7.2023) summarizes different Linux Distributions for having greater or equal version of `glibc`. For (likely) supported distributions the minimum OS Version is given that has a required glibc version. For (likely) unsupported distributions the recent highest Versions (if known) of Linux Distributions with its highest glibc version is given:
 
   |                    | OS                  | OS Version       | glibc     |
   |:------------------:|:-------------------:|:----------------:|:---------:|
@@ -69,7 +69,19 @@ A Python 3.11 installation is assumed.
 
 ### Python Setup
 
-requires extra packages when developing **on Linux**
+requires Pipenv package (also ensure it is added to your system's `PATH`)
+
+``` bash
+# Windows
+python -m pip install pipenv --user
+# MacOs
+brew install pipenv
+# Linux
+apt install python3-pip
+pip install --user pipenv
+```
+
+additionally requires extra packages when developing **on Linux**
 
 ``` bash
 apt install -y gcc python3-dev libdbus-1-dev
@@ -80,13 +92,9 @@ pkg-config --cflags --libs dbus-1
 The minimal setup to develop your package is to create a virtual environment and install the package and its runtime requirements:
 
 ```bash
-# Your Python installation may instead be available under `py` or `python`.
-python3 -m venv venv
-# In Windows PowerShell run this instead: `.\venv\Scripts\Activate.ps1`
-# In Windows CMD run this instead: `.\venv\scripts\activate.bat`
-source venv/bin/activate
-pip install --upgrade pip tox setuptools
-pip install -e '.[dev]'
+pipenv sync --dev
+# activate venv
+pipenv shell
 ```
 
 ### Run usdb_syncer
