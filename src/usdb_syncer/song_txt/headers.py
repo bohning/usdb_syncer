@@ -166,7 +166,7 @@ class Headers:
 
     def fix_language(self, logger: Log) -> None:
         if not self.language:
-            logger.warning("No #LANGUAGE tag found. Consider adding it.")
+            logger.debug("No #LANGUAGE tag found. Consider adding it.")
         if old_language := self.language:
             languages = [
                 language.strip()
