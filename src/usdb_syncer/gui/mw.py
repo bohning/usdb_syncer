@@ -433,7 +433,7 @@ def _load_main_window(mw: MainWindow) -> None:
     splash = generate_splashscreen()
     splash.show()
     QApplication.processEvents()
-    splash.showMessage("Loading song database from usdb...", color=Qt.GlobalColor.gray)
+    splash.showMessage("Loading song database ...", color=Qt.GlobalColor.gray)
     songs = get_all_song_data(False)
     mw.initialize_song_table(songs)
     splash.showMessage(

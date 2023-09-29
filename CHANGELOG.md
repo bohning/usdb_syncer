@@ -5,6 +5,7 @@
 ## Fixes
 
 - Fixed downloading updated resources (overwrite existing files).
+- Fixed downloading from USDB after recent changes.
 
 ## Features
 

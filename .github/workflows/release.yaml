@@ -37,16 +37,32 @@ jobs:
         uses: actions/setup-python@v4
         with:
           python-version: "3.11"
+      - name: Install Pipenv
+        run: |
+          python -m pip install pipenv
       - name: Install dependencies
         run: |
-          python -m pip install --upgrade pip wheel
-          python -m pip install '.[dev]'
+          pipenv sync --system
+      - name: Prepend src to PYTHONPATH (Windows)
+        run: |
+          echo "PERSISTENT_PYTHONPATH=$(pwd)\src;$env:PYTHONPATH" >> $env:GITHUB_ENV
+        if: matrix.TARGET == 'Windows'
+      - name: Prepend src to PYTHONPATH (Linux/macOS)
+        run: |
+          echo "PERSISTENT_PYTHONPATH=$(pwd)/src:$PYTHONPATH" >> $GITHUB_ENV
+        if: matrix.TARGET == 'Linux' || matrix.TARGET == 'macOS'
       - name: Write version and commit hash
-        run: write_release_info -p src/usdb_syncer/constants.py -v ${{ github.ref_name }} -c ${{ github.workflow_sha }}
+        run: python -m src.tools.write_release_info -p src/usdb_syncer/constants.py -v ${{ github.ref_name }} -c ${{ github.workflow_sha }}
+        env:
+          PYTHONPATH: ${{ env.PERSISTENT_PYTHONPATH }}
       - name: Generate GUI elements
-        run: generate_pyside_files
+        run: python -m src.tools.generate_pyside_files
+        env:
+          PYTHONPATH: ${{ env.PERSISTENT_PYTHONPATH }}
       - name: Scrape USDB song list to ship with the bundle
-        run: generate_song_list_json -t 'data/song_list.json' -u '${{ secrets.USDB_USER }}' -p '${{ secrets.USDB_PASSWORD }}'
+        run: python -m src.tools.generate_song_list_json -t 'data/song_list.json' -u '${{ secrets.USDB_USER }}' -p '${{ secrets.USDB_PASSWORD }}'
+        env:
+          PYTHONPATH: ${{ env.PERSISTENT_PYTHONPATH }}
       - name: add dependencies for xcb support
         if: matrix.TARGET == 'Linux'
         run: |
