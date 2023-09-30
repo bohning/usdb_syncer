@@ -28,14 +28,15 @@ pyinstaller = "*"
 pyinstaller-hooks-contrib = "*"
 # specifically required for pyinstaller (Note: darwin -> macos)
 macholib = {version = "*", markers="sys_platform == 'darwin'"}
+altgraph = "*"
 
 [dev-packages]
 tox = "*"
 # lint
-black = "==23.3"
-isort = "==5.12"
-mypy = "==1.2"
-pylint = "==2.17"
+black = "*"
+isort = "*"
+mypy = "*"
+pylint = "*"
 types-setuptools = "*"
 types-requests = "*"
 # test
