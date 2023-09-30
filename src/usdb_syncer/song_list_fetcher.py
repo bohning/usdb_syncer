@@ -8,11 +8,10 @@ from requests import Session
 from usdb_syncer import SongId, settings
 from usdb_syncer.logger import get_logger
 from usdb_syncer.song_data import LocalFiles, SongData
-from usdb_syncer.song_txt import SongTxt
 from usdb_syncer.sync_meta import SyncMeta
 from usdb_syncer.usdb_scraper import UsdbLoginError, get_usdb_available_songs
 from usdb_syncer.usdb_song import UsdbSong, UsdbSongEncoder
-from usdb_syncer.utils import AppPaths, try_read_unknown_encoding
+from usdb_syncer.utils import AppPaths
 
 _logger = get_logger(__file__)
 
@@ -70,30 +69,8 @@ def dump_available_songs(songs: list[UsdbSong], target: Path | None = None) -> N
 
 
 def find_local_files() -> dict[SongId, LocalFiles]:
-    local_files: dict[SongId, LocalFiles] = {}
-    for path in settings.get_song_dir().glob("**/*.usdb"):
-        if meta := SyncMeta.try_from_file(path):
-            local_files[meta.song_id] = files = LocalFiles(usdb_path=path)
-            if txt := _get_song_txt(meta, path.parent):
-                files.txt = True
-                files.audio = _file_exists(path.parent, txt.headers.mp3)
-                files.video = _file_exists(path.parent, txt.headers.video)
-                files.cover = _file_exists(path.parent, txt.headers.cover)
-                files.background = _file_exists(path.parent, txt.headers.background)
-    return local_files
-
-
-def _get_song_txt(meta: SyncMeta, folder: Path) -> SongTxt | None:
-    if not meta.txt:
-        return None
-    txt_path = folder.joinpath(meta.txt.fname)
-    logger = get_logger(__file__, meta.song_id)
-    if txt_path.exists() and (contents := try_read_unknown_encoding(txt_path)):
-        return SongTxt.try_parse(contents, logger)
-    return None
-
-
-def _file_exists(folder: Path, fname: str | None) -> bool:
-    if not fname:
-        return False
-    return folder.joinpath(fname).exists()
+    return {
+        meta.song_id: LocalFiles.from_sync_meta(path, meta)
+        for path in settings.get_song_dir().glob("**/*.usdb")
+        if (meta := SyncMeta.try_from_file(path))
+    }
