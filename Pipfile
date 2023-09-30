@@ -42,6 +42,7 @@ types-requests = "*"
 pytest = "*"
 # entry points
 usdb-syncer = {editable = true, path = "."}
+snakeviz = "*"
 
 [requires]
 python_version = "3.11"
