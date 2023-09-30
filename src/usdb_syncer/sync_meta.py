@@ -48,6 +48,9 @@ class FileMeta:
         path = folder.joinpath(self.fname)
         return path.exists() and os.path.getmtime(path) == self.mtime
 
+    def bump_mtime(self, folder: Path) -> None:
+        self.mtime = os.path.getmtime(folder.joinpath(self.fname))
+
 
 @attrs.define
 class SyncMeta:

@@ -6,10 +6,12 @@
 
 - Fixed downloading updated resources (overwrite existing files).
 - Fixed downloading from USDB after recent changes.
+- Fixed redownloading of unchanged audio files.
 
 ## Features
 
 - Vimeo IDs are now supported for audio/video metatags (e.g. #VIDEO:v=123456789).
+- Startup time has been improved significantly for large song collections.
 
 <!-- 0.2.1 -->
 

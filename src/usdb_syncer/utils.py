@@ -35,6 +35,7 @@ class AppPaths:
     song_list = Path(_app_dirs.user_cache_dir, "available_songs.json")
     root = _root()
     fallback_song_list = Path(root, "data", "song_list.json")
+    profile = Path(root, "usdb_syncer.prof")
 
     @classmethod
     def make_dirs(cls) -> None:

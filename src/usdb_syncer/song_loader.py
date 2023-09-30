@@ -234,8 +234,8 @@ class SongLoader(QRunnable):
         _maybe_download_cover(ctx)
         _maybe_download_background(ctx)
         _maybe_write_txt(ctx)
-        _write_sync_meta(ctx)
         _maybe_write_audio_tags(ctx)
+        _write_sync_meta(ctx)
         return ctx.finished_song_data()
 
 
@@ -385,6 +385,8 @@ def _maybe_write_audio_tags(ctx: Context) -> None:
             _write_m4a_tags(meta, ctx, options.embed_artwork)
         case ".mp3":
             _write_mp3_tags(meta, ctx, options.embed_artwork)
+
+    ctx.sync_meta.audio.bump_mtime(ctx.locations.dir_path())
 
 
 def _write_m4a_tags(audio_meta: FileMeta, ctx: Context, embed_artwork: bool) -> None:

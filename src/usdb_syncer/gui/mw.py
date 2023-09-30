@@ -298,6 +298,9 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         song_dir = QFileDialog.getExistingDirectory(self, "Select Song Directory")
         if not song_dir:
             return
+        self._set_song_dir(song_dir)
+
+    def _set_song_dir(self, song_dir: str) -> None:
         self.lineEdit_song_dir.setText(song_dir)
         settings.set_song_dir(song_dir)
         data = resync_song_data(self.table.get_all_data())
