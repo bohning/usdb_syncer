@@ -98,9 +98,6 @@ class Column(IntEnum):
             case _ as unreachable:
                 assert_never(unreachable)
 
-    def display_in_batch_view(self) -> bool:
-        return self in (self.SONG_ID, self.ARTIST, self.TITLE, self.DOWNLOAD_STATUS)
-
     def fixed_size(self, header: QHeaderView, window: QPaintDevice) -> int | None:
         match self:
             case Column.SONG_ID:

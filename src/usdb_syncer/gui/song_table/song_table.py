@@ -306,7 +306,7 @@ class SongTable:
     ### sort and filter model
 
     def connect_row_count_changed(self, func: Callable[[int], None]) -> None:
-        """Calls `func` with the new list and batch row counts."""
+        """Calls `func` with the new row count."""
 
         def wrapped(*_: Any) -> None:
             func(self._current_model().rowCount())
