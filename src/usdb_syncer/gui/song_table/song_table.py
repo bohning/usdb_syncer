@@ -14,6 +14,7 @@ from PySide6.QtCore import (
     QItemSelectionModel,
     QModelIndex,
     QObject,
+    QPoint,
     QSortFilterProxyModel,
     Qt,
     Signal,
@@ -22,7 +23,6 @@ from PySide6.QtGui import QCursor
 from PySide6.QtWidgets import QHeaderView, QLabel, QMenu, QProgressBar, QTableView
 
 from usdb_syncer import SongId, settings
-from usdb_syncer.gui.song_table.batch_model import BatchModel
 from usdb_syncer.gui.song_table.column import Column
 from usdb_syncer.gui.song_table.table_model import CustomRole, TableModel
 from usdb_syncer.gui.song_table.usdb_model import LocalModel, UsdbModel
@@ -86,45 +86,31 @@ class SongTable:
     """Controller for the song table."""
 
     def __init__(self, mw: MainWindow) -> None:
-        self._parent = mw
-        self._usdb_view = mw.view_usdb
-        self._local_view = mw.view_local
-        self._batch_view = mw.view_batch
+        self.mw = mw
         self._model = TableModel(mw)
         self._usdb_model = UsdbModel(mw)
         self._local_model = LocalModel(mw)
-        self._batch_model = BatchModel(mw)
         self._setup_view(
-            self._usdb_view,
-            self._usdb_model,
-            mw.menu_songs,
-            settings.get_usdb_view_header_state(),
+            mw.view_usdb, self._usdb_model, settings.get_usdb_view_header_state()
         )
         self._setup_view(
-            self._local_view,
-            self._local_model,
-            mw.menu_songs,
-            settings.get_local_view_header_state(),
+            mw.view_local, self._local_model, settings.get_local_view_header_state()
         )
-        self._setup_view(
-            self._batch_view,
-            self._batch_model,
-            mw.menu_batch,
-            settings.get_batch_view_header_state(),
-        )
-        self._tabs = mw.tabs
         self._tab_models = (self._usdb_model, self._local_model)
-        self._tab_views = (self._usdb_view, self._local_view)
+        self._tab_views = (mw.view_usdb, mw.view_local)
         self._signals = SongSignals()
         self._signals.started.connect(self._on_download_started)
         self._signals.finished.connect(self._on_download_finished)
         self._progress = Progress(mw.bar_download_progress, mw.label_download_progress)
 
-    def download_selection(self) -> None:
-        self._download(self._list_rows(selected_only=True))
+    def _current_model(self) -> UsdbModel:
+        return self._tab_models[self.mw.tabs.currentIndex()]
 
-    def download_batch(self) -> None:
-        self._download(self._batch_rows())
+    def _current_view(self) -> QTableView:
+        return self._tab_views[self.mw.tabs.currentIndex()]
+
+    def download_selection(self) -> None:
+        self._download(self._selected_rows())
 
     def _download(self, rows: Iterable[int]) -> None:
         to_download = []
@@ -153,49 +139,15 @@ class SongTable:
             if processor(data):
                 self._model.row_changed(row)
 
-    def stage_selection(self) -> None:
-        self._stage_rows(self._list_rows(selected_only=True))
-
-    def _stage_rows(self, rows: Iterable[int]) -> None:
-        def process(data: SongData) -> bool:
-            if data.status is DownloadStatus.NONE:
-                data.status = DownloadStatus.STAGED
-                return True
-            return False
-
-        self._process_rows(rows, process)
-
-    def unstage_selection(self) -> None:
-        def process(data: SongData) -> bool:
-            if data.status.can_be_unstaged():
-                data.status = DownloadStatus.NONE
-                return True
-            return False
-
-        self._process_rows(self._batch_rows(selected_only=True), process)
-
-    def clear_batch(self) -> None:
-        def process(data: SongData) -> bool:
-            if data.status.can_be_unstaged():
-                data.status = DownloadStatus.NONE
-                return True
-            return False
-
-        self._process_rows(self._batch_rows(), process)
-
     def _setup_view(
-        self,
-        view: QTableView,
-        model: QSortFilterProxyModel,
-        menu: QMenu,
-        state: QByteArray,
+        self, view: QTableView, model: QSortFilterProxyModel, state: QByteArray
     ) -> None:
         model.setSourceModel(self._model)
         model.setSortRole(CustomRole.SORT)
         view.setModel(model)
         view.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
-        view.customContextMenuRequested.connect(lambda _: self._context_menu(menu))  # type: ignore
-        view.doubleClicked.connect(lambda idx: self._on_double_clicked(idx, model))  # type: ignore
+        view.customContextMenuRequested.connect(self._context_menu)  # type: ignore
+        view.doubleClicked.connect(self._on_double_clicked)  # type: ignore
         header = view.horizontalHeader()
         if not state.isEmpty():
             header.restoreState(state)
@@ -203,7 +155,7 @@ class SongTable:
         for column in Column:
             if not model.filterAcceptsColumn(column, QModelIndex()):
                 continue
-            if size := column.fixed_size(header, self._parent):
+            if size := column.fixed_size(header, self.mw):
                 header.setSectionResizeMode(column, QHeaderView.ResizeMode.Fixed)
                 header.resizeSection(column, size)
             # setting a (default) width on the last, stretching column seems to cause
@@ -212,24 +164,14 @@ class SongTable:
                 header.resizeSection(column, DEFAULT_COLUMN_WIDTH)
                 header.setSectionResizeMode(column, QHeaderView.ResizeMode.Interactive)
 
-    def _context_menu(self, base_menu: QMenu) -> None:
+    def _context_menu(self, _pos: QPoint) -> None:
         menu = QMenu()
-        for action in base_menu.actions():
+        for action in self.mw.menu_songs.actions():
             menu.addAction(action)
         menu.exec(QCursor.pos())
 
-    def _on_double_clicked(
-        self, index: QModelIndex, model: QSortFilterProxyModel
-    ) -> None:
-        row = model.mapToSource(index).row()
-        data = self._model.songs[row]
-        if model is self._batch_model and data.status.can_be_unstaged():
-            data.status = DownloadStatus.NONE
-        elif model is self._current_model() and data.status is DownloadStatus.NONE:
-            data.status = DownloadStatus.STAGED
-        else:
-            return
-        self._model.row_changed(row)
+    def _on_double_clicked(self, index: QModelIndex) -> None:
+        self._download([self._current_model().mapToSource(index).row()])
 
     def _on_download_started(self, song_id: SongId) -> None:
         if (row := self._model.rows.get(song_id)) is None:
@@ -259,41 +201,28 @@ class SongTable:
 
     def save_state(self) -> None:
         settings.set_usdb_view_header_state(
-            self._usdb_view.horizontalHeader().saveState()
+            self.mw.view_usdb.horizontalHeader().saveState()
         )
         settings.set_local_view_header_state(
-            self._local_view.horizontalHeader().saveState()
-        )
-        settings.set_batch_view_header_state(
-            self._batch_view.horizontalHeader().saveState()
+            self.mw.view_local.horizontalHeader().saveState()
         )
 
     ### selection model
 
-    def current_list_song(self) -> SongData | None:
+    def current_song(self) -> SongData | None:
         idx = self._current_view().selectionModel().currentIndex()
         row = self._current_model().source_rows([idx])[0]
         return self._model.songs[row] if row != -1 else None
 
-    def selected_row_count(self) -> int:
-        return len(self._usdb_view.selectionModel().selectedRows())
+    def selected_songs(self) -> Iterator[SongData]:
+        return (self._model.songs[row] for row in self._selected_rows())
 
-    def _list_rows(self, selected_only: bool = False) -> Iterable[int]:
+    def _selected_rows(self) -> Iterable[int]:
         return self._current_model().source_rows(
             self._current_view().selectionModel().selectedRows()
-            if selected_only
-            else None
         )
 
-    def batch_ids(self) -> Iterable[SongId]:
-        return self._model.ids_for_rows(self._batch_rows())
-
-    def _batch_rows(self, selected_only: bool = False) -> Iterable[int]:
-        return self._batch_model.source_rows(
-            self._batch_view.selectionModel().selectedRows() if selected_only else None
-        )
-
-    def stage_local_songs(self, directory: Path) -> None:
+    def select_local_songs(self, directory: Path) -> None:
         song_map: defaultdict[tuple[str, str], list[int]] = defaultdict(list)
         for row, song in enumerate(self._model.songs):
             song_map[fuzzy_key(song.data)].append(row)
@@ -307,23 +236,24 @@ class SongTable:
                     matched_rows.update(matches)
                 else:
                     _logger.warning(f"No matches for '{name}'.")
-        self._stage_rows(matched_rows)
-        _logger.info(f"Added {len(matched_rows)} songs to batch.")
-
-    def stage_song_ids(self, song_ids: list[SongId]) -> None:
-        self._stage_rows(
-            row for id in song_ids if (row := self._model.row_for_id(id)) is not None
+        self.set_selection_to_indices(
+            self._current_model().target_indices(
+                self._model.index(row, 0) for row in matched_rows
+            )
         )
+        _logger.info(f"Selected {len(matched_rows)} songs.")
 
     def set_selection_to_song_ids(self, select_song_ids: list[SongId]) -> None:
-        select_indices = self._model.indices_for_ids(select_song_ids)
-        self.set_selection_to_rows(iter(select_indices))
+        source_indices = self._model.indices_for_ids(select_song_ids)
+        self.set_selection_to_indices(
+            self._current_model().target_indices(source_indices)
+        )
 
-    def set_selection_to_rows(self, rows: Iterator[QModelIndex]) -> None:
+    def set_selection_to_indices(self, rows: Iterable[QModelIndex]) -> None:
         selection = QItemSelection()
         for row in rows:
             selection.select(row, row)
-        self._usdb_view.selectionModel().select(
+        self._current_view().selectionModel().select(
             selection,
             QItemSelectionModel.SelectionFlag.Rows
             | QItemSelectionModel.SelectionFlag.ClearAndSelect,
@@ -331,21 +261,15 @@ class SongTable:
 
     ### sort and filter model
 
-    def _current_model(self) -> UsdbModel:
-        return self._tab_models[self._tabs.currentIndex()]
-
-    def _current_view(self) -> QTableView:
-        return self._tab_views[self._tabs.currentIndex()]
-
-    def connect_row_count_changed(self, func: Callable[[int, int], None]) -> None:
+    def connect_row_count_changed(self, func: Callable[[int], None]) -> None:
         """Calls `func` with the new list and batch row counts."""
 
         def wrapped(*_: Any) -> None:
-            func(self._current_model().rowCount(), self._batch_model.rowCount())
+            func(self._current_model().rowCount())
 
         self._model.modelReset.connect(wrapped)  # type:ignore
-        self._tabs.currentChanged.connect(wrapped)
-        for model in (self._usdb_model, self._local_model, self._batch_model):
+        self.mw.tabs.currentChanged.connect(wrapped)
+        for model in self._tab_models:
             model.rowsInserted.connect(wrapped)  # type:ignore
             model.rowsRemoved.connect(wrapped)  # type:ignore
 

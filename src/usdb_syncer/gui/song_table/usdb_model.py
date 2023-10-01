@@ -1,5 +1,7 @@
 """Proxy model for sorting and filtering data of a source model."""
 
+from typing import Iterable, Iterator
+
 from PySide6.QtCore import (
     QModelIndex,
     QObject,
@@ -39,7 +41,10 @@ class UsdbModel(QSortFilterProxyModel):
     def source_rows(self, subset: list[QModelIndex] | None = None) -> list[int]:
         """Returns the source rows of the provided or all rows in the model."""
         indices = subset or (self.index(row, 0) for row in range(self.rowCount()))
-        return [self.mapToSource(idx).row() for idx in indices]
+        return [row for idx in indices if (row := self.mapToSource(idx).row()) != -1]
+
+    def target_indices(self, sources: Iterable[QModelIndex]) -> Iterator[QModelIndex]:
+        return (self.mapFromSource(idx) for idx in sources)
 
     def set_text_filter(self, text: str) -> None:
         self._text_filter = fuzz_text(text).split()

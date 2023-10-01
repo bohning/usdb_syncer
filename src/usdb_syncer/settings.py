@@ -60,8 +60,7 @@ class SettingKey(Enum):
     BACKGROUND = "downloads/background"
     BACKGROUND_ALWAYS = "downloads/background_always"
     MAIN_WINDOW_GEOMETRY = "geometry/main_window"
-    MAIN_WINDOW_SPLITTER_MAIN_STATE = "main_window/splitter_main/state"
-    MAIN_WINDOW_SPLITTER_BOTTOM_STATE = "main_window/splitter_bottom/state"
+    MAIN_WINDOW_SPLITTER_MAIN_STATE = "main_window/splitter/state"
     USDB_VIEW_HEADER_STATE = "list_view/header/state"
     LOCAL_VIEW_HEADER_STATE = "local_view/header/state"
     BATCH_VIEW_HEADER_STATE = "batch_view/header/state"
@@ -538,14 +537,6 @@ def get_state_splitter_main() -> QByteArray:
 
 def set_state_splitter_main(state: QByteArray) -> None:
     set_setting(SettingKey.MAIN_WINDOW_SPLITTER_MAIN_STATE, state)
-
-
-def get_state_splitter_bottom() -> QByteArray:
-    return get_setting(SettingKey.MAIN_WINDOW_SPLITTER_BOTTOM_STATE, QByteArray())
-
-
-def set_state_splitter_bottom(state: QByteArray) -> None:
-    set_setting(SettingKey.MAIN_WINDOW_SPLITTER_BOTTOM_STATE, state)
 
 
 def get_usdb_view_header_state() -> QByteArray:

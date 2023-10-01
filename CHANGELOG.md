@@ -1,3 +1,13 @@
+<!-- 0.4.0 -->
+
+# Changes
+
+## Fixes
+
+## Features
+
+- The batch view has been removed, and a view dedicated to local songs added.
+
 <!-- 0.3.0 -->
 
 # Changes

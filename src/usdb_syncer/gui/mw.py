@@ -86,7 +86,7 @@ def get_available_song_ids_from_files(
     ]:
         _logger.info(
             f"available {len(available_song_ids)}/{len(unique_song_ids)} "
-            "imported USDB IDs are added to Batch: "
+            "imported USDB IDs will be selected: "
             f"{', '.join(str(song_id) for song_id in available_song_ids)}"
         )
 
@@ -116,10 +116,9 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         self._status_label = QLabel(self)
         self.statusbar.addWidget(self._status_label)
 
-        def on_count_changed(list_count: int, batch_count: int) -> None:
-            total = len(self.table.get_all_data())
+        def on_count_changed(shown_count: int) -> None:
             self._status_label.setText(
-                f"{list_count} out of {total} songs shown. {batch_count} in batch."
+                f"{shown_count} out of {len(self.table.get_all_data())} songs shown."
             )
 
         self.table.connect_row_count_changed(on_count_changed)
@@ -138,8 +137,6 @@ class MainWindow(Ui_MainWindow, QMainWindow):
     def _setup_toolbar(self) -> None:
         for action, func in (
             (self.action_songs_download, self._download_selection),
-            (self.action_songs_to_batch, self.table.stage_selection),
-            (self.action_batch_remove, self.table.unstage_selection),
             (self.action_find_local_songs, self._stage_local_songs),
             (self.action_refetch_song_list, self._refetch_song_list),
             (self.action_usdb_login, lambda: UsdbLoginDialog(self).show()),
@@ -158,9 +155,6 @@ class MainWindow(Ui_MainWindow, QMainWindow):
     def _download_selection(self) -> None:
         check_ffmpeg(self, self.table.download_selection)
 
-    def _download_batch(self) -> None:
-        check_ffmpeg(self, self.table.download_batch)
-
     def _setup_shortcuts(self) -> None:
         set_shortcut("Ctrl+.", self, lambda: DebugConsole(self).show())
 
@@ -169,8 +163,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         self.pushButton_select_song_dir.clicked.connect(self.select_song_dir)
 
     def _setup_buttons(self) -> None:
-        self.button_batch_download.clicked.connect(self._download_batch)
-        self.button_batch_clear.clicked.connect(self.table.clear_batch)
+        self.button_download.clicked.connect(self._download_selection)
 
     def _setup_search(self) -> None:
         self._populate_search_filters()
@@ -249,7 +242,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
 
     def _stage_local_songs(self) -> None:
         if directory := QFileDialog.getExistingDirectory(self, "Select Song Directory"):
-            self.table.stage_local_songs(Path(directory))
+            self.table.select_local_songs(Path(directory))
 
     def _refetch_song_list(self) -> None:
         run_with_progress(
@@ -326,10 +319,10 @@ class MainWindow(Ui_MainWindow, QMainWindow):
             file_list, self.table
         ):
             # select available songs to prepare Download
-            self.table.stage_song_ids(available_song_ids)
+            self.table.set_selection_to_song_ids(available_song_ids)
 
     def _export_usdb_ids_to_file(self) -> None:
-        selected_ids = list(self.table.batch_ids())
+        selected_ids = list(song.data.song_id for song in self.table.selected_songs())
         if not selected_ids:
             _logger.info("skipping export: no songs in Batch")
             return
@@ -349,14 +342,14 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         _logger.info(f"exported {len(selected_ids)} USDB IDs to {path}")
 
     def _show_current_song_in_usdb(self) -> None:
-        if song := self.table.current_list_song():
+        if song := self.table.current_song():
             _logger.debug(f"Opening song page #{song.data.song_id} in webbrowser.")
             webbrowser.open(f"{Usdb.BASE_URL}?link=detail&id={int(song.data.song_id)}")
         else:
             _logger.info("No current song.")
 
     def _open_current_song_folder(self) -> None:
-        if song := self.table.current_list_song():
+        if song := self.table.current_song():
             if song.local_files.usdb_path:
                 open_file_explorer(song.local_files.usdb_path.parent)
             else:
@@ -372,13 +365,11 @@ class MainWindow(Ui_MainWindow, QMainWindow):
 
     def _restore_state(self) -> None:
         self.restoreGeometry(settings.get_geometry_main_window())
-        self.splitter_main.restoreState(settings.get_state_splitter_main())
-        self.splitter_bottom.restoreState(settings.get_state_splitter_bottom())
+        self.splitter.restoreState(settings.get_state_splitter_main())
 
     def _save_state(self) -> None:
         settings.set_geometry_main_window(self.saveGeometry())
-        settings.set_state_splitter_main(self.splitter_main.saveState())
-        settings.set_state_splitter_bottom(self.splitter_bottom.saveState())
+        settings.set_state_splitter_main(self.splitter.saveState())
 
 
 class LogSignal(QObject):
