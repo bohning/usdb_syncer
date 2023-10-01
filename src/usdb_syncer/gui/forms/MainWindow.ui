@@ -26,7 +26,7 @@
          <widget class="QGroupBox" name="groupBox_filters">
           <property name="sizePolicy">
            <sizepolicy hsizetype="MinimumExpanding" vsizetype="Preferred">
-            <horstretch>3</horstretch>
+            <horstretch>2</horstretch>
             <verstretch>0</verstretch>
            </sizepolicy>
           </property>
@@ -673,13 +673,19 @@
     <property name="title">
      <string>Tools</string>
     </property>
+    <property name="toolTipsVisible">
+     <bool>true</bool>
+    </property>
     <addaction name="action_settings"/>
     <addaction name="action_meta_tags"/>
     <addaction name="action_generate_song_pdf"/>
    </widget>
-   <widget class="QMenu" name="menu_sync">
+   <widget class="QMenu" name="menu_usdb">
     <property name="title">
      <string>USDB</string>
+    </property>
+    <property name="toolTipsVisible">
+     <bool>true</bool>
     </property>
     <addaction name="action_usdb_login"/>
     <addaction name="action_refetch_song_list"/>
@@ -688,6 +694,9 @@
     <property name="title">
      <string>Help</string>
     </property>
+    <property name="toolTipsVisible">
+     <bool>true</bool>
+    </property>
     <addaction name="action_show_log"/>
     <addaction name="action_about"/>
    </widget>
@@ -695,22 +704,28 @@
     <property name="title">
      <string>Songs</string>
     </property>
+    <property name="toolTipsVisible">
+     <bool>true</bool>
+    </property>
     <addaction name="action_songs_download"/>
     <addaction name="action_show_in_usdb"/>
     <addaction name="separator"/>
     <addaction name="action_open_song_folder"/>
    </widget>
-   <widget class="QMenu" name="menu_batch">
+   <widget class="QMenu" name="menu_local">
     <property name="title">
      <string>Local</string>
+    </property>
+    <property name="toolTipsVisible">
+     <bool>true</bool>
     </property>
     <addaction name="action_find_local_songs"/>
     <addaction name="action_import_usdb_ids"/>
     <addaction name="action_export_usdb_ids"/>
    </widget>
    <addaction name="menu_songs"/>
-   <addaction name="menu_sync"/>
-   <addaction name="menu_batch"/>
+   <addaction name="menu_usdb"/>
+   <addaction name="menu_local"/>
    <addaction name="menu_tools"/>
    <addaction name="menu_about"/>
   </widget>
@@ -750,6 +765,9 @@
    <property name="text">
     <string>Check USDB Song List</string>
    </property>
+   <property name="toolTip">
+    <string>Redownload the entire song list from USDB</string>
+   </property>
   </action>
   <action name="action_find_local_songs">
    <property name="icon">
@@ -758,6 +776,9 @@
    </property>
    <property name="text">
     <string>Find Local Songs</string>
+   </property>
+   <property name="toolTip">
+    <string>Select songs matching a txt file in the given folder</string>
    </property>
   </action>
   <action name="action_show_log">
@@ -778,7 +799,7 @@
     <string>Select Songs from Files</string>
    </property>
    <property name="toolTip">
-    <string>Stage Multiple USDB songs for download that are defined by IDs in files and/or weblinks</string>
+    <string>Read song IDs from selected files and select the corresponding songs in the song table</string>
    </property>
   </action>
   <action name="action_export_usdb_ids">
@@ -788,6 +809,9 @@
    </property>
    <property name="text">
     <string>Export IDs to File</string>
+   </property>
+   <property name="toolTip">
+    <string>Write the IDs of the selected songs to a file</string>
    </property>
   </action>
   <action name="action_songs_download">
