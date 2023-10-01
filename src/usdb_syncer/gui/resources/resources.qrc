@@ -1,5 +1,6 @@
 <RCC>
   <qresource prefix="icons">
+    <file>minus-circle.png</file>
     <file>document-import.png</file>
     <file>document-export.png</file>
     <file>broom.png</file>

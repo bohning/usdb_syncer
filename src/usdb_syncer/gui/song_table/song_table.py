@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any, Callable, Iterable, Iterator
 
 import attrs
+import send2trash
 from PySide6.QtCore import (
     QByteArray,
     QItemSelection,
@@ -31,6 +32,7 @@ from usdb_syncer.song_data import (
     DownloadErrorReason,
     DownloadResult,
     DownloadStatus,
+    LocalFiles,
     SongData,
     fuzz_text,
 )
@@ -114,15 +116,12 @@ class SongTable:
 
     def _download(self, rows: Iterable[int]) -> None:
         to_download = []
-
-        def process(data: SongData) -> bool:
+        for row in rows:
+            data = self._model.songs[row]
             if data.status.can_be_downloaded():
                 data.status = DownloadStatus.PENDING
                 to_download.append(data)
-                return True
-            return False
-
-        self._process_rows(rows, process)
+                self._model.row_changed(row)
         if to_download:
             self._progress.start(len(to_download))
             download_songs(
@@ -130,14 +129,6 @@ class SongTable:
                 self._signals.started.emit,
                 self._signals.finished.emit,
             )
-
-    def _process_rows(
-        self, rows: Iterable[int], processor: Callable[[SongData], bool]
-    ) -> None:
-        for row in rows:
-            data = self._model.songs[row]
-            if processor(data):
-                self._model.row_changed(row)
 
     def _setup_view(
         self, view: QTableView, model: QSortFilterProxyModel, state: QByteArray
@@ -206,6 +197,16 @@ class SongTable:
         settings.set_local_view_header_state(
             self.mw.view_local.horizontalHeader().saveState()
         )
+
+    ### actions
+
+    def delete_selected_songs(self) -> None:
+        for song in self.selected_songs():
+            if song.local_files.usdb_path:
+                send2trash.send2trash(song.local_files.usdb_path.parent)
+                song.local_files = LocalFiles()
+                self._model.update_item(song)
+                get_logger(__file__, song.data.song_id).debug("Trashed song folder.")
 
     ### selection model
 
