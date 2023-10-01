@@ -7,14 +7,17 @@ from __future__ import annotations
 import enum
 from enum import Enum
 from pathlib import Path
-from typing import assert_never
+from typing import Callable, assert_never
 
 import attrs
 from unidecode import unidecode
 
 from usdb_syncer import SongId
+from usdb_syncer.logger import get_logger
 from usdb_syncer.sync_meta import SyncMeta
 from usdb_syncer.usdb_scraper import UsdbSong
+
+_logger = get_logger(__file__)
 
 
 class FuzzySearchText:
@@ -84,6 +87,7 @@ class LocalFiles:
     """The path of a .usdb file and which files exist in the same folder."""
 
     usdb_path: Path | None = None
+    pinned: bool = False
     txt: bool = False
     audio: bool = False
     video: bool = False
@@ -94,12 +98,26 @@ class LocalFiles:
     def from_sync_meta(cls, usdb_path: Path, sync_meta: SyncMeta) -> LocalFiles:
         return cls(
             usdb_path=usdb_path,
+            pinned=sync_meta.pinned,
             txt=bool(sync_meta.txt),
             audio=bool(sync_meta.audio),
             video=bool(sync_meta.video),
             cover=bool(sync_meta.cover),
             background=bool(sync_meta.background),
         )
+
+    def try_update_sync_meta(self, modifier: Callable[[SyncMeta], None]) -> None:
+        if not self.usdb_path:
+            return
+        meta = SyncMeta.try_from_file(self.usdb_path)
+        if not meta:
+            _logger.error(
+                f"Failed to parse file: '{self.usdb_path}'. "
+                "Redownload the song to continue."
+            )
+            return
+        modifier(meta)
+        meta.to_file(self.usdb_path.parent)
 
 
 class DownloadStatus(Enum):

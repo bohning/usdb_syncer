@@ -39,6 +39,7 @@ from usdb_syncer.song_data import (
 from usdb_syncer.song_loader import DownloadInfo, download_songs
 from usdb_syncer.song_txt import SongTxt
 from usdb_syncer.song_txt.headers import Headers
+from usdb_syncer.sync_meta import SyncMeta
 from usdb_syncer.usdb_scraper import UsdbSong
 from usdb_syncer.utils import try_read_unknown_encoding
 
@@ -118,6 +119,11 @@ class SongTable:
         to_download = []
         for row in rows:
             data = self._model.songs[row]
+            if data.local_files.pinned:
+                get_logger(__file__, data.data.song_id).info(
+                    "Not downloading song as it is pinned."
+                )
+                continue
             if data.status.can_be_downloaded():
                 data.status = DownloadStatus.PENDING
                 to_download.append(data)
@@ -202,11 +208,27 @@ class SongTable:
 
     def delete_selected_songs(self) -> None:
         for song in self.selected_songs():
-            if song.local_files.usdb_path:
-                send2trash.send2trash(song.local_files.usdb_path.parent)
-                song.local_files = LocalFiles()
-                self._model.update_item(song)
-                get_logger(__file__, song.data.song_id).debug("Trashed song folder.")
+            if not song.local_files.usdb_path:
+                continue
+            logger = get_logger(__file__, song.data.song_id)
+            if song.local_files.pinned:
+                logger.info("Not trashing song folder as it is pinned.")
+                continue
+            send2trash.send2trash(song.local_files.usdb_path.parent)
+            song.local_files = LocalFiles()
+            self._model.update_item(song)
+            logger.debug("Trashed song folder.")
+
+    def set_pin_selected_songs(self, pin: bool) -> None:
+        def setter(meta: SyncMeta) -> None:
+            meta.pinned = pin
+
+        for song in self.selected_songs():
+            if song.local_files.pinned == pin or not song.local_files.usdb_path:
+                continue
+            song.local_files.pinned = pin
+            song.local_files.try_update_sync_meta(setter)
+            self._model.update_item(song)
 
     ### selection model
 

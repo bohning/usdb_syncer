@@ -58,6 +58,7 @@ class SyncMeta:
 
     song_id: SongId
     meta_tags: MetaTags
+    pinned: bool = False
     txt: FileMeta | None = None
     audio: FileMeta | None = None
     video: FileMeta | None = None
@@ -84,6 +85,7 @@ class SyncMeta:
         return cls(
             SongId(dct["song_id"]),
             meta_tags=MetaTags.parse(dct["meta_tags"], _logger),
+            pinned=dct.get("pinned", False),
             txt=FileMeta.from_nested_dict(dct["txt"]),
             audio=FileMeta.from_nested_dict(dct["audio"]),
             video=FileMeta.from_nested_dict(dct["video"]),

@@ -150,6 +150,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
             (self.action_show_in_usdb, self._show_current_song_in_usdb),
             (self.action_open_song_folder, self._open_current_song_folder),
             (self.action_delete, self.table.delete_selected_songs),
+            (self.action_pin, self.table.set_pin_selected_songs),
         ):
             action.triggered.connect(func)
 

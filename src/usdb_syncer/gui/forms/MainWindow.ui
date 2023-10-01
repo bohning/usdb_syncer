@@ -712,6 +712,7 @@
     <addaction name="separator"/>
     <addaction name="action_open_song_folder"/>
     <addaction name="action_delete"/>
+    <addaction name="action_pin"/>
    </widget>
    <widget class="QMenu" name="menu_local">
     <property name="title">
@@ -875,6 +876,17 @@
    </property>
    <property name="toolTip">
     <string>Move to system recycle bin</string>
+   </property>
+  </action>
+  <action name="action_pin">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Toggle Pin</string>
+   </property>
+   <property name="toolTip">
+    <string>Disable or reenable updates to local files</string>
    </property>
   </action>
  </widget>

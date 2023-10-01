@@ -9,6 +9,7 @@
 - The batch view has been removed, and a view dedicated to local songs added.
 - Added several actions for downloaded songs:
   - Delete (move to recycle bin)
+  - Pin (prevent updates to local files)
 
 <!-- 0.3.0 -->
 
