@@ -5,7 +5,7 @@ from __future__ import annotations
 import logging
 from collections import defaultdict
 from pathlib import Path
-from typing import Any, Callable, Iterable, Iterator
+from typing import TYPE_CHECKING, Any, Callable, Iterable, Iterator
 
 import attrs
 from PySide6.QtCore import (
@@ -19,20 +19,13 @@ from PySide6.QtCore import (
     Signal,
 )
 from PySide6.QtGui import QCursor
-from PySide6.QtWidgets import (
-    QHeaderView,
-    QLabel,
-    QMenu,
-    QProgressBar,
-    QTableView,
-    QWidget,
-)
+from PySide6.QtWidgets import QHeaderView, QLabel, QMenu, QProgressBar, QTableView
 
 from usdb_syncer import SongId, settings
 from usdb_syncer.gui.song_table.batch_model import BatchModel
 from usdb_syncer.gui.song_table.column import Column
-from usdb_syncer.gui.song_table.list_model import ListModel
 from usdb_syncer.gui.song_table.table_model import CustomRole, TableModel
+from usdb_syncer.gui.song_table.usdb_model import LocalModel, UsdbModel
 from usdb_syncer.logger import get_logger
 from usdb_syncer.song_data import (
     DownloadErrorReason,
@@ -46,6 +39,9 @@ from usdb_syncer.song_txt import SongTxt
 from usdb_syncer.song_txt.headers import Headers
 from usdb_syncer.usdb_scraper import UsdbSong
 from usdb_syncer.utils import try_read_unknown_encoding
+
+if TYPE_CHECKING:
+    from usdb_syncer.gui.mw import MainWindow
 
 _logger = logging.getLogger(__file__)
 _err_logger = get_logger(__file__ + "[errors]")
@@ -89,38 +85,40 @@ class Progress:
 class SongTable:
     """Controller for the song table."""
 
-    def __init__(
-        self,
-        parent: QWidget,
-        list_view: QTableView,
-        batch_view: QTableView,
-        list_menu: QMenu,
-        batch_menu: QMenu,
-        progress_bar: QProgressBar,
-        progress_label: QLabel,
-    ) -> None:
-        self._parent = parent
-        self._list_view = list_view
-        self._batch_view = batch_view
-        self._model = TableModel(parent)
-        self._list_model = ListModel(parent)
-        self._batch_model = BatchModel(parent)
+    def __init__(self, mw: MainWindow) -> None:
+        self._parent = mw
+        self._usdb_view = mw.view_usdb
+        self._local_view = mw.view_local
+        self._batch_view = mw.view_batch
+        self._model = TableModel(mw)
+        self._usdb_model = UsdbModel(mw)
+        self._local_model = LocalModel(mw)
+        self._batch_model = BatchModel(mw)
         self._setup_view(
-            self._list_view,
-            self._list_model,
-            list_menu,
-            settings.get_list_view_header_state(),
+            self._usdb_view,
+            self._usdb_model,
+            mw.menu_songs,
+            settings.get_usdb_view_header_state(),
+        )
+        self._setup_view(
+            self._local_view,
+            self._local_model,
+            mw.menu_songs,
+            settings.get_local_view_header_state(),
         )
         self._setup_view(
             self._batch_view,
             self._batch_model,
-            batch_menu,
+            mw.menu_batch,
             settings.get_batch_view_header_state(),
         )
+        self._tabs = mw.tabs
+        self._tab_models = (self._usdb_model, self._local_model)
+        self._tab_views = (self._usdb_view, self._local_view)
         self._signals = SongSignals()
         self._signals.started.connect(self._on_download_started)
         self._signals.finished.connect(self._on_download_finished)
-        self._progress = Progress(progress_bar, progress_label)
+        self._progress = Progress(mw.bar_download_progress, mw.label_download_progress)
 
     def download_selection(self) -> None:
         self._download(self._list_rows(selected_only=True))
@@ -227,7 +225,7 @@ class SongTable:
         data = self._model.songs[row]
         if model is self._batch_model and data.status.can_be_unstaged():
             data.status = DownloadStatus.NONE
-        elif model is self._list_model and data.status is DownloadStatus.NONE:
+        elif model is self._current_model() and data.status is DownloadStatus.NONE:
             data.status = DownloadStatus.STAGED
         else:
             return
@@ -260,8 +258,11 @@ class SongTable:
             logger.info("All done!")
 
     def save_state(self) -> None:
-        settings.set_list_view_header_state(
-            self._list_view.horizontalHeader().saveState()
+        settings.set_usdb_view_header_state(
+            self._usdb_view.horizontalHeader().saveState()
+        )
+        settings.set_local_view_header_state(
+            self._local_view.horizontalHeader().saveState()
         )
         settings.set_batch_view_header_state(
             self._batch_view.horizontalHeader().saveState()
@@ -270,25 +271,18 @@ class SongTable:
     ### selection model
 
     def current_list_song(self) -> SongData | None:
-        idx = self._list_view.selectionModel().currentIndex()
-        row = self._list_model.source_rows([idx])[0]
+        idx = self._current_view().selectionModel().currentIndex()
+        row = self._current_model().source_rows([idx])[0]
         return self._model.songs[row] if row != -1 else None
 
-    def connect_selected_rows_changed(self, func: Callable[[int], None]) -> None:
-        """Calls `func` with the new count of selected rows. The new count is not
-        necessarily different.
-        """
-        model = self._list_view.selectionModel()
-        model.selectionChanged.connect(  # type:ignore
-            lambda *_: func(len(model.selectedRows()))
-        )
-
     def selected_row_count(self) -> int:
-        return len(self._list_view.selectionModel().selectedRows())
+        return len(self._usdb_view.selectionModel().selectedRows())
 
     def _list_rows(self, selected_only: bool = False) -> Iterable[int]:
-        return self._list_model.source_rows(
-            self._list_view.selectionModel().selectedRows() if selected_only else None
+        return self._current_model().source_rows(
+            self._current_view().selectionModel().selectedRows()
+            if selected_only
+            else None
         )
 
     def batch_ids(self) -> Iterable[SongId]:
@@ -329,7 +323,7 @@ class SongTable:
         selection = QItemSelection()
         for row in rows:
             selection.select(row, row)
-        self._list_view.selectionModel().select(
+        self._usdb_view.selectionModel().select(
             selection,
             QItemSelectionModel.SelectionFlag.Rows
             | QItemSelectionModel.SelectionFlag.ClearAndSelect,
@@ -337,40 +331,55 @@ class SongTable:
 
     ### sort and filter model
 
+    def _current_model(self) -> UsdbModel:
+        return self._tab_models[self._tabs.currentIndex()]
+
+    def _current_view(self) -> QTableView:
+        return self._tab_views[self._tabs.currentIndex()]
+
     def connect_row_count_changed(self, func: Callable[[int, int], None]) -> None:
         """Calls `func` with the new list and batch row counts."""
 
         def wrapped(*_: Any) -> None:
-            func(self._list_model.rowCount(), self._batch_model.rowCount())
+            func(self._current_model().rowCount(), self._batch_model.rowCount())
 
         self._model.modelReset.connect(wrapped)  # type:ignore
-        for model in (self._list_model, self._batch_model):
+        self._tabs.currentChanged.connect(wrapped)
+        for model in (self._usdb_model, self._local_model, self._batch_model):
             model.rowsInserted.connect(wrapped)  # type:ignore
             model.rowsRemoved.connect(wrapped)  # type:ignore
 
     def set_text_filter(self, text: str) -> None:
-        self._list_model.set_text_filter(text)
+        self._usdb_model.set_text_filter(text)
+        self._local_model.set_text_filter(text)
 
     def set_artist_filter(self, artist: str) -> None:
-        self._list_model.set_artist_filter(artist)
+        self._usdb_model.set_artist_filter(artist)
+        self._local_model.set_artist_filter(artist)
 
     def set_title_filter(self, title: str) -> None:
-        self._list_model.set_title_filter(title)
+        self._usdb_model.set_title_filter(title)
+        self._local_model.set_title_filter(title)
 
     def set_language_filter(self, language: str) -> None:
-        self._list_model.set_language_filter(language)
+        self._usdb_model.set_language_filter(language)
+        self._local_model.set_language_filter(language)
 
     def set_edition_filter(self, edition: str) -> None:
-        self._list_model.set_edition_filter(edition)
+        self._usdb_model.set_edition_filter(edition)
+        self._local_model.set_edition_filter(edition)
 
     def set_golden_notes_filter(self, golden_notes: bool | None) -> None:
-        self._list_model.set_golden_notes_filter(golden_notes)
+        self._usdb_model.set_golden_notes_filter(golden_notes)
+        self._local_model.set_golden_notes_filter(golden_notes)
 
     def set_rating_filter(self, rating: int, exact: bool) -> None:
-        self._list_model.set_rating_filter(rating, exact)
+        self._usdb_model.set_rating_filter(rating, exact)
+        self._local_model.set_rating_filter(rating, exact)
 
     def set_views_filter(self, min_views: int) -> None:
-        self._list_model.set_views_filter(min_views)
+        self._usdb_model.set_views_filter(min_views)
+        self._local_model.set_views_filter(min_views)
 
     ### data model
 

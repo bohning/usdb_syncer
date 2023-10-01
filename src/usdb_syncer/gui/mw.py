@@ -102,7 +102,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         super().__init__()
         self.setupUi(self)
         self.threadpool = QThreadPool(self)
-        self._setup_table()
+        self.table = SongTable(self)
         self._setup_statusbar()
         self._setup_log()
         self._setup_toolbar()
@@ -111,17 +111,6 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         self._setup_search()
         self._setup_buttons()
         self._restore_state()
-
-    def _setup_table(self) -> None:
-        self.table = SongTable(
-            self,
-            self.view_list,
-            self.view_batch,
-            self.menu_songs,
-            self.menu_batch,
-            self.bar_download_progress,
-            self.label_download_progress,
-        )
 
     def _setup_statusbar(self) -> None:
         self._status_label = QLabel(self)

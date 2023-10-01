@@ -14,7 +14,7 @@ from usdb_syncer.song_data import SongData, fuzz_text
 QIndex = QModelIndex | QPersistentModelIndex
 
 
-class ListModel(QSortFilterProxyModel):
+class UsdbModel(QSortFilterProxyModel):
     """Proxy model for sorting and filtering data of a source model."""
 
     def __init__(self, parent: QObject) -> None:
@@ -76,7 +76,9 @@ class ListModel(QSortFilterProxyModel):
     def filterAcceptsRow(self, source_row: int, source_parent: QIndex) -> bool:
         model = self.sourceModel()
         idx = model.index(source_row, 0, source_parent)
-        song: SongData = model.data(idx, CustomRole.ALL_DATA)
+        return self._filter_accepts_song(model.data(idx, CustomRole.ALL_DATA))
+
+    def _filter_accepts_song(self, song: SongData) -> bool:
         if self._artist_filter not in ("", song.data.artist):
             return False
         if self._title_filter not in ("", song.data.title):
@@ -96,3 +98,15 @@ class ListModel(QSortFilterProxyModel):
         if song.data.views < self._views_filter:
             return False
         return all(word in song.fuzzy_text for word in self._text_filter)
+
+
+class LocalModel(UsdbModel):
+    """Like UsdbMode, but only includes local files."""
+
+    def filterAcceptsRow(self, source_row: int, source_parent: QIndex) -> bool:
+        model = self.sourceModel()
+        idx = model.index(source_row, 0, source_parent)
+        song: SongData = model.data(idx, CustomRole.ALL_DATA)
+        return (
+            song.local_files.usdb_path is not None
+        ) and super()._filter_accepts_song(song)
