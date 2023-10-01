@@ -139,7 +139,12 @@ def _display_data(song: SongData, column: int) -> str | None:
         case Column.DOWNLOAD_STATUS:
             return str(song.status)
         case (
-            Column.TXT | Column.AUDIO | Column.VIDEO | Column.COVER | Column.BACKGROUND
+            Column.TXT
+            | Column.AUDIO
+            | Column.VIDEO
+            | Column.COVER
+            | Column.BACKGROUND
+            | Column.PINNED
         ):
             return None
         case _ as unreachable:
@@ -171,6 +176,8 @@ def _decoration_data(song: SongData, column: int) -> QIcon | None:
             return optional_check_icon(song.local_files.cover)
         case Column.BACKGROUND:
             return optional_check_icon(song.local_files.background)
+        case Column.PINNED:
+            return optional_check_icon(song.local_files.pinned)
         case _ as unreachable:
             assert_never(unreachable)
 
@@ -206,6 +213,8 @@ def _sort_data(song: SongData, column: int) -> int | str | bool:
             return song.local_files.background
         case Column.DOWNLOAD_STATUS:
             return song.status.value
+        case Column.PINNED:
+            return song.local_files.pinned
         case _ as unreachable:
             assert_never(unreachable)
 

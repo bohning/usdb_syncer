@@ -1,5 +1,6 @@
 """Table model for song data."""
 
+import enum
 from enum import IntEnum
 from functools import cache
 from typing import assert_never
@@ -17,19 +18,20 @@ class Column(IntEnum):
     """Table columns."""
 
     SONG_ID = 0
-    ARTIST = 1
-    TITLE = 2
-    LANGUAGE = 3
-    EDITION = 4
-    GOLDEN_NOTES = 5
-    RATING = 6
-    VIEWS = 7
-    TXT = 8
-    AUDIO = 9
-    VIDEO = 10
-    COVER = 11
-    BACKGROUND = 12
-    DOWNLOAD_STATUS = 13
+    ARTIST = enum.auto()
+    TITLE = enum.auto()
+    LANGUAGE = enum.auto()
+    EDITION = enum.auto()
+    GOLDEN_NOTES = enum.auto()
+    RATING = enum.auto()
+    VIEWS = enum.auto()
+    PINNED = enum.auto()
+    TXT = enum.auto()
+    AUDIO = enum.auto()
+    VIDEO = enum.auto()
+    COVER = enum.auto()
+    BACKGROUND = enum.auto()
+    DOWNLOAD_STATUS = enum.auto()
 
     def display_data(self) -> str | None:
         match self:
@@ -53,6 +55,7 @@ class Column(IntEnum):
                 | Column.VIDEO
                 | Column.COVER
                 | Column.BACKGROUND
+                | Column.PINNED
             ):
                 return None
             case _ as unreachable:
@@ -90,6 +93,8 @@ class Column(IntEnum):
                 return QIcon(":/icons/background.png")
             case Column.DOWNLOAD_STATUS:
                 return QIcon(":/icons/status.png")
+            case Column.PINNED:
+                return QIcon(":/icons/pin.png")
             case _ as unreachable:
                 assert_never(unreachable)
 
@@ -120,6 +125,7 @@ class Column(IntEnum):
                 | Column.VIDEO
                 | Column.COVER
                 | Column.BACKGROUND
+                | Column.PINNED
             ):
                 return 24
             case _ as unreachable:
