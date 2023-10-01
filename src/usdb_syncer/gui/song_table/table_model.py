@@ -45,11 +45,9 @@ class TableModel(QAbstractTableModel):
         self.endResetModel()
 
     def update_item(self, new: SongData) -> None:
-        idx = self.rows[new.data.song_id]
-        self.songs = self.songs[:idx] + (new,) + self.songs[idx + 1 :]
-        start_idx = self.index(idx, 0)
-        end_idx = self.index(idx, self.columnCount())
-        self.dataChanged.emit(start_idx, end_idx)  # type:ignore
+        row = self.rows[new.data.song_id]
+        self.songs = self.songs[:row] + (new,) + self.songs[row + 1 :]
+        self.row_changed(row)
 
     def remove_row(self, row: int) -> None:
         self.set_data(self.songs[:row] + self.songs[row + 1 :])
