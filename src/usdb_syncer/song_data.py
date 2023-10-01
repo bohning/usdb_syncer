@@ -105,41 +105,26 @@ class LocalFiles:
 class DownloadStatus(Enum):
     """Status of song in download queue."""
 
-    NONE = 0
-    STAGED = 1
-    PENDING = 2
-    DOWNLOADING = 3
-    DONE = 4
-    FAILED = 5
+    NONE = enum.auto()
+    PENDING = enum.auto()
+    DOWNLOADING = enum.auto()
+    FAILED = enum.auto()
 
     def __str__(self) -> str:  # pylint: disable=invalid-str-returned
         match self:
-            case DownloadStatus.NONE | DownloadStatus.STAGED:
+            case DownloadStatus.NONE:
                 return ""
             case DownloadStatus.PENDING:
                 return "Pending"
             case DownloadStatus.DOWNLOADING:
                 return "Downloading"
-            case DownloadStatus.DONE:
-                return "Done"
             case DownloadStatus.FAILED:
                 return "Failed"
             case _ as unreachable:
                 assert_never(unreachable)
 
-    def can_be_unstaged(self) -> bool:
-        return self in (
-            DownloadStatus.STAGED,
-            DownloadStatus.DONE,
-            DownloadStatus.FAILED,
-        )
-
     def can_be_downloaded(self) -> bool:
-        return self in (
-            DownloadStatus.NONE,
-            DownloadStatus.STAGED,
-            DownloadStatus.FAILED,
-        )
+        return self in (DownloadStatus.NONE, DownloadStatus.FAILED)
 
 
 @attrs.define
