@@ -882,6 +882,10 @@
    <property name="checkable">
     <bool>true</bool>
    </property>
+   <property name="icon">
+    <iconset resource="../resources/resources.qrc">
+     <normaloff>:/icons/pin.png</normaloff>:/icons/pin.png</iconset>
+   </property>
    <property name="text">
     <string>Pin</string>
    </property>
