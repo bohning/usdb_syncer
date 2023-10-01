@@ -101,6 +101,12 @@ class SongTable:
         )
         self._tab_models = (self._usdb_model, self._local_model)
         self._tab_views = (mw.view_usdb, mw.view_local)
+        for signal in (
+            mw.tabs.currentChanged,
+            mw.view_usdb.selectionModel().currentChanged,
+            mw.view_local.selectionModel().currentChanged,
+        ):
+            signal.connect(self._on_current_song_changed)
         self._signals = SongSignals()
         self._signals.started.connect(self._on_download_started)
         self._signals.finished.connect(self._on_download_finished)
@@ -206,6 +212,20 @@ class SongTable:
 
     ### actions
 
+    def _on_current_song_changed(self) -> None:
+        song = self.current_song()
+        for action in self.mw.menu_songs.actions():
+            action.setEnabled(bool(song))
+        if not song:
+            return
+        for action in (
+            self.mw.action_open_song_folder,
+            self.mw.action_delete,
+            self.mw.action_pin,
+        ):
+            action.setEnabled(bool(song.local_files.usdb_path))
+        self.mw.action_pin.setChecked(song.local_files.pinned)
+
     def delete_selected_songs(self) -> None:
         for song in self.selected_songs():
             if not song.local_files.usdb_path:
@@ -233,9 +253,10 @@ class SongTable:
     ### selection model
 
     def current_song(self) -> SongData | None:
-        idx = self._current_view().selectionModel().currentIndex()
-        row = self._current_model().source_rows([idx])[0]
-        return self._model.songs[row] if row != -1 else None
+        if (idx := self._current_view().selectionModel().currentIndex()).isValid():
+            if rows := self._current_model().source_rows([idx]):
+                return self._model.songs[rows[0]]
+        return None
 
     def selected_songs(self) -> Iterator[SongData]:
         return (self._model.songs[row] for row in self._selected_rows())

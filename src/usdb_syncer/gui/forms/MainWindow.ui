@@ -883,7 +883,7 @@
     <bool>true</bool>
    </property>
    <property name="text">
-    <string>Toggle Pin</string>
+    <string>Pin</string>
    </property>
    <property name="toolTip">
     <string>Disable or reenable updates to local files</string>
