@@ -25,8 +25,8 @@ from PySide6.QtWidgets import QHeaderView, QLabel, QMenu, QProgressBar, QTableVi
 
 from usdb_syncer import SongId, settings
 from usdb_syncer.gui.song_table.column import Column
+from usdb_syncer.gui.song_table.proxy_model import ProxyModel
 from usdb_syncer.gui.song_table.table_model import CustomRole, TableModel
-from usdb_syncer.gui.song_table.usdb_model import LocalModel, UsdbModel
 from usdb_syncer.logger import get_logger
 from usdb_syncer.song_data import (
     DownloadErrorReason,
@@ -91,32 +91,18 @@ class SongTable:
     def __init__(self, mw: MainWindow) -> None:
         self.mw = mw
         self._model = TableModel(mw)
-        self._usdb_model = UsdbModel(mw)
-        self._local_model = LocalModel(mw)
+        self._proxy_model = ProxyModel(mw)
+        self.table_view = mw.table_view
         self._setup_view(
-            mw.view_usdb, self._usdb_model, settings.get_usdb_view_header_state()
+            mw.table_view, self._proxy_model, settings.get_table_view_header_state()
         )
-        self._setup_view(
-            mw.view_local, self._local_model, settings.get_local_view_header_state()
+        mw.table_view.selectionModel().currentChanged.connect(
+            self._on_current_song_changed
         )
-        self._tab_models = (self._usdb_model, self._local_model)
-        self._tab_views = (mw.view_usdb, mw.view_local)
-        for signal in (
-            mw.tabs.currentChanged,
-            mw.view_usdb.selectionModel().currentChanged,
-            mw.view_local.selectionModel().currentChanged,
-        ):
-            signal.connect(self._on_current_song_changed)
         self._signals = SongSignals()
         self._signals.started.connect(self._on_download_started)
         self._signals.finished.connect(self._on_download_finished)
         self._progress = Progress(mw.bar_download_progress, mw.label_download_progress)
-
-    def _current_model(self) -> UsdbModel:
-        return self._tab_models[self.mw.tabs.currentIndex()]
-
-    def _current_view(self) -> QTableView:
-        return self._tab_views[self.mw.tabs.currentIndex()]
 
     def download_selection(self) -> None:
         self._download(self._selected_rows())
@@ -174,7 +160,7 @@ class SongTable:
         menu.exec(QCursor.pos())
 
     def _on_double_clicked(self, index: QModelIndex) -> None:
-        self._download([self._current_model().mapToSource(index).row()])
+        self._download([self._proxy_model.mapToSource(index).row()])
 
     def _on_download_started(self, song_id: SongId) -> None:
         if (row := self._model.rows.get(song_id)) is None:
@@ -203,11 +189,8 @@ class SongTable:
             logger.info("All done!")
 
     def save_state(self) -> None:
-        settings.set_usdb_view_header_state(
-            self.mw.view_usdb.horizontalHeader().saveState()
-        )
-        settings.set_local_view_header_state(
-            self.mw.view_local.horizontalHeader().saveState()
+        settings.set_table_view_header_state(
+            self.mw.table_view.horizontalHeader().saveState()
         )
 
     ### actions
@@ -253,8 +236,8 @@ class SongTable:
     ### selection model
 
     def current_song(self) -> SongData | None:
-        if (idx := self._current_view().selectionModel().currentIndex()).isValid():
-            if rows := self._current_model().source_rows([idx]):
+        if (idx := self.table_view.selectionModel().currentIndex()).isValid():
+            if rows := self._proxy_model.source_rows([idx]):
                 return self._model.songs[rows[0]]
         return None
 
@@ -262,8 +245,8 @@ class SongTable:
         return (self._model.songs[row] for row in self._selected_rows())
 
     def _selected_rows(self) -> Iterable[int]:
-        return self._current_model().source_rows(
-            self._current_view().selectionModel().selectedRows()
+        return self._proxy_model.source_rows(
+            self.table_view.selectionModel().selectedRows()
         )
 
     def select_local_songs(self, directory: Path) -> None:
@@ -281,7 +264,7 @@ class SongTable:
                 else:
                     _logger.warning(f"No matches for '{name}'.")
         self.set_selection_to_indices(
-            self._current_model().target_indices(
+            self._proxy_model.target_indices(
                 self._model.index(row, 0) for row in matched_rows
             )
         )
@@ -289,15 +272,13 @@ class SongTable:
 
     def set_selection_to_song_ids(self, select_song_ids: list[SongId]) -> None:
         source_indices = self._model.indices_for_ids(select_song_ids)
-        self.set_selection_to_indices(
-            self._current_model().target_indices(source_indices)
-        )
+        self.set_selection_to_indices(self._proxy_model.target_indices(source_indices))
 
     def set_selection_to_indices(self, rows: Iterable[QModelIndex]) -> None:
         selection = QItemSelection()
         for row in rows:
             selection.select(row, row)
-        self._current_view().selectionModel().select(
+        self.table_view.selectionModel().select(
             selection,
             QItemSelectionModel.SelectionFlag.Rows
             | QItemSelectionModel.SelectionFlag.ClearAndSelect,
@@ -309,45 +290,35 @@ class SongTable:
         """Calls `func` with the new row count."""
 
         def wrapped(*_: Any) -> None:
-            func(self._current_model().rowCount())
+            func(self._proxy_model.rowCount())
 
         self._model.modelReset.connect(wrapped)  # type:ignore
-        self.mw.tabs.currentChanged.connect(wrapped)
-        for model in self._tab_models:
-            model.rowsInserted.connect(wrapped)  # type:ignore
-            model.rowsRemoved.connect(wrapped)  # type:ignore
+        self._model.rowsInserted.connect(wrapped)  # type:ignore
+        self._model.rowsRemoved.connect(wrapped)  # type:ignore
 
     def set_text_filter(self, text: str) -> None:
-        self._usdb_model.set_text_filter(text)
-        self._local_model.set_text_filter(text)
+        self._proxy_model.set_text_filter(text)
 
     def set_artist_filter(self, artist: str) -> None:
-        self._usdb_model.set_artist_filter(artist)
-        self._local_model.set_artist_filter(artist)
+        self._proxy_model.set_artist_filter(artist)
 
     def set_title_filter(self, title: str) -> None:
-        self._usdb_model.set_title_filter(title)
-        self._local_model.set_title_filter(title)
+        self._proxy_model.set_title_filter(title)
 
     def set_language_filter(self, language: str) -> None:
-        self._usdb_model.set_language_filter(language)
-        self._local_model.set_language_filter(language)
+        self._proxy_model.set_language_filter(language)
 
     def set_edition_filter(self, edition: str) -> None:
-        self._usdb_model.set_edition_filter(edition)
-        self._local_model.set_edition_filter(edition)
+        self._proxy_model.set_edition_filter(edition)
 
     def set_golden_notes_filter(self, golden_notes: bool | None) -> None:
-        self._usdb_model.set_golden_notes_filter(golden_notes)
-        self._local_model.set_golden_notes_filter(golden_notes)
+        self._proxy_model.set_golden_notes_filter(golden_notes)
 
     def set_rating_filter(self, rating: int, exact: bool) -> None:
-        self._usdb_model.set_rating_filter(rating, exact)
-        self._local_model.set_rating_filter(rating, exact)
+        self._proxy_model.set_rating_filter(rating, exact)
 
     def set_views_filter(self, min_views: int) -> None:
-        self._usdb_model.set_views_filter(min_views)
-        self._local_model.set_views_filter(min_views)
+        self._proxy_model.set_views_filter(min_views)
 
     ### data model
 

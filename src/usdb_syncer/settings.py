@@ -61,8 +61,7 @@ class SettingKey(Enum):
     BACKGROUND_ALWAYS = "downloads/background_always"
     MAIN_WINDOW_GEOMETRY = "geometry/main_window"
     MAIN_WINDOW_SPLITTER_MAIN_STATE = "main_window/splitter/state"
-    USDB_VIEW_HEADER_STATE = "usdb_view/header/state"
-    LOCAL_VIEW_HEADER_STATE = "local_view/header/state"
+    TABLE_VIEW_HEADER_STATE = "list_view/header/state"
     USDB_USER_NAME = "usdb/username"
 
 
@@ -538,17 +537,9 @@ def set_state_splitter_main(state: QByteArray) -> None:
     set_setting(SettingKey.MAIN_WINDOW_SPLITTER_MAIN_STATE, state)
 
 
-def get_usdb_view_header_state() -> QByteArray:
-    return get_setting(SettingKey.USDB_VIEW_HEADER_STATE, QByteArray())
+def get_table_view_header_state() -> QByteArray:
+    return get_setting(SettingKey.TABLE_VIEW_HEADER_STATE, QByteArray())
 
 
-def set_usdb_view_header_state(state: QByteArray) -> None:
-    set_setting(SettingKey.USDB_VIEW_HEADER_STATE, state)
-
-
-def get_local_view_header_state() -> QByteArray:
-    return get_setting(SettingKey.LOCAL_VIEW_HEADER_STATE, QByteArray())
-
-
-def set_local_view_header_state(state: QByteArray) -> None:
-    set_setting(SettingKey.LOCAL_VIEW_HEADER_STATE, state)
+def set_table_view_header_state(state: QByteArray) -> None:
+    set_setting(SettingKey.TABLE_VIEW_HEADER_STATE, state)
