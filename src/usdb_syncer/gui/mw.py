@@ -367,11 +367,13 @@ class MainWindow(Ui_MainWindow, QMainWindow):
 
     def _restore_state(self) -> None:
         self.restoreGeometry(settings.get_geometry_main_window())
-        self.splitter.restoreState(settings.get_state_splitter_main())
+        self.restoreState(settings.get_state_main_window())
+        self.dock_log.restoreGeometry(settings.get_geometry_log_dock())
 
     def _save_state(self) -> None:
         settings.set_geometry_main_window(self.saveGeometry())
-        settings.set_state_splitter_main(self.splitter.saveState())
+        settings.set_state_main_window(self.saveState())
+        settings.set_geometry_log_dock(self.dock_log.saveGeometry())
 
 
 class LogSignal(QObject):

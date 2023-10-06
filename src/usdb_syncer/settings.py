@@ -60,7 +60,8 @@ class SettingKey(Enum):
     BACKGROUND = "downloads/background"
     BACKGROUND_ALWAYS = "downloads/background_always"
     MAIN_WINDOW_GEOMETRY = "geometry/main_window"
-    MAIN_WINDOW_SPLITTER_MAIN_STATE = "main_window/splitter/state"
+    DOCK_LOG_GEOMETRY = "geometry/dock_log"
+    MAIN_WINDOW_STATE = "state/main_window"
     TABLE_VIEW_HEADER_STATE = "list_view/header/state"
     USDB_USER_NAME = "usdb/username"
 
@@ -529,12 +530,20 @@ def set_geometry_main_window(geometry: QByteArray) -> None:
     set_setting(SettingKey.MAIN_WINDOW_GEOMETRY, geometry)
 
 
-def get_state_splitter_main() -> QByteArray:
-    return get_setting(SettingKey.MAIN_WINDOW_SPLITTER_MAIN_STATE, QByteArray())
+def get_state_main_window() -> QByteArray:
+    return get_setting(SettingKey.MAIN_WINDOW_STATE, QByteArray())
 
 
-def set_state_splitter_main(state: QByteArray) -> None:
-    set_setting(SettingKey.MAIN_WINDOW_SPLITTER_MAIN_STATE, state)
+def set_state_main_window(state: QByteArray) -> None:
+    set_setting(SettingKey.MAIN_WINDOW_STATE, state)
+
+
+def get_geometry_log_dock() -> QByteArray:
+    return get_setting(SettingKey.DOCK_LOG_GEOMETRY, QByteArray())
+
+
+def set_geometry_log_dock(state: QByteArray) -> None:
+    set_setting(SettingKey.DOCK_LOG_GEOMETRY, state)
 
 
 def get_table_view_header_state() -> QByteArray:
