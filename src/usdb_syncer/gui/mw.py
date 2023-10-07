@@ -11,7 +11,6 @@ from PySide6.QtCore import QObject, Qt, QThreadPool, QTimer, Signal
 from PySide6.QtGui import QCloseEvent, QColor, QFont, QIcon, QPainter, QPixmap
 from PySide6.QtWidgets import (
     QApplication,
-    QComboBox,
     QFileDialog,
     QLabel,
     QMainWindow,
@@ -34,7 +33,6 @@ from usdb_syncer.gui.utils import scroll_to_bottom, set_shortcut
 from usdb_syncer.logger import get_logger
 from usdb_syncer.pdf import generate_song_pdf
 from usdb_syncer.song_data import SongData
-from usdb_syncer.song_filters import GoldenNotesFilter, RatingFilter, ViewsFilter
 from usdb_syncer.song_list_fetcher import (
     dump_available_songs,
     get_all_song_data,
@@ -110,7 +108,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         self._setup_toolbar()
         self._setup_shortcuts()
         self._setup_song_dir()
-        self._setup_search()
+        self.lineEdit_search.textChanged.connect(self.table.set_text_filter)
         self._setup_buttons()
         self._restore_state()
 
@@ -168,22 +166,6 @@ class MainWindow(Ui_MainWindow, QMainWindow):
 
     def _setup_buttons(self) -> None:
         self.button_download.clicked.connect(self._download_selection)
-
-    def _setup_search(self) -> None:
-        self._populate_search_filters()
-        self._connect_search_filters()
-        self.clear_filters.clicked.connect(self._clear_filters)
-
-    def _populate_search_filters(self) -> None:
-        for rating in RatingFilter:
-            self.comboBox_rating.addItem(str(rating), rating.value)
-        for golden in GoldenNotesFilter:
-            self.comboBox_golden_notes.addItem(str(golden), golden.value)
-        for views in ViewsFilter:
-            self.comboBox_views.addItem(str(views), views.value)
-
-    def _connect_search_filters(self) -> None:
-        self.lineEdit_search.textChanged.connect(self.table.set_text_filter)
 
     def _on_log_filter_changed(self) -> None:
         messages = []
@@ -250,16 +232,6 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         settings.set_song_dir(song_dir)
         data = resync_song_data(self.table.get_all_data())
         self.table.set_data(data)
-
-    def _clear_filters(self) -> None:
-        self.lineEdit_search.setText("")
-        self.comboBox_artist.setCurrentIndex(0)
-        self.comboBox_title.setCurrentIndex(0)
-        self.comboBox_language.setCurrentIndex(0)
-        self.comboBox_edition.setCurrentIndex(0)
-        self.comboBox_golden_notes.setCurrentIndex(0)
-        self.comboBox_rating.setCurrentIndex(0)
-        self.comboBox_views.setCurrentIndex(0)
 
     def _generate_song_pdf(self) -> None:
         fname = f"{datetime.datetime.now():%Y-%m-%d}_songlist.pdf"
