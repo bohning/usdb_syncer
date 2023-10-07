@@ -204,7 +204,7 @@ class RatingVariant(SongMatch, enum.Enum):
         return self.value * "★"
 
     def matches_song(self, song: SongData) -> bool:
-        return self.value == song.data.rating
+        return (self.value or 0) == song.data.rating
 
 
 class GoldenNotesVariant(SongMatch, enum.Enum):
