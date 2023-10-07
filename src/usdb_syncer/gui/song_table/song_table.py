@@ -292,9 +292,9 @@ class SongTable:
         def wrapped(*_: Any) -> None:
             func(self._proxy_model.rowCount())
 
-        self._model.modelReset.connect(wrapped)  # type:ignore
-        self._model.rowsInserted.connect(wrapped)  # type:ignore
-        self._model.rowsRemoved.connect(wrapped)  # type:ignore
+        self._model.modelReset.connect(wrapped)
+        self._proxy_model.rowsInserted.connect(wrapped)
+        self._proxy_model.rowsRemoved.connect(wrapped)
 
     def set_text_filter(self, text: str) -> None:
         self._proxy_model.set_text_filter(text)
