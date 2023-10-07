@@ -3,9 +3,11 @@
 from __future__ import annotations
 
 import enum
+from functools import cache
 from typing import Any, Iterable, assert_never
 
 import attrs
+from PySide6.QtGui import QIcon
 
 from usdb_syncer.song_data import SongData
 
@@ -58,6 +60,9 @@ class TreeItem:
 
     def toggle_checked(self, _keep_siblings: bool) -> None:
         pass
+
+    def decoration(self) -> QIcon | None:
+        return None
 
 
 @attrs.define(kw_only=True)
@@ -115,6 +120,9 @@ class FilterItem(TreeItem):
             self.checked_children.remove(child)
         self.children[child].checked = checked
         self.checkable = self.checked = bool(self.checked_children)
+
+    def decoration(self) -> QIcon:
+        return self.data.decoration()
 
 
 @attrs.define(kw_only=True)
@@ -184,6 +192,27 @@ class Filter(enum.Enum):
                 return RatingVariant
             case Filter.VIEWS:
                 return ViewsVariant
+            case _ as unreachable:
+                assert_never(unreachable)
+
+    # https://github.com/PyCQA/pylint/issues/7857
+    @cache  # pylint: disable=method-cache-max-size-none
+    def decoration(self) -> QIcon:
+        match self:
+            case Filter.ARTIST:
+                return QIcon(":/icons/artist.png")
+            case Filter.TITLE:
+                return QIcon(":/icons/title.png")
+            case Filter.EDITION:
+                return QIcon(":/icons/edition.png")
+            case Filter.LANGUAGE:
+                return QIcon(":/icons/language.png")
+            case Filter.GOLDEN_NOTES:
+                return QIcon(":/icons/golden_notes.png")
+            case Filter.RATING:
+                return QIcon(":/icons/rating.png")
+            case Filter.VIEWS:
+                return QIcon(":/icons/views.png")
             case _ as unreachable:
                 assert_never(unreachable)
 

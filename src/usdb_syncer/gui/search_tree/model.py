@@ -92,8 +92,8 @@ class TreeModel(QAbstractItemModel):
             return str(self.item_for_index(index).data)
         if role == Qt.ItemDataRole.CheckStateRole:
             return self.item_for_index(index).checked
-        # if role == Qt.ItemDataRole.DecorationRole:
-        #     return str(self.item_for_index(idx).data)
+        if role == Qt.ItemDataRole.DecorationRole:
+            return self.item_for_index(index).decoration()
         return None
 
     def flags(self, index: QIndex) -> Qt.ItemFlag:
