@@ -6,6 +6,11 @@
 [![Release](https://github.com/bohning/usdb_syncer/actions/workflows/release.yaml/badge.svg)](https://github.com/bohning/usdb_syncer/actions/workflows/release.yaml)
 [![tox](https://github.com/bohning/usdb_syncer/actions/workflows/tox.yaml/badge.svg)](https://github.com/bohning/usdb_syncer/actions/workflows/tox.yaml)
 
+**USDB Syncer** is an app to download and synchronize UltraStar songs hosted on [USDB](https://usdb.animux.de).
+The project [extensively uses the `#VIDEO` tag](https://github.com/bohning/usdb_syncer/wiki/Meta-Tags#format) to automaticly retrieve the resources (audio, video, images, etc...) to make the UltraStar song complete.
+Once a song is downloaded it can be synchronized (new notes, audio, video, images...) by redownloading the song. If a resource didn't change it's skipped.
+The project can be used from the commandline, but also has a GUI available.
+
 ## Linux Distributions
 
 Linux Build are generated on `Ubuntu:latest`, should run on `Ubuntu >=23.04`
