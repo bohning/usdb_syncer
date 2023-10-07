@@ -234,29 +234,10 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         )
 
     def _update_dynamic_filters(self, songs: tuple[SongData, ...]) -> None:
-        def update_filter(selector: QComboBox, attribute: str) -> None:
-            items = list(sorted(set(getattr(song.data, attribute) for song in songs)))
-            items.insert(0, "Any")
-            current_text = selector.currentText()
-            try:
-                new_index = items.index(current_text)
-            except ValueError:
-                new_index = 0
-            selector.blockSignals(True)
-            selector.clear()
-            selector.addItems(items)
-            selector.setCurrentIndex(new_index)
-            selector.blockSignals(False)
-            if current_text != selector.currentText():
-                selector.currentIndexChanged.emit(new_index)  # type: ignore
-
-        for selector, name in (
-            (self.comboBox_artist, "artist"),
-            (self.comboBox_title, "title"),
-            (self.comboBox_language, "language"),
-            (self.comboBox_edition, "edition"),
-        ):
-            update_filter(selector, name)
+        self.tree.set_artists(sorted(set(song.data.artist for song in songs)))
+        self.tree.set_titles(sorted(set(song.data.title for song in songs)))
+        self.tree.set_editions(sorted(set(song.data.edition for song in songs)))
+        self.tree.set_languages(sorted(set(song.data.language for song in songs)))
 
     def select_song_dir(self) -> None:
         song_dir = QFileDialog.getExistingDirectory(self, "Select Song Directory")

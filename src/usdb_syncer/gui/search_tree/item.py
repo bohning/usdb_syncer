@@ -17,6 +17,34 @@ class SongMatch:
         raise NotImplementedError
 
 
+class SongArtistMatch(str, SongMatch):
+    """str that can be matched against a song's artist."""
+
+    def matches_song(self, song: SongData) -> bool:
+        return self == song.data.artist
+
+
+class SongTitleMatch(str, SongMatch):
+    """str that can be matched against a song's title."""
+
+    def matches_song(self, song: SongData) -> bool:
+        return self == song.data.title
+
+
+class SongEditionMatch(str, SongMatch):
+    """str that can be matched against a song's edition."""
+
+    def matches_song(self, song: SongData) -> bool:
+        return self == song.data.edition
+
+
+class SongLanguageMatch(str, SongMatch):
+    """str that can be matched against a song's language."""
+
+    def matches_song(self, song: SongData) -> bool:
+        return self == song.data.language
+
+
 @attrs.define(kw_only=True)
 class TreeItem:
     """A row in the tree."""
@@ -110,7 +138,7 @@ class Filter(enum.Enum):
     """Kinds of filters in the tree."""
 
     # STATUS = enum.auto()
-    ARTIST = enum.auto()
+    ARTIST = 0
     TITLE = enum.auto()
     EDITION = enum.auto()
     LANGUAGE = enum.auto()

@@ -2,11 +2,21 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Callable
+from typing import TYPE_CHECKING, Callable, Iterable
 
 from usdb_syncer.song_data import SongData
 
-from .item import Filter, FilterItem, RootItem, VariantItem
+from .item import (
+    Filter,
+    FilterItem,
+    RootItem,
+    SongArtistMatch,
+    SongEditionMatch,
+    SongLanguageMatch,
+    SongMatch,
+    SongTitleMatch,
+    VariantItem,
+)
 from .model import TreeModel
 
 if TYPE_CHECKING:
@@ -37,3 +47,21 @@ class FilterTree:
 
     def connect_filter_changed(self, func: Callable[[], None]) -> None:
         self._model.dataChanged.connect(func)
+
+    def set_artists(self, artists: Iterable[str]) -> None:
+        self._set_variants(Filter.ARTIST, (SongArtistMatch(a) for a in artists))
+
+    def set_titles(self, titles: Iterable[str]) -> None:
+        self._set_variants(Filter.TITLE, (SongTitleMatch(a) for a in titles))
+
+    def set_editions(self, editions: Iterable[str]) -> None:
+        self._set_variants(Filter.EDITION, (SongEditionMatch(a) for a in editions))
+
+    def set_languages(self, languages: Iterable[str]) -> None:
+        self._set_variants(Filter.LANGUAGE, (SongLanguageMatch(a) for a in languages))
+
+    def _set_variants(self, filt: Filter, variants: Iterable[SongMatch]) -> None:
+        item = self.root.children[filt.value]
+        for variant in variants:
+            item.add_child(VariantItem(data=variant, parent=item))
+        self._model.dataChanged.emit(self.root, self.root)
