@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Callable, Iterable
 
+from PySide6.QtCore import Qt
+
 from usdb_syncer.song_data import SongData
 
 from .item import (
@@ -33,6 +35,9 @@ class FilterTree:
         self._model = TreeModel(mw, self.root)
         self.view.setHeaderHidden(True)
         self.view.setModel(self._model)
+        self.view.clicked.connect(
+            lambda idx: self._model.setData(idx, None, Qt.ItemDataRole.CheckStateRole)
+        )
 
     def _build_tree(self) -> None:
         self.root = RootItem()
