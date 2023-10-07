@@ -26,6 +26,7 @@ from usdb_syncer.gui.ffmpeg_dialog import check_ffmpeg
 from usdb_syncer.gui.forms.MainWindow import Ui_MainWindow
 from usdb_syncer.gui.meta_tags_dialog import MetaTagsDialog
 from usdb_syncer.gui.progress import run_with_progress
+from usdb_syncer.gui.search_tree.tree import FilterTree
 from usdb_syncer.gui.settings_dialog import SettingsDialog
 from usdb_syncer.gui.song_table.song_table import SongTable
 from usdb_syncer.gui.usdb_login_dialog import UsdbLoginDialog
@@ -102,6 +103,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         super().__init__()
         self.setupUi(self)
         self.threadpool = QThreadPool(self)
+        self.tree = FilterTree(self)
         self.table = SongTable(self)
         self._setup_statusbar()
         self._setup_log()
@@ -182,28 +184,6 @@ class MainWindow(Ui_MainWindow, QMainWindow):
 
     def _connect_search_filters(self) -> None:
         self.lineEdit_search.textChanged.connect(self.table.set_text_filter)
-        for combo_box, setter in (
-            (self.comboBox_artist, self.table.set_artist_filter),
-            (self.comboBox_title, self.table.set_title_filter),
-            (self.comboBox_language, self.table.set_language_filter),
-            (self.comboBox_edition, self.table.set_edition_filter),
-        ):
-            combo_box.currentIndexChanged.connect(
-                lambda idx, combo_box=combo_box, setter=setter: setter(
-                    "" if not idx else combo_box.currentText()
-                )
-            )
-        self.comboBox_rating.currentIndexChanged.connect(
-            lambda: self.table.set_rating_filter(*self.comboBox_rating.currentData())
-        )
-        self.comboBox_golden_notes.currentIndexChanged.connect(
-            lambda: self.table.set_golden_notes_filter(
-                self.comboBox_golden_notes.currentData()
-            )
-        )
-        self.comboBox_views.currentIndexChanged.connect(
-            lambda: self.table.set_views_filter(self.comboBox_views.currentData())
-        )
 
     def _on_log_filter_changed(self) -> None:
         messages = []

@@ -91,7 +91,7 @@ class SongTable:
     def __init__(self, mw: MainWindow) -> None:
         self.mw = mw
         self._model = TableModel(mw)
-        self._proxy_model = ProxyModel(mw)
+        self._proxy_model = ProxyModel(mw, mw.tree)
         self.table_view = mw.table_view
         self._setup_view(
             mw.table_view, self._proxy_model, settings.get_table_view_header_state()
@@ -298,27 +298,6 @@ class SongTable:
 
     def set_text_filter(self, text: str) -> None:
         self._proxy_model.set_text_filter(text)
-
-    def set_artist_filter(self, artist: str) -> None:
-        self._proxy_model.set_artist_filter(artist)
-
-    def set_title_filter(self, title: str) -> None:
-        self._proxy_model.set_title_filter(title)
-
-    def set_language_filter(self, language: str) -> None:
-        self._proxy_model.set_language_filter(language)
-
-    def set_edition_filter(self, edition: str) -> None:
-        self._proxy_model.set_edition_filter(edition)
-
-    def set_golden_notes_filter(self, golden_notes: bool | None) -> None:
-        self._proxy_model.set_golden_notes_filter(golden_notes)
-
-    def set_rating_filter(self, rating: int, exact: bool) -> None:
-        self._proxy_model.set_rating_filter(rating, exact)
-
-    def set_views_filter(self, min_views: int) -> None:
-        self._proxy_model.set_views_filter(min_views)
 
     ### data model
 
