@@ -56,7 +56,7 @@ class TreeItem:
     checked: bool = attrs.field(default=False, init=False)
     checkable: bool = attrs.field(default=False, init=False)
 
-    def toggle_checked(self) -> None:
+    def toggle_checked(self, _keep_siblings: bool) -> None:
         pass
 
 
@@ -96,7 +96,7 @@ class FilterItem(TreeItem):
     def is_checkable(self) -> bool:
         return bool(self.checked_children)
 
-    def toggle_checked(self) -> None:
+    def toggle_checked(self, _keep_siblings: bool) -> None:
         if self.checked:
             self.uncheck_children()
 
@@ -106,10 +106,15 @@ class FilterItem(TreeItem):
         self.checked_children.clear()
         self.checkable = self.checked = False
 
-    def check_child(self, child: int) -> None:
-        self.uncheck_children()
-        self.checked_children.add(child)
-        self.checkable = self.checked = self.children[child].checked = True
+    def set_child_checked(self, child: int, checked: bool, keep_siblings: bool) -> None:
+        if checked:
+            if not keep_siblings:
+                self.uncheck_children()
+            self.checked_children.add(child)
+        else:
+            self.checked_children.remove(child)
+        self.children[child].checked = checked
+        self.checkable = self.checked = bool(self.checked_children)
 
 
 @attrs.define(kw_only=True)
@@ -127,11 +132,10 @@ class VariantItem(TreeItem):
     def is_checkable(self) -> bool:
         return True
 
-    def toggle_checked(self) -> None:
-        if self.checked:
-            self.parent.uncheck_children()
-        else:
-            self.parent.check_child(self.row_in_parent)
+    def toggle_checked(self, keep_siblings: bool) -> None:
+        self.parent.set_child_checked(
+            self.row_in_parent, not self.checked, keep_siblings
+        )
 
 
 class Filter(enum.Enum):

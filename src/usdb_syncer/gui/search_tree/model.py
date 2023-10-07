@@ -13,6 +13,8 @@ from PySide6.QtCore import (
 )
 from PySide6.QtWidgets import QWidget
 
+from usdb_syncer.gui.utils import keyboard_modifiers
+
 from .item import TreeItem
 
 QIndex = QModelIndex | QPersistentModelIndex
@@ -107,7 +109,7 @@ class TreeModel(QAbstractItemModel):
         if not index.isValid():
             return False
         if role == Qt.ItemDataRole.CheckStateRole:
-            self.item_for_index(index).toggle_checked()
+            self.item_for_index(index).toggle_checked(keyboard_modifiers().ctrl)
             # other rows may have changed too
             self.dataChanged.emit(self.root, self.root, Qt.ItemDataRole.CheckStateRole)
         else:
