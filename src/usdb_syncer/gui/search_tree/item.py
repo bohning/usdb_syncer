@@ -9,7 +9,7 @@ from typing import Any, Iterable, assert_never
 import attrs
 from PySide6.QtGui import QIcon
 
-from usdb_syncer.song_data import SongData
+from usdb_syncer.song_data import SongData, fuzz_text
 
 
 class SongMatch:
@@ -63,6 +63,9 @@ class TreeItem:
 
     def decoration(self) -> QIcon | None:
         return None
+
+    def filter_accepts_row(self, _filt: list[str]) -> bool:
+        return True
 
 
 @attrs.define(kw_only=True)
@@ -133,6 +136,10 @@ class VariantItem(TreeItem):
     parent: FilterItem
     checkable: bool = attrs.field(default=True, init=False)
     children: tuple[TreeItem, ...] = attrs.field(factory=tuple, init=False)
+    _fuzzy_text: str = attrs.field(init=False)
+
+    def __attrs_post_init__(self) -> None:
+        self._fuzzy_text = fuzz_text(str(self.data))
 
     def accepts_song(self, song: SongData) -> bool:
         return self.data.matches_song(song)
@@ -144,6 +151,9 @@ class VariantItem(TreeItem):
         self.parent.set_child_checked(
             self.row_in_parent, not self.checked, keep_siblings
         )
+
+    def filter_accepts_row(self, filt: list[str]) -> bool:
+        return all(word in self._fuzzy_text for word in filt)
 
 
 class Filter(enum.Enum):

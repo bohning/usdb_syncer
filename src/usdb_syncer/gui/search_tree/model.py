@@ -9,11 +9,14 @@ from PySide6.QtCore import (
     QModelIndex,
     QObject,
     QPersistentModelIndex,
+    QSortFilterProxyModel,
     Qt,
+    QTimer,
 )
 from PySide6.QtWidgets import QWidget
 
 from usdb_syncer.gui.utils import keyboard_modifiers
+from usdb_syncer.song_data import fuzz_text
 
 from .item import TreeItem
 
@@ -115,3 +118,29 @@ class TreeModel(QAbstractItemModel):
         else:
             return False
         return True
+
+
+class TreeProxyModel(QSortFilterProxyModel):
+    """Proxy model for filtering the filter tree by text."""
+
+    def __init__(self, parent: QObject, source_model: TreeModel) -> None:
+        super().__init__(parent)
+        self._source = source_model
+        self.setSourceModel(source_model)
+        self._filter: list[str] = []
+
+        self._filter_invalidation_timer = QTimer(parent)
+        self._filter_invalidation_timer.setSingleShot(True)
+        self._filter_invalidation_timer.setInterval(200)
+        self._filter_invalidation_timer.timeout.connect(self.invalidateRowsFilter)
+
+    def filterAcceptsRow(self, source_row: int, source_parent: QIndex) -> bool:
+        if not self._filter or not source_parent.isValid():
+            return True
+        parent = self._source.item_for_index(source_parent)
+        item = parent.children[source_row]
+        return item.filter_accepts_row(self._filter)
+
+    def set_filter(self, text: str) -> None:
+        self._filter = fuzz_text(text).split()
+        self._filter_invalidation_timer.start()

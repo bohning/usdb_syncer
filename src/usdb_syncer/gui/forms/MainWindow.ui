@@ -374,9 +374,23 @@
     <number>1</number>
    </attribute>
    <widget class="QWidget" name="dockWidgetContents_2">
-    <layout class="QVBoxLayout" name="verticalLayout_4">
+    <layout class="QVBoxLayout" name="verticalLayout">
      <item>
-      <widget class="QTreeView" name="search_view"/>
+      <widget class="QLineEdit" name="line_edit_search_filters">
+       <property name="frame">
+        <bool>false</bool>
+       </property>
+       <property name="placeholderText">
+        <string>Search filters</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QTreeView" name="search_view">
+       <property name="frameShape">
+        <enum>QFrame::NoFrame</enum>
+       </property>
+      </widget>
      </item>
     </layout>
    </widget>

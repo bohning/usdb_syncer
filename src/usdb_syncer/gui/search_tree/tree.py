@@ -19,7 +19,7 @@ from .item import (
     SongTitleMatch,
     VariantItem,
 )
-from .model import TreeModel
+from .model import TreeModel, TreeProxyModel
 
 if TYPE_CHECKING:
     from usdb_syncer.gui.mw import MainWindow
@@ -33,11 +33,15 @@ class FilterTree:
         self.view = mw.search_view
         self._build_tree()
         self._model = TreeModel(mw, self.root)
+        self._proxy_model = TreeProxyModel(self.view, self._model)
         self.view.setHeaderHidden(True)
-        self.view.setModel(self._model)
+        self.view.setModel(self._proxy_model)
         self.view.clicked.connect(
-            lambda idx: self._model.setData(idx, None, Qt.ItemDataRole.CheckStateRole)
+            lambda idx: self._model.setData(
+                self._proxy_model.mapToSource(idx), None, Qt.ItemDataRole.CheckStateRole
+            )
         )
+        mw.line_edit_search_filters.textChanged.connect(self._proxy_model.set_filter)
 
     def _build_tree(self) -> None:
         self.root = RootItem()
@@ -66,7 +70,9 @@ class FilterTree:
         self._set_variants(Filter.LANGUAGE, (SongLanguageMatch(a) for a in languages))
 
     def _set_variants(self, filt: Filter, variants: Iterable[SongMatch]) -> None:
+        self._model.beginResetModel()
         item = self.root.children[filt.value]
         for variant in variants:
             item.add_child(VariantItem(data=variant, parent=item))
         self._model.dataChanged.emit(self.root, self.root)
+        self._model.endResetModel()
