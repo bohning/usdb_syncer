@@ -5,13 +5,10 @@ from enum import IntEnum
 from functools import cache
 from typing import assert_never
 
-from PySide6.QtCore import QModelIndex, QPersistentModelIndex
 from PySide6.QtGui import QIcon, QPaintDevice
 from PySide6.QtWidgets import QHeaderView
 
 from usdb_syncer import SongId
-
-QIndex = QModelIndex | QPersistentModelIndex
 
 
 class Column(IntEnum):

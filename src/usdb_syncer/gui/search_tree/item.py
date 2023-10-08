@@ -176,7 +176,7 @@ class Filter(enum.Enum):
 
     def __str__(self) -> str:
         match self:
-            case self.STATUS:
+            case Filter.STATUS:
                 return "Status"
             case Filter.ARTIST:
                 return "Artist"
@@ -242,7 +242,7 @@ class StatusVariant(SongMatch, enum.Enum):
     IN_PROGRESS = enum.auto()
     FAILED = enum.auto()
 
-    def __str__(self) -> str:  # pylint: disable=invalid-str-returned
+    def __str__(self) -> str:
         match self:
             case StatusVariant.NONE:
                 return "Not downloaded"

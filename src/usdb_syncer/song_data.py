@@ -128,7 +128,7 @@ class DownloadStatus(Enum):
     DOWNLOADING = enum.auto()
     FAILED = enum.auto()
 
-    def __str__(self) -> str:  # pylint: disable=invalid-str-returned
+    def __str__(self) -> str:
         match self:
             case DownloadStatus.NONE:
                 return ""

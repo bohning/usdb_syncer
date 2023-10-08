@@ -18,7 +18,7 @@ class Modifiers:
 
 
 def set_shortcut(key: str, parent: QObject, func: Callable[[], Any]) -> None:
-    QShortcut(QKeySequence(key), parent).activated.connect(func)  # type: ignore
+    QShortcut(QKeySequence(key), parent).activated.connect(func)
 
 
 def scroll_to_bottom(scroll_area: QAbstractScrollArea) -> None:

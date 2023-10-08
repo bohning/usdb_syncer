@@ -73,7 +73,7 @@ class Encoding(Enum):
     UTF_8_BOM = "utf_8_sig"
     CP1252 = "cp1252"
 
-    def __str__(self) -> str:  # pylint: disable=invalid-str-returned
+    def __str__(self) -> str:
         match self:
             case Encoding.UTF_8:
                 return "UTF-8"
@@ -91,7 +91,7 @@ class Newline(Enum):
     LF = "\n"
     CRLF = "\r\n"
 
-    def __str__(self) -> str:  # pylint: disable=invalid-str-returned
+    def __str__(self) -> str:
         match self:
             case Newline.LF:
                 return "Mac/Linux (LF)"
@@ -113,7 +113,7 @@ class AudioFormat(Enum):
     M4A = "m4a"
     MP3 = "mp3"
 
-    def __str__(self) -> str:  # pylint: disable=invalid-str-returned
+    def __str__(self) -> str:
         match self:
             case AudioFormat.M4A:
                 return ".m4a (mp4a)"
@@ -233,7 +233,7 @@ class VideoContainer(Enum):
     WEBM = "webm"
     BEST = "bestvideo"
 
-    def __str__(self) -> str:  # pylint: disable=invalid-str-returned
+    def __str__(self) -> str:
         match self:
             case VideoContainer.MP4:
                 return ".mp4"
@@ -258,7 +258,7 @@ class VideoCodec(Enum):
     LIBVPX = "libvpx-vp9"
     LIBAOM = "libaom-av1"
 
-    def __str__(self) -> str:  # pylint: disable=invalid-str-returned
+    def __str__(self) -> str:
         match self:
             case VideoCodec.H264:
                 return "h264"

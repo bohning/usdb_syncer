@@ -135,8 +135,8 @@ class SongTable:
         model.setSortRole(CustomRole.SORT)
         view.setModel(model)
         view.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
-        view.customContextMenuRequested.connect(self._context_menu)  # type: ignore
-        view.doubleClicked.connect(self._on_double_clicked)  # type: ignore
+        view.customContextMenuRequested.connect(self._context_menu)
+        view.doubleClicked.connect(self._on_double_clicked)
         header = view.horizontalHeader()
         if not state.isEmpty():
             header.restoreState(state)

@@ -35,7 +35,7 @@ class ImageKind(Enum):
     COVER = "CO"
     BACKGROUND = "BG"
 
-    def __str__(self) -> str:  # pylint: disable=invalid-str-returned
+    def __str__(self) -> str:
         match self:
             case ImageKind.COVER:
                 return "cover"
