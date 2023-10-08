@@ -48,8 +48,10 @@ class FilterTree:
         for filt in Filter:
             item = FilterItem(data=filt, parent=self.root)
             self.root.add_child(item)
-            for variant in filt.static_variants():
-                item.add_child(VariantItem(data=variant, parent=item))
+            item.set_children(
+                VariantItem(data=variant, parent=item)
+                for variant in filt.static_variants()
+            )
 
     def accepts_song(self, song: SongData) -> bool:
         return all(filt.accepts_song(song) for filt in self.root.children)
@@ -72,7 +74,6 @@ class FilterTree:
     def _set_variants(self, filt: Filter, variants: Iterable[SongMatch]) -> None:
         self._model.beginResetModel()
         item = self.root.children[filt.value]
-        for variant in variants:
-            item.add_child(VariantItem(data=variant, parent=item))
+        item.set_children(VariantItem(data=var, parent=item) for var in variants)
         self._model.dataChanged.emit(self.root, self.root)
         self._model.endResetModel()

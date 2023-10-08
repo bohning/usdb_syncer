@@ -96,6 +96,12 @@ class FilterItem(TreeItem):
         child.row_in_parent = len(self.children)
         self.children = (*self.children, child)
 
+    def set_children(self, children: Iterable[VariantItem]) -> None:
+        self.children = tuple(children)
+        for row, child in enumerate(self.children):
+            child.parent = self
+            child.row_in_parent = row
+
     def accepts_song(self, song: SongData) -> bool:
         return not self.checked_children or any(
             self.children[i].accepts_song(song) for i in self.checked_children
