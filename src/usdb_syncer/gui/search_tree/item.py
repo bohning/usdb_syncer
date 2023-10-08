@@ -9,7 +9,7 @@ from typing import Any, Iterable, assert_never
 import attrs
 from PySide6.QtGui import QIcon
 
-from usdb_syncer.song_data import SongData, fuzz_text
+from usdb_syncer.song_data import DownloadStatus, SongData, fuzz_text
 
 
 class SongMatch:
@@ -165,8 +165,8 @@ class VariantItem(TreeItem):
 class Filter(enum.Enum):
     """Kinds of filters in the tree."""
 
-    # STATUS = enum.auto()
-    ARTIST = 0
+    STATUS = 0
+    ARTIST = enum.auto()
     TITLE = enum.auto()
     EDITION = enum.auto()
     LANGUAGE = enum.auto()
@@ -176,8 +176,8 @@ class Filter(enum.Enum):
 
     def __str__(self) -> str:
         match self:
-            # case self.STATUS:
-            #     return "Status"
+            case self.STATUS:
+                return "Status"
             case Filter.ARTIST:
                 return "Artist"
             case Filter.TITLE:
@@ -199,9 +199,8 @@ class Filter(enum.Enum):
         match self:
             case Filter.ARTIST | Filter.TITLE | Filter.EDITION | Filter.LANGUAGE:
                 return []
-            # case Filter.STATUS:
-            #     vars = DownloadStatus
-            #     func = status_is_match
+            case Filter.STATUS:
+                return StatusVariant
             case Filter.GOLDEN_NOTES:
                 return GoldenNotesVariant
             case Filter.RATING:
@@ -215,6 +214,8 @@ class Filter(enum.Enum):
     @cache  # pylint: disable=method-cache-max-size-none
     def decoration(self) -> QIcon:
         match self:
+            case Filter.STATUS:
+                return QIcon(":/icons/status.png")
             case Filter.ARTIST:
                 return QIcon(":/icons/artist.png")
             case Filter.TITLE:
@@ -229,6 +230,47 @@ class Filter(enum.Enum):
                 return QIcon(":/icons/rating.png")
             case Filter.VIEWS:
                 return QIcon(":/icons/views.png")
+            case _ as unreachable:
+                assert_never(unreachable)
+
+
+class StatusVariant(SongMatch, enum.Enum):
+    """Variants of the status of a song."""
+
+    NONE = enum.auto()
+    DOWNLOADED = enum.auto()
+    IN_PROGRESS = enum.auto()
+    FAILED = enum.auto()
+
+    def __str__(self) -> str:  # pylint: disable=invalid-str-returned
+        match self:
+            case StatusVariant.NONE:
+                return "Not downloaded"
+            case StatusVariant.DOWNLOADED:
+                return "Downloaded"
+            case StatusVariant.IN_PROGRESS:
+                return "In progress"
+            case StatusVariant.FAILED:
+                return "Download failed"
+            case _ as unreachable:
+                assert_never(unreachable)
+
+    def matches_song(self, song: SongData) -> bool:
+        match self:
+            case StatusVariant.NONE:
+                return (
+                    not song.local_files.usdb_path
+                    and song.status is DownloadStatus.NONE
+                )
+            case StatusVariant.DOWNLOADED:
+                return bool(song.local_files.usdb_path)
+            case StatusVariant.IN_PROGRESS:
+                return song.status in (
+                    DownloadStatus.PENDING,
+                    DownloadStatus.DOWNLOADING,
+                )
+            case StatusVariant.FAILED:
+                return song.status is DownloadStatus.FAILED
             case _ as unreachable:
                 assert_never(unreachable)
 
