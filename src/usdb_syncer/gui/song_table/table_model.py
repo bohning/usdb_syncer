@@ -45,11 +45,9 @@ class TableModel(QAbstractTableModel):
         self.endResetModel()
 
     def update_item(self, new: SongData) -> None:
-        idx = self.rows[new.data.song_id]
-        self.songs = self.songs[:idx] + (new,) + self.songs[idx + 1 :]
-        start_idx = self.index(idx, 0)
-        end_idx = self.index(idx, self.columnCount())
-        self.dataChanged.emit(start_idx, end_idx)  # type:ignore
+        row = self.rows[new.data.song_id]
+        self.songs = self.songs[:row] + (new,) + self.songs[row + 1 :]
+        self.row_changed(row)
 
     def remove_row(self, row: int) -> None:
         self.set_data(self.songs[:row] + self.songs[row + 1 :])
@@ -81,7 +79,7 @@ class TableModel(QAbstractTableModel):
     def row_changed(self, row: int) -> None:
         start_idx = self.index(row, 0)
         end_idx = self.index(row, self.columnCount() - 1)
-        self.dataChanged.emit(start_idx, end_idx)  # type:ignore
+        self.dataChanged.emit(start_idx, end_idx)
 
     ### QAbstractTableModel implementation
 
@@ -141,7 +139,12 @@ def _display_data(song: SongData, column: int) -> str | None:
         case Column.DOWNLOAD_STATUS:
             return str(song.status)
         case (
-            Column.TXT | Column.AUDIO | Column.VIDEO | Column.COVER | Column.BACKGROUND
+            Column.TXT
+            | Column.AUDIO
+            | Column.VIDEO
+            | Column.COVER
+            | Column.BACKGROUND
+            | Column.PINNED
         ):
             return None
         case _ as unreachable:
@@ -173,6 +176,8 @@ def _decoration_data(song: SongData, column: int) -> QIcon | None:
             return optional_check_icon(song.local_files.cover)
         case Column.BACKGROUND:
             return optional_check_icon(song.local_files.background)
+        case Column.PINNED:
+            return optional_check_icon(song.local_files.pinned)
         case _ as unreachable:
             assert_never(unreachable)
 
@@ -208,6 +213,8 @@ def _sort_data(song: SongData, column: int) -> int | str | bool:
             return song.local_files.background
         case Column.DOWNLOAD_STATUS:
             return song.status.value
+        case Column.PINNED:
+            return song.local_files.pinned
         case _ as unreachable:
             assert_never(unreachable)
 

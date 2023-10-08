@@ -7,14 +7,17 @@ from __future__ import annotations
 import enum
 from enum import Enum
 from pathlib import Path
-from typing import assert_never
+from typing import Callable, assert_never
 
 import attrs
 from unidecode import unidecode
 
 from usdb_syncer import SongId
+from usdb_syncer.logger import get_logger
 from usdb_syncer.sync_meta import SyncMeta
 from usdb_syncer.usdb_scraper import UsdbSong
+
+_logger = get_logger(__file__)
 
 
 class FuzzySearchText:
@@ -84,6 +87,7 @@ class LocalFiles:
     """The path of a .usdb file and which files exist in the same folder."""
 
     usdb_path: Path | None = None
+    pinned: bool = False
     txt: bool = False
     audio: bool = False
     video: bool = False
@@ -94,6 +98,7 @@ class LocalFiles:
     def from_sync_meta(cls, usdb_path: Path, sync_meta: SyncMeta) -> LocalFiles:
         return cls(
             usdb_path=usdb_path,
+            pinned=sync_meta.pinned,
             txt=bool(sync_meta.txt),
             audio=bool(sync_meta.audio),
             video=bool(sync_meta.video),
@@ -101,45 +106,43 @@ class LocalFiles:
             background=bool(sync_meta.background),
         )
 
+    def try_update_sync_meta(self, modifier: Callable[[SyncMeta], None]) -> None:
+        if not self.usdb_path:
+            return
+        meta = SyncMeta.try_from_file(self.usdb_path)
+        if not meta:
+            _logger.error(
+                f"Failed to parse file: '{self.usdb_path}'. "
+                "Redownload the song to continue."
+            )
+            return
+        modifier(meta)
+        meta.to_file(self.usdb_path.parent)
+
 
 class DownloadStatus(Enum):
     """Status of song in download queue."""
 
-    NONE = 0
-    STAGED = 1
-    PENDING = 2
-    DOWNLOADING = 3
-    DONE = 4
-    FAILED = 5
+    NONE = enum.auto()
+    PENDING = enum.auto()
+    DOWNLOADING = enum.auto()
+    FAILED = enum.auto()
 
-    def __str__(self) -> str:  # pylint: disable=invalid-str-returned
+    def __str__(self) -> str:
         match self:
-            case DownloadStatus.NONE | DownloadStatus.STAGED:
+            case DownloadStatus.NONE:
                 return ""
             case DownloadStatus.PENDING:
                 return "Pending"
             case DownloadStatus.DOWNLOADING:
                 return "Downloading"
-            case DownloadStatus.DONE:
-                return "Done"
             case DownloadStatus.FAILED:
                 return "Failed"
             case _ as unreachable:
                 assert_never(unreachable)
 
-    def can_be_unstaged(self) -> bool:
-        return self in (
-            DownloadStatus.STAGED,
-            DownloadStatus.DONE,
-            DownloadStatus.FAILED,
-        )
-
     def can_be_downloaded(self) -> bool:
-        return self in (
-            DownloadStatus.NONE,
-            DownloadStatus.STAGED,
-            DownloadStatus.FAILED,
-        )
+        return self in (DownloadStatus.NONE, DownloadStatus.FAILED)
 
 
 @attrs.define

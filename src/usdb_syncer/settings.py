@@ -60,10 +60,9 @@ class SettingKey(Enum):
     BACKGROUND = "downloads/background"
     BACKGROUND_ALWAYS = "downloads/background_always"
     MAIN_WINDOW_GEOMETRY = "geometry/main_window"
-    MAIN_WINDOW_SPLITTER_MAIN_STATE = "main_window/splitter_main/state"
-    MAIN_WINDOW_SPLITTER_BOTTOM_STATE = "main_window/splitter_bottom/state"
-    LIST_VIEW_HEADER_STATE = "list_view/header/state"
-    BATCH_VIEW_HEADER_STATE = "batch_view/header/state"
+    DOCK_LOG_GEOMETRY = "geometry/dock_log"
+    MAIN_WINDOW_STATE = "state/main_window"
+    TABLE_VIEW_HEADER_STATE = "list_view/header/state"
     USDB_USER_NAME = "usdb/username"
 
 
@@ -74,7 +73,7 @@ class Encoding(Enum):
     UTF_8_BOM = "utf_8_sig"
     CP1252 = "cp1252"
 
-    def __str__(self) -> str:  # pylint: disable=invalid-str-returned
+    def __str__(self) -> str:
         match self:
             case Encoding.UTF_8:
                 return "UTF-8"
@@ -92,7 +91,7 @@ class Newline(Enum):
     LF = "\n"
     CRLF = "\r\n"
 
-    def __str__(self) -> str:  # pylint: disable=invalid-str-returned
+    def __str__(self) -> str:
         match self:
             case Newline.LF:
                 return "Mac/Linux (LF)"
@@ -114,7 +113,7 @@ class AudioFormat(Enum):
     M4A = "m4a"
     MP3 = "mp3"
 
-    def __str__(self) -> str:  # pylint: disable=invalid-str-returned
+    def __str__(self) -> str:
         match self:
             case AudioFormat.M4A:
                 return ".m4a (mp4a)"
@@ -234,7 +233,7 @@ class VideoContainer(Enum):
     WEBM = "webm"
     BEST = "bestvideo"
 
-    def __str__(self) -> str:  # pylint: disable=invalid-str-returned
+    def __str__(self) -> str:
         match self:
             case VideoContainer.MP4:
                 return ".mp4"
@@ -259,7 +258,7 @@ class VideoCodec(Enum):
     LIBVPX = "libvpx-vp9"
     LIBAOM = "libaom-av1"
 
-    def __str__(self) -> str:  # pylint: disable=invalid-str-returned
+    def __str__(self) -> str:
         match self:
             case VideoCodec.H264:
                 return "h264"
@@ -531,33 +530,25 @@ def set_geometry_main_window(geometry: QByteArray) -> None:
     set_setting(SettingKey.MAIN_WINDOW_GEOMETRY, geometry)
 
 
-def get_state_splitter_main() -> QByteArray:
-    return get_setting(SettingKey.MAIN_WINDOW_SPLITTER_MAIN_STATE, QByteArray())
+def get_state_main_window() -> QByteArray:
+    return get_setting(SettingKey.MAIN_WINDOW_STATE, QByteArray())
 
 
-def set_state_splitter_main(state: QByteArray) -> None:
-    set_setting(SettingKey.MAIN_WINDOW_SPLITTER_MAIN_STATE, state)
+def set_state_main_window(state: QByteArray) -> None:
+    set_setting(SettingKey.MAIN_WINDOW_STATE, state)
 
 
-def get_state_splitter_bottom() -> QByteArray:
-    return get_setting(SettingKey.MAIN_WINDOW_SPLITTER_BOTTOM_STATE, QByteArray())
+def get_geometry_log_dock() -> QByteArray:
+    return get_setting(SettingKey.DOCK_LOG_GEOMETRY, QByteArray())
 
 
-def set_state_splitter_bottom(state: QByteArray) -> None:
-    set_setting(SettingKey.MAIN_WINDOW_SPLITTER_BOTTOM_STATE, state)
+def set_geometry_log_dock(state: QByteArray) -> None:
+    set_setting(SettingKey.DOCK_LOG_GEOMETRY, state)
 
 
-def get_list_view_header_state() -> QByteArray:
-    return get_setting(SettingKey.LIST_VIEW_HEADER_STATE, QByteArray())
+def get_table_view_header_state() -> QByteArray:
+    return get_setting(SettingKey.TABLE_VIEW_HEADER_STATE, QByteArray())
 
 
-def set_list_view_header_state(state: QByteArray) -> None:
-    set_setting(SettingKey.LIST_VIEW_HEADER_STATE, state)
-
-
-def get_batch_view_header_state() -> QByteArray:
-    return get_setting(SettingKey.BATCH_VIEW_HEADER_STATE, QByteArray())
-
-
-def set_batch_view_header_state(state: QByteArray) -> None:
-    set_setting(SettingKey.BATCH_VIEW_HEADER_STATE, state)
+def set_table_view_header_state(state: QByteArray) -> None:
+    set_setting(SettingKey.TABLE_VIEW_HEADER_STATE, state)

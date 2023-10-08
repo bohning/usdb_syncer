@@ -29,6 +29,7 @@ pyinstaller-hooks-contrib = "*"
 # specifically required for pyinstaller (Note: darwin -> macos)
 macholib = {version = "*", markers="sys_platform == 'darwin'"}
 altgraph = "*"
+send2trash = "*"
 
 [dev-packages]
 tox = "*"

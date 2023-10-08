@@ -6,715 +6,154 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1100</width>
-    <height>658</height>
+    <width>1540</width>
+    <height>838</height>
    </rect>
   </property>
   <property name="windowTitle">
    <string>USDB Syncer</string>
   </property>
   <widget class="QWidget" name="centralwidget">
-   <layout class="QVBoxLayout" name="verticalLayout_4">
+   <layout class="QVBoxLayout" name="verticalLayout_3">
     <item>
-     <widget class="QGroupBox" name="groupBox_2">
-      <property name="title">
-       <string>Synchronize to local song directory</string>
+     <widget class="QLineEdit" name="lineEdit_search">
+      <property name="placeholderText">
+       <string>Search for anything ...</string>
       </property>
-      <property name="checkable">
-       <bool>false</bool>
-      </property>
-      <layout class="QHBoxLayout" name="horizontalLayout_4">
-       <property name="leftMargin">
-        <number>4</number>
-       </property>
-       <property name="topMargin">
-        <number>4</number>
-       </property>
-       <property name="rightMargin">
-        <number>4</number>
-       </property>
-       <property name="bottomMargin">
-        <number>4</number>
-       </property>
-       <item>
-        <widget class="QLineEdit" name="lineEdit_song_dir">
-         <property name="text">
-          <string>./songs</string>
-         </property>
-         <property name="readOnly">
-          <bool>true</bool>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QPushButton" name="pushButton_select_song_dir">
-         <property name="enabled">
-          <bool>true</bool>
-         </property>
-         <property name="text">
-          <string>Select song folder</string>
-         </property>
-         <property name="icon">
-          <iconset resource="../resources/resources.qrc">
-           <normaloff>:/icons/folder_note.png</normaloff>:/icons/folder_note.png</iconset>
-         </property>
-        </widget>
-       </item>
-      </layout>
      </widget>
     </item>
     <item>
-     <widget class="QGroupBox" name="groupBox_4">
-      <property name="title">
-       <string>Search</string>
-      </property>
-      <layout class="QHBoxLayout" name="horizontalLayout_2">
-       <property name="leftMargin">
-        <number>4</number>
-       </property>
-       <property name="topMargin">
-        <number>4</number>
-       </property>
-       <property name="rightMargin">
-        <number>4</number>
-       </property>
-       <property name="bottomMargin">
-        <number>4</number>
-       </property>
-       <item>
-        <widget class="QLineEdit" name="lineEdit_search">
-         <property name="placeholderText">
-          <string>Search for anything ...</string>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QPushButton" name="clear_filters">
-         <property name="text">
-          <string>Clear filters</string>
-         </property>
-         <property name="icon">
-          <iconset resource="../resources/resources.qrc">
-           <normaloff>:/icons/broom.png</normaloff>:/icons/broom.png</iconset>
-         </property>
-        </widget>
-       </item>
-      </layout>
-     </widget>
-    </item>
-    <item>
-     <widget class="QGroupBox" name="groupBox_filters">
+     <widget class="QTableView" name="table_view">
       <property name="sizePolicy">
-       <sizepolicy hsizetype="MinimumExpanding" vsizetype="Preferred">
+       <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
         <horstretch>0</horstretch>
-        <verstretch>0</verstretch>
+        <verstretch>3</verstretch>
        </sizepolicy>
       </property>
-      <property name="title">
-       <string>Filters</string>
+      <property name="editTriggers">
+       <set>QAbstractItemView::NoEditTriggers</set>
       </property>
-      <layout class="QHBoxLayout" name="horizontalLayout_5" stretch="0,2,0,2,0,2,0,2,0,1,0,1,0,1">
-       <property name="leftMargin">
-        <number>4</number>
-       </property>
-       <property name="topMargin">
-        <number>4</number>
-       </property>
-       <property name="rightMargin">
-        <number>4</number>
-       </property>
-       <property name="bottomMargin">
-        <number>4</number>
-       </property>
-       <item>
-        <widget class="QLabel" name="label_10">
-         <property name="text">
-          <string/>
-         </property>
-         <property name="pixmap">
-          <pixmap resource="../resources/resources.qrc">:/icons/artist.png</pixmap>
-         </property>
-         <property name="alignment">
-          <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QComboBox" name="comboBox_artist">
-         <property name="sizePolicy">
-          <sizepolicy hsizetype="Ignored" vsizetype="Fixed">
-           <horstretch>0</horstretch>
-           <verstretch>0</verstretch>
-          </sizepolicy>
-         </property>
-         <property name="minimumSize">
-          <size>
-           <width>50</width>
-           <height>0</height>
-          </size>
-         </property>
-         <property name="editable">
-          <bool>false</bool>
-         </property>
-         <property name="sizeAdjustPolicy">
-          <enum>QComboBox::AdjustToContentsOnFirstShow</enum>
-         </property>
-         <item>
-          <property name="text">
-           <string>Any</string>
-          </property>
-         </item>
-        </widget>
-       </item>
-       <item>
-        <widget class="QLabel" name="label_11">
-         <property name="text">
-          <string/>
-         </property>
-         <property name="pixmap">
-          <pixmap resource="../resources/resources.qrc">:/icons/title.png</pixmap>
-         </property>
-         <property name="alignment">
-          <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QComboBox" name="comboBox_title">
-         <property name="sizePolicy">
-          <sizepolicy hsizetype="Ignored" vsizetype="Fixed">
-           <horstretch>0</horstretch>
-           <verstretch>0</verstretch>
-          </sizepolicy>
-         </property>
-         <property name="minimumSize">
-          <size>
-           <width>50</width>
-           <height>0</height>
-          </size>
-         </property>
-         <property name="editable">
-          <bool>false</bool>
-         </property>
-         <property name="sizeAdjustPolicy">
-          <enum>QComboBox::AdjustToContentsOnFirstShow</enum>
-         </property>
-         <item>
-          <property name="text">
-           <string>Any</string>
-          </property>
-         </item>
-        </widget>
-       </item>
-       <item>
-        <widget class="QLabel" name="label_12">
-         <property name="text">
-          <string/>
-         </property>
-         <property name="pixmap">
-          <pixmap resource="../resources/resources.qrc">:/icons/language.png</pixmap>
-         </property>
-         <property name="alignment">
-          <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QComboBox" name="comboBox_language">
-         <property name="sizePolicy">
-          <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
-           <horstretch>0</horstretch>
-           <verstretch>0</verstretch>
-          </sizepolicy>
-         </property>
-         <property name="minimumSize">
-          <size>
-           <width>50</width>
-           <height>0</height>
-          </size>
-         </property>
-         <property name="editable">
-          <bool>false</bool>
-         </property>
-         <item>
-          <property name="text">
-           <string>Any</string>
-          </property>
-         </item>
-        </widget>
-       </item>
-       <item>
-        <widget class="QLabel" name="label_13">
-         <property name="text">
-          <string/>
-         </property>
-         <property name="pixmap">
-          <pixmap resource="../resources/resources.qrc">:/icons/edition.png</pixmap>
-         </property>
-         <property name="alignment">
-          <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QComboBox" name="comboBox_edition">
-         <property name="sizePolicy">
-          <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
-           <horstretch>0</horstretch>
-           <verstretch>0</verstretch>
-          </sizepolicy>
-         </property>
-         <property name="minimumSize">
-          <size>
-           <width>30</width>
-           <height>0</height>
-          </size>
-         </property>
-         <property name="editable">
-          <bool>false</bool>
-         </property>
-         <item>
-          <property name="text">
-           <string>Any</string>
-          </property>
-         </item>
-        </widget>
-       </item>
-       <item>
-        <widget class="QLabel" name="label_14">
-         <property name="text">
-          <string/>
-         </property>
-         <property name="pixmap">
-          <pixmap resource="../resources/resources.qrc">:/icons/golden_notes.png</pixmap>
-         </property>
-         <property name="alignment">
-          <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QComboBox" name="comboBox_golden_notes">
-         <property name="sizePolicy">
-          <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
-           <horstretch>0</horstretch>
-           <verstretch>0</verstretch>
-          </sizepolicy>
-         </property>
-         <property name="minimumSize">
-          <size>
-           <width>30</width>
-           <height>0</height>
-          </size>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QLabel" name="label_15">
-         <property name="text">
-          <string/>
-         </property>
-         <property name="pixmap">
-          <pixmap resource="../resources/resources.qrc">:/icons/rating.png</pixmap>
-         </property>
-         <property name="alignment">
-          <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QComboBox" name="comboBox_rating">
-         <property name="sizePolicy">
-          <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
-           <horstretch>0</horstretch>
-           <verstretch>0</verstretch>
-          </sizepolicy>
-         </property>
-         <property name="minimumSize">
-          <size>
-           <width>50</width>
-           <height>0</height>
-          </size>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QLabel" name="label_16">
-         <property name="text">
-          <string/>
-         </property>
-         <property name="pixmap">
-          <pixmap resource="../resources/resources.qrc">:/icons/views.png</pixmap>
-         </property>
-         <property name="alignment">
-          <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QComboBox" name="comboBox_views">
-         <property name="sizePolicy">
-          <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
-           <horstretch>0</horstretch>
-           <verstretch>0</verstretch>
-          </sizepolicy>
-         </property>
-         <property name="minimumSize">
-          <size>
-           <width>30</width>
-           <height>0</height>
-          </size>
-         </property>
-        </widget>
-       </item>
-      </layout>
+      <property name="alternatingRowColors">
+       <bool>true</bool>
+      </property>
+      <property name="selectionMode">
+       <enum>QAbstractItemView::ExtendedSelection</enum>
+      </property>
+      <property name="selectionBehavior">
+       <enum>QAbstractItemView::SelectRows</enum>
+      </property>
+      <property name="sortingEnabled">
+       <bool>true</bool>
+      </property>
+      <attribute name="horizontalHeaderMinimumSectionSize">
+       <number>20</number>
+      </attribute>
+      <attribute name="horizontalHeaderDefaultSectionSize">
+       <number>20</number>
+      </attribute>
+      <attribute name="horizontalHeaderHighlightSections">
+       <bool>false</bool>
+      </attribute>
+      <attribute name="horizontalHeaderStretchLastSection">
+       <bool>true</bool>
+      </attribute>
+      <attribute name="verticalHeaderVisible">
+       <bool>false</bool>
+      </attribute>
+      <attribute name="verticalHeaderMinimumSectionSize">
+       <number>24</number>
+      </attribute>
+      <attribute name="verticalHeaderDefaultSectionSize">
+       <number>24</number>
+      </attribute>
      </widget>
     </item>
     <item>
-     <widget class="QSplitter" name="splitter_main">
-      <property name="orientation">
-       <enum>Qt::Vertical</enum>
-      </property>
-      <widget class="QGroupBox" name="groupBox_songlist">
-       <property name="title">
-        <string>Songlist</string>
-       </property>
-       <layout class="QVBoxLayout" name="verticalLayout_2">
-        <property name="leftMargin">
-         <number>4</number>
+     <layout class="QHBoxLayout" name="horizontalLayout">
+      <item>
+       <widget class="QPushButton" name="button_download">
+        <property name="enabled">
+         <bool>true</bool>
         </property>
-        <property name="topMargin">
-         <number>4</number>
+        <property name="text">
+         <string>Download</string>
         </property>
-        <property name="rightMargin">
-         <number>4</number>
+        <property name="icon">
+         <iconset resource="../resources/resources.qrc">
+          <normaloff>:/icons/drive-download.png</normaloff>:/icons/drive-download.png</iconset>
         </property>
-        <property name="bottomMargin">
-         <number>4</number>
+        <property name="iconSize">
+         <size>
+          <width>20</width>
+          <height>20</height>
+         </size>
         </property>
-        <item>
-         <widget class="QTableView" name="view_list">
-          <property name="sizePolicy">
-           <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
-            <horstretch>0</horstretch>
-            <verstretch>3</verstretch>
-           </sizepolicy>
-          </property>
-          <property name="editTriggers">
-           <set>QAbstractItemView::NoEditTriggers</set>
-          </property>
-          <property name="alternatingRowColors">
-           <bool>true</bool>
-          </property>
-          <property name="selectionMode">
-           <enum>QAbstractItemView::ExtendedSelection</enum>
-          </property>
-          <property name="selectionBehavior">
-           <enum>QAbstractItemView::SelectRows</enum>
-          </property>
-          <property name="sortingEnabled">
-           <bool>true</bool>
-          </property>
-          <attribute name="horizontalHeaderMinimumSectionSize">
-           <number>20</number>
-          </attribute>
-          <attribute name="horizontalHeaderDefaultSectionSize">
-           <number>20</number>
-          </attribute>
-          <attribute name="horizontalHeaderHighlightSections">
-           <bool>false</bool>
-          </attribute>
-          <attribute name="horizontalHeaderStretchLastSection">
-           <bool>true</bool>
-          </attribute>
-          <attribute name="verticalHeaderVisible">
-           <bool>false</bool>
-          </attribute>
-          <attribute name="verticalHeaderMinimumSectionSize">
-           <number>24</number>
-          </attribute>
-          <attribute name="verticalHeaderDefaultSectionSize">
-           <number>24</number>
-          </attribute>
-         </widget>
-        </item>
-       </layout>
-      </widget>
-      <widget class="QSplitter" name="splitter_bottom">
-       <property name="orientation">
-        <enum>Qt::Horizontal</enum>
-       </property>
-       <widget class="QGroupBox" name="groupBox">
-        <property name="title">
-         <string>Batch</string>
-        </property>
-        <layout class="QVBoxLayout" name="verticalLayout">
-         <property name="leftMargin">
-          <number>4</number>
-         </property>
-         <property name="topMargin">
-          <number>4</number>
-         </property>
-         <property name="rightMargin">
-          <number>4</number>
-         </property>
-         <property name="bottomMargin">
-          <number>4</number>
-         </property>
-         <item>
-          <widget class="QTableView" name="view_batch">
-           <property name="sizePolicy">
-            <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
-             <horstretch>3</horstretch>
-             <verstretch>0</verstretch>
-            </sizepolicy>
-           </property>
-           <property name="editTriggers">
-            <set>QAbstractItemView::NoEditTriggers</set>
-           </property>
-           <property name="alternatingRowColors">
-            <bool>true</bool>
-           </property>
-           <property name="selectionBehavior">
-            <enum>QAbstractItemView::SelectRows</enum>
-           </property>
-           <property name="sortingEnabled">
-            <bool>true</bool>
-           </property>
-           <attribute name="horizontalHeaderMinimumSectionSize">
-            <number>20</number>
-           </attribute>
-           <attribute name="horizontalHeaderDefaultSectionSize">
-            <number>20</number>
-           </attribute>
-           <attribute name="horizontalHeaderHighlightSections">
-            <bool>false</bool>
-           </attribute>
-           <attribute name="horizontalHeaderStretchLastSection">
-            <bool>true</bool>
-           </attribute>
-           <attribute name="verticalHeaderVisible">
-            <bool>false</bool>
-           </attribute>
-           <attribute name="verticalHeaderDefaultSectionSize">
-            <number>24</number>
-           </attribute>
-          </widget>
-         </item>
-         <item>
-          <layout class="QHBoxLayout" name="horizontalLayout">
-           <item>
-            <widget class="QPushButton" name="button_batch_download">
-             <property name="enabled">
-              <bool>true</bool>
-             </property>
-             <property name="text">
-              <string>Download</string>
-             </property>
-             <property name="icon">
-              <iconset resource="../resources/resources.qrc">
-               <normaloff>:/icons/drive-download.png</normaloff>:/icons/drive-download.png</iconset>
-             </property>
-             <property name="iconSize">
-              <size>
-               <width>20</width>
-               <height>20</height>
-              </size>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QPushButton" name="button_batch_clear">
-             <property name="text">
-              <string>Clear</string>
-             </property>
-             <property name="icon">
-              <iconset resource="../resources/resources.qrc">
-               <normaloff>:/icons/clipboard-empty.png</normaloff>:/icons/clipboard-empty.png</iconset>
-             </property>
-             <property name="iconSize">
-              <size>
-               <width>20</width>
-               <height>20</height>
-              </size>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QProgressBar" name="bar_download_progress">
-             <property name="value">
-              <number>0</number>
-             </property>
-             <property name="textVisible">
-              <bool>false</bool>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QLabel" name="label_download_progress">
-             <property name="minimumSize">
-              <size>
-               <width>100</width>
-               <height>0</height>
-              </size>
-             </property>
-             <property name="text">
-              <string>0/0</string>
-             </property>
-             <property name="alignment">
-              <set>Qt::AlignCenter</set>
-             </property>
-            </widget>
-           </item>
-          </layout>
-         </item>
-        </layout>
        </widget>
-       <widget class="QGroupBox" name="group_log">
-        <property name="sizePolicy">
-         <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
-          <horstretch>2</horstretch>
-          <verstretch>0</verstretch>
-         </sizepolicy>
+      </item>
+      <item>
+       <widget class="QProgressBar" name="bar_download_progress">
+        <property name="value">
+         <number>0</number>
         </property>
-        <property name="title">
-         <string>Log</string>
+        <property name="textVisible">
+         <bool>false</bool>
         </property>
-        <layout class="QVBoxLayout" name="verticalLayout_3">
-         <property name="leftMargin">
-          <number>4</number>
-         </property>
-         <property name="topMargin">
-          <number>4</number>
-         </property>
-         <property name="rightMargin">
-          <number>4</number>
-         </property>
-         <property name="bottomMargin">
-          <number>4</number>
-         </property>
-         <item>
-          <widget class="QPlainTextEdit" name="plainTextEdit"/>
-         </item>
-         <item>
-          <layout class="QHBoxLayout" name="horizontalLayout_3">
-           <item>
-            <widget class="QToolButton" name="toolButton_errors">
-             <property name="toolTip">
-              <string>Errors</string>
-             </property>
-             <property name="text">
-              <string>Errors</string>
-             </property>
-             <property name="icon">
-              <iconset resource="../resources/resources.qrc">
-               <normaloff>:/icons/error.png</normaloff>:/icons/error.png</iconset>
-             </property>
-             <property name="iconSize">
-              <size>
-               <width>20</width>
-               <height>20</height>
-              </size>
-             </property>
-             <property name="checkable">
-              <bool>true</bool>
-             </property>
-             <property name="checked">
-              <bool>true</bool>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QToolButton" name="toolButton_warnings">
-             <property name="toolTip">
-              <string>Warnings</string>
-             </property>
-             <property name="text">
-              <string>Warnings</string>
-             </property>
-             <property name="icon">
-              <iconset resource="../resources/resources.qrc">
-               <normaloff>:/icons/warning.png</normaloff>:/icons/warning.png</iconset>
-             </property>
-             <property name="iconSize">
-              <size>
-               <width>20</width>
-               <height>20</height>
-              </size>
-             </property>
-             <property name="checkable">
-              <bool>true</bool>
-             </property>
-             <property name="checked">
-              <bool>true</bool>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QToolButton" name="toolButton_infos">
-             <property name="toolTip">
-              <string>Information</string>
-             </property>
-             <property name="text">
-              <string>Infos</string>
-             </property>
-             <property name="icon">
-              <iconset resource="../resources/resources.qrc">
-               <normaloff>:/icons/info.png</normaloff>:/icons/info.png</iconset>
-             </property>
-             <property name="iconSize">
-              <size>
-               <width>20</width>
-               <height>20</height>
-              </size>
-             </property>
-             <property name="checkable">
-              <bool>true</bool>
-             </property>
-             <property name="checked">
-              <bool>true</bool>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QToolButton" name="toolButton_debugs">
-             <property name="text">
-              <string>Debugs</string>
-             </property>
-             <property name="icon">
-              <iconset resource="../resources/resources.qrc">
-               <normaloff>:/icons/bug.png</normaloff>:/icons/bug.png</iconset>
-             </property>
-             <property name="iconSize">
-              <size>
-               <width>20</width>
-               <height>20</height>
-              </size>
-             </property>
-             <property name="checkable">
-              <bool>true</bool>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <spacer name="horizontalSpacer">
-             <property name="orientation">
-              <enum>Qt::Horizontal</enum>
-             </property>
-             <property name="sizeHint" stdset="0">
-              <size>
-               <width>40</width>
-               <height>20</height>
-              </size>
-             </property>
-            </spacer>
-           </item>
-          </layout>
-         </item>
-        </layout>
        </widget>
-      </widget>
-     </widget>
+      </item>
+      <item>
+       <widget class="QLabel" name="label_download_progress">
+        <property name="minimumSize">
+         <size>
+          <width>100</width>
+          <height>0</height>
+         </size>
+        </property>
+        <property name="text">
+         <string>0/0</string>
+        </property>
+        <property name="alignment">
+         <set>Qt::AlignCenter</set>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <spacer name="horizontalSpacer_2">
+        <property name="orientation">
+         <enum>Qt::Horizontal</enum>
+        </property>
+        <property name="sizeHint" stdset="0">
+         <size>
+          <width>40</width>
+          <height>20</height>
+         </size>
+        </property>
+       </spacer>
+      </item>
+      <item>
+       <widget class="QPushButton" name="pushButton_select_song_dir">
+        <property name="enabled">
+         <bool>true</bool>
+        </property>
+        <property name="text">
+         <string>Select song folder</string>
+        </property>
+        <property name="icon">
+         <iconset resource="../resources/resources.qrc">
+          <normaloff>:/icons/folder_note.png</normaloff>:/icons/folder_note.png</iconset>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QLineEdit" name="lineEdit_song_dir">
+        <property name="text">
+         <string>./songs</string>
+        </property>
+        <property name="readOnly">
+         <bool>true</bool>
+        </property>
+       </widget>
+      </item>
+     </layout>
     </item>
    </layout>
   </widget>
@@ -723,29 +162,37 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1100</width>
-     <height>24</height>
+     <width>1540</width>
+     <height>22</height>
     </rect>
    </property>
    <widget class="QMenu" name="menu_tools">
     <property name="title">
      <string>Tools</string>
     </property>
+    <property name="toolTipsVisible">
+     <bool>true</bool>
+    </property>
     <addaction name="action_settings"/>
     <addaction name="action_meta_tags"/>
     <addaction name="action_generate_song_pdf"/>
    </widget>
-   <widget class="QMenu" name="menu_sync">
+   <widget class="QMenu" name="menu_usdb">
     <property name="title">
-     <string>Synchronize</string>
+     <string>USDB</string>
+    </property>
+    <property name="toolTipsVisible">
+     <bool>true</bool>
     </property>
     <addaction name="action_usdb_login"/>
     <addaction name="action_refetch_song_list"/>
-    <addaction name="action_find_local_songs"/>
    </widget>
    <widget class="QMenu" name="menu_about">
     <property name="title">
      <string>Help</string>
+    </property>
+    <property name="toolTipsVisible">
+     <bool>true</bool>
     </property>
     <addaction name="action_show_log"/>
     <addaction name="action_about"/>
@@ -754,33 +201,207 @@
     <property name="title">
      <string>Songs</string>
     </property>
-    <addaction name="action_songs_download"/>
-    <addaction name="action_songs_to_batch"/>
-    <addaction name="action_show_in_usdb"/>
-    <addaction name="action_open_song_folder"/>
-   </widget>
-   <widget class="QMenu" name="menu_batch">
-    <property name="title">
-     <string>Batch</string>
+    <property name="toolTipsVisible">
+     <bool>true</bool>
     </property>
+    <addaction name="action_songs_download"/>
+    <addaction name="action_show_in_usdb"/>
+    <addaction name="separator"/>
+    <addaction name="action_open_song_folder"/>
+    <addaction name="action_delete"/>
+    <addaction name="action_pin"/>
+   </widget>
+   <widget class="QMenu" name="menu_local">
+    <property name="title">
+     <string>Local</string>
+    </property>
+    <property name="toolTipsVisible">
+     <bool>true</bool>
+    </property>
+    <addaction name="action_find_local_songs"/>
     <addaction name="action_import_usdb_ids"/>
     <addaction name="action_export_usdb_ids"/>
-    <addaction name="action_batch_remove"/>
    </widget>
    <addaction name="menu_songs"/>
-   <addaction name="menu_batch"/>
-   <addaction name="menu_sync"/>
+   <addaction name="menu_usdb"/>
+   <addaction name="menu_local"/>
    <addaction name="menu_tools"/>
    <addaction name="menu_about"/>
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
+  <widget class="QDockWidget" name="dock_log">
+   <property name="windowTitle">
+    <string>Log</string>
+   </property>
+   <attribute name="dockWidgetArea">
+    <number>2</number>
+   </attribute>
+   <widget class="QWidget" name="dockWidgetContents">
+    <layout class="QVBoxLayout" name="verticalLayout_2">
+     <item>
+      <layout class="QHBoxLayout" name="horizontalLayout_3">
+       <item>
+        <widget class="QToolButton" name="toolButton_errors">
+         <property name="toolTip">
+          <string>Errors</string>
+         </property>
+         <property name="text">
+          <string>Errors</string>
+         </property>
+         <property name="icon">
+          <iconset resource="../resources/resources.qrc">
+           <normaloff>:/icons/error.png</normaloff>:/icons/error.png</iconset>
+         </property>
+         <property name="iconSize">
+          <size>
+           <width>20</width>
+           <height>20</height>
+          </size>
+         </property>
+         <property name="checkable">
+          <bool>true</bool>
+         </property>
+         <property name="checked">
+          <bool>true</bool>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QToolButton" name="toolButton_warnings">
+         <property name="toolTip">
+          <string>Warnings</string>
+         </property>
+         <property name="text">
+          <string>Warnings</string>
+         </property>
+         <property name="icon">
+          <iconset resource="../resources/resources.qrc">
+           <normaloff>:/icons/warning.png</normaloff>:/icons/warning.png</iconset>
+         </property>
+         <property name="iconSize">
+          <size>
+           <width>20</width>
+           <height>20</height>
+          </size>
+         </property>
+         <property name="checkable">
+          <bool>true</bool>
+         </property>
+         <property name="checked">
+          <bool>true</bool>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QToolButton" name="toolButton_infos">
+         <property name="toolTip">
+          <string>Information</string>
+         </property>
+         <property name="text">
+          <string>Infos</string>
+         </property>
+         <property name="icon">
+          <iconset resource="../resources/resources.qrc">
+           <normaloff>:/icons/info.png</normaloff>:/icons/info.png</iconset>
+         </property>
+         <property name="iconSize">
+          <size>
+           <width>20</width>
+           <height>20</height>
+          </size>
+         </property>
+         <property name="checkable">
+          <bool>true</bool>
+         </property>
+         <property name="checked">
+          <bool>true</bool>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QToolButton" name="toolButton_debugs">
+         <property name="text">
+          <string>Debugs</string>
+         </property>
+         <property name="icon">
+          <iconset resource="../resources/resources.qrc">
+           <normaloff>:/icons/bug.png</normaloff>:/icons/bug.png</iconset>
+         </property>
+         <property name="iconSize">
+          <size>
+           <width>20</width>
+           <height>20</height>
+          </size>
+         </property>
+         <property name="checkable">
+          <bool>true</bool>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <spacer name="horizontalSpacer">
+         <property name="orientation">
+          <enum>Qt::Horizontal</enum>
+         </property>
+         <property name="sizeHint" stdset="0">
+          <size>
+           <width>40</width>
+           <height>20</height>
+          </size>
+         </property>
+        </spacer>
+       </item>
+      </layout>
+     </item>
+     <item>
+      <widget class="QPlainTextEdit" name="plainTextEdit">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+      </widget>
+     </item>
+    </layout>
+   </widget>
+  </widget>
+  <widget class="QDockWidget" name="dock_search">
+   <property name="windowTitle">
+    <string>Filters</string>
+   </property>
+   <attribute name="dockWidgetArea">
+    <number>1</number>
+   </attribute>
+   <widget class="QWidget" name="dockWidgetContents_2">
+    <layout class="QVBoxLayout" name="verticalLayout">
+     <item>
+      <widget class="QLineEdit" name="line_edit_search_filters">
+       <property name="frame">
+        <bool>false</bool>
+       </property>
+       <property name="placeholderText">
+        <string>Search filters</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QTreeView" name="search_view">
+       <property name="frameShape">
+        <enum>QFrame::NoFrame</enum>
+       </property>
+      </widget>
+     </item>
+    </layout>
+   </widget>
+  </widget>
   <action name="action_meta_tags">
    <property name="icon">
     <iconset resource="../resources/resources.qrc">
      <normaloff>:/icons/tag-hash.png</normaloff>:/icons/tag-hash.png</iconset>
    </property>
    <property name="text">
-    <string>Create Meta Tags...</string>
+    <string>Create Meta Tags</string>
    </property>
   </action>
   <action name="action_settings">
@@ -789,7 +410,7 @@
      <normaloff>:/icons/cog.png</normaloff>:/icons/cog.png</iconset>
    </property>
    <property name="text">
-    <string>Settings...</string>
+    <string>Settings</string>
    </property>
   </action>
   <action name="action_generate_song_pdf">
@@ -798,7 +419,7 @@
      <normaloff>:/icons/report.png</normaloff>:/icons/report.png</iconset>
    </property>
    <property name="text">
-    <string>Generate Song List (PDF)...</string>
+    <string>Generate Song List (PDF)</string>
    </property>
   </action>
   <action name="action_refetch_song_list">
@@ -809,6 +430,9 @@
    <property name="text">
     <string>Check USDB Song List</string>
    </property>
+   <property name="toolTip">
+    <string>Redownload the entire song list from USDB</string>
+   </property>
   </action>
   <action name="action_find_local_songs">
    <property name="icon">
@@ -816,7 +440,10 @@
      <normaloff>:/icons/database.png</normaloff>:/icons/database.png</iconset>
    </property>
    <property name="text">
-    <string>Find Local Songs...</string>
+    <string>Find Local Songs</string>
+   </property>
+   <property name="toolTip">
+    <string>Select songs matching a txt file in the given folder</string>
    </property>
   </action>
   <action name="action_show_log">
@@ -825,7 +452,7 @@
      <normaloff>:/icons/log.png</normaloff>:/icons/log.png</iconset>
    </property>
    <property name="text">
-    <string>Show Log...</string>
+    <string>Show Log</string>
    </property>
   </action>
   <action name="action_import_usdb_ids">
@@ -834,10 +461,10 @@
      <normaloff>:/icons/document-export.png</normaloff>:/icons/document-export.png</iconset>
    </property>
    <property name="text">
-    <string>Add IDs from File(s)</string>
+    <string>Select Songs from Files</string>
    </property>
    <property name="toolTip">
-    <string>Stage Multiple USDB songs for download that are defined by IDs in files and/or weblinks</string>
+    <string>Read song IDs from selected files and select the corresponding songs in the song table</string>
    </property>
   </action>
   <action name="action_export_usdb_ids">
@@ -847,6 +474,9 @@
    </property>
    <property name="text">
     <string>Export IDs to File</string>
+   </property>
+   <property name="toolTip">
+    <string>Write the IDs of the selected songs to a file</string>
    </property>
   </action>
   <action name="action_songs_download">
@@ -858,41 +488,13 @@
     <string>Download</string>
    </property>
   </action>
-  <action name="action_songs_to_batch">
-   <property name="icon">
-    <iconset resource="../resources/resources.qrc">
-     <normaloff>:/icons/clipboard--plus.png</normaloff>:/icons/clipboard--plus.png</iconset>
-   </property>
-   <property name="text">
-    <string>Add to Batch</string>
-   </property>
-  </action>
-  <action name="action_batch_remove">
-   <property name="icon">
-    <iconset resource="../resources/resources.qrc">
-     <normaloff>:/icons/clipboard--minus.png</normaloff>:/icons/clipboard--minus.png</iconset>
-   </property>
-   <property name="text">
-    <string>Remove</string>
-   </property>
-  </action>
-  <action name="actionDownload_2">
-   <property name="text">
-    <string>Download Batch</string>
-   </property>
-  </action>
-  <action name="actionClear_Batch">
-   <property name="text">
-    <string>Clear Batch</string>
-   </property>
-  </action>
   <action name="action_usdb_login">
    <property name="icon">
     <iconset resource="../resources/resources.qrc">
      <normaloff>:/icons/faviconUSDB.ico</normaloff>:/icons/faviconUSDB.ico</iconset>
    </property>
    <property name="text">
-    <string>USDB Login...</string>
+    <string>USDB Login</string>
    </property>
   </action>
   <action name="actionHelp">
@@ -906,12 +508,7 @@
      <normaloff>:/app/appicon_128x128.png</normaloff>:/app/appicon_128x128.png</iconset>
    </property>
    <property name="text">
-    <string>About...</string>
-   </property>
-  </action>
-  <action name="actionHelp_2">
-   <property name="text">
-    <string>Help...</string>
+    <string>About</string>
    </property>
   </action>
   <action name="action_show_in_usdb">
@@ -920,7 +517,7 @@
      <normaloff>:/icons/faviconUSDB.ico</normaloff>:/icons/faviconUSDB.ico</iconset>
    </property>
    <property name="text">
-    <string>Show in USDB</string>
+    <string>Show on USDB</string>
    </property>
   </action>
   <action name="action_open_song_folder">
@@ -930,6 +527,33 @@
    </property>
    <property name="text">
     <string>Open Song Folder</string>
+   </property>
+  </action>
+  <action name="action_delete">
+   <property name="icon">
+    <iconset resource="../resources/resources.qrc">
+     <normaloff>:/icons/minus-circle.png</normaloff>:/icons/minus-circle.png</iconset>
+   </property>
+   <property name="text">
+    <string>Delete</string>
+   </property>
+   <property name="toolTip">
+    <string>Move to system recycle bin</string>
+   </property>
+  </action>
+  <action name="action_pin">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="icon">
+    <iconset resource="../resources/resources.qrc">
+     <normaloff>:/icons/pin.png</normaloff>:/icons/pin.png</iconset>
+   </property>
+   <property name="text">
+    <string>Pin</string>
+   </property>
+   <property name="toolTip">
+    <string>Disable or reenable updates to local files</string>
    </property>
   </action>
  </widget>

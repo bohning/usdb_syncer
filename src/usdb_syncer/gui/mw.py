@@ -11,7 +11,6 @@ from PySide6.QtCore import QObject, Qt, QThreadPool, QTimer, Signal
 from PySide6.QtGui import QCloseEvent, QColor, QFont, QIcon, QPainter, QPixmap
 from PySide6.QtWidgets import (
     QApplication,
-    QComboBox,
     QFileDialog,
     QLabel,
     QMainWindow,
@@ -26,6 +25,7 @@ from usdb_syncer.gui.ffmpeg_dialog import check_ffmpeg
 from usdb_syncer.gui.forms.MainWindow import Ui_MainWindow
 from usdb_syncer.gui.meta_tags_dialog import MetaTagsDialog
 from usdb_syncer.gui.progress import run_with_progress
+from usdb_syncer.gui.search_tree.tree import FilterTree
 from usdb_syncer.gui.settings_dialog import SettingsDialog
 from usdb_syncer.gui.song_table.song_table import SongTable
 from usdb_syncer.gui.usdb_login_dialog import UsdbLoginDialog
@@ -33,7 +33,6 @@ from usdb_syncer.gui.utils import scroll_to_bottom, set_shortcut
 from usdb_syncer.logger import get_logger
 from usdb_syncer.pdf import generate_song_pdf
 from usdb_syncer.song_data import SongData
-from usdb_syncer.song_filters import GoldenNotesFilter, RatingFilter, ViewsFilter
 from usdb_syncer.song_list_fetcher import (
     dump_available_songs,
     get_all_song_data,
@@ -86,7 +85,7 @@ def get_available_song_ids_from_files(
     ]:
         _logger.info(
             f"available {len(available_song_ids)}/{len(unique_song_ids)} "
-            "imported USDB IDs are added to Batch: "
+            "imported USDB IDs will be selected: "
             f"{', '.join(str(song_id) for song_id in available_song_ids)}"
         )
 
@@ -102,35 +101,24 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         super().__init__()
         self.setupUi(self)
         self.threadpool = QThreadPool(self)
-        self._setup_table()
+        self.tree = FilterTree(self)
+        self.table = SongTable(self)
         self._setup_statusbar()
         self._setup_log()
         self._setup_toolbar()
         self._setup_shortcuts()
         self._setup_song_dir()
-        self._setup_search()
+        self.lineEdit_search.textChanged.connect(self.table.set_text_filter)
         self._setup_buttons()
         self._restore_state()
-
-    def _setup_table(self) -> None:
-        self.table = SongTable(
-            self,
-            self.view_list,
-            self.view_batch,
-            self.menu_songs,
-            self.menu_batch,
-            self.bar_download_progress,
-            self.label_download_progress,
-        )
 
     def _setup_statusbar(self) -> None:
         self._status_label = QLabel(self)
         self.statusbar.addWidget(self._status_label)
 
-        def on_count_changed(list_count: int, batch_count: int) -> None:
-            total = len(self.table.get_all_data())
+        def on_count_changed(shown_count: int) -> None:
             self._status_label.setText(
-                f"{list_count} out of {total} songs shown. {batch_count} in batch."
+                f"{shown_count} out of {len(self.table.get_all_data())} songs shown."
             )
 
         self.table.connect_row_count_changed(on_count_changed)
@@ -149,8 +137,6 @@ class MainWindow(Ui_MainWindow, QMainWindow):
     def _setup_toolbar(self) -> None:
         for action, func in (
             (self.action_songs_download, self._download_selection),
-            (self.action_songs_to_batch, self.table.stage_selection),
-            (self.action_batch_remove, self.table.unstage_selection),
             (self.action_find_local_songs, self._stage_local_songs),
             (self.action_refetch_song_list, self._refetch_song_list),
             (self.action_usdb_login, lambda: UsdbLoginDialog(self).show()),
@@ -163,14 +149,13 @@ class MainWindow(Ui_MainWindow, QMainWindow):
             (self.action_show_log, lambda: open_file_explorer(AppPaths.log)),
             (self.action_show_in_usdb, self._show_current_song_in_usdb),
             (self.action_open_song_folder, self._open_current_song_folder),
+            (self.action_delete, self.table.delete_selected_songs),
+            (self.action_pin, self.table.set_pin_selected_songs),
         ):
             action.triggered.connect(func)
 
     def _download_selection(self) -> None:
         check_ffmpeg(self, self.table.download_selection)
-
-    def _download_batch(self) -> None:
-        check_ffmpeg(self, self.table.download_batch)
 
     def _setup_shortcuts(self) -> None:
         set_shortcut("Ctrl+.", self, lambda: DebugConsole(self).show())
@@ -180,46 +165,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         self.pushButton_select_song_dir.clicked.connect(self.select_song_dir)
 
     def _setup_buttons(self) -> None:
-        self.button_batch_download.clicked.connect(self._download_batch)
-        self.button_batch_clear.clicked.connect(self.table.clear_batch)
-
-    def _setup_search(self) -> None:
-        self._populate_search_filters()
-        self._connect_search_filters()
-        self.clear_filters.clicked.connect(self._clear_filters)
-
-    def _populate_search_filters(self) -> None:
-        for rating in RatingFilter:
-            self.comboBox_rating.addItem(str(rating), rating.value)
-        for golden in GoldenNotesFilter:
-            self.comboBox_golden_notes.addItem(str(golden), golden.value)
-        for views in ViewsFilter:
-            self.comboBox_views.addItem(str(views), views.value)
-
-    def _connect_search_filters(self) -> None:
-        self.lineEdit_search.textChanged.connect(self.table.set_text_filter)
-        for combo_box, setter in (
-            (self.comboBox_artist, self.table.set_artist_filter),
-            (self.comboBox_title, self.table.set_title_filter),
-            (self.comboBox_language, self.table.set_language_filter),
-            (self.comboBox_edition, self.table.set_edition_filter),
-        ):
-            combo_box.currentIndexChanged.connect(
-                lambda idx, combo_box=combo_box, setter=setter: setter(
-                    "" if not idx else combo_box.currentText()
-                )
-            )
-        self.comboBox_rating.currentIndexChanged.connect(
-            lambda: self.table.set_rating_filter(*self.comboBox_rating.currentData())
-        )
-        self.comboBox_golden_notes.currentIndexChanged.connect(
-            lambda: self.table.set_golden_notes_filter(
-                self.comboBox_golden_notes.currentData()
-            )
-        )
-        self.comboBox_views.currentIndexChanged.connect(
-            lambda: self.table.set_views_filter(self.comboBox_views.currentData())
-        )
+        self.button_download.clicked.connect(self._download_selection)
 
     def _on_log_filter_changed(self) -> None:
         messages = []
@@ -260,7 +206,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
 
     def _stage_local_songs(self) -> None:
         if directory := QFileDialog.getExistingDirectory(self, "Select Song Directory"):
-            self.table.stage_local_songs(Path(directory))
+            self.table.select_local_songs(Path(directory))
 
     def _refetch_song_list(self) -> None:
         run_with_progress(
@@ -270,29 +216,10 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         )
 
     def _update_dynamic_filters(self, songs: tuple[SongData, ...]) -> None:
-        def update_filter(selector: QComboBox, attribute: str) -> None:
-            items = list(sorted(set(getattr(song.data, attribute) for song in songs)))
-            items.insert(0, "Any")
-            current_text = selector.currentText()
-            try:
-                new_index = items.index(current_text)
-            except ValueError:
-                new_index = 0
-            selector.blockSignals(True)
-            selector.clear()
-            selector.addItems(items)
-            selector.setCurrentIndex(new_index)
-            selector.blockSignals(False)
-            if current_text != selector.currentText():
-                selector.currentIndexChanged.emit(new_index)  # type: ignore
-
-        for selector, name in (
-            (self.comboBox_artist, "artist"),
-            (self.comboBox_title, "title"),
-            (self.comboBox_language, "language"),
-            (self.comboBox_edition, "edition"),
-        ):
-            update_filter(selector, name)
+        self.tree.set_artists(sorted(set(song.data.artist for song in songs)))
+        self.tree.set_titles(sorted(set(song.data.title for song in songs)))
+        self.tree.set_editions(sorted(set(song.data.edition for song in songs)))
+        self.tree.set_languages(sorted(set(song.data.language for song in songs)))
 
     def select_song_dir(self) -> None:
         song_dir = QFileDialog.getExistingDirectory(self, "Select Song Directory")
@@ -305,16 +232,6 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         settings.set_song_dir(song_dir)
         data = resync_song_data(self.table.get_all_data())
         self.table.set_data(data)
-
-    def _clear_filters(self) -> None:
-        self.lineEdit_search.setText("")
-        self.comboBox_artist.setCurrentIndex(0)
-        self.comboBox_title.setCurrentIndex(0)
-        self.comboBox_language.setCurrentIndex(0)
-        self.comboBox_edition.setCurrentIndex(0)
-        self.comboBox_golden_notes.setCurrentIndex(0)
-        self.comboBox_rating.setCurrentIndex(0)
-        self.comboBox_views.setCurrentIndex(0)
 
     def _generate_song_pdf(self) -> None:
         fname = f"{datetime.datetime.now():%Y-%m-%d}_songlist.pdf"
@@ -337,12 +254,12 @@ class MainWindow(Ui_MainWindow, QMainWindow):
             file_list, self.table
         ):
             # select available songs to prepare Download
-            self.table.stage_song_ids(available_song_ids)
+            self.table.set_selection_to_song_ids(available_song_ids)
 
     def _export_usdb_ids_to_file(self) -> None:
-        selected_ids = list(self.table.batch_ids())
+        selected_ids = list(song.data.song_id for song in self.table.selected_songs())
         if not selected_ids:
-            _logger.info("skipping export: no songs in Batch")
+            _logger.info("Skipping export: no songs selected.")
             return
 
         # Note: automatically checks if file already exists
@@ -360,14 +277,14 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         _logger.info(f"exported {len(selected_ids)} USDB IDs to {path}")
 
     def _show_current_song_in_usdb(self) -> None:
-        if song := self.table.current_list_song():
+        if song := self.table.current_song():
             _logger.debug(f"Opening song page #{song.data.song_id} in webbrowser.")
             webbrowser.open(f"{Usdb.BASE_URL}?link=detail&id={int(song.data.song_id)}")
         else:
             _logger.info("No current song.")
 
     def _open_current_song_folder(self) -> None:
-        if song := self.table.current_list_song():
+        if song := self.table.current_song():
             if song.local_files.usdb_path:
                 open_file_explorer(song.local_files.usdb_path.parent)
             else:
@@ -383,13 +300,13 @@ class MainWindow(Ui_MainWindow, QMainWindow):
 
     def _restore_state(self) -> None:
         self.restoreGeometry(settings.get_geometry_main_window())
-        self.splitter_main.restoreState(settings.get_state_splitter_main())
-        self.splitter_bottom.restoreState(settings.get_state_splitter_bottom())
+        self.restoreState(settings.get_state_main_window())
+        self.dock_log.restoreGeometry(settings.get_geometry_log_dock())
 
     def _save_state(self) -> None:
         settings.set_geometry_main_window(self.saveGeometry())
-        settings.set_state_splitter_main(self.splitter_main.saveState())
-        settings.set_state_splitter_bottom(self.splitter_bottom.saveState())
+        settings.set_state_main_window(self.saveState())
+        settings.set_geometry_log_dock(self.dock_log.saveGeometry())
 
 
 class LogSignal(QObject):

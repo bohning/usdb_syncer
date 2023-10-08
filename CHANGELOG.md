@@ -1,3 +1,21 @@
+<!-- 0.4.0 -->
+
+# Changes
+
+## Fixes
+
+## Features
+
+- Removed batch view.
+- Reorganized filters in a tree.
+  - Songs can be filtered by download status.
+  - Filters can be searched.
+  - Multiple variants of the same filter can be active at the same time (select with ctrl+click).
+- Added several actions for downloaded songs:
+  - Delete (move to recycle bin)
+  - Pin (prevent updates to local files)
+- Added tooltips for some more involved actions.
+
 <!-- 0.3.0 -->
 
 # Changes

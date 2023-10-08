@@ -174,7 +174,7 @@ class Context:
         return SongData.from_usdb_song(
             self.usdb_song(),
             LocalFiles.from_sync_meta(self.locations.meta_path, self.sync_meta),
-            DownloadStatus.DONE,
+            DownloadStatus.NONE,
         )
 
 
