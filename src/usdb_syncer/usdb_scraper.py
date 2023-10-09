@@ -64,6 +64,9 @@ def new_session_with_cookies(browser: settings.Browser) -> Session:
     if cookies := browser.cookies():
         for cookie in cookies:
             session.cookies.set_cookie(cookie)
+    adapter = requests.adapters.HTTPAdapter(pool_connections=100, pool_maxsize=100)
+    session.mount("http://", adapter)
+    session.mount("https://", adapter)
     return session
 
 
