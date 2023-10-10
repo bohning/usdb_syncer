@@ -26,7 +26,7 @@ class ProxyModel(QSortFilterProxyModel):
 
         self._filter_invalidation_timer = QTimer(parent)
         self._filter_invalidation_timer.setSingleShot(True)
-        self._filter_invalidation_timer.setInterval(200)
+        self._filter_invalidation_timer.setInterval(600)
         self._filter_invalidation_timer.timeout.connect(self.invalidateRowsFilter)
         filter_tree.connect_filter_changed(self._filter_invalidation_timer.start)
 
