@@ -380,11 +380,17 @@ def _maybe_write_audio_tags(ctx: Context) -> None:
 
     audiofile = ctx.locations.file_path(meta.fname)
 
-    match audiofile.suffix:
-        case ".m4a":
-            _write_m4a_tags(meta, ctx, options.embed_artwork)
-        case ".mp3":
-            _write_mp3_tags(meta, ctx, options.embed_artwork)
+    try:
+        match audiofile.suffix:
+            case ".m4a":
+                _write_m4a_tags(meta, ctx, options.embed_artwork)
+            case ".mp3":
+                _write_mp3_tags(meta, ctx, options.embed_artwork)
+    except Exception as err:  # pylint: disable=broad-exception-caught
+        ctx.logger.debug(err)
+        ctx.logger.error(f"Failed to write audio tags to file '{meta.fname}'!")
+    else:
+        ctx.logger.debug(f"Audio tags written to file '{meta.fname}'.")
 
     ctx.sync_meta.audio.bump_mtime(ctx.locations.dir_path())
 
