@@ -107,11 +107,14 @@ class TreeModel(QAbstractItemModel):
         return flags
 
     def setData(
-        self, index: QIndex, _value: Any, role: int = Qt.ItemDataRole.DisplayRole
+        self, index: QIndex, value: Any, role: int = Qt.ItemDataRole.DisplayRole
     ) -> bool:
         if not index.isValid():
             return False
         if role == Qt.ItemDataRole.CheckStateRole:
+            if value is not None:
+                # ignore signals sent by the check box itself as we connect our own
+                return False
             self.item_for_index(index).toggle_checked(keyboard_modifiers().ctrl)
             # other rows may have changed too
             self.dataChanged.emit(self.root, self.root, Qt.ItemDataRole.CheckStateRole)
@@ -131,7 +134,7 @@ class TreeProxyModel(QSortFilterProxyModel):
 
         self._filter_invalidation_timer = QTimer(parent)
         self._filter_invalidation_timer.setSingleShot(True)
-        self._filter_invalidation_timer.setInterval(200)
+        self._filter_invalidation_timer.setInterval(600)
         self._filter_invalidation_timer.timeout.connect(self.invalidateRowsFilter)
 
     def filterAcceptsRow(self, source_row: int, source_parent: QIndex) -> bool:
