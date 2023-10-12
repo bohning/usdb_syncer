@@ -8,6 +8,7 @@ from typing import Callable, Iterable, Iterator
 
 import attrs
 import mutagen.mp4
+from audio_separator import Separator
 from mutagen import id3
 from PySide6.QtCore import QRunnable, QThreadPool
 
@@ -236,6 +237,7 @@ class SongLoader(QRunnable):
         _maybe_write_txt(ctx)
         _maybe_write_audio_tags(ctx)
         _write_sync_meta(ctx)
+        _maybe_generate_instrumental(ctx)
         return ctx.finished_song_data()
 
 
@@ -463,3 +465,46 @@ def _write_mp3_tags(audio_meta: FileMeta, ctx: Context, embed_artwork: bool) -> 
         )
 
     tags.save(ctx.locations.file_path(audio_meta.fname))
+
+
+def _maybe_generate_instrumental(ctx: Context) -> None:
+    if not (audio_options := ctx.options.audio_options) or not (
+        meta := ctx.sync_meta.audio
+    ):
+        return
+    if not audio_options.instrumental:
+        return
+
+    audio = os.path.join(ctx.locations.dir_path(), meta.fname)
+    ext = "mp3"
+    # Initialize the Separator with the audio file and model name
+    separator = Separator(
+        audio_file_path=f"{audio}",
+        model_name="UVR_MDXNET_KARA_2",
+        output_format=ext.upper(),
+        output_dir=ctx.locations.dir_path(),
+        denoise_enabled=True,
+    )
+    # Perform the separation
+    # pylint: disable-next=unbalanced-tuple-unpacking
+    instrumental_file, vocals_file = separator.separate()
+    # Properly rename the files
+    os.rename(
+        os.path.join(ctx.locations.dir_path(), instrumental_file),
+        f"{ctx.locations.file_path()} [Instrumental].{ext}",
+    )
+    os.rename(
+        os.path.join(ctx.locations.dir_path(), vocals_file),
+        f"{ctx.locations.file_path()} [Vocals].{ext}",
+    )
+
+    if not (txt_options := ctx.options.txt_options):
+        return
+
+    instrumental_txt = Path(f"{ctx.locations.file_path()} [Instrumental].txt")
+    ctx.txt.headers.title = ctx.txt.headers.title + " [Instrumental]"
+    ctx.txt.headers.mp3 = f"{ctx.locations.filename_stem} [Instrumental].{ext}"
+    ctx.txt.write_to_file(
+        instrumental_txt, txt_options.encoding.value, txt_options.newline.value
+    )
+    ctx.logger.info("Success! Created instrumental song txt.")

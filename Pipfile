@@ -30,6 +30,8 @@ pyinstaller-hooks-contrib = "*"
 macholib = {version = "*", markers="sys_platform == 'darwin'"}
 altgraph = "*"
 send2trash = "*"
+audio-separator = "*"
+onnxruntime = "*"
 
 [dev-packages]
 tox = "*"
