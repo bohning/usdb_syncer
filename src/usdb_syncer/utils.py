@@ -90,6 +90,27 @@ def extract_youtube_id(url: str) -> str | None:
     return None
 
 
+def extract_vimeo_id(url: str) -> str | None:
+    """Extracts the Vimeo id from a variety of URLs."""
+
+    pattern = r"""
+        (?:https?://)?
+        (?:
+            www\.
+            |
+            player\.
+        )?
+        (?:vimeo\.com/)
+        (?:video/)?
+        (\d{2,9})                   # the actual id
+        (?:[%#?&]|$)                # URL may contain additonal parameters
+        .*
+        """
+    if match := re.search(pattern, url, re.VERBOSE | re.IGNORECASE):
+        return match.group(1)
+    return None
+
+
 def try_read_unknown_encoding(path: Path) -> str | None:
     for codec in ["utf-8-sig", "cp1252"]:
         try:
