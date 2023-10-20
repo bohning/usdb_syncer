@@ -177,7 +177,7 @@ def _decoration_data(song: SongData, column: int) -> QIcon | None:
         case Column.BACKGROUND:
             return optional_check_icon(song.local_files.background)
         case Column.PINNED:
-            return optional_check_icon(song.local_files.pinned)
+            return pinned_icon(song.local_files.pinned)
         case _ as unreachable:
             assert_never(unreachable)
 
@@ -234,3 +234,7 @@ def yes_no_str(yes: bool) -> str:
 @cache
 def optional_check_icon(yes: bool) -> QIcon | None:
     return QIcon(":/icons/tick.png") if yes else None
+
+
+def pinned_icon(yes: bool) -> QIcon | None:
+    return QIcon(":/icons/pin.png") if yes else None
