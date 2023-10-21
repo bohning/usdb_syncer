@@ -177,7 +177,7 @@ def _decoration_data(song: SongData, column: int) -> QIcon | None:
         case Column.BACKGROUND:
             return optional_check_icon(song.local_files.background)
         case Column.PINNED:
-            return optional_check_icon(song.local_files.pinned)
+            return pinned_icon(song.local_files.pinned)
         case _ as unreachable:
             assert_never(unreachable)
 
@@ -230,7 +230,12 @@ def yes_no_str(yes: bool) -> str:
 
 # Creating a QIcon without a QApplication gives a runtime error, so we can't put it
 # in a global, but we also don't want to keep recreating it.
-# So we store it in this convenience function.
+# So we store them in these convenience functions.
 @cache
 def optional_check_icon(yes: bool) -> QIcon | None:
     return QIcon(":/icons/tick.png") if yes else None
+
+
+@cache
+def pinned_icon(yes: bool) -> QIcon | None:
+    return QIcon(":/icons/pin.png") if yes else None
