@@ -93,7 +93,9 @@ class ImageMetaTags:
     def source_url(self, logger: Log) -> str:
         if "://" in self.source:
             if "fanart.tv" in self.source:
-                logger.debug("Please use only fanart ids instead of full fanart urls.")
+                logger.debug(
+                    "Metatags contain a full fanart.tv URL instead of a fanart id only."
+                )
                 self.source = self.source.replace(
                     "images.fanart.tv", "assets.fanart.tv"
                 )
