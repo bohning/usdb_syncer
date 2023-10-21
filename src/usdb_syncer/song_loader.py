@@ -142,7 +142,7 @@ class Context:
     def cover_url(self) -> str | None:
         url = None
         if self.txt.meta_tags.cover:
-            url = self.txt.meta_tags.cover.source_url()
+            url = self.txt.meta_tags.cover.source_url(self.logger)
             self.logger.debug(f"downloading cover from #VIDEO params: {url}")
         elif self.details.cover_url:
             url = self.details.cover_url
@@ -154,7 +154,7 @@ class Context:
     def background_url(self) -> str | None:
         url = None
         if self.txt.meta_tags.background:
-            url = self.txt.meta_tags.background.source_url()
+            url = self.txt.meta_tags.background.source_url(self.logger)
             self.logger.debug(f"downloading background from #VIDEO params: {url}")
         return url
 

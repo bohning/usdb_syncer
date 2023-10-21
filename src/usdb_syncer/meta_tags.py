@@ -90,8 +90,15 @@ class ImageMetaTags:
     resize: ResizeMetaTags | None = None
     contrast: Literal["auto"] | float | None = None
 
-    def source_url(self) -> str:
+    def source_url(self, logger: Log) -> str:
         if "://" in self.source:
+            if "fanart.tv" in self.source:
+                logger.debug(
+                    "Metatags contain a full fanart.tv URL instead of a fanart id only."
+                )
+                self.source = self.source.replace(
+                    "images.fanart.tv", "assets.fanart.tv"
+                )
             return self.source
         if "/" in self.source:
             return f"https://{self.source}"
