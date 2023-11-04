@@ -126,16 +126,25 @@ If you don’t want to run the whole test pipeline, you can also use single comm
 ### Building
 
 **USDB Syncer** uses [pyinstaller](https://github.com/pyinstaller/pyinstaller) for creating
-executables. In order to build **USDB Syncer**, run the following command
+executables. In order to build **USDB Syncer**, run the following command (inside `pipenv shell`)
 
 ```bash
 # On Linux
+export PYTHONPATH="$PYTHONPATH:./src"
+python -m src.tools.write_release_info -p src/usdb_syncer/constants.py -v $(git tag | tail -n 1) -c $(git log | head -n 1 | cut -d " " -f 2)
+python -m src.tools.generate_pyside_files
 pyinstaller --name "USDBSyncer" --onefile src/usdb_syncer/main.py
 
 # On macOS
+export PYTHONPATH="$PYTHONPATH:./src"
+python -m src.tools.write_release_info -p src/usdb_syncer/constants.py -v $(git tag | tail -n 1) -c $(git log | head -n 1 | cut -d " " -f 2)
+python -m src.tools.generate_pyside_files
 pyinstaller --name "USDBSyncer" --windowed src/usdb_syncer/main.py
 
 # On Windows
+$env:PYTHONPATH = "$env:PYTHONPATH;.\src"
+python -m src.tools.write_release_info -p src/usdb_syncer/constants.py -v $(git tag | select -last 1) -c $(git log | select -first 1 | % {$_.split(" ")[1]})
+python -m src.tools.generate_pyside_files
 pyinstaller --name "USDBSyncer" --onefile src/usdb_syncer/main.py
 ```
 
