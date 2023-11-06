@@ -69,12 +69,10 @@ class TreeModel(QAbstractItemModel):
         return self.createIndex(row, column, item)
 
     @overload
-    def parent(self) -> QObject:
-        ...
+    def parent(self) -> QObject: ...
 
     @overload
-    def parent(self, child: QIndex) -> QModelIndex:
-        ...
+    def parent(self, child: QIndex) -> QModelIndex: ...
 
     def parent(self, child: QIndex | None = None) -> QModelIndex | QObject:
         if child is None:

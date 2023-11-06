@@ -109,9 +109,9 @@ def _video_options() -> VideoOptions | None:
         return None
     return VideoOptions(
         format=settings.get_video_format(),
-        reencode_format=settings.get_video_format_new()
-        if settings.get_video_reencode()
-        else None,
+        reencode_format=(
+            settings.get_video_format_new() if settings.get_video_reencode() else None
+        ),
         max_resolution=settings.get_video_resolution(),
         max_fps=settings.get_video_fps(),
     )

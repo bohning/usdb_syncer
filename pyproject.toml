@@ -12,6 +12,7 @@ skip_glob = ["src/usdb_syncer/gui/forms", "src/usdb_syncer/gui/resources"]
 
 [tool.black]
 skip-magic-trailing-comma = true
+preview = true
 
 [tool.pylint.master]
 ignore-paths = [
