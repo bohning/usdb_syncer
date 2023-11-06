@@ -213,6 +213,12 @@ class SongLoader(QRunnable):
         except UsdbNotFoundError:
             self.logger.error("Song seems to have been deleted from USDB.")
             result.error = DownloadErrorReason.NOT_FOUND
+        except IOError:
+            self.logger.error(
+                "I/O error: failed to write files. Please check write permission for"
+                " the selected song folder."
+            )
+            result.error = DownloadErrorReason.FILE_IO
         except Exception as exception:  # pylint: disable=broad-except
             self.logger.debug(exception)
             self.logger.error(

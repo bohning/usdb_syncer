@@ -70,6 +70,7 @@ class DownloadErrorReason(Enum):
 
     NOT_LOGGED_IN = enum.auto()
     NOT_FOUND = enum.auto()
+    FILE_IO = enum.auto()
     UNKNOWN = enum.auto()
 
 
