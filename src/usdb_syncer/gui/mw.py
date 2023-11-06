@@ -245,7 +245,9 @@ class MainWindow(Ui_MainWindow, QMainWindow):
             self,
             caption="Select one or more files to import USDB IDs from",
             dir=os.getcwd(),
-            filter="JSON, USDB IDs, Weblinks (*.json *.usdb_ids *.url *.webloc *.desktop)",
+            filter=(
+                "JSON, USDB IDs, Weblinks (*.json *.usdb_ids *.url *.webloc *.desktop)"
+            ),
         )[0]
         if not file_list:
             _logger.info("no files selected to import USDB IDs from")

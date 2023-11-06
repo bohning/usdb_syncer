@@ -312,7 +312,8 @@ class Tracks:
                 note_text_fixed += 1
         if note_text_fixed > 0:
             logger.debug(
-                f"FIX: {note_text_fixed} apostrophes/quotation marks in lyrics corrected."
+                f"FIX: {note_text_fixed} apostrophes/quotation marks in lyrics"
+                " corrected."
             )
 
     def fix_spaces(self, logger: Log) -> None:
