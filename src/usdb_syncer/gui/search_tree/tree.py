@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections import Counter
 from typing import TYPE_CHECKING, Callable, Iterable
 
 from PySide6.QtCore import Qt
@@ -60,16 +61,28 @@ class FilterTree:
         self._model.dataChanged.connect(func)
 
     def set_artists(self, artists: Iterable[str]) -> None:
-        self._set_variants(Filter.ARTIST, (SongArtistMatch(a) for a in artists))
+        self._set_variants(
+            Filter.ARTIST,
+            (SongArtistMatch(a, c) for a, c in sorted(Counter(artists).items())),
+        )
 
     def set_titles(self, titles: Iterable[str]) -> None:
-        self._set_variants(Filter.TITLE, (SongTitleMatch(a) for a in titles))
+        self._set_variants(
+            Filter.TITLE,
+            (SongTitleMatch(t, c) for t, c in sorted(Counter(titles).items())),
+        )
 
     def set_editions(self, editions: Iterable[str]) -> None:
-        self._set_variants(Filter.EDITION, (SongEditionMatch(a) for a in editions))
+        self._set_variants(
+            Filter.EDITION,
+            (SongEditionMatch(e, c) for e, c in sorted(Counter(editions).items())),
+        )
 
     def set_languages(self, languages: Iterable[str]) -> None:
-        self._set_variants(Filter.LANGUAGE, (SongLanguageMatch(a) for a in languages))
+        self._set_variants(
+            Filter.LANGUAGE,
+            (SongLanguageMatch(l, c) for l, c in sorted(Counter(languages).items())),
+        )
 
     def _set_variants(self, filt: Filter, variants: Iterable[SongMatch]) -> None:
         self._model.beginResetModel()

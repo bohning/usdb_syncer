@@ -216,10 +216,10 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         )
 
     def _update_dynamic_filters(self, songs: tuple[SongData, ...]) -> None:
-        self.tree.set_artists(sorted(set(song.data.artist for song in songs)))
-        self.tree.set_titles(sorted(set(song.data.title for song in songs)))
-        self.tree.set_editions(sorted(set(song.data.edition for song in songs)))
-        self.tree.set_languages(sorted(set(song.data.language for song in songs)))
+        self.tree.set_artists(song.data.artist for song in songs)
+        self.tree.set_titles(song.data.title for song in songs)
+        self.tree.set_editions(song.data.edition for song in songs)
+        self.tree.set_languages(song.data.language for song in songs)
 
     def select_song_dir(self) -> None:
         song_dir = QFileDialog.getExistingDirectory(self, "Select Song Directory")

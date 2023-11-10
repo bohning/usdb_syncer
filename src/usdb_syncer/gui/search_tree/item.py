@@ -19,32 +19,46 @@ class SongMatch:
         raise NotImplementedError
 
 
-class SongArtistMatch(str, SongMatch):
+@attrs.define
+class SongValueMatch(SongMatch):
+    """str that can be matched against a song's artist."""
+
+    val: str
+    count: int
+
+    def matches_song(self, song: SongData) -> bool:
+        return self.val == song.data.artist
+
+    def __str__(self) -> str:
+        return f"{self.val} [{self.count}]"
+
+
+class SongArtistMatch(SongValueMatch):
     """str that can be matched against a song's artist."""
 
     def matches_song(self, song: SongData) -> bool:
-        return self == song.data.artist
+        return self.val == song.data.artist
 
 
-class SongTitleMatch(str, SongMatch):
+class SongTitleMatch(SongValueMatch):
     """str that can be matched against a song's title."""
 
     def matches_song(self, song: SongData) -> bool:
-        return self == song.data.title
+        return self.val == song.data.title
 
 
-class SongEditionMatch(str, SongMatch):
+class SongEditionMatch(SongValueMatch):
     """str that can be matched against a song's edition."""
 
     def matches_song(self, song: SongData) -> bool:
-        return self == song.data.edition
+        return self.val == song.data.edition
 
 
-class SongLanguageMatch(str, SongMatch):
+class SongLanguageMatch(SongValueMatch):
     """str that can be matched against a song's language."""
 
     def matches_song(self, song: SongData) -> bool:
-        return self == song.data.language
+        return self.val == song.data.language
 
 
 @attrs.define(kw_only=True)
