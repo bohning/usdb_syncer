@@ -181,6 +181,7 @@ class Context:
 def _load_sync_meta(path: Path, song_id: SongId, meta_tags: MetaTags) -> SyncMeta:
     """Loads meta from path if valid or creates a new one."""
     if path.exists() and (meta := SyncMeta.try_from_file(path)):
+        meta.meta_tags = meta_tags
         return meta
     return SyncMeta.new(song_id, meta_tags)
 
