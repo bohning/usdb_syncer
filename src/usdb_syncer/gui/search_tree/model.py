@@ -15,7 +15,6 @@ from PySide6.QtCore import (
 )
 from PySide6.QtWidgets import QWidget
 
-from usdb_syncer.gui.utils import keyboard_modifiers
 from usdb_syncer.song_data import fuzz_text
 
 from .item import TreeItem
@@ -103,22 +102,6 @@ class TreeModel(QAbstractItemModel):
         if item.checkable:
             flags |= Qt.ItemFlag.ItemIsUserCheckable
         return flags
-
-    def setData(
-        self, index: QIndex, value: Any, role: int = Qt.ItemDataRole.DisplayRole
-    ) -> bool:
-        if not index.isValid():
-            return False
-        if role == Qt.ItemDataRole.CheckStateRole:
-            if value is not None:
-                # ignore signals sent by the check box itself as we connect our own
-                return False
-            self.item_for_index(index).toggle_checked(keyboard_modifiers().ctrl)
-            # other rows may have changed too
-            self.dataChanged.emit(self.root, self.root, Qt.ItemDataRole.CheckStateRole)
-        else:
-            return False
-        return True
 
 
 class TreeProxyModel(QSortFilterProxyModel):

@@ -181,6 +181,7 @@ class Context:
 def _load_sync_meta(path: Path, song_id: SongId, meta_tags: MetaTags) -> SyncMeta:
     """Loads meta from path if valid or creates a new one."""
     if path.exists() and (meta := SyncMeta.try_from_file(path)):
+        meta.meta_tags = meta_tags
         return meta
     return SyncMeta.new(song_id, meta_tags)
 
@@ -319,11 +320,11 @@ def _maybe_download_cover(ctx: Context) -> None:
     if not (url := ctx.cover_url()):
         ctx.logger.warning("No cover resource found.")
         return
-    if ctx.sync_meta.meta_tags.cover == ctx.txt.meta_tags.cover:
-        if meta := ctx.sync_meta.synced_cover(ctx.locations.dir_path()):
-            ctx.txt.headers.cover = meta.fname
-            ctx.logger.info("Cover resource is unchanged.")
-            return
+    meta = ctx.sync_meta.synced_cover(ctx.locations.dir_path())
+    if meta and meta.resource == url:
+        ctx.txt.headers.cover = meta.fname
+        ctx.logger.info("Cover resource is unchanged.")
+        return
     if path := download_and_process_image(
         url,
         ctx.locations.file_path(),
@@ -347,11 +348,11 @@ def _maybe_download_background(ctx: Context) -> None:
     if not (url := ctx.background_url()):
         ctx.logger.warning("No background resource found.")
         return
-    if ctx.sync_meta.meta_tags.background == ctx.txt.meta_tags.background:
-        if meta := ctx.sync_meta.synced_background(ctx.locations.dir_path()):
-            ctx.txt.headers.background = meta.fname
-            ctx.logger.info("Background resource is unchanged.")
-            return
+    meta = ctx.sync_meta.synced_background(ctx.locations.dir_path())
+    if meta and meta.resource == url:
+        ctx.txt.headers.background = meta.fname
+        ctx.logger.info("Background resource is unchanged.")
+        return
     if path := download_and_process_image(
         url,
         ctx.locations.file_path(),

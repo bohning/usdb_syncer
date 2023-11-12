@@ -4,6 +4,9 @@
 
 ## Fixes
 
+- Don't fail download if mp3/m4a tags cannot be written.
+- Fix cover and background change detection.
+
 ## Features
 
 - Removed batch view.
@@ -15,6 +18,8 @@
   - Delete (move to recycle bin)
   - Pin (prevent updates to local files)
 - Added tooltips for some more involved actions.
+- Support Vimeo IDs and shortening Amazon URLs in the meta tags dialog.
+- Show number of songs per artist, title, language and edition.
 
 <!-- 0.3.0 -->
 
