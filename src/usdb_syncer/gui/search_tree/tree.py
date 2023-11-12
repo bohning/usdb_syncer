@@ -5,8 +5,9 @@ from __future__ import annotations
 from collections import Counter
 from typing import TYPE_CHECKING, Callable, Iterable
 
-from PySide6.QtCore import Qt
+from PySide6.QtCore import QModelIndex, Qt
 
+from usdb_syncer.gui.utils import keyboard_modifiers
 from usdb_syncer.song_data import SongData
 
 from .item import (
@@ -37,11 +38,7 @@ class FilterTree:
         self._proxy_model = TreeProxyModel(self.view, self._model)
         self.view.setHeaderHidden(True)
         self.view.setModel(self._proxy_model)
-        self.view.clicked.connect(
-            lambda idx: self._model.setData(
-                self._proxy_model.mapToSource(idx), None, Qt.ItemDataRole.CheckStateRole
-            )
-        )
+        self.view.clicked.connect(self._on_click)
         mw.line_edit_search_filters.textChanged.connect(self._proxy_model.set_filter)
 
     def _build_tree(self) -> None:
@@ -53,6 +50,17 @@ class FilterTree:
                 VariantItem(data=variant, parent=item)
                 for variant in filt.static_variants()
             )
+
+    def _on_click(self, index: QModelIndex) -> None:
+        item = self._model.item_for_index(self._proxy_model.mapToSource(index))
+        item.toggle_checked(keyboard_modifiers().ctrl)
+        # parent and siblings may have changed too
+        self._model.dataChanged.emit(
+            index.parent(), index.parent(), [Qt.ItemDataRole.CheckStateRole]
+        )
+        first = self._model.index_for_item(item.parent.children[0])
+        last = self._model.index_for_item(item.parent.children[-1])
+        self._model.dataChanged.emit(first, last, [Qt.ItemDataRole.CheckStateRole])
 
     def accepts_song(self, song: SongData) -> bool:
         return all(filt.accepts_song(song) for filt in self.root.children)
