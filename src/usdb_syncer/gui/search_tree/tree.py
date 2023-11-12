@@ -53,14 +53,9 @@ class FilterTree:
 
     def _on_click(self, index: QModelIndex) -> None:
         item = self._model.item_for_index(self._proxy_model.mapToSource(index))
-        item.toggle_checked(keyboard_modifiers().ctrl)
-        # parent and siblings may have changed too
-        self._model.dataChanged.emit(
-            index.parent(), index.parent(), [Qt.ItemDataRole.CheckStateRole]
-        )
-        first = self._model.index_for_item(item.parent.children[0])
-        last = self._model.index_for_item(item.parent.children[-1])
-        self._model.dataChanged.emit(first, last, [Qt.ItemDataRole.CheckStateRole])
+        for changed in item.toggle_checked(keyboard_modifiers().ctrl):
+            idx = self._model.index_for_item(changed)
+            self._model.dataChanged.emit(idx, idx, [Qt.ItemDataRole.CheckStateRole])
 
     def accepts_song(self, song: SongData) -> bool:
         return all(filt.accepts_song(song) for filt in self.root.children)

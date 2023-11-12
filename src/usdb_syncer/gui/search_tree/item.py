@@ -72,8 +72,9 @@ class TreeItem:
     checked: bool = attrs.field(default=False, init=False)
     checkable: bool = attrs.field(default=False, init=False)
 
-    def toggle_checked(self, _keep_siblings: bool) -> None:
-        pass
+    def toggle_checked(self, _keep_siblings: bool) -> list[TreeItem]:
+        """Returns toggled items."""
+        return []
 
     def decoration(self) -> QIcon | None:
         return None
@@ -124,25 +125,30 @@ class FilterItem(TreeItem):
     def is_checkable(self) -> bool:
         return bool(self.checked_children)
 
-    def toggle_checked(self, _keep_siblings: bool) -> None:
-        if self.checked:
-            self.uncheck_children()
+    def toggle_checked(self, _keep_siblings: bool) -> list[TreeItem]:
+        return self.uncheck_children() if self.checked else []
 
-    def uncheck_children(self) -> None:
-        for child in self.children:
+    def uncheck_children(self) -> list[TreeItem]:
+        changed = [self.children[row] for row in self.checked_children]
+        for child in changed:
             child.checked = False
         self.checked_children.clear()
         self.checkable = self.checked = False
+        return changed + [self]
 
-    def set_child_checked(self, child: int, checked: bool, keep_siblings: bool) -> None:
+    def set_child_checked(
+        self, child: int, checked: bool, keep_siblings: bool
+    ) -> list[TreeItem]:
+        changed = [self, self.children[child]]
         if checked:
             if not keep_siblings:
-                self.uncheck_children()
+                changed += self.uncheck_children()
             self.checked_children.add(child)
         else:
             self.checked_children.remove(child)
         self.children[child].checked = checked
         self.checkable = self.checked = bool(self.checked_children)
+        return changed
 
     def decoration(self) -> QIcon:
         return self.data.decoration()
@@ -167,8 +173,8 @@ class VariantItem(TreeItem):
     def is_checkable(self) -> bool:
         return True
 
-    def toggle_checked(self, keep_siblings: bool) -> None:
-        self.parent.set_child_checked(
+    def toggle_checked(self, keep_siblings: bool) -> list[TreeItem]:
+        return self.parent.set_child_checked(
             self.row_in_parent, not self.checked, keep_siblings
         )
 
