@@ -78,7 +78,7 @@ def download_audio(
         postprocessor = {
             "key": "FFmpegExtractAudio",
             "preferredquality": options.bitrate.ytdl_format(),
-            "preferredcodec": options.format.value,
+            "preferredcodec": options.format.ytdl_codec(),
         }
         ydl_opts["postprocessors"] = [postprocessor]
 

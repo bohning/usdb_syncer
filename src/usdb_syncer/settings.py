@@ -112,6 +112,7 @@ class AudioFormat(Enum):
 
     M4A = "m4a"
     MP3 = "mp3"
+    OGG = "ogg"
 
     def __str__(self) -> str:
         match self:
@@ -119,6 +120,8 @@ class AudioFormat(Enum):
                 return ".m4a (mp4a)"
             case AudioFormat.MP3:
                 return ".mp3 (MPEG)"
+            case AudioFormat.OGG:
+                return ".ogg (Ogg Vorbis)"
             case _ as unreachable:
                 assert_never(unreachable)
 
@@ -126,12 +129,25 @@ class AudioFormat(Enum):
         # prefer best audio-only codec; otherwise take a video codec and extract later
         return f"bestaudio[ext={self.value}]/bestaudio/bestaudio*"
 
+    def ytdl_codec(self) -> str:
+        match self:
+            case AudioFormat.M4A:
+                return "m4a"
+            case AudioFormat.MP3:
+                return "mp3"
+            case AudioFormat.OGG:
+                return "vorbis"
+            case _ as unreachable:
+                assert_never(unreachable)
+
     def ffmpeg_encoder(self) -> str:
         match self:
             case AudioFormat.M4A:
                 return "aac"
             case AudioFormat.MP3:
                 return "libmp3lame"
+            case AudioFormat.OGG:
+                return "libvorbis"
             case _ as unreachable:
                 assert_never(unreachable)
 

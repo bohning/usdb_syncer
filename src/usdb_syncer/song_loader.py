@@ -2,13 +2,17 @@
 
 from __future__ import annotations
 
+import base64
 import os
 from pathlib import Path
 from typing import Callable, Iterable, Iterator
 
 import attrs
 import mutagen.mp4
+import mutagen.oggvorbis
 from mutagen import id3
+from mutagen.flac import Picture
+from PIL import Image
 from PySide6.QtCore import QRunnable, QThreadPool
 
 from usdb_syncer import SongId, resource_dl, usdb_scraper
@@ -393,6 +397,8 @@ def _maybe_write_audio_tags(ctx: Context) -> None:
                 _write_m4a_tags(meta, ctx, options.embed_artwork)
             case ".mp3":
                 _write_mp3_tags(meta, ctx, options.embed_artwork)
+            case ".ogg":
+                _write_ogg_tags(meta, ctx, options.embed_artwork)
     except Exception as err:  # pylint: disable=broad-exception-caught
         ctx.logger.debug(err)
         ctx.logger.error(f"Failed to write audio tags to file '{meta.fname}'!")
@@ -470,3 +476,41 @@ def _write_mp3_tags(audio_meta: FileMeta, ctx: Context, embed_artwork: bool) -> 
         )
 
     tags.save(ctx.locations.file_path(audio_meta.fname))
+
+
+def _write_ogg_tags(audio_meta: FileMeta, ctx: Context, embed_artwork: bool) -> None:
+    audio = mutagen.oggvorbis.OggVorbis(ctx.locations.file_path(audio_meta.fname))
+
+    # Set basic tags
+    audio["artist"] = ctx.txt.headers.artist
+    audio["title"] = ctx.txt.headers.title
+    lang = ISO_639_2B_LANGUAGE_CODES.get(ctx.txt.headers.main_language(), "und")
+    audio["language"] = lang
+    if genre := ctx.txt.headers.genre:
+        audio["genre"] = genre
+    if year := ctx.txt.headers.year:
+        audio["date"] = year
+    audio["lyrics"] = ctx.txt.unsynchronized_lyrics()
+
+    if embed_artwork and ctx.sync_meta.cover:
+        with open(ctx.locations.file_path(ctx.sync_meta.cover.fname), "rb") as cover:
+            data = cover.read()
+        with Image.open(ctx.locations.file_path(ctx.sync_meta.cover.fname)) as cover:
+            width, height = cover.size
+
+        picture = Picture()
+        picture.data = data
+        picture.type = 3  # "Cover (front)"
+        picture.desc = "Cover art"
+        picture.mime = "image/jpeg"
+        picture.width = width
+        picture.height = height
+        picture.depth = 24
+
+        picture_data = picture.write()
+        encoded_data = base64.b64encode(picture_data)
+        vcomment_value = encoded_data.decode("ascii")
+
+        audio["metadata_block_picture"] = [vcomment_value]
+
+    audio.save()
