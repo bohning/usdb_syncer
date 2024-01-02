@@ -29,11 +29,19 @@ def generate_song_json(songs: Iterable[SongId], path: str) -> int:
             "id": song.song_id,
             "artist": headers.artist,
             "title": headers.title,
-            "year": headers.year,
-            "edition": song.edition,
-            "genre": headers.genre,
+            "year": int(headers.year) if headers.year else None,
+            "edition": (
+                None
+                if (not headers.edition or headers.edition == "None")
+                else headers.edition
+            ),
+            "genre": (
+                None
+                if (not headers.genre or headers.genre == "None")
+                else headers.genre
+            ),
             "language": song.language,
-            "golden_notes": song.golden_notes,
+            "golden_notes": bool(song.golden_notes),  # force true/false instead of 1/0
             "cover_url": (
                 meta.meta_tags.cover.source_url(_logger)
                 if meta.meta_tags.cover
@@ -60,7 +68,8 @@ def generate_song_json(songs: Iterable[SongId], path: str) -> int:
         for song_id in songs
         if (song := UsdbSong.get(song_id))
         and (meta := song.sync_meta)
-        and (headers := get_headers(str(meta.path)))
+        and (txt := meta.txt)
+        and (headers := get_headers(str(meta.path.with_name(txt.fname))))
     ]
     content = {"songs": song_list, "date": str(date), "syncer_version": VERSION}
 
