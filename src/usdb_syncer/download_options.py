@@ -7,6 +7,13 @@ from usdb_syncer import settings
 
 
 @dataclass(frozen=True)
+class MiscOptions:
+    """Miscellaneous settings that must always be present."""
+
+    apostrophe: settings.Apostrophe
+
+
+@dataclass(frozen=True)
 class TxtOptions:
     """Settings regarding the song txt file to be downloaded."""
 
@@ -67,6 +74,7 @@ class Options:
     """Settings for downloading songs."""
 
     song_dir: Path
+    misc_options: MiscOptions
     txt_options: TxtOptions | None
     audio_options: AudioOptions | None
     browser: settings.Browser
@@ -78,6 +86,7 @@ class Options:
 def download_options() -> Options:
     return Options(
         song_dir=settings.get_song_dir(),
+        misc_options=_misc_options(),
         txt_options=_txt_options(),
         audio_options=_audio_options(),
         browser=settings.get_browser(),
@@ -85,6 +94,10 @@ def download_options() -> Options:
         cover=_cover_options(),
         background_options=_background_options(),
     )
+
+
+def _misc_options() -> MiscOptions:
+    return MiscOptions(settings.get_apostrophe())
 
 
 def _txt_options() -> TxtOptions | None:

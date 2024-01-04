@@ -303,11 +303,13 @@ class Tracks:
                 f"FIX: pitch values normalized (shifted by {octave_shift} octaves)."
             )
 
-    def fix_apostrophes_and_quotation_marks(self, logger: Log) -> None:
+    def fix_apostrophes_and_quotation_marks(self, apostrophe: str, logger: Log) -> None:
         note_text_fixed = 0
         for note in self.all_notes():
             note_text_old = note.text
-            note.text = replace_false_apostrophes_and_quotation_marks(note_text_old)
+            note.text = replace_false_apostrophes_and_quotation_marks(
+                note_text_old, apostrophe
+            )
             if note_text_old != note.text:
                 note_text_fixed += 1
         if note_text_fixed > 0:
@@ -420,16 +422,17 @@ def fix_line_breaks(lines: list[Line]) -> None:
         last_line = line
 
 
-def replace_false_apostrophes_and_quotation_marks(value: str) -> str:
+def replace_false_apostrophes_and_quotation_marks(value: str, apostrophe: str) -> str:
     # two single upright quotation marks ('') by double upright quotation marks (")
     # grave accent (`), acute accent (´), prime symbol (′) and upright apostrophe (')
-    # by typographer’s apostrophe (’)
+    # by user's choice (typographer’s apostrophe (’) or upright apostrophe ('))
     return (
         value.replace("''", '"')
-        .replace("`", "’")
-        .replace("´", "’")
-        .replace("′", "’")
-        .replace("'", "’")
+        .replace("`", apostrophe)
+        .replace("´", apostrophe)
+        .replace("′", apostrophe)
+        .replace("’", apostrophe)
+        .replace("'", apostrophe)
     )
 
 

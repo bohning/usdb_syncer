@@ -80,12 +80,12 @@ class SongTxt:
         ) as file:
             file.write(str(self))
 
-    def sanitize(self) -> None:
+    def sanitize(self, apostrophe: str) -> None:
         """Sanitize USDB issues and prepare for local usage."""
         self.headers.reset_file_location_headers()
-        self.fix()
+        self.fix(apostrophe)
 
-    def fix(self) -> None:
+    def fix(self, apostrophe: str) -> None:
         # non-optional fixes
         self.fix_relative_songs()
         self.notes.maybe_split_duet_notes()
@@ -95,8 +95,8 @@ class SongTxt:
         self.notes.fix_overlapping_and_touching_notes(self.logger)
         self.notes.fix_line_breaks(self.logger)
         self.notes.fix_pitch_values(self.logger)
-        self.notes.fix_apostrophes_and_quotation_marks(self.logger)
-        self.headers.fix_apostrophes(self.logger)
+        self.notes.fix_apostrophes_and_quotation_marks(apostrophe, self.logger)
+        self.headers.fix_apostrophes(apostrophe, self.logger)
         self.notes.fix_spaces(self.logger)
         self.notes.fix_all_caps(self.logger)
         self.notes.fix_first_words_capitalization(self.logger)

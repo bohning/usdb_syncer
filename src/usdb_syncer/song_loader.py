@@ -123,7 +123,7 @@ class Context:
     ) -> Context:
         txt_str = usdb_scraper.get_notes(details.song_id, logger)
         txt = SongTxt.parse(txt_str, logger)
-        txt.sanitize()
+        txt.sanitize(options.misc_options.apostrophe.value)
         txt.headers.creator = txt.headers.creator or details.uploader or None
         paths = Locations.new(
             details.song_id, options.song_dir, info.meta_path, txt.headers

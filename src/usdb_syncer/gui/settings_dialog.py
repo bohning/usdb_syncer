@@ -24,6 +24,8 @@ class SettingsDialog(Ui_Dialog, QDialog):
             self.comboBox_encoding.addItem(str(encoding), encoding)
         for newline in settings.Newline:
             self.comboBox_line_endings.addItem(str(newline), newline)
+        for apostrophe in settings.Apostrophe:
+            self.comboBox_apostrophes.addItem(str(apostrophe), apostrophe)
         for container in settings.AudioFormat:
             self.comboBox_audio_format.addItem(str(container), container)
         for bitrate in settings.AudioBitrate:
@@ -51,6 +53,9 @@ class SettingsDialog(Ui_Dialog, QDialog):
         )
         self.comboBox_line_endings.setCurrentIndex(
             self.comboBox_line_endings.findData(settings.get_newline())
+        )
+        self.comboBox_apostrophes.setCurrentIndex(
+            self.comboBox_apostrophes.findData(settings.get_apostrophe())
         )
         self.groupBox_audio.setChecked(settings.get_audio())
         self.comboBox_audio_format.setCurrentIndex(
@@ -91,6 +96,7 @@ class SettingsDialog(Ui_Dialog, QDialog):
         settings.set_txt(self.groupBox_songfile.isChecked())
         settings.set_encoding(self.comboBox_encoding.currentData())
         settings.set_newline(self.comboBox_line_endings.currentData())
+        settings.set_apostrophe(self.comboBox_apostrophes.currentData())
         settings.set_audio(self.groupBox_audio.isChecked())
         settings.set_audio_format(self.comboBox_audio_format.currentData())
         settings.set_audio_bitrate(self.comboBox_audio_bitrate.currentData())

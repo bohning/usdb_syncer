@@ -147,11 +147,13 @@ class Headers:
     def artist_title_str(self) -> str:
         return f"{self.artist} - {self.title}"
 
-    def fix_apostrophes(self, logger: Log) -> None:
+    def fix_apostrophes(self, apostrophe: str, logger: Log) -> None:
         apostrophes_and_quotation_marks_fixed = False
         for key in ("artist", "title", "language", "genre", "p1", "p2", "album"):
             if value := getattr(self, key):
-                corrected_value = replace_false_apostrophes_and_quotation_marks(value)
+                corrected_value = replace_false_apostrophes_and_quotation_marks(
+                    value, apostrophe
+                )
                 if value != corrected_value:
                     setattr(self, key, corrected_value)
                     apostrophes_and_quotation_marks_fixed = True

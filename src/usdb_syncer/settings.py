@@ -58,6 +58,7 @@ class SettingKey(Enum):
     TXT = "downloads/txt"
     ENCODING = "downloads/encoding"
     NEWLINE = "downloads/newline"
+    APOSTROPHE = "downloads/apostrophe"
     AUDIO = "downloads/audio"
     AUDIO_FORMAT = "downloads/audio_format"
     AUDIO_BITRATE = "downloads/audio_bitrate"
@@ -119,6 +120,22 @@ class Newline(Enum):
         if os.linesep == Newline.CRLF.value:
             return Newline.CRLF
         return Newline.LF
+
+
+class Apostrophe(Enum):
+    """Apostrophe normalization for song txts."""
+
+    TYPOGRAPHER = "’"
+    UPRIGHT = "'"
+
+    def __str__(self) -> str:
+        match self:
+            case Apostrophe.TYPOGRAPHER:
+                return "Typographer's Apostrophe (’)"
+            case Apostrophe.UPRIGHT:
+                return "Upright Apostrophe (')"
+            case _ as unreachable:
+                assert_never(unreachable)
 
 
 class AudioFormat(Enum):
@@ -470,6 +487,14 @@ def get_encoding() -> Encoding:
 
 def set_encoding(value: Encoding) -> None:
     set_setting(SettingKey.ENCODING, value)
+
+
+def get_apostrophe() -> Apostrophe:
+    return get_setting(SettingKey.APOSTROPHE, Apostrophe.TYPOGRAPHER)
+
+
+def set_apostrophe(value: Apostrophe) -> None:
+    set_setting(SettingKey.APOSTROPHE, value)
 
 
 def get_txt() -> bool:
