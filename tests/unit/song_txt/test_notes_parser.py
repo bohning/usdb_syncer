@@ -37,7 +37,21 @@ def test_notes_parser_fixes(resource_dir: str) -> None:
         with open(path.replace("_in.txt", "_out.txt"), encoding="utf-8") as file:
             out = file.read()
         txt = SongTxt.parse(contents, _logger)
-        txt.fix()
+        txt.fix("’")
+        assert str(txt) == out, f"failed test for '{path}'"
+
+
+def test_notes_parser_fixes_upright_apostrophes(resource_dir: str) -> None:
+    folder = os.path.join(resource_dir, "txt", "fixes")
+    for path in glob(f"{folder}/*_typograhper.txt"):
+        with open(path, encoding="utf-8") as file:
+            contents = file.read()
+        with open(
+            path.replace("_typograhper.txt", "_upright.txt"), encoding="utf-8"
+        ) as file:
+            out = file.read()
+        txt = SongTxt.parse(contents, _logger)
+        txt.fix("'")
         assert str(txt) == out, f"failed test for '{path}'"
 
 

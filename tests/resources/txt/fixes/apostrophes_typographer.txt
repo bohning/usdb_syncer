@@ -1,0 +1,15 @@
+#ARTIST:Mi’st’er ’B’ean
+#TITLE:S’too’early
+#MP3:Mi’st’er ’B’ean - S’too’early.mp3
+#LANGUAGE:g’rman
+#BPM:244
+#GAP:2910
+F 14 5 27 ba’da’m
+F 20 61 17 mil’jen
+- 81
+: 82 1 5 ’n halb’s
+: 84 3 12 E’
+: 88 1 12 compe’
+: 90 1 10  ’SCON
+: 92 3 8 to’ta,
+E
