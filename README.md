@@ -123,22 +123,6 @@ The following tools are part of the test pipeline:
 
 If you don’t want to run the whole test pipeline, you can also use single commands from the pipeline, e.g., `pytest`. The tools will automatically pick up the correct configuration from the `pyproject.toml` file.
 
-### Building
-
-**USDB Syncer** uses [pyinstaller](https://github.com/pyinstaller/pyinstaller) for creating
-executables. In order to build **USDB Syncer**, run the following command
-
-```bash
-# On Linux
-pyinstaller --name "USDBSyncer" --onefile src/usdb_syncer/main.py
-
-# On macOS
-pyinstaller --name "USDBSyncer" --windowed src/usdb_syncer/main.py
-
-# On Windows
-pyinstaller --name "USDBSyncer" --onefile src/usdb_syncer/main.py
-```
-
 ## Versioning
 
 **USDB Syncer** uses [semantic versioning (semver)](https://semver.org/) as versioning scheme.
