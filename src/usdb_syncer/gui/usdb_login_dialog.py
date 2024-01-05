@@ -1,6 +1,5 @@
 """Dialog to manage USDB login."""
 
-
 from PySide6.QtGui import QDesktopServices, QIcon
 from PySide6.QtWidgets import QDialog, QMessageBox, QWidget
 

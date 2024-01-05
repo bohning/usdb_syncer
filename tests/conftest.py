@@ -1,6 +1,5 @@
 """This module contains pytest fixtures."""
 
-
 from pathlib import Path
 
 import pytest
