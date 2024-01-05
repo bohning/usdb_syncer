@@ -20,6 +20,7 @@
 - Added tooltips for some more involved actions.
 - Support Vimeo IDs and shortening Amazon URLs in the meta tags dialog.
 - Show number of songs per artist, title, language and edition.
+- Support Ogg/Vorbis (.ogg) audio format.
 
 <!-- 0.3.0 -->
 
