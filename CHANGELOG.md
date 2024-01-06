@@ -6,6 +6,8 @@
 
 - Don't fail download if mp3/m4a tags cannot be written.
 - Fix cover and background change detection.
+- Let users resize all text-based columns, as width is not calculated correctly on Linux and macOS.
+- Enable running the app even without keyring backend available (usually the case on Linux).
 
 ## Features
 

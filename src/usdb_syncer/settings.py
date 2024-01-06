@@ -23,16 +23,30 @@ from usdb_syncer.logger import get_logger
 _logger = get_logger(__file__)
 
 SYSTEM_USDB = "USDB Syncer/USDB"
+NO_KEYRING_BACKEND_WARNING = (
+    "Your USDB password cannot be stored or retrieved because no keyring backend is "
+    "available. See https://pypi.org/project/keyring for details."
+)
 
 
 def get_usdb_auth() -> Tuple[str, str]:
     username = get_setting(SettingKey.USDB_USER_NAME, "")
-    return (username, keyring.get_password(SYSTEM_USDB, username) or "")
+    pwd = ""
+    try:
+        pwd = keyring.get_password(SYSTEM_USDB, username) or ""
+    except keyring.core.backend.errors.NoKeyringError as error:
+        _logger.debug(error)
+        _logger.warning(NO_KEYRING_BACKEND_WARNING)
+    return (username, pwd)
 
 
 def set_usdb_auth(username: str, password: str) -> None:
     set_setting(SettingKey.USDB_USER_NAME, username)
-    keyring.set_password(SYSTEM_USDB, username, password)
+    try:
+        keyring.set_password(SYSTEM_USDB, username, password)
+    except keyring.core.backend.errors.NoKeyringError as error:
+        _logger.debug(error)
+        _logger.warning(NO_KEYRING_BACKEND_WARNING)
 
 
 class SettingKey(Enum):
@@ -240,6 +254,38 @@ class Browser(Enum):
             _logger.debug(error)
         _logger.warning(f"Failed to retrieve {str(self).capitalize()} cookies.")
         return None
+
+    def cookie_path(self) -> str | None:
+        """Retrieve the path to the cookie as returned by browser_cookie3. This seems to
+        be more reliable than yt-dlp's cookie handling."""
+        try:
+            match self:
+                case Browser.NONE:
+                    path = None
+                case Browser.BRAVE:
+                    path = browser_cookie3.Brave().cookie_file
+                case Browser.CHROME:
+                    path = browser_cookie3.Chrome().cookie_file
+                case Browser.CHROMIUM:
+                    path = browser_cookie3.Chromium().cookie_file
+                case Browser.EDGE:
+                    path = browser_cookie3.Edge().cookie_file
+                case Browser.FIREFOX:
+                    path = browser_cookie3.Firefox().cookie_file
+                case Browser.OPERA:
+                    path = browser_cookie3.Opera().cookie_file
+                case Browser.SAFARI:
+                    safari = browser_cookie3.Safari()
+                    buf = safari.__buffer  # pylint: disable=protected-access
+                    path = buf.name if buf else None
+                case Browser.VIVALDI:
+                    path = browser_cookie3.Vivaldi().cookie_file
+                case _ as unreachable:
+                    assert_never(unreachable)
+        except Exception as error:  # pylint: disable=broad-exception-caught
+            _logger.debug(error)
+            path = None
+        return path
 
 
 class VideoContainer(Enum):
