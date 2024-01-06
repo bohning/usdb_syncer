@@ -275,7 +275,8 @@ class Browser(Enum):
                 case Browser.OPERA:
                     path = browser_cookie3.Opera().cookie_file
                 case Browser.SAFARI:
-                    buf = browser_cookie3.Safari().__buffer
+                    safari = browser_cookie3.Safari()
+                    buf = safari.__buffer  # pylint: disable=protected-access
                     path = buf.name if buf else None
                 case Browser.VIVALDI:
                     path = browser_cookie3.Vivaldi().cookie_file
