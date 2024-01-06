@@ -255,6 +255,37 @@ class Browser(Enum):
         _logger.warning(f"Failed to retrieve {str(self).capitalize()} cookies.")
         return None
 
+    def cookie_path(self) -> str | None:
+        """Retrieve the path to the cookie as returned by browser_cookie3. This seems to
+        be more reliable than yt-dlp's cookie handling."""
+        try:
+            match self:
+                case Browser.NONE:
+                    path = None
+                case Browser.BRAVE:
+                    path = browser_cookie3.Brave().cookie_file
+                case Browser.CHROME:
+                    path = browser_cookie3.Chrome().cookie_file
+                case Browser.CHROMIUM:
+                    path = browser_cookie3.Chromium().cookie_file
+                case Browser.EDGE:
+                    path = browser_cookie3.Edge().cookie_file
+                case Browser.FIREFOX:
+                    path = browser_cookie3.Firefox().cookie_file
+                case Browser.OPERA:
+                    path = browser_cookie3.Opera().cookie_file
+                case Browser.SAFARI:
+                    buf = browser_cookie3.Safari().__buffer
+                    path = buf.name if buf else None
+                case Browser.VIVALDI:
+                    path = browser_cookie3.Vivaldi().cookie_file
+                case _ as unreachable:
+                    assert_never(unreachable)
+        except Exception as error:  # pylint: disable=broad-exception-caught
+            _logger.debug(error)
+            path = None
+        return path
+
 
 class VideoContainer(Enum):
     """Video containers that can be requested when downloading with ytdl."""

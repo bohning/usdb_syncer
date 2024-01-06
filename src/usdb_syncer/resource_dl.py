@@ -141,8 +141,8 @@ def _ytdl_options(format_: str, browser: Browser, target_stem: Path) -> YtdlOpti
         "playlistend": 0,
         "overwrites": True,
     }
-    if browser.value:
-        options["cookiesfrombrowser"] = (browser.value,)
+    if path := browser.cookie_path():
+        options["cookies"] = (f"{browser.value}:{path}",)
     return options
 
 
