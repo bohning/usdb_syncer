@@ -140,17 +140,17 @@ class SongTable:
         header = view.horizontalHeader()
         if not state.isEmpty():
             header.restoreState(state)
-            return
         for column in Column:
             if not model.filterAcceptsColumn(column, QModelIndex()):
                 continue
-            if size := column.fixed_size(header, self.mw):
+            if size := column.fixed_size():
                 header.setSectionResizeMode(column, QHeaderView.ResizeMode.Fixed)
                 header.resizeSection(column, size)
             # setting a (default) width on the last, stretching column seems to cause
             # issues, so we set it manually on the other columns
             elif column is not max(Column):
-                header.resizeSection(column, DEFAULT_COLUMN_WIDTH)
+                if state.isEmpty():
+                    header.resizeSection(column, DEFAULT_COLUMN_WIDTH)
                 header.setSectionResizeMode(column, QHeaderView.ResizeMode.Interactive)
 
     def _context_menu(self, _pos: QPoint) -> None:

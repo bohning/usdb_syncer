@@ -5,10 +5,7 @@ from enum import IntEnum
 from functools import cache
 from typing import assert_never
 
-from PySide6.QtGui import QIcon, QPaintDevice
-from PySide6.QtWidgets import QHeaderView
-
-from usdb_syncer import SongId
+from PySide6.QtGui import QIcon
 
 
 class Column(IntEnum):
@@ -95,22 +92,18 @@ class Column(IntEnum):
             case _ as unreachable:
                 assert_never(unreachable)
 
-    def fixed_size(self, header: QHeaderView, window: QPaintDevice) -> int | None:
+    def fixed_size(self) -> int | None:
         match self:
-            case Column.SONG_ID:
-                return _horizontal_size(str(SongId(0)), header, window)
-            case Column.VIEWS:
-                return _horizontal_size("99999", header, window)
-            case Column.RATING:
-                return _horizontal_size("★★★★★", header, window)
-            case Column.GOLDEN_NOTES:
-                return _horizontal_size("Yes", header, window)
             case (
                 Column.ARTIST
                 | Column.TITLE
                 | Column.LANGUAGE
                 | Column.EDITION
                 | Column.DOWNLOAD_STATUS
+                | Column.SONG_ID
+                | Column.VIEWS
+                | Column.RATING
+                | Column.GOLDEN_NOTES
             ):
                 return None
             case (
@@ -124,13 +117,3 @@ class Column(IntEnum):
                 return 24
             case _ as unreachable:
                 assert_never(unreachable)
-
-
-def _horizontal_size(text: str, header: QHeaderView, window: QPaintDevice) -> int:
-    return (
-        int(header.fontMetrics().horizontalAdvance(text) * window.devicePixelRatio())
-        # for rounding down
-        + 1
-        # for cell padding
-        + 2 * 3
-    )
