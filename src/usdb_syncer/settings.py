@@ -23,16 +23,30 @@ from usdb_syncer.logger import get_logger
 _logger = get_logger(__file__)
 
 SYSTEM_USDB = "USDB Syncer/USDB"
+NO_KEYRING_BACKEND_WARNING = (
+    "Your USDB password cannot be stored or retrieved because no keyring backend is "
+    "available. See https://pypi.org/project/keyring for details."
+)
 
 
 def get_usdb_auth() -> Tuple[str, str]:
     username = get_setting(SettingKey.USDB_USER_NAME, "")
-    return (username, keyring.get_password(SYSTEM_USDB, username) or "")
+    pwd = ""
+    try:
+        pwd = keyring.get_password(SYSTEM_USDB, username) or ""
+    except keyring.core.backend.errors.NoKeyringError as error:
+        _logger.debug(error)
+        _logger.warning(NO_KEYRING_BACKEND_WARNING)
+    return (username, pwd)
 
 
 def set_usdb_auth(username: str, password: str) -> None:
     set_setting(SettingKey.USDB_USER_NAME, username)
-    keyring.set_password(SYSTEM_USDB, username, password)
+    try:
+        keyring.set_password(SYSTEM_USDB, username, password)
+    except keyring.core.backend.errors.NoKeyringError as error:
+        _logger.debug(error)
+        _logger.warning(NO_KEYRING_BACKEND_WARNING)
 
 
 class SettingKey(Enum):
