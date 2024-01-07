@@ -20,17 +20,17 @@ pillow = ">=10"
 pyshorteners = "*"
 PySide6 = "==6.5.*"
 requests = "*"
+send2trash = "*"
 unidecode = "*"
 yt_dlp = "*"
 wheel = "*"
-send2trash = "*"
 # build
 pyinstaller = "*"
 pyinstaller-hooks-contrib = "*"
 # specifically required for pyinstaller (Note: darwin -> macos)
-macholib = {version = "*", markers="sys_platform == 'darwin'"}
-pywin32-ctypes = {version = "*", markers="sys_platform == 'windows'"}
 altgraph = "*"
+macholib = {version = "*", markers="sys_platform == 'darwin'"}
+pywin32-ctypes = {version = "*", markers="sys_platform == 'win32'"}
 
 [dev-packages]
 tox = "*"
