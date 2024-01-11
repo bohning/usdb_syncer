@@ -8,8 +8,8 @@ from typing import Iterator, Tuple
 
 import attrs
 
+from usdb_syncer import errors
 from usdb_syncer.logger import Log
-from usdb_syncer.song_txt.error import NotesParseError
 
 
 class NoteKind(Enum):
@@ -36,7 +36,7 @@ class Note:
     def parse(cls, value: str) -> Note:
         regex = re.compile(r"(:|\*|F|R|G):? +(-?\d+) +(\d+) +(-?\d+)(?: (.*))?")
         if not (match := regex.fullmatch(value)):
-            raise NotesParseError(f"invalid note: '{value}'")
+            raise errors.NotesParseError(f"invalid note: '{value}'")
         text = match.group(5) or ""
         try:
             kind = NoteKind(match.group(1))
@@ -44,7 +44,7 @@ class Note:
             duration = int(match.group(3))
             pitch = int(match.group(4))
         except ValueError as err:
-            raise NotesParseError(f"invalid note: '{value}'") from err
+            raise errors.NotesParseError(f"invalid note: '{value}'") from err
         if kind != NoteKind.FREESTYLE:
             if not text.strip():
                 text = "~" + text
@@ -103,7 +103,7 @@ class LineBreak:
         """
         regex = re.compile(r"- *(-?\d+) *(-?\d+)? *(.+)?")
         if not (match := regex.fullmatch(value)):
-            raise NotesParseError(f"invalid line break: '{value}'")
+            raise errors.NotesParseError(f"invalid line break: '{value}'")
         end = int(match.group(2)) if match.group(2) else None
         return cls(int(match.group(1)), end), match.group(3)
 
@@ -143,7 +143,7 @@ class Line:
             if txt_line.startswith("-"):
                 try:
                     line_break, next_line = LineBreak.parse(txt_line)
-                except NotesParseError as err:
+                except errors.NotesParseError as err:
                     logger.warning(str(err))
                     continue
                 else:
@@ -152,7 +152,7 @@ class Line:
                     break
             try:
                 notes.append(Note.parse(txt_line))
-            except NotesParseError as err:
+            except errors.NotesParseError as err:
                 logger.warning(str(err))
         else:
             logger.warning("unterminated line")
@@ -205,7 +205,7 @@ class Tracks:
     def parse(cls, lines: list[str], logger: Log) -> Tracks:
         track_1 = _player_lines(lines, logger)
         if not track_1:
-            raise NotesParseError("no notes in file")
+            raise errors.NotesParseError("no notes in file")
         track_2 = _player_lines(lines, logger) or None
         return cls(track_1, track_2)
 

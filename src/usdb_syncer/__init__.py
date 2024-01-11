@@ -2,6 +2,10 @@
 
 from __future__ import annotations
 
+import base64
+import binascii
+import random
+
 
 class SongId(int):
     """Bounded int representing an id on USDB.
@@ -26,3 +30,24 @@ class SongId(int):
             return cls.parse(value)
         except ValueError:
             return None
+
+
+class SyncMetaId(int):
+    """8-byte signed integer with str encoding."""
+
+    @classmethod
+    def new(cls) -> SyncMetaId:
+        return cls(random.randint(-(2**63), 2**63 - 1))
+
+    def encode(self) -> str:
+        value = base64.urlsafe_b64encode(self.to_bytes(8, "big", signed=True)).decode()
+        # strip padding
+        return value[:-1]
+
+    @classmethod
+    def decode(cls, value: str) -> SyncMetaId | None:
+        try:
+            number = base64.urlsafe_b64decode(f"{value}=")
+        except binascii.Error:
+            return None
+        return cls.from_bytes(number, "big", signed=True)

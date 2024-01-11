@@ -5,16 +5,17 @@ from __future__ import annotations
 import configparser
 import json
 import os
+from typing import Iterable
 from urllib.parse import parse_qs, urlparse
 
 import attrs
 from bs4 import BeautifulSoup
 
-from usdb_syncer import SongId
+from usdb_syncer import SongId, errors
 
 
 @attrs.define
-class UsdbIdFileError(Exception):
+class UsdbIdFileError(errors.UsdbSyncerError):
     """USDB File Parser root exception"""
 
 
@@ -441,6 +442,6 @@ def parse_usdb_id_file(filepath: str) -> list[SongId]:
     return song_ids
 
 
-def write_usdb_id_file(filepath: str, song_ids: list[SongId]) -> None:
+def write_usdb_id_file(filepath: str, song_ids: Iterable[SongId]) -> None:
     with open(filepath, encoding="utf-8", mode="w") as file:
         file.write("\n".join(str(id) for id in song_ids))

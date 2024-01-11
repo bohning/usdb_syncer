@@ -5,9 +5,8 @@ import logging
 import os
 import sys
 import webbrowser
-from pathlib import Path
 
-from PySide6.QtCore import QObject, Qt, QThreadPool, QTimer, Signal
+from PySide6.QtCore import QObject, Qt, QThreadPool, Signal
 from PySide6.QtGui import QCloseEvent, QColor, QFont, QIcon, QPainter, QPixmap
 from PySide6.QtWidgets import (
     QApplication,
@@ -17,7 +16,7 @@ from PySide6.QtWidgets import (
     QSplashScreen,
 )
 
-from usdb_syncer import SongId, settings
+from usdb_syncer import SongId, db, settings
 from usdb_syncer.constants import SHORT_COMMIT_HASH, VERSION, Usdb
 from usdb_syncer.gui.about_dialog import AboutDialog
 from usdb_syncer.gui.debug_console import DebugConsole
@@ -32,12 +31,7 @@ from usdb_syncer.gui.usdb_login_dialog import UsdbLoginDialog
 from usdb_syncer.gui.utils import scroll_to_bottom, set_shortcut
 from usdb_syncer.logger import get_logger
 from usdb_syncer.pdf import generate_song_pdf
-from usdb_syncer.song_data import SongData
-from usdb_syncer.song_list_fetcher import (
-    dump_available_songs,
-    get_all_song_data,
-    resync_song_data,
-)
+from usdb_syncer.song_list_fetcher import load_available_songs
 from usdb_syncer.usdb_id_file import (
     UsdbIdFileError,
     parse_usdb_id_file,
@@ -48,21 +42,14 @@ from usdb_syncer.utils import AppPaths, open_file_explorer
 _logger = get_logger(__file__)
 
 
-def get_available_song_ids_from_files(
-    file_list: list[str], song_table: SongTable
-) -> list[SongId]:
+def get_available_song_ids_from_files(file_list: list[str]) -> list[SongId]:
     song_ids: list[SongId] = []
-    has_error = False
     for path in file_list:
         try:
             song_ids += parse_usdb_id_file(path)
         except UsdbIdFileError as error:
-            _logger.error(f"failed importing file {path}: {str(error)}")
-            has_error = True
-
-    # stop import if encounter errors
-    if has_error:
-        return []
+            _logger.error(f"Failed to import file '{path}': {str(error)}")
+            return []
 
     unique_song_ids = list(set(song_ids))
     unique_song_ids.sort()
@@ -72,7 +59,7 @@ def get_available_song_ids_from_files(
         f"USDB IDs: {', '.join(str(id) for id in unique_song_ids)}"
     )
     if unavailable_song_ids := [
-        song_id for song_id in unique_song_ids if not song_table.get_data(song_id)
+        song_id for song_id in unique_song_ids if not db.get_usdb_song(song_id)
     ]:
         _logger.warning(
             f"{len(unavailable_song_ids)}/{len(unique_song_ids)} "
@@ -95,8 +82,6 @@ def get_available_song_ids_from_files(
 class MainWindow(Ui_MainWindow, QMainWindow):
     """The app's main window and entry point to the GUI."""
 
-    _search_timer: QTimer
-
     def __init__(self) -> None:
         super().__init__()
         self.setupUi(self)
@@ -118,7 +103,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
 
         def on_count_changed(shown_count: int) -> None:
             self._status_label.setText(
-                f"{shown_count} out of {len(self.table.get_all_data())} songs shown."
+                f"{shown_count} out of {db.usdb_song_count()} songs shown."
             )
 
         self.table.connect_row_count_changed(on_count_changed)
@@ -137,7 +122,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
     def _setup_toolbar(self) -> None:
         for action, func in (
             (self.action_songs_download, self._download_selection),
-            (self.action_find_local_songs, self._stage_local_songs),
+            # (self.action_find_local_songs, self._select_local_songs),
             (self.action_refetch_song_list, self._refetch_song_list),
             (self.action_usdb_login, lambda: UsdbLoginDialog(self).show()),
             (self.action_meta_tags, lambda: MetaTagsDialog(self).show()),
@@ -200,26 +185,16 @@ class MainWindow(Ui_MainWindow, QMainWindow):
                 if self.toolButton_debugs.isChecked():
                     self.plainTextEdit.appendPlainText(message)
 
-    def initialize_song_table(self, songs: tuple[SongData, ...]) -> None:
-        self.table.set_data(songs)
-        self._update_dynamic_filters(songs)
-
-    def _stage_local_songs(self) -> None:
-        if directory := QFileDialog.getExistingDirectory(self, "Select Song Directory"):
-            self.table.select_local_songs(Path(directory))
+    # def _select_local_songs(self) -> None:
+    #     if directory := QFileDialog.getExistingDirectory(self, "Select Song Directory"):
+    #         self.table.select_local_songs(Path(directory))
 
     def _refetch_song_list(self) -> None:
         run_with_progress(
             "Fetching song list...",
-            lambda _: get_all_song_data(True),
-            self.initialize_song_table,
+            lambda _: load_available_songs(force_reload=True),
+            lambda _: self.table.reset(),
         )
-
-    def _update_dynamic_filters(self, songs: tuple[SongData, ...]) -> None:
-        self.tree.set_artists(song.data.artist for song in songs)
-        self.tree.set_titles(song.data.title for song in songs)
-        self.tree.set_editions(song.data.edition for song in songs)
-        self.tree.set_languages(song.data.language for song in songs)
 
     def select_song_dir(self) -> None:
         song_dir = QFileDialog.getExistingDirectory(self, "Select Song Directory")
@@ -230,15 +205,14 @@ class MainWindow(Ui_MainWindow, QMainWindow):
     def _set_song_dir(self, song_dir: str) -> None:
         self.lineEdit_song_dir.setText(song_dir)
         settings.set_song_dir(song_dir)
-        data = resync_song_data(self.table.get_all_data())
-        self.table.set_data(data)
+        # self.table.resync_song_data()
 
     def _generate_song_pdf(self) -> None:
         fname = f"{datetime.datetime.now():%Y-%m-%d}_songlist.pdf"
         path = os.path.join(settings.get_song_dir(), fname)
         path = QFileDialog.getSaveFileName(self, dir=path, filter="PDF (*.pdf)")[0]
         if path:
-            generate_song_pdf(self.table.all_local_songs(), path)
+            generate_song_pdf(db.all_local_usdb_songs(), path)
 
     def _import_usdb_ids_from_files(self) -> None:
         file_list = QFileDialog.getOpenFileNames(
@@ -252,14 +226,12 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         if not file_list:
             _logger.info("no files selected to import USDB IDs from")
             return
-        if available_song_ids := get_available_song_ids_from_files(
-            file_list, self.table
-        ):
+        if available_song_ids := get_available_song_ids_from_files(file_list):
             # select available songs to prepare Download
             self.table.set_selection_to_song_ids(available_song_ids)
 
     def _export_usdb_ids_to_file(self) -> None:
-        selected_ids = list(song.data.song_id for song in self.table.selected_songs())
+        selected_ids = [song.song_id for song in self.table.selected_songs()]
         if not selected_ids:
             _logger.info("Skipping export: no songs selected.")
             return
@@ -280,15 +252,15 @@ class MainWindow(Ui_MainWindow, QMainWindow):
 
     def _show_current_song_in_usdb(self) -> None:
         if song := self.table.current_song():
-            _logger.debug(f"Opening song page #{song.data.song_id} in webbrowser.")
-            webbrowser.open(f"{Usdb.BASE_URL}?link=detail&id={int(song.data.song_id)}")
+            _logger.debug(f"Opening song page #{song.song_id} in webbrowser.")
+            webbrowser.open(f"{Usdb.BASE_URL}?link=detail&id={song.song_id:d}")
         else:
             _logger.info("No current song.")
 
     def _open_current_song_folder(self) -> None:
         if song := self.table.current_song():
-            if song.local_files.usdb_path:
-                open_file_explorer(song.local_files.usdb_path.parent)
+            if song.sync_meta:
+                open_file_explorer(song.sync_meta.path.parent)
             else:
                 _logger.info("Song does not exist locally.")
         else:
@@ -297,7 +269,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
     def closeEvent(self, event: QCloseEvent) -> None:
         self.table.save_state()
         self._save_state()
-        dump_available_songs(list(s.data for s in self.table.get_all_data()))
+        db.close()
         event.accept()
 
     def _restore_state(self) -> None:
@@ -332,6 +304,8 @@ class TextEditLogger(logging.Handler):
 
 def main() -> None:
     app = _init_app()
+    db.connect()
+    load_available_songs(force_reload=False)
     mw = MainWindow()
     _configure_logging(mw)
     _load_main_window(mw)
@@ -343,12 +317,7 @@ def _load_main_window(mw: MainWindow) -> None:
     splash.show()
     QApplication.processEvents()
     splash.showMessage("Loading song database ...", color=Qt.GlobalColor.gray)
-    songs = get_all_song_data(False)
-    mw.initialize_song_table(songs)
-    splash.showMessage(
-        f"Song database successfully loaded with {len(songs)} songs.",
-        color=Qt.GlobalColor.gray,
-    )
+    splash.showMessage("Song database successfully loaded.", color=Qt.GlobalColor.gray)
     mw.show()
     logging.info("Application successfully loaded.")
     splash.finish(mw)

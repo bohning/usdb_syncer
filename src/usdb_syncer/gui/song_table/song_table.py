@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import logging
-from collections import defaultdict
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Callable, Iterable, Iterator
 
@@ -16,31 +15,24 @@ from PySide6.QtCore import (
     QModelIndex,
     QObject,
     QPoint,
-    QSortFilterProxyModel,
     Qt,
+    QTimer,
     Signal,
 )
 from PySide6.QtGui import QCursor
 from PySide6.QtWidgets import QHeaderView, QLabel, QMenu, QProgressBar, QTableView
 
-from usdb_syncer import SongId, settings
+from usdb_syncer import SongId, db, settings
 from usdb_syncer.gui.song_table.column import Column
-from usdb_syncer.gui.song_table.proxy_model import ProxyModel
-from usdb_syncer.gui.song_table.table_model import CustomRole, TableModel
+from usdb_syncer.gui.song_table.table_model import TableModel
 from usdb_syncer.logger import get_logger
-from usdb_syncer.song_data import (
-    DownloadErrorReason,
-    DownloadResult,
-    DownloadStatus,
-    LocalFiles,
-    SongData,
-    fuzz_text,
-)
-from usdb_syncer.song_loader import DownloadInfo, download_songs
+
+# from usdb_syncer.song_list_fetcher import find_local_files
+from usdb_syncer.song_loader import DownloadErrorReason, DownloadResult, download_songs
 from usdb_syncer.song_txt import SongTxt
-from usdb_syncer.song_txt.headers import Headers
-from usdb_syncer.sync_meta import SyncMeta
-from usdb_syncer.usdb_scraper import UsdbSong
+
+# from usdb_syncer.db.models import DownloadStatus, LocalSong, UsdbSong
+from usdb_syncer.usdb_song import DownloadStatus, UsdbSong
 from usdb_syncer.utils import try_read_unknown_encoding
 
 if TYPE_CHECKING:
@@ -91,58 +83,62 @@ class SongTable:
     def __init__(self, mw: MainWindow) -> None:
         self.mw = mw
         self._model = TableModel(mw)
-        self._proxy_model = ProxyModel(mw, mw.tree)
         self.table_view = mw.table_view
-        self._setup_view(
-            mw.table_view, self._proxy_model, settings.get_table_view_header_state()
-        )
+        self._setup_view(mw.table_view, settings.get_table_view_header_state())
         mw.table_view.selectionModel().currentChanged.connect(
             self._on_current_song_changed
         )
+        self._setup_search_timer()
+        mw.tree.connect_filter_changed(self._search_timer.start)
         self._signals = SongSignals()
         self._signals.started.connect(self._on_download_started)
         self._signals.finished.connect(self._on_download_finished)
         self._progress = Progress(mw.bar_download_progress, mw.label_download_progress)
+        self._search_songs()
+
+    def reset(self) -> None:
+        self._model.reset()
+
+    # def resync_song_data(self) -> None:
+    #     local_files = find_local_files()
+    #     self._model.songs = tuple(
+    #         song.with_local_files(local_files.get(song.data.song_id, LocalFiles()))
+    #         for song in self._model.songs
+    #     )
+    #     self._model.reset()
 
     def download_selection(self) -> None:
         self._download(self._selected_rows())
 
     def _download(self, rows: Iterable[int]) -> None:
-        to_download = []
-        for row in rows:
-            data = self._model.songs[row]
-            if data.local_files.pinned:
-                get_logger(__file__, data.data.song_id).info(
+        to_download: list[UsdbSong] = []
+        for song_id in self._model.ids_for_rows(rows):
+            song = UsdbSong.get(song_id)
+            assert song
+            if song.sync_meta and song.sync_meta.pinned:
+                get_logger(__file__, song.song_id).info(
                     "Not downloading song as it is pinned."
                 )
                 continue
-            if data.status.can_be_downloaded():
-                data.status = DownloadStatus.PENDING
-                to_download.append(data)
-                self._model.row_changed(row)
+            if song.status.can_be_downloaded():
+                song.status = DownloadStatus.PENDING
+                to_download.append(song)
+                self._model.song_changed(song.song_id)
         if to_download:
             self._progress.start(len(to_download))
             download_songs(
-                map(DownloadInfo.from_song_data, to_download),
-                self._signals.started.emit,
-                self._signals.finished.emit,
+                to_download, self._signals.started.emit, self._signals.finished.emit
             )
 
-    def _setup_view(
-        self, view: QTableView, model: QSortFilterProxyModel, state: QByteArray
-    ) -> None:
-        model.setSourceModel(self._model)
-        model.setSortRole(CustomRole.SORT)
-        view.setModel(model)
+    def _setup_view(self, view: QTableView, state: QByteArray) -> None:
+        view.setModel(self._model)
         view.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
         view.customContextMenuRequested.connect(self._context_menu)
-        view.doubleClicked.connect(self._on_double_clicked)
+        view.doubleClicked.connect(lambda idx: self._download([idx.row()]))
         header = view.horizontalHeader()
         if not state.isEmpty():
             header.restoreState(state)
         for column in Column:
-            if not model.filterAcceptsColumn(column, QModelIndex()):
-                continue
             if size := column.fixed_size():
                 header.setSectionResizeMode(column, QHeaderView.ResizeMode.Fixed)
                 header.resizeSection(column, size)
@@ -159,33 +155,30 @@ class SongTable:
             menu.addAction(action)
         menu.exec(QCursor.pos())
 
-    def _on_double_clicked(self, index: QModelIndex) -> None:
-        self._download([self._proxy_model.mapToSource(index).row()])
-
     def _on_download_started(self, song_id: SongId) -> None:
-        if (row := self._model.rows.get(song_id)) is None:
+        if (song := UsdbSong.get(song_id)) is None:
             logger = get_logger(__file__, song_id)
             logger.error("Unknown id. Ignoring download start signal.")
             return
-        data = self._model.songs[row]
-        data.status = DownloadStatus.DOWNLOADING
-        self._model.row_changed(row)
+        song.status = DownloadStatus.DOWNLOADING
+        self._model.song_changed(song_id)
 
     def _on_download_finished(self, result: DownloadResult) -> None:
         self._progress.finish(1)
         logger = get_logger(__file__, result.song_id)
         if result.error is not None:
-            if (row := self._model.row_for_id(result.song_id)) is None:
+            if (song := UsdbSong.get(result.song_id)) is None:
                 logger.error("Unknown id. Ignoring download finish signal.")
                 return
             if result.error is DownloadErrorReason.NOT_FOUND:
-                self._model.remove_row(row)
-                logger.info("Removed song from local database.")
+                # db.delete_usdb_song(song)
+                logger.info("Song is not on USDB anymore.")
             else:
-                self._model.songs[row].status = DownloadStatus.FAILED
-                self._model.row_changed(row)
+                song.status = DownloadStatus.FAILED
+                self._model.song_changed(result.song_id)
         elif result.data:
-            self._model.update_item(result.data)
+            result.data.upsert()
+            self._model.song_changed(result.song_id)
             logger.info("All done!")
 
     def save_state(self) -> None:
@@ -206,73 +199,73 @@ class SongTable:
             self.mw.action_delete,
             self.mw.action_pin,
         ):
-            action.setEnabled(bool(song.local_files.usdb_path))
-        self.mw.action_pin.setChecked(song.local_files.pinned)
+            action.setEnabled(song.is_local())
+        self.mw.action_pin.setChecked(song.is_pinned())
 
     def delete_selected_songs(self) -> None:
         for song in self.selected_songs():
-            if not song.local_files.usdb_path:
+            if not song.sync_meta:
                 continue
-            logger = get_logger(__file__, song.data.song_id)
-            if song.local_files.pinned:
+            logger = get_logger(__file__, song.song_id)
+            if song.is_pinned():
                 logger.info("Not trashing song folder as it is pinned.")
                 continue
-            send2trash.send2trash(song.local_files.usdb_path.parent)
-            song.local_files = LocalFiles()
-            self._model.update_item(song)
+            send2trash.send2trash(song.sync_meta.path)
+            db.delete_sync_meta(song.sync_meta.sync_meta_id)
+            self._model.song_changed(song.song_id)
             logger.debug("Trashed song folder.")
 
     def set_pin_selected_songs(self, pin: bool) -> None:
-        def setter(meta: SyncMeta) -> None:
-            meta.pinned = pin
-
         for song in self.selected_songs():
-            if song.local_files.pinned == pin or not song.local_files.usdb_path:
+            if not song.sync_meta or song.sync_meta.pinned == pin:
                 continue
-            song.local_files.pinned = pin
-            song.local_files.try_update_sync_meta(setter)
-            self._model.update_item(song)
+            song.sync_meta.pinned = pin
+            song.sync_meta.synchronize_to_file()
+            db.commit()
+            self._model.song_changed(song.song_id)
 
     ### selection model
 
-    def current_song(self) -> SongData | None:
+    def current_song(self) -> UsdbSong | None:
         if (idx := self.table_view.selectionModel().currentIndex()).isValid():
-            if rows := self._proxy_model.source_rows([idx]):
-                return self._model.songs[rows[0]]
+            if ids := self._model.ids_for_indices([idx]):
+                return UsdbSong.get(ids[0])
         return None
 
-    def selected_songs(self) -> Iterator[SongData]:
-        return (self._model.songs[row] for row in self._selected_rows())
+    def selected_songs(self) -> Iterator[UsdbSong]:
+        return (
+            song
+            for song_id in self._model.ids_for_rows(self._selected_rows())
+            if (song := UsdbSong.get(song_id))
+        )
 
     def _selected_rows(self) -> Iterable[int]:
-        return self._proxy_model.source_rows(
-            self.table_view.selectionModel().selectedRows()
-        )
+        return (idx.row() for idx in self.table_view.selectionModel().selectedRows())
 
-    def select_local_songs(self, directory: Path) -> None:
-        song_map: defaultdict[tuple[str, str], list[int]] = defaultdict(list)
-        for row, song in enumerate(self._model.songs):
-            song_map[fuzzy_key(song.data)].append(row)
-        matched_rows: set[int] = set()
-        for path in directory.glob("**/*.txt"):
-            if txt := try_parse_txt(path):
-                name = txt.headers.artist_title_str()
-                if matches := song_map[fuzzy_key(txt.headers)]:
-                    plural = "es" if len(matches) > 1 else ""
-                    _logger.info(f"{len(matches)} match{plural} for '{name}'.")
-                    matched_rows.update(matches)
-                else:
-                    _logger.warning(f"No matches for '{name}'.")
-        self.set_selection_to_indices(
-            self._proxy_model.target_indices(
-                self._model.index(row, 0) for row in matched_rows
-            )
-        )
-        _logger.info(f"Selected {len(matched_rows)} songs.")
+    # TODO
+    # def select_local_songs(self, directory: Path) -> None:
+    #     song_map: defaultdict[tuple[str, str], list[int]] = defaultdict(list)
+    #     for row, song in enumerate(self._model.songs):
+    #         song_map[fuzzy_key(song.data)].append(row)
+    #     matched_rows: set[int] = set()
+    #     for path in directory.glob("**/*.txt"):
+    #         if txt := try_parse_txt(path):
+    #             name = txt.headers.artist_title_str()
+    #             if matches := song_map[fuzzy_key(txt.headers)]:
+    #                 plural = "es" if len(matches) > 1 else ""
+    #                 _logger.info(f"{len(matches)} match{plural} for '{name}'.")
+    #                 matched_rows.update(matches)
+    #             else:
+    #                 _logger.warning(f"No matches for '{name}'.")
+    #     self.set_selection_to_indices(
+    #         self._proxy_model.target_indices(
+    #             self._model.index(row, 0) for row in matched_rows
+    #         )
+    #     )
+    #     _logger.info(f"Selected {len(matched_rows)} songs.")
 
     def set_selection_to_song_ids(self, select_song_ids: list[SongId]) -> None:
-        source_indices = self._model.indices_for_ids(select_song_ids)
-        self.set_selection_to_indices(self._proxy_model.target_indices(source_indices))
+        self.set_selection_to_indices(self._model.indices_for_ids(select_song_ids))
 
     def set_selection_to_indices(self, rows: Iterable[QModelIndex]) -> None:
         selection = QItemSelection()
@@ -290,35 +283,26 @@ class SongTable:
         """Calls `func` with the new row count."""
 
         def wrapped(*_: Any) -> None:
-            func(self._proxy_model.rowCount())
+            func(self._model.rowCount())
 
         self._model.modelReset.connect(wrapped)
-        self._proxy_model.rowsInserted.connect(wrapped)
-        self._proxy_model.rowsRemoved.connect(wrapped)
+        self._model.rowsInserted.connect(wrapped)
+        self._model.rowsRemoved.connect(wrapped)
 
     def set_text_filter(self, text: str) -> None:
-        self._proxy_model.set_text_filter(text)
+        # TODO
+        pass
 
-    ### data model
+    def _setup_search_timer(self) -> None:
+        self._search_timer = QTimer(self.mw)
+        self._search_timer.setSingleShot(True)
+        self._search_timer.setInterval(600)
+        self._search_timer.timeout.connect(self._search_songs)
 
-    def set_data(self, songs: tuple[SongData, ...]) -> None:
-        self._model.set_data(songs)
-
-    def get_all_data(self) -> tuple[SongData, ...]:
-        return self._model.songs
-
-    def all_local_songs(self) -> Iterator[UsdbSong]:
-        return self._model.all_local_songs()
-
-    def get_data(self, song_id: SongId) -> SongData | None:
-        return self._model.item_for_id(song_id)
-
-    def update_item(self, new: SongData) -> None:
-        self._model.update_item(new)
-
-
-def fuzzy_key(data: UsdbSong | Headers) -> tuple[str, str]:
-    return fuzz_text(data.artist), fuzz_text(data.title)
+    def _search_songs(self) -> None:
+        search = db.SearchBuilder()
+        self.mw.tree.build_search(search)
+        self._model.set_songs(db.search_usdb_songs(search))
 
 
 def try_parse_txt(path: Path) -> SongTxt | None:

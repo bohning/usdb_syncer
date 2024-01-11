@@ -15,9 +15,10 @@ from PySide6.QtCore import (
 )
 from PySide6.QtWidgets import QWidget
 
-from usdb_syncer.song_data import fuzz_text
-
 from .item import TreeItem
+
+# from usdb_syncer.song_data import fuzz_text
+
 
 QIndex = QModelIndex | QPersistentModelIndex
 
@@ -118,13 +119,13 @@ class TreeProxyModel(QSortFilterProxyModel):
         self._filter_invalidation_timer.setInterval(600)
         self._filter_invalidation_timer.timeout.connect(self.invalidateRowsFilter)
 
-    def filterAcceptsRow(self, source_row: int, source_parent: QIndex) -> bool:
-        if not self._filter or not source_parent.isValid():
-            return True
-        parent = self._source.item_for_index(source_parent)
-        item = parent.children[source_row]
-        return item.filter_accepts_row(self._filter)
+    # def filterAcceptsRow(self, source_row: int, source_parent: QIndex) -> bool:
+    #     if not self._filter or not source_parent.isValid():
+    #         return True
+    #     parent = self._source.item_for_index(source_parent)
+    #     item = parent.children[source_row]
+    #     return item.filter_accepts_row(self._filter)
 
-    def set_filter(self, text: str) -> None:
-        self._filter = fuzz_text(text).split()
-        self._filter_invalidation_timer.start()
+    # def set_filter(self, text: str) -> None:
+    #     self._filter = fuzz_text(text).split()
+    #     self._filter_invalidation_timer.start()

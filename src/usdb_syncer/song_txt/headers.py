@@ -7,9 +7,9 @@ from typing import Any, Callable
 
 import attrs
 
+from usdb_syncer import errors
 from usdb_syncer.constants import MINIMUM_BPM
 from usdb_syncer.logger import Log
-from usdb_syncer.song_txt.error import NotesParseError
 from usdb_syncer.song_txt.language_translations import LANGUAGE_TRANSLATIONS
 from usdb_syncer.song_txt.tracks import replace_false_apostrophes_and_quotation_marks
 
@@ -99,7 +99,9 @@ class Headers:
             except ValueError:
                 logger.warning(f"invalid header value: '{line}'")
         if "title" not in kwargs or "artist" not in kwargs or "bpm" not in kwargs:
-            raise NotesParseError("cannot parse song without artist, title or bpm")
+            raise errors.NotesParseError(
+                "cannot parse song without artist, title or bpm"
+            )
         return cls(**kwargs)
 
     def reset_file_location_headers(self) -> None:

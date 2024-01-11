@@ -2,14 +2,15 @@
 
 # maybe reportlab is better suited?
 import datetime
-from typing import Any, Iterator
+from typing import Any, Iterable
 
-from pdfme import build_pdf  # type: ignore
+from pdfme import build_pdf
 
-from usdb_syncer.usdb_scraper import UsdbSong
+from usdb_syncer import SongId
+from usdb_syncer.usdb_song import UsdbSong
 
 
-def generate_song_pdf(songs: Iterator[UsdbSong], path: str) -> None:
+def generate_song_pdf(songs: Iterable[SongId], path: str) -> None:
     document: dict[str, Any] = {}
     document["style"] = {"margin_bottom": 15, "text_align": "j"}
     document["formats"] = {"url": {"c": "blue", "u": 1}, "title": {"b": 1, "s": 13}}
@@ -26,9 +27,11 @@ def generate_song_pdf(songs: Iterator[UsdbSong], path: str) -> None:
         "outline": {"level": 1, "text": "A different title 1"},
     })
 
-    for song in songs:
-        data = f"{song.song_id}\t\t{song.artist}\t\t{song.title}\t\t{song.language}"
-        content1.append([data.replace("’", "'")])
+    for song_id in songs:
+        song = UsdbSong.get(song_id)
+        if song:
+            data = f"{song.song_id}\t\t{song.artist}\t\t{song.title}\t\t{song.language}"
+            content1.append([data.replace("’", "'")])
 
     with open(path, "wb") as file:
         build_pdf(document, file)

@@ -36,6 +36,8 @@ class AppPaths:
     root = _root()
     fallback_song_list = Path(root, "data", "song_list.json")
     profile = Path(root, "usdb_syncer.prof")
+    db = Path(_app_dirs.user_data_dir, "usdb_syncer.db")
+    sql = Path(root, "src", "usdb_syncer", "db", "sql")
 
     @classmethod
     def make_dirs(cls) -> None:
