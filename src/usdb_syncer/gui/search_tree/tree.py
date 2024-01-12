@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING, Callable
 
 from PySide6.QtCore import QModelIndex, Qt
 
-from usdb_syncer import db
+from usdb_syncer import db, signals
 from usdb_syncer.gui.utils import keyboard_modifiers
 
 from .item import Filter, FilterItem, RootItem, VariantItem
@@ -28,6 +28,7 @@ class FilterTree:
         self.view.setHeaderHidden(True)
         self.view.setModel(self._proxy_model)
         self.view.clicked.connect(self._on_click)
+        self._model.dataChanged.connect(self._on_data_changed)
         # mw.line_edit_search_filters.textChanged.connect(self._proxy_model.set_filter)
 
     def _build_tree(self) -> None:
@@ -48,6 +49,8 @@ class FilterTree:
     def connect_filter_changed(self, func: Callable[[], None]) -> None:
         self._model.dataChanged.connect(func)
 
-    def build_search(self, search: db.SearchBuilder) -> None:
+    def _on_data_changed(self) -> None:
+        search = db.SearchBuilder()
         for filt in self.root.children:
             filt.build_search(search)
+        signals.TreeFilterChanged.emit(search)

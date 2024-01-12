@@ -22,7 +22,7 @@ from PySide6.QtCore import (
 from PySide6.QtGui import QCursor
 from PySide6.QtWidgets import QHeaderView, QLabel, QMenu, QProgressBar, QTableView
 
-from usdb_syncer import SongId, db, settings
+from usdb_syncer import SongId, db, settings, signals
 from usdb_syncer.gui.song_table.column import Column
 from usdb_syncer.gui.song_table.table_model import TableModel
 from usdb_syncer.logger import get_logger
@@ -80,6 +80,8 @@ class Progress:
 class SongTable:
     """Controller for the song table."""
 
+    _search = db.SearchBuilder()
+
     def __init__(self, mw: MainWindow) -> None:
         self.mw = mw
         self._model = TableModel(mw)
@@ -89,7 +91,7 @@ class SongTable:
             self._on_current_song_changed
         )
         self._setup_search_timer()
-        mw.tree.connect_filter_changed(self._search_timer.start)
+        signals.TreeFilterChanged.subscribe(self._on_search_changed)
         self._signals = SongSignals()
         self._signals.started.connect(self._on_download_started)
         self._signals.finished.connect(self._on_download_finished)
@@ -300,9 +302,11 @@ class SongTable:
         self._search_timer.timeout.connect(self._search_songs)
 
     def _search_songs(self) -> None:
-        search = db.SearchBuilder()
-        self.mw.tree.build_search(search)
-        self._model.set_songs(db.search_usdb_songs(search))
+        self._model.set_songs(db.search_usdb_songs(self._search))
+
+    def _on_search_changed(self, search: db.SearchBuilder) -> None:
+        self._search = search
+        self._search_timer.start()
 
 
 def try_parse_txt(path: Path) -> SongTxt | None:
