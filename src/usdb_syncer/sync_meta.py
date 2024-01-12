@@ -182,7 +182,7 @@ class SyncMeta:
         return db.SyncMetaParams(
             sync_meta_id=self.sync_meta_id,
             song_id=self.song_id,
-            path=str(self.path),
+            path=self.path.as_posix(),
             mtime=self.mtime,
             meta_tags=str(self.meta_tags),
             pinned=self.pinned,
