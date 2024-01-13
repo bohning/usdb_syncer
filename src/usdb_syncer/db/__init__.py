@@ -248,7 +248,7 @@ def delete_sync_meta(sync_meta_id: SyncMetaId) -> None:
 ### ResourceFile
 
 
-class ResourceFileKind(enum.Enum):
+class ResourceFileKind(str, enum.Enum):
     """Kinds of resource files."""
 
     TXT = "txt"
