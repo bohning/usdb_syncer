@@ -22,7 +22,8 @@ class FilterTree:
     def __init__(self, mw: MainWindow) -> None:
         self.mw = mw
         self.view = mw.search_view
-        self._build_tree()
+        self.root = RootItem()
+        self.root.set_children(FilterItem(data=f, parent=self.root) for f in Filter)
         self._model = TreeModel(mw, self.root)
         self._proxy_model = TreeProxyModel(self.view, self._model)
         self.view.setHeaderHidden(True)
@@ -31,13 +32,10 @@ class FilterTree:
         self._model.dataChanged.connect(self._on_data_changed)
         # mw.line_edit_search_filters.textChanged.connect(self._proxy_model.set_filter)
 
-    def _build_tree(self) -> None:
-        self.root = RootItem()
-        for filt in Filter:
-            item = FilterItem(data=filt, parent=self.root)
-            self.root.add_child(item)
+    def populate(self) -> None:
+        for item in self.root.children:
             item.set_children(
-                VariantItem(data=variant, parent=item) for variant in filt.variants()
+                VariantItem(data=var, parent=item) for var in item.data.variants()
             )
 
     def _on_click(self, index: QModelIndex) -> None:

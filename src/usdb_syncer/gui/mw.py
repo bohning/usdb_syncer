@@ -6,7 +6,7 @@ import os
 import sys
 import webbrowser
 
-from PySide6.QtCore import QObject, Qt, QThreadPool, Signal
+from PySide6.QtCore import QObject, Qt, Signal
 from PySide6.QtGui import QCloseEvent, QColor, QFont, QIcon, QPainter, QPixmap
 from PySide6.QtWidgets import (
     QApplication,
@@ -85,7 +85,6 @@ class MainWindow(Ui_MainWindow, QMainWindow):
     def __init__(self) -> None:
         super().__init__()
         self.setupUi(self)
-        self.threadpool = QThreadPool(self)
         self.tree = FilterTree(self)
         self.table = SongTable(self)
         self._setup_statusbar()
@@ -304,8 +303,6 @@ class TextEditLogger(logging.Handler):
 
 def main() -> None:
     app = _init_app()
-    db.connect()
-    load_available_songs(force_reload=False)
     mw = MainWindow()
     _configure_logging(mw)
     _load_main_window(mw)
@@ -317,6 +314,10 @@ def _load_main_window(mw: MainWindow) -> None:
     splash.show()
     QApplication.processEvents()
     splash.showMessage("Loading song database ...", color=Qt.GlobalColor.gray)
+    db.connect()
+    load_available_songs(force_reload=False)
+    mw.tree.populate()
+    mw.table.search_songs()
     splash.showMessage("Song database successfully loaded.", color=Qt.GlobalColor.gray)
     mw.show()
     logging.info("Application successfully loaded.")

@@ -96,7 +96,6 @@ class SongTable:
         self._signals.started.connect(self._on_download_started)
         self._signals.finished.connect(self._on_download_finished)
         self._progress = Progress(mw.bar_download_progress, mw.label_download_progress)
-        self._search_songs()
 
     def reset(self) -> None:
         self._model.reset()
@@ -299,9 +298,9 @@ class SongTable:
         self._search_timer = QTimer(self.mw)
         self._search_timer.setSingleShot(True)
         self._search_timer.setInterval(600)
-        self._search_timer.timeout.connect(self._search_songs)
+        self._search_timer.timeout.connect(self.search_songs)
 
-    def _search_songs(self) -> None:
+    def search_songs(self) -> None:
         self._model.set_songs(db.search_usdb_songs(self._search))
 
     def _on_search_changed(self, search: db.SearchBuilder) -> None:

@@ -88,10 +88,11 @@ class RootItem(TreeItem):
     parent: None = attrs.field(default=None, init=False)
     children: tuple[FilterItem, ...] = attrs.field(factory=tuple, init=False)
 
-    def add_child(self, child: FilterItem) -> None:
-        child.parent = self
-        child.row_in_parent = len(self.children)
-        self.children = (*self.children, child)
+    def set_children(self, children: Iterable[FilterItem]) -> None:
+        self.children = tuple(children)
+        for row, child in enumerate(self.children):
+            child.parent = self
+            child.row_in_parent = row
 
 
 @attrs.define(kw_only=True)
