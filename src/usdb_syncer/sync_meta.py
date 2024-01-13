@@ -189,10 +189,10 @@ class SyncMeta:
         )
 
     def synchronize_to_file(self) -> None:
+        """Rewrite the file on disk and update the mtime."""
         with self.path.open("w", encoding="utf8") as file:
             json.dump(self, file, cls=SyncMetaEncoder)
         self.mtime = os.path.getmtime(self.path)
-        db.upsert_sync_meta(self.db_params())
 
     def set_txt_meta(self, path: Path) -> None:
         self.txt = ResourceFile.new(
