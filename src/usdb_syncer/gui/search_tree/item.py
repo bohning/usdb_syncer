@@ -118,16 +118,16 @@ class FilterItem(TreeItem):
     def is_checkable(self) -> bool:
         return bool(self.checked_children)
 
-    def toggle_checked(self, _keep_siblings: bool) -> list[TreeItem]:
-        return self.uncheck_children() if self.checked else []
+    def toggle_checked(self, _keep_siblings: bool) -> tuple[TreeItem, ...]:
+        return self.uncheck_children() if self.checked else tuple()
 
-    def uncheck_children(self) -> list[TreeItem]:
-        changed = list(self.checked_child_items())
+    def uncheck_children(self) -> tuple[TreeItem, ...]:
+        changed = tuple(self.checked_child_items())
         for child in changed:
             child.checked = False
         self.checked_children.clear()
         self.checkable = self.checked = False
-        return changed + [self]
+        return changed + (self,)
 
     def set_child_checked(
         self, child: int, checked: bool, keep_siblings: bool
