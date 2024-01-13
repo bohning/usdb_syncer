@@ -22,7 +22,7 @@ from PySide6.QtCore import (
 from PySide6.QtGui import QCursor
 from PySide6.QtWidgets import QHeaderView, QLabel, QMenu, QProgressBar, QTableView
 
-from usdb_syncer import SongId, db, settings, signals
+from usdb_syncer import SongId, db, events, settings
 from usdb_syncer.gui.song_table.column import Column
 from usdb_syncer.gui.song_table.table_model import TableModel
 from usdb_syncer.logger import get_logger
@@ -91,7 +91,7 @@ class SongTable:
             self._on_current_song_changed
         )
         self._setup_search_timer()
-        signals.TreeFilterChanged.subscribe(self._on_search_changed)
+        events.TreeFilterChanged.subscribe(self._on_search_changed)
         self._signals = SongSignals()
         self._signals.started.connect(self._on_download_started)
         self._signals.finished.connect(self._on_download_finished)
@@ -303,8 +303,8 @@ class SongTable:
     def search_songs(self) -> None:
         self._model.set_songs(db.search_usdb_songs(self._search))
 
-    def _on_search_changed(self, search: db.SearchBuilder) -> None:
-        self._search = search
+    def _on_search_changed(self, event: events.TreeFilterChanged) -> None:
+        self._search = event.search
         self._search_timer.start()
 
 

@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING, Callable
 
 from PySide6.QtCore import QModelIndex, Qt
 
-from usdb_syncer import db, signals
+from usdb_syncer import db, events
 from usdb_syncer.gui.utils import keyboard_modifiers
 
 from .item import Filter, FilterItem, RootItem, VariantItem
@@ -51,4 +51,4 @@ class FilterTree:
         search = db.SearchBuilder()
         for filt in self.root.children:
             filt.build_search(search)
-        signals.TreeFilterChanged.emit(search)
+        events.TreeFilterChanged(search).post()
