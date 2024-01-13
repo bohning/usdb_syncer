@@ -30,7 +30,7 @@ class _DbState:
 
     @classmethod
     def connect(cls) -> None:
-        cls._connection = sqlite3.connect(AppPaths.db)
+        cls._connection = sqlite3.connect(AppPaths.db, check_same_thread=False)
         _validate_schema(cls._connection)
 
     @classmethod
