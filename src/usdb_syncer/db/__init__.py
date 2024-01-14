@@ -99,7 +99,7 @@ class SearchBuilder:
             _in_values_clause("usdb_song.language", self.languages),
             "usdb_song.golden_notes = ?" if self.golden_notes is not None else "",
             _in_values_clause("usdb_song.rating", self.ratings),
-            _in_ranges_clause("usdb.views", self.views),
+            _in_ranges_clause("usdb_song.views", self.views),
         )
         return " AND ".join(filter(None, filters))
 
