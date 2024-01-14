@@ -219,6 +219,12 @@ def usdb_song_languages() -> list[tuple[str, int]]:
 ### SyncMeta
 
 
+def get_sync_metas(folder: Path) -> list[tuple]:
+    stmt = _SqlCache.get("select_sync_meta.sql")
+    params = {"folder": folder.as_posix()}
+    return _DbState.connection().execute(stmt, params).fetchall()
+
+
 @attrs.define(frozen=True, slots=False)
 class SyncMetaParams:
     """Parameters for inserting or updating a sync meta."""
@@ -244,6 +250,13 @@ def upsert_sync_metas(params: Iterable[SyncMetaParams]) -> None:
 def delete_sync_meta(sync_meta_id: SyncMetaId) -> None:
     _DbState.connection().execute(
         "DELETE FROM sync_meta WHERE sync_meta_id = ?", (sync_meta_id,)
+    )
+
+
+def delete_sync_metas(ids: tuple[SyncMetaId, ...]) -> None:
+    id_str = ", ".join("?" for _ in range(len(ids)))
+    _DbState.connection().execute(
+        f"DELETE FROM sync_meta WHERE sync_meta_id IN ({id_str})", ids
     )
 
 

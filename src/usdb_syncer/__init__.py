@@ -5,6 +5,7 @@ from __future__ import annotations
 import base64
 import binascii
 import random
+from pathlib import Path
 
 
 class SongId(int):
@@ -51,3 +52,7 @@ class SyncMetaId(int):
         except binascii.Error:
             return None
         return cls.from_bytes(number, "big", signed=True)
+
+    @classmethod
+    def from_path(cls, path: Path) -> SyncMetaId | None:
+        return cls.decode(path.stem)

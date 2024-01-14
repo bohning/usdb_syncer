@@ -1,12 +1,14 @@
 """Runnable for getting the available songs from USDB or the local cache."""
 
 import json
+import os
 from pathlib import Path
 
 from requests import Session
 
-from usdb_syncer import SongId, db, errors
+from usdb_syncer import SongId, SyncMetaId, db, errors, utils
 from usdb_syncer.logger import get_logger
+from usdb_syncer.sync_meta import SyncMeta
 from usdb_syncer.usdb_scraper import get_usdb_available_songs
 from usdb_syncer.usdb_song import UsdbSong, UsdbSongEncoder
 from usdb_syncer.utils import AppPaths
@@ -37,7 +39,6 @@ def load_available_songs(force_reload: bool, session: Session | None = None) -> 
         db.delete_all_usdb_songs()
     elif (max_skip_id := db.max_usdb_song_id()) == 0 and (songs := load_cached_songs()):
         UsdbSong.upsert_many(songs)
-        db.commit()
         max_skip_id = db.max_usdb_song_id()
     try:
         songs = get_usdb_available_songs(max_skip_id, session=session)
@@ -46,7 +47,6 @@ def load_available_songs(force_reload: bool, session: Session | None = None) -> 
     else:
         if songs:
             UsdbSong.upsert_many(songs)
-            db.commit()
     finally:
         db.rollback()
 
@@ -76,3 +76,23 @@ def dump_available_songs(songs: list[UsdbSong], target: Path | None = None) -> N
 #         for path in settings.get_song_dir().glob("**/*.usdb")
 #         if (meta := SyncMeta.try_from_file(path))
 #     }
+
+
+def collect_sync_metas(folder: Path) -> None:
+    db_metas = {m.sync_meta_id: m for m in SyncMeta.get_all(folder)}
+    to_upsert: list[SyncMeta] = []
+    for path in folder.glob("**/*.usdb"):
+        meta_id = SyncMetaId.from_path(path)
+        meta = None if meta_id is None else db_metas.get(meta_id)
+        if meta_id is not None and meta and meta.mtime == utils.get_mtime(path):
+            del db_metas[meta_id]
+            continue
+        if meta := SyncMeta.try_from_file(path):
+            to_upsert.append(meta)
+            if meta.sync_meta_id in db_metas:
+                del db_metas[meta.sync_meta_id]
+                _logger.info(f"Updated meta file from disk: '{path}'.")
+            else:
+                _logger.info(f"New meta file found on disk: '{path}'.")
+    SyncMeta.delete_many(tuple(db_metas.keys()), commit=False)
+    SyncMeta.upsert_many(to_upsert)

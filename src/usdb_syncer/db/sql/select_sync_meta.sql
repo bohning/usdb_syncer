@@ -1,12 +1,4 @@
 SELECT
-    usdb_song.song_id,
-    usdb_song.artist,
-    usdb_song.title,
-    usdb_song.language,
-    usdb_song.edition,
-    usdb_song.golden_notes,
-    usdb_song.rating,
-    usdb_song.views,
     sync_meta.sync_meta_id,
     sync_meta.song_id,
     sync_meta.path,
@@ -29,21 +21,7 @@ SELECT
     background.mtime,
     background.resource
 FROM
-    usdb_song
-    LEFT JOIN (
-        SELECT
-            sync_meta.*,
-            ROW_NUMBER() OVER (
-                PARTITION BY song_id
-                ORDER BY
-                    path ASC
-            ) AS rank
-        FROM
-            sync_meta
-        WHERE
-            path GLOB :folder || '/*'
-    ) sync_meta ON sync_meta.rank = 1
-    AND usdb_song.song_id = sync_meta.song_id
+    sync_meta
     LEFT JOIN resource_file AS txt ON txt.kind = 'txt'
     AND sync_meta.sync_meta_id = txt.sync_meta_id
     LEFT JOIN resource_file AS audio ON audio.kind = 'audio'
@@ -54,3 +32,5 @@ FROM
     AND sync_meta.sync_meta_id = cover.sync_meta_id
     LEFT JOIN resource_file AS background ON background.kind = 'background'
     AND sync_meta.sync_meta_id = background.sync_meta_id
+WHERE
+    path GLOB :folder || '/*'

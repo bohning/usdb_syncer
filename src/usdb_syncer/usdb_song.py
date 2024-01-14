@@ -85,7 +85,7 @@ class UsdbSong:
 
     @classmethod
     def from_db_row(cls, song_id: SongId, row: tuple) -> UsdbSong:
-        assert len(row) == 28
+        assert len(row) == 29
         return cls(
             song_id=song_id,
             artist=row[1],
@@ -95,7 +95,7 @@ class UsdbSong:
             golden_notes=row[5],
             rating=row[6],
             views=row[7],
-            sync_meta=SyncMeta.from_db_row(song_id, row[8:]),
+            sync_meta=None if row[8] is None else SyncMeta.from_db_row(row[8:]),
         )
 
     @classmethod
