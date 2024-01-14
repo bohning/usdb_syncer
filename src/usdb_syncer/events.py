@@ -1,5 +1,6 @@
 """Signals other components can notify and subscribe to."""
 
+from pathlib import Path
 from typing import Any, Callable, Self
 
 import attrs
@@ -107,3 +108,13 @@ class DownloadFinished(_SubscriptableEvent):
     """Sent when a song download has finished."""
 
     song_id: SongId
+
+
+# files
+
+
+@attrs.define(slots=False)
+class SongDirChanged(_SubscriptableEvent):
+    """Sent when the selected song directory has changed."""
+
+    new_dir: Path

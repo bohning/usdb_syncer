@@ -5,6 +5,7 @@ import logging
 import os
 import sys
 import webbrowser
+from pathlib import Path
 
 from PySide6.QtCore import QObject, Qt, Signal
 from PySide6.QtGui import QCloseEvent, QColor, QFont, QIcon, QPainter, QPixmap
@@ -16,7 +17,7 @@ from PySide6.QtWidgets import (
     QSplashScreen,
 )
 
-from usdb_syncer import SongId, db, settings
+from usdb_syncer import SongId, db, events, settings
 from usdb_syncer.constants import SHORT_COMMIT_HASH, VERSION, Usdb
 from usdb_syncer.gui import progress_bar
 from usdb_syncer.gui.about_dialog import AboutDialog
@@ -203,11 +204,10 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         song_dir = QFileDialog.getExistingDirectory(self, "Select Song Directory")
         if not song_dir:
             return
-        self._set_song_dir(song_dir)
-
-    def _set_song_dir(self, song_dir: str) -> None:
-        self.lineEdit_song_dir.setText(song_dir)
-        settings.set_song_dir(song_dir)
+        path = Path(song_dir).resolve(strict=True)
+        self.lineEdit_song_dir.setText(str(path))
+        settings.set_song_dir(path)
+        events.SongDirChanged(path).post()
         # self.table.resync_song_data()
 
     def _generate_song_pdf(self) -> None:

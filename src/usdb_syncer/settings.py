@@ -506,11 +506,11 @@ def set_browser(value: Browser) -> None:
 
 
 def get_song_dir() -> Path:
-    return get_setting(SettingKey.SONG_DIR, Path.cwd().joinpath("songs"))
+    return get_setting(SettingKey.SONG_DIR, Path("songs").resolve())
 
 
-def set_song_dir(value: str) -> None:
-    set_setting(SettingKey.SONG_DIR, Path.cwd().joinpath(value))
+def set_song_dir(value: Path) -> None:
+    set_setting(SettingKey.SONG_DIR, value)
 
 
 def get_video() -> bool:
