@@ -44,7 +44,11 @@ class ResourceFile:
         return None
 
     @classmethod
-    def from_db_row(cls, row: tuple[str, float, str]) -> ResourceFile:
+    def from_db_row(
+        cls, row: tuple[str | None, float | None, str | None]
+    ) -> ResourceFile | None:
+        if row[0] is None or row[1] is None or row[2] is None:
+            return None
         return cls(fname=row[0], mtime=row[1], resource=row[2])
 
     def is_in_sync(self, folder: Path) -> bool:
@@ -129,7 +133,7 @@ class SyncMeta:
         meta = cls(
             sync_meta_id=SyncMetaId(row[0]),
             song_id=song_id,
-            path=row[1],
+            path=Path(row[1]),
             mtime=row[2],
             meta_tags=MetaTags.parse(row[3], _logger),
             pinned=row[4],
