@@ -50,7 +50,7 @@ class DebugConsole(Ui_Dialog, QDialog):
         with redirect_stdout(io.StringIO()) as captured:
             try:
                 exec(code, {"mw": self.parent()})  # pylint: disable=exec-used
-            except:  # pylint: disable=bare-except
+            except Exception:  # pylint: disable=broad-exception-caught
                 print(traceback.format_exc())
         self._log_output(code, captured.getvalue())
 

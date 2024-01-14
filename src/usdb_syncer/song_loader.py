@@ -5,6 +5,7 @@ from __future__ import annotations
 import base64
 import copy
 import os
+import traceback
 from pathlib import Path
 from typing import Iterable, Iterator
 
@@ -184,8 +185,8 @@ class SongLoader(QRunnable):
             self.logger.error("Song has been deleted from USDB.")
             self.song.delete()
             change_event = events.SongDeleted(self.song_id)
-        except Exception as exception:  # pylint: disable=broad-except
-            self.logger.debug(exception)
+        except Exception:  # pylint: disable=broad-except
+            self.logger.debug(traceback.format_exc())
             self.logger.error(
                 "Failed to finish download due to an unexpected error. "
                 "See debug log for more information."
@@ -194,9 +195,9 @@ class SongLoader(QRunnable):
         else:
             updated_song.status = DownloadStatus.NONE
             updated_song.upsert()
+            self.logger.info("All done!")
         change_event.post()
         events.DownloadFinished(self.song_id).post()
-        self.logger.info("All done!")
 
     def _run_inner(self) -> UsdbSong:
         self.song.status = DownloadStatus.DOWNLOADING
@@ -355,8 +356,8 @@ def _maybe_write_audio_tags(ctx: Context) -> None:
                 _write_mp3_tags(meta, ctx, options.embed_artwork)
             case ".ogg":
                 _write_ogg_tags(meta, ctx, options.embed_artwork)
-    except Exception as err:  # pylint: disable=broad-exception-caught
-        ctx.logger.debug(err)
+    except Exception:  # pylint: disable=broad-exception-caught
+        ctx.logger.debug(traceback.format_exc())
         ctx.logger.error(f"Failed to write audio tags to file '{meta.fname}'!")
     else:
         ctx.logger.debug(f"Audio tags written to file '{meta.fname}'.")
