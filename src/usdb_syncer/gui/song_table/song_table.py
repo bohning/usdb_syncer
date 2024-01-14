@@ -13,11 +13,9 @@ from PySide6.QtCore import (
     QItemSelection,
     QItemSelectionModel,
     QModelIndex,
-    QObject,
     QPoint,
     Qt,
     QTimer,
-    Signal,
 )
 from PySide6.QtGui import QCursor
 from PySide6.QtWidgets import QHeaderView, QLabel, QMenu, QProgressBar, QTableView
@@ -28,7 +26,7 @@ from usdb_syncer.gui.song_table.table_model import TableModel
 from usdb_syncer.logger import get_logger
 
 # from usdb_syncer.song_list_fetcher import find_local_files
-from usdb_syncer.song_loader import DownloadErrorReason, DownloadResult, download_songs
+from usdb_syncer.song_loader import download_songs
 from usdb_syncer.song_txt import SongTxt
 
 # from usdb_syncer.db.models import DownloadStatus, LocalSong, UsdbSong
@@ -43,13 +41,6 @@ _err_logger = get_logger(__file__ + "[errors]")
 _err_logger.setLevel(logging.ERROR)
 
 DEFAULT_COLUMN_WIDTH = 300
-
-
-class SongSignals(QObject):
-    """Signals relating to songs."""
-
-    started = Signal(SongId)
-    finished = Signal(DownloadResult)
 
 
 @attrs.define
@@ -92,9 +83,8 @@ class SongTable:
         )
         self._setup_search_timer()
         events.TreeFilterChanged.subscribe(self._on_search_changed)
-        self._signals = SongSignals()
-        self._signals.started.connect(self._on_download_started)
-        self._signals.finished.connect(self._on_download_finished)
+        events.DownloadStarted.subscribe(self._on_download_started)
+        events.DownloadFinished.subscribe(self._on_download_finished)
         self._progress = Progress(mw.bar_download_progress, mw.label_download_progress)
 
     def reset(self) -> None:
@@ -127,9 +117,7 @@ class SongTable:
                 self._model.song_changed(song.song_id)
         if to_download:
             self._progress.start(len(to_download))
-            download_songs(
-                to_download, self._signals.started.emit, self._signals.finished.emit
-            )
+            download_songs(to_download)
 
     def _setup_view(self, view: QTableView, state: QByteArray) -> None:
         view.setModel(self._model)
@@ -156,30 +144,30 @@ class SongTable:
             menu.addAction(action)
         menu.exec(QCursor.pos())
 
-    def _on_download_started(self, song_id: SongId) -> None:
-        if (song := UsdbSong.get(song_id)) is None:
-            logger = get_logger(__file__, song_id)
+    def _on_download_started(self, event: events.DownloadStarted) -> None:
+        if (song := UsdbSong.get(event.song_id)) is None:
+            logger = get_logger(__file__, event.song_id)
             logger.error("Unknown id. Ignoring download start signal.")
             return
         song.status = DownloadStatus.DOWNLOADING
-        self._model.song_changed(song_id)
+        self._model.song_changed(song.song_id)
 
-    def _on_download_finished(self, result: DownloadResult) -> None:
+    def _on_download_finished(self, event: events.DownloadFinished) -> None:
         self._progress.finish(1)
-        logger = get_logger(__file__, result.song_id)
-        if result.error is not None:
-            if (song := UsdbSong.get(result.song_id)) is None:
+        logger = get_logger(__file__, event.song_id)
+        if event.error is not None:
+            if (song := UsdbSong.get(event.song_id)) is None:
                 logger.error("Unknown id. Ignoring download finish signal.")
                 return
-            if result.error is DownloadErrorReason.NOT_FOUND:
+            if event.error is events.DownloadErrorReason.NOT_FOUND:
                 # db.delete_usdb_song(song)
                 logger.info("Song is not on USDB anymore.")
             else:
                 song.status = DownloadStatus.FAILED
-                self._model.song_changed(result.song_id)
-        elif result.data:
-            result.data.upsert()
-            self._model.song_changed(result.song_id)
+                self._model.song_changed(event.song_id)
+        elif event.song:
+            event.song.upsert()
+            self._model.song_changed(event.song_id)
             logger.info("All done!")
 
     def save_state(self) -> None:

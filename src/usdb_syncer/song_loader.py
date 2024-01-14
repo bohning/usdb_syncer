@@ -4,10 +4,9 @@ from __future__ import annotations
 
 import base64
 import copy
-import enum
 import os
 from pathlib import Path
-from typing import Callable, Iterable, Iterator
+from typing import Iterable, Iterator
 
 import attrs
 import mutagen.mp4
@@ -17,7 +16,7 @@ from mutagen.flac import Picture
 from PIL import Image
 from PySide6.QtCore import QRunnable, QThreadPool
 
-from usdb_syncer import SongId, errors, resource_dl, usdb_scraper
+from usdb_syncer import SongId, errors, events, resource_dl, usdb_scraper
 from usdb_syncer.constants import ISO_639_2B_LANGUAGE_CODES
 from usdb_syncer.download_options import Options, download_options
 from usdb_syncer.logger import Log, get_logger
@@ -34,23 +33,6 @@ from usdb_syncer.utils import (
     resource_file_ending,
     sanitize_filename,
 )
-
-
-class DownloadErrorReason(enum.Enum):
-    """Reason for a failed song download."""
-
-    NOT_LOGGED_IN = enum.auto()
-    NOT_FOUND = enum.auto()
-    UNKNOWN = enum.auto()
-
-
-@attrs.define
-class DownloadResult:
-    """Result of a song download to be passed by signal."""
-
-    song_id: SongId
-    data: UsdbSong | None = None
-    error: DownloadErrorReason | None = None
 
 
 @attrs.define(kw_only=True)
@@ -182,42 +164,34 @@ def _update_song_with_usdb_data(
 class SongLoader(QRunnable):
     """Runnable to create a complete song folder."""
 
-    def __init__(
-        self,
-        song: UsdbSong,
-        options: Options,
-        on_start: Callable[[SongId], None],
-        on_finish: Callable[[DownloadResult], None],
-    ) -> None:
+    def __init__(self, song: UsdbSong, options: Options) -> None:
         super().__init__()
         self.song = copy.deepcopy(song)
         self.song_id = song.song_id
         self.options = options
-        self.on_start = on_start
-        self.on_finish = on_finish
         self.logger = get_logger(__file__, self.song_id)
 
     def run(self) -> None:
-        result = DownloadResult(self.song_id)
+        event = events.DownloadFinished(self.song_id)
         try:
-            result.data = self._run_inner()
+            event.song = self._run_inner()
         except errors.UsdbLoginError:
             self.logger.error("Aborted; download requires login.")
-            result.error = DownloadErrorReason.NOT_LOGGED_IN
+            event.error = events.DownloadErrorReason.NOT_LOGGED_IN
         except errors.UsdbNotFoundError:
             self.logger.error("Song seems to have been deleted from USDB.")
-            result.error = DownloadErrorReason.NOT_FOUND
+            event.error = events.DownloadErrorReason.NOT_FOUND
         except Exception as exception:  # pylint: disable=broad-except
             self.logger.debug(exception)
             self.logger.error(
                 "Failed to finish download due to an unexpected error. "
                 "See debug log for more information."
             )
-            result.error = DownloadErrorReason.UNKNOWN
-        self.on_finish(result)
+            event.error = events.DownloadErrorReason.UNKNOWN
+        event.post()
 
     def _run_inner(self) -> UsdbSong:
-        self.on_start(self.song_id)
+        events.DownloadStarted(self.song_id).post()
         ctx = Context.new(self.song, self.options, self.logger)
         ctx.locations.folder.mkdir(parents=True, exist_ok=True)
         ctx.locations.ensure_correct_paths(ctx.sync_meta)
@@ -231,15 +205,11 @@ class SongLoader(QRunnable):
         return ctx.song
 
 
-def download_songs(
-    songs: Iterable[UsdbSong],
-    on_start: Callable[[SongId], None],
-    on_finish: Callable[[DownloadResult], None],
-) -> None:
+def download_songs(songs: Iterable[UsdbSong]) -> None:
     options = download_options()
     threadpool = QThreadPool.globalInstance()
     for song in songs:
-        worker = SongLoader(song, options, on_start, on_finish)
+        worker = SongLoader(song, options)
         threadpool.start(worker)
 
 
