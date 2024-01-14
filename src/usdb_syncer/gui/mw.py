@@ -318,7 +318,7 @@ def _load_main_window(mw: MainWindow) -> None:
     splash.show()
     QApplication.processEvents()
     splash.showMessage("Loading song database ...", color=Qt.GlobalColor.gray)
-    db.connect()
+    db.connect(AppPaths.db)
     load_available_songs(force_reload=False)
     mw.tree.populate()
     mw.table.search_songs()

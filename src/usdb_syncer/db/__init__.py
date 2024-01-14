@@ -3,6 +3,7 @@
 import enum
 import sqlite3
 import time
+from pathlib import Path
 from typing import Iterable
 
 import attrs
@@ -29,8 +30,8 @@ class _DbState:
     _connection: sqlite3.Connection | None = None
 
     @classmethod
-    def connect(cls) -> None:
-        cls._connection = sqlite3.connect(AppPaths.db, check_same_thread=False)
+    def connect(cls, db_path: Path | str) -> None:
+        cls._connection = sqlite3.connect(db_path, check_same_thread=False)
         _validate_schema(cls._connection)
 
     @classmethod
@@ -63,8 +64,8 @@ def _validate_schema(connection: sqlite3.Connection) -> None:
             raise errors.UnknownSchemaError
 
 
-def connect() -> None:
-    _DbState.connect()
+def connect(db_path: Path | str) -> None:
+    _DbState.connect(db_path)
 
 
 def close() -> None:
