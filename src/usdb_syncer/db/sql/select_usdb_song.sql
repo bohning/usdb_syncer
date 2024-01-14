@@ -29,7 +29,7 @@ SELECT
     background.resource
 FROM
     usdb_song
-    LEFT JOIN sync_meta ON usdb_song.song_id = sync_meta.sync_meta_id
+    LEFT JOIN sync_meta ON usdb_song.song_id = sync_meta.song_id
     LEFT JOIN resource_file AS txt ON txt.kind = 'txt'
     AND sync_meta.sync_meta_id = txt.sync_meta_id
     LEFT JOIN resource_file AS audio ON audio.kind = 'audio'
