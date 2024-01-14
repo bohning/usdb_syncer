@@ -7,7 +7,7 @@ from typing import Iterable
 
 import attrs
 
-from usdb_syncer import SongId, SyncMetaId, errors
+from usdb_syncer import SongId, SyncMetaId, errors, settings
 from usdb_syncer.utils import AppPaths
 
 SCHEMA_VERSION = 1
@@ -135,8 +135,9 @@ def _in_ranges_clause(attribute: str, values: list[tuple[int, int | None]]) -> s
 
 
 def get_usdb_song(song_id: SongId) -> tuple | None:
-    stmt = f"{_SqlCache.get('select_usdb_song.sql')} WHERE usdb_song.song_id = ?"
-    return _DbState.connection().execute(stmt, (song_id,)).fetchone()
+    stmt = f"{_SqlCache.get('select_usdb_song.sql')} WHERE usdb_song.song_id = :song_id"
+    params = {"folder": settings.get_song_dir().as_posix(), "song_id": song_id}
+    return _DbState.connection().execute(stmt, params).fetchone()
 
 
 def delete_usdb_song(song_id: SongId) -> None:
