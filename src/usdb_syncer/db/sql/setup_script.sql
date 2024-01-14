@@ -28,7 +28,7 @@ CREATE TABLE sync_meta (
     pinned BOOLEAN NOT NULL,
     PRIMARY KEY (sync_meta_id),
     UNIQUE (path),
-    FOREIGN KEY(song_id) REFERENCES usdb_song (song_id)
+    FOREIGN KEY(song_id) REFERENCES usdb_song (song_id) ON DELETE CASCADE
 );
 
 CREATE TABLE resource_file (
