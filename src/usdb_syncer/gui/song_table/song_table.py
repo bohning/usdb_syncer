@@ -6,7 +6,6 @@ import logging
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Callable, Iterable, Iterator
 
-import attrs
 import send2trash
 from PySide6.QtCore import (
     QByteArray,
@@ -18,7 +17,7 @@ from PySide6.QtCore import (
     QTimer,
 )
 from PySide6.QtGui import QCursor
-from PySide6.QtWidgets import QHeaderView, QLabel, QMenu, QProgressBar, QTableView
+from PySide6.QtWidgets import QHeaderView, QMenu, QTableView
 
 from usdb_syncer import SongId, db, events, settings
 from usdb_syncer.gui.song_table.column import Column
@@ -43,31 +42,6 @@ _err_logger.setLevel(logging.ERROR)
 DEFAULT_COLUMN_WIDTH = 300
 
 
-@attrs.define
-class Progress:
-    """Progress bar controller."""
-
-    _bar: QProgressBar
-    _label: QLabel
-    _running: int = 0
-    _finished: int = 0
-
-    def start(self, count: int) -> None:
-        if self._running == self._finished:
-            self._running = 0
-            self._finished = 0
-        self._running += count
-        self._update()
-
-    def finish(self, count: int) -> None:
-        self._finished += count
-        self._update()
-
-    def _update(self) -> None:
-        self._label.setText(f"{self._finished}/{self._running}")
-        self._bar.setValue(int((self._finished + 1) / (self._running + 1) * 100))
-
-
 class SongTable:
     """Controller for the song table."""
 
@@ -83,9 +57,6 @@ class SongTable:
         )
         self._setup_search_timer()
         events.TreeFilterChanged.subscribe(self._on_search_changed)
-        events.DownloadStarted.subscribe(self._on_download_started)
-        events.DownloadFinished.subscribe(self._on_download_finished)
-        self._progress = Progress(mw.bar_download_progress, mw.label_download_progress)
 
     def reset(self) -> None:
         self._model.reset()
@@ -113,10 +84,10 @@ class SongTable:
                 continue
             if song.status.can_be_downloaded():
                 song.status = DownloadStatus.PENDING
+                events.SongChanged(song.song_id).post()
                 to_download.append(song)
-                self._model.song_changed(song.song_id)
         if to_download:
-            self._progress.start(len(to_download))
+            events.DownloadsRequested(len(to_download)).post()
             download_songs(to_download)
 
     def _setup_view(self, view: QTableView, state: QByteArray) -> None:
@@ -143,32 +114,6 @@ class SongTable:
         for action in self.mw.menu_songs.actions():
             menu.addAction(action)
         menu.exec(QCursor.pos())
-
-    def _on_download_started(self, event: events.DownloadStarted) -> None:
-        if (song := UsdbSong.get(event.song_id)) is None:
-            logger = get_logger(__file__, event.song_id)
-            logger.error("Unknown id. Ignoring download start signal.")
-            return
-        song.status = DownloadStatus.DOWNLOADING
-        self._model.song_changed(song.song_id)
-
-    def _on_download_finished(self, event: events.DownloadFinished) -> None:
-        self._progress.finish(1)
-        logger = get_logger(__file__, event.song_id)
-        if event.error is not None:
-            if (song := UsdbSong.get(event.song_id)) is None:
-                logger.error("Unknown id. Ignoring download finish signal.")
-                return
-            if event.error is events.DownloadErrorReason.NOT_FOUND:
-                # db.delete_usdb_song(song)
-                logger.info("Song is not on USDB anymore.")
-            else:
-                song.status = DownloadStatus.FAILED
-                self._model.song_changed(event.song_id)
-        elif event.song:
-            event.song.upsert()
-            self._model.song_changed(event.song_id)
-            logger.info("All done!")
 
     def save_state(self) -> None:
         settings.set_table_view_header_state(
@@ -200,8 +145,8 @@ class SongTable:
                 logger.info("Not trashing song folder as it is pinned.")
                 continue
             send2trash.send2trash(song.sync_meta.path)
-            db.delete_sync_meta(song.sync_meta.sync_meta_id)
-            self._model.song_changed(song.song_id)
+            song.sync_meta.delete()
+            events.SongChanged(song.song_id)
             logger.debug("Trashed song folder.")
 
     def set_pin_selected_songs(self, pin: bool) -> None:
@@ -210,8 +155,9 @@ class SongTable:
                 continue
             song.sync_meta.pinned = pin
             song.sync_meta.synchronize_to_file()
+            song.sync_meta.upsert()
             db.commit()
-            self._model.song_changed(song.song_id)
+            events.SongChanged(song.song_id)
 
     ### selection model
 

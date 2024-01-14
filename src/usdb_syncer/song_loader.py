@@ -26,7 +26,7 @@ from usdb_syncer.sync_meta import ResourceFile, SyncMeta
 from usdb_syncer.usdb_scraper import SongDetails
 
 # from usdb_syncer.db.models import LocalSong, ResourceFile, UsdbSong
-from usdb_syncer.usdb_song import UsdbSong
+from usdb_syncer.usdb_song import DownloadStatus, UsdbSong
 from usdb_syncer.utils import (
     is_name_maybe_with_suffix,
     next_unique_directory,
@@ -89,6 +89,7 @@ class Locations:
 class Context:
     """Context for downloading media and creating a song folder."""
 
+    # deep copy of the passed in song
     song: UsdbSong
     # alias to song.sync_meta
     sync_meta: SyncMeta
@@ -100,6 +101,7 @@ class Context:
 
     @classmethod
     def new(cls, song: UsdbSong, options: Options, logger: Log) -> Context:
+        song = copy.deepcopy(song)
         details, txt = _get_usdb_data(song.song_id, logger)
         _update_song_with_usdb_data(song, details, txt)
         paths = Locations.new(song, options.song_dir, txt.headers)
@@ -166,32 +168,39 @@ class SongLoader(QRunnable):
 
     def __init__(self, song: UsdbSong, options: Options) -> None:
         super().__init__()
-        self.song = copy.deepcopy(song)
+        self.song = song
         self.song_id = song.song_id
         self.options = options
         self.logger = get_logger(__file__, self.song_id)
 
     def run(self) -> None:
-        event = events.DownloadFinished(self.song_id)
+        change_event = events.SongChanged(self.song_id)
         try:
-            event.song = self._run_inner()
+            updated_song = self._run_inner()
         except errors.UsdbLoginError:
             self.logger.error("Aborted; download requires login.")
-            event.error = events.DownloadErrorReason.NOT_LOGGED_IN
+            self.song.status = DownloadStatus.FAILED
         except errors.UsdbNotFoundError:
-            self.logger.error("Song seems to have been deleted from USDB.")
-            event.error = events.DownloadErrorReason.NOT_FOUND
+            self.logger.error("Song has been deleted from USDB.")
+            self.song.delete()
+            change_event = events.SongDeleted(self.song_id)
         except Exception as exception:  # pylint: disable=broad-except
             self.logger.debug(exception)
             self.logger.error(
                 "Failed to finish download due to an unexpected error. "
                 "See debug log for more information."
             )
-            event.error = events.DownloadErrorReason.UNKNOWN
-        event.post()
+            self.song.status = DownloadStatus.FAILED
+        else:
+            updated_song.status = DownloadStatus.NONE
+            updated_song.upsert()
+        change_event.post()
+        events.DownloadFinished(self.song_id).post()
+        self.logger.info("All done!")
 
     def _run_inner(self) -> UsdbSong:
-        events.DownloadStarted(self.song_id).post()
+        self.song.status = DownloadStatus.DOWNLOADING
+        events.SongChanged(self.song_id).post()
         ctx = Context.new(self.song, self.options, self.logger)
         ctx.locations.folder.mkdir(parents=True, exist_ok=True)
         ctx.locations.ensure_correct_paths(ctx.sync_meta)

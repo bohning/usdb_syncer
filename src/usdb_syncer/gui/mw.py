@@ -18,6 +18,7 @@ from PySide6.QtWidgets import (
 
 from usdb_syncer import SongId, db, settings
 from usdb_syncer.constants import SHORT_COMMIT_HASH, VERSION, Usdb
+from usdb_syncer.gui import progress_bar
 from usdb_syncer.gui.about_dialog import AboutDialog
 from usdb_syncer.gui.debug_console import DebugConsole
 from usdb_syncer.gui.ffmpeg_dialog import check_ffmpeg
@@ -87,6 +88,9 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         self.setupUi(self)
         self.tree = FilterTree(self)
         self.table = SongTable(self)
+        self.progress_bar = progress_bar.ProgressBar(
+            self.bar_download_progress, self.label_download_progress
+        )
         self._setup_statusbar()
         self._setup_log()
         self._setup_toolbar()

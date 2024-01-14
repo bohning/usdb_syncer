@@ -12,7 +12,7 @@ from PySide6.QtCore import (
 )
 from PySide6.QtGui import QIcon
 
-from usdb_syncer import SongId
+from usdb_syncer import SongId, events
 from usdb_syncer.gui.song_table.column import Column
 from usdb_syncer.usdb_song import UsdbSong
 
@@ -27,9 +27,11 @@ class TableModel(QAbstractTableModel):
     _songs: dict[SongId, UsdbSong]
 
     def __init__(self, parent: QObject) -> None:
+        super().__init__(parent)
         self._rows = {}
         self._songs = {}
-        super().__init__(parent)
+        events.SongChanged.subscribe(self._on_song_changed)
+        events.SongDeleted.subscribe(self._on_song_deleted)
 
     def reset(self) -> None:
         self.beginResetModel()
@@ -58,14 +60,23 @@ class TableModel(QAbstractTableModel):
     def row_for_id(self, song_id: SongId) -> int | None:
         return self._rows.get(song_id)
 
-    def row_changed(self, row: int) -> None:
+    def _row_changed(self, row: int) -> None:
         start_idx = self.index(row, 0)
         end_idx = self.index(row, self.columnCount() - 1)
         self.dataChanged.emit(start_idx, end_idx)
 
-    def song_changed(self, song_id: SongId) -> None:
-        if (row := self._rows.get(song_id)) is not None:
-            self.row_changed(row)
+    def _on_song_changed(self, event: events.SongChanged) -> None:
+        if (row := self._rows.get(event.song_id)) is not None:
+            self._row_changed(row)
+
+    def _on_song_deleted(self, event: events.SongDeleted) -> None:
+        if (row := self._rows.get(event.song_id)) is None:
+            return
+        self.beginRemoveRows(QModelIndex(), row, row)
+        del self._songs[event.song_id]
+        del self._rows[event.song_id]
+        self._ids = tuple(i for i in self._ids if i != event.song_id)
+        self.endRemoveRows()
 
     ### QAbstractTableModel implementation
 

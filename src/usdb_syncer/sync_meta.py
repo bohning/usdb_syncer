@@ -141,7 +141,7 @@ class SyncMeta:
         meta.background = ResourceFile.from_db_row(row[17:])
         return meta
 
-    def upsert(self) -> None:
+    def upsert(self, commit: bool = True) -> None:
         db.upsert_sync_meta(self.db_params())
         files = self.all_resource_files()
         db.upsert_resource_files(
@@ -150,9 +150,11 @@ class SyncMeta:
         db.delete_resource_files(
             (self.sync_meta_id, kind) for file, kind in files if not file
         )
+        if commit:
+            db.commit()
 
     @classmethod
-    def upsert_many(cls, metas: list[SyncMeta]) -> None:
+    def upsert_many(cls, metas: list[SyncMeta], commit: bool = True) -> None:
         db.upsert_sync_metas(meta.db_params() for meta in metas)
         db.upsert_resource_files(
             file.db_params(meta.sync_meta_id, kind)
@@ -166,6 +168,13 @@ class SyncMeta:
             for file, kind in meta.all_resource_files()
             if not file
         )
+        if commit:
+            db.commit()
+
+    def delete(self, commit: bool = True) -> None:
+        db.delete_sync_meta(self.sync_meta_id)
+        if commit:
+            db.commit()
 
     def all_resource_files(
         self,

@@ -1,13 +1,11 @@
 """Signals other components can notify and subscribe to."""
 
-import enum
 from typing import Any, Callable, Self
 
 import attrs
 from PySide6 import QtCore
 
 from usdb_syncer import SongId, db
-from usdb_syncer.usdb_song import UsdbSong
 
 
 class _EventProcessor(QtCore.QObject):
@@ -77,22 +75,31 @@ class TextFilterChanged(_SubscriptableEvent):
     search: str
 
 
-# downloads
+# songs
 
 
 @attrs.define(slots=False)
-class DownloadStarted(_SubscriptableEvent):
-    """Sent when a song download has started on the worker thread."""
+class SongChanged(_SubscriptableEvent):
+    """Sent when attributes of a UsdbSong have changed."""
 
     song_id: SongId
 
 
-class DownloadErrorReason(enum.Enum):
-    """Reason for a failed song download."""
+@attrs.define(slots=False)
+class SongDeleted(_SubscriptableEvent):
+    """Sent when attributes of a UsdbSong have changed."""
 
-    NOT_LOGGED_IN = enum.auto()
-    NOT_FOUND = enum.auto()
-    UNKNOWN = enum.auto()
+    song_id: SongId
+
+
+# downloads
+
+
+@attrs.define(slots=False)
+class DownloadsRequested(_SubscriptableEvent):
+    """Sent when a song download has been queued for download."""
+
+    count: int
 
 
 @attrs.define(slots=False)
@@ -100,5 +107,3 @@ class DownloadFinished(_SubscriptableEvent):
     """Sent when a song download has finished."""
 
     song_id: SongId
-    song: UsdbSong | None = None
-    error: DownloadErrorReason | None = None
