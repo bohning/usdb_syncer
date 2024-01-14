@@ -175,7 +175,7 @@ class SongLoader(QRunnable):
         self.logger = get_logger(__file__, self.song_id)
 
     def run(self) -> None:
-        change_event = events.SongChanged(self.song_id)
+        change_event: events.SubscriptableEvent = events.SongChanged(self.song_id)
         try:
             updated_song = self._run_inner()
         except errors.UsdbLoginError:

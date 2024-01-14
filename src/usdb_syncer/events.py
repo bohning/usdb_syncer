@@ -1,7 +1,7 @@
 """Signals other components can notify and subscribe to."""
 
 from pathlib import Path
-from typing import Any, Callable, Self
+from typing import Any, Callable, Self, cast
 
 import attrs
 from PySide6 import QtCore
@@ -13,7 +13,7 @@ class _EventProcessor(QtCore.QObject):
     """Processes events."""
 
     def customEvent(self, event: QtCore.QEvent) -> None:
-        if isinstance(event, _SubscriptableEvent):
+        if isinstance(event, SubscriptableEvent):
             event.process()
 
 
@@ -32,7 +32,7 @@ class _EventProcessorManager(QtCore.QObject):
 
 
 @attrs.define(slots=False)
-class _SubscriptableEvent(QtCore.QEvent):
+class SubscriptableEvent(QtCore.QEvent):
     """An event other components can send and subscribe to."""
 
     _subscribers: list[Callable[[Self], Any]] = attrs.field(init=False)
@@ -45,16 +45,17 @@ class _SubscriptableEvent(QtCore.QEvent):
 
     @classmethod
     def subscribe(cls, callback: Callable[[Self], Any]) -> None:
-        cls._subscribers.append(callback)
+        # mypy seems to have a lot of trouble with the Self type
+        cast(list[Callable[[Self], Any]], cls._subscribers).append(callback)
 
     @classmethod
     def unsubscribe(cls, callback: Callable[[Self], Any]) -> None:
-        cls._subscribers.remove(callback)
+        cast(list[Callable[[Self], Any]], cls._subscribers).remove(callback)
 
     def post(self) -> None:
         QtCore.QCoreApplication.postEvent(_EventProcessorManager.processor(), self)
 
-    def process(self) -> None:
+    def process(self: Self) -> None:
         for func in self._subscribers:
             func(self)
 
@@ -63,14 +64,14 @@ class _SubscriptableEvent(QtCore.QEvent):
 
 
 @attrs.define(slots=False)
-class TreeFilterChanged(_SubscriptableEvent):
+class TreeFilterChanged(SubscriptableEvent):
     """Sent when a tree filter row has been selected or deselected."""
 
     search: db.SearchBuilder
 
 
 @attrs.define(slots=False)
-class TextFilterChanged(_SubscriptableEvent):
+class TextFilterChanged(SubscriptableEvent):
     """Sent when the free text search has been changed."""
 
     search: str
@@ -80,14 +81,14 @@ class TextFilterChanged(_SubscriptableEvent):
 
 
 @attrs.define(slots=False)
-class SongChanged(_SubscriptableEvent):
+class SongChanged(SubscriptableEvent):
     """Sent when attributes of a UsdbSong have changed."""
 
     song_id: SongId
 
 
 @attrs.define(slots=False)
-class SongDeleted(_SubscriptableEvent):
+class SongDeleted(SubscriptableEvent):
     """Sent when attributes of a UsdbSong have changed."""
 
     song_id: SongId
@@ -97,14 +98,14 @@ class SongDeleted(_SubscriptableEvent):
 
 
 @attrs.define(slots=False)
-class DownloadsRequested(_SubscriptableEvent):
+class DownloadsRequested(SubscriptableEvent):
     """Sent when a song download has been queued for download."""
 
     count: int
 
 
 @attrs.define(slots=False)
-class DownloadFinished(_SubscriptableEvent):
+class DownloadFinished(SubscriptableEvent):
     """Sent when a song download has finished."""
 
     song_id: SongId
@@ -114,7 +115,7 @@ class DownloadFinished(_SubscriptableEvent):
 
 
 @attrs.define(slots=False)
-class SongDirChanged(_SubscriptableEvent):
+class SongDirChanged(SubscriptableEvent):
     """Sent when the selected song directory has changed."""
 
     new_dir: Path

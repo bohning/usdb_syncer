@@ -72,9 +72,9 @@ class TreeItem:
     checked: bool = attrs.field(default=False, init=False)
     checkable: bool = attrs.field(default=False, init=False)
 
-    def toggle_checked(self, _keep_siblings: bool) -> list[TreeItem]:
+    def toggle_checked(self, _keep_siblings: bool) -> tuple[TreeItem, ...]:
         """Returns toggled items."""
-        return []
+        return tuple()
 
     def decoration(self) -> QIcon | None:
         return None
@@ -131,8 +131,8 @@ class FilterItem(TreeItem):
 
     def set_child_checked(
         self, child: int, checked: bool, keep_siblings: bool
-    ) -> list[TreeItem]:
-        changed = [self, self.children[child]]
+    ) -> tuple[TreeItem, ...]:
+        changed: tuple[TreeItem, ...] = (self, self.children[child])
         if checked:
             if not keep_siblings:
                 changed += self.uncheck_children()
@@ -166,7 +166,7 @@ class VariantItem(TreeItem):
     def is_checkable(self) -> bool:
         return True
 
-    def toggle_checked(self, keep_siblings: bool) -> list[TreeItem]:
+    def toggle_checked(self, keep_siblings: bool) -> tuple[TreeItem, ...]:
         return self.parent.set_child_checked(
             self.row_in_parent, not self.checked, keep_siblings
         )
