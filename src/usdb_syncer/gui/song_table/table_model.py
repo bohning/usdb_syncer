@@ -32,10 +32,10 @@ class TableModel(QAbstractTableModel):
         self._songs = {}
         events.SongChanged.subscribe(self._on_song_changed)
         events.SongDeleted.subscribe(self._on_song_deleted)
+        events.SongDirChanged.subscribe(lambda _: self.reset)
 
     def reset(self) -> None:
         self.beginResetModel()
-        self._songs = {}
         self.endResetModel()
 
     def set_songs(self, songs: Iterable[SongId]) -> None:

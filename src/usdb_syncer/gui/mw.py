@@ -39,6 +39,7 @@ from usdb_syncer.usdb_id_file import (
     parse_usdb_id_file,
     write_usdb_id_file,
 )
+from usdb_syncer.usdb_song import UsdbSong
 from usdb_syncer.utils import AppPaths, open_file_explorer
 
 _logger = get_logger(__file__)
@@ -207,8 +208,9 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         path = Path(song_dir).resolve(strict=True)
         self.lineEdit_song_dir.setText(str(path))
         settings.set_song_dir(path)
+        collect_sync_metas(path)
+        UsdbSong.clear_cache()
         events.SongDirChanged(path).post()
-        # self.table.resync_song_data()
 
     def _generate_song_pdf(self) -> None:
         fname = f"{datetime.datetime.now():%Y-%m-%d}_songlist.pdf"

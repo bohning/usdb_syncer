@@ -150,6 +150,10 @@ class UsdbSong:
     def is_pinned(self) -> bool:
         return self.sync_meta is not None and self.sync_meta.pinned
 
+    @classmethod
+    def clear_cache(cls) -> None:
+        _UsdbSongCache.clear()
+
 
 class UsdbSongEncoder(JSONEncoder):
     """Custom JSON encoder"""
@@ -180,3 +184,7 @@ class _UsdbSongCache:
     def remove(cls, song_id: SongId) -> None:
         if song_id in cls._songs:
             del cls._songs[song_id]
+
+    @classmethod
+    def clear(cls) -> None:
+        cls._songs = {}
