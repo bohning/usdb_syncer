@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import json
-import os
 from pathlib import Path
 from typing import Any, Iterator
 
@@ -30,7 +29,7 @@ class ResourceFile:
     """Meta data about a local file."""
 
     fname: str
-    mtime: float
+    mtime: int
     resource: str
 
     @classmethod
@@ -45,7 +44,7 @@ class ResourceFile:
 
     @classmethod
     def from_db_row(
-        cls, row: tuple[str | None, float | None, str | None]
+        cls, row: tuple[str | None, int | None, str | None]
     ) -> ResourceFile | None:
         if row[0] is None or row[1] is None or row[2] is None:
             return None
@@ -78,7 +77,7 @@ class SyncMeta:
     sync_meta_id: SyncMetaId
     song_id: SongId
     path: Path
-    mtime: float
+    mtime: int
     meta_tags: MetaTags
     pinned: bool = False
     txt: ResourceFile | None = None

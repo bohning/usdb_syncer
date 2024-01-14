@@ -1,7 +1,6 @@
 """Runnable for getting the available songs from USDB or the local cache."""
 
 import json
-import os
 from pathlib import Path
 
 from requests import Session

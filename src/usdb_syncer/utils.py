@@ -179,6 +179,6 @@ def resource_file_ending(name: str) -> str:
     return ""
 
 
-def get_mtime(path: Path) -> float:
-    """Helper for consistently rounded mtime so it can be stored in db losslessly."""
-    return round(os.path.getmtime(path), 3)
+def get_mtime(path: Path) -> int:
+    """Helper for mtime in microseconds so it can be stored in db losslessly."""
+    return int(os.path.getmtime(path) * 1_000_000)

@@ -55,7 +55,7 @@ def _validate_schema(connection: sqlite3.Connection) -> None:
         connection.executescript(_SqlCache.get("setup_script.sql"))
         connection.execute(
             "INSERT INTO meta (id, version, ctime) VALUES (1, ?, ?)",
-            (SCHEMA_VERSION, time.time()),
+            (SCHEMA_VERSION, int(time.time() * 1_000_000)),
         )
         connection.commit()
     else:
@@ -232,7 +232,7 @@ class SyncMetaParams:
     sync_meta_id: SyncMetaId
     song_id: SongId
     path: str
-    mtime: float
+    mtime: int
     meta_tags: str
     pinned: bool
 
@@ -280,7 +280,7 @@ class ResourceFileParams:
     sync_meta_id: SyncMetaId
     kind: ResourceFileKind
     fname: str
-    mtime: float
+    mtime: int
     resource: str
 
 
