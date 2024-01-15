@@ -7,8 +7,8 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any, Callable, Iterable, Iterator
 
 import send2trash
+from PySide6 import QtWidgets
 from PySide6.QtCore import (
-    QByteArray,
     QItemSelection,
     QItemSelectionModel,
     QModelIndex,
@@ -17,7 +17,7 @@ from PySide6.QtCore import (
     QTimer,
 )
 from PySide6.QtGui import QCursor
-from PySide6.QtWidgets import QHeaderView, QMenu, QTableView
+from PySide6.QtWidgets import QHeaderView, QMenu
 
 from usdb_syncer import SongId, db, events, settings
 from usdb_syncer.gui.song_table.column import Column
@@ -27,8 +27,6 @@ from usdb_syncer.logger import get_logger
 # from usdb_syncer.song_list_fetcher import find_local_files
 from usdb_syncer.song_loader import download_songs
 from usdb_syncer.song_txt import SongTxt
-
-# from usdb_syncer.db.models import DownloadStatus, LocalSong, UsdbSong
 from usdb_syncer.usdb_song import DownloadStatus, UsdbSong
 from usdb_syncer.utils import try_read_unknown_encoding
 
@@ -50,16 +48,17 @@ class SongTable:
     def __init__(self, mw: MainWindow) -> None:
         self.mw = mw
         self._model = TableModel(mw)
-        self.table_view = mw.table_view
-        self._setup_view(mw.table_view, settings.get_table_view_header_state())
-        self.table_view.horizontalHeader().sortIndicatorChanged.connect(
-            self._on_sort_order_changed
-        )
+        self._view = mw.table_view
+        self._setup_view()
+        self._header().sortIndicatorChanged.connect(self._on_sort_order_changed)
         mw.table_view.selectionModel().currentChanged.connect(
             self._on_current_song_changed
         )
         self._setup_search_timer()
         events.TreeFilterChanged.subscribe(self._on_tree_filter_changed)
+
+    def _header(self) -> QtWidgets.QHeaderView:
+        return self._view.horizontalHeader()
 
     def reset(self) -> None:
         self._model.reset()
@@ -93,12 +92,13 @@ class SongTable:
             events.DownloadsRequested(len(to_download)).post()
             download_songs(to_download)
 
-    def _setup_view(self, view: QTableView, state: QByteArray) -> None:
-        view.setModel(self._model)
-        view.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
-        view.customContextMenuRequested.connect(self._context_menu)
-        view.doubleClicked.connect(lambda idx: self._download([idx.row()]))
-        header = view.horizontalHeader()
+    def _setup_view(self) -> None:
+        state = settings.get_table_view_header_state()
+        self._view.setModel(self._model)
+        self._view.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
+        self._view.customContextMenuRequested.connect(self._context_menu)
+        self._view.doubleClicked.connect(lambda idx: self._download([idx.row()]))
+        header = self._header()
         if not state.isEmpty():
             header.restoreState(state)
         for column in Column:
@@ -165,7 +165,7 @@ class SongTable:
     ### selection model
 
     def current_song(self) -> UsdbSong | None:
-        if (idx := self.table_view.selectionModel().currentIndex()).isValid():
+        if (idx := self._view.selectionModel().currentIndex()).isValid():
             if ids := self._model.ids_for_indices([idx]):
                 return UsdbSong.get(ids[0])
         return None
@@ -178,7 +178,7 @@ class SongTable:
         )
 
     def _selected_rows(self) -> Iterable[int]:
-        return (idx.row() for idx in self.table_view.selectionModel().selectedRows())
+        return (idx.row() for idx in self._view.selectionModel().selectedRows())
 
     # TODO
     # def select_local_songs(self, directory: Path) -> None:
@@ -209,7 +209,7 @@ class SongTable:
         selection = QItemSelection()
         for row in rows:
             selection.select(row, row)
-        self.table_view.selectionModel().select(
+        self._view.selectionModel().select(
             selection,
             QItemSelectionModel.SelectionFlag.Rows
             | QItemSelectionModel.SelectionFlag.ClearAndSelect,
@@ -249,10 +249,13 @@ class SongTable:
 
     def _on_sort_order_changed(self, section: int, order: Qt.SortOrder) -> None:
         if (search_order := Column(section).song_order()) is None:
-            # TODO: revert indicator change
+            _logger.info("Sorting by this column is not supported.")
+            if (col := Column.from_song_order(self._search.order)) is not None:
+                order = Qt.SortOrder(self._search.descending)
+                self._header().setSortIndicator(col.value, order)
             return
         self._search.order = search_order
-        self._search.descending = order is Qt.SortOrder.DescendingOrder
+        self._search.descending = bool(order.value)
         self.search_songs()
 
 

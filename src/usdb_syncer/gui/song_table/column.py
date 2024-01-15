@@ -1,5 +1,7 @@
 """Table model for song data."""
 
+from __future__ import annotations
+
 import enum
 from enum import IntEnum
 from functools import cache
@@ -148,5 +150,29 @@ class Column(IntEnum):
                 | Column.DOWNLOAD_STATUS
             ):
                 return None
+            case unreachable:
+                assert_never(unreachable)
+
+    @classmethod
+    def from_song_order(cls, order: db.SongOrder) -> Column | None:
+        match order:
+            case db.SongOrder.NONE:
+                return None
+            case db.SongOrder.SONG_ID:
+                return Column.SONG_ID
+            case db.SongOrder.ARTIST:
+                return Column.ARTIST
+            case db.SongOrder.TITLE:
+                return Column.TITLE
+            case db.SongOrder.LANGUAGE:
+                return Column.LANGUAGE
+            case db.SongOrder.EDITION:
+                return Column.EDITION
+            case db.SongOrder.GOLDEN_NOTES:
+                return Column.GOLDEN_NOTES
+            case db.SongOrder.RATING:
+                return Column.RATING
+            case db.SongOrder.VIEWS:
+                return Column.VIEWS
             case unreachable:
                 assert_never(unreachable)
