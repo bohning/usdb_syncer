@@ -52,11 +52,14 @@ class SongTable:
         self._model = TableModel(mw)
         self.table_view = mw.table_view
         self._setup_view(mw.table_view, settings.get_table_view_header_state())
+        self.table_view.horizontalHeader().sortIndicatorChanged.connect(
+            self._on_sort_order_changed
+        )
         mw.table_view.selectionModel().currentChanged.connect(
             self._on_current_song_changed
         )
         self._setup_search_timer()
-        events.TreeFilterChanged.subscribe(self._on_search_changed)
+        events.TreeFilterChanged.subscribe(self._on_tree_filter_changed)
 
     def reset(self) -> None:
         self._model.reset()
@@ -212,7 +215,7 @@ class SongTable:
             | QItemSelectionModel.SelectionFlag.ClearAndSelect,
         )
 
-    ### sort and filter model
+    ### sorting and filtering
 
     def connect_row_count_changed(self, func: Callable[[int], None]) -> None:
         """Calls `func` with the new row count."""
@@ -235,11 +238,22 @@ class SongTable:
         self._search_timer.timeout.connect(self.search_songs)
 
     def search_songs(self) -> None:
+        self._search_timer.stop()
         self._model.set_songs(db.search_usdb_songs(self._search))
 
-    def _on_search_changed(self, event: events.TreeFilterChanged) -> None:
+    def _on_tree_filter_changed(self, event: events.TreeFilterChanged) -> None:
+        event.search.order = self._search.order
+        event.search.descending = self._search.descending
         self._search = event.search
         self._search_timer.start()
+
+    def _on_sort_order_changed(self, section: int, order: Qt.SortOrder) -> None:
+        if (search_order := Column(section).song_order()) is None:
+            # TODO: revert indicator change
+            return
+        self._search.order = search_order
+        self._search.descending = order is Qt.SortOrder.DescendingOrder
+        self.search_songs()
 
 
 def try_parse_txt(path: Path) -> SongTxt | None:

@@ -7,6 +7,8 @@ from typing import assert_never
 
 from PySide6.QtGui import QIcon
 
+from usdb_syncer import db
+
 
 class Column(IntEnum):
     """Table columns."""
@@ -116,4 +118,35 @@ class Column(IntEnum):
             ):
                 return 24
             case _ as unreachable:
+                assert_never(unreachable)
+
+    def song_order(self) -> db.SongOrder | None:
+        match self:
+            case Column.SONG_ID:
+                return db.SongOrder.SONG_ID
+            case Column.ARTIST:
+                return db.SongOrder.ARTIST
+            case Column.TITLE:
+                return db.SongOrder.TITLE
+            case Column.LANGUAGE:
+                return db.SongOrder.LANGUAGE
+            case Column.EDITION:
+                return db.SongOrder.EDITION
+            case Column.GOLDEN_NOTES:
+                return db.SongOrder.GOLDEN_NOTES
+            case Column.RATING:
+                return db.SongOrder.RATING
+            case Column.VIEWS:
+                return db.SongOrder.VIEWS
+            case (
+                Column.PINNED
+                | Column.TXT
+                | Column.AUDIO
+                | Column.VIDEO
+                | Column.COVER
+                | Column.BACKGROUND
+                | Column.DOWNLOAD_STATUS
+            ):
+                return None
+            case unreachable:
                 assert_never(unreachable)

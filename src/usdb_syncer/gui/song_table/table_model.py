@@ -24,7 +24,6 @@ class TableModel(QAbstractTableModel):
 
     _ids: tuple[SongId, ...] = tuple()
     _rows: dict[SongId, int]
-    _songs: dict[SongId, UsdbSong]
 
     def __init__(self, parent: QObject) -> None:
         super().__init__(parent)
@@ -73,7 +72,6 @@ class TableModel(QAbstractTableModel):
         if (row := self._rows.get(event.song_id)) is None:
             return
         self.beginRemoveRows(QModelIndex(), row, row)
-        del self._songs[event.song_id]
         del self._rows[event.song_id]
         self._ids = tuple(i for i in self._ids if i != event.song_id)
         self.endRemoveRows()

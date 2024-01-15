@@ -4,7 +4,7 @@ import enum
 import sqlite3
 import time
 from pathlib import Path
-from typing import Iterable
+from typing import Iterable, assert_never
 
 import attrs
 
@@ -80,10 +80,72 @@ def rollback() -> None:
     _DbState.connection().rollback()
 
 
+# _SYNC_META_JOIN = """ LEFT JOIN (
+#     SELECT
+#         sync_meta.*,
+#         ROW_NUMBER() OVER (
+#             PARTITION BY song_id
+#             ORDER BY
+#                 path ASC
+#         ) AS rank
+#     FROM
+#         sync_meta
+#     WHERE
+#         path GLOB :folder || '/*'
+# ) sync_meta ON sync_meta.rank = 1
+# AND usdb_song.song_id = sync_meta.song_id
+# """
+
+# _RESOURCE_TABLE_JOIN = """
+# """
+
+
+class SongOrder(enum.Enum):
+    """Attributes songs can be sorted by."""
+
+    NONE = None
+    SONG_ID = "usdb_song.song_id"
+    ARTIST = "usdb_song.artist"
+    TITLE = "usdb_song.title"
+    EDITION = "usdb_song.edition"
+    LANGUAGE = "usdb_song.language"
+    GOLDEN_NOTES = "usdb_song.golden_notes"
+    RATING = "usdb_song.rating"
+    VIEWS = "usdb_song.views"
+    # TODO: attributes from other tables
+    # PINNED = "sync_meta.pinned"
+    # TXT = "usdb_song.txt"
+    # AUDIO = "usdb_song.audio"
+    # VIDEO = "usdb_song.video"
+    # COVER = "usdb_song.cover"
+    # BACKGROUND = "usdb_song.background"
+
+    # def secondary_table(self) -> str:
+    #     match self:
+    #         case (
+    #             SongOrder.NONE
+    #             | SongOrder.SONG_ID
+    #             | SongOrder.ARTIST
+    #             | SongOrder.TITLE
+    #             | SongOrder.EDITION
+    #             | SongOrder.LANGUAGE
+    #             | SongOrder.GOLDEN_NOTES
+    #             | SongOrder.RATING
+    #             | SongOrder.VIEWS
+    #         ):
+    #             return ""
+    #         case SongOrder.PINNED:
+    #             return _SYNC_META_JOIN
+    #         case unreachable:
+    #             assert_never(unreachable)
+
+
 @attrs.define
 class SearchBuilder:
     """Helper for building a where clause to find songs."""
 
+    order: SongOrder = SongOrder.NONE
+    descending: bool = False
     artists: list[str] = attrs.field(factory=list)
     titles: list[str] = attrs.field(factory=list)
     editions: list[str] = attrs.field(factory=list)
@@ -91,6 +153,10 @@ class SearchBuilder:
     golden_notes: bool | None = None
     ratings: list[int] = attrs.field(factory=list)
     views: list[tuple[int, int | None]] = attrs.field(factory=list)
+
+    def _from_clause(self) -> str:
+        txt = " FROM usdb_song"
+        return txt
 
     def _where_clause(self) -> str:
         filters = (
@@ -102,7 +168,13 @@ class SearchBuilder:
             _in_values_clause("usdb_song.rating", self.ratings),
             _in_ranges_clause("usdb_song.views", self.views),
         )
-        return " AND ".join(filter(None, filters))
+        where = " AND ".join(filter(None, filters))
+        return f" WHERE {where}" if where else ""
+
+    def _order_by_clause(self) -> str:
+        if not self.order.value:
+            return ""
+        return f" ORDER BY {self.order.value} {'DESC' if self.descending else 'ASC'}"
 
     def parameters(self) -> tuple[str | int | bool, ...]:
         return (
@@ -116,9 +188,10 @@ class SearchBuilder:
         )
 
     def statement(self) -> str:
+        from_ = self._from_clause()
         where = self._where_clause()
-        where = f" WHERE {where}" if where else ""
-        return f"SELECT usdb_song.song_id FROM usdb_song{where}"
+        order_by = self._order_by_clause()
+        return f"SELECT usdb_song.song_id{from_}{where}{order_by}"
 
 
 def _in_values_clause(attribute: str, values: list) -> str:
