@@ -141,7 +141,7 @@ class SyncMeta:
             path=Path(row[2]),
             mtime=row[3],
             meta_tags=MetaTags.parse(row[4], _logger),
-            pinned=row[5],
+            pinned=bool(row[5]),
         )
         meta.txt = ResourceFile.from_db_row(row[6:9])
         meta.audio = ResourceFile.from_db_row(row[9:12])
@@ -151,8 +151,14 @@ class SyncMeta:
         return meta
 
     @classmethod
-    def get_all(cls, folder: Path) -> Iterator[SyncMeta]:
-        return (SyncMeta.from_db_row(r) for r in db.get_sync_metas(folder))
+    def get_in_folder(cls, folder: Path) -> Iterator[SyncMeta]:
+        return (SyncMeta.from_db_row(r) for r in db.get_in_folder(folder))
+
+    @classmethod
+    def reset_active(cls, folder: Path, commit: bool = False) -> None:
+        db.reset_active_sync_metas(folder)
+        if commit:
+            db.commit()
 
     def upsert(self, commit: bool = True) -> None:
         db.upsert_sync_meta(self.db_params())

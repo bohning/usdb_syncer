@@ -33,7 +33,11 @@ from usdb_syncer.gui.usdb_login_dialog import UsdbLoginDialog
 from usdb_syncer.gui.utils import scroll_to_bottom, set_shortcut
 from usdb_syncer.logger import get_logger
 from usdb_syncer.pdf import generate_song_pdf
-from usdb_syncer.song_list_fetcher import collect_sync_metas, load_available_songs
+from usdb_syncer.song_list_fetcher import (
+    load_available_songs,
+    synchronize_sync_meta_folder,
+)
+from usdb_syncer.sync_meta import SyncMeta
 from usdb_syncer.usdb_id_file import (
     UsdbIdFileError,
     parse_usdb_id_file,
@@ -208,7 +212,8 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         path = Path(song_dir).resolve(strict=True)
         self.lineEdit_song_dir.setText(str(path))
         settings.set_song_dir(path)
-        collect_sync_metas(path)
+        synchronize_sync_meta_folder(path)
+        SyncMeta.reset_active(path)
         UsdbSong.clear_cache()
         events.SongDirChanged(path).post()
 
@@ -321,7 +326,9 @@ def _load_main_window(mw: MainWindow) -> None:
     QApplication.processEvents()
     splash.showMessage("Loading song database ...", color=Qt.GlobalColor.gray)
     db.connect(AppPaths.db)
-    collect_sync_metas(settings.get_song_dir())
+    folder = settings.get_song_dir()
+    synchronize_sync_meta_folder(folder)
+    SyncMeta.reset_active(folder)
     load_available_songs(force_reload=False)
     mw.tree.populate()
     mw.table.search_songs()

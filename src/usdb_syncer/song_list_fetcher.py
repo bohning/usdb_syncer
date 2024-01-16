@@ -77,8 +77,8 @@ def dump_available_songs(songs: list[UsdbSong], target: Path | None = None) -> N
 #     }
 
 
-def collect_sync_metas(folder: Path) -> None:
-    db_metas = {m.sync_meta_id: m for m in SyncMeta.get_all(folder)}
+def synchronize_sync_meta_folder(folder: Path) -> None:
+    db_metas = {m.sync_meta_id: m for m in SyncMeta.get_in_folder(folder)}
     to_upsert: list[SyncMeta] = []
     for path in folder.glob("**/*.usdb"):
         meta_id = SyncMetaId.from_path(path)
@@ -94,4 +94,4 @@ def collect_sync_metas(folder: Path) -> None:
             else:
                 _logger.info(f"New meta file found on disk: '{path}'.")
     SyncMeta.delete_many(tuple(db_metas.keys()), commit=False)
-    SyncMeta.upsert_many(to_upsert)
+    SyncMeta.upsert_many(to_upsert, commit=False)

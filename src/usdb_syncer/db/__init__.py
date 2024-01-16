@@ -4,11 +4,11 @@ import enum
 import sqlite3
 import time
 from pathlib import Path
-from typing import Iterable, assert_never
+from typing import Iterable
 
 import attrs
 
-from usdb_syncer import SongId, SyncMetaId, errors, settings
+from usdb_syncer import SongId, SyncMetaId, errors
 from usdb_syncer.utils import AppPaths
 
 SCHEMA_VERSION = 1
@@ -209,9 +209,8 @@ def _in_ranges_clause(attribute: str, values: list[tuple[int, int | None]]) -> s
 
 
 def get_usdb_song(song_id: SongId) -> tuple | None:
-    stmt = f"{_SqlCache.get('select_usdb_song.sql')} WHERE usdb_song.song_id = :song_id"
-    params = {"folder": settings.get_song_dir().as_posix(), "song_id": song_id}
-    return _DbState.connection().execute(stmt, params).fetchone()
+    stmt = f"{_SqlCache.get('select_usdb_song.sql')} WHERE usdb_song.song_id = ?"
+    return _DbState.connection().execute(stmt, (song_id,)).fetchone()
 
 
 def delete_usdb_song(song_id: SongId) -> None:
@@ -292,10 +291,15 @@ def usdb_song_languages() -> list[tuple[str, int]]:
 ### SyncMeta
 
 
-def get_sync_metas(folder: Path) -> list[tuple]:
-    stmt = _SqlCache.get("select_sync_meta.sql")
+def get_in_folder(folder: Path) -> list[tuple]:
+    stmt = f"{_SqlCache.get('select_sync_meta.sql')} WHERE path GLOB ? || '/*'"
+    return _DbState.connection().execute(stmt, (folder.as_posix(),)).fetchall()
+
+
+def reset_active_sync_metas(folder: Path) -> None:
+    _DbState.connection().execute("DELETE FROM active_sync_meta")
     params = {"folder": folder.as_posix()}
-    return _DbState.connection().execute(stmt, params).fetchall()
+    _DbState.connection().execute(_SqlCache.get("insert_active_sync_meta.sql"), params)
 
 
 @attrs.define(frozen=True, slots=False)

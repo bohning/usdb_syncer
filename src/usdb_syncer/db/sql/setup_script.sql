@@ -38,7 +38,15 @@ CREATE TABLE resource_file (
     mtime INTEGER NOT NULL,
     resource TEXT NOT NULL,
     PRIMARY KEY (sync_meta_id, kind),
-    FOREIGN KEY(sync_meta_id) REFERENCES sync_meta (sync_meta_id) ON DELETE CASCADE
+    FOREIGN KEY (sync_meta_id) REFERENCES sync_meta (sync_meta_id) ON DELETE CASCADE
+);
+
+CREATE TABLE active_sync_meta (
+    song_id INTEGER NOT NULL,
+    rank INTEGER NOT NULL,
+    sync_meta_id INTEGER NOT NULL,
+    PRIMARY KEY (song_id, rank),
+    FOREIGN KEY (song_id, sync_meta_id) REFERENCES sync_meta (song_id, sync_meta_id) ON DELETE CASCADE
 );
 
 COMMIT;

@@ -120,7 +120,7 @@ class UsdbSong:
             self.sync_meta.upsert(commit=False)
         if commit:
             db.commit()
-        _UsdbSongCache.update(self)
+        _UsdbSongCache.remove(self.song_id)
 
     @classmethod
     def upsert_many(cls, songs: list[UsdbSong]) -> None:
@@ -130,7 +130,7 @@ class UsdbSong:
         )
         db.commit()
         for song in songs:
-            _UsdbSongCache.update(song)
+            _UsdbSongCache.remove(song.song_id)
 
     def db_params(self) -> db.UsdbSongParams:
         return db.UsdbSongParams(
