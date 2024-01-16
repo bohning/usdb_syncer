@@ -14,23 +14,6 @@ from usdb_syncer.utils import AppPaths
 
 _logger = get_logger(__file__)
 
-# def get_all_song_data(force_reload: bool) -> tuple[SongData, ...]:
-#     load_available_songs(force_reload)
-#     songs = db.session().execute(sqlalchemy.select(UsdbSong)).scalars()
-#     local_files = find_local_files()
-#     return tuple(
-#         SongData.from_usdb_song(song, local_files.get(song.song_id, LocalFiles()))
-#         for song in songs
-#     )
-
-
-# def resync_song_data(data: tuple[SongData, ...]) -> tuple[SongData, ...]:
-#     local_files = find_local_files()
-#     return tuple(
-#         song.with_local_files(local_files.get(song.data.song_id, LocalFiles()))
-#         for song in data
-#     )
-
 
 def load_available_songs(force_reload: bool, session: Session | None = None) -> None:
     if force_reload:

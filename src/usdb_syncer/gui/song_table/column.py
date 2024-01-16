@@ -140,15 +140,19 @@ class Column(IntEnum):
                 return db.SongOrder.RATING
             case Column.VIEWS:
                 return db.SongOrder.VIEWS
-            case (
-                Column.PINNED
-                | Column.TXT
-                | Column.AUDIO
-                | Column.VIDEO
-                | Column.COVER
-                | Column.BACKGROUND
-                | Column.DOWNLOAD_STATUS
-            ):
+            case Column.PINNED:
+                return db.SongOrder.PINNED
+            case Column.TXT:
+                return db.SongOrder.TXT
+            case Column.AUDIO:
+                return db.SongOrder.AUDIO
+            case Column.VIDEO:
+                return db.SongOrder.VIDEO
+            case Column.COVER:
+                return db.SongOrder.COVER
+            case Column.BACKGROUND:
+                return db.SongOrder.BACKGROUND
+            case Column.DOWNLOAD_STATUS:
                 return None
             case unreachable:
                 assert_never(unreachable)
@@ -174,5 +178,17 @@ class Column(IntEnum):
                 return Column.RATING
             case db.SongOrder.VIEWS:
                 return Column.VIEWS
+            case db.SongOrder.PINNED:
+                return Column.PINNED
+            case db.SongOrder.TXT:
+                return Column.TXT
+            case db.SongOrder.AUDIO:
+                return Column.AUDIO
+            case db.SongOrder.VIDEO:
+                return Column.VIDEO
+            case db.SongOrder.COVER:
+                return Column.COVER
+            case db.SongOrder.BACKGROUND:
+                return Column.BACKGROUND
             case unreachable:
                 assert_never(unreachable)

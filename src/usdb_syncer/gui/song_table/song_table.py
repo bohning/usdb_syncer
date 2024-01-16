@@ -63,14 +63,6 @@ class SongTable:
     def reset(self) -> None:
         self._model.reset()
 
-    # def resync_song_data(self) -> None:
-    #     local_files = find_local_files()
-    #     self._model.songs = tuple(
-    #         song.with_local_files(local_files.get(song.data.song_id, LocalFiles()))
-    #         for song in self._model.songs
-    #     )
-    #     self._model.reset()
-
     def download_selection(self) -> None:
         self._download(self._selected_rows())
 

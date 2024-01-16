@@ -112,32 +112,12 @@ class SongOrder(enum.Enum):
     GOLDEN_NOTES = "usdb_song.golden_notes"
     RATING = "usdb_song.rating"
     VIEWS = "usdb_song.views"
-    # TODO: attributes from other tables
-    # PINNED = "sync_meta.pinned"
-    # TXT = "usdb_song.txt"
-    # AUDIO = "usdb_song.audio"
-    # VIDEO = "usdb_song.video"
-    # COVER = "usdb_song.cover"
-    # BACKGROUND = "usdb_song.background"
-
-    # def secondary_table(self) -> str:
-    #     match self:
-    #         case (
-    #             SongOrder.NONE
-    #             | SongOrder.SONG_ID
-    #             | SongOrder.ARTIST
-    #             | SongOrder.TITLE
-    #             | SongOrder.EDITION
-    #             | SongOrder.LANGUAGE
-    #             | SongOrder.GOLDEN_NOTES
-    #             | SongOrder.RATING
-    #             | SongOrder.VIEWS
-    #         ):
-    #             return ""
-    #         case SongOrder.PINNED:
-    #             return _SYNC_META_JOIN
-    #         case unreachable:
-    #             assert_never(unreachable)
+    PINNED = "sync_meta.pinned"
+    TXT = "txt.sync_meta_id IS NULL"
+    AUDIO = "audio.sync_meta_id IS NULL"
+    VIDEO = "video.sync_meta_id IS NULL"
+    COVER = "cover.sync_meta_id IS NULL"
+    BACKGROUND = "background.sync_meta_id IS NULL"
 
 
 @attrs.define
@@ -153,10 +133,6 @@ class SearchBuilder:
     golden_notes: bool | None = None
     ratings: list[int] = attrs.field(factory=list)
     views: list[tuple[int, int | None]] = attrs.field(factory=list)
-
-    def _from_clause(self) -> str:
-        txt = " FROM usdb_song"
-        return txt
 
     def _where_clause(self) -> str:
         filters = (
@@ -188,10 +164,10 @@ class SearchBuilder:
         )
 
     def statement(self) -> str:
-        from_ = self._from_clause()
+        select_from = _SqlCache.get("select_song_id.sql")
         where = self._where_clause()
         order_by = self._order_by_clause()
-        return f"SELECT usdb_song.song_id{from_}{where}{order_by}"
+        return f"{select_from}{where}{order_by}"
 
 
 def _in_values_clause(attribute: str, values: list) -> str:
