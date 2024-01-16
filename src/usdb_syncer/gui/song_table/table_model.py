@@ -28,7 +28,6 @@ class TableModel(QAbstractTableModel):
     def __init__(self, parent: QObject) -> None:
         super().__init__(parent)
         self._rows = {}
-        self._songs = {}
         events.SongChanged.subscribe(self._on_song_changed)
         events.SongDeleted.subscribe(self._on_song_deleted)
         events.SongDirChanged.subscribe(lambda _: self.reset)

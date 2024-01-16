@@ -160,7 +160,7 @@ class SyncMeta:
         if commit:
             db.commit()
 
-    def upsert(self, commit: bool = True) -> None:
+    def upsert(self, commit: bool = False) -> None:
         db.upsert_sync_meta(self.db_params())
         files = self.all_resource_files()
         db.upsert_resource_files(
@@ -173,7 +173,7 @@ class SyncMeta:
             db.commit()
 
     @classmethod
-    def upsert_many(cls, metas: list[SyncMeta], commit: bool = True) -> None:
+    def upsert_many(cls, metas: list[SyncMeta], commit: bool = False) -> None:
         db.upsert_sync_metas(meta.db_params() for meta in metas)
         db.upsert_resource_files(
             file.db_params(meta.sync_meta_id, kind)
@@ -190,13 +190,13 @@ class SyncMeta:
         if commit:
             db.commit()
 
-    def delete(self, commit: bool = True) -> None:
+    def delete(self, commit: bool = False) -> None:
         db.delete_sync_meta(self.sync_meta_id)
         if commit:
             db.commit()
 
     @classmethod
-    def delete_many(cls, ids: tuple[SyncMetaId, ...], commit: bool = True) -> None:
+    def delete_many(cls, ids: tuple[SyncMetaId, ...], commit: bool = False) -> None:
         db.delete_sync_metas(ids)
         if commit:
             db.commit()

@@ -213,7 +213,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         self.lineEdit_song_dir.setText(str(path))
         settings.set_song_dir(path)
         synchronize_sync_meta_folder(path)
-        SyncMeta.reset_active(path)
+        SyncMeta.reset_active(path, commit=True)
         UsdbSong.clear_cache()
         events.SongDirChanged(path).post()
 
@@ -328,7 +328,7 @@ def _load_main_window(mw: MainWindow) -> None:
     db.connect(AppPaths.db)
     folder = settings.get_song_dir()
     synchronize_sync_meta_folder(folder)
-    SyncMeta.reset_active(folder)
+    SyncMeta.reset_active(folder, commit=True)
     load_available_songs(force_reload=False)
     mw.tree.populate()
     mw.table.search_songs()

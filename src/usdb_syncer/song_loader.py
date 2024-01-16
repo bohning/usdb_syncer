@@ -183,7 +183,7 @@ class SongLoader(QRunnable):
             self.song.status = DownloadStatus.FAILED
         except errors.UsdbNotFoundError:
             self.logger.error("Song has been deleted from USDB.")
-            self.song.delete()
+            self.song.delete(commit=True)
             change_event = events.SongDeleted(self.song_id)
         except Exception:  # pylint: disable=broad-except
             self.logger.debug(traceback.format_exc())
@@ -194,7 +194,7 @@ class SongLoader(QRunnable):
             self.song.status = DownloadStatus.FAILED
         else:
             updated_song.status = DownloadStatus.NONE
-            updated_song.upsert()
+            updated_song.upsert(commit=True)
             self.logger.info("All done!")
         change_event.post()
         events.DownloadFinished(self.song_id).post()
