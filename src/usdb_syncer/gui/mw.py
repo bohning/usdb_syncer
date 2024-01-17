@@ -17,7 +17,7 @@ from PySide6.QtWidgets import (
     QSplashScreen,
 )
 
-from usdb_syncer import SongId, db, events, settings
+from usdb_syncer import db, events, settings, usdb_id_file
 from usdb_syncer.constants import SHORT_COMMIT_HASH, VERSION, Usdb
 from usdb_syncer.gui import progress_bar
 from usdb_syncer.gui.about_dialog import AboutDialog
@@ -38,52 +38,10 @@ from usdb_syncer.song_list_fetcher import (
     synchronize_sync_meta_folder,
 )
 from usdb_syncer.sync_meta import SyncMeta
-from usdb_syncer.usdb_id_file import (
-    UsdbIdFileError,
-    parse_usdb_id_file,
-    write_usdb_id_file,
-)
 from usdb_syncer.usdb_song import UsdbSong
 from usdb_syncer.utils import AppPaths, open_file_explorer
 
 _logger = get_logger(__file__)
-
-
-def get_available_song_ids_from_files(file_list: list[str]) -> list[SongId]:
-    song_ids: list[SongId] = []
-    for path in file_list:
-        try:
-            song_ids += parse_usdb_id_file(path)
-        except UsdbIdFileError as error:
-            _logger.error(f"Failed to import file '{path}': {str(error)}")
-            return []
-
-    unique_song_ids = list(set(song_ids))
-    unique_song_ids.sort()
-    _logger.info(
-        f"read {len(file_list)} file(s), "
-        f"found {len(unique_song_ids)} "
-        f"USDB IDs: {', '.join(str(id) for id in unique_song_ids)}"
-    )
-    if unavailable_song_ids := [
-        song_id for song_id in unique_song_ids if not db.get_usdb_song(song_id)
-    ]:
-        _logger.warning(
-            f"{len(unavailable_song_ids)}/{len(unique_song_ids)} "
-            "imported USDB IDs are not available: "
-            f"{', '.join(str(song_id) for song_id in unavailable_song_ids)}"
-        )
-
-    if available_song_ids := [
-        song_id for song_id in unique_song_ids if song_id not in unavailable_song_ids
-    ]:
-        _logger.info(
-            f"available {len(available_song_ids)}/{len(unique_song_ids)} "
-            "imported USDB IDs will be selected: "
-            f"{', '.join(str(song_id) for song_id in available_song_ids)}"
-        )
-
-    return available_song_ids
 
 
 class MainWindow(Ui_MainWindow, QMainWindow):
@@ -236,9 +194,8 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         if not file_list:
             _logger.info("no files selected to import USDB IDs from")
             return
-        if available_song_ids := get_available_song_ids_from_files(file_list):
-            # select available songs to prepare Download
-            self.table.set_selection_to_song_ids(available_song_ids)
+        if available := usdb_id_file.get_available_song_ids_from_files(file_list):
+            self.table.set_selection_to_song_ids(available)
 
     def _export_usdb_ids_to_file(self) -> None:
         selected_ids = [song.song_id for song in self.table.selected_songs()]
@@ -257,7 +214,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
             _logger.info("export aborted")
             return
 
-        write_usdb_id_file(path, selected_ids)
+        usdb_id_file.write_usdb_id_file(path, selected_ids)
         _logger.info(f"exported {len(selected_ids)} USDB IDs to {path}")
 
     def _show_current_song_in_usdb(self) -> None:

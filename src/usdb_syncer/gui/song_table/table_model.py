@@ -182,43 +182,6 @@ def _decoration_data(song: UsdbSong, column: int) -> QIcon | None:
             assert_never(unreachable)
 
 
-# def _sort_data(song: SongData, column: int) -> int | str | bool:
-#     col = Column(column)
-#     match col:
-#         case Column.SONG_ID:
-#             return int(song.data.song_id)
-#         case Column.ARTIST:
-#             return song.data.artist
-#         case Column.TITLE:
-#             return song.data.title
-#         case Column.LANGUAGE:
-#             return song.data.language
-#         case Column.EDITION:
-#             return song.data.edition
-#         case Column.GOLDEN_NOTES:
-#             return song.data.golden_notes
-#         case Column.RATING:
-#             return song.data.rating
-#         case Column.VIEWS:
-#             return song.data.views
-#         case Column.TXT:
-#             return song.local_files.txt
-#         case Column.AUDIO:
-#             return song.local_files.audio
-#         case Column.VIDEO:
-#             return song.local_files.video
-#         case Column.COVER:
-#             return song.local_files.cover
-#         case Column.BACKGROUND:
-#             return song.local_files.background
-#         case Column.DOWNLOAD_STATUS:
-#             return song.status.value
-#         case Column.PINNED:
-#             return song.local_files.pinned
-#         case _ as unreachable:
-#             assert_never(unreachable)
-
-
 @cache
 def rating_str(rating: int) -> str:
     return rating * "★"
