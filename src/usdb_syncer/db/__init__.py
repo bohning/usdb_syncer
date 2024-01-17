@@ -8,10 +8,12 @@ from typing import Iterable
 
 import attrs
 
-from usdb_syncer import SongId, SyncMetaId, errors
+from usdb_syncer import SongId, SyncMetaId, errors, logger
 from usdb_syncer.utils import AppPaths
 
 SCHEMA_VERSION = 1
+
+_logger = logger.get_logger(__file__)
 
 
 class _SqlCache:
@@ -30,8 +32,10 @@ class _DbState:
     _connection: sqlite3.Connection | None = None
 
     @classmethod
-    def connect(cls, db_path: Path | str) -> None:
+    def connect(cls, db_path: Path | str, trace: bool = False) -> None:
         cls._connection = sqlite3.connect(db_path, check_same_thread=False)
+        if trace:
+            cls._connection.set_trace_callback(_logger.debug)
         _validate_schema(cls._connection)
 
     @classmethod
@@ -64,8 +68,8 @@ def _validate_schema(connection: sqlite3.Connection) -> None:
             raise errors.UnknownSchemaError
 
 
-def connect(db_path: Path | str) -> None:
-    _DbState.connect(db_path)
+def connect(db_path: Path | str, trace: bool = False) -> None:
+    _DbState.connect(db_path, trace=trace)
 
 
 def close() -> None:

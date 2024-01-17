@@ -282,7 +282,7 @@ def _load_main_window(mw: MainWindow) -> None:
     splash.show()
     QApplication.processEvents()
     splash.showMessage("Loading song database ...", color=Qt.GlobalColor.gray)
-    db.connect(AppPaths.db)
+    db.connect(AppPaths.db, trace=bool(os.environ.get("TRACESQL")))
     folder = settings.get_song_dir()
     synchronize_sync_meta_folder(folder)
     SyncMeta.reset_active(folder, commit=True)
