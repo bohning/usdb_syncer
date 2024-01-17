@@ -4,7 +4,7 @@ import enum
 import sqlite3
 import time
 from pathlib import Path
-from typing import Iterable
+from typing import Iterable, Iterator
 
 import attrs
 
@@ -84,26 +84,6 @@ def rollback() -> None:
     _DbState.connection().rollback()
 
 
-# _SYNC_META_JOIN = """ LEFT JOIN (
-#     SELECT
-#         sync_meta.*,
-#         ROW_NUMBER() OVER (
-#             PARTITION BY song_id
-#             ORDER BY
-#                 path ASC
-#         ) AS rank
-#     FROM
-#         sync_meta
-#     WHERE
-#         path GLOB :folder || '/*'
-# ) sync_meta ON sync_meta.rank = 1
-# AND usdb_song.song_id = sync_meta.song_id
-# """
-
-# _RESOURCE_TABLE_JOIN = """
-# """
-
-
 class SongOrder(enum.Enum):
     """Attributes songs can be sorted by."""
 
@@ -130,6 +110,7 @@ class SearchBuilder:
 
     order: SongOrder = SongOrder.NONE
     descending: bool = False
+    text: str = ""
     artists: list[str] = attrs.field(factory=list)
     titles: list[str] = attrs.field(factory=list)
     editions: list[str] = attrs.field(factory=list)
@@ -140,6 +121,7 @@ class SearchBuilder:
 
     def _where_clause(self) -> str:
         filters = (
+            "fts_usdb_song MATCH ?" if _prepare_fts5_text(self.text) else "",
             _in_values_clause("usdb_song.artist", self.artists),
             _in_values_clause("usdb_song.title", self.titles),
             _in_values_clause("usdb_song.edition", self.editions),
@@ -156,16 +138,20 @@ class SearchBuilder:
             return ""
         return f" ORDER BY {self.order.value} {'DESC' if self.descending else 'ASC'}"
 
-    def parameters(self) -> tuple[str | int | bool, ...]:
-        return (
-            *self.artists,
-            *self.titles,
-            *self.editions,
-            *self.languages,
-            *([] if self.golden_notes is None else [self.golden_notes]),
-            *self.ratings,
-            *(val for views in self.views for val in views if val is not None),
-        )
+    def parameters(self) -> Iterator[str | int | bool]:
+        if text := _prepare_fts5_text(self.text):
+            yield text
+        yield from self.artists
+        yield from self.titles
+        yield from self.editions
+        yield from self.languages
+        if self.golden_notes is not None:
+            yield self.golden_notes
+        yield from self.ratings
+        for min_views, max_views in self.views:
+            yield min_views
+            if max_views is not None:
+                yield max_views
 
     def statement(self) -> str:
         select_from = _SqlCache.get("select_song_id.sql")
@@ -183,6 +169,10 @@ def _in_ranges_clause(attribute: str, values: list[tuple[int, int | None]]) -> s
         f"{attribute} >= ?{'' if val[1] is None else f' AND {attribute} < ?'}"
         for val in values
     )
+
+
+def _prepare_fts5_text(text: str) -> str:
+    return " ".join(f'"{s}"' for s in text.replace('"', "").split(" ") if s)
 
 
 ### UsdbSong
@@ -240,10 +230,8 @@ def all_local_usdb_songs() -> Iterable[SongId]:
 
 
 def search_usdb_songs(search: SearchBuilder) -> Iterable[SongId]:
-    return (
-        SongId(r[0])
-        for r in _DbState.connection().execute(search.statement(), search.parameters())
-    )
+    rows = _DbState.connection().execute(search.statement(), tuple(search.parameters()))
+    return (SongId(r[0]) for r in rows)
 
 
 def usdb_song_artists() -> list[tuple[str, int]]:

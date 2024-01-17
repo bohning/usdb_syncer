@@ -60,7 +60,9 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         self._setup_toolbar()
         self._setup_shortcuts()
         self._setup_song_dir()
-        self.lineEdit_search.textChanged.connect(self.table.set_text_filter)
+        self.lineEdit_search.textChanged.connect(
+            lambda txt: events.TextFilterChanged(txt).post()
+        )
         self._setup_buttons()
         self._restore_state()
 

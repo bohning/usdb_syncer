@@ -2,6 +2,7 @@ SELECT
     usdb_song.song_id
 FROM
     usdb_song
+    JOIN fts_usdb_song ON usdb_song.song_id = fts_usdb_song.rowid
     LEFT JOIN active_sync_meta ON usdb_song.song_id = active_sync_meta.song_id
     AND active_sync_meta.rank = 1
     LEFT JOIN sync_meta ON sync_meta.sync_meta_id = active_sync_meta.sync_meta_id

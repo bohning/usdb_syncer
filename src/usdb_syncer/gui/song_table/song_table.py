@@ -56,6 +56,7 @@ class SongTable:
         )
         self._setup_search_timer()
         events.TreeFilterChanged.subscribe(self._on_tree_filter_changed)
+        events.TextFilterChanged.subscribe(self._on_text_filter_changed)
 
     def _header(self) -> QtWidgets.QHeaderView:
         return self._view.horizontalHeader()
@@ -235,7 +236,12 @@ class SongTable:
     def _on_tree_filter_changed(self, event: events.TreeFilterChanged) -> None:
         event.search.order = self._search.order
         event.search.descending = self._search.descending
+        event.search.text = self._search.text
         self._search = event.search
+        self._search_timer.start()
+
+    def _on_text_filter_changed(self, event: events.TextFilterChanged) -> None:
+        self._search.text = event.search
         self._search_timer.start()
 
     def _on_sort_order_changed(self, section: int, order: Qt.SortOrder) -> None:

@@ -28,7 +28,7 @@ CREATE TABLE sync_meta (
     pinned BOOLEAN NOT NULL,
     PRIMARY KEY (sync_meta_id),
     UNIQUE (path),
-    FOREIGN KEY(song_id) REFERENCES usdb_song (song_id) ON DELETE CASCADE
+    FOREIGN KEY (song_id) REFERENCES usdb_song (song_id) ON DELETE CASCADE
 );
 
 CREATE TABLE resource_file (
@@ -48,5 +48,66 @@ CREATE TABLE active_sync_meta (
     PRIMARY KEY (song_id, rank),
     FOREIGN KEY (song_id, sync_meta_id) REFERENCES sync_meta (song_id, sync_meta_id) ON DELETE CASCADE
 );
+
+CREATE VIRTUAL TABLE fts_usdb_song USING fts5 (
+    song_id,
+    artist,
+    title,
+    language,
+    edition,
+    content = usdb_song,
+    content_rowid = song_id
+);
+
+CREATE TRIGGER fts_usdb_song_insert
+AFTER
+INSERT
+    ON usdb_song BEGIN
+INSERT INTO
+    fts_usdb_song (
+        rowid,
+        song_id,
+        artist,
+        title,
+        language,
+        edition
+    )
+VALUES
+    (
+        new.song_id,
+        new.song_id,
+        new.artist,
+        new.title,
+        new.language,
+        new.edition
+    );
+
+END;
+
+CREATE TRIGGER fts_usdb_song_update
+AFTER
+UPDATE
+    ON usdb_song BEGIN
+UPDATE
+    fts_usdb_song
+SET
+    rowid = new.song_id,
+    song_id = new.song_id,
+    artist = new.artist,
+    title = new.title,
+    language = new.language,
+    edition = new.edition;
+
+END;
+
+CREATE TRIGGER fts_usdb_song_delete
+AFTER
+    DELETE ON usdb_song BEGIN
+DELETE FROM
+    fts_usdb_song
+WHERE
+    rowid = old.song_id;
+
+END;
 
 COMMIT;
