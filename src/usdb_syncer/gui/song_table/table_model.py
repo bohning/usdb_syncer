@@ -72,7 +72,7 @@ class TableModel(QAbstractTableModel):
             return
         self.beginRemoveRows(QModelIndex(), row, row)
         del self._rows[event.song_id]
-        self._ids = tuple(i for i in self._ids if i != event.song_id)
+        self._ids = self._ids[:row] + self._ids[row + 1 :]
         self.endRemoveRows()
 
     ### QAbstractTableModel implementation
