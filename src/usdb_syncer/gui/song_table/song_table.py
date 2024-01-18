@@ -94,6 +94,8 @@ class SongTable:
         header = self._header()
         if not state.isEmpty():
             header.restoreState(state)
+            # self._search.order = Column(header.sortIndicatorSection()).song_order()
+            # self._search.order = header.sortIndicatorOrder()
         for column in Column:
             if size := column.fixed_size():
                 header.setSectionResizeMode(column, QHeaderView.ResizeMode.Fixed)
@@ -244,13 +246,7 @@ class SongTable:
         self.search_songs(400)
 
     def _on_sort_order_changed(self, section: int, order: Qt.SortOrder) -> None:
-        if (search_order := Column(section).song_order()) is None:
-            _logger.info("Sorting by this column is not supported.")
-            if (col := Column.from_song_order(self._search.order)) is not None:
-                order = Qt.SortOrder(self._search.descending)
-                self._header().setSortIndicator(col.value, order)
-            return
-        self._search.order = search_order
+        self._search.order = Column(section).song_order()
         self._search.descending = bool(order.value)
         self.search_songs()
 

@@ -1,5 +1,7 @@
 """General-purpose utilities."""
 
+import datetime
+import functools
 import os
 import re
 import subprocess
@@ -182,3 +184,10 @@ def resource_file_ending(name: str) -> str:
 def get_mtime(path: Path) -> int:
     """Helper for mtime in microseconds so it can be stored in db losslessly."""
     return int(os.path.getmtime(path) * 1_000_000)
+
+
+@functools.cache
+def format_timestamp(micros: int) -> str:
+    return datetime.datetime.fromtimestamp(micros / 1_000_000).strftime(
+        "%Y-%m-%d %H:%M:%S"
+    )

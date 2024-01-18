@@ -12,9 +12,9 @@ from PySide6.QtCore import (
 )
 from PySide6.QtGui import QIcon
 
-from usdb_syncer import SongId, events
+from usdb_syncer import SongId, events, utils
 from usdb_syncer.gui.song_table.column import Column
-from usdb_syncer.usdb_song import UsdbSong
+from usdb_syncer.usdb_song import DownloadStatus, UsdbSong
 
 QIndex = QModelIndex | QPersistentModelIndex
 
@@ -135,7 +135,11 @@ def _display_data(song: UsdbSong, column: int) -> str | None:
         case Column.VIEWS:
             return str(song.views)
         case Column.DOWNLOAD_STATUS:
-            return str(song.status)
+            return (
+                utils.format_timestamp(song.sync_meta.mtime)
+                if song.sync_meta and song.status is DownloadStatus.NONE
+                else str(song.status)
+            )
         case (
             Column.TXT
             | Column.AUDIO

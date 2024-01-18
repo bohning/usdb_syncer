@@ -102,6 +102,7 @@ class SongOrder(enum.Enum):
     VIDEO = "video.sync_meta_id IS NULL"
     COVER = "cover.sync_meta_id IS NULL"
     BACKGROUND = "background.sync_meta_id IS NULL"
+    SYNC_TIME = "sync_meta.mtime"
 
 
 @attrs.define
