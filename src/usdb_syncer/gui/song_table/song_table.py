@@ -219,30 +219,29 @@ class SongTable:
         self._model.rowsInserted.connect(wrapped)
         self._model.rowsRemoved.connect(wrapped)
 
-    def set_text_filter(self, text: str) -> None:
-        # TODO
-        pass
-
     def _setup_search_timer(self) -> None:
         self._search_timer = QTimer(self.mw)
         self._search_timer.setSingleShot(True)
-        self._search_timer.setInterval(600)
         self._search_timer.timeout.connect(self.search_songs)
 
-    def search_songs(self) -> None:
+    def search_songs(self, msec_delay: int = 0) -> None:
         self._search_timer.stop()
-        self._model.set_songs(db.search_usdb_songs(self._search))
+        if msec_delay:
+            self._search_timer.setInterval(msec_delay)
+            self._search_timer.start()
+        else:
+            self._model.set_songs(db.search_usdb_songs(self._search))
 
     def _on_tree_filter_changed(self, event: events.TreeFilterChanged) -> None:
         event.search.order = self._search.order
         event.search.descending = self._search.descending
         event.search.text = self._search.text
         self._search = event.search
-        self._search_timer.start()
+        self.search_songs(100)
 
     def _on_text_filter_changed(self, event: events.TextFilterChanged) -> None:
         self._search.text = event.search
-        self._search_timer.start()
+        self.search_songs(400)
 
     def _on_sort_order_changed(self, section: int, order: Qt.SortOrder) -> None:
         if (search_order := Column(section).song_order()) is None:
