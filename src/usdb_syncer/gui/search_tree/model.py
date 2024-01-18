@@ -98,11 +98,7 @@ class TreeModel(QAbstractItemModel):
         return None
 
     def flags(self, index: QIndex) -> Qt.ItemFlag:
-        flags = Qt.ItemFlag.ItemIsEnabled
-        item = self.item_for_index(index)
-        if item.checkable:
-            flags |= Qt.ItemFlag.ItemIsUserCheckable
-        return flags
+        return self.item_for_index(index).flags()
 
 
 class TreeProxyModel(QSortFilterProxyModel):

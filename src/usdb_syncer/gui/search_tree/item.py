@@ -7,6 +7,7 @@ from functools import cache
 from typing import Any, Iterable, assert_never
 
 import attrs
+from PySide6.QtCore import Qt
 from PySide6.QtGui import QIcon
 
 from usdb_syncer import db
@@ -70,7 +71,6 @@ class TreeItem:
     row_in_parent: int = attrs.field(default=0, init=False)
     children: tuple[TreeItem, ...] = attrs.field(factory=tuple, init=False)
     checked: bool = attrs.field(default=False, init=False)
-    checkable: bool = attrs.field(default=False, init=False)
 
     def toggle_checked(self, _keep_siblings: bool) -> tuple[TreeItem, ...]:
         """Returns toggled items."""
@@ -78,6 +78,9 @@ class TreeItem:
 
     def decoration(self) -> QIcon | None:
         return None
+
+    def flags(self) -> Qt.ItemFlag:
+        return Qt.ItemFlag.ItemIsEnabled
 
 
 @attrs.define(kw_only=True)
@@ -115,8 +118,10 @@ class FilterItem(TreeItem):
             child.parent = self
             child.row_in_parent = row
 
-    def is_checkable(self) -> bool:
-        return bool(self.checked_children)
+    def flags(self) -> Qt.ItemFlag:
+        if self.checked_children:
+            return Qt.ItemFlag.ItemIsEnabled | Qt.ItemFlag.ItemIsUserCheckable
+        return Qt.ItemFlag.ItemIsEnabled
 
     def toggle_checked(self, _keep_siblings: bool) -> tuple[TreeItem, ...]:
         return self.uncheck_children() if self.checked else tuple()
@@ -126,7 +131,7 @@ class FilterItem(TreeItem):
         for child in changed:
             child.checked = False
         self.checked_children.clear()
-        self.checkable = self.checked = False
+        self.checked = False
         return changed + (self,)
 
     def set_child_checked(
@@ -140,7 +145,7 @@ class FilterItem(TreeItem):
         else:
             self.checked_children.remove(child)
         self.children[child].checked = checked
-        self.checkable = self.checked = bool(self.checked_children)
+        self.checked = bool(self.checked_children)
         return changed
 
     def decoration(self) -> QIcon:
@@ -160,11 +165,14 @@ class VariantItem(TreeItem):
 
     data: SongMatch
     parent: FilterItem
-    checkable: bool = attrs.field(default=True, init=False)
     children: tuple[TreeItem, ...] = attrs.field(factory=tuple, init=False)
 
-    def is_checkable(self) -> bool:
-        return True
+    def flags(self) -> Qt.ItemFlag:
+        return (
+            Qt.ItemFlag.ItemIsEnabled
+            | Qt.ItemFlag.ItemIsUserCheckable
+            | Qt.ItemFlag.ItemNeverHasChildren
+        )
 
     def toggle_checked(self, keep_siblings: bool) -> tuple[TreeItem, ...]:
         return self.parent.set_child_checked(
