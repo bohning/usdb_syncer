@@ -17,7 +17,7 @@ from PySide6.QtWidgets import (
     QSplashScreen,
 )
 
-from usdb_syncer import db, events, settings, usdb_id_file
+from usdb_syncer import db, events, settings, song_routines, usdb_id_file
 from usdb_syncer.constants import SHORT_COMMIT_HASH, VERSION, Usdb
 from usdb_syncer.gui import progress_bar
 from usdb_syncer.gui.about_dialog import AboutDialog
@@ -33,10 +33,6 @@ from usdb_syncer.gui.usdb_login_dialog import UsdbLoginDialog
 from usdb_syncer.gui.utils import scroll_to_bottom, set_shortcut
 from usdb_syncer.logger import get_logger
 from usdb_syncer.pdf import generate_song_pdf
-from usdb_syncer.song_list_fetcher import (
-    load_available_songs,
-    synchronize_sync_meta_folder,
-)
 from usdb_syncer.sync_meta import SyncMeta
 from usdb_syncer.usdb_song import UsdbSong
 from usdb_syncer.utils import AppPaths, open_file_explorer
@@ -156,12 +152,14 @@ class MainWindow(Ui_MainWindow, QMainWindow):
 
     def _select_local_songs(self) -> None:
         if directory := QFileDialog.getExistingDirectory(self, "Select Song Directory"):
-            self.table.select_local_songs(Path(directory))
+            songs = song_routines.find_local_songs(Path(directory))
+            self.table.set_selection_to_song_ids(songs)
+            _logger.info(f"Selected {len(songs)} songs.")
 
     def _refetch_song_list(self) -> None:
         run_with_progress(
             "Fetching song list...",
-            lambda _: load_available_songs(force_reload=True),
+            lambda _: song_routines.load_available_songs(force_reload=True),
             lambda _: self.table.reset(),
         )
 
@@ -172,7 +170,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         path = Path(song_dir).resolve(strict=True)
         self.lineEdit_song_dir.setText(str(path))
         settings.set_song_dir(path)
-        synchronize_sync_meta_folder(path)
+        song_routines.synchronize_sync_meta_folder(path)
         SyncMeta.reset_active(path, commit=True)
         UsdbSong.clear_cache()
         events.SongDirChanged(path).post()
@@ -286,9 +284,9 @@ def _load_main_window(mw: MainWindow) -> None:
     splash.showMessage("Loading song database ...", color=Qt.GlobalColor.gray)
     db.connect(AppPaths.db, trace=bool(os.environ.get("TRACESQL")))
     folder = settings.get_song_dir()
-    synchronize_sync_meta_folder(folder)
+    song_routines.synchronize_sync_meta_folder(folder)
     SyncMeta.reset_active(folder, commit=True)
-    load_available_songs(force_reload=False)
+    song_routines.load_available_songs(force_reload=False)
     mw.tree.populate()
     mw.table.search_songs()
     splash.showMessage("Song database successfully loaded.", color=Qt.GlobalColor.gray)

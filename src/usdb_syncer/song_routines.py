@@ -1,11 +1,12 @@
-"""Runnable for getting the available songs from USDB or the local cache."""
+"""High-level routines for USDB and local songs."""
 
 import json
+import logging
 from pathlib import Path
 
 from requests import Session
 
-from usdb_syncer import SongId, SyncMetaId, db, errors, utils
+from usdb_syncer import SongId, SyncMetaId, db, errors, song_txt, utils
 from usdb_syncer.logger import get_logger
 from usdb_syncer.sync_meta import SyncMeta
 from usdb_syncer.usdb_scraper import get_usdb_available_songs
@@ -13,6 +14,8 @@ from usdb_syncer.usdb_song import UsdbSong, UsdbSongEncoder
 from usdb_syncer.utils import AppPaths
 
 _logger = get_logger(__file__)
+_err_logger = get_logger(__file__ + "[errors]")
+_err_logger.setLevel(logging.ERROR)
 
 
 def load_available_songs(force_reload: bool, session: Session | None = None) -> None:
@@ -71,3 +74,28 @@ def synchronize_sync_meta_folder(folder: Path) -> None:
                 _logger.info(f"New meta file found on disk: '{path}'.")
     SyncMeta.delete_many(tuple(db_metas.keys()))
     SyncMeta.upsert_many(to_upsert, commit=True)
+
+
+def find_local_songs(directory: Path) -> set[SongId]:
+    matched_rows: set[SongId] = set()
+    for path in directory.glob("**/*.txt"):
+        if headers := try_parse_txt_headers(path):
+            name = headers.artist_title_str()
+            if matches := list(
+                db.find_similar_usdb_songs(headers.artist, headers.title)
+            ):
+                plural = "es" if len(matches) > 1 else ""
+                _logger.info(f"{len(matches)} match{plural} for '{name}'.")
+                matched_rows.update(matches)
+            else:
+                _logger.warning(f"No matches for '{name}'.")
+    return matched_rows
+
+
+def try_parse_txt_headers(path: Path) -> song_txt.Headers | None:
+    if lines := utils.read_file_head(path, 20):
+        try:
+            return song_txt.Headers.parse(lines, _err_logger)
+        except errors.NotesParseError:
+            return None
+    return None

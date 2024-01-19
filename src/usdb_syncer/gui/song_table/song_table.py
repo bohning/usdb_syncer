@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import logging
-from pathlib import Path
 from typing import TYPE_CHECKING, Any, Callable, Iterable, Iterator
 
 import send2trash
@@ -19,20 +18,17 @@ from PySide6.QtCore import (
 from PySide6.QtGui import QCursor
 from PySide6.QtWidgets import QHeaderView, QMenu
 
-from usdb_syncer import SongId, db, errors, events, settings, utils
+from usdb_syncer import SongId, db, events, settings
 from usdb_syncer.gui.song_table.column import Column
 from usdb_syncer.gui.song_table.table_model import TableModel
 from usdb_syncer.logger import get_logger
 from usdb_syncer.song_loader import download_songs
-from usdb_syncer.song_txt import headers
 from usdb_syncer.usdb_song import DownloadStatus, UsdbSong
 
 if TYPE_CHECKING:
     from usdb_syncer.gui.mw import MainWindow
 
 _logger = logging.getLogger(__file__)
-_err_logger = get_logger(__file__ + "[errors]")
-_err_logger.setLevel(logging.ERROR)
 
 DEFAULT_COLUMN_WIDTH = 300
 
@@ -171,22 +167,6 @@ class SongTable:
     def _selected_rows(self) -> Iterable[int]:
         return (idx.row() for idx in self._view.selectionModel().selectedRows())
 
-    def select_local_songs(self, directory: Path) -> None:
-        matched_rows: set[SongId] = set()
-        for path in directory.glob("**/*.txt"):
-            if headers := try_parse_txt_headers(path):
-                name = headers.artist_title_str()
-                if matches := list(
-                    db.find_similar_usdb_songs(headers.artist, headers.title)
-                ):
-                    plural = "es" if len(matches) > 1 else ""
-                    _logger.info(f"{len(matches)} match{plural} for '{name}'.")
-                    matched_rows.update(matches)
-                else:
-                    _logger.warning(f"No matches for '{name}'.")
-        self.set_selection_to_song_ids(matched_rows)
-        _logger.info(f"Selected {len(matched_rows)} songs.")
-
     def set_selection_to_song_ids(self, select_song_ids: Iterable[SongId]) -> None:
         self.set_selection_to_indices(self._model.indices_for_ids(select_song_ids))
 
@@ -240,12 +220,3 @@ class SongTable:
         self._search.order = Column(section).song_order()
         self._search.descending = bool(order.value)
         self.search_songs()
-
-
-def try_parse_txt_headers(path: Path) -> headers.Headers | None:
-    if lines := utils.read_file_head(path, 20):
-        try:
-            return headers.Headers.parse(lines, _err_logger)
-        except errors.NotesParseError:
-            return None
-    return None
