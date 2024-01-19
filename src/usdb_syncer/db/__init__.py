@@ -119,19 +119,30 @@ class SearchBuilder:
     golden_notes: bool | None = None
     ratings: list[int] = attrs.field(factory=list)
     views: list[tuple[int, int | None]] = attrs.field(factory=list)
+    downloaded: bool | None = None
+
+    def _filters(self) -> Iterator[str]:
+        if _fts5_phrases(self.text):
+            yield "fts_usdb_song MATCH ?"
+        if self.artists:
+            yield _in_values_clause("usdb_song.artist", self.artists)
+        if self.titles:
+            yield _in_values_clause("usdb_song.title", self.titles)
+        if self.editions:
+            yield _in_values_clause("usdb_song.edition", self.editions)
+        if self.languages:
+            yield _in_values_clause("usdb_song.language", self.languages)
+        if self.golden_notes is not None:
+            yield "usdb_song.golden_notes = ?"
+        if self.ratings:
+            yield _in_values_clause("usdb_song.rating", self.ratings)
+        if self.views:
+            yield _in_ranges_clause("usdb_song.views", self.views)
+        if self.downloaded is not None:
+            yield f"sync_meta.sync_meta_id IS {'NOT ' if self.downloaded else ''}NULL"
 
     def _where_clause(self) -> str:
-        filters = (
-            "fts_usdb_song MATCH ?" if _fts5_phrases(self.text) else "",
-            _in_values_clause("usdb_song.artist", self.artists),
-            _in_values_clause("usdb_song.title", self.titles),
-            _in_values_clause("usdb_song.edition", self.editions),
-            _in_values_clause("usdb_song.language", self.languages),
-            "usdb_song.golden_notes = ?" if self.golden_notes is not None else "",
-            _in_values_clause("usdb_song.rating", self.ratings),
-            _in_ranges_clause("usdb_song.views", self.views),
-        )
-        where = " AND ".join(filter(None, filters))
+        where = " AND ".join(self._filters())
         return f" WHERE {where}" if where else ""
 
     def _order_by_clause(self) -> str:
@@ -162,7 +173,7 @@ class SearchBuilder:
 
 
 def _in_values_clause(attribute: str, values: list) -> str:
-    return f"{attribute} IN ({', '.join('?'*len(values))})" if values else ""
+    return f"{attribute} IN ({', '.join('?'*len(values))})"
 
 
 def _in_ranges_clause(attribute: str, values: list[tuple[int, int | None]]) -> str:
