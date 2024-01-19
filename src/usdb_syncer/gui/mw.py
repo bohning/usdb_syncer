@@ -91,7 +91,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
     def _setup_toolbar(self) -> None:
         for action, func in (
             (self.action_songs_download, self._download_selection),
-            # (self.action_find_local_songs, self._select_local_songs),
+            (self.action_find_local_songs, self._select_local_songs),
             (self.action_refetch_song_list, self._refetch_song_list),
             (self.action_usdb_login, lambda: UsdbLoginDialog(self).show()),
             (self.action_meta_tags, lambda: MetaTagsDialog(self).show()),
@@ -154,9 +154,9 @@ class MainWindow(Ui_MainWindow, QMainWindow):
                 if self.toolButton_debugs.isChecked():
                     self.plainTextEdit.appendPlainText(message)
 
-    # def _select_local_songs(self) -> None:
-    #     if directory := QFileDialog.getExistingDirectory(self, "Select Song Directory"):
-    #         self.table.select_local_songs(Path(directory))
+    def _select_local_songs(self) -> None:
+        if directory := QFileDialog.getExistingDirectory(self, "Select Song Directory"):
+            self.table.select_local_songs(Path(directory))
 
     def _refetch_song_list(self) -> None:
         run_with_progress(

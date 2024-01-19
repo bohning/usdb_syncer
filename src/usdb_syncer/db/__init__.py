@@ -122,7 +122,7 @@ class SearchBuilder:
 
     def _where_clause(self) -> str:
         filters = (
-            "fts_usdb_song MATCH ?" if _prepare_fts5_text(self.text) else "",
+            "fts_usdb_song MATCH ?" if _fts5_phrases(self.text) else "",
             _in_values_clause("usdb_song.artist", self.artists),
             _in_values_clause("usdb_song.title", self.titles),
             _in_values_clause("usdb_song.edition", self.editions),
@@ -140,7 +140,7 @@ class SearchBuilder:
         return f" ORDER BY {self.order.value} {'DESC' if self.descending else 'ASC'}"
 
     def parameters(self) -> Iterator[str | int | bool]:
-        if text := _prepare_fts5_text(self.text):
+        if text := _fts5_phrases(self.text):
             yield text
         yield from self.artists
         yield from self.titles
@@ -172,8 +172,14 @@ def _in_ranges_clause(attribute: str, values: list[tuple[int, int | None]]) -> s
     )
 
 
-def _prepare_fts5_text(text: str) -> str:
+def _fts5_phrases(text: str) -> str:
+    """Turns each whitespace-separated word into an FTS5 phrase."""
     return " ".join(f'"{s}"' for s in text.replace('"', "").split(" ") if s)
+
+
+def _fts5_start_phrase(text: str) -> str:
+    """Turns the entire string into an FTS5 initial phrase."""
+    return f'''^ "{text.replace('"', "")}"'''
 
 
 ### UsdbSong
@@ -227,12 +233,18 @@ def delete_all_usdb_songs() -> None:
 
 def all_local_usdb_songs() -> Iterable[SongId]:
     stmt = "SELECT DISTINCT song_id FROM sync_meta"
-    return (SongId(i) for i in _DbState.connection().execute(stmt))
+    return (SongId(r[0]) for r in _DbState.connection().execute(stmt))
 
 
 def search_usdb_songs(search: SearchBuilder) -> Iterable[SongId]:
     rows = _DbState.connection().execute(search.statement(), tuple(search.parameters()))
     return (SongId(r[0]) for r in rows)
+
+
+def find_similar_usdb_songs(artist: str, title: str) -> Iterable[SongId]:
+    stmt = "SELECT rowid FROM fts_usdb_song WHERE artist MATCH ? AND title MATCH ?"
+    params = (_fts5_start_phrase(artist), _fts5_start_phrase(title))
+    return (SongId(r[0]) for r in _DbState.connection().execute(stmt, params))
 
 
 ### song filters
@@ -262,25 +274,25 @@ def usdb_song_languages() -> list[tuple[str, int]]:
 
 def search_usdb_song_artists(search: str) -> set[str]:
     stmt = "SELECT artist FROM fts_usdb_song WHERE artist MATCH ?"
-    rows = _DbState.connection().execute(stmt, (_prepare_fts5_text(search),)).fetchall()
+    rows = _DbState.connection().execute(stmt, (_fts5_phrases(search),)).fetchall()
     return set(row[0] for row in rows)
 
 
 def search_usdb_song_titles(search: str) -> set[str]:
     stmt = "SELECT title FROM fts_usdb_song WHERE title MATCH ?"
-    rows = _DbState.connection().execute(stmt, (_prepare_fts5_text(search),)).fetchall()
+    rows = _DbState.connection().execute(stmt, (_fts5_phrases(search),)).fetchall()
     return set(row[0] for row in rows)
 
 
 def search_usdb_song_editions(search: str) -> set[str]:
     stmt = "SELECT edition FROM fts_usdb_song WHERE edition MATCH ?"
-    rows = _DbState.connection().execute(stmt, (_prepare_fts5_text(search),)).fetchall()
+    rows = _DbState.connection().execute(stmt, (_fts5_phrases(search),)).fetchall()
     return set(row[0] for row in rows)
 
 
 def search_usdb_song_languages(search: str) -> set[str]:
     stmt = "SELECT language FROM fts_usdb_song WHERE language MATCH ?"
-    rows = _DbState.connection().execute(stmt, (_prepare_fts5_text(search),)).fetchall()
+    rows = _DbState.connection().execute(stmt, (_fts5_phrases(search),)).fetchall()
     return set(row[0] for row in rows)
 
 

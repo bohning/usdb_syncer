@@ -53,14 +53,6 @@ def dump_available_songs(songs: list[UsdbSong], target: Path | None = None) -> N
         json.dump(songs, file, cls=UsdbSongEncoder)
 
 
-# def find_local_files() -> dict[SongId, LocalFiles]:
-#     return {
-#         meta.song_id: LocalFiles.from_sync_meta(path, meta)
-#         for path in settings.get_song_dir().glob("**/*.usdb")
-#         if (meta := SyncMeta.try_from_file(path))
-#     }
-
-
 def synchronize_sync_meta_folder(folder: Path) -> None:
     db_metas = {m.sync_meta_id: m for m in SyncMeta.get_in_folder(folder)}
     to_upsert: list[SyncMeta] = []

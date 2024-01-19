@@ -23,8 +23,6 @@ from usdb_syncer import SongId, db, events, settings
 from usdb_syncer.gui.song_table.column import Column
 from usdb_syncer.gui.song_table.table_model import TableModel
 from usdb_syncer.logger import get_logger
-
-# from usdb_syncer.song_list_fetcher import find_local_files
 from usdb_syncer.song_loader import download_songs
 from usdb_syncer.song_txt import SongTxt
 from usdb_syncer.usdb_song import DownloadStatus, UsdbSong
@@ -174,29 +172,23 @@ class SongTable:
     def _selected_rows(self) -> Iterable[int]:
         return (idx.row() for idx in self._view.selectionModel().selectedRows())
 
-    # TODO
-    # def select_local_songs(self, directory: Path) -> None:
-    #     song_map: defaultdict[tuple[str, str], list[int]] = defaultdict(list)
-    #     for row, song in enumerate(self._model.songs):
-    #         song_map[fuzzy_key(song.data)].append(row)
-    #     matched_rows: set[int] = set()
-    #     for path in directory.glob("**/*.txt"):
-    #         if txt := try_parse_txt(path):
-    #             name = txt.headers.artist_title_str()
-    #             if matches := song_map[fuzzy_key(txt.headers)]:
-    #                 plural = "es" if len(matches) > 1 else ""
-    #                 _logger.info(f"{len(matches)} match{plural} for '{name}'.")
-    #                 matched_rows.update(matches)
-    #             else:
-    #                 _logger.warning(f"No matches for '{name}'.")
-    #     self.set_selection_to_indices(
-    #         self._proxy_model.target_indices(
-    #             self._model.index(row, 0) for row in matched_rows
-    #         )
-    #     )
-    #     _logger.info(f"Selected {len(matched_rows)} songs.")
+    def select_local_songs(self, directory: Path) -> None:
+        matched_rows: set[SongId] = set()
+        for path in directory.glob("**/*.txt"):
+            if txt := try_parse_txt(path):
+                name = txt.headers.artist_title_str()
+                if matches := list(
+                    db.find_similar_usdb_songs(txt.headers.artist, txt.headers.title)
+                ):
+                    plural = "es" if len(matches) > 1 else ""
+                    _logger.info(f"{len(matches)} match{plural} for '{name}'.")
+                    matched_rows.update(matches)
+                else:
+                    _logger.warning(f"No matches for '{name}'.")
+        self.set_selection_to_song_ids(matched_rows)
+        _logger.info(f"Selected {len(matched_rows)} songs.")
 
-    def set_selection_to_song_ids(self, select_song_ids: list[SongId]) -> None:
+    def set_selection_to_song_ids(self, select_song_ids: Iterable[SongId]) -> None:
         self.set_selection_to_indices(self._model.indices_for_ids(select_song_ids))
 
     def set_selection_to_indices(self, rows: Iterable[QModelIndex]) -> None:
