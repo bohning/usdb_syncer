@@ -15,10 +15,9 @@ from PySide6.QtCore import (
 )
 from PySide6.QtWidgets import QWidget
 
-from .item import TreeItem
+from usdb_syncer import db
 
-# from usdb_syncer.song_data import fuzz_text
-
+from .item import Filter, TreeItem
 
 QIndex = QModelIndex | QPersistentModelIndex
 
@@ -108,20 +107,32 @@ class TreeProxyModel(QSortFilterProxyModel):
         super().__init__(parent)
         self._source = source_model
         self.setSourceModel(source_model)
-        self._filter: list[str] = []
-
+        self._filter: str = ""
+        self._matches: dict[Filter, set[str]] = {}
         self._filter_invalidation_timer = QTimer(parent)
         self._filter_invalidation_timer.setSingleShot(True)
-        self._filter_invalidation_timer.setInterval(600)
-        self._filter_invalidation_timer.timeout.connect(self.invalidateRowsFilter)
+        self._filter_invalidation_timer.setInterval(400)
+        self._filter_invalidation_timer.timeout.connect(self._on_filter_changed)
 
-    # def filterAcceptsRow(self, source_row: int, source_parent: QIndex) -> bool:
-    #     if not self._filter or not source_parent.isValid():
-    #         return True
-    #     parent = self._source.item_for_index(source_parent)
-    #     item = parent.children[source_row]
-    #     return item.filter_accepts_row(self._filter)
+    def filterAcceptsRow(self, source_row: int, source_parent: QIndex) -> bool:
+        if not self._filter or not source_parent.isValid():
+            return True
+        parent = self._source.item_for_index(source_parent)
+        return parent.children[source_row].is_accepted(self._matches)
 
-    # def set_filter(self, text: str) -> None:
-    #     self._filter = fuzz_text(text).split()
-    #     self._filter_invalidation_timer.start()
+    def set_filter(self, text: str) -> None:
+        if (new := text.strip()) != self._filter:
+            self._filter = new
+            self._filter_invalidation_timer.start()
+
+    def _on_filter_changed(self) -> None:
+        if self._filter:
+            self._matches = {
+                Filter.ARTIST: set(db.search_usdb_song_artists(self._filter)),
+                Filter.TITLE: set(db.search_usdb_song_titles(self._filter)),
+                Filter.EDITION: set(db.search_usdb_song_editions(self._filter)),
+                Filter.LANGUAGE: set(db.search_usdb_song_languages(self._filter)),
+            }
+        else:
+            self._matches = {}
+        self.invalidateRowsFilter()

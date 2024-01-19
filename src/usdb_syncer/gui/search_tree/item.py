@@ -19,6 +19,9 @@ class SongMatch:
     def build_search(self, search: db.SearchBuilder) -> None:
         raise NotImplementedError
 
+    def is_accepted(self, _matches: set[str]) -> bool:
+        return True
+
 
 @attrs.define
 class SongValueMatch(SongMatch):
@@ -32,6 +35,9 @@ class SongValueMatch(SongMatch):
 
     def build_search(self, search: db.SearchBuilder) -> None:
         raise NotImplementedError
+
+    def is_accepted(self, matches: set[str]) -> bool:
+        return self.val in matches
 
 
 class SongArtistMatch(SongValueMatch):
@@ -81,6 +87,9 @@ class TreeItem:
 
     def flags(self) -> Qt.ItemFlag:
         return Qt.ItemFlag.ItemIsEnabled
+
+    def is_accepted(self, _matches: dict[Filter, set[str]]) -> bool:
+        return True
 
 
 @attrs.define(kw_only=True)
@@ -178,6 +187,11 @@ class VariantItem(TreeItem):
         return self.parent.set_child_checked(
             self.row_in_parent, not self.checked, keep_siblings
         )
+
+    def is_accepted(self, matches: dict[Filter, set[str]]) -> bool:
+        if (parent_matches := matches.get(self.parent.data)) is None:
+            return True
+        return self.data.is_accepted(parent_matches)
 
 
 class Filter(enum.Enum):

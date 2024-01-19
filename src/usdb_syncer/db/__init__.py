@@ -235,6 +235,9 @@ def search_usdb_songs(search: SearchBuilder) -> Iterable[SongId]:
     return (SongId(r[0]) for r in rows)
 
 
+### song filters
+
+
 def usdb_song_artists() -> list[tuple[str, int]]:
     stmt = "SELECT artist, COUNT(*) FROM usdb_song GROUP BY artist ORDER BY artist"
     return _DbState.connection().execute(stmt).fetchall()
@@ -255,6 +258,30 @@ def usdb_song_languages() -> list[tuple[str, int]]:
         "SELECT language, COUNT(*) FROM usdb_song GROUP BY language ORDER BY language"
     )
     return _DbState.connection().execute(stmt).fetchall()
+
+
+def search_usdb_song_artists(search: str) -> set[str]:
+    stmt = "SELECT artist FROM fts_usdb_song WHERE artist MATCH ?"
+    rows = _DbState.connection().execute(stmt, (_prepare_fts5_text(search),)).fetchall()
+    return set(row[0] for row in rows)
+
+
+def search_usdb_song_titles(search: str) -> set[str]:
+    stmt = "SELECT title FROM fts_usdb_song WHERE title MATCH ?"
+    rows = _DbState.connection().execute(stmt, (_prepare_fts5_text(search),)).fetchall()
+    return set(row[0] for row in rows)
+
+
+def search_usdb_song_editions(search: str) -> set[str]:
+    stmt = "SELECT edition FROM fts_usdb_song WHERE edition MATCH ?"
+    rows = _DbState.connection().execute(stmt, (_prepare_fts5_text(search),)).fetchall()
+    return set(row[0] for row in rows)
+
+
+def search_usdb_song_languages(search: str) -> set[str]:
+    stmt = "SELECT language FROM fts_usdb_song WHERE language MATCH ?"
+    rows = _DbState.connection().execute(stmt, (_prepare_fts5_text(search),)).fetchall()
+    return set(row[0] for row in rows)
 
 
 ### SyncMeta

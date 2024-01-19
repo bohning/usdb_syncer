@@ -30,7 +30,7 @@ class FilterTree:
         self.view.setModel(self._proxy_model)
         self.view.clicked.connect(self._on_click)
         self._model.dataChanged.connect(self._on_data_changed)
-        # mw.line_edit_search_filters.textChanged.connect(self._proxy_model.set_filter)
+        mw.line_edit_search_filters.textChanged.connect(self._proxy_model.set_filter)
 
     def populate(self) -> None:
         for item in self.root.children:
