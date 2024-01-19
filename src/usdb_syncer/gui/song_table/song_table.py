@@ -19,14 +19,13 @@ from PySide6.QtCore import (
 from PySide6.QtGui import QCursor
 from PySide6.QtWidgets import QHeaderView, QMenu
 
-from usdb_syncer import SongId, db, events, settings
+from usdb_syncer import SongId, db, errors, events, settings, utils
 from usdb_syncer.gui.song_table.column import Column
 from usdb_syncer.gui.song_table.table_model import TableModel
 from usdb_syncer.logger import get_logger
 from usdb_syncer.song_loader import download_songs
-from usdb_syncer.song_txt import SongTxt
+from usdb_syncer.song_txt import headers
 from usdb_syncer.usdb_song import DownloadStatus, UsdbSong
-from usdb_syncer.utils import try_read_unknown_encoding
 
 if TYPE_CHECKING:
     from usdb_syncer.gui.mw import MainWindow
@@ -175,10 +174,10 @@ class SongTable:
     def select_local_songs(self, directory: Path) -> None:
         matched_rows: set[SongId] = set()
         for path in directory.glob("**/*.txt"):
-            if txt := try_parse_txt(path):
-                name = txt.headers.artist_title_str()
+            if headers := try_parse_txt_headers(path):
+                name = headers.artist_title_str()
                 if matches := list(
-                    db.find_similar_usdb_songs(txt.headers.artist, txt.headers.title)
+                    db.find_similar_usdb_songs(headers.artist, headers.title)
                 ):
                     plural = "es" if len(matches) > 1 else ""
                     _logger.info(f"{len(matches)} match{plural} for '{name}'.")
@@ -243,7 +242,10 @@ class SongTable:
         self.search_songs()
 
 
-def try_parse_txt(path: Path) -> SongTxt | None:
-    if contents := try_read_unknown_encoding(path):
-        return SongTxt.try_parse(contents, _err_logger)
+def try_parse_txt_headers(path: Path) -> headers.Headers | None:
+    if lines := utils.read_file_head(path, 20):
+        try:
+            return headers.Headers.parse(lines, _err_logger)
+        except errors.NotesParseError:
+            return None
     return None

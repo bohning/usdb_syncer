@@ -2,6 +2,7 @@
 
 import datetime
 import functools
+import itertools
 import os
 import re
 import subprocess
@@ -115,11 +116,17 @@ def extract_vimeo_id(url: str) -> str | None:
     return None
 
 
-def try_read_unknown_encoding(path: Path) -> str | None:
-    for codec in ["utf-8-sig", "cp1252"]:
+def read_file_head(
+    path: Path, length: int, encoding: str | None = None
+) -> list[str] | None:
+    """Return the first `length` lines of `path`. If `encoding` is None, try UTF-8 (with
+    BOM) first, then cp1252.
+    """
+    for enc in [encoding] if encoding else ["utf-8-sig", "cp1252"]:
         try:
-            with open(path, encoding=codec) as file:
-                return file.read()
+            with open(path, encoding=enc) as file:
+                # strip line break
+                return list(r[:-1] for r in itertools.islice(file, length))
         except UnicodeDecodeError:
             pass
     return None
