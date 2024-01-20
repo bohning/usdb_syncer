@@ -1,42 +1,20 @@
 """Tests for functions from the usdb_scraper module."""
 
-import json
-import os
 from datetime import datetime
-from io import StringIO
+from pathlib import Path
 
 from bs4 import BeautifulSoup
 
 from usdb_syncer import SongId
 from usdb_syncer.usdb_scraper import _parse_song_page, _parse_song_txt_from_txt_page
-from usdb_syncer.usdb_song import UsdbSong, UsdbSongEncoder
 
 
-def get_soup(resource_dir: str, resource: str) -> BeautifulSoup:
-    with open(os.path.join(resource_dir, "html", resource), encoding="utf8") as html:
+def get_soup(resource_dir: Path, resource: str) -> BeautifulSoup:
+    with resource_dir.joinpath("html", resource).open(encoding="utf8") as html:
         return BeautifulSoup(html, "lxml")
 
 
-def test_encoding_and_decoding_song_meta() -> None:
-    song = UsdbSong(
-        song_id=SongId(123),
-        artist="Foo",
-        title="Bar",
-        language="Esperanto",
-        edition="",
-        golden_notes=True,
-        rating=0,
-        views=1,
-    )
-    buf = StringIO()
-    json.dump(song, buf, cls=UsdbSongEncoder)
-    buf.seek(0)
-    new_song = json.load(buf, object_hook=UsdbSong.from_json)
-    assert isinstance(new_song, UsdbSong)
-    assert song == new_song
-
-
-def test__parse_song_txt_from_txt_page(resource_dir: str) -> None:
+def test__parse_song_txt_from_txt_page(resource_dir: Path) -> None:
     soup = get_soup(resource_dir, "txt_page.htm")
     txt = _parse_song_txt_from_txt_page(soup)
     assert txt is not None
@@ -44,7 +22,7 @@ def test__parse_song_txt_from_txt_page(resource_dir: str) -> None:
     assert txt.endswith("\nE")
 
 
-def test__parse_song_page_with_commented_embedded_video(resource_dir: str) -> None:
+def test__parse_song_page_with_commented_embedded_video(resource_dir: Path) -> None:
     song_id = SongId(26152)
     soup = get_soup(resource_dir, "song_page_with_embedded_video.htm")
     details = _parse_song_page(soup, song_id)
@@ -76,7 +54,7 @@ def test__parse_song_page_with_commented_embedded_video(resource_dir: str) -> No
     assert details.comments[1].contents.urls == []
 
 
-def test__parse_song_page_with_commented_unembedded_video(resource_dir: str) -> None:
+def test__parse_song_page_with_commented_unembedded_video(resource_dir: Path) -> None:
     song_id = SongId(16575)
     soup = get_soup(resource_dir, "song_page_with_unembedded_video.htm")
     details = _parse_song_page(soup, song_id)
@@ -84,7 +62,7 @@ def test__parse_song_page_with_commented_unembedded_video(resource_dir: str) -> 
     assert details.comments[0].contents.youtube_ids == ["WIAvMiUcCgw"]
 
 
-def test__parse_song_page_without_comments_or_cover(resource_dir: str) -> None:
+def test__parse_song_page_without_comments_or_cover(resource_dir: Path) -> None:
     song_id = SongId(26244)
     soup = get_soup(resource_dir, "song_page_without_comments_or_cover.htm")
     details = _parse_song_page(soup, song_id)

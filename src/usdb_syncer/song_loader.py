@@ -3,9 +3,11 @@
 from __future__ import annotations
 
 import base64
+import copy
 import os
+import traceback
 from pathlib import Path
-from typing import Callable, Iterable, Iterator
+from typing import Iterable, Iterator
 
 import attrs
 import mutagen.mp4
@@ -15,23 +17,15 @@ from mutagen.flac import Picture
 from PIL import Image
 from PySide6.QtCore import QRunnable, QThreadPool
 
-from usdb_syncer import SongId, resource_dl, usdb_scraper
+from usdb_syncer import SongId, db, errors, events, resource_dl, usdb_scraper
 from usdb_syncer.constants import ISO_639_2B_LANGUAGE_CODES
 from usdb_syncer.download_options import Options, download_options
 from usdb_syncer.logger import Log, get_logger
-from usdb_syncer.meta_tags import MetaTags
 from usdb_syncer.resource_dl import ImageKind, download_and_process_image
-from usdb_syncer.song_data import (
-    DownloadErrorReason,
-    DownloadResult,
-    DownloadStatus,
-    LocalFiles,
-    SongData,
-)
 from usdb_syncer.song_txt import Headers, SongTxt
-from usdb_syncer.sync_meta import FileMeta, SyncMeta
-from usdb_syncer.usdb_scraper import SongDetails, UsdbLoginError, UsdbNotFoundError
-from usdb_syncer.usdb_song import UsdbSong
+from usdb_syncer.sync_meta import ResourceFile, SyncMeta
+from usdb_syncer.usdb_scraper import SongDetails
+from usdb_syncer.usdb_song import DownloadStatus, UsdbSong
 from usdb_syncer.utils import (
     is_name_maybe_with_suffix,
     next_unique_directory,
@@ -40,38 +34,21 @@ from usdb_syncer.utils import (
 )
 
 
-@attrs.define
-class DownloadInfo:
-    """Data required to start a song download."""
-
-    song_id: SongId
-    meta_path: Path | None
-
-    @classmethod
-    def from_song_data(cls, data: SongData) -> DownloadInfo:
-        return cls(data.data.song_id, data.local_files.usdb_path)
-
-
 @attrs.define(kw_only=True)
 class Locations:
     """Paths for downloading a song."""
 
-    meta_path: Path
+    folder: Path
     filename_stem: str
 
     @classmethod
-    def new(
-        cls, song_id: SongId, song_dir: Path, meta_path: Path | None, headers: Headers
-    ) -> Locations:
+    def new(cls, song: UsdbSong, song_dir: Path, headers: Headers) -> Locations:
         filename_stem = sanitize_filename(headers.artist_title_str())
-        if not meta_path:
-            dir_path = next_unique_directory(song_dir.joinpath(filename_stem))
-            meta_path = dir_path.joinpath(f"{song_id}.usdb")
-        return cls(meta_path=meta_path, filename_stem=filename_stem)
-
-    def dir_path(self) -> Path:
-        """The song directory."""
-        return self.meta_path.parent
+        if song.sync_meta:
+            folder = song.sync_meta.path.parent
+        else:
+            folder = next_unique_directory(song_dir.joinpath(filename_stem))
+        return cls(folder=folder, filename_stem=filename_stem)
 
     def file_path(self, file: str = "", ext: str = "") -> Path:
         """Path to file in the song directory. The final path component is the generic
@@ -80,22 +57,23 @@ class Locations:
         name = file or self.filename_stem
         if ext:
             name = f"{name}.{ext}"
-        return self.meta_path.with_name(name)
+        return self.folder.joinpath(name)
 
     def ensure_correct_paths(self, sync_meta: SyncMeta) -> None:
         """Ensure meta path and given resource paths match the generic filename."""
-        if is_name_maybe_with_suffix(self.dir_path().name, self.filename_stem):
+        if is_name_maybe_with_suffix(self.folder.name, self.filename_stem):
             return
-        self._fix_meta_path()
-        self._fix_resource_paths(sync_meta)
+        self._rename_folder()
+        self._update_sync_meta_paths(sync_meta)
 
-    def _fix_meta_path(self) -> None:
-        new = next_unique_directory(self.dir_path().with_name(self.filename_stem))
-        self.dir_path().rename(new)
-        self.meta_path = new.joinpath(self.meta_path.name)
+    def _rename_folder(self) -> None:
+        new = next_unique_directory(self.folder.with_name(self.filename_stem))
+        self.folder.rename(new)
+        self.folder = new
 
-    def _fix_resource_paths(self, sync_meta: SyncMeta) -> None:
-        for meta in sync_meta.file_metas():
+    def _update_sync_meta_paths(self, sync_meta: SyncMeta) -> None:
+        sync_meta.path = self.file_path(file=sync_meta.path.name)
+        for meta in sync_meta.resource_files():
             old_path = self.file_path(file=meta.fname)
             new_path = self.file_path(
                 file=self.filename_stem + resource_file_ending(meta.fname)
@@ -110,26 +88,25 @@ class Locations:
 class Context:
     """Context for downloading media and creating a song folder."""
 
+    # deep copy of the passed in song
+    song: UsdbSong
+    # alias to song.sync_meta
+    sync_meta: SyncMeta
     details: SongDetails
     options: Options
     txt: SongTxt
     locations: Locations
-    sync_meta: SyncMeta
     logger: Log
 
     @classmethod
-    def new(
-        cls, details: SongDetails, options: Options, info: DownloadInfo, logger: Log
-    ) -> Context:
-        txt_str = usdb_scraper.get_notes(details.song_id, logger)
-        txt = SongTxt.parse(txt_str, logger)
-        txt.sanitize()
-        txt.headers.creator = txt.headers.creator or details.uploader or None
-        paths = Locations.new(
-            details.song_id, options.song_dir, info.meta_path, txt.headers
-        )
-        sync_meta = _load_sync_meta(paths.meta_path, details.song_id, txt.meta_tags)
-        return cls(details, options, txt, paths, sync_meta, logger)
+    def new(cls, song: UsdbSong, options: Options, logger: Log) -> Context:
+        song = copy.deepcopy(song)
+        details, txt = _get_usdb_data(song.song_id, logger)
+        _update_song_with_usdb_data(song, details, txt)
+        paths = Locations.new(song, options.song_dir, txt.headers)
+        if not song.sync_meta:
+            song.sync_meta = SyncMeta.new(song.song_id, paths.folder, txt.meta_tags)
+        return cls(song, song.sync_meta, details, options, txt, paths, logger)
 
     def all_audio_resources(self) -> Iterator[str]:
         if self.txt.meta_tags.audio:
@@ -162,77 +139,71 @@ class Context:
             self.logger.debug(f"downloading background from #VIDEO params: {url}")
         return url
 
-    def usdb_song(self) -> UsdbSong:
-        return UsdbSong(
-            song_id=self.sync_meta.song_id,
-            artist=self.details.artist,
-            title=self.details.title,
-            language=self.txt.headers.language or "",
-            edition=self.txt.headers.edition or "",
-            golden_notes=self.details.golden_notes,
-            rating=self.details.rating,
-            views=self.details.views,
-        )
 
-    def finished_song_data(self) -> SongData:
-        return SongData.from_usdb_song(
-            self.usdb_song(),
-            LocalFiles.from_sync_meta(self.locations.meta_path, self.sync_meta),
-            DownloadStatus.NONE,
-        )
+def _get_usdb_data(song_id: SongId, logger: Log) -> tuple[SongDetails, SongTxt]:
+    details = usdb_scraper.get_usdb_details(song_id)
+    logger.info(f"Found '{details.artist} - {details.title}' on USDB.")
+    txt_str = usdb_scraper.get_notes(details.song_id, logger)
+    txt = SongTxt.parse(txt_str, logger)
+    txt.sanitize()
+    txt.headers.creator = txt.headers.creator or details.uploader or None
+    return details, txt
 
 
-def _load_sync_meta(path: Path, song_id: SongId, meta_tags: MetaTags) -> SyncMeta:
-    """Loads meta from path if valid or creates a new one."""
-    if path.exists() and (meta := SyncMeta.try_from_file(path)):
-        meta.meta_tags = meta_tags
-        return meta
-    return SyncMeta.new(song_id, meta_tags)
+def _update_song_with_usdb_data(
+    song: UsdbSong, details: SongDetails, txt: SongTxt
+) -> None:
+    song.artist = details.artist
+    song.title = details.title
+    song.language = txt.headers.language or ""
+    song.edition = txt.headers.edition or ""
+    song.golden_notes = details.golden_notes
+    song.rating = details.rating
+    song.views = details.views
 
 
 class SongLoader(QRunnable):
     """Runnable to create a complete song folder."""
 
-    def __init__(
-        self,
-        info: DownloadInfo,
-        options: Options,
-        on_start: Callable[[SongId], None],
-        on_finish: Callable[[DownloadResult], None],
-    ) -> None:
+    def __init__(self, song: UsdbSong, options: Options) -> None:
         super().__init__()
-        self.song_id = info.song_id
-        self.data = info
+        self.song = song
+        self.song_id = song.song_id
         self.options = options
-        self.on_start = on_start
-        self.on_finish = on_finish
-        self.logger = get_logger(__file__, info.song_id)
+        self.logger = get_logger(__file__, self.song_id)
 
     def run(self) -> None:
-        result = DownloadResult(self.song_id)
+        change_event: events.SubscriptableEvent = events.SongChanged(self.song_id)
         try:
-            result.data = self._run_inner()
-        except UsdbLoginError:
+            updated_song = self._run_inner()
+        except errors.UsdbLoginError:
             self.logger.error("Aborted; download requires login.")
-            result.error = DownloadErrorReason.NOT_LOGGED_IN
-        except UsdbNotFoundError:
-            self.logger.error("Song seems to have been deleted from USDB.")
-            result.error = DownloadErrorReason.NOT_FOUND
-        except Exception as exception:  # pylint: disable=broad-except
-            self.logger.debug(exception)
+            self.song.status = DownloadStatus.FAILED
+        except errors.UsdbNotFoundError:
+            self.logger.error("Song has been deleted from USDB.")
+            with db.transaction():
+                self.song.delete()
+            change_event = events.SongDeleted(self.song_id)
+        except Exception:  # pylint: disable=broad-except
+            self.logger.debug(traceback.format_exc())
             self.logger.error(
                 "Failed to finish download due to an unexpected error. "
                 "See debug log for more information."
             )
-            result.error = DownloadErrorReason.UNKNOWN
-        self.on_finish(result)
+            self.song.status = DownloadStatus.FAILED
+        else:
+            updated_song.status = DownloadStatus.NONE
+            with db.transaction():
+                updated_song.upsert()
+            self.logger.info("All done!")
+        change_event.post()
+        events.DownloadFinished(self.song_id).post()
 
-    def _run_inner(self) -> SongData:
-        self.on_start(self.song_id)
-        details = usdb_scraper.get_usdb_details(self.song_id)
-        self.logger.info(f"Found '{details.artist} - {details.title}' on USDB")
-        ctx = Context.new(details, self.options, self.data, self.logger)
-        ctx.locations.dir_path().mkdir(parents=True, exist_ok=True)
+    def _run_inner(self) -> UsdbSong:
+        self.song.status = DownloadStatus.DOWNLOADING
+        events.SongChanged(self.song_id).post()
+        ctx = Context.new(self.song, self.options, self.logger)
+        ctx.locations.folder.mkdir(parents=True, exist_ok=True)
         ctx.locations.ensure_correct_paths(ctx.sync_meta)
         _maybe_download_audio(ctx)
         _maybe_download_video(ctx)
@@ -240,26 +211,22 @@ class SongLoader(QRunnable):
         _maybe_download_background(ctx)
         _maybe_write_txt(ctx)
         _maybe_write_audio_tags(ctx)
-        _write_sync_meta(ctx)
-        return ctx.finished_song_data()
+        ctx.sync_meta.synchronize_to_file()
+        return ctx.song
 
 
-def download_songs(
-    infos: Iterable[DownloadInfo],
-    on_start: Callable[[SongId], None],
-    on_finish: Callable[[DownloadResult], None],
-) -> None:
+def download_songs(songs: Iterable[UsdbSong]) -> None:
     options = download_options()
     threadpool = QThreadPool.globalInstance()
-    for info in infos:
-        worker = SongLoader(info, options, on_start, on_finish)
+    for song in songs:
+        worker = SongLoader(song, options)
         threadpool.start(worker)
 
 
 def _maybe_download_audio(ctx: Context) -> None:
     if not (options := ctx.options.audio_options):
         return
-    meta = ctx.sync_meta.synced_audio(ctx.locations.dir_path())
+    meta = ctx.sync_meta.synced_audio(ctx.locations.folder)
     for idx, resource in enumerate(ctx.all_audio_resources()):
         if meta and meta.resource == resource:
             ctx.txt.headers.mp3 = meta.fname
@@ -289,7 +256,7 @@ def _maybe_download_audio(ctx: Context) -> None:
 def _maybe_download_video(ctx: Context) -> None:
     if not (options := ctx.options.video_options) or ctx.txt.meta_tags.is_audio_only():
         return
-    meta = ctx.sync_meta.synced_video(ctx.locations.dir_path())
+    meta = ctx.sync_meta.synced_video(ctx.locations.folder)
     for idx, resource in enumerate(ctx.all_video_resources()):
         if meta and meta.resource == resource:
             ctx.txt.headers.video = meta.fname
@@ -318,7 +285,7 @@ def _maybe_download_cover(ctx: Context) -> None:
     if not (url := ctx.cover_url()):
         ctx.logger.warning("No cover resource found.")
         return
-    meta = ctx.sync_meta.synced_cover(ctx.locations.dir_path())
+    meta = ctx.sync_meta.synced_cover(ctx.locations.folder)
     if meta and meta.resource == url:
         ctx.txt.headers.cover = meta.fname
         ctx.logger.info("Cover resource is unchanged.")
@@ -346,7 +313,7 @@ def _maybe_download_background(ctx: Context) -> None:
     if not (url := ctx.background_url()):
         ctx.logger.warning("No background resource found.")
         return
-    meta = ctx.sync_meta.synced_background(ctx.locations.dir_path())
+    meta = ctx.sync_meta.synced_background(ctx.locations.folder)
     if meta and meta.resource == url:
         ctx.txt.headers.background = meta.fname
         ctx.logger.info("Background resource is unchanged.")
@@ -375,10 +342,6 @@ def _maybe_write_txt(ctx: Context) -> None:
     ctx.logger.info("Success! Created song txt.")
 
 
-def _write_sync_meta(ctx: Context) -> None:
-    ctx.sync_meta.to_file(ctx.locations.dir_path())
-
-
 def _maybe_write_audio_tags(ctx: Context) -> None:
     if not (options := ctx.options.audio_options) or not (meta := ctx.sync_meta.audio):
         return
@@ -393,16 +356,18 @@ def _maybe_write_audio_tags(ctx: Context) -> None:
                 _write_mp3_tags(meta, ctx, options.embed_artwork)
             case ".ogg":
                 _write_ogg_tags(meta, ctx, options.embed_artwork)
-    except Exception as err:  # pylint: disable=broad-exception-caught
-        ctx.logger.debug(err)
+    except Exception:  # pylint: disable=broad-exception-caught
+        ctx.logger.debug(traceback.format_exc())
         ctx.logger.error(f"Failed to write audio tags to file '{meta.fname}'!")
     else:
         ctx.logger.debug(f"Audio tags written to file '{meta.fname}'.")
 
-    ctx.sync_meta.audio.bump_mtime(ctx.locations.dir_path())
+    ctx.sync_meta.audio.bump_mtime(ctx.locations.folder)
 
 
-def _write_m4a_tags(audio_meta: FileMeta, ctx: Context, embed_artwork: bool) -> None:
+def _write_m4a_tags(
+    audio_meta: ResourceFile, ctx: Context, embed_artwork: bool
+) -> None:
     tags = mutagen.mp4.MP4Tags()
 
     tags["\xa9ART"] = ctx.txt.headers.artist
@@ -427,7 +392,9 @@ def _write_m4a_tags(audio_meta: FileMeta, ctx: Context, embed_artwork: bool) -> 
     tags.save(ctx.locations.file_path(audio_meta.fname))
 
 
-def _write_mp3_tags(audio_meta: FileMeta, ctx: Context, embed_artwork: bool) -> None:
+def _write_mp3_tags(
+    audio_meta: ResourceFile, ctx: Context, embed_artwork: bool
+) -> None:
     tags = id3.ID3()
 
     lang = ISO_639_2B_LANGUAGE_CODES.get(ctx.txt.headers.main_language(), "und")
@@ -472,7 +439,9 @@ def _write_mp3_tags(audio_meta: FileMeta, ctx: Context, embed_artwork: bool) -> 
     tags.save(ctx.locations.file_path(audio_meta.fname))
 
 
-def _write_ogg_tags(audio_meta: FileMeta, ctx: Context, embed_artwork: bool) -> None:
+def _write_ogg_tags(
+    audio_meta: ResourceFile, ctx: Context, embed_artwork: bool
+) -> None:
     audio = mutagen.oggvorbis.OggVorbis(ctx.locations.file_path(audio_meta.fname))
 
     # Set basic tags

@@ -6,9 +6,9 @@ from pathlib import Path
 
 import attrs
 
+from usdb_syncer import errors
 from usdb_syncer.logger import Log
 from usdb_syncer.meta_tags import MetaTags
-from usdb_syncer.song_txt.error import NotesParseError
 from usdb_syncer.song_txt.headers import Headers
 from usdb_syncer.song_txt.tracks import Tracks
 
@@ -56,7 +56,7 @@ class SongTxt:
     def try_parse(cls, value: str, logger: Log) -> SongTxt | None:
         try:
             return cls.parse(value, logger)
-        except NotesParseError:
+        except errors.NotesParseError:
             return None
 
     def maybe_split_duet_notes(self) -> None:

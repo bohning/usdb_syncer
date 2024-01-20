@@ -1,11 +1,15 @@
 """Table model for song data."""
 
+from __future__ import annotations
+
 import enum
 from enum import IntEnum
 from functools import cache
 from typing import assert_never
 
 from PySide6.QtGui import QIcon
+
+from usdb_syncer import db
 
 
 class Column(IntEnum):
@@ -116,4 +120,39 @@ class Column(IntEnum):
             ):
                 return 24
             case _ as unreachable:
+                assert_never(unreachable)
+
+    def song_order(self) -> db.SongOrder:
+        match self:
+            case Column.SONG_ID:
+                return db.SongOrder.SONG_ID
+            case Column.ARTIST:
+                return db.SongOrder.ARTIST
+            case Column.TITLE:
+                return db.SongOrder.TITLE
+            case Column.LANGUAGE:
+                return db.SongOrder.LANGUAGE
+            case Column.EDITION:
+                return db.SongOrder.EDITION
+            case Column.GOLDEN_NOTES:
+                return db.SongOrder.GOLDEN_NOTES
+            case Column.RATING:
+                return db.SongOrder.RATING
+            case Column.VIEWS:
+                return db.SongOrder.VIEWS
+            case Column.PINNED:
+                return db.SongOrder.PINNED
+            case Column.TXT:
+                return db.SongOrder.TXT
+            case Column.AUDIO:
+                return db.SongOrder.AUDIO
+            case Column.VIDEO:
+                return db.SongOrder.VIDEO
+            case Column.COVER:
+                return db.SongOrder.COVER
+            case Column.BACKGROUND:
+                return db.SongOrder.BACKGROUND
+            case Column.DOWNLOAD_STATUS:
+                return db.SongOrder.SYNC_TIME
+            case unreachable:
                 assert_never(unreachable)

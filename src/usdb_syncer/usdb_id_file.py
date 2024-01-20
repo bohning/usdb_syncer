@@ -5,16 +5,20 @@ from __future__ import annotations
 import configparser
 import json
 import os
+from typing import Iterable
 from urllib.parse import parse_qs, urlparse
 
 import attrs
 from bs4 import BeautifulSoup
 
-from usdb_syncer import SongId
+from usdb_syncer import SongId, errors, logger
+from usdb_syncer.usdb_song import UsdbSong
+
+_logger = logger.get_logger(__file__)
 
 
 @attrs.define
-class UsdbIdFileError(Exception):
+class UsdbIdFileError(errors.UsdbSyncerError):
     """USDB File Parser root exception"""
 
 
@@ -265,6 +269,43 @@ class UsdbIdFileNoUrlFoundError(UsdbIdFileError):
         return "no URL found"
 
 
+def get_available_song_ids_from_files(file_list: list[str]) -> list[SongId]:
+    song_ids: list[SongId] = []
+    for path in file_list:
+        try:
+            song_ids += parse_usdb_id_file(path)
+        except UsdbIdFileError as error:
+            _logger.error(f"Failed to import file '{path}': {str(error)}")
+            return []
+
+    unique_song_ids = list(set(song_ids))
+    unique_song_ids.sort()
+    _logger.info(
+        f"read {len(file_list)} file(s), "
+        f"found {len(unique_song_ids)} "
+        f"USDB IDs: {', '.join(str(id) for id in unique_song_ids)}"
+    )
+    if unavailable_song_ids := [
+        song_id for song_id in unique_song_ids if not UsdbSong.get(song_id)
+    ]:
+        _logger.warning(
+            f"{len(unavailable_song_ids)}/{len(unique_song_ids)} "
+            "imported USDB IDs are not available: "
+            f"{', '.join(str(song_id) for song_id in unavailable_song_ids)}"
+        )
+
+    if available_song_ids := [
+        song_id for song_id in unique_song_ids if song_id not in unavailable_song_ids
+    ]:
+        _logger.info(
+            f"available {len(available_song_ids)}/{len(unique_song_ids)} "
+            "imported USDB IDs will be selected: "
+            f"{', '.join(str(song_id) for song_id in available_song_ids)}"
+        )
+
+    return available_song_ids
+
+
 def _get_json_file_content(filepath: str) -> str:
     filecontent: str
     try:
@@ -441,6 +482,6 @@ def parse_usdb_id_file(filepath: str) -> list[SongId]:
     return song_ids
 
 
-def write_usdb_id_file(filepath: str, song_ids: list[SongId]) -> None:
+def write_usdb_id_file(filepath: str, song_ids: Iterable[SongId]) -> None:
     with open(filepath, encoding="utf-8", mode="w") as file:
         file.write("\n".join(str(id) for id in song_ids))

@@ -47,11 +47,10 @@ class DebugConsole(Ui_Dialog, QDialog):
 
     def _execute(self) -> None:
         code = self.input.toPlainText()
-        locals()["mw"] = self.parent()
         with redirect_stdout(io.StringIO()) as captured:
             try:
-                exec(code)  # pylint: disable=exec-used
-            except:  # pylint: disable=bare-except
+                exec(code, {"mw": self.parent()})  # pylint: disable=exec-used
+            except Exception:  # pylint: disable=broad-exception-caught
                 print(traceback.format_exc())
         self._log_output(code, captured.getvalue())
 

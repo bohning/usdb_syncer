@@ -11,7 +11,14 @@
       "program": "${workspaceFolder}/src/usdb_syncer/main.py",
       "console": "internalConsole",
       "justMyCode": true,
-      "env": {}
+      "env": {
+        // print every executed SQL statement
+        // "TRACESQL": "1"
+      },
+      "args": [
+        // profile runtime performance
+        // "--profile"
+      ]
     }
   ]
 }

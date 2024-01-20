@@ -8,6 +8,7 @@ and getters should be added to this module.
 from __future__ import annotations
 
 import os
+import traceback
 from enum import Enum
 from http.cookiejar import CookieJar
 from pathlib import Path
@@ -250,8 +251,8 @@ class Browser(Enum):
                 assert_never(unreachable)
         try:
             return function(domain_name=Usdb.DOMAIN)
-        except Exception as error:  # pylint: disable=broad-exception-caught
-            _logger.debug(error)
+        except Exception:  # pylint: disable=broad-exception-caught
+            _logger.debug(traceback.format_exc())
         _logger.warning(f"Failed to retrieve {str(self).capitalize()} cookies.")
         return None
 
@@ -282,8 +283,8 @@ class Browser(Enum):
                     path = browser_cookie3.Vivaldi().cookie_file
                 case _ as unreachable:
                     assert_never(unreachable)
-        except Exception as error:  # pylint: disable=broad-exception-caught
-            _logger.debug(error)
+        except Exception:  # pylint: disable=broad-exception-caught
+            _logger.debug(traceback.format_exc())
             path = None
         return path
 
@@ -505,11 +506,11 @@ def set_browser(value: Browser) -> None:
 
 
 def get_song_dir() -> Path:
-    return get_setting(SettingKey.SONG_DIR, Path.cwd().joinpath("songs"))
+    return get_setting(SettingKey.SONG_DIR, Path("songs").resolve())
 
 
-def set_song_dir(value: str) -> None:
-    set_setting(SettingKey.SONG_DIR, Path.cwd().joinpath(value))
+def set_song_dir(value: Path) -> None:
+    set_setting(SettingKey.SONG_DIR, value)
 
 
 def get_video() -> bool:

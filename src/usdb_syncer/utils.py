@@ -1,5 +1,8 @@
 """General-purpose utilities."""
 
+import datetime
+import functools
+import itertools
 import os
 import re
 import subprocess
@@ -36,6 +39,8 @@ class AppPaths:
     root = _root()
     fallback_song_list = Path(root, "data", "song_list.json")
     profile = Path(root, "usdb_syncer.prof")
+    db = Path(_app_dirs.user_data_dir, "usdb_syncer.db")
+    sql = Path(root, "src", "usdb_syncer", "db", "sql")
 
     @classmethod
     def make_dirs(cls) -> None:
@@ -111,11 +116,17 @@ def extract_vimeo_id(url: str) -> str | None:
     return None
 
 
-def try_read_unknown_encoding(path: Path) -> str | None:
-    for codec in ["utf-8-sig", "cp1252"]:
+def read_file_head(
+    path: Path, length: int, encoding: str | None = None
+) -> list[str] | None:
+    """Return the first `length` lines of `path`. If `encoding` is None, try UTF-8 (with
+    BOM) first, then cp1252.
+    """
+    for enc in [encoding] if encoding else ["utf-8-sig", "cp1252"]:
         try:
-            with open(path, encoding=codec) as file:
-                return file.read()
+            with open(path, encoding=enc) as file:
+                # strip line break
+                return list(r[:-1] for r in itertools.islice(file, length))
         except UnicodeDecodeError:
             pass
     return None
@@ -175,3 +186,15 @@ def resource_file_ending(name: str) -> str:
     if match := regex.fullmatch(name):
         return match.group(1)
     return ""
+
+
+def get_mtime(path: Path) -> int:
+    """Helper for mtime in microseconds so it can be stored in db losslessly."""
+    return int(os.path.getmtime(path) * 1_000_000)
+
+
+@functools.cache
+def format_timestamp(micros: int) -> str:
+    return datetime.datetime.fromtimestamp(micros / 1_000_000).strftime(
+        "%Y-%m-%d %H:%M:%S"
+    )

@@ -10,7 +10,7 @@ from types import TracebackType
 from typing import Any, Callable
 
 from tools import generate_pyside_files
-from usdb_syncer.utils import AppPaths
+from usdb_syncer import utils
 
 
 class Args:
@@ -42,14 +42,14 @@ def _with_profile(func: Callable[[], None]) -> None:
     profiler.enable()
     func()
     profiler.disable()
-    profiler.dump_stats(AppPaths.profile)
-    subprocess.call(["snakeviz", AppPaths.profile])
+    profiler.dump_stats(utils.AppPaths.profile)
+    subprocess.call(["snakeviz", utils.AppPaths.profile])
 
 
 def cli_entry(run_tools: bool = True) -> None:
     sys.excepthook = _excepthook
     args = _parse_args()
-    AppPaths.make_dirs()
+    utils.AppPaths.make_dirs()
     if run_tools:
         generate_pyside_files()
 

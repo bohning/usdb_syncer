@@ -1,47 +1,35 @@
 """Utilities for running a task in the background while showing a progress dialog."""
 
-from typing import Callable, TypeVar
+from typing import Callable, TypeVar, cast
 
-from PySide6.QtCore import QObject, Qt, QThreadPool, Signal
-from PySide6.QtWidgets import QProgressDialog
-
-
-class Signals(QObject):
-    """Custom signals."""
-
-    obj = Signal(object)
-
+from PySide6 import QtCore, QtWidgets
 
 T = TypeVar("T")
 
 
-def run_with_progress(
-    label: str,
-    task: Callable[[QProgressDialog], T],
-    on_done: Callable[[T], None] | None = None,
-) -> None:
+def run_with_progress(label: str, task: Callable[[QtWidgets.QProgressDialog], T]) -> T:
     """Runs a task on a background thread. A progress dialog is shown in the meantime
     and is exposed, so progress can be updated via `setLabel()`, `setMaximum()` and
-    `setValue()`. Also takes a callback to be run on the main thread afterwards.
+    `setValue()`.
+    If the user aborts the dialog, an exception is raised.
     """
-    dialog = QProgressDialog(
+    dialog = QtWidgets.QProgressDialog(
         labelText=label, cancelButtonText="Abort", maximum=0, minimum=0
     )
-    dialog.setWindowModality(Qt.WindowModality.ApplicationModal)
+    dialog.setCancelButton(None)  # type: ignore
+    dialog.setWindowModality(QtCore.Qt.WindowModality.ApplicationModal)
     # show immediately
     dialog.setMinimumDuration(0)
     dialog.setValue(1)
-    signal = Signals()
+    out: T | None = None
+    finished = False
 
     def wrapped_task() -> None:
+        nonlocal out, finished
         out = task(dialog)
-        if not dialog.wasCanceled():
-            signal.obj.emit(out)
+        finished = True
 
-    def wrapped_on_done(obj: T) -> None:
-        dialog.accept()
-        if on_done:
-            on_done(obj)
-
-    signal.obj.connect(wrapped_on_done)
-    QThreadPool.globalInstance().start(wrapped_task)
+    QtCore.QThreadPool.globalInstance().start(wrapped_task)
+    while not finished:
+        QtCore.QCoreApplication.processEvents()
+    return cast(T, out)
