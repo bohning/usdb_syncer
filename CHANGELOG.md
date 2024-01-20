@@ -1,3 +1,17 @@
+<!-- 0.5.0 -->
+
+# Changes
+
+## Features
+
+- Added an SQLite database.
+  - Vastly improved performance for loading, searching etc.
+  - Meta files are still being used, but are upgraded with a unique ID. Therefore,
+    initially launching the new release may take some time.
+  - SQLite's FTS5 is used for searching, which works by matching tokens (words). So
+    a search for "beat" matches "Beat It", but not, unlike before, the "The Beatles".
+- The download status column now shows the last sync time.
+
 <!-- 0.4.0 -->
 
 # Changes
