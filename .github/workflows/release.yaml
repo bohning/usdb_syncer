@@ -14,13 +14,24 @@ jobs:
         include:
           - os: ubuntu-latest
             TARGET: Linux
-            PYINSTALLER_ARGS: "--onefile --add-data 'data/song_list.json:data'"
+            PYINSTALLER_ARGS: >
+              --onefile
+              --add-data 'data/song_list.json:data'
+              --add-data 'src/usdb_syncer/db/sql:src/usdb_syncer/db/sql'
           - os: macos-latest
             TARGET: macOS
-            PYINSTALLER_ARGS: "--windowed --icon src/usdb_syncer/gui/resources/appicon_128x128.png --add-data 'data/song_list.json:data'"
+            PYINSTALLER_ARGS: >
+              --windowed
+              --icon src/usdb_syncer/gui/resources/appicon_128x128.png
+              --add-data 'data/song_list.json:data'
+              --add-data 'src/usdb_syncer/db/sql:src/usdb_syncer/db/sql'
           - os: windows-latest
             TARGET: Windows
-            PYINSTALLER_ARGS: "--onefile --icon src/usdb_syncer/gui/resources/appicon_128x128.png --add-data 'data/song_list.json;data'"
+            PYINSTALLER_ARGS: >
+              --onefile
+              --icon src/usdb_syncer/gui/resources/appicon_128x128.png
+              --add-data 'data/song_list.json;data'
+              --add-data 'src/usdb_syncer/db/sql;src/usdb_syncer/db/sql'
     steps:
       - uses: actions/checkout@v3
       - name: Install Linux specific dependencies for dbus-python
@@ -52,7 +63,11 @@ jobs:
           echo "PERSISTENT_PYTHONPATH=$(pwd)/src:$PYTHONPATH" >> $GITHUB_ENV
         if: matrix.TARGET == 'Linux' || matrix.TARGET == 'macOS'
       - name: Write version and commit hash
-        run: python -m src.tools.write_release_info -p src/usdb_syncer/constants.py -v ${{ github.ref_name }} -c ${{ github.workflow_sha }}
+        run: >
+          python -m src.tools.write_release_info
+          -p src/usdb_syncer/constants.py
+          -v ${{ github.ref_name }}
+          -c ${{ github.workflow_sha }}
         env:
           PYTHONPATH: ${{ env.PERSISTENT_PYTHONPATH }}
       - name: Generate GUI elements
@@ -60,7 +75,11 @@ jobs:
         env:
           PYTHONPATH: ${{ env.PERSISTENT_PYTHONPATH }}
       - name: Scrape USDB song list to ship with the bundle
-        run: python -m src.tools.generate_song_list_json -t 'data/song_list.json' -u '${{ secrets.USDB_USER }}' -p '${{ secrets.USDB_PASSWORD }}'
+        run: >
+          python -m src.tools.generate_song_list_json
+          -t 'data/song_list.json'
+          -u '${{ secrets.USDB_USER }}'
+          -p '${{ secrets.USDB_PASSWORD }}'
         env:
           PYTHONPATH: ${{ env.PERSISTENT_PYTHONPATH }}
       - name: add dependencies for xcb support
@@ -68,7 +87,11 @@ jobs:
         run: |
           sudo apt install libxcb-cursor0
       - name: Build with pyinstaller for ${{matrix.os}}
-        run: pyinstaller -n 'USDB_Syncer-${{github.ref_name}}-${{matrix.TARGET}}' ${{matrix.PYINSTALLER_ARGS}} src/usdb_syncer/main.py
+        run: >
+          pyinstaller
+          -n 'USDB_Syncer-${{github.ref_name}}-${{matrix.TARGET}}'
+          ${{matrix.PYINSTALLER_ARGS}}
+          src/usdb_syncer/main.py
       - name: Create DMG
         if: matrix.TARGET == 'macOS'
         run: |
@@ -106,8 +129,10 @@ jobs:
       - uses: actions/download-artifact@v3
       - name: Extract Release Notes
         id: extract_notes
-        run: |
-          awk 'BEGIN { RS="<!-- [0-9]+\\.[0-9]+\\.[0-9]+ -->\\s*"; ORS=""; } NR==2 { print $0; exit; }' artifacts/CHANGELOG.md >CHANGELOG.md
+        run: >
+          awk 'BEGIN { RS="<!-- [0-9]+\\.[0-9]+\\.[0-9]+ -->\\s*"; ORS=""; }
+          NR==2 { print $0; exit; }'
+          artifacts/CHANGELOG.md >CHANGELOG.md
         shell: bash
       - uses: ncipollo/release-action@v1
         with:
