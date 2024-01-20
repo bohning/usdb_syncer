@@ -155,12 +155,10 @@ class SyncMeta:
         return (SyncMeta.from_db_row(r) for r in db.get_in_folder(folder))
 
     @classmethod
-    def reset_active(cls, folder: Path, commit: bool = False) -> None:
+    def reset_active(cls, folder: Path) -> None:
         db.reset_active_sync_metas(folder)
-        if commit:
-            db.commit()
 
-    def upsert(self, commit: bool = False) -> None:
+    def upsert(self) -> None:
         db.upsert_sync_meta(self.db_params())
         db.update_active_sync_metas(settings.get_song_dir(), self.song_id)
         files = self.all_resource_files()
@@ -170,11 +168,9 @@ class SyncMeta:
         db.delete_resource_files(
             (self.sync_meta_id, kind) for file, kind in files if not file
         )
-        if commit:
-            db.commit()
 
     @classmethod
-    def upsert_many(cls, metas: list[SyncMeta], commit: bool = False) -> None:
+    def upsert_many(cls, metas: list[SyncMeta]) -> None:
         db.upsert_sync_metas(meta.db_params() for meta in metas)
         db.reset_active_sync_metas(settings.get_song_dir())
         db.upsert_resource_files(
@@ -189,19 +185,13 @@ class SyncMeta:
             for file, kind in meta.all_resource_files()
             if not file
         )
-        if commit:
-            db.commit()
 
-    def delete(self, commit: bool = False) -> None:
+    def delete(self) -> None:
         db.delete_sync_meta(self.sync_meta_id)
-        if commit:
-            db.commit()
 
     @classmethod
-    def delete_many(cls, ids: tuple[SyncMetaId, ...], commit: bool = False) -> None:
+    def delete_many(cls, ids: tuple[SyncMetaId, ...]) -> None:
         db.delete_sync_metas(ids)
-        if commit:
-            db.commit()
 
     def all_resource_files(
         self,

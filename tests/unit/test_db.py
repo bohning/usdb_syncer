@@ -1,3 +1,5 @@
+"""Database tests."""
+
 from pathlib import Path
 
 import attrs

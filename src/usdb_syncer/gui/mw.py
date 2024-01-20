@@ -160,11 +160,11 @@ class MainWindow(Ui_MainWindow, QMainWindow):
             _logger.info(f"Selected {len(songs)} songs.")
 
     def _refetch_song_list(self) -> None:
-        run_with_progress(
-            "Fetching song list ...",
-            lambda _: song_routines.load_available_songs(force_reload=True),
-        )
-        db.commit()
+        with db.transaction():
+            run_with_progress(
+                "Fetching song list ...",
+                lambda _: song_routines.load_available_songs(force_reload=True),
+            )
         self.table.reset()
 
     def _select_song_dir(self) -> None:
@@ -172,13 +172,14 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         if not song_dir:
             return
         path = Path(song_dir).resolve(strict=True)
-        run_with_progress(
-            "Reading meta files ...",
-            lambda _: song_routines.synchronize_sync_meta_folder(path),
-        )
+        with db.transaction():
+            run_with_progress(
+                "Reading meta files ...",
+                lambda _: song_routines.synchronize_sync_meta_folder(path),
+            )
+            SyncMeta.reset_active(path)
         self.lineEdit_song_dir.setText(str(path))
         settings.set_song_dir(path)
-        SyncMeta.reset_active(path, commit=True)
         UsdbSong.clear_cache()
         events.SongDirChanged(path).post()
 
@@ -289,12 +290,12 @@ def _load_main_window(mw: MainWindow) -> None:
     splash.show()
     QApplication.processEvents()
     splash.showMessage("Loading song database ...", color=Qt.GlobalColor.gray)
-    db.connect(AppPaths.db, trace=bool(os.environ.get("TRACESQL")))
     folder = settings.get_song_dir()
-    song_routines.synchronize_sync_meta_folder(folder)
-    SyncMeta.reset_active(folder, commit=True)
-    song_routines.load_available_songs(force_reload=False)
-    db.commit()
+    db.connect(AppPaths.db, trace=bool(os.environ.get("TRACESQL")))
+    with db.transaction():
+        song_routines.synchronize_sync_meta_folder(folder)
+        SyncMeta.reset_active(folder)
+        song_routines.load_available_songs(force_reload=False)
     mw.tree.populate()
     mw.table.search_songs()
     splash.showMessage("Song database successfully loaded.", color=Qt.GlobalColor.gray)

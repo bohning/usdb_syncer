@@ -10,7 +10,7 @@ from types import TracebackType
 from typing import Any, Callable
 
 from tools import generate_pyside_files
-from usdb_syncer import db, utils
+from usdb_syncer import utils
 
 
 class Args:
@@ -22,10 +22,6 @@ class Args:
 def _excepthook(
     error_type: type[BaseException], error: BaseException, tb_type: TracebackType | None
 ) -> Any:
-    try:
-        db.rollback()
-    except Exception:  # pylint: disable=broad-exception-caught
-        pass
     text = "    ".join(traceback.format_exception(error_type, error, tb_type)).strip()
     logging.error(f"Uncaught exception:\n    {text}")
 

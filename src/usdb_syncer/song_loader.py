@@ -17,7 +17,7 @@ from mutagen.flac import Picture
 from PIL import Image
 from PySide6.QtCore import QRunnable, QThreadPool
 
-from usdb_syncer import SongId, errors, events, resource_dl, usdb_scraper
+from usdb_syncer import SongId, db, errors, events, resource_dl, usdb_scraper
 from usdb_syncer.constants import ISO_639_2B_LANGUAGE_CODES
 from usdb_syncer.download_options import Options, download_options
 from usdb_syncer.logger import Log, get_logger
@@ -25,8 +25,6 @@ from usdb_syncer.resource_dl import ImageKind, download_and_process_image
 from usdb_syncer.song_txt import Headers, SongTxt
 from usdb_syncer.sync_meta import ResourceFile, SyncMeta
 from usdb_syncer.usdb_scraper import SongDetails
-
-# from usdb_syncer.db.models import LocalSong, ResourceFile, UsdbSong
 from usdb_syncer.usdb_song import DownloadStatus, UsdbSong
 from usdb_syncer.utils import (
     is_name_maybe_with_suffix,
@@ -183,7 +181,8 @@ class SongLoader(QRunnable):
             self.song.status = DownloadStatus.FAILED
         except errors.UsdbNotFoundError:
             self.logger.error("Song has been deleted from USDB.")
-            self.song.delete(commit=True)
+            with db.transaction():
+                self.song.delete()
             change_event = events.SongDeleted(self.song_id)
         except Exception:  # pylint: disable=broad-except
             self.logger.debug(traceback.format_exc())
@@ -194,7 +193,8 @@ class SongLoader(QRunnable):
             self.song.status = DownloadStatus.FAILED
         else:
             updated_song.status = DownloadStatus.NONE
-            updated_song.upsert(commit=True)
+            with db.transaction():
+                updated_song.upsert()
             self.logger.info("All done!")
         change_event.post()
         events.DownloadFinished(self.song_id).post()

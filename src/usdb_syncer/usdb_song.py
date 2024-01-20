@@ -108,33 +108,25 @@ class UsdbSong:
             return song
         return None
 
-    def delete(self, commit: bool = False) -> None:
+    def delete(self) -> None:
         db.delete_usdb_song(self.song_id)
-        if commit:
-            db.commit()
         _UsdbSongCache.remove(self.song_id)
 
     @classmethod
-    def delete_all(cls, commit: bool = False) -> None:
+    def delete_all(cls) -> None:
         db.delete_all_usdb_songs()
-        if commit:
-            db.commit()
         _UsdbSongCache.clear()
 
-    def upsert(self, commit: bool = False) -> None:
+    def upsert(self) -> None:
         db.upsert_usdb_song(self.db_params())
         if self.sync_meta:
-            self.sync_meta.upsert(commit=False)
-        if commit:
-            db.commit()
+            self.sync_meta.upsert()
         _UsdbSongCache.remove(self.song_id)
 
     @classmethod
-    def upsert_many(cls, songs: list[UsdbSong], commit: bool = False) -> None:
+    def upsert_many(cls, songs: list[UsdbSong]) -> None:
         db.upsert_usdb_songs(song.db_params() for song in songs)
         SyncMeta.upsert_many([song.sync_meta for song in songs if song.sync_meta])
-        if commit:
-            db.commit()
         for song in songs:
             _UsdbSongCache.remove(song.song_id)
 

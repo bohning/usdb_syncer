@@ -146,7 +146,8 @@ class SongTable:
                 continue
             song.sync_meta.pinned = pin
             song.sync_meta.synchronize_to_file()
-            song.sync_meta.upsert(commit=True)
+            with db.transaction():
+                song.sync_meta.upsert()
             events.SongChanged(song.song_id)
 
     ### selection model

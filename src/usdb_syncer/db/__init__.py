@@ -1,10 +1,12 @@
 """Database utilities."""
 
+import contextlib
 import enum
 import sqlite3
+import threading
 import time
 from pathlib import Path
-from typing import Iterable, Iterator
+from typing import Generator, Iterable, Iterator
 
 import attrs
 
@@ -12,6 +14,7 @@ from usdb_syncer import SongId, SyncMetaId, errors, logger
 from usdb_syncer.utils import AppPaths
 
 SCHEMA_VERSION = 1
+
 
 _logger = logger.get_logger(__file__)
 
@@ -29,14 +32,18 @@ class _SqlCache:
 class _DbState:
     """Singleton for managing the global database connection."""
 
+    lock = threading.Lock()
     _connection: sqlite3.Connection | None = None
 
     @classmethod
     def connect(cls, db_path: Path | str, trace: bool = False) -> None:
-        cls._connection = sqlite3.connect(db_path, check_same_thread=False)
-        if trace:
-            cls._connection.set_trace_callback(_logger.debug)
-        _validate_schema(cls._connection)
+        with cls.lock:
+            cls._connection = sqlite3.connect(
+                db_path, check_same_thread=False, isolation_level=None
+            )
+            if trace:
+                cls._connection.set_trace_callback(_logger.debug)
+            _validate_schema(cls._connection)
 
     @classmethod
     def connection(cls) -> sqlite3.Connection:
@@ -51,6 +58,18 @@ class _DbState:
             _DbState._connection = None
 
 
+@contextlib.contextmanager
+def transaction() -> Generator[None, None, None]:
+    with _DbState.lock:
+        try:
+            _DbState.connection().execute("BEGIN")
+            yield None
+        except Exception:  # pylint: disable=broad-except
+            _DbState.connection().rollback()
+            raise
+        _DbState.connection().commit()
+
+
 def _validate_schema(connection: sqlite3.Connection) -> None:
     meta_table = connection.execute(
         "SELECT 1 FROM sqlite_schema WHERE type = 'table' AND name = 'meta'"
@@ -61,7 +80,6 @@ def _validate_schema(connection: sqlite3.Connection) -> None:
             "INSERT INTO meta (id, version, ctime) VALUES (1, ?, ?)",
             (SCHEMA_VERSION, int(time.time() * 1_000_000)),
         )
-        connection.commit()
     else:
         row = connection.execute("SELECT version FROM meta").fetchone()
         if not row or row[0] != SCHEMA_VERSION:
@@ -74,14 +92,6 @@ def connect(db_path: Path | str, trace: bool = False) -> None:
 
 def close() -> None:
     _DbState.close()
-
-
-def commit() -> None:
-    _DbState.connection().commit()
-
-
-def rollback() -> None:
-    _DbState.connection().rollback()
 
 
 class SongOrder(enum.Enum):
