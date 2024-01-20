@@ -112,7 +112,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
 
     def _setup_song_dir(self) -> None:
         self.lineEdit_song_dir.setText(str(settings.get_song_dir()))
-        self.pushButton_select_song_dir.clicked.connect(self.select_song_dir)
+        self.pushButton_select_song_dir.clicked.connect(self._select_song_dir)
 
     def _setup_buttons(self) -> None:
         self.button_download.clicked.connect(self._download_selection)
@@ -152,25 +152,32 @@ class MainWindow(Ui_MainWindow, QMainWindow):
 
     def _select_local_songs(self) -> None:
         if directory := QFileDialog.getExistingDirectory(self, "Select Song Directory"):
-            songs = song_routines.find_local_songs(Path(directory))
+            songs = run_with_progress(
+                "Reading song txts ...",
+                lambda _: song_routines.find_local_songs(Path(directory)),
+            )
             self.table.set_selection_to_song_ids(songs)
             _logger.info(f"Selected {len(songs)} songs.")
 
     def _refetch_song_list(self) -> None:
         run_with_progress(
-            "Fetching song list...",
+            "Fetching song list ...",
             lambda _: song_routines.load_available_songs(force_reload=True),
-            lambda _: self.table.reset(),
         )
+        db.commit()
+        self.table.reset()
 
-    def select_song_dir(self) -> None:
+    def _select_song_dir(self) -> None:
         song_dir = QFileDialog.getExistingDirectory(self, "Select Song Directory")
         if not song_dir:
             return
         path = Path(song_dir).resolve(strict=True)
+        run_with_progress(
+            "Reading meta files ...",
+            lambda _: song_routines.synchronize_sync_meta_folder(path),
+        )
         self.lineEdit_song_dir.setText(str(path))
         settings.set_song_dir(path)
-        song_routines.synchronize_sync_meta_folder(path)
         SyncMeta.reset_active(path, commit=True)
         UsdbSong.clear_cache()
         events.SongDirChanged(path).post()
@@ -287,6 +294,7 @@ def _load_main_window(mw: MainWindow) -> None:
     song_routines.synchronize_sync_meta_folder(folder)
     SyncMeta.reset_active(folder, commit=True)
     song_routines.load_available_songs(force_reload=False)
+    db.commit()
     mw.tree.populate()
     mw.table.search_songs()
     splash.showMessage("Song database successfully loaded.", color=Qt.GlobalColor.gray)

@@ -23,7 +23,7 @@ def load_available_songs(force_reload: bool, session: Session | None = None) -> 
         max_skip_id = SongId(0)
         UsdbSong.delete_all()
     elif (max_skip_id := db.max_usdb_song_id()) == 0 and (songs := load_cached_songs()):
-        UsdbSong.upsert_many(songs, commit=True)
+        UsdbSong.upsert_many(songs)
         max_skip_id = db.max_usdb_song_id()
     try:
         songs = get_usdb_available_songs(max_skip_id, session=session)
@@ -32,9 +32,6 @@ def load_available_songs(force_reload: bool, session: Session | None = None) -> 
     else:
         if songs:
             UsdbSong.upsert_many(songs)
-        db.commit()
-    finally:
-        db.rollback()
 
 
 def load_cached_songs() -> list[UsdbSong] | None:
@@ -73,7 +70,7 @@ def synchronize_sync_meta_folder(folder: Path) -> None:
             else:
                 _logger.info(f"New meta file found on disk: '{path}'.")
     SyncMeta.delete_many(tuple(db_metas.keys()))
-    SyncMeta.upsert_many(to_upsert, commit=True)
+    SyncMeta.upsert_many(to_upsert)
 
 
 def find_local_songs(directory: Path) -> set[SongId]:
