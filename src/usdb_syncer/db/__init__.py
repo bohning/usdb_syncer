@@ -318,6 +318,14 @@ def get_in_folder(folder: Path) -> list[tuple]:
 def reset_active_sync_metas(folder: Path) -> None:
     _DbState.connection().execute("DELETE FROM active_sync_meta")
     params = {"folder": folder.as_posix()}
+    _DbState.connection().execute(_SqlCache.get("insert_active_sync_metas.sql"), params)
+
+
+def update_active_sync_metas(folder: Path, song_id: SongId) -> None:
+    _DbState.connection().execute(
+        "DELETE FROM active_sync_meta WHERE song_id = ?", (song_id,)
+    )
+    params = {"folder": folder.as_posix(), "song_id": song_id}
     _DbState.connection().execute(_SqlCache.get("insert_active_sync_meta.sql"), params)
 
 

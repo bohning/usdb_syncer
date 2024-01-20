@@ -18,5 +18,4 @@ FROM
             sync_meta
         WHERE
             path GLOB :folder || '/*'
-            AND song_id = :song_id
     )

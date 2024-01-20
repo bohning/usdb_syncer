@@ -96,7 +96,9 @@ SET
     artist = new.artist,
     title = new.title,
     language = new.language,
-    edition = new.edition;
+    edition = new.edition
+WHERE
+    rowid = old.song_id;
 
 END;
 
