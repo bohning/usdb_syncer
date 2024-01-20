@@ -31,7 +31,7 @@ def test_persisting_usdb_song() -> None:
 
     db.connect(":memory:")
     song.upsert()
-    UsdbSong.get(song.song_id)
+    db.reset_active_sync_metas(Path("C:"))
     db_song = UsdbSong.get(song.song_id)
 
     assert db_song
