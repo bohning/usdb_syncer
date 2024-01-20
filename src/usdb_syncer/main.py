@@ -10,7 +10,7 @@ from types import TracebackType
 from typing import Any, Callable
 
 from tools import generate_pyside_files
-from usdb_syncer.utils import AppPaths
+from usdb_syncer import db, utils
 
 
 class Args:
@@ -22,6 +22,10 @@ class Args:
 def _excepthook(
     error_type: type[BaseException], error: BaseException, tb_type: TracebackType | None
 ) -> Any:
+    try:
+        db.rollback()
+    except Exception:  # pylint: disable=broad-exception-caught
+        pass
     text = "    ".join(traceback.format_exception(error_type, error, tb_type)).strip()
     logging.error(f"Uncaught exception:\n    {text}")
 
@@ -42,14 +46,14 @@ def _with_profile(func: Callable[[], None]) -> None:
     profiler.enable()
     func()
     profiler.disable()
-    profiler.dump_stats(AppPaths.profile)
-    subprocess.call(["snakeviz", AppPaths.profile])
+    profiler.dump_stats(utils.AppPaths.profile)
+    subprocess.call(["snakeviz", utils.AppPaths.profile])
 
 
 def cli_entry(run_tools: bool = True) -> None:
     sys.excepthook = _excepthook
     args = _parse_args()
-    AppPaths.make_dirs()
+    utils.AppPaths.make_dirs()
     if run_tools:
         generate_pyside_files()
 
