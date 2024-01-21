@@ -7,6 +7,8 @@ import binascii
 import random
 from pathlib import Path
 
+from usdb_syncer.constants import Usdb
+
 
 class SongId(int):
     """Bounded int representing an id on USDB.
@@ -31,6 +33,9 @@ class SongId(int):
             return cls.parse(value)
         except ValueError:
             return None
+
+    def usdb_url(self) -> str:
+        return f"{Usdb.BASE_URL}?link=gettxt&id={self:d}"
 
 
 class SyncMetaId(int):

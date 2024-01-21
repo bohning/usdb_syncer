@@ -4,12 +4,11 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import Any, Iterator
+from typing import Any, Iterator, assert_never
 
 import attrs
 
 from usdb_syncer import SongId, SyncMetaId, db, settings, utils
-from usdb_syncer.constants import Usdb
 from usdb_syncer.logger import get_logger
 from usdb_syncer.meta_tags import MetaTags
 
@@ -54,9 +53,6 @@ class ResourceFile:
         """True if this file exists in the given folder and is in sync."""
         path = folder.joinpath(self.fname)
         return path.exists() and utils.get_mtime(path) == self.mtime
-
-    def bump_mtime(self, folder: Path) -> None:
-        self.mtime = utils.get_mtime(folder.joinpath(self.fname))
 
     def db_params(
         self, sync_meta_id: SyncMetaId, kind: db.ResourceFileKind
@@ -220,41 +216,42 @@ class SyncMeta:
             json.dump(self, file, cls=SyncMetaEncoder)
         self.mtime = utils.get_mtime(self.path)
 
-    def set_txt_meta(self, path: Path) -> None:
-        self.txt = ResourceFile.new(
-            path, f"{Usdb.BASE_URL}?link=gettxt&id={self.song_id}"
-        )
+    def set_resource_meta(
+        self, path: Path, resource: str, kind: db.ResourceFileKind
+    ) -> None:
+        meta = ResourceFile.new(path, resource)
+        match kind:
+            case db.ResourceFileKind.TXT:
+                self.txt = meta
+            case db.ResourceFileKind.AUDIO:
+                self.audio = meta
+            case db.ResourceFileKind.VIDEO:
+                self.video = meta
+            case db.ResourceFileKind.COVER:
+                self.cover = meta
+            case db.ResourceFileKind.BACKGROUND:
+                self.background = meta
+            case unreachable:
+                assert_never(unreachable)
 
-    def set_audio_meta(self, path: Path, resource: str) -> None:
-        self.audio = ResourceFile.new(path, resource)
-
-    def set_video_meta(self, path: Path, resource: str) -> None:
-        self.video = ResourceFile.new(path, resource)
-
-    def set_cover_meta(self, path: Path, resource: str) -> None:
-        self.cover = ResourceFile.new(path, resource)
-
-    def set_background_meta(self, path: Path, resource: str) -> None:
-        self.background = ResourceFile.new(path, resource)
-
-    def synced_audio(self, folder: Path) -> ResourceFile | None:
-        if self.audio and self.audio.is_in_sync(folder):
-            return self.audio
-        return None
-
-    def synced_video(self, folder: Path) -> ResourceFile | None:
-        if self.video and self.video.is_in_sync(folder):
-            return self.video
-        return None
-
-    def synced_cover(self, folder: Path) -> ResourceFile | None:
-        if self.cover and self.cover.is_in_sync(folder):
-            return self.cover
-        return None
-
-    def synced_background(self, folder: Path) -> ResourceFile | None:
-        if self.background and self.background.is_in_sync(folder):
-            return self.background
+    def synced_resource(
+        self, folder: Path, kind: db.ResourceFileKind
+    ) -> ResourceFile | None:
+        match kind:
+            case db.ResourceFileKind.TXT:
+                meta = self.txt
+            case db.ResourceFileKind.AUDIO:
+                meta = self.audio
+            case db.ResourceFileKind.VIDEO:
+                meta = self.video
+            case db.ResourceFileKind.COVER:
+                meta = self.cover
+            case db.ResourceFileKind.BACKGROUND:
+                meta = self.background
+            case unreachable:
+                assert_never(unreachable)
+        if meta and meta.is_in_sync(folder):
+            return meta
         return None
 
     def resource_files(self) -> Iterator[ResourceFile]:
