@@ -61,3 +61,6 @@ class SyncMetaId(int):
     @classmethod
     def from_path(cls, path: Path) -> SyncMetaId | None:
         return cls.decode(path.stem)
+
+    def to_filename(self) -> str:
+        return f"{self.encode()}.usdb"

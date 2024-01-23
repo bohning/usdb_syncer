@@ -25,7 +25,7 @@ def test_persisting_usdb_song() -> None:
     song.sync_meta = SyncMeta(
         sync_meta_id=sync_meta_id,
         song_id=song.song_id,
-        path=Path(f"C:/{sync_meta_id.encode()}.usdb"),
+        path=Path(f"C:/{sync_meta_id.to_filename()}"),
         mtime=0,
         meta_tags=MetaTags(),
     )

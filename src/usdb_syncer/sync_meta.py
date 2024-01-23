@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import Any, Iterator, assert_never
+from typing import Any, Iterator
 
 import attrs
 
@@ -88,7 +88,7 @@ class SyncMeta:
         return cls(
             sync_meta_id=sync_meta_id,
             song_id=song_id,
-            path=folder.joinpath(f"{sync_meta_id.encode()}.usdb"),
+            path=folder.joinpath(sync_meta_id.to_filename()),
             mtime=0,
             meta_tags=meta_tags,
         )
@@ -123,7 +123,7 @@ class SyncMeta:
         except (json.decoder.JSONDecodeError, TypeError, KeyError, ValueError):
             return None
         if new_id:
-            meta.path = path.with_name(f"{sync_meta_id.encode()}.usdb")
+            meta.path = path.with_name(sync_meta_id.to_filename())
             path.rename(meta.path)
             _logger.info(f"Assigned new ID to meta file: '{path}' > '{meta.path}'.")
         return meta
@@ -215,44 +215,6 @@ class SyncMeta:
         with self.path.open("w", encoding="utf8") as file:
             json.dump(self, file, cls=SyncMetaEncoder)
         self.mtime = utils.get_mtime(self.path)
-
-    def set_resource_meta(
-        self, path: Path, resource: str, kind: db.ResourceFileKind
-    ) -> None:
-        meta = ResourceFile.new(path, resource)
-        match kind:
-            case db.ResourceFileKind.TXT:
-                self.txt = meta
-            case db.ResourceFileKind.AUDIO:
-                self.audio = meta
-            case db.ResourceFileKind.VIDEO:
-                self.video = meta
-            case db.ResourceFileKind.COVER:
-                self.cover = meta
-            case db.ResourceFileKind.BACKGROUND:
-                self.background = meta
-            case unreachable:
-                assert_never(unreachable)
-
-    def synced_resource(
-        self, folder: Path, kind: db.ResourceFileKind
-    ) -> ResourceFile | None:
-        match kind:
-            case db.ResourceFileKind.TXT:
-                meta = self.txt
-            case db.ResourceFileKind.AUDIO:
-                meta = self.audio
-            case db.ResourceFileKind.VIDEO:
-                meta = self.video
-            case db.ResourceFileKind.COVER:
-                meta = self.cover
-            case db.ResourceFileKind.BACKGROUND:
-                meta = self.background
-            case unreachable:
-                assert_never(unreachable)
-        if meta and meta.is_in_sync(folder):
-            return meta
-        return None
 
     def resource_files(self) -> Iterator[ResourceFile]:
         for meta in (self.txt, self.audio, self.video, self.cover, self.background):
