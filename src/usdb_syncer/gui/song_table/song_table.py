@@ -209,6 +209,7 @@ class SongTable:
             self._search_timer.start()
         else:
             self._model.set_songs(db.search_usdb_songs(self._search))
+            self._on_current_song_changed()
 
     def _on_tree_filter_changed(self, event: events.TreeFilterChanged) -> None:
         event.search.order = self._search.order
