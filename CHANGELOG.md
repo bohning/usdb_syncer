@@ -11,6 +11,7 @@
   - SQLite's FTS5 is used for searching, which works by matching tokens (words). So
     a search for "beat" matches "Beat It", but not, unlike before, the "The Beatles".
 - The download status column now shows the last sync time.
+- Support Ogg/Opus (.opus) audio format.
 
 <!-- 0.4.0 -->
 
