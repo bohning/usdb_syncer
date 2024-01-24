@@ -23,13 +23,13 @@ from usdb_syncer import (
     SongId,
     SyncMetaId,
     db,
+    download_options,
     errors,
     events,
     resource_dl,
     usdb_scraper,
 )
 from usdb_syncer.constants import ISO_639_2B_LANGUAGE_CODES
-from usdb_syncer.download_options import Options, download_options
 from usdb_syncer.logger import Log, get_logger
 from usdb_syncer.resource_dl import ImageKind, download_and_process_image
 from usdb_syncer.song_txt import Headers, SongTxt
@@ -44,8 +44,26 @@ from usdb_syncer.utils import (
 )
 
 
+class DownloadManager:
+    _jobs: dict[SongId, _SongLoader] = {}
+
+    @classmethod
+    def download(cls, songs: Iterable[UsdbSong]) -> None:
+        options = download_options.download_options()
+        threadpool = QThreadPool.globalInstance()
+        for song in songs:
+            cls._jobs[song.song_id] = job = _SongLoader(song, options)
+            threadpool.start(job)
+
+    @classmethod
+    def abort(cls, songs: Iterable[SongId]) -> None:
+        for song in songs:
+            if job := cls._jobs.get(song):
+                job.abort = True
+
+
 @attrs.define(kw_only=True)
-class Locations:
+class _Locations:
     """Paths for downloading a song."""
 
     folder: Path
@@ -55,7 +73,7 @@ class Locations:
     @classmethod
     def new(
         cls, song: UsdbSong, song_dir: Path, headers: Headers, tempdir: Path
-    ) -> Locations:
+    ) -> _Locations:
         filename_stem = sanitize_filename(headers.artist_title_str())
         if song.sync_meta:
             folder = song.sync_meta.path.parent
@@ -87,7 +105,7 @@ class Locations:
 
 
 @attrs.define
-class TempResourceFile:
+class _TempResourceFile:
     """Interim resource file in the temporary folder, or in the old folder if the
     resource is potentially kept.
     """
@@ -97,7 +115,7 @@ class TempResourceFile:
     resource: str | None = None
 
     @classmethod
-    def from_existing(cls, old: ResourceFile, folder: Path) -> TempResourceFile:
+    def from_existing(cls, old: ResourceFile, folder: Path) -> _TempResourceFile:
         return cls(resource=old.resource, old_path=folder.joinpath(old.fname))
 
     def path_and_resource(self) -> tuple[Path, str] | None:
@@ -115,31 +133,31 @@ class TempResourceFile:
 
 
 @attrs.define
-class TempResourceFiles:
+class _TempResourceFiles:
     """Collection of all temporary resource files."""
 
-    txt: TempResourceFile = attrs.field(factory=TempResourceFile)
-    audio: TempResourceFile = attrs.field(factory=TempResourceFile)
-    video: TempResourceFile = attrs.field(factory=TempResourceFile)
-    cover: TempResourceFile = attrs.field(factory=TempResourceFile)
-    background: TempResourceFile = attrs.field(factory=TempResourceFile)
+    txt: _TempResourceFile = attrs.field(factory=_TempResourceFile)
+    audio: _TempResourceFile = attrs.field(factory=_TempResourceFile)
+    video: _TempResourceFile = attrs.field(factory=_TempResourceFile)
+    cover: _TempResourceFile = attrs.field(factory=_TempResourceFile)
+    background: _TempResourceFile = attrs.field(factory=_TempResourceFile)
 
-    def __iter__(self) -> Iterator[TempResourceFile]:
+    def __iter__(self) -> Iterator[_TempResourceFile]:
         return iter((self.txt, self.audio, self.video, self.cover, self.background))
 
 
 @attrs.define
-class Context:
-    """Context for downloading media and creating a song folder."""
+class _Context:
+    """_Context for downloading media and creating a song folder."""
 
     # deep copy of the passed in song
     song: UsdbSong
     details: SongDetails
-    options: Options
+    options: download_options.Options
     txt: SongTxt
-    locations: Locations
+    locations: _Locations
     logger: Log
-    out: TempResourceFiles = attrs.field(factory=TempResourceFiles)
+    out: _TempResourceFiles = attrs.field(factory=_TempResourceFiles)
 
     def __attrs_post_init__(self) -> None:
         # reuse old resource files unless we acquire new ones later on
@@ -157,12 +175,16 @@ class Context:
 
     @classmethod
     def new(
-        cls, song: UsdbSong, options: Options, tempdir: Path, logger: Log
-    ) -> Context:
+        cls,
+        song: UsdbSong,
+        options: download_options.Options,
+        tempdir: Path,
+        logger: Log,
+    ) -> _Context:
         song = copy.deepcopy(song)
         details, txt = _get_usdb_data(song.song_id, logger)
         _update_song_with_usdb_data(song, details, txt)
-        paths = Locations.new(song, options.song_dir, txt.headers, tempdir)
+        paths = _Locations.new(song, options.song_dir, txt.headers, tempdir)
         if not song.sync_meta:
             song.sync_meta = SyncMeta.new(song.song_id, paths.folder, txt.meta_tags)
         return cls(song, details, options, txt, paths, logger)
@@ -221,10 +243,12 @@ def _update_song_with_usdb_data(
     song.views = details.views
 
 
-class SongLoader(QRunnable):
+class _SongLoader(QRunnable):
     """Runnable to create a complete song folder."""
 
-    def __init__(self, song: UsdbSong, options: Options) -> None:
+    abort = False
+
+    def __init__(self, song: UsdbSong, options: download_options.Options) -> None:
         super().__init__()
         self.song = song
         self.song_id = song.song_id
@@ -235,6 +259,9 @@ class SongLoader(QRunnable):
         change_event: events.SubscriptableEvent = events.SongChanged(self.song_id)
         try:
             updated_song = self._run_inner()
+        except errors.AbortError:
+            self.logger.info("Download aborted by user request.")
+            self.song.status = DownloadStatus.NONE
         except errors.UsdbLoginError:
             self.logger.error("Aborted; download requires login.")
             self.song.status = DownloadStatus.FAILED
@@ -259,17 +286,23 @@ class SongLoader(QRunnable):
         events.DownloadFinished(self.song_id).post()
 
     def _run_inner(self) -> UsdbSong:
+        self._check_abort_flag()
         self.song.status = DownloadStatus.DOWNLOADING
         events.SongChanged(self.song_id).post()
         with tempfile.TemporaryDirectory() as tempdir:
-            ctx = Context.new(self.song, self.options, Path(tempdir), self.logger)
+            ctx = _Context.new(self.song, self.options, Path(tempdir), self.logger)
+            for job in (
+                _maybe_download_audio,
+                _maybe_download_video,
+                _maybe_download_cover,
+                _maybe_download_background,
+                _maybe_write_audio_tags,
+            ):
+                self._check_abort_flag()
+                job(ctx)
 
-            _maybe_download_audio(ctx)
-            _maybe_download_video(ctx)
-            _maybe_download_cover(ctx)
-            _maybe_download_background(ctx)
-            _maybe_write_audio_tags(ctx)
-
+            # last chance to abort before irreversible changes
+            self._check_abort_flag()
             _cleanup_exisiting_resource(ctx)
             _ensure_correct_folder_name(ctx.locations)
             # only here so filenames in header are up-to-date
@@ -277,19 +310,14 @@ class SongLoader(QRunnable):
             _persist_tempfiles(ctx)
 
         _write_sync_meta(ctx)
-
         return ctx.song
 
-
-def download_songs(songs: Iterable[UsdbSong]) -> None:
-    options = download_options()
-    threadpool = QThreadPool.globalInstance()
-    for song in songs:
-        worker = SongLoader(song, options)
-        threadpool.start(worker)
+    def _check_abort_flag(self) -> None:
+        if self.abort:
+            raise errors.AbortError
 
 
-def _maybe_download_audio(ctx: Context) -> None:
+def _maybe_download_audio(ctx: _Context) -> None:
     if not (options := ctx.options.audio_options):
         return
     for resource in islice(ctx.all_audio_resources(), 10):
@@ -312,7 +340,7 @@ def _maybe_download_audio(ctx: Context) -> None:
     ctx.logger.error(f"Failed to download audio (song duration > {song_len})!{keep}")
 
 
-def _maybe_download_video(ctx: Context) -> None:
+def _maybe_download_video(ctx: _Context) -> None:
     if not (options := ctx.options.video_options) or ctx.txt.meta_tags.is_audio_only():
         return
     for resource in islice(ctx.all_video_resources(), 10):
@@ -334,7 +362,7 @@ def _maybe_download_video(ctx: Context) -> None:
     ctx.logger.error(f"Failed to download video!{keep}")
 
 
-def _maybe_download_cover(ctx: Context) -> None:
+def _maybe_download_cover(ctx: _Context) -> None:
     if not ctx.options.cover:
         return
     if not (url := ctx.cover_url()):
@@ -359,7 +387,7 @@ def _maybe_download_cover(ctx: Context) -> None:
         ctx.logger.error(f"Failed to download cover!{keep}")
 
 
-def _maybe_download_background(ctx: Context) -> None:
+def _maybe_download_background(ctx: _Context) -> None:
     if not (options := ctx.options.background_options):
         return
     if not options.download_background(bool(ctx.txt.headers.video)):
@@ -386,7 +414,7 @@ def _maybe_download_background(ctx: Context) -> None:
         ctx.logger.error(f"Failed to download background!{keep}")
 
 
-def _maybe_write_txt(ctx: Context) -> None:
+def _maybe_write_txt(ctx: _Context) -> None:
     if not (options := ctx.options.txt_options):
         return
     _write_headers(ctx)
@@ -396,7 +424,7 @@ def _maybe_write_txt(ctx: Context) -> None:
     ctx.logger.info("Success! Created song txt.")
 
 
-def _write_headers(ctx: Context) -> None:
+def _write_headers(ctx: _Context) -> None:
     if path := ctx.out.audio.path():
         ctx.txt.headers.mp3 = path.name
     if path := ctx.out.video.path():
@@ -407,7 +435,7 @@ def _write_headers(ctx: Context) -> None:
         ctx.txt.headers.background = path.name
 
 
-def _maybe_write_audio_tags(ctx: Context) -> None:
+def _maybe_write_audio_tags(ctx: _Context) -> None:
     if not (options := ctx.options.audio_options):
         return
     if not (path_resource := ctx.out.audio.path_and_resource()):
@@ -429,7 +457,7 @@ def _maybe_write_audio_tags(ctx: Context) -> None:
 
 
 def _write_m4a_tags(
-    path: Path, resource: str, ctx: Context, embed_artwork: bool
+    path: Path, resource: str, ctx: _Context, embed_artwork: bool
 ) -> None:
     tags = mutagen.mp4.MP4Tags()
 
@@ -455,7 +483,7 @@ def _write_m4a_tags(
 
 
 def _write_mp3_tags(
-    path: Path, resource: str, ctx: Context, embed_artwork: bool
+    path: Path, resource: str, ctx: _Context, embed_artwork: bool
 ) -> None:
     tags = id3.ID3()
 
@@ -498,7 +526,7 @@ def _write_mp3_tags(
     tags.save(path)
 
 
-def _write_ogg_tags(path: Path, ctx: Context, embed_artwork: bool) -> None:
+def _write_ogg_tags(path: Path, ctx: _Context, embed_artwork: bool) -> None:
     audio = mutagen.oggvorbis.OggVorbis(path)
 
     # Set basic tags
@@ -532,7 +560,7 @@ def _write_ogg_tags(path: Path, ctx: Context, embed_artwork: bool) -> None:
     audio.save()
 
 
-def _cleanup_exisiting_resource(ctx: Context) -> None:
+def _cleanup_exisiting_resource(ctx: _Context) -> None:
     """Delete resources that are either out of sync or will be replaced with a new one,
     and ensure kept ones are correctly named.
     """
@@ -558,7 +586,7 @@ def _cleanup_exisiting_resource(ctx: Context) -> None:
             out.old_path = path
 
 
-def _ensure_correct_folder_name(locations: Locations) -> None:
+def _ensure_correct_folder_name(locations: _Locations) -> None:
     """Ensure the song folder exists and has the correct name."""
     locations.folder.mkdir(parents=True, exist_ok=True)
     if is_name_maybe_with_suffix(locations.folder.name, locations.filename_stem):
@@ -568,7 +596,7 @@ def _ensure_correct_folder_name(locations: Locations) -> None:
     locations.folder = new
 
 
-def _persist_tempfiles(ctx: Context) -> None:
+def _persist_tempfiles(ctx: _Context) -> None:
     for temp_file in ctx.out:
         if temp_file.new_path:
             target = ctx.locations.file_path(temp_file.new_path.name)
@@ -579,7 +607,7 @@ def _persist_tempfiles(ctx: Context) -> None:
             temp_file.new_path = target
 
 
-def _write_sync_meta(ctx: Context) -> None:
+def _write_sync_meta(ctx: _Context) -> None:
     old = ctx.song.sync_meta
     sync_meta_id = old.sync_meta_id if old else SyncMetaId.new()
     ctx.song.sync_meta = SyncMeta(

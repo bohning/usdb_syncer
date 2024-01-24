@@ -37,6 +37,9 @@ class DownloadStatus(enum.Enum):
     def can_be_downloaded(self) -> bool:
         return self in (DownloadStatus.NONE, DownloadStatus.FAILED)
 
+    def can_be_aborted(self) -> bool:
+        return self in (DownloadStatus.PENDING, DownloadStatus.DOWNLOADING)
+
 
 @attrs.define(kw_only=True)
 class UsdbSong:

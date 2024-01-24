@@ -1,49 +1,50 @@
 <RCC>
   <qresource prefix="icons">
-    <file>pin.png</file>
-    <file>minus-circle.png</file>
-    <file>document-import.png</file>
-    <file>document-export.png</file>
-    <file>broom.png</file>
-    <file>folder_note.png</file>
-    <file>clipboard-empty.png</file>
-    <file>tag-hash.png</file>
-    <file>clipboard--minus.png</file>
-    <file>clipboard--plus.png</file>
-    <file>drive-download.png</file>
-    <file>database.png</file>
-    <file>check_for_update.png</file>
-    <file>report.png</file>
-    <file>cog.png</file>
-    <file>log.png</file>
-    <file>bug.png</file>
-    <file>error.png</file>
-    <file>info.png</file>
-    <file>warning.png</file>
+    <file>artist.png</file>
+    <file>audio.png</file>
+    <file>background.png</file>
+    <file>bin.png</file>
     <file>brave.png</file>
+    <file>broom.png</file>
+    <file>bug.png</file>
+    <file>check_for_update.png</file>
     <file>chrome.png</file>
     <file>chromium.png</file>
-    <file>edge.png</file>
-    <file>firefox.png</file>
-    <file>opera.png</file>
-    <file>safari.png</file>
-    <file>vivaldi.png</file>
-    <file>audio.png</file>
-    <file>tick.png</file>
-    <file>background.png</file>
+    <file>clipboard--minus.png</file>
+    <file>clipboard--plus.png</file>
+    <file>clipboard-empty.png</file>
+    <file>cog.png</file>
     <file>cover.png</file>
-    <file>video.png</file>
-    <file>text.png</file>
-    <file>rating.png</file>
-    <file>faviconUSDB.ico</file>
-    <file>artist.png</file>
+    <file>database.png</file>
+    <file>document-export.png</file>
+    <file>document-import.png</file>
+    <file>drive-download.png</file>
+    <file>edge.png</file>
     <file>edition.png</file>
+    <file>error.png</file>
+    <file>faviconUSDB.ico</file>
+    <file>firefox.png</file>
+    <file>folder_note.png</file>
     <file>golden_notes.png</file>
     <file>id.png</file>
+    <file>info.png</file>
     <file>language.png</file>
-    <file>title.png</file>
-    <file>views.png</file>
+    <file>log.png</file>
+    <file>minus-circle.png</file>
+    <file>opera.png</file>
+    <file>pin.png</file>
+    <file>rating.png</file>
+    <file>report.png</file>
+    <file>safari.png</file>
     <file>status.png</file>
+    <file>tag-hash.png</file>
+    <file>text.png</file>
+    <file>tick.png</file>
+    <file>title.png</file>
+    <file>video.png</file>
+    <file>views.png</file>
+    <file>vivaldi.png</file>
+    <file>warning.png</file>
   </qresource>
   <qresource prefix="app">
     <file>appicon_128x128.png</file>

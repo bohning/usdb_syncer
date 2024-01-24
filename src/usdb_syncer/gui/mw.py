@@ -87,6 +87,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
     def _setup_toolbar(self) -> None:
         for action, func in (
             (self.action_songs_download, self._download_selection),
+            (self.action_songs_abort, self.table.abort_selected_downloads),
             (self.action_find_local_songs, self._select_local_songs),
             (self.action_refetch_song_list, self._refetch_song_list),
             (self.action_usdb_login, lambda: UsdbLoginDialog(self).show()),
