@@ -11,6 +11,7 @@ from typing import Iterable, Iterator
 
 import attrs
 import mutagen.mp4
+import mutagen.ogg
 import mutagen.oggopus
 import mutagen.oggvorbis
 from mutagen import id3
@@ -440,9 +441,10 @@ def _write_mp3_tags(
     tags.save(audio_file)
 
 
-def _write_ogg_tags(
+def _write_ogg_tags(  # pylint: disable=too-many-locals
     audio_file: Path, audio_meta: ResourceFile, ctx: Context, embed_artwork: bool
 ) -> None:
+    audio: mutagen.ogg.OggFileType
     match audio_file.suffix:
         case ".ogg":
             audio = mutagen.oggvorbis.OggVorbis(audio_file)
