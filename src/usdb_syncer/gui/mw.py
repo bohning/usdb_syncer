@@ -1,25 +1,16 @@
 """usdb_syncer's GUI"""
 
 import datetime
-import logging
 import os
-import sys
 import webbrowser
 from pathlib import Path
 
-from PySide6.QtCore import QObject, Qt, Signal
-from PySide6.QtGui import QCloseEvent, QColor, QFont, QIcon, QPainter, QPixmap
-from PySide6.QtWidgets import (
-    QApplication,
-    QFileDialog,
-    QLabel,
-    QMainWindow,
-    QSplashScreen,
-)
+from PySide6 import QtGui
+from PySide6.QtWidgets import QFileDialog, QLabel, QMainWindow
 
 from usdb_syncer import db, events, settings, song_routines, usdb_id_file
-from usdb_syncer.constants import SHORT_COMMIT_HASH, VERSION, Usdb
-from usdb_syncer.gui import progress_bar
+from usdb_syncer.constants import Usdb
+from usdb_syncer.gui import gui_utils, progress_bar
 from usdb_syncer.gui.about_dialog import AboutDialog
 from usdb_syncer.gui.debug_console import DebugConsole
 from usdb_syncer.gui.ffmpeg_dialog import check_ffmpeg
@@ -30,7 +21,6 @@ from usdb_syncer.gui.search_tree.tree import FilterTree
 from usdb_syncer.gui.settings_dialog import SettingsDialog
 from usdb_syncer.gui.song_table.song_table import SongTable
 from usdb_syncer.gui.usdb_login_dialog import UsdbLoginDialog
-from usdb_syncer.gui.utils import scroll_to_bottom, set_shortcut
 from usdb_syncer.logger import get_logger
 from usdb_syncer.pdf import generate_song_pdf
 from usdb_syncer.sync_meta import SyncMeta
@@ -109,7 +99,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         check_ffmpeg(self, self.table.download_selection)
 
     def _setup_shortcuts(self) -> None:
-        set_shortcut("Ctrl+.", self, lambda: DebugConsole(self).show())
+        gui_utils.set_shortcut("Ctrl+.", self, lambda: DebugConsole(self).show())
 
     def _setup_song_dir(self) -> None:
         self.lineEdit_song_dir.setText(str(settings.get_song_dir()))
@@ -130,7 +120,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
             messages += self._errors
         messages.sort(key=lambda m: m[1])
         self.plainTextEdit.setPlainText("\n".join(m[0] for m in messages))
-        scroll_to_bottom(self.plainTextEdit)
+        gui_utils.scroll_to_bottom(self.plainTextEdit)
 
     def log_to_text_edit(self, message: str, level: int, created: float) -> None:
         match level:
@@ -242,7 +232,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         else:
             _logger.info("No current song.")
 
-    def closeEvent(self, event: QCloseEvent) -> None:
+    def closeEvent(self, event: QtGui.QCloseEvent) -> None:
         self.table.save_state()
         self._save_state()
         db.close()
@@ -257,102 +247,3 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         settings.set_geometry_main_window(self.saveGeometry())
         settings.set_state_main_window(self.saveState())
         settings.set_geometry_log_dock(self.dock_log.saveGeometry())
-
-
-class LogSignal(QObject):
-    """Signal used by the logger."""
-
-    message_level_time = Signal(str, int, float)
-
-
-class TextEditLogger(logging.Handler):
-    """Handler that logs to the GUI in a thread-safe manner."""
-
-    def __init__(self, mw: MainWindow) -> None:
-        super().__init__()
-        self.signals = LogSignal()
-        self.signals.message_level_time.connect(mw.log_to_text_edit)
-
-    def emit(self, record: logging.LogRecord) -> None:
-        message = self.format(record)
-        self.signals.message_level_time.emit(message, record.levelno, record.created)
-
-
-def main() -> None:
-    app = _init_app()
-    mw = MainWindow()
-    _configure_logging(mw)
-    _load_main_window(mw)
-    app.exec()
-
-
-def _load_main_window(mw: MainWindow) -> None:
-    splash = generate_splashscreen()
-    splash.show()
-    QApplication.processEvents()
-    splash.showMessage("Loading song database ...", color=Qt.GlobalColor.gray)
-    folder = settings.get_song_dir()
-    db.connect(AppPaths.db, trace=bool(os.environ.get("TRACESQL")))
-    with db.transaction():
-        song_routines.synchronize_sync_meta_folder(folder)
-        SyncMeta.reset_active(folder)
-        song_routines.load_available_songs(force_reload=False)
-    mw.tree.populate()
-    mw.table.search_songs()
-    splash.showMessage("Song database successfully loaded.", color=Qt.GlobalColor.gray)
-    mw.show()
-    logging.info("Application successfully loaded.")
-    splash.finish(mw)
-
-
-def generate_splashscreen() -> QSplashScreen:
-    canvas = QPixmap(":/splash/splash.png")
-    painter = QPainter(canvas)
-    painter.setPen(QColor(0, 174, 239))  # light blue
-    font = QFont()
-    font.setFamily("Kozuka Gothic Pro")
-    font.setPointSize(24)
-    painter.setFont(font)
-    painter.drawText(
-        0,
-        0,
-        428,
-        140,
-        Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignBottom,
-        VERSION,
-    )
-    font.setPointSize(12)
-    painter.setFont(font)
-    painter.drawText(
-        0,
-        0,
-        428,
-        155,
-        Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignBottom,
-        SHORT_COMMIT_HASH,
-    )
-    painter.end()
-    return QSplashScreen(canvas)
-
-
-def _init_app() -> QApplication:
-    app = QApplication(sys.argv)
-    app.setOrganizationName("bohning")
-    app.setApplicationName("usdb_syncer")
-    app.setWindowIcon(QIcon(":/app/appicon_128x128.png"))
-    return app
-
-
-def _configure_logging(mw: MainWindow) -> None:
-    logging.basicConfig(
-        level=logging.DEBUG,
-        style="{",
-        format="{asctime} [{levelname}] {message}",
-        datefmt="%Y-%m-%d %H:%M:%S",
-        encoding="utf-8",
-        handlers=(
-            logging.FileHandler(AppPaths.log),
-            logging.StreamHandler(sys.stdout),
-            TextEditLogger(mw),
-        ),
-    )

@@ -18,7 +18,7 @@ from PySide6.QtCore import (
 from PySide6.QtGui import QCursor
 from PySide6.QtWidgets import QHeaderView, QMenu
 
-from usdb_syncer import SongId, db, events, settings, song_loader
+from usdb_syncer import SongId, db, events, settings
 from usdb_syncer.gui.song_table.column import Column
 from usdb_syncer.gui.song_table.table_model import TableModel
 from usdb_syncer.logger import get_logger

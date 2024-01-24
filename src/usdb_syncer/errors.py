@@ -1,5 +1,6 @@
 """Errors thrown by the USDB Syncer."""
 
+
 class UsdbSyncerError(Exception):
     """Common base class for our own errors."""
 

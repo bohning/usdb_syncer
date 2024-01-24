@@ -45,6 +45,8 @@ from usdb_syncer.utils import (
 
 
 class DownloadManager:
+    """Manager for concurrent song downloads."""
+
     _jobs: dict[SongId, _SongLoader] = {}
 
     @classmethod

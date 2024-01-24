@@ -8,17 +8,15 @@
       "name": "GUI",
       "type": "python",
       "request": "launch",
-      "program": "${workspaceFolder}/src/usdb_syncer/main.py",
+      "program": "${workspaceFolder}/src/usdb_syncer/gui/__init__.py",
       "console": "internalConsole",
       "justMyCode": true,
       "env": {
         // print every executed SQL statement
-        // "TRACESQL": "1"
-      },
-      "args": [
+        // "TRACESQL": "1",
         // profile runtime performance
-        // "--profile"
-      ]
+        // "PROFILE": "1",
+      }
     }
   ]
 }

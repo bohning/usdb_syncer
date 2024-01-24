@@ -21,11 +21,16 @@ CACHE_LIFETIME = 60 * 60
 _app_dirs = AppDirs("usdb_syncer", "bohning")
 
 
-def _root() -> Path:
-    """Returns source root folder or temprory bundle folder if running as such.
+def is_bundle() -> bool:
+    """True if the app is running from a bundle.
 
     https://pyinstaller.org/en/stable/runtime-information.html#run-time-information
     """
+    return bool(getattr(sys, "frozen", False) and getattr(sys, "_MEIPASS", False))
+
+
+def _root() -> Path:
+    """Returns source root folder or temprory bundle folder if running as such."""
     if getattr(sys, "frozen", False) and (bundle := getattr(sys, "_MEIPASS", None)):
         return Path(bundle)
     return Path(__file__).parent.parent.parent.absolute()
