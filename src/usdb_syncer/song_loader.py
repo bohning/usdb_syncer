@@ -11,6 +11,7 @@ from typing import Iterable, Iterator
 
 import attrs
 import mutagen.mp4
+import mutagen.oggopus
 import mutagen.oggvorbis
 from mutagen import id3
 from mutagen.flac import Picture
@@ -346,16 +347,16 @@ def _maybe_write_audio_tags(ctx: Context) -> None:
     if not (options := ctx.options.audio_options) or not (meta := ctx.sync_meta.audio):
         return
 
-    audiofile = ctx.locations.file_path(meta.fname)
+    audio_file = ctx.locations.file_path(meta.fname)
 
     try:
-        match audiofile.suffix:
+        match audio_file.suffix:
             case ".m4a":
-                _write_m4a_tags(meta, ctx, options.embed_artwork)
+                _write_m4a_tags(audio_file, meta, ctx, options.embed_artwork)
             case ".mp3":
-                _write_mp3_tags(meta, ctx, options.embed_artwork)
-            case ".ogg":
-                _write_ogg_tags(meta, ctx, options.embed_artwork)
+                _write_mp3_tags(audio_file, meta, ctx, options.embed_artwork)
+            case ".ogg" | ".opus":
+                _write_ogg_tags(audio_file, meta, ctx, options.embed_artwork)
     except Exception:  # pylint: disable=broad-exception-caught
         ctx.logger.debug(traceback.format_exc())
         ctx.logger.error(f"Failed to write audio tags to file '{meta.fname}'!")
@@ -366,7 +367,7 @@ def _maybe_write_audio_tags(ctx: Context) -> None:
 
 
 def _write_m4a_tags(
-    audio_meta: ResourceFile, ctx: Context, embed_artwork: bool
+    audio_file: Path, audio_meta: ResourceFile, ctx: Context, embed_artwork: bool
 ) -> None:
     tags = mutagen.mp4.MP4Tags()
 
@@ -389,11 +390,11 @@ def _write_m4a_tags(
             if image
         ]
 
-    tags.save(ctx.locations.file_path(audio_meta.fname))
+    tags.save(audio_file)
 
 
 def _write_mp3_tags(
-    audio_meta: ResourceFile, ctx: Context, embed_artwork: bool
+    audio_file: Path, audio_meta: ResourceFile, ctx: Context, embed_artwork: bool
 ) -> None:
     tags = id3.ID3()
 
@@ -436,13 +437,17 @@ def _write_mp3_tags(
             )
         )
 
-    tags.save(ctx.locations.file_path(audio_meta.fname))
+    tags.save(audio_file)
 
 
 def _write_ogg_tags(
-    audio_meta: ResourceFile, ctx: Context, embed_artwork: bool
+    audio_file: Path, audio_meta: ResourceFile, ctx: Context, embed_artwork: bool
 ) -> None:
-    audio = mutagen.oggvorbis.OggVorbis(ctx.locations.file_path(audio_meta.fname))
+    match audio_file.suffix:
+        case ".ogg":
+            audio = mutagen.oggvorbis.OggVorbis(audio_file)
+        case ".opus":
+            audio = mutagen.oggopus.OggOpus(audio_file)
 
     # Set basic tags
     audio["artist"] = ctx.txt.headers.artist
@@ -454,6 +459,7 @@ def _write_ogg_tags(
     if year := ctx.txt.headers.year:
         audio["date"] = year
     audio["lyrics"] = ctx.txt.unsynchronized_lyrics()
+    audio["comment"] = audio_meta.resource
 
     if embed_artwork and ctx.sync_meta.cover:
         with open(ctx.locations.file_path(ctx.sync_meta.cover.fname), "rb") as cover:
