@@ -11,6 +11,9 @@
   - SQLite's FTS5 is used for searching, which works by matching tokens (words). So
     a search for "beat" matches "Beat It", but not, unlike before, the "The Beatles".
 - The download status column now shows the last sync time.
+- Files are downloaded into temporary folders first for better clean-up, especially if
+  the download fails.
+- Downloads may be aborted or paused.
 
 <!-- 0.4.0 -->
 

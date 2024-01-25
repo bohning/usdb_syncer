@@ -91,6 +91,26 @@
        </widget>
       </item>
       <item>
+       <widget class="QToolButton" name="button_pause">
+        <property name="text">
+         <string>Pause</string>
+        </property>
+        <property name="icon">
+         <iconset resource="../resources/resources.qrc">
+          <normaloff>:/icons/control-pause.png</normaloff>:/icons/control-pause.png</iconset>
+        </property>
+        <property name="iconSize">
+         <size>
+          <width>20</width>
+          <height>20</height>
+         </size>
+        </property>
+        <property name="checkable">
+         <bool>true</bool>
+        </property>
+       </widget>
+      </item>
+      <item>
        <widget class="QProgressBar" name="bar_download_progress">
         <property name="value">
          <number>0</number>

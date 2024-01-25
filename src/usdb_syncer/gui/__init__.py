@@ -9,21 +9,24 @@ import subprocess
 import sys
 import traceback
 from types import TracebackType
-from typing import Any, Callable
+from typing import TYPE_CHECKING, Any, Callable
 
 from PySide6 import QtCore, QtGui, QtWidgets
 from PySide6.QtCore import Qt
 
-from tools import generate_pyside_files
+import tools
 from usdb_syncer import constants, db, settings, song_routines, sync_meta, utils
-from usdb_syncer.gui.mw import MainWindow
+
+if TYPE_CHECKING:
+    # only import from gui after pyside file generation
+    from usdb_syncer.gui.mw import MainWindow
 
 
 def main() -> None:
     sys.excepthook = _excepthook
     utils.AppPaths.make_dirs()
     if not utils.is_bundle():
-        generate_pyside_files()
+        tools.generate_pyside_files()
 
     if os.environ.get("PROFILE"):
         _with_profile(_run)
@@ -32,6 +35,8 @@ def main() -> None:
 
 
 def _run() -> None:
+    from usdb_syncer.gui.mw import MainWindow  # pylint: disable=import-outside-toplevel
+
     app = _init_app()
     mw = MainWindow()
     _configure_logging(mw)

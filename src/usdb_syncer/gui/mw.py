@@ -23,6 +23,7 @@ from usdb_syncer.gui.song_table.song_table import SongTable
 from usdb_syncer.gui.usdb_login_dialog import UsdbLoginDialog
 from usdb_syncer.logger import get_logger
 from usdb_syncer.pdf import generate_song_pdf
+from usdb_syncer.song_loader import DownloadManager
 from usdb_syncer.sync_meta import SyncMeta
 from usdb_syncer.usdb_song import UsdbSong
 from usdb_syncer.utils import AppPaths, open_file_explorer
@@ -107,6 +108,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
 
     def _setup_buttons(self) -> None:
         self.button_download.clicked.connect(self._download_selection)
+        self.button_pause.clicked.connect(DownloadManager.set_pause)
 
     def _on_log_filter_changed(self) -> None:
         messages = []
@@ -233,6 +235,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
             _logger.info("No current song.")
 
     def closeEvent(self, event: QtGui.QCloseEvent) -> None:
+        DownloadManager.quit()
         self.table.save_state()
         self._save_state()
         db.close()

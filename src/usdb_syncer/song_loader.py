@@ -5,6 +5,7 @@ from __future__ import annotations
 import base64
 import copy
 import tempfile
+import time
 import traceback
 from itertools import islice
 from pathlib import Path
@@ -17,7 +18,7 @@ import send2trash
 from mutagen import id3
 from mutagen.flac import Picture
 from PIL import Image
-from PySide6.QtCore import QRunnable, QThreadPool
+from PySide6 import QtCore
 
 from usdb_syncer import (
     SongId,
@@ -48,20 +49,57 @@ class DownloadManager:
     """Manager for concurrent song downloads."""
 
     _jobs: dict[SongId, _SongLoader] = {}
+    _pause = False
+    _pool: QtCore.QThreadPool | None = None
 
     @classmethod
     def download(cls, songs: Iterable[UsdbSong]) -> None:
         options = download_options.download_options()
-        threadpool = QThreadPool.globalInstance()
         for song in songs:
+            if song.song_id in cls._jobs:
+                cls._jobs[song.song_id].logger.warning("Already downloading!")
+                continue
             cls._jobs[song.song_id] = job = _SongLoader(song, options)
-            threadpool.start(job)
+            job.pause = cls._pause
+            cls._threadpool().start(job)
 
     @classmethod
     def abort(cls, songs: Iterable[SongId]) -> None:
+        cls._threadpool().setMaxThreadCount(0)
         for song in songs:
             if job := cls._jobs.get(song):
+                if cls._threadpool().tryTake(job):
+                    job.logger.info("Download aborted by user request.")
+                    job.song.status = DownloadStatus.NONE
+                    events.SongChanged(job.song_id).post()
+                    events.DownloadFinished(job.song_id).post()
+                else:
+                    job.abort = True
+
+    @classmethod
+    def set_pause(cls, pause: bool) -> None:
+        cls._pause = pause
+        for job in cls._jobs.values():
+            job.pause = pause
+
+    @classmethod
+    def quit(cls) -> None:
+        if cls._pool:
+            for job in cls._jobs.values():
                 job.abort = True
+            cls._pool.waitForDone()
+
+    @classmethod
+    def _threadpool(cls) -> QtCore.QThreadPool:
+        if cls._pool is None:
+            cls._pool = QtCore.QThreadPool()
+            events.DownloadFinished.subscribe(cls._remove_job)
+        return cls._pool
+
+    @classmethod
+    def _remove_job(cls, event: events.DownloadFinished) -> None:
+        if event.song_id in cls._jobs:
+            del cls._jobs[event.song_id]
 
 
 @attrs.define(kw_only=True)
@@ -245,10 +283,11 @@ def _update_song_with_usdb_data(
     song.views = details.views
 
 
-class _SongLoader(QRunnable):
+class _SongLoader(QtCore.QRunnable):
     """Runnable to create a complete song folder."""
 
     abort = False
+    pause = False
 
     def __init__(self, song: UsdbSong, options: download_options.Options) -> None:
         super().__init__()
@@ -288,7 +327,7 @@ class _SongLoader(QRunnable):
         events.DownloadFinished(self.song_id).post()
 
     def _run_inner(self) -> UsdbSong:
-        self._check_abort_flag()
+        self._check_flags()
         self.song.status = DownloadStatus.DOWNLOADING
         events.SongChanged(self.song_id).post()
         with tempfile.TemporaryDirectory() as tempdir:
@@ -300,11 +339,11 @@ class _SongLoader(QRunnable):
                 _maybe_download_background,
                 _maybe_write_audio_tags,
             ):
-                self._check_abort_flag()
+                self._check_flags()
                 job(ctx)
 
             # last chance to abort before irreversible changes
-            self._check_abort_flag()
+            self._check_flags()
             _cleanup_exisiting_resource(ctx)
             _ensure_correct_folder_name(ctx.locations)
             # only here so filenames in header are up-to-date
@@ -314,9 +353,14 @@ class _SongLoader(QRunnable):
         _write_sync_meta(ctx)
         return ctx.song
 
-    def _check_abort_flag(self) -> None:
+    def _check_flags(self) -> None:
         if self.abort:
             raise errors.AbortError
+        if self.pause:
+            while self.pause:
+                time.sleep(0.5)
+                if self.abort:
+                    raise errors.AbortError
 
 
 def _maybe_download_audio(ctx: _Context) -> None:
