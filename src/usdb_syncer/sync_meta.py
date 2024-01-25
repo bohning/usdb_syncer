@@ -9,7 +9,6 @@ from typing import Any, Iterator
 import attrs
 
 from usdb_syncer import SongId, SyncMetaId, db, settings, utils
-from usdb_syncer.constants import Usdb
 from usdb_syncer.logger import get_logger
 from usdb_syncer.meta_tags import MetaTags
 
@@ -55,9 +54,6 @@ class ResourceFile:
         path = folder.joinpath(self.fname)
         return path.exists() and utils.get_mtime(path) == self.mtime
 
-    def bump_mtime(self, folder: Path) -> None:
-        self.mtime = utils.get_mtime(folder.joinpath(self.fname))
-
     def db_params(
         self, sync_meta_id: SyncMetaId, kind: db.ResourceFileKind
     ) -> db.ResourceFileParams:
@@ -92,7 +88,7 @@ class SyncMeta:
         return cls(
             sync_meta_id=sync_meta_id,
             song_id=song_id,
-            path=folder.joinpath(f"{sync_meta_id.encode()}.usdb"),
+            path=folder.joinpath(sync_meta_id.to_filename()),
             mtime=0,
             meta_tags=meta_tags,
         )
@@ -127,7 +123,7 @@ class SyncMeta:
         except (json.decoder.JSONDecodeError, TypeError, KeyError, ValueError):
             return None
         if new_id:
-            meta.path = path.with_name(f"{sync_meta_id.encode()}.usdb")
+            meta.path = path.with_name(sync_meta_id.to_filename())
             path.rename(meta.path)
             _logger.info(f"Assigned new ID to meta file: '{path}' > '{meta.path}'.")
         return meta
@@ -219,43 +215,6 @@ class SyncMeta:
         with self.path.open("w", encoding="utf8") as file:
             json.dump(self, file, cls=SyncMetaEncoder)
         self.mtime = utils.get_mtime(self.path)
-
-    def set_txt_meta(self, path: Path) -> None:
-        self.txt = ResourceFile.new(
-            path, f"{Usdb.BASE_URL}?link=gettxt&id={self.song_id}"
-        )
-
-    def set_audio_meta(self, path: Path, resource: str) -> None:
-        self.audio = ResourceFile.new(path, resource)
-
-    def set_video_meta(self, path: Path, resource: str) -> None:
-        self.video = ResourceFile.new(path, resource)
-
-    def set_cover_meta(self, path: Path, resource: str) -> None:
-        self.cover = ResourceFile.new(path, resource)
-
-    def set_background_meta(self, path: Path, resource: str) -> None:
-        self.background = ResourceFile.new(path, resource)
-
-    def synced_audio(self, folder: Path) -> ResourceFile | None:
-        if self.audio and self.audio.is_in_sync(folder):
-            return self.audio
-        return None
-
-    def synced_video(self, folder: Path) -> ResourceFile | None:
-        if self.video and self.video.is_in_sync(folder):
-            return self.video
-        return None
-
-    def synced_cover(self, folder: Path) -> ResourceFile | None:
-        if self.cover and self.cover.is_in_sync(folder):
-            return self.cover
-        return None
-
-    def synced_background(self, folder: Path) -> ResourceFile | None:
-        if self.background and self.background.is_in_sync(folder):
-            return self.background
-        return None
 
     def resource_files(self) -> Iterator[ResourceFile]:
         for meta in (self.txt, self.audio, self.video, self.cover, self.background):

@@ -22,7 +22,7 @@ from usdb_syncer import SongId, db, events, settings
 from usdb_syncer.gui.song_table.column import Column
 from usdb_syncer.gui.song_table.table_model import TableModel
 from usdb_syncer.logger import get_logger
-from usdb_syncer.song_loader import download_songs
+from usdb_syncer.song_loader import DownloadManager
 from usdb_syncer.usdb_song import DownloadStatus, UsdbSong
 
 if TYPE_CHECKING:
@@ -76,7 +76,10 @@ class SongTable:
                 to_download.append(song)
         if to_download:
             events.DownloadsRequested(len(to_download)).post()
-            download_songs(to_download)
+            DownloadManager.download(to_download)
+
+    def abort_selected_downloads(self) -> None:
+        DownloadManager.abort(self._model.ids_for_rows(self._selected_rows()))
 
     def _setup_view(self) -> None:
         state = settings.get_table_view_header_state()
@@ -126,6 +129,7 @@ class SongTable:
         ):
             action.setEnabled(song.is_local())
         self.mw.action_pin.setChecked(song.is_pinned())
+        self.mw.action_songs_abort.setEnabled(song.status.can_be_aborted())
 
     def delete_selected_songs(self) -> None:
         for song in self.selected_songs():
@@ -205,6 +209,7 @@ class SongTable:
             self._search_timer.start()
         else:
             self._model.set_songs(db.search_usdb_songs(self._search))
+            self._on_current_song_changed()
 
     def _on_tree_filter_changed(self, event: events.TreeFilterChanged) -> None:
         event.search.order = self._search.order

@@ -50,3 +50,10 @@ class UsdbNotFoundError(UsdbError):
 
 class NotesParseError(UsdbSyncerError):
     """Raised when failing to parse notes."""
+
+
+### user input
+
+
+class AbortError(UsdbSyncerError):
+    """Raised when the user requests to abort an operation."""
