@@ -77,7 +77,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
 
     def _setup_toolbar(self) -> None:
         for action, func in (
-            (self.action_songs_download, self._download_selection),
+            (self.action_songs_download, self.table.download_selection),
             (self.action_songs_abort, self.table.abort_selected_downloads),
             (self.action_find_local_songs, self._select_local_songs),
             (self.action_refetch_song_list, self._refetch_song_list),
@@ -96,9 +96,6 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         ):
             action.triggered.connect(func)
 
-    def _download_selection(self) -> None:
-        check_ffmpeg(self, self.table.download_selection)
-
     def _setup_shortcuts(self) -> None:
         gui_utils.set_shortcut("Ctrl+.", self, lambda: DebugConsole(self).show())
 
@@ -107,7 +104,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         self.pushButton_select_song_dir.clicked.connect(self._select_song_dir)
 
     def _setup_buttons(self) -> None:
-        self.button_download.clicked.connect(self._download_selection)
+        self.button_download.clicked.connect(self.table.download_selection)
         self.button_pause.clicked.connect(DownloadManager.set_pause)
 
     def _on_log_filter_changed(self) -> None:

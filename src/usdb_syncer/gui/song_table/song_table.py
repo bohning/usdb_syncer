@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+from functools import partial
 from typing import TYPE_CHECKING, Any, Callable, Iterable, Iterator
 
 import send2trash
@@ -19,6 +20,7 @@ from PySide6.QtGui import QCursor
 from PySide6.QtWidgets import QHeaderView, QMenu
 
 from usdb_syncer import SongId, db, events, settings
+from usdb_syncer.gui import ffmpeg_dialog
 from usdb_syncer.gui.song_table.column import Column
 from usdb_syncer.gui.song_table.table_model import TableModel
 from usdb_syncer.logger import get_logger
@@ -61,6 +63,9 @@ class SongTable:
         self._download(self._selected_rows())
 
     def _download(self, rows: Iterable[int]) -> None:
+        ffmpeg_dialog.check_ffmpeg(self.mw, partial(self._download_inner, rows))
+
+    def _download_inner(self, rows: Iterable[int]) -> None:
         to_download: list[UsdbSong] = []
         for song_id in self._model.ids_for_rows(rows):
             song = UsdbSong.get(song_id)
