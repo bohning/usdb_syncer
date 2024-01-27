@@ -137,17 +137,19 @@ class SongTable:
         self.mw.action_songs_abort.setEnabled(song.status.can_be_aborted())
 
     def delete_selected_songs(self) -> None:
-        for song in self.selected_songs():
-            if not song.sync_meta:
-                continue
-            logger = get_logger(__file__, song.song_id)
-            if song.is_pinned():
-                logger.info("Not trashing song folder as it is pinned.")
-                continue
-            send2trash.send2trash(song.sync_meta.path)
-            song.sync_meta.delete()
-            events.SongChanged(song.song_id)
-            logger.debug("Trashed song folder.")
+        with db.transaction():
+            for song in self.selected_songs():
+                if not song.sync_meta:
+                    continue
+                logger = get_logger(__file__, song.song_id)
+                if song.is_pinned():
+                    logger.info("Not trashing song folder as it is pinned.")
+                    continue
+                if song.sync_meta.path.exists():
+                    send2trash.send2trash(song.sync_meta.path)
+                song.remove_sync_meta()
+                events.SongChanged(song.song_id)
+                logger.debug("Trashed song folder.")
 
     def set_pin_selected_songs(self, pin: bool) -> None:
         for song in self.selected_songs():

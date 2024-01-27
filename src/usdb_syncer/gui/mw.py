@@ -225,7 +225,13 @@ class MainWindow(Ui_MainWindow, QMainWindow):
     def _open_current_song_folder(self) -> None:
         if song := self.table.current_song():
             if song.sync_meta:
-                open_file_explorer(song.sync_meta.path.parent)
+                if song.sync_meta.path.exists():
+                    open_file_explorer(song.sync_meta.path.parent)
+                else:
+                    with db.transaction():
+                        song.remove_sync_meta()
+                    events.SongChanged(song.song_id)
+                    _logger.info("Song does not exist locally anymore.")
             else:
                 _logger.info("Song does not exist locally.")
         else:
