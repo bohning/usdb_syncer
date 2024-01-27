@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import base64
 import copy
+import shutil
 import tempfile
 import time
 import traceback
@@ -649,7 +650,7 @@ def _persist_tempfiles(ctx: _Context) -> None:
             if target.exists():
                 send2trash.send2trash(target)
                 ctx.logger.debug(f"Trashed existing file: '{target}'.")
-            temp_file.new_path.rename(target)
+            shutil.move(temp_file.new_path, target)
             temp_file.new_path = target
 
 
