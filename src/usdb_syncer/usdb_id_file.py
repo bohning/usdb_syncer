@@ -338,6 +338,10 @@ def _parse_json_file(filepath: str) -> list[SongId]:
     if not isinstance(parsed_json, dict):
         raise UsdbIdFileInvalidJsonError()
 
+    return _parse_json_content(parsed_json)
+
+
+def _parse_json_content(parsed_json: dict) -> list[SongId]:
     top_key = "songs"
 
     if top_key not in parsed_json:
