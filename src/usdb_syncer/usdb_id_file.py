@@ -230,19 +230,23 @@ class UsdbIdFileInvalidJsonError(UsdbIdFileError):
 
 
 @attrs.define
-class UsdbIdFileEmptyJsonArrayError(UsdbIdFileError):
-    """file content is an emty JSON array"""
+class UsdbIdFileEmptySongsArrayError(UsdbIdFileError):
+    """songs array is empty"""
+
+    songs_key: str
 
     def __str__(self) -> str:
-        return "empty JSON array"
+        return f"'{self.songs_key}' is empty"
 
 
 @attrs.define
-class UsdbIdFileNoJsonArrayError(UsdbIdFileError):
-    """file content is valid JSON, but not an array"""
+class UsdbIdFileWrongJsonSongsFormatError(UsdbIdFileError):
+    """songs value is not an array"""
+
+    songs_key: str
 
     def __str__(self) -> str:
-        return "file does not contain a JSON array"
+        return f"'{self.songs_key}' is not a JSON array"
 
 
 @attrs.define
@@ -331,15 +335,21 @@ def _parse_json_file(filepath: str) -> list[SongId]:
     except Exception as exception:
         raise UnexpectedUsdbIdFileError() from exception
 
-    if not isinstance(parsed_json, list):
-        raise UsdbIdFileNoJsonArrayError()
+    if not isinstance(parsed_json, dict):
+        raise UsdbIdFileInvalidJsonError()
 
-    if not parsed_json:
-        raise UsdbIdFileEmptyJsonArrayError()
+    top_key = "songs"
+
+    if top_key not in parsed_json:
+        raise UsdbIdFileMissingKeyFormatError(top_key)
+    if not isinstance(parsed_json[top_key], list):
+        raise UsdbIdFileWrongJsonSongsFormatError(songs_key=top_key)
+    if not parsed_json[top_key]:
+        raise UsdbIdFileEmptySongsArrayError(songs_key=top_key)
 
     key = "id"
     try:
-        return [SongId.parse(element[key]) for element in parsed_json]
+        return [SongId.parse(element[key]) for element in parsed_json[top_key]]
     except ValueError as exception:
         raise UsdbIdFileInvalidUsdbIdError() from exception
     except (KeyError, IndexError) as exception:
