@@ -13,7 +13,6 @@ from usdb_syncer.constants import Usdb
 from usdb_syncer.gui import gui_utils, progress_bar
 from usdb_syncer.gui.about_dialog import AboutDialog
 from usdb_syncer.gui.debug_console import DebugConsole
-from usdb_syncer.gui.ffmpeg_dialog import check_ffmpeg
 from usdb_syncer.gui.forms.MainWindow import Ui_MainWindow
 from usdb_syncer.gui.meta_tags_dialog import MetaTagsDialog
 from usdb_syncer.gui.progress import run_with_progress
