@@ -14,6 +14,7 @@
 - Files are downloaded into temporary folders first for better clean-up, especially if
   the download fails.
 - Downloads may be aborted or paused.
+- Support Ogg/Opus (.opus) audio format.
 
 <!-- 0.4.0 -->
 
