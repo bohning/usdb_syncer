@@ -66,7 +66,6 @@ class DownloadManager:
 
     @classmethod
     def abort(cls, songs: Iterable[SongId]) -> None:
-        cls._threadpool().setMaxThreadCount(0)
         for song in songs:
             if job := cls._jobs.get(song):
                 if cls._threadpool().tryTake(job):
@@ -128,20 +127,22 @@ class _Locations:
 
     def file_path(self, file: str = "", ext: str = "") -> Path:
         """Path to file in the final download directory. The final path component is
-        the generic name or the provided file, optionally with the provided extension.
+        the generic name or the provided file, optionally with the provided extension
+        joined with a '.' unless one is already present.
         """
         name = file or self.filename_stem
         if ext:
-            name = f"{name}.{ext}"
+            name = f"{name}{'' if '.' in ext else '.'}{ext}"
         return self.folder.joinpath(name)
 
     def temp_path(self, file: str = "", ext: str = "") -> Path:
         """Path to file in the temporary download directory. The final path component is
-        the generic name or the provided file, optionally with the provided extension.
+        the generic name or the provided file, optionally with the provided extension
+        joined with a '.' unless one is already present.
         """
         name = file or self.filename_stem
         if ext:
-            name = f"{name}.{ext}"
+            name = f"{name}{'' if '.' in ext else '.'}{ext}"
         return self.tempdir.joinpath(name)
 
 
@@ -489,13 +490,16 @@ def _maybe_write_audio_tags(ctx: _Context) -> None:
         return
     path, resource = path_resource
     try:
-        match path_resource[1]:
+        match path.suffix:
             case ".m4a":
                 _write_m4a_tags(path, resource, ctx, options.embed_artwork)
             case ".mp3":
                 _write_mp3_tags(path, resource, ctx, options.embed_artwork)
             case ".ogg":
                 _write_ogg_tags(path, ctx, options.embed_artwork)
+            case other:
+                ctx.logger.debug(f"Audio tags not supported for suffix '{other}'.")
+                return
     except Exception:  # pylint: disable=broad-exception-caught
         ctx.logger.debug(traceback.format_exc())
         ctx.logger.error(f"Failed to write audio tags to file '{path}'!")
