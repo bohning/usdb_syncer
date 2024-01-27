@@ -1,37 +1,58 @@
 """Generates a PDF from the passed song list."""
 
-# maybe reportlab is better suited?
 import datetime
-from typing import Any, Iterable
+from typing import Iterable, List
 
-from pdfme import build_pdf
+from reportlab.lib.pagesizes import A4
+from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
+from reportlab.pdfbase import pdfmetrics
+from reportlab.pdfbase.ttfonts import TTFont
+from reportlab.platypus import Paragraph, SimpleDocTemplate
 
 from usdb_syncer import SongId
 from usdb_syncer.usdb_song import UsdbSong
 
+pdfmetrics.registerFont(TTFont("NotoSans-Regular", "NotoSans-Regular.ttf"))
+pdfmetrics.registerFont(TTFont("NotoSans-Bold", "NotoSans-Bold.ttf"))
+
 
 def generate_song_pdf(songs: Iterable[SongId], path: str) -> None:
-    document: dict[str, Any] = {}
-    document["style"] = {"margin_bottom": 15, "text_align": "j"}
-    document["formats"] = {"url": {"c": "blue", "u": 1}, "title": {"b": 1, "s": 13}}
-    document["sections"] = []
-    section1: dict[str, list[Any]] = {}
-    document["sections"].append(section1)
-    content1: list[Any] = []
-    section1["content"] = content1
-    date = datetime.datetime.now()
-    content1.append({
-        ".": f"Songlist ({date:%Y-%m-%d})",
-        "style": "title",
-        "label": "title1",
-        "outline": {"level": 1, "text": "A different title 1"},
-    })
+    # Create a PDF document
+    doc = SimpleDocTemplate(path, pagesize=A4)
 
+    # Define custom styles
+    styles = getSampleStyleSheet()
+    custom_styles = {
+        "Title": ParagraphStyle(
+            "Title", parent=styles["Title"], fontName="NotoSans-Bold", fontSize=16
+        ),
+        "Heading1": ParagraphStyle(
+            "Heading1", parent=styles["Heading1"], fontName="NotoSans-Bold", fontSize=14
+        ),
+        "Normal": ParagraphStyle(
+            "Normal", parent=styles["Normal"], fontName="NotoSans-Regular", fontSize=12
+        ),
+    }
+
+    # Build the content
+    content = []
+    date = datetime.datetime.now()
+    content.append(Paragraph(f"Songlist ({date:%Y-%m-%d})", custom_styles["Title"]))
+
+    # Add table header
+    table_header = ["Song ID", "Artist", "Title", "Language"]
+    content.append(build_table_row(table_header, custom_styles["Heading1"]))
+
+    # Add songs to the table
     for song_id in songs:
         song = UsdbSong.get(song_id)
         if song:
-            data = f"{song.song_id}\t\t{song.artist}\t\t{song.title}\t\t{song.language}"
-            content1.append([data.replace("’", "'")])
+            song_data = [str(song.song_id), song.artist, song.title, song.language]
+            content.append(build_table_row(song_data, custom_styles["Normal"]))
 
-    with open(path, "wb") as file:
-        build_pdf(document, file)
+    # Build the PDF document
+    doc.build(content)
+
+
+def build_table_row(data: List[str], style: ParagraphStyle) -> Paragraph:
+    return Paragraph("\t\t".join(data), style)
