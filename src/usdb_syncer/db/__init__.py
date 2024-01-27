@@ -84,6 +84,7 @@ def _validate_schema(connection: sqlite3.Connection) -> None:
         row = connection.execute("SELECT version FROM meta").fetchone()
         if not row or row[0] != SCHEMA_VERSION:
             raise errors.UnknownSchemaError
+    connection.execute("PRAGMA foreign_keys = ON")
 
 
 def connect(db_path: Path | str, trace: bool = False) -> None:
@@ -133,7 +134,10 @@ class SearchBuilder:
 
     def _filters(self) -> Iterator[str]:
         if _fts5_phrases(self.text):
-            yield "fts_usdb_song MATCH ?"
+            yield (
+                "usdb_song.song_id IN (SELECT rowid FROM fts_usdb_song WHERE"
+                " fts_usdb_song MATCH ?)"
+            )
         if self.artists:
             yield _in_values_clause("usdb_song.artist", self.artists)
         if self.titles:
@@ -194,8 +198,8 @@ def _in_ranges_clause(attribute: str, values: list[tuple[int, int | None]]) -> s
 
 
 def _fts5_phrases(text: str) -> str:
-    """Turns each whitespace-separated word into an FTS5 phrase."""
-    return " ".join(f'"{s}"' for s in text.replace('"', "").split(" ") if s)
+    """Turns each whitespace-separated word into an FTS5 prefix phrase."""
+    return " ".join(f'"{s}"*' for s in text.replace('"', "").split(" ") if s)
 
 
 def _fts5_start_phrase(text: str) -> str:
@@ -255,6 +259,11 @@ def delete_all_usdb_songs() -> None:
 def all_local_usdb_songs() -> Iterable[SongId]:
     stmt = "SELECT DISTINCT song_id FROM sync_meta"
     return (SongId(r[0]) for r in _DbState.connection().execute(stmt))
+
+
+def all_song_ids() -> Iterable[SongId]:
+    rows = _DbState.connection().execute("SELECT song_id FROM usdb_song")
+    return (SongId(r[0]) for r in rows)
 
 
 def search_usdb_songs(search: SearchBuilder) -> Iterable[SongId]:

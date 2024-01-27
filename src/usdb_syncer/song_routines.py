@@ -55,6 +55,7 @@ def dump_available_songs(songs: list[UsdbSong], target: Path | None = None) -> N
 
 def synchronize_sync_meta_folder(folder: Path) -> None:
     db_metas = {m.sync_meta_id: m for m in SyncMeta.get_in_folder(folder)}
+    song_ids = set(db.all_song_ids())
     to_upsert: list[SyncMeta] = []
     for path in folder.glob("**/[!.]*.usdb"):
         meta_id = SyncMetaId.from_path(path)
@@ -62,7 +63,7 @@ def synchronize_sync_meta_folder(folder: Path) -> None:
         if meta_id is not None and meta and meta.mtime == utils.get_mtime(path):
             del db_metas[meta_id]
             continue
-        if meta := SyncMeta.try_from_file(path):
+        if (meta := SyncMeta.try_from_file(path)) and meta.song_id in song_ids:
             to_upsert.append(meta)
             if meta.sync_meta_id in db_metas:
                 del db_metas[meta.sync_meta_id]

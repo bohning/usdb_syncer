@@ -115,6 +115,12 @@ class UsdbSong:
         db.delete_usdb_song(self.song_id)
         _UsdbSongCache.remove(self.song_id)
 
+    def remove_sync_meta(self) -> None:
+        if self.sync_meta:
+            self.sync_meta.delete()
+            self.sync_meta = None
+            _UsdbSongCache.remove(self.song_id)
+
     @classmethod
     def delete_all(cls) -> None:
         db.delete_all_usdb_songs()

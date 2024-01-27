@@ -8,8 +8,8 @@
   - Vastly improved performance for loading, searching etc.
   - Meta files are still being used, but are upgraded with a unique ID. Therefore,
     initially launching the new release may take some time.
-  - SQLite's FTS5 is used for searching, which works by matching tokens (words). So
-    a search for "beat" matches "Beat It", but not, unlike before, the "The Beatles".
+  - SQLite's FTS5 is used for searching, which works slightly different than the
+    previous approach.
 - The download status column now shows the last sync time.
 - Files are downloaded into temporary folders first for better clean-up, especially if
   the download fails.

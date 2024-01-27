@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+from functools import partial
 from typing import TYPE_CHECKING, Any, Callable, Iterable, Iterator
 
 import send2trash
@@ -19,6 +20,7 @@ from PySide6.QtGui import QCursor
 from PySide6.QtWidgets import QHeaderView, QMenu
 
 from usdb_syncer import SongId, db, events, settings
+from usdb_syncer.gui import ffmpeg_dialog
 from usdb_syncer.gui.song_table.column import Column
 from usdb_syncer.gui.song_table.table_model import TableModel
 from usdb_syncer.logger import get_logger
@@ -47,6 +49,7 @@ class SongTable:
         mw.table_view.selectionModel().currentChanged.connect(
             self._on_current_song_changed
         )
+        events.SongChanged.subscribe(self._on_song_changed)
         self._setup_search_timer()
         events.TreeFilterChanged.subscribe(self._on_tree_filter_changed)
         events.TextFilterChanged.subscribe(self._on_text_filter_changed)
@@ -61,6 +64,9 @@ class SongTable:
         self._download(self._selected_rows())
 
     def _download(self, rows: Iterable[int]) -> None:
+        ffmpeg_dialog.check_ffmpeg(self.mw, partial(self._download_inner, rows))
+
+    def _download_inner(self, rows: Iterable[int]) -> None:
         to_download: list[UsdbSong] = []
         for song_id in self._model.ids_for_rows(rows):
             song = UsdbSong.get(song_id)
@@ -116,6 +122,10 @@ class SongTable:
 
     ### actions
 
+    def _on_song_changed(self, event: events.SongChanged) -> None:
+        if event.song_id == self.current_song_id():
+            self._on_current_song_changed()
+
     def _on_current_song_changed(self) -> None:
         song = self.current_song()
         for action in self.mw.menu_songs.actions():
@@ -132,17 +142,19 @@ class SongTable:
         self.mw.action_songs_abort.setEnabled(song.status.can_be_aborted())
 
     def delete_selected_songs(self) -> None:
-        for song in self.selected_songs():
-            if not song.sync_meta:
-                continue
-            logger = get_logger(__file__, song.song_id)
-            if song.is_pinned():
-                logger.info("Not trashing song folder as it is pinned.")
-                continue
-            send2trash.send2trash(song.sync_meta.path)
-            song.sync_meta.delete()
-            events.SongChanged(song.song_id)
-            logger.debug("Trashed song folder.")
+        with db.transaction():
+            for song in self.selected_songs():
+                if not song.sync_meta:
+                    continue
+                logger = get_logger(__file__, song.song_id)
+                if song.is_pinned():
+                    logger.info("Not trashing song folder as it is pinned.")
+                    continue
+                if song.sync_meta.path.exists():
+                    send2trash.send2trash(song.sync_meta.path)
+                song.remove_sync_meta()
+                events.SongChanged(song.song_id)
+                logger.debug("Trashed song folder.")
 
     def set_pin_selected_songs(self, pin: bool) -> None:
         for song in self.selected_songs():
@@ -156,10 +168,15 @@ class SongTable:
 
     ### selection model
 
-    def current_song(self) -> UsdbSong | None:
+    def current_song_id(self) -> SongId | None:
         if (idx := self._view.selectionModel().currentIndex()).isValid():
             if ids := self._model.ids_for_indices([idx]):
-                return UsdbSong.get(ids[0])
+                return ids[0]
+        return None
+
+    def current_song(self) -> UsdbSong | None:
+        if (song_id := self.current_song_id()) is not None:
+            return UsdbSong.get(song_id)
         return None
 
     def selected_songs(self) -> Iterator[UsdbSong]:

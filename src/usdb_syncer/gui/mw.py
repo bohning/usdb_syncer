@@ -13,7 +13,6 @@ from usdb_syncer.constants import Usdb
 from usdb_syncer.gui import gui_utils, progress_bar
 from usdb_syncer.gui.about_dialog import AboutDialog
 from usdb_syncer.gui.debug_console import DebugConsole
-from usdb_syncer.gui.ffmpeg_dialog import check_ffmpeg
 from usdb_syncer.gui.forms.MainWindow import Ui_MainWindow
 from usdb_syncer.gui.meta_tags_dialog import MetaTagsDialog
 from usdb_syncer.gui.progress import run_with_progress
@@ -77,7 +76,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
 
     def _setup_toolbar(self) -> None:
         for action, func in (
-            (self.action_songs_download, self._download_selection),
+            (self.action_songs_download, self.table.download_selection),
             (self.action_songs_abort, self.table.abort_selected_downloads),
             (self.action_find_local_songs, self._select_local_songs),
             (self.action_refetch_song_list, self._refetch_song_list),
@@ -96,9 +95,6 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         ):
             action.triggered.connect(func)
 
-    def _download_selection(self) -> None:
-        check_ffmpeg(self, self.table.download_selection)
-
     def _setup_shortcuts(self) -> None:
         gui_utils.set_shortcut("Ctrl+.", self, lambda: DebugConsole(self).show())
 
@@ -107,7 +103,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         self.pushButton_select_song_dir.clicked.connect(self._select_song_dir)
 
     def _setup_buttons(self) -> None:
-        self.button_download.clicked.connect(self._download_selection)
+        self.button_download.clicked.connect(self.table.download_selection)
         self.button_pause.clicked.connect(DownloadManager.set_pause)
 
     def _on_log_filter_changed(self) -> None:
@@ -228,7 +224,13 @@ class MainWindow(Ui_MainWindow, QMainWindow):
     def _open_current_song_folder(self) -> None:
         if song := self.table.current_song():
             if song.sync_meta:
-                open_file_explorer(song.sync_meta.path.parent)
+                if song.sync_meta.path.exists():
+                    open_file_explorer(song.sync_meta.path.parent)
+                else:
+                    with db.transaction():
+                        song.remove_sync_meta()
+                    events.SongChanged(song.song_id)
+                    _logger.info("Song does not exist locally anymore.")
             else:
                 _logger.info("Song does not exist locally.")
         else:

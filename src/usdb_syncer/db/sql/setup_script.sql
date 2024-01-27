@@ -27,6 +27,8 @@ CREATE TABLE sync_meta (
     meta_tags TEXT NOT NULL,
     pinned BOOLEAN NOT NULL,
     PRIMARY KEY (sync_meta_id),
+    -- necessary for the active_sync_meta foreign key
+    UNIQUE (song_id, sync_meta_id),
     UNIQUE (path),
     FOREIGN KEY (song_id) REFERENCES usdb_song (song_id) ON DELETE CASCADE
 );
@@ -51,12 +53,14 @@ CREATE TABLE active_sync_meta (
 
 CREATE VIRTUAL TABLE fts_usdb_song USING fts5 (
     song_id,
+    padded_song_id,
     artist,
     title,
     language,
     edition,
     content = usdb_song,
-    content_rowid = song_id
+    content_rowid = song_id,
+    prefix = '1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20'
 );
 
 CREATE TRIGGER fts_usdb_song_insert
@@ -67,6 +71,7 @@ INSERT INTO
     fts_usdb_song (
         rowid,
         song_id,
+        padded_song_id,
         artist,
         title,
         language,
@@ -76,6 +81,7 @@ VALUES
     (
         new.song_id,
         new.song_id,
+        printf('%05d', new.song_id),
         new.artist,
         new.title,
         new.language,
@@ -93,6 +99,7 @@ UPDATE
 SET
     rowid = new.song_id,
     song_id = new.song_id,
+    padded_song_id = printf('%05d', new.song_id),
     artist = new.artist,
     title = new.title,
     language = new.language,
