@@ -27,6 +27,7 @@ CREATE TABLE sync_meta (
     meta_tags TEXT NOT NULL,
     pinned BOOLEAN NOT NULL,
     PRIMARY KEY (sync_meta_id),
+    UNIQUE (song_id, sync_meta_id),
     UNIQUE (path),
     FOREIGN KEY (song_id) REFERENCES usdb_song (song_id) ON DELETE CASCADE
 );

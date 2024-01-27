@@ -84,6 +84,7 @@ def _validate_schema(connection: sqlite3.Connection) -> None:
         row = connection.execute("SELECT version FROM meta").fetchone()
         if not row or row[0] != SCHEMA_VERSION:
             raise errors.UnknownSchemaError
+    connection.execute("PRAGMA foreign_keys = ON")
 
 
 def connect(db_path: Path | str, trace: bool = False) -> None:
@@ -255,6 +256,11 @@ def delete_all_usdb_songs() -> None:
 def all_local_usdb_songs() -> Iterable[SongId]:
     stmt = "SELECT DISTINCT song_id FROM sync_meta"
     return (SongId(r[0]) for r in _DbState.connection().execute(stmt))
+
+
+def all_song_ids() -> Iterable[SongId]:
+    rows = _DbState.connection().execute("SELECT song_id FROM usdb_song")
+    return (SongId(r[0]) for r in rows)
 
 
 def search_usdb_songs(search: SearchBuilder) -> Iterable[SongId]:

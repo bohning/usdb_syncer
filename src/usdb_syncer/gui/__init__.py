@@ -69,9 +69,9 @@ def _load_main_window(mw: MainWindow) -> None:
     folder = settings.get_song_dir()
     db.connect(utils.AppPaths.db, trace=bool(os.environ.get("TRACESQL")))
     with db.transaction():
+        song_routines.load_available_songs(force_reload=False)
         song_routines.synchronize_sync_meta_folder(folder)
         sync_meta.SyncMeta.reset_active(folder)
-        song_routines.load_available_songs(force_reload=False)
     mw.tree.populate()
     mw.table.search_songs()
     splash.showMessage("Song database successfully loaded.", color=Qt.GlobalColor.gray)
