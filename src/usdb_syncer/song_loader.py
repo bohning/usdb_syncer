@@ -348,7 +348,7 @@ class _SongLoader(QtCore.QRunnable):
 
             # last chance to abort before irreversible changes
             self._check_flags()
-            _cleanup_exisiting_resource(ctx)
+            _cleanup_existing_resource(ctx)
             _ensure_correct_folder_name(ctx.locations)
             # only here so filenames in header are up-to-date
             _maybe_write_txt(ctx)
@@ -497,8 +497,17 @@ def _maybe_write_audio_tags(ctx: _Context) -> None:
                 _write_m4a_tags(path, resource, ctx, options.embed_artwork)
             case ".mp3":
                 _write_mp3_tags(path, resource, ctx, options.embed_artwork)
-            case ".ogg" | ".opus":
-                _write_ogg_tags(path, resource, ctx, options.embed_artwork)
+            case ".ogg":
+                _write_ogg_tags(
+                    mutagen.oggvorbis.OggVorbis(path),
+                    resource,
+                    ctx,
+                    options.embed_artwork,
+                )
+            case ".opus":
+                _write_ogg_tags(
+                    mutagen.oggopus.OggOpus(path), resource, ctx, options.embed_artwork
+                )
             case other:
                 ctx.logger.debug(f"Audio tags not supported for suffix '{other}'.")
                 return
@@ -580,15 +589,8 @@ def _write_mp3_tags(
 
 
 def _write_ogg_tags(
-    path: Path, resource: str, ctx: _Context, embed_artwork: bool
+    audio: mutagen.ogg.OggFileType, resource: str, ctx: _Context, embed_artwork: bool
 ) -> None:
-    audio: mutagen.ogg.OggFileType
-    match path.suffix:
-        case ".ogg":
-            audio = mutagen.oggvorbis.OggVorbis(path)
-        case ".opus":
-            audio = mutagen.oggopus.OggOpus(path)
-
     # Set basic tags
     audio["artist"] = ctx.txt.headers.artist
     audio["title"] = ctx.txt.headers.title
@@ -621,7 +623,7 @@ def _write_ogg_tags(
     audio.save()
 
 
-def _cleanup_exisiting_resource(ctx: _Context) -> None:
+def _cleanup_existing_resource(ctx: _Context) -> None:
     """Delete resources that are either out of sync or will be replaced with a new one,
     and ensure kept ones are correctly named.
     """
