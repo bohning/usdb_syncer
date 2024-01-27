@@ -66,7 +66,6 @@ class DownloadManager:
 
     @classmethod
     def abort(cls, songs: Iterable[SongId]) -> None:
-        cls._threadpool().setMaxThreadCount(0)
         for song in songs:
             if job := cls._jobs.get(song):
                 if cls._threadpool().tryTake(job):
