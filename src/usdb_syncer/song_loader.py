@@ -127,20 +127,22 @@ class _Locations:
 
     def file_path(self, file: str = "", ext: str = "") -> Path:
         """Path to file in the final download directory. The final path component is
-        the generic name or the provided file, optionally with the provided extension.
+        the generic name or the provided file, optionally with the provided extension
+        joined with a '.' unless one is already present.
         """
         name = file or self.filename_stem
         if ext:
-            name = f"{name}.{ext}"
+            name = f"{name}{'' if '.' in ext else '.'}{ext}"
         return self.folder.joinpath(name)
 
     def temp_path(self, file: str = "", ext: str = "") -> Path:
         """Path to file in the temporary download directory. The final path component is
-        the generic name or the provided file, optionally with the provided extension.
+        the generic name or the provided file, optionally with the provided extension
+        joined with a '.' unless one is already present.
         """
         name = file or self.filename_stem
         if ext:
-            name = f"{name}.{ext}"
+            name = f"{name}{'' if '.' in ext else '.'}{ext}"
         return self.tempdir.joinpath(name)
 
 
