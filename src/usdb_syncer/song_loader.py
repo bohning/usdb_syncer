@@ -348,7 +348,7 @@ class _SongLoader(QtCore.QRunnable):
 
             # last chance to abort before irreversible changes
             self._check_flags()
-            _cleanup_existing_resource(ctx)
+            _cleanup_existing_resources(ctx)
             _ensure_correct_folder_name(ctx.locations)
             # only here so filenames in header are up-to-date
             _maybe_write_txt(ctx)
@@ -623,7 +623,7 @@ def _write_ogg_tags(
     audio.save()
 
 
-def _cleanup_existing_resource(ctx: _Context) -> None:
+def _cleanup_existing_resources(ctx: _Context) -> None:
     """Delete resources that are either out of sync or will be replaced with a new one,
     and ensure kept ones are correctly named.
     """
