@@ -134,7 +134,10 @@ class SearchBuilder:
 
     def _filters(self) -> Iterator[str]:
         if _fts5_phrases(self.text):
-            yield "fts_usdb_song MATCH ?"
+            yield (
+                "usdb_song.song_id IN (SELECT rowid FROM fts_usdb_song WHERE"
+                " fts_usdb_song MATCH ?)"
+            )
         if self.artists:
             yield _in_values_clause("usdb_song.artist", self.artists)
         if self.titles:
