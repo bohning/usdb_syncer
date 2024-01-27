@@ -51,6 +51,21 @@ CREATE TABLE active_sync_meta (
     FOREIGN KEY (song_id, sync_meta_id) REFERENCES sync_meta (song_id, sync_meta_id) ON DELETE CASCADE
 );
 
+-- external content of the fts table
+CREATE VIEW usdb_song_with_padded_song_id AS
+SELECT
+    song_id,
+    printf('%05d', song_id) padded_song_id,
+    artist,
+    title,
+    language,
+    edition,
+    golden_notes,
+    rating,
+    views
+FROM
+    usdb_song;
+
 CREATE VIRTUAL TABLE fts_usdb_song USING fts5 (
     song_id,
     padded_song_id,
@@ -58,7 +73,7 @@ CREATE VIRTUAL TABLE fts_usdb_song USING fts5 (
     title,
     language,
     edition,
-    content = usdb_song,
+    content = usdb_song_with_padded_song_id,
     content_rowid = song_id,
     prefix = '1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20'
 );
