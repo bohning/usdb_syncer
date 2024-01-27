@@ -488,13 +488,16 @@ def _maybe_write_audio_tags(ctx: _Context) -> None:
         return
     path, resource = path_resource
     try:
-        match path_resource[1]:
+        match path.suffix:
             case ".m4a":
                 _write_m4a_tags(path, resource, ctx, options.embed_artwork)
             case ".mp3":
                 _write_mp3_tags(path, resource, ctx, options.embed_artwork)
             case ".ogg":
                 _write_ogg_tags(path, ctx, options.embed_artwork)
+            case other:
+                ctx.logger.debug(f"Audio tags not supported for suffix '{other}'.")
+                return
     except Exception:  # pylint: disable=broad-exception-caught
         ctx.logger.debug(traceback.format_exc())
         ctx.logger.error(f"Failed to write audio tags to file '{path}'!")
