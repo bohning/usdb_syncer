@@ -49,6 +49,7 @@ class SongTable:
         mw.table_view.selectionModel().currentChanged.connect(
             self._on_current_song_changed
         )
+        events.SongChanged.subscribe(self._on_song_changed)
         self._setup_search_timer()
         events.TreeFilterChanged.subscribe(self._on_tree_filter_changed)
         events.TextFilterChanged.subscribe(self._on_text_filter_changed)
@@ -121,6 +122,10 @@ class SongTable:
 
     ### actions
 
+    def _on_song_changed(self, event: events.SongChanged) -> None:
+        if event.song_id == self.current_song_id():
+            self._on_current_song_changed()
+
     def _on_current_song_changed(self) -> None:
         song = self.current_song()
         for action in self.mw.menu_songs.actions():
@@ -163,10 +168,15 @@ class SongTable:
 
     ### selection model
 
-    def current_song(self) -> UsdbSong | None:
+    def current_song_id(self) -> SongId | None:
         if (idx := self._view.selectionModel().currentIndex()).isValid():
             if ids := self._model.ids_for_indices([idx]):
-                return UsdbSong.get(ids[0])
+                return ids[0]
+        return None
+
+    def current_song(self) -> UsdbSong | None:
+        if (song_id := self.current_song_id()) is not None:
+            return UsdbSong.get(song_id)
         return None
 
     def selected_songs(self) -> Iterator[UsdbSong]:
