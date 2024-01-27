@@ -57,7 +57,8 @@ CREATE VIRTUAL TABLE fts_usdb_song USING fts5 (
     language,
     edition,
     content = usdb_song,
-    content_rowid = song_id
+    content_rowid = song_id,
+    prefix = '1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20'
 );
 
 CREATE TRIGGER fts_usdb_song_insert

@@ -195,8 +195,8 @@ def _in_ranges_clause(attribute: str, values: list[tuple[int, int | None]]) -> s
 
 
 def _fts5_phrases(text: str) -> str:
-    """Turns each whitespace-separated word into an FTS5 phrase."""
-    return " ".join(f'"{s}"' for s in text.replace('"', "").split(" ") if s)
+    """Turns each whitespace-separated word into an FTS5 prefix phrase."""
+    return " ".join(f'"{s}"*' for s in text.replace('"', "").split(" ") if s)
 
 
 def _fts5_start_phrase(text: str) -> str:
