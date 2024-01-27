@@ -128,6 +128,7 @@ class AudioFormat(Enum):
     M4A = "m4a"
     MP3 = "mp3"
     OGG = "ogg"
+    OPUS = "opus"
 
     def __str__(self) -> str:
         match self:
@@ -137,6 +138,8 @@ class AudioFormat(Enum):
                 return ".mp3 (MPEG)"
             case AudioFormat.OGG:
                 return ".ogg (Ogg Vorbis)"
+            case AudioFormat.OPUS:
+                return ".opus (Ogg Opus)"
             case _ as unreachable:
                 assert_never(unreachable)
 
@@ -152,6 +155,8 @@ class AudioFormat(Enum):
                 return "mp3"
             case AudioFormat.OGG:
                 return "vorbis"
+            case AudioFormat.OPUS:
+                return "opus"
             case _ as unreachable:
                 assert_never(unreachable)
 
@@ -163,6 +168,8 @@ class AudioFormat(Enum):
                 return "libmp3lame"
             case AudioFormat.OGG:
                 return "libvorbis"
+            case AudioFormat.OPUS:
+                return "libopus"
             case _ as unreachable:
                 assert_never(unreachable)
 

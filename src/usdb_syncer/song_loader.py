@@ -14,6 +14,8 @@ from typing import Iterable, Iterator
 
 import attrs
 import mutagen.mp4
+import mutagen.ogg
+import mutagen.oggopus
 import mutagen.oggvorbis
 import send2trash
 from mutagen import id3
@@ -495,8 +497,8 @@ def _maybe_write_audio_tags(ctx: _Context) -> None:
                 _write_m4a_tags(path, resource, ctx, options.embed_artwork)
             case ".mp3":
                 _write_mp3_tags(path, resource, ctx, options.embed_artwork)
-            case ".ogg":
-                _write_ogg_tags(path, ctx, options.embed_artwork)
+            case ".ogg" | ".opus":
+                _write_ogg_tags(path, resource, ctx, options.embed_artwork)
             case other:
                 ctx.logger.debug(f"Audio tags not supported for suffix '{other}'.")
                 return
@@ -577,8 +579,15 @@ def _write_mp3_tags(
     tags.save(path)
 
 
-def _write_ogg_tags(path: Path, ctx: _Context, embed_artwork: bool) -> None:
-    audio = mutagen.oggvorbis.OggVorbis(path)
+def _write_ogg_tags(
+    path: Path, resource: str, ctx: _Context, embed_artwork: bool
+) -> None:
+    audio: mutagen.ogg.OggFileType
+    match path.suffix:
+        case ".ogg":
+            audio = mutagen.oggvorbis.OggVorbis(path)
+        case ".opus":
+            audio = mutagen.oggopus.OggOpus(path)
 
     # Set basic tags
     audio["artist"] = ctx.txt.headers.artist
@@ -590,6 +599,7 @@ def _write_ogg_tags(path: Path, ctx: _Context, embed_artwork: bool) -> None:
     if year := ctx.txt.headers.year:
         audio["date"] = year
     audio["lyrics"] = ctx.txt.unsynchronized_lyrics()
+    audio["comment"] = resource
 
     if embed_artwork and (cover_path := ctx.out.cover.path()):
         picture = Picture()
