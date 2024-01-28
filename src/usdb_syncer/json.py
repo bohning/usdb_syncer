@@ -2,6 +2,7 @@
 
 import datetime
 import json
+from pathlib import Path
 from typing import Any, Iterable
 
 from usdb_syncer import SongId
@@ -9,11 +10,9 @@ from usdb_syncer.constants import VERSION
 from usdb_syncer.logger import get_logger
 from usdb_syncer.resource_dl import _url_from_resource
 from usdb_syncer.song_txt.headers import Headers
-from usdb_syncer.usdb_scraper import UsdbSong
+from usdb_syncer.usdb_song import UsdbSong
 
 _logger = get_logger(__file__)
-
-MAX_SIZE = (100, 100)
 
 
 def get_headers(txt_path: str) -> Headers:
@@ -22,7 +21,7 @@ def get_headers(txt_path: str) -> Headers:
         return Headers.parse(lines, _logger)
 
 
-def generate_song_json(songs: Iterable[SongId], path: str) -> int:
+def generate_song_json(songs: Iterable[SongId], path: Path) -> int:
     date = datetime.datetime.now()
     song_list: list[dict[str, Any]] = [
         {
