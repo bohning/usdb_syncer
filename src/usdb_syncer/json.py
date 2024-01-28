@@ -14,6 +14,8 @@ from usdb_syncer.usdb_song import UsdbSong
 
 _logger = get_logger(__file__)
 
+JSON_EXPORT_VERSION = "0.1.0"
+
 
 def get_headers(txt_path: str) -> Headers:
     with open(txt_path, "r", encoding="utf-8") as file:
@@ -70,7 +72,12 @@ def generate_song_json(songs: Iterable[SongId], path: Path) -> int:
         and (txt := meta.txt)
         and (headers := get_headers(str(meta.path.with_name(txt.fname))))
     ]
-    content = {"songs": song_list, "date": str(date), "syncer_version": VERSION}
+    content = {
+        "songs": song_list,
+        "date": str(date),
+        "syncer_version": VERSION,
+        "export_version": JSON_EXPORT_VERSION,
+    }
 
     with open(path, "w", encoding="utf8") as file:
         json.dump(content, file, ensure_ascii=False)
