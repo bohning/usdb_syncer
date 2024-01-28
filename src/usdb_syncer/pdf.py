@@ -5,15 +5,10 @@ from typing import Iterable, List
 
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
-from reportlab.pdfbase import pdfmetrics
-from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.platypus import Paragraph, SimpleDocTemplate
 
 from usdb_syncer import SongId
 from usdb_syncer.usdb_song import UsdbSong
-
-pdfmetrics.registerFont(TTFont("NotoSans-Regular", "NotoSans-Regular.ttf"))
-pdfmetrics.registerFont(TTFont("NotoSans-Bold", "NotoSans-Bold.ttf"))
 
 
 def generate_song_pdf(songs: Iterable[SongId], path: str) -> None:
@@ -23,15 +18,9 @@ def generate_song_pdf(songs: Iterable[SongId], path: str) -> None:
     # Define custom styles
     styles = getSampleStyleSheet()
     custom_styles = {
-        "Title": ParagraphStyle(
-            "Title", parent=styles["Title"], fontName="NotoSans-Bold", fontSize=16
-        ),
-        "Heading1": ParagraphStyle(
-            "Heading1", parent=styles["Heading1"], fontName="NotoSans-Bold", fontSize=14
-        ),
-        "Normal": ParagraphStyle(
-            "Normal", parent=styles["Normal"], fontName="NotoSans-Regular", fontSize=12
-        ),
+        "Title": ParagraphStyle("Title", parent=styles["Title"], fontSize=20),
+        "Heading1": ParagraphStyle("Heading1", parent=styles["Heading1"], fontSize=14),
+        "Normal": ParagraphStyle("Normal", parent=styles["Normal"], fontSize=12),
     }
 
     # Build the content
