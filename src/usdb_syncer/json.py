@@ -42,7 +42,7 @@ def generate_song_json(songs: Iterable[SongId], path: Path) -> int:
                 else headers.genre
             ),
             "language": song.language,
-            "golden_notes": bool(song.golden_notes),  # force true/false instead of 1/0
+            "golden_notes": song.golden_notes,
             "cover_url": (
                 meta.meta_tags.cover.source_url(_logger)
                 if meta.meta_tags.cover
