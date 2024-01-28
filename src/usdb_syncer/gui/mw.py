@@ -186,7 +186,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         path = os.path.join(settings.get_song_dir(), fname)
         path = QFileDialog.getSaveFileName(self, dir=path, filter="JSON (*.json)")[0]
         if path:
-            num_of_songs = generate_song_json(db.all_local_usdb_songs(), path)
+            num_of_songs = generate_song_json(db.all_local_usdb_songs(), Path(path))
             _logger.info(f"exported {num_of_songs} songs to {path}")
 
     def _import_usdb_ids_from_files(self) -> None:
