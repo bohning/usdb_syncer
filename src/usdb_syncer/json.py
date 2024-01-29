@@ -13,18 +13,11 @@ import attrs
 from usdb_syncer import SongId
 from usdb_syncer.logger import get_logger
 from usdb_syncer.resource_dl import _url_from_resource
-from usdb_syncer.song_txt.headers import Headers
 from usdb_syncer.usdb_song import UsdbSong
 
 _logger = get_logger(__file__)
 
 JSON_EXPORT_VERSION = 1
-
-
-def get_headers(txt_path: str) -> Headers:
-    with open(txt_path, "r", encoding="utf-8") as file:
-        lines = [line for line in file.read().splitlines() if line]
-        return Headers.parse(lines, _logger)
 
 
 @attrs.define(kw_only=True)
@@ -34,9 +27,9 @@ class SongExportData:
     id: SongId
     artist: str
     title: str
-    year: int | None = None
+    year: int | None = attrs.field(default=None, init=False)  # until available
     edition: str | None = None
-    genre: str | None = None
+    genre: str | None = attrs.field(default=None, init=False)  # until available
     language: str | None = None
     golden_notes: bool
     cover_url: str | None = None
@@ -47,23 +40,14 @@ class SongExportData:
 
     @classmethod
     def from_usdb_song(cls, song: UsdbSong) -> SongExportData | None:
-        if not (meta := song.sync_meta) or not (txt := meta.txt):
+        if not (meta := song.sync_meta):
             return None
-        headers = get_headers(str(meta.path.with_name(txt.fname)))
         return cls(
             id=song.song_id,
-            artist=headers.artist,
-            title=headers.title,
-            year=int(headers.year) if headers.year else None,
+            artist=song.artist,
+            title=song.title,
             edition=(
-                None
-                if (not headers.edition or headers.edition == "None")
-                else headers.edition
-            ),
-            genre=(
-                None
-                if (not headers.genre or headers.genre == "None")
-                else headers.genre
+                None if (not song.edition or song.edition == "None") else song.edition
             ),
             language=song.language,
             golden_notes=song.golden_notes,
