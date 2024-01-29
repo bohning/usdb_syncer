@@ -36,6 +36,20 @@ def _root() -> Path:
     return Path(__file__).parent.parent.parent.absolute()
 
 
+def url_from_resource(resource: str) -> str | None:
+    if "://" in resource:
+        return resource
+    if "/" in resource:
+        return f"https://{resource}"
+    vimeo_id_pattern = r"^\d{2,10}$"
+    if re.match(vimeo_id_pattern, resource):
+        return f"https://vimeo.com/{resource}"
+    yt_id_pattern = r"^[A-Za-z0-9_-]{11}$"
+    if re.match(yt_id_pattern, resource):
+        return f"https://www.youtube.com/watch?v={resource}"
+    return None
+
+
 class AppPaths:
     """App data paths."""
 

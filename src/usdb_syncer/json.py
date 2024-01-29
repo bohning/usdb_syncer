@@ -12,8 +12,8 @@ import attrs
 
 from usdb_syncer import SongId
 from usdb_syncer.logger import get_logger
-from usdb_syncer.resource_dl import _url_from_resource
 from usdb_syncer.usdb_song import UsdbSong
+from usdb_syncer.utils import url_from_resource
 
 _logger = get_logger(__file__)
 
@@ -60,12 +60,12 @@ class SongExportData:
                 meta.meta_tags.cover.to_str("co") if meta.meta_tags.cover else None
             ),
             audio_url=(
-                _url_from_resource(meta.meta_tags.audio)
+                url_from_resource(meta.meta_tags.audio)
                 if meta.meta_tags.audio
                 else None
             ),
             video_url=(
-                _url_from_resource(meta.meta_tags.video)
+                url_from_resource(meta.meta_tags.video)
                 if meta.meta_tags.video
                 else None
             ),
