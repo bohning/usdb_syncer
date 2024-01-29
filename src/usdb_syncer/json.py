@@ -11,7 +11,6 @@ from typing import Any, Iterable
 import attrs
 
 from usdb_syncer import SongId
-from usdb_syncer.constants import VERSION
 from usdb_syncer.logger import get_logger
 from usdb_syncer.resource_dl import _url_from_resource
 from usdb_syncer.song_txt.headers import Headers
@@ -19,7 +18,7 @@ from usdb_syncer.usdb_song import UsdbSong
 
 _logger = get_logger(__file__)
 
-JSON_EXPORT_VERSION = "0.1.0"
+JSON_EXPORT_VERSION = 1
 
 
 def get_headers(txt_path: str) -> Headers:
@@ -99,8 +98,7 @@ class JsonSongList:
 
     songs: list[SongExportData]
     date: str
-    syncer_version: str = attrs.field(default=VERSION, init=False)
-    export_version: str = attrs.field(default=JSON_EXPORT_VERSION, init=False)
+    version: int = attrs.field(default=JSON_EXPORT_VERSION, init=False)
 
     @classmethod
     def from_songs(
