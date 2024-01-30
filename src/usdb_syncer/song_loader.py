@@ -123,10 +123,6 @@ class _Locations:
             folder = next_unique_directory(song_dir.joinpath(filename_stem))
         return cls(folder=folder, filename_stem=filename_stem, tempdir=tempdir)
 
-    def filename_with_ending(self, filename: str) -> str:
-        """Path to file in the final song folder with the ending of the given file."""
-        return self.filename_stem + resource_file_ending(filename)
-
     def file_path(self, file: str = "", ext: str = "") -> Path:
         """Path to file in the final download directory. The final path component is
         the generic name or the provided file, optionally with the provided extension
