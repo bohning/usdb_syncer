@@ -19,6 +19,13 @@ CREATE TABLE usdb_song (
     PRIMARY KEY (song_id)
 );
 
+CREATE TABLE usdb_song_language (
+    language TEXT NOT NULL,
+    song_id INTEGER NOT NULL,
+    PRIMARY KEY (language, song_id),
+    FOREIGN KEY (song_id) REFERENCES usdb_song (song_id) ON DELETE CASCADE
+);
+
 CREATE TABLE sync_meta (
     sync_meta_id INTEGER NOT NULL,
     song_id INTEGER NOT NULL,
