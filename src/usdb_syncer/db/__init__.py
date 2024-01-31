@@ -107,6 +107,10 @@ class SongOrder(enum.Enum):
     GOLDEN_NOTES = "usdb_song.golden_notes"
     RATING = "usdb_song.rating"
     VIEWS = "usdb_song.views"
+    YEAR = "usdb_song.year"
+    GENRE = "usdb_song.genre"
+    CREATOR = "usdb_song.creator"
+    TAGS = "usdb_song.tags"
     PINNED = "sync_meta.pinned"
     TXT = "txt.sync_meta_id IS NULL"
     AUDIO = "audio.sync_meta_id IS NULL"
@@ -234,6 +238,10 @@ class UsdbSongParams:
     golden_notes: bool
     rating: int
     views: int
+    year: int | None
+    genre: str
+    creator: str
+    tags: str
 
 
 def upsert_usdb_song(params: UsdbSongParams) -> None:

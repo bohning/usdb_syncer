@@ -281,6 +281,13 @@ def _update_song_with_usdb_data(
     song.golden_notes = details.golden_notes
     song.rating = details.rating
     song.views = details.views
+    if txt.headers.year and len(txt.headers.year) == 4 and txt.headers.year.isdigit():
+        song.year = int(txt.headers.year)
+    else:
+        song.year = None
+    song.genre = txt.headers.genre or ""
+    song.creator = txt.headers.creator or ""
+    song.tags = txt.headers.tags or ""
 
 
 class _SongLoader(QtCore.QRunnable):

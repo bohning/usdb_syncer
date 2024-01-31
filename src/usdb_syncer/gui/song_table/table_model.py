@@ -134,6 +134,14 @@ def _display_data(song: UsdbSong, column: int) -> str | None:
             return rating_str(song.rating)
         case Column.VIEWS:
             return str(song.views)
+        case Column.YEAR:
+            return str(song.year) if song.year else ""
+        case Column.GENRE:
+            return song.genre
+        case Column.CREATOR:
+            return song.creator
+        case Column.TAGS:
+            return song.tags
         case Column.DOWNLOAD_STATUS:
             return (
                 utils.format_timestamp(song.sync_meta.mtime)
@@ -168,6 +176,10 @@ def _decoration_data(song: UsdbSong, column: int) -> QIcon | None:
             | Column.RATING
             | Column.VIEWS
             | Column.DOWNLOAD_STATUS
+            | Column.YEAR
+            | Column.GENRE
+            | Column.CREATOR
+            | Column.TAGS
         ):
             return None
         case Column.TXT:

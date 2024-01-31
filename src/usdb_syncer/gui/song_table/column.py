@@ -23,6 +23,10 @@ class Column(IntEnum):
     GOLDEN_NOTES = enum.auto()
     RATING = enum.auto()
     VIEWS = enum.auto()
+    YEAR = enum.auto()
+    GENRE = enum.auto()
+    CREATOR = enum.auto()
+    TAGS = enum.auto()
     PINNED = enum.auto()
     TXT = enum.auto()
     AUDIO = enum.auto()
@@ -41,6 +45,14 @@ class Column(IntEnum):
                 return "Language"
             case Column.EDITION:
                 return "Edition"
+            case Column.YEAR:
+                return "Year"
+            case Column.GENRE:
+                return "Genre"
+            case Column.CREATOR:
+                return "Creator"
+            case Column.TAGS:
+                return "Tags"
             case Column.DOWNLOAD_STATUS:
                 return "Status"
             case (
@@ -79,6 +91,14 @@ class Column(IntEnum):
                 return QIcon(":/icons/rating.png")
             case Column.VIEWS:
                 return QIcon(":/icons/views.png")
+            case Column.YEAR:
+                return QIcon(":/icons/year.png")
+            case Column.GENRE:
+                return QIcon(":/icons/genre.png")
+            case Column.CREATOR:
+                return QIcon(":/icons/creator.png")
+            case Column.TAGS:
+                return QIcon(":/icons/tags.png")
             case Column.TXT:
                 return QIcon(":/icons/text.png")
             case Column.AUDIO:
@@ -108,6 +128,10 @@ class Column(IntEnum):
                 | Column.VIEWS
                 | Column.RATING
                 | Column.GOLDEN_NOTES
+                | Column.YEAR
+                | Column.GENRE
+                | Column.CREATOR
+                | Column.TAGS
             ):
                 return None
             case (
@@ -140,6 +164,14 @@ class Column(IntEnum):
                 return db.SongOrder.RATING
             case Column.VIEWS:
                 return db.SongOrder.VIEWS
+            case Column.YEAR:
+                return db.SongOrder.YEAR
+            case Column.GENRE:
+                return db.SongOrder.GENRE
+            case Column.CREATOR:
+                return db.SongOrder.CREATOR
+            case Column.TAGS:
+                return db.SongOrder.TAGS
             case Column.PINNED:
                 return db.SongOrder.PINNED
             case Column.TXT:
