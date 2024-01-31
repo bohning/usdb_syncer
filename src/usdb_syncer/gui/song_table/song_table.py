@@ -94,10 +94,15 @@ class SongTable:
         self._view.customContextMenuRequested.connect(self._context_menu)
         self._view.doubleClicked.connect(lambda idx: self._download([idx.row()]))
         header = self._header()
+        existing_state = False
         if not state.isEmpty():
             header.restoreState(state)
-            self._search.order = Column(header.sortIndicatorSection()).song_order()
-            self._search.descending = bool(header.sortIndicatorOrder())
+            if header.count() != max(Column) + 1:
+                header.reset()
+            else:
+                existing_state = True
+                self._search.order = Column(header.sortIndicatorSection()).song_order()
+                self._search.descending = bool(header.sortIndicatorOrder())
         for column in Column:
             if size := column.fixed_size():
                 header.setSectionResizeMode(column, QHeaderView.ResizeMode.Fixed)
@@ -105,7 +110,7 @@ class SongTable:
             # setting a (default) width on the last, stretching column seems to cause
             # issues, so we set it manually on the other columns
             elif column is not max(Column):
-                if state.isEmpty():
+                if not existing_state:
                     header.resizeSection(column, DEFAULT_COLUMN_WIDTH)
                 header.setSectionResizeMode(column, QHeaderView.ResizeMode.Interactive)
 
