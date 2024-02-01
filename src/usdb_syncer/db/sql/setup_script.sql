@@ -129,8 +129,7 @@ VALUES
 
 END;
 
-CREATE TRIGGER fts_usdb_song_update
-AFTER
+CREATE TRIGGER fts_usdb_song_update BEFORE
 UPDATE
     ON usdb_song BEGIN
 UPDATE
