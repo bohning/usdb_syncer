@@ -92,13 +92,13 @@ class Column(IntEnum):
             case Column.VIEWS:
                 return QIcon(":/icons/views.png")
             case Column.YEAR:
-                return QIcon(":/icons/year.png")
+                return QIcon(":/icons/calendar.png")
             case Column.GENRE:
-                return QIcon(":/icons/genre.png")
+                return QIcon(":/icons/spectrum-absorption.png")
             case Column.CREATOR:
-                return QIcon(":/icons/creator.png")
+                return QIcon(":/icons/quill.png")
             case Column.TAGS:
-                return QIcon(":/icons/tags.png")
+                return QIcon(":/icons/price-tag.png")
             case Column.TXT:
                 return QIcon(":/icons/text.png")
             case Column.AUDIO:
