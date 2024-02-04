@@ -20,7 +20,7 @@ from usdb_syncer.gui.search_tree.tree import FilterTree
 from usdb_syncer.gui.settings_dialog import SettingsDialog
 from usdb_syncer.gui.song_table.song_table import SongTable
 from usdb_syncer.gui.usdb_login_dialog import UsdbLoginDialog
-from usdb_syncer.json import generate_song_json
+from usdb_syncer.json_export import generate_song_json
 from usdb_syncer.logger import get_logger
 from usdb_syncer.pdf import generate_song_pdf
 from usdb_syncer.song_loader import DownloadManager
