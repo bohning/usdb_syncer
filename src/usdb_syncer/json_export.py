@@ -27,9 +27,9 @@ class SongExportData:
     id: SongId
     artist: str
     title: str
-    year: int | None = attrs.field(default=None, init=False)  # until available
+    year: int | None = None
     edition: str | None = None
-    genre: str | None = attrs.field(default=None, init=False)  # until available
+    genre: str | None = None
     language: str | None = None
     golden_notes: bool
     cover_url: str | None = None
@@ -46,9 +46,11 @@ class SongExportData:
             id=song.song_id,
             artist=song.artist,
             title=song.title,
+            year=song.year,
             edition=(
                 None if (not song.edition or song.edition == "None") else song.edition
             ),
+            genre=song.genre,
             language=song.language,
             golden_notes=song.golden_notes,
             cover_url=(
