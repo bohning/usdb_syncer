@@ -196,6 +196,7 @@
     <addaction name="action_settings"/>
     <addaction name="action_meta_tags"/>
     <addaction name="action_generate_song_pdf"/>
+    <addaction name="action_generate_song_json"/>
    </widget>
    <widget class="QMenu" name="menu_usdb">
     <property name="title">
@@ -441,6 +442,15 @@
    </property>
    <property name="text">
     <string>Generate Song List (PDF)</string>
+   </property>
+  </action>
+  <action name="action_generate_song_json">
+   <property name="icon">
+    <iconset resource="../resources/resources.qrc">
+     <normaloff>:/icons/report.png</normaloff>:/icons/report.png</iconset>
+   </property>
+   <property name="text">
+    <string>Generate Song List (JSON)</string>
    </property>
   </action>
   <action name="action_refetch_song_list">

@@ -1,7 +1,6 @@
 """Functions for downloading and processing media."""
 
 import os
-import re
 from enum import Enum
 from pathlib import Path
 from typing import Union, assert_never
@@ -18,6 +17,7 @@ from usdb_syncer.logger import Log, get_logger
 from usdb_syncer.meta_tags import ImageMetaTags
 from usdb_syncer.settings import Browser
 from usdb_syncer.usdb_scraper import SongDetails
+from usdb_syncer.utils import url_from_resource
 
 IMAGE_DOWNLOAD_HEADERS = {
     "User-Agent": (
@@ -43,20 +43,6 @@ class ImageKind(Enum):
                 return "background"
             case _ as unreachable:
                 assert_never(unreachable)
-
-
-def _url_from_resource(resource: str) -> str | None:
-    if "://" in resource:
-        return resource
-    if "/" in resource:
-        return f"https://{resource}"
-    vimeo_id_pattern = r"^\d{2,10}$"
-    if re.match(vimeo_id_pattern, resource):
-        return f"https://vimeo.com/{resource}"
-    yt_id_pattern = r"^[A-Za-z0-9_-]{11}$"
-    if re.match(yt_id_pattern, resource):
-        return f"https://www.youtube.com/watch?v={resource}"
-    return None
 
 
 def download_audio(
@@ -147,7 +133,7 @@ def _ytdl_options(format_: str, browser: Browser, target_stem: Path) -> YtdlOpti
 
 
 def _download_resource(options: YtdlOptions, resource: str, logger: Log) -> str | None:
-    if (url := _url_from_resource(resource)) is None:
+    if (url := url_from_resource(resource)) is None:
         logger.debug(f"invalid audio/video resource: {resource}")
         return None
 

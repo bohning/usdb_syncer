@@ -95,7 +95,7 @@ class UsdbSong:
             title=row[2],
             language=row[3],
             edition=row[4],
-            golden_notes=row[5],
+            golden_notes=bool(row[5]),  # else would be 0/1 instead of False/True
             rating=row[6],
             views=row[7],
             sync_meta=None if row[8] is None else SyncMeta.from_db_row(row[8:]),
