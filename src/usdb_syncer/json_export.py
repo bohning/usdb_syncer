@@ -30,6 +30,7 @@ class SongExportData:
     year: int | None = None
     edition: str | None = None
     genre: str | None = None
+    tags: str | None = None
     language: str | None = None
     golden_notes: bool
     cover_url: str | None = None
@@ -51,6 +52,7 @@ class SongExportData:
                 None if (not song.edition or song.edition == "None") else song.edition
             ),
             genre=song.genre,
+            tags=song.tags,
             language=song.language,
             golden_notes=song.golden_notes,
             cover_url=(
