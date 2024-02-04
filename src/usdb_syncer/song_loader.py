@@ -123,10 +123,6 @@ class _Locations:
             folder = next_unique_directory(song_dir.joinpath(filename_stem))
         return cls(folder=folder, filename_stem=filename_stem, tempdir=tempdir)
 
-    def filename_with_ending(self, filename: str) -> str:
-        """Path to file in the final song folder with the ending of the given file."""
-        return self.filename_stem + resource_file_ending(filename)
-
     def file_path(self, file: str = "", ext: str = "") -> Path:
         """Path to file in the final download directory. The final path component is
         the generic name or the provided file, optionally with the provided extension
@@ -285,6 +281,13 @@ def _update_song_with_usdb_data(
     song.golden_notes = details.golden_notes
     song.rating = details.rating
     song.views = details.views
+    if txt.headers.year and len(txt.headers.year) == 4 and txt.headers.year.isdigit():
+        song.year = int(txt.headers.year)
+    else:
+        song.year = None
+    song.genre = txt.headers.genre or ""
+    song.creator = txt.headers.creator or ""
+    song.tags = txt.headers.tags or ""
 
 
 class _SongLoader(QtCore.QRunnable):

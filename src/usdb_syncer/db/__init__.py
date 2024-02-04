@@ -107,6 +107,10 @@ class SongOrder(enum.Enum):
     GOLDEN_NOTES = "usdb_song.golden_notes"
     RATING = "usdb_song.rating"
     VIEWS = "usdb_song.views"
+    YEAR = "usdb_song.year"
+    GENRE = "usdb_song.genre"
+    CREATOR = "usdb_song.creator"
+    TAGS = "usdb_song.tags"
     PINNED = "sync_meta.pinned"
     TXT = "txt.sync_meta_id IS NULL"
     AUDIO = "audio.sync_meta_id IS NULL"
@@ -145,7 +149,10 @@ class SearchBuilder:
         if self.editions:
             yield _in_values_clause("usdb_song.edition", self.editions)
         if self.languages:
-            yield _in_values_clause("usdb_song.language", self.languages)
+            yield (
+                "usdb_song.song_id IN (SELECT song_id FROM usdb_song_language WHERE"
+                f" {_in_values_clause('language', self.languages)})"
+            )
         if self.golden_notes is not None:
             yield "usdb_song.golden_notes = ?"
         if self.ratings:
@@ -187,7 +194,7 @@ class SearchBuilder:
 
 
 def _in_values_clause(attribute: str, values: list) -> str:
-    return f"{attribute} IN ({', '.join('?'*len(values))})"
+    return f"{attribute} IN ({', '.join('?' * len(values))})"
 
 
 def _in_ranges_clause(attribute: str, values: list[tuple[int, int | None]]) -> str:
@@ -231,6 +238,10 @@ class UsdbSongParams:
     golden_notes: bool
     rating: int
     views: int
+    year: int | None
+    genre: str
+    creator: str
+    tags: str
 
 
 def upsert_usdb_song(params: UsdbSongParams) -> None:
@@ -280,6 +291,17 @@ def find_similar_usdb_songs(artist: str, title: str) -> Iterable[SongId]:
 ### song filters
 
 
+def upsert_usdb_songs_languages(params: list[tuple[SongId, Iterable[str]]]) -> None:
+    _DbState.connection().execute(
+        f"DELETE FROM usdb_song_language WHERE {_in_values_clause('song_id', params)}",
+        tuple(t[0] for t in params),
+    )
+    _DbState.connection().executemany(
+        "INSERT INTO usdb_song_language (song_id, language) VALUES (?, ?)",
+        ((song_id, lang) for song_id, langs in params for lang in langs),
+    )
+
+
 def usdb_song_artists() -> list[tuple[str, int]]:
     stmt = "SELECT artist, COUNT(*) FROM usdb_song GROUP BY artist ORDER BY artist"
     return _DbState.connection().execute(stmt).fetchall()
@@ -297,7 +319,8 @@ def usdb_song_editions() -> list[tuple[str, int]]:
 
 def usdb_song_languages() -> list[tuple[str, int]]:
     stmt = (
-        "SELECT language, COUNT(*) FROM usdb_song GROUP BY language ORDER BY language"
+        "SELECT language, COUNT(*) FROM usdb_song_language GROUP BY language ORDER BY"
+        " language"
     )
     return _DbState.connection().execute(stmt).fetchall()
 

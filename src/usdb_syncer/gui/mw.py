@@ -76,6 +76,8 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         self.toolButton_errors.toggled.connect(self._on_log_filter_changed)
 
     def _setup_toolbar(self) -> None:
+        self.menu_view.addAction(self.dock_search.toggleViewAction())
+        self.menu_view.addAction(self.dock_log.toggleViewAction())
         for action, func in (
             (self.action_songs_download, self.table.download_selection),
             (self.action_songs_abort, self.table.abort_selected_downloads),

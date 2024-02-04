@@ -16,7 +16,18 @@ CREATE TABLE usdb_song (
     golden_notes BOOLEAN NOT NULL,
     rating INTEGER NOT NULL,
     views INTEGER NOT NULL,
+    year INTEGER,
+    genre TEXT NOT NULL,
+    creator TEXT NOT NULL,
+    tags TEXT NOT NULL,
     PRIMARY KEY (song_id)
+);
+
+CREATE TABLE usdb_song_language (
+    language TEXT NOT NULL,
+    song_id INTEGER NOT NULL,
+    PRIMARY KEY (language, song_id),
+    FOREIGN KEY (song_id) REFERENCES usdb_song (song_id) ON DELETE CASCADE
 );
 
 CREATE TABLE sync_meta (
@@ -52,7 +63,7 @@ CREATE TABLE active_sync_meta (
 );
 
 -- external content of the fts table
-CREATE VIEW usdb_song_with_padded_song_id AS
+CREATE VIEW fts_usdb_song_view AS
 SELECT
     song_id,
     printf('%05d', song_id) padded_song_id,
@@ -60,9 +71,10 @@ SELECT
     title,
     language,
     edition,
-    golden_notes,
-    rating,
-    views
+    year,
+    genre,
+    creator,
+    tags
 FROM
     usdb_song;
 
@@ -73,7 +85,11 @@ CREATE VIRTUAL TABLE fts_usdb_song USING fts5 (
     title,
     language,
     edition,
-    content = usdb_song_with_padded_song_id,
+    year,
+    genre,
+    creator,
+    tags,
+    content = fts_usdb_song_view,
     content_rowid = song_id,
     prefix = '1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20'
 );
@@ -90,7 +106,11 @@ INSERT INTO
         artist,
         title,
         language,
-        edition
+        edition,
+        year,
+        genre,
+        creator,
+        tags
     )
 VALUES
     (
@@ -100,13 +120,16 @@ VALUES
         new.artist,
         new.title,
         new.language,
-        new.edition
+        new.edition,
+        new.year,
+        new.genre,
+        new.creator,
+        new.tags
     );
 
 END;
 
-CREATE TRIGGER fts_usdb_song_update
-AFTER
+CREATE TRIGGER fts_usdb_song_update BEFORE
 UPDATE
     ON usdb_song BEGIN
 UPDATE
@@ -118,7 +141,11 @@ SET
     artist = new.artist,
     title = new.title,
     language = new.language,
-    edition = new.edition
+    edition = new.edition,
+    year = new.year,
+    genre = new.genre,
+    creator = new.creator,
+    tags = new.tags
 WHERE
     rowid = old.song_id;
 

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import enum
 from json import JSONEncoder
-from typing import Any, Type, assert_never
+from typing import Any, Iterable, Type, assert_never
 
 import attrs
 
@@ -53,6 +53,12 @@ class UsdbSong:
     golden_notes: bool
     rating: int
     views: int
+    # not in USDB song list
+    year: int | None = None
+    genre: str = ""
+    creator: str = ""
+    tags: str = ""
+    # internal
     sync_meta: SyncMeta | None = None
     status: DownloadStatus = DownloadStatus.NONE
 
@@ -88,7 +94,7 @@ class UsdbSong:
 
     @classmethod
     def from_db_row(cls, song_id: SongId, row: tuple) -> UsdbSong:
-        assert len(row) == 29
+        assert len(row) == 33
         return cls(
             song_id=song_id,
             artist=row[1],
@@ -98,7 +104,11 @@ class UsdbSong:
             golden_notes=bool(row[5]),  # else would be 0/1 instead of False/True
             rating=row[6],
             views=row[7],
-            sync_meta=None if row[8] is None else SyncMeta.from_db_row(row[8:]),
+            year=row[8],
+            genre=row[9],
+            creator=row[10],
+            tags=row[11],
+            sync_meta=None if row[12] is None else SyncMeta.from_db_row(row[12:]),
         )
 
     @classmethod
@@ -128,6 +138,7 @@ class UsdbSong:
 
     def upsert(self) -> None:
         db.upsert_usdb_song(self.db_params())
+        db.upsert_usdb_songs_languages([(self.song_id, self.languages())])
         if self.sync_meta:
             self.sync_meta.upsert()
         _UsdbSongCache.remove(self.song_id)
@@ -135,6 +146,7 @@ class UsdbSong:
     @classmethod
     def upsert_many(cls, songs: list[UsdbSong]) -> None:
         db.upsert_usdb_songs(song.db_params() for song in songs)
+        db.upsert_usdb_songs_languages([(s.song_id, s.languages()) for s in songs])
         SyncMeta.upsert_many([song.sync_meta for song in songs if song.sync_meta])
         for song in songs:
             _UsdbSongCache.remove(song.song_id)
@@ -149,6 +161,10 @@ class UsdbSong:
             golden_notes=self.golden_notes,
             rating=self.rating,
             views=self.views,
+            year=self.year,
+            genre=self.genre,
+            creator=self.creator,
+            tags=self.tags,
         )
 
     def is_local(self) -> bool:
@@ -156,6 +172,9 @@ class UsdbSong:
 
     def is_pinned(self) -> bool:
         return self.sync_meta is not None and self.sync_meta.pinned
+
+    def languages(self) -> Iterable[str]:
+        return (l for lang in self.language.split(",") if (l := lang.strip()))
 
     @classmethod
     def clear_cache(cls) -> None:

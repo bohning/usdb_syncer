@@ -78,6 +78,7 @@ class Headers:
     encoding: str | None = None
     comment: str | None = None
     resolution: str | None = None
+    tags: str | None = None
 
     @classmethod
     def parse(cls, lines: list[str], logger: Log) -> Headers:
@@ -137,6 +138,7 @@ class Headers:
                 "p2",
                 "album",
                 "comment",
+                "tags",
             )
             if (val := getattr(self, key)) is not None
         )
@@ -211,6 +213,7 @@ def _set_header_value(kwargs: dict[str, Any], header: str, value: str) -> None:
         "encoding",
         "comment",
         "resolution",
+        "tags",
     ):
         kwargs[header] = value
     elif header == "title":

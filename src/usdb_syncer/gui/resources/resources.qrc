@@ -7,6 +7,7 @@
     <file>brave.png</file>
     <file>broom.png</file>
     <file>bug.png</file>
+    <file>calendar.png</file>
     <file>check_for_update.png</file>
     <file>chrome.png</file>
     <file>chromium.png</file>
@@ -14,6 +15,7 @@
     <file>clipboard--plus.png</file>
     <file>clipboard-empty.png</file>
     <file>cog.png</file>
+    <file>control-pause.png</file>
     <file>cover.png</file>
     <file>database.png</file>
     <file>document-export.png</file>
@@ -32,11 +34,13 @@
     <file>log.png</file>
     <file>minus-circle.png</file>
     <file>opera.png</file>
-    <file>control-pause.png</file>
     <file>pin.png</file>
+    <file>price-tag.png</file>
+    <file>quill.png</file>
     <file>rating.png</file>
     <file>report.png</file>
     <file>safari.png</file>
+    <file>spectrum-absorption.png</file>
     <file>status.png</file>
     <file>tag-hash.png</file>
     <file>text.png</file>

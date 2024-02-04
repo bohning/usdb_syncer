@@ -244,6 +244,12 @@
     <addaction name="action_import_usdb_ids"/>
     <addaction name="action_export_usdb_ids"/>
    </widget>
+   <widget class="QMenu" name="menu_view">
+    <property name="title">
+     <string>View</string>
+    </property>
+   </widget>
+   <addaction name="menu_view"/>
    <addaction name="menu_songs"/>
    <addaction name="menu_usdb"/>
    <addaction name="menu_local"/>
@@ -526,11 +532,6 @@
    </property>
    <property name="text">
     <string>USDB Login</string>
-   </property>
-  </action>
-  <action name="actionHelp">
-   <property name="text">
-    <string>Help...</string>
    </property>
   </action>
   <action name="action_about">
