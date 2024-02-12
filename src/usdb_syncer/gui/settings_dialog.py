@@ -19,27 +19,28 @@ class SettingsDialog(Ui_Dialog, QDialog):
         self._browser = self.comboBox_browser.currentData()
         self.groupBox_reencode_video.setVisible(False)
 
-    def _populate_comboboxes(self) -> None:  # pylint: disable=too-complex
-        for encoding in settings.Encoding:
-            self.comboBox_encoding.addItem(str(encoding), encoding)
-        for newline in settings.Newline:
-            self.comboBox_line_endings.addItem(str(newline), newline)
-        for size in settings.CoverMaxSize:
-            self.comboBox_cover_max_size.addItem(str(size), size)
-        for container in settings.AudioFormat:
-            self.comboBox_audio_format.addItem(str(container), container)
-        for bitrate in settings.AudioBitrate:
-            self.comboBox_audio_bitrate.addItem(str(bitrate), bitrate)
-        for browser in settings.Browser:
-            self.comboBox_browser.addItem(QIcon(browser.icon()), str(browser), browser)
-        for video_container in settings.VideoContainer:
-            self.comboBox_videocontainer.addItem(str(video_container), video_container)
-        for video_codec in settings.VideoCodec:
-            self.comboBox_videoencoder.addItem(str(video_codec), video_codec)
-        for resolution in settings.VideoResolution:
-            self.comboBox_videoresolution.addItem(str(resolution), resolution)
-        for fps in settings.VideoFps:
-            self.comboBox_fps.addItem(str(fps), fps)
+    def _populate_comboboxes(self) -> None:
+        combobox_settings = [
+            (self.comboBox_encoding, settings.Encoding),
+            (self.comboBox_line_endings, settings.Newline),
+            (self.comboBox_cover_max_size, settings.CoverMaxSize),
+            (self.comboBox_audio_format, settings.AudioFormat),
+            (self.comboBox_audio_bitrate, settings.AudioBitrate),
+            (self.comboBox_browser, settings.Browser),
+            (self.comboBox_videocontainer, settings.VideoContainer),
+            (self.comboBox_videoencoder, settings.VideoCodec),
+            (self.comboBox_videoresolution, settings.VideoResolution),
+            (self.comboBox_fps, settings.VideoFps),
+        ]
+
+        for combobox, setting in combobox_settings:
+            for item in setting:
+                if combobox == self.comboBox_browser:
+                    combobox.addItem(
+                        (QIcon(settings.Browser(item).icon()), str(item), item)
+                    )
+                else:
+                    combobox.addItem((str(item), item))
 
     def _load_settings(self) -> None:
         self.comboBox_browser.setCurrentIndex(
