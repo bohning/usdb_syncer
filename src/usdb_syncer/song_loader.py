@@ -73,6 +73,8 @@ class DownloadManager:
                 if cls._threadpool().tryTake(job):
                     job.logger.info("Download aborted by user request.")
                     job.song.status = DownloadStatus.NONE
+                    with db.transaction():
+                        job.song.upsert()
                     events.SongChanged(job.song_id).post()
                     events.DownloadFinished(job.song_id).post()
                 else:
@@ -336,6 +338,8 @@ class _SongLoader(QtCore.QRunnable):
     def _run_inner(self) -> UsdbSong:
         self._check_flags()
         self.song.status = DownloadStatus.DOWNLOADING
+        with db.transaction():
+            self.song.upsert()
         events.SongChanged(self.song_id).post()
         with tempfile.TemporaryDirectory() as tempdir:
             ctx = _Context.new(self.song, self.options, Path(tempdir), self.logger)

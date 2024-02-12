@@ -78,6 +78,8 @@ class SongTable:
                 continue
             if song.status.can_be_downloaded():
                 song.status = DownloadStatus.PENDING
+                with db.transaction():
+                    song.upsert()
                 events.SongChanged(song.song_id).post()
                 to_download.append(song)
         if to_download:

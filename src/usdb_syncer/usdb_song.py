@@ -16,7 +16,7 @@ from usdb_syncer.sync_meta import SyncMeta
 class DownloadStatus(enum.Enum):
     """Status of song in download queue."""
 
-    NONE = enum.auto()
+    NONE = 0
     PENDING = enum.auto()
     DOWNLOADING = enum.auto()
     FAILED = enum.auto()
@@ -94,7 +94,7 @@ class UsdbSong:
 
     @classmethod
     def from_db_row(cls, song_id: SongId, row: tuple) -> UsdbSong:
-        assert len(row) == 33
+        assert len(row) == 34
         return cls(
             song_id=song_id,
             artist=row[1],
@@ -108,7 +108,8 @@ class UsdbSong:
             genre=row[9],
             creator=row[10],
             tags=row[11],
-            sync_meta=None if row[12] is None else SyncMeta.from_db_row(row[12:]),
+            status=DownloadStatus(row[12] or 0),
+            sync_meta=None if row[13] is None else SyncMeta.from_db_row(row[13:]),
         )
 
     @classmethod
@@ -165,6 +166,7 @@ class UsdbSong:
             genre=self.genre,
             creator=self.creator,
             tags=self.tags,
+            status=self.status.value or None,
         )
 
     def is_local(self) -> bool:

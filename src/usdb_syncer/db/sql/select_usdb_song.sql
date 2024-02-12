@@ -11,6 +11,7 @@ SELECT
     usdb_song.genre,
     usdb_song.creator,
     usdb_song.tags,
+    usdb_song_status.status,
     sync_meta.sync_meta_id,
     sync_meta.song_id,
     sync_meta.path,
@@ -34,6 +35,7 @@ SELECT
     background.resource
 FROM
     usdb_song
+    LEFT JOIN usdb_song_status ON usdb_song.song_id = usdb_song_status.song_id
     LEFT JOIN active_sync_meta ON usdb_song.song_id = active_sync_meta.song_id
     AND active_sync_meta.rank = 1
     LEFT JOIN sync_meta ON sync_meta.sync_meta_id = active_sync_meta.sync_meta_id

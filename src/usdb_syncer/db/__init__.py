@@ -86,7 +86,7 @@ def _validate_schema(connection: sqlite3.Connection) -> None:
         row = connection.execute("SELECT version FROM meta").fetchone()
         if not row or row[0] != SCHEMA_VERSION:
             raise errors.UnknownSchemaError
-    connection.execute("PRAGMA foreign_keys = ON")
+    connection.executescript(_SqlCache.get("setup_session_script.sql", cache=False))
 
 
 def connect(db_path: Path | str, trace: bool = False) -> None:
@@ -244,11 +244,19 @@ class UsdbSongParams:
     genre: str
     creator: str
     tags: str
+    status: int | None
 
 
 def upsert_usdb_song(params: UsdbSongParams) -> None:
     stmt = _SqlCache.get("upsert_usdb_song.sql")
     _DbState.connection().execute(stmt, params.__dict__)
+    if params.status is None:
+        _DbState.connection().execute(
+            "DELETE FROM usdb_song_status WHERE song_id = ?", (params.song_id,)
+        )
+    else:
+        stmt = _SqlCache.get("upsert_usdb_song_status.sql")
+        _DbState.connection().execute(stmt, params.__dict__)
 
 
 def upsert_usdb_songs(params: Iterable[UsdbSongParams]) -> None:
