@@ -147,7 +147,8 @@ class SongOrder(enum.Enum):
     VIDEO = "video.sync_meta_id IS NULL"
     COVER = "cover.sync_meta_id IS NULL"
     BACKGROUND = "background.sync_meta_id IS NULL"
-    SYNC_TIME = "sync_meta.mtime"
+    # max integer in SQLite
+    STATUS = "coalesce(usdb_song_status.status, sync_meta.mtime, 9223372036854775807)"
 
 
 @attrs.define
