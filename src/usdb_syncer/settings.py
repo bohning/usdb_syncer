@@ -127,10 +127,8 @@ class CoverMaxSize(Enum):
 
     DISABLE = 0
     PX_1920 = 1920
-    PX_1200 = 1200
     PX_1000 = 1000
     PX_640 = 640
-    PX_500 = 500
 
     def __str__(self) -> str:
         match self:
@@ -138,14 +136,10 @@ class CoverMaxSize(Enum):
                 return "disable"
             case CoverMaxSize.PX_1920:
                 return "1920x1920 px"
-            case CoverMaxSize.PX_1200:
-                return "1200x1200 px"
             case CoverMaxSize.PX_1000:
                 return "1000x1000 px"
             case CoverMaxSize.PX_640:
                 return "640x640 px"
-            case CoverMaxSize.PX_500:
-                return "500x500 px"
             case _ as unreachable:
                 assert_never(unreachable)
 
