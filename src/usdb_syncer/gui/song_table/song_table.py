@@ -211,15 +211,18 @@ class SongTable:
 
     ### sorting and filtering
 
-    def connect_row_count_changed(self, func: Callable[[int], None]) -> None:
-        """Calls `func` with the new row count."""
+    def connect_row_count_changed(self, func: Callable[[int, int], None]) -> None:
+        """Calls `func` with the new table row and selection counts."""
 
         def wrapped(*_: Any) -> None:
-            func(self._model.rowCount())
+            func(
+                self._model.rowCount(), len(self._view.selectionModel().selectedRows())
+            )
 
         self._model.modelReset.connect(wrapped)
         self._model.rowsInserted.connect(wrapped)
         self._model.rowsRemoved.connect(wrapped)
+        self._view.selectionModel().selectionChanged.connect(wrapped)
 
     def _setup_search_timer(self) -> None:
         self._search_timer = QTimer(self.mw)

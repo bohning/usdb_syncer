@@ -57,9 +57,10 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         self._status_label = QLabel(self)
         self.statusbar.addWidget(self._status_label)
 
-        def on_count_changed(shown_count: int) -> None:
+        def on_count_changed(rows: int, selected: int) -> None:
+            total = db.usdb_song_count()
             self._status_label.setText(
-                f"{shown_count} out of {db.usdb_song_count()} songs shown."
+                f"{rows} out of {total} songs shown, {selected} selected."
             )
 
         self.table.connect_row_count_changed(on_count_changed)
