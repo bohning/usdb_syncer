@@ -23,9 +23,11 @@ class _SqlCache:
     _cache: dict[str, str] = {}
 
     @classmethod
-    def get(cls, name: str) -> str:
+    def get(cls, name: str, cache: bool = True) -> str:
         if (stmt := cls._cache.get(name)) is None:
-            cls._cache[name] = stmt = AppPaths.sql.joinpath(name).read_text("utf8")
+            stmt = AppPaths.sql.joinpath(name).read_text("utf8")
+            if cache:
+                cls._cache[name] = stmt
         return stmt
 
 
@@ -75,7 +77,7 @@ def _validate_schema(connection: sqlite3.Connection) -> None:
         "SELECT 1 FROM sqlite_schema WHERE type = 'table' AND name = 'meta'"
     ).fetchone()
     if meta_table is None:
-        connection.executescript(_SqlCache.get("setup_script.sql"))
+        connection.executescript(_SqlCache.get("setup_script.sql", cache=False))
         connection.execute(
             "INSERT INTO meta (id, version, ctime) VALUES (1, ?, ?)",
             (SCHEMA_VERSION, int(time.time() * 1_000_000)),
