@@ -161,12 +161,12 @@ class SearchBuilder:
     artists: list[str] = attrs.field(factory=list)
     titles: list[str] = attrs.field(factory=list)
     editions: list[str] = attrs.field(factory=list)
-    languages: list[str] = attrs.field(factory=list)
-    golden_notes: bool | None = None
     ratings: list[int] = attrs.field(factory=list)
-    views: list[tuple[int, int | None]] = attrs.field(factory=list)
-    downloaded: bool | None = None
     statuses: list[DownloadStatus] = attrs.field(factory=list)
+    languages: list[str] = attrs.field(factory=list)
+    views: list[tuple[int, int | None]] = attrs.field(factory=list)
+    golden_notes: bool | None = None
+    downloaded: bool | None = None
 
     def _filters(self) -> Iterator[str]:
         if _fts5_phrases(self.text):
@@ -174,27 +174,26 @@ class SearchBuilder:
                 "usdb_song.song_id IN (SELECT rowid FROM fts_usdb_song WHERE"
                 " fts_usdb_song MATCH ?)"
             )
-        if self.artists:
-            yield _in_values_clause("usdb_song.artist", self.artists)
-        if self.titles:
-            yield _in_values_clause("usdb_song.title", self.titles)
-        if self.editions:
-            yield _in_values_clause("usdb_song.edition", self.editions)
+        for vals, col in (
+            (self.artists, "usdb_song.artist"),
+            (self.titles, "usdb_song.title"),
+            (self.editions, "usdb_song.edition"),
+            (self.ratings, "usdb_song.rating"),
+            (self.statuses, "usdb_song_status.status"),
+        ):
+            if vals:
+                yield _in_values_clause(col, vals)
         if self.languages:
             yield (
                 "usdb_song.song_id IN (SELECT song_id FROM usdb_song_language WHERE"
                 f" {_in_values_clause('language', self.languages)})"
             )
-        if self.golden_notes is not None:
-            yield "usdb_song.golden_notes = ?"
-        if self.ratings:
-            yield _in_values_clause("usdb_song.rating", self.ratings)
         if self.views:
             yield _in_ranges_clause("usdb_song.views", self.views)
+        if self.golden_notes is not None:
+            yield "usdb_song.golden_notes = ?"
         if self.downloaded is not None:
             yield f"sync_meta.sync_meta_id IS {'NOT ' if self.downloaded else ''}NULL"
-        if self.statuses:
-            yield _in_values_clause("usdb_song_status.status", self.statuses)
 
     def _where_clause(self) -> str:
         where = " AND ".join(self._filters())
@@ -211,15 +210,15 @@ class SearchBuilder:
         yield from self.artists
         yield from self.titles
         yield from self.editions
-        yield from self.languages
-        if self.golden_notes is not None:
-            yield self.golden_notes
         yield from self.ratings
+        yield from self.statuses
+        yield from self.languages
         for min_views, max_views in self.views:
             yield min_views
             if max_views is not None:
                 yield max_views
-        yield from self.statuses
+        if self.golden_notes is not None:
+            yield self.golden_notes
 
     def statement(self) -> str:
         select_from = _SqlCache.get("select_song_id.sql")
