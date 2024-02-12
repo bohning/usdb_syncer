@@ -125,7 +125,7 @@ class Newline(Enum):
 class CoverMaxSize(Enum):
     """Maximum cover size."""
 
-    PX_3840 = 3840
+    DISABLE = 0
     PX_1920 = 1920
     PX_1200 = 1200
     PX_1000 = 1000
@@ -134,8 +134,8 @@ class CoverMaxSize(Enum):
 
     def __str__(self) -> str:
         match self:
-            case CoverMaxSize.PX_3840:
-                return "3840x3840 px"
+            case CoverMaxSize.DISABLE:
+                return "disable"
             case CoverMaxSize.PX_1920:
                 return "1920x1920 px"
             case CoverMaxSize.PX_1200:

@@ -214,7 +214,11 @@ def _process_image(
                 image = ImageOps.autocontrast(image, cutoff=5)
             elif meta_tags.contrast:
                 image = ImageEnhance.Contrast(image).enhance(meta_tags.contrast)
-        if max_width and max_width.value < image.width:
+        if (
+            max_width
+            and max_width != CoverMaxSize.DISABLE
+            and max_width.value < image.width
+        ):
             processed = True
             height = round(image.height * max_width.value / image.width)
             image = image.resize((max_width.value, height), resample=Resampling.LANCZOS)
