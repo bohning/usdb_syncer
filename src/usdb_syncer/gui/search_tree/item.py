@@ -277,6 +277,8 @@ class StatusVariant(SongMatch, enum.Enum):
 
     NONE = enum.auto()
     DOWNLOADED = enum.auto()
+    IN_PROGRESS = enum.auto()
+    FAILED = enum.auto()
 
     def __str__(self) -> str:
         match self:
@@ -284,14 +286,28 @@ class StatusVariant(SongMatch, enum.Enum):
                 return "Not downloaded"
             case StatusVariant.DOWNLOADED:
                 return "Downloaded"
+            case StatusVariant.IN_PROGRESS:
+                return "In progress"
+            case StatusVariant.FAILED:
+                return "Failed"
             case _ as unreachable:
                 assert_never(unreachable)
 
     def build_search(self, search: db.SearchBuilder) -> None:
-        if search.downloaded is None:
-            search.downloaded = self is StatusVariant.DOWNLOADED
-        else:
-            search.downloaded = None
+        match self:
+            case StatusVariant.IN_PROGRESS:
+                search.statuses.append(db.DownloadStatus.PENDING)
+                search.statuses.append(db.DownloadStatus.DOWNLOADING)
+            case StatusVariant.FAILED:
+                search.statuses.append(db.DownloadStatus.FAILED)
+            case StatusVariant.NONE | StatusVariant.DOWNLOADED:
+                search.downloaded = (
+                    self is StatusVariant.DOWNLOADED
+                    if search.downloaded is None
+                    else None
+                )
+            case unreachable:
+                assert_never(unreachable)
 
 
 class RatingVariant(SongMatch, enum.Enum):

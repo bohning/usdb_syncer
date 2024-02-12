@@ -306,9 +306,8 @@ class _SongLoader(QtCore.QRunnable):
         self.logger = get_logger(__file__, self.song_id)
 
     def run(self) -> None:
-        change_event: events.SubscriptableEvent = events.SongChanged(self.song_id)
         try:
-            updated_song = self._run_inner()
+            self.song = self._run_inner()
         except errors.AbortError:
             self.logger.info("Download aborted by user request.")
             self.song.status = DownloadStatus.NONE
@@ -319,7 +318,9 @@ class _SongLoader(QtCore.QRunnable):
             self.logger.error("Song has been deleted from USDB.")
             with db.transaction():
                 self.song.delete()
-            change_event = events.SongDeleted(self.song_id)
+            events.SongDeleted(self.song_id).post()
+            events.DownloadFinished(self.song_id).post()
+            return
         except Exception:  # pylint: disable=broad-except
             self.logger.debug(traceback.format_exc())
             self.logger.error(
@@ -328,11 +329,11 @@ class _SongLoader(QtCore.QRunnable):
             )
             self.song.status = DownloadStatus.FAILED
         else:
-            updated_song.status = DownloadStatus.NONE
-            with db.transaction():
-                updated_song.upsert()
+            self.song.status = DownloadStatus.NONE
             self.logger.info("All done!")
-        change_event.post()
+        with db.transaction():
+            self.song.upsert()
+        events.SongChanged(self.song_id).post()
         events.DownloadFinished(self.song_id).post()
 
     def _run_inner(self) -> UsdbSong:

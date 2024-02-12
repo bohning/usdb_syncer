@@ -6,7 +6,7 @@ import sqlite3
 import threading
 import time
 from pathlib import Path
-from typing import Generator, Iterable, Iterator
+from typing import Generator, Iterable, Iterator, assert_never
 
 import attrs
 
@@ -97,6 +97,34 @@ def close() -> None:
     _DbState.close()
 
 
+class DownloadStatus(enum.IntEnum):
+    """Status of song in download queue."""
+
+    NONE = 0
+    PENDING = enum.auto()
+    DOWNLOADING = enum.auto()
+    FAILED = enum.auto()
+
+    def __str__(self) -> str:
+        match self:
+            case DownloadStatus.NONE:
+                return ""
+            case DownloadStatus.PENDING:
+                return "Pending"
+            case DownloadStatus.DOWNLOADING:
+                return "Downloading"
+            case DownloadStatus.FAILED:
+                return "Failed"
+            case _ as unreachable:
+                assert_never(unreachable)
+
+    def can_be_downloaded(self) -> bool:
+        return self in (DownloadStatus.NONE, DownloadStatus.FAILED)
+
+    def can_be_aborted(self) -> bool:
+        return self in (DownloadStatus.PENDING, DownloadStatus.DOWNLOADING)
+
+
 class SongOrder(enum.Enum):
     """Attributes songs can be sorted by."""
 
@@ -137,6 +165,7 @@ class SearchBuilder:
     ratings: list[int] = attrs.field(factory=list)
     views: list[tuple[int, int | None]] = attrs.field(factory=list)
     downloaded: bool | None = None
+    statuses: list[DownloadStatus] = attrs.field(factory=list)
 
     def _filters(self) -> Iterator[str]:
         if _fts5_phrases(self.text):
@@ -163,6 +192,8 @@ class SearchBuilder:
             yield _in_ranges_clause("usdb_song.views", self.views)
         if self.downloaded is not None:
             yield f"sync_meta.sync_meta_id IS {'NOT ' if self.downloaded else ''}NULL"
+        if self.statuses:
+            yield _in_values_clause("usdb_song_status.status", self.statuses)
 
     def _where_clause(self) -> str:
         where = " AND ".join(self._filters())
@@ -187,6 +218,7 @@ class SearchBuilder:
             yield min_views
             if max_views is not None:
                 yield max_views
+        yield from self.statuses
 
     def statement(self) -> str:
         select_from = _SqlCache.get("select_song_id.sql")
@@ -244,13 +276,13 @@ class UsdbSongParams:
     genre: str
     creator: str
     tags: str
-    status: int | None
+    status: DownloadStatus
 
 
 def upsert_usdb_song(params: UsdbSongParams) -> None:
     stmt = _SqlCache.get("upsert_usdb_song.sql")
     _DbState.connection().execute(stmt, params.__dict__)
-    if params.status is None:
+    if params.status is DownloadStatus.NONE:
         _DbState.connection().execute(
             "DELETE FROM usdb_song_status WHERE song_id = ?", (params.song_id,)
         )

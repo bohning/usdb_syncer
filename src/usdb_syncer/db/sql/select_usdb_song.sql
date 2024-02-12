@@ -11,7 +11,7 @@ SELECT
     usdb_song.genre,
     usdb_song.creator,
     usdb_song.tags,
-    usdb_song_status.status,
+    coalesce(usdb_song_status.status, 0),
     sync_meta.sync_meta_id,
     sync_meta.song_id,
     sync_meta.path,
