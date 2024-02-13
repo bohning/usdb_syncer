@@ -122,6 +122,28 @@ class Newline(Enum):
         return Newline.LF
 
 
+class CoverMaxSize(Enum):
+    """Maximum cover size."""
+
+    DISABLE = 0
+    PX_1920 = 1920
+    PX_1000 = 1000
+    PX_640 = 640
+
+    def __str__(self) -> str:
+        match self:
+            case CoverMaxSize.DISABLE:
+                return "disable"
+            case CoverMaxSize.PX_1920:
+                return "1920x1920 px"
+            case CoverMaxSize.PX_1000:
+                return "1000x1000 px"
+            case CoverMaxSize.PX_640:
+                return "640x640 px"
+            case _ as unreachable:
+                assert_never(unreachable)
+
+
 class AudioFormat(Enum):
     """Audio containers that can be requested when downloading with ytdl."""
 
@@ -496,11 +518,11 @@ def set_cover(value: bool) -> None:
     set_setting(SettingKey.COVER, value)
 
 
-def get_cover_max_size() -> int:
-    return get_setting(SettingKey.COVER_MAX_SIZE, 1920)
+def get_cover_max_size() -> CoverMaxSize:
+    return get_setting(SettingKey.COVER_MAX_SIZE, CoverMaxSize.PX_1920)
 
 
-def set_cover_max_size(value: int) -> None:
+def set_cover_max_size(value: CoverMaxSize) -> None:
     set_setting(SettingKey.COVER_MAX_SIZE, value)
 
 

@@ -15,7 +15,7 @@ from PIL.Image import Resampling
 from usdb_syncer.download_options import AudioOptions, VideoOptions
 from usdb_syncer.logger import Log, get_logger
 from usdb_syncer.meta_tags import ImageMetaTags
-from usdb_syncer.settings import Browser
+from usdb_syncer.settings import Browser, CoverMaxSize
 from usdb_syncer.usdb_scraper import SongDetails
 from usdb_syncer.utils import url_from_resource
 
@@ -176,7 +176,7 @@ def download_and_process_image(
     meta_tags: ImageMetaTags | None,
     details: SongDetails,
     kind: ImageKind,
-    max_width: int | None,
+    max_width: CoverMaxSize | None,
 ) -> Path | None:
     logger = get_logger(__file__, details.song_id)
     if not (img_bytes := download_image(url, logger)):
@@ -196,7 +196,7 @@ def download_and_process_image(
 
 
 def _process_image(
-    meta_tags: ImageMetaTags | None, max_width: int | None, path: Path
+    meta_tags: ImageMetaTags | None, max_width: CoverMaxSize | None, path: Path
 ) -> None:
     processed = False
     with Image.open(path).convert("RGB") as image:
@@ -214,10 +214,14 @@ def _process_image(
                 image = ImageOps.autocontrast(image, cutoff=5)
             elif meta_tags.contrast:
                 image = ImageEnhance.Contrast(image).enhance(meta_tags.contrast)
-        if max_width and max_width < image.width:
+        if (
+            max_width
+            and max_width != CoverMaxSize.DISABLE
+            and max_width.value < image.width
+        ):
             processed = True
-            height = round(image.height * max_width / image.width)
-            image = image.resize((max_width, height), resample=Resampling.LANCZOS)
+            height = round(image.height * max_width.value / image.width)
+            image = image.resize((max_width.value, height), resample=Resampling.LANCZOS)
 
         if processed:
             image.save(path, "jpeg", quality=100, subsampling=0)

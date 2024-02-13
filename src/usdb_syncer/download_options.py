@@ -49,7 +49,7 @@ class VideoOptions:
 class CoverOptions:
     """Settings regarding the cover image to be downloaded."""
 
-    max_size: int | None
+    max_size: settings.CoverMaxSize | None
 
 
 @dataclass(frozen=True)
