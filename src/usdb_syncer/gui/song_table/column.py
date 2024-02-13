@@ -185,6 +185,6 @@ class Column(IntEnum):
             case Column.BACKGROUND:
                 return db.SongOrder.BACKGROUND
             case Column.DOWNLOAD_STATUS:
-                return db.SongOrder.SYNC_TIME
+                return db.SongOrder.STATUS
             case unreachable:
                 assert_never(unreachable)

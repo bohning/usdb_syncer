@@ -6,7 +6,7 @@ import sqlite3
 import threading
 import time
 from pathlib import Path
-from typing import Generator, Iterable, Iterator
+from typing import Generator, Iterable, Iterator, assert_never, cast
 
 import attrs
 
@@ -23,9 +23,11 @@ class _SqlCache:
     _cache: dict[str, str] = {}
 
     @classmethod
-    def get(cls, name: str) -> str:
+    def get(cls, name: str, cache: bool = True) -> str:
         if (stmt := cls._cache.get(name)) is None:
-            cls._cache[name] = stmt = AppPaths.sql.joinpath(name).read_text("utf8")
+            stmt = AppPaths.sql.joinpath(name).read_text("utf8")
+            if cache:
+                cls._cache[name] = stmt
         return stmt
 
 
@@ -75,7 +77,7 @@ def _validate_schema(connection: sqlite3.Connection) -> None:
         "SELECT 1 FROM sqlite_schema WHERE type = 'table' AND name = 'meta'"
     ).fetchone()
     if meta_table is None:
-        connection.executescript(_SqlCache.get("setup_script.sql"))
+        connection.executescript(_SqlCache.get("setup_script.sql", cache=False))
         connection.execute(
             "INSERT INTO meta (id, version, ctime) VALUES (1, ?, ?)",
             (SCHEMA_VERSION, int(time.time() * 1_000_000)),
@@ -84,7 +86,7 @@ def _validate_schema(connection: sqlite3.Connection) -> None:
         row = connection.execute("SELECT version FROM meta").fetchone()
         if not row or row[0] != SCHEMA_VERSION:
             raise errors.UnknownSchemaError
-    connection.execute("PRAGMA foreign_keys = ON")
+    connection.executescript(_SqlCache.get("setup_session_script.sql", cache=False))
 
 
 def connect(db_path: Path | str, trace: bool = False) -> None:
@@ -93,6 +95,34 @@ def connect(db_path: Path | str, trace: bool = False) -> None:
 
 def close() -> None:
     _DbState.close()
+
+
+class DownloadStatus(enum.IntEnum):
+    """Status of song in download queue."""
+
+    NONE = 0
+    PENDING = enum.auto()
+    DOWNLOADING = enum.auto()
+    FAILED = enum.auto()
+
+    def __str__(self) -> str:
+        match self:
+            case DownloadStatus.NONE:
+                return ""
+            case DownloadStatus.PENDING:
+                return "Pending"
+            case DownloadStatus.DOWNLOADING:
+                return "Downloading"
+            case DownloadStatus.FAILED:
+                return "Failed"
+            case _ as unreachable:
+                assert_never(unreachable)
+
+    def can_be_downloaded(self) -> bool:
+        return self in (DownloadStatus.NONE, DownloadStatus.FAILED)
+
+    def can_be_aborted(self) -> bool:
+        return self in (DownloadStatus.PENDING, DownloadStatus.DOWNLOADING)
 
 
 class SongOrder(enum.Enum):
@@ -117,7 +147,8 @@ class SongOrder(enum.Enum):
     VIDEO = "video.sync_meta_id IS NULL"
     COVER = "cover.sync_meta_id IS NULL"
     BACKGROUND = "background.sync_meta_id IS NULL"
-    SYNC_TIME = "sync_meta.mtime"
+    # max integer in SQLite
+    STATUS = "coalesce(usdb_song_status.status, sync_meta.mtime, 9223372036854775807)"
 
 
 @attrs.define
@@ -130,10 +161,11 @@ class SearchBuilder:
     artists: list[str] = attrs.field(factory=list)
     titles: list[str] = attrs.field(factory=list)
     editions: list[str] = attrs.field(factory=list)
-    languages: list[str] = attrs.field(factory=list)
-    golden_notes: bool | None = None
     ratings: list[int] = attrs.field(factory=list)
+    statuses: list[DownloadStatus] = attrs.field(factory=list)
+    languages: list[str] = attrs.field(factory=list)
     views: list[tuple[int, int | None]] = attrs.field(factory=list)
+    golden_notes: bool | None = None
     downloaded: bool | None = None
 
     def _filters(self) -> Iterator[str]:
@@ -142,23 +174,24 @@ class SearchBuilder:
                 "usdb_song.song_id IN (SELECT rowid FROM fts_usdb_song WHERE"
                 " fts_usdb_song MATCH ?)"
             )
-        if self.artists:
-            yield _in_values_clause("usdb_song.artist", self.artists)
-        if self.titles:
-            yield _in_values_clause("usdb_song.title", self.titles)
-        if self.editions:
-            yield _in_values_clause("usdb_song.edition", self.editions)
+        for vals, col in (
+            (self.artists, "usdb_song.artist"),
+            (self.titles, "usdb_song.title"),
+            (self.editions, "usdb_song.edition"),
+            (self.ratings, "usdb_song.rating"),
+            (self.statuses, "usdb_song_status.status"),
+        ):
+            if vals:
+                yield _in_values_clause(col, cast(list, vals))
         if self.languages:
             yield (
                 "usdb_song.song_id IN (SELECT song_id FROM usdb_song_language WHERE"
                 f" {_in_values_clause('language', self.languages)})"
             )
-        if self.golden_notes is not None:
-            yield "usdb_song.golden_notes = ?"
-        if self.ratings:
-            yield _in_values_clause("usdb_song.rating", self.ratings)
         if self.views:
             yield _in_ranges_clause("usdb_song.views", self.views)
+        if self.golden_notes is not None:
+            yield "usdb_song.golden_notes = ?"
         if self.downloaded is not None:
             yield f"sync_meta.sync_meta_id IS {'NOT ' if self.downloaded else ''}NULL"
 
@@ -177,14 +210,15 @@ class SearchBuilder:
         yield from self.artists
         yield from self.titles
         yield from self.editions
-        yield from self.languages
-        if self.golden_notes is not None:
-            yield self.golden_notes
         yield from self.ratings
+        yield from self.statuses
+        yield from self.languages
         for min_views, max_views in self.views:
             yield min_views
             if max_views is not None:
                 yield max_views
+        if self.golden_notes is not None:
+            yield self.golden_notes
 
     def statement(self) -> str:
         select_from = _SqlCache.get("select_song_id.sql")
@@ -242,11 +276,19 @@ class UsdbSongParams:
     genre: str
     creator: str
     tags: str
+    status: DownloadStatus
 
 
 def upsert_usdb_song(params: UsdbSongParams) -> None:
     stmt = _SqlCache.get("upsert_usdb_song.sql")
     _DbState.connection().execute(stmt, params.__dict__)
+    if params.status is DownloadStatus.NONE:
+        _DbState.connection().execute(
+            "DELETE FROM usdb_song_status WHERE song_id = ?", (params.song_id,)
+        )
+    else:
+        stmt = _SqlCache.get("upsert_usdb_song_status.sql")
+        _DbState.connection().execute(stmt, params.__dict__)
 
 
 def upsert_usdb_songs(params: Iterable[UsdbSongParams]) -> None:

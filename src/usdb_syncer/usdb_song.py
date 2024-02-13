@@ -2,43 +2,15 @@
 
 from __future__ import annotations
 
-import enum
 from json import JSONEncoder
-from typing import Any, Iterable, Type, assert_never
+from typing import Any, Iterable, Type
 
 import attrs
 
 from usdb_syncer import SongId, db
 from usdb_syncer.constants import UsdbStrings
+from usdb_syncer.db import DownloadStatus
 from usdb_syncer.sync_meta import SyncMeta
-
-
-class DownloadStatus(enum.Enum):
-    """Status of song in download queue."""
-
-    NONE = enum.auto()
-    PENDING = enum.auto()
-    DOWNLOADING = enum.auto()
-    FAILED = enum.auto()
-
-    def __str__(self) -> str:
-        match self:
-            case DownloadStatus.NONE:
-                return ""
-            case DownloadStatus.PENDING:
-                return "Pending"
-            case DownloadStatus.DOWNLOADING:
-                return "Downloading"
-            case DownloadStatus.FAILED:
-                return "Failed"
-            case _ as unreachable:
-                assert_never(unreachable)
-
-    def can_be_downloaded(self) -> bool:
-        return self in (DownloadStatus.NONE, DownloadStatus.FAILED)
-
-    def can_be_aborted(self) -> bool:
-        return self in (DownloadStatus.PENDING, DownloadStatus.DOWNLOADING)
 
 
 @attrs.define(kw_only=True)
@@ -94,7 +66,7 @@ class UsdbSong:
 
     @classmethod
     def from_db_row(cls, song_id: SongId, row: tuple) -> UsdbSong:
-        assert len(row) == 33
+        assert len(row) == 34
         return cls(
             song_id=song_id,
             artist=row[1],
@@ -108,7 +80,8 @@ class UsdbSong:
             genre=row[9],
             creator=row[10],
             tags=row[11],
-            sync_meta=None if row[12] is None else SyncMeta.from_db_row(row[12:]),
+            status=DownloadStatus(row[12]),
+            sync_meta=None if row[13] is None else SyncMeta.from_db_row(row[13:]),
         )
 
     @classmethod
@@ -165,6 +138,7 @@ class UsdbSong:
             genre=self.genre,
             creator=self.creator,
             tags=self.tags,
+            status=self.status,
         )
 
     def is_local(self) -> bool:
