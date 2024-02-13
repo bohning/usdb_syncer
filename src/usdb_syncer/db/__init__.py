@@ -6,7 +6,7 @@ import sqlite3
 import threading
 import time
 from pathlib import Path
-from typing import Generator, Iterable, Iterator, assert_never
+from typing import Generator, Iterable, Iterator, assert_never, cast
 
 import attrs
 
@@ -182,7 +182,7 @@ class SearchBuilder:
             (self.statuses, "usdb_song_status.status"),
         ):
             if vals:
-                yield _in_values_clause(col, vals)
+                yield _in_values_clause(col, cast(list, vals))
         if self.languages:
             yield (
                 "usdb_song.song_id IN (SELECT song_id FROM usdb_song_language WHERE"
