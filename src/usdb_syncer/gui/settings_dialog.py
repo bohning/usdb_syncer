@@ -20,27 +20,22 @@ class SettingsDialog(Ui_Dialog, QDialog):
         self.groupBox_reencode_video.setVisible(False)
 
     def _populate_comboboxes(self) -> None:
-        combobox_settings = [
+        combobox_settings = (
             (self.comboBox_encoding, settings.Encoding),
             (self.comboBox_line_endings, settings.Newline),
             (self.comboBox_cover_max_size, settings.CoverMaxSize),
             (self.comboBox_audio_format, settings.AudioFormat),
             (self.comboBox_audio_bitrate, settings.AudioBitrate),
-            (self.comboBox_browser, settings.Browser),
             (self.comboBox_videocontainer, settings.VideoContainer),
             (self.comboBox_videoencoder, settings.VideoCodec),
             (self.comboBox_videoresolution, settings.VideoResolution),
             (self.comboBox_fps, settings.VideoFps),
-        ]
-
+        )
         for combobox, setting in combobox_settings:
             for item in setting:
-                if combobox == self.comboBox_browser:
-                    combobox.addItem(
-                        (QIcon(settings.Browser(item).icon()), str(item), item)
-                    )
-                else:
-                    combobox.addItem((str(item), item))
+                combobox.addItem((str(item), item))
+        for browser in settings.Browser:
+            self.comboBox_browser.addItem(QIcon(browser.icon()), str(browser), browser)
 
     def _load_settings(self) -> None:
         self.comboBox_browser.setCurrentIndex(
