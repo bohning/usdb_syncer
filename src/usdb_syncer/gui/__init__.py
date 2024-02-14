@@ -15,7 +15,7 @@ from PySide6 import QtCore, QtGui, QtWidgets
 from PySide6.QtCore import Qt
 
 import tools
-from usdb_syncer import constants, db, settings, song_routines, sync_meta, utils
+from usdb_syncer import constants, db, song_routines, sync_meta, utils
 
 if TYPE_CHECKING:
     # only import from gui after pyside file generation
@@ -66,7 +66,7 @@ def _load_main_window(mw: MainWindow) -> None:
     splash.show()
     QtWidgets.QApplication.processEvents()
     splash.showMessage("Loading song database ...", color=Qt.GlobalColor.gray)
-    folder = settings.get_song_dir()
+    folder = utils.get_song_dir()
     db.connect(utils.AppPaths.db, trace=bool(os.environ.get("TRACESQL")))
     with db.transaction():
         song_routines.load_available_songs(force_reload=False)
