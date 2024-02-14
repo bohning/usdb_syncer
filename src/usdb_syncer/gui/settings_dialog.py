@@ -33,7 +33,7 @@ class SettingsDialog(Ui_Dialog, QDialog):
         )
         for combobox, setting in combobox_settings:
             for item in setting:
-                combobox.addItem((str(item), item))
+                combobox.addItem(str(item), item)
         for browser in settings.Browser:
             self.comboBox_browser.addItem(QIcon(browser.icon()), str(browser), browser)
 
