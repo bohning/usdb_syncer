@@ -6,9 +6,37 @@ on:
       - "[0-9]+.[0-9]+.[0-9]+" # Only create releases on matching tags following semver X.Y.Z
 
 jobs:
+  scrape-song-list:
+    name: Scrape USDB song list
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.11"
+      - name: Install Pipenv
+        run: |
+          python -m pip install pipenv
+      - name: Install dependencies
+        run: |
+          pipenv sync --system
+      - name: Scrape USDB song list to ship with the bundle
+        run: >
+          env PYTHONPATH=$(pwd)/src
+          python -m src.tools.generate_song_list_json
+          -t 'song_list.json'
+          -u '${{ secrets.USDB_USER }}'
+          -p '${{ secrets.USDB_PASSWORD }}'
+      - uses: actions/upload-artifact@v3
+        with:
+          name: data
+          path: song_list.json
+
   build:
     name: Build packages
     runs-on: ${{ matrix.os }}
+    needs: scrape-song-list
     strategy:
       matrix:
         include:
@@ -33,6 +61,7 @@ jobs:
               --add-data 'data/song_list.json;data'
               --add-data 'src/usdb_syncer/db/sql;src/usdb_syncer/db/sql'
     steps:
+      - uses: actions/download-artifact@v3
       - uses: actions/checkout@v3
       - name: Install Linux specific dependencies for dbus-python
         if: matrix.TARGET == 'Linux'
@@ -72,14 +101,6 @@ jobs:
           PYTHONPATH: ${{ env.PERSISTENT_PYTHONPATH }}
       - name: Generate GUI elements
         run: python -m src.tools.generate_pyside_files
-        env:
-          PYTHONPATH: ${{ env.PERSISTENT_PYTHONPATH }}
-      - name: Scrape USDB song list to ship with the bundle
-        run: >
-          python -m src.tools.generate_song_list_json
-          -t 'data/song_list.json'
-          -u '${{ secrets.USDB_USER }}'
-          -p '${{ secrets.USDB_PASSWORD }}'
         env:
           PYTHONPATH: ${{ env.PERSISTENT_PYTHONPATH }}
       - name: add dependencies for xcb support
