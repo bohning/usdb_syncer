@@ -101,7 +101,10 @@ class SyncMeta:
             sync_meta_id = SyncMetaId.new()
             new_id = True
         with path.open(encoding="utf8") as file:
-            dct = json.load(file)
+            try:
+                dct = json.load(file)
+            except (json.decoder.JSONDecodeError, UnicodeDecodeError):
+                return None
         if not isinstance(dct, dict):
             return None
         if int(dct["version"]) > SYNC_META_VERSION:
@@ -120,7 +123,7 @@ class SyncMeta:
                 cover=ResourceFile.from_nested_dict(dct["cover"]),
                 background=ResourceFile.from_nested_dict(dct["background"]),
             )
-        except (json.decoder.JSONDecodeError, TypeError, KeyError, ValueError):
+        except (TypeError, KeyError, ValueError):
             return None
         if new_id:
             meta.path = path.with_name(sync_meta_id.to_filename())
