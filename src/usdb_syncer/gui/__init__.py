@@ -15,11 +15,18 @@ from PySide6 import QtCore, QtGui, QtWidgets
 from PySide6.QtCore import Qt
 
 import tools
-from usdb_syncer import constants, db, song_routines, sync_meta, utils
+from usdb_syncer import constants, db, errors, song_routines, sync_meta, utils
 
 if TYPE_CHECKING:
     # only import from gui after pyside file generation
     from usdb_syncer.gui.mw import MainWindow
+
+
+SCHEMA_ERROR_MESSAGE = (
+    "Your database cannot be read with this version of USDB Syncer! Either upgrade to a"
+    f" more recent release, or remove the file at '{utils.AppPaths.db}' and restart to "
+    "create a new database."
+)
 
 
 def main() -> None:
@@ -40,7 +47,11 @@ def _run() -> None:
     app = _init_app()
     mw = MainWindow()
     _configure_logging(mw)
-    _load_main_window(mw)
+    try:
+        _load_main_window(mw)
+    except errors.UnknownSchemaError:
+        QtWidgets.QMessageBox.critical(mw, "Version conflict", SCHEMA_ERROR_MESSAGE)
+        return
     app.exec()
 
 
