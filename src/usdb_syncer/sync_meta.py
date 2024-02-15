@@ -8,7 +8,7 @@ from typing import Any, Iterator
 
 import attrs
 
-from usdb_syncer import SongId, SyncMetaId, db, settings, utils
+from usdb_syncer import SongId, SyncMetaId, db, utils
 from usdb_syncer.logger import get_logger
 from usdb_syncer.meta_tags import MetaTags
 
@@ -156,7 +156,7 @@ class SyncMeta:
 
     def upsert(self) -> None:
         db.upsert_sync_meta(self.db_params())
-        db.update_active_sync_metas(settings.get_song_dir(), self.song_id)
+        db.update_active_sync_metas(utils.get_song_dir(), self.song_id)
         files = self.all_resource_files()
         db.upsert_resource_files(
             file.db_params(self.sync_meta_id, kind) for file, kind in files if file
@@ -168,7 +168,7 @@ class SyncMeta:
     @classmethod
     def upsert_many(cls, metas: list[SyncMeta]) -> None:
         db.upsert_sync_metas(meta.db_params() for meta in metas)
-        db.reset_active_sync_metas(settings.get_song_dir())
+        db.reset_active_sync_metas(utils.get_song_dir())
         db.upsert_resource_files(
             file.db_params(meta.sync_meta_id, kind)
             for meta in metas

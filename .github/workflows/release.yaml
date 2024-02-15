@@ -14,20 +14,20 @@ jobs:
         include:
           - os: ubuntu-latest
             TARGET: Linux
-            PYINSTALLER_ARGS: >
+            PYINSTALLER_ARGS: >-
               --onefile
               --add-data 'data/song_list.json:data'
               --add-data 'src/usdb_syncer/db/sql:src/usdb_syncer/db/sql'
           - os: macos-latest
             TARGET: macOS
-            PYINSTALLER_ARGS: >
+            PYINSTALLER_ARGS: >-
               --windowed
               --icon src/usdb_syncer/gui/resources/appicon_128x128.png
               --add-data 'data/song_list.json:data'
               --add-data 'src/usdb_syncer/db/sql:src/usdb_syncer/db/sql'
           - os: windows-latest
             TARGET: Windows
-            PYINSTALLER_ARGS: >
+            PYINSTALLER_ARGS: >-
               --onefile
               --icon src/usdb_syncer/gui/resources/appicon_128x128.png
               --add-data 'data/song_list.json;data'

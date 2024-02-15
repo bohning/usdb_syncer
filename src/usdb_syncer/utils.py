@@ -13,6 +13,7 @@ from pathlib import Path
 
 from appdirs import AppDirs
 
+from usdb_syncer import settings
 from usdb_syncer.logger import get_logger
 
 _logger = get_logger(__file__)
@@ -217,3 +218,12 @@ def format_timestamp(micros: int) -> str:
     return datetime.datetime.fromtimestamp(micros / 1_000_000).strftime(
         "%Y-%m-%d %H:%M:%S"
     )
+
+
+def get_song_dir() -> Path:
+    """Returns the stored song diretory, which may be overwritten by an environment
+    variable.
+    """
+    if path := os.environ.get("SONG_DIR"):
+        return Path(path)
+    return settings.get_song_dir()

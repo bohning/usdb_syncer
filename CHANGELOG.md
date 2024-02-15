@@ -15,6 +15,7 @@
   the download fails.
 - Downloads may be aborted or paused.
 - Support Ogg/Opus (.opus) audio format.
+- Parse song tags from USDB comments (like "#TAGS:Love Songs, Movie, 80s").
 
 <!-- 0.4.0 -->
 

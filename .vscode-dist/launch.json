@@ -16,6 +16,8 @@
         // "TRACESQL": "1",
         // profile runtime performance
         // "PROFILE": "1",
+        // overwrite song folder from settings
+        // "SONG_DIR": "c:/path/to/song_dir",
       }
     }
   ]
