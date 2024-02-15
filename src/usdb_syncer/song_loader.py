@@ -289,7 +289,7 @@ def _update_song_with_usdb_data(
         song.year = None
     song.genre = txt.headers.genre or ""
     song.creator = txt.headers.creator or ""
-    song.tags = txt.headers.tags or ""
+    song.tags = ", ".join(details.comment_tags())
 
 
 class _SongLoader(QtCore.QRunnable):
