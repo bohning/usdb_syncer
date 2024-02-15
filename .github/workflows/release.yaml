@@ -91,7 +91,7 @@ jobs:
           pyinstaller
           -n 'USDB_Syncer-${{github.ref_name}}-${{matrix.TARGET}}'
           ${{matrix.PYINSTALLER_ARGS}}
-          src/usdb_syncer/main.py
+          src/usdb_syncer/gui/__init__.py
       - name: Create DMG
         if: matrix.TARGET == 'macOS'
         run: |
