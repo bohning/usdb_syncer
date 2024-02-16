@@ -10,7 +10,7 @@ jobs:
     name: Scrape USDB song list
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
@@ -32,7 +32,7 @@ jobs:
           -t 'song_list.json'
           -u '${{ secrets.USDB_USER }}'
           -p '${{ secrets.USDB_PASSWORD }}'
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
           name: data
           path: song_list.json
@@ -65,8 +65,8 @@ jobs:
               --add-data 'data/song_list.json;data'
               --add-data 'src/usdb_syncer/db/sql;src/usdb_syncer/db/sql'
     steps:
-      - uses: actions/download-artifact@v3
-      - uses: actions/checkout@v3
+      - uses: actions/download-artifact@v4
+      - uses: actions/checkout@v4
       - name: Install Linux specific dependencies for dbus-python
         if: matrix.TARGET == 'Linux'
         run: |
@@ -135,7 +135,7 @@ jobs:
             --no-internet-enable \
             "dist/USDB_Syncer-${{github.ref_name}}-${{matrix.TARGET}}.dmg" \
             "dist/USDB_Syncer-${{github.ref_name}}-${{matrix.TARGET}}.app"
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
           name: artifacts
           path: |
@@ -151,7 +151,7 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/download-artifact@v3
+      - uses: actions/download-artifact@v4
       - name: Extract Release Notes
         id: extract_notes
         run: >
