@@ -65,8 +65,8 @@ jobs:
               --add-data 'data/song_list.json;data'
               --add-data 'src/usdb_syncer/db/sql;src/usdb_syncer/db/sql'
     steps:
-      - uses: actions/download-artifact@v4
       - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
       - name: Install Linux specific dependencies for dbus-python
         if: matrix.TARGET == 'Linux'
         run: |
