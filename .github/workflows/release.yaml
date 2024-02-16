@@ -34,8 +34,10 @@ jobs:
           -p '${{ secrets.USDB_PASSWORD }}'
       - uses: actions/upload-artifact@v4
         with:
-          name: data
-          path: song_list.json
+          name: artifacts
+          path: |
+            song_list.json
+            CHANGELOG.md
 
   build:
     name: Build packages
@@ -48,21 +50,21 @@ jobs:
             TARGET: Linux
             PYINSTALLER_ARGS: >-
               --onefile
-              --add-data 'data/song_list.json:data'
+              --add-data 'artifacts/song_list.json:data'
               --add-data 'src/usdb_syncer/db/sql:src/usdb_syncer/db/sql'
           - os: macos-latest
             TARGET: macOS
             PYINSTALLER_ARGS: >-
               --windowed
               --icon src/usdb_syncer/gui/resources/appicon_128x128.png
-              --add-data 'data/song_list.json:data'
+              --add-data 'artifacts/song_list.json:data'
               --add-data 'src/usdb_syncer/db/sql:src/usdb_syncer/db/sql'
           - os: windows-latest
             TARGET: Windows
             PYINSTALLER_ARGS: >-
               --onefile
               --icon src/usdb_syncer/gui/resources/appicon_128x128.png
-              --add-data 'data/song_list.json;data'
+              --add-data 'artifacts/song_list.json;data'
               --add-data 'src/usdb_syncer/db/sql;src/usdb_syncer/db/sql'
     steps:
       - uses: actions/checkout@v4
@@ -137,12 +139,11 @@ jobs:
             "dist/USDB_Syncer-${{github.ref_name}}-${{matrix.TARGET}}.app"
       - uses: actions/upload-artifact@v4
         with:
-          name: artifacts
+          name: ${{ matrix.os }}-artifacts
           path: |
             dist/*Linux
             dist/*.dmg
             dist/*.exe
-            CHANGELOG.md
 
   release:
     name: Create release
@@ -152,6 +153,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          merge-multiple: true
       - name: Extract Release Notes
         id: extract_notes
         run: >
