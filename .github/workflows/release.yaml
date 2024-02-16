@@ -165,5 +165,5 @@ jobs:
         shell: bash
       - uses: ncipollo/release-action@v1
         with:
-          artifacts: "artifacts/dist/*"
+          artifacts: "artifacts/USDB_Syncer*"
           bodyFile: "CHANGELOG.md"
