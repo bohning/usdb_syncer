@@ -180,10 +180,8 @@ class SongDetails:
         before URLs.
         """
         for comment in self.comments:
-            for ytid in comment.contents.youtube_ids:
-                yield ytid
-            for url in comment.contents.urls:
-                yield url
+            yield from comment.contents.youtube_ids
+            yield from comment.contents.urls
 
     def comment_tags(self) -> list[str]:
         """Return the first tags string sanitized, if any."""
