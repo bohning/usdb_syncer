@@ -146,6 +146,11 @@ def download_image(url: str, logger: Log) -> bytes | None:
         reply = requests.get(
             url, allow_redirects=True, headers=IMAGE_DOWNLOAD_HEADERS, timeout=60
         )
+    except requests.exceptions.SSLError:
+        logger.error(
+            f"Failed to retrieve {url}. The SSL certificate could not be verified."
+        )
+        return None
     except requests.RequestException:
         logger.error(
             f"Failed to retrieve {url}. The server may be down or your internet "
