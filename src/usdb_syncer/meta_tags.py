@@ -101,6 +101,7 @@ class ImageMetaTags:
                 )
             return self.source
         if "/" in self.source:
+            logger.debug(f"{self.source} is missing the protocol.")
             return f"https://{self.source}"
         return f"https://assets.fanart.tv/fanart/{self.source}"
 
