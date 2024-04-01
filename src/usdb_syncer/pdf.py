@@ -20,14 +20,12 @@ def generate_song_pdf(songs: Iterable[SongId], path: str) -> None:
     content1: list[Any] = []
     section1["content"] = content1
     date = datetime.datetime.now()
-    content1.append(
-        {
-            ".": f"Songlist ({date:%Y-%m-%d})",
-            "style": "title",
-            "label": "title1",
-            "outline": {"level": 1, "text": "A different title 1"},
-        }
-    )
+    content1.append({
+        ".": f"Songlist ({date:%Y-%m-%d})",
+        "style": "title",
+        "label": "title1",
+        "outline": {"level": 1, "text": "A different title 1"},
+    })
 
     for song_id in songs:
         song = UsdbSong.get(song_id)
