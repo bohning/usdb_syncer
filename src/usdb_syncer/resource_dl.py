@@ -8,7 +8,6 @@ from typing import Union, assert_never
 import filetype
 import requests
 import yt_dlp
-from fake_useragent import UserAgent
 from ffmpeg_normalize import FFmpegNormalize
 from PIL import Image, ImageEnhance, ImageOps
 from PIL.Image import Resampling
@@ -20,7 +19,12 @@ from usdb_syncer.settings import Browser, CoverMaxSize
 from usdb_syncer.usdb_scraper import SongDetails
 from usdb_syncer.utils import url_from_resource
 
-IMAGE_DOWNLOAD_HEADERS = {"User-Agent": UserAgent().random}
+IMAGE_DOWNLOAD_HEADERS = {
+    "User-Agent": (
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+        "(KHTML, like Gecko) Chrome/42.0.2311.135 Safari/537.36 Edge/12.246"
+    )
+}
 
 YtdlOptions = dict[str, Union[str, bool, tuple, list, int]]
 
