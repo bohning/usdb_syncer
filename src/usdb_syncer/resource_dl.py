@@ -22,7 +22,7 @@ from usdb_syncer.utils import url_from_resource
 IMAGE_DOWNLOAD_HEADERS = {
     "User-Agent": (
         "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
-        "(KHTML, like Gecko) Chrome/42.0.2311.135 Safari/537.36 Edge/12.246"
+        "(KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36"
     )
 }
 
@@ -150,6 +150,11 @@ def download_image(url: str, logger: Log) -> bytes | None:
         reply = requests.get(
             url, allow_redirects=True, headers=IMAGE_DOWNLOAD_HEADERS, timeout=60
         )
+    except requests.exceptions.SSLError:
+        logger.error(
+            f"Failed to retrieve {url}. The SSL certificate could not be verified."
+        )
+        return None
     except requests.RequestException:
         logger.error(
             f"Failed to retrieve {url}. The server may be down or your internet "

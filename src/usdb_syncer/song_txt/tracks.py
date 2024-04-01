@@ -258,8 +258,7 @@ class Tracks:
 
     def all_notes(self) -> Iterator[Note]:
         for line in self.all_lines():
-            for note in line.notes:
-                yield note
+            yield from line.notes
 
     def is_all_caps(self) -> bool:
         return not any(
