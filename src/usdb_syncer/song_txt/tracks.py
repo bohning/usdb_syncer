@@ -33,7 +33,7 @@ class Note:
     text: str = NotImplemented
 
     @classmethod
-    def parse(cls, value: str) -> Note:
+    def parse(cls, value: str, logger: Log) -> Note:
         regex = re.compile(r"(:|\*|F|R|G):? +(-?\d+) +(\d+) +(-?\d+)(?: (.*))?")
         if not (match := regex.fullmatch(value)):
             raise errors.NotesParseError(f"invalid note: '{value}'")
@@ -48,6 +48,8 @@ class Note:
         if kind != NoteKind.FREESTYLE:
             if not text.strip():
                 text = "~" + text
+        if duration == 0:
+            logger.warning(f"zero-length note: '{value}'")
         if text.strip() == "-":
             text = text.replace("-", "~")
         return Note(kind, start, duration, pitch, text)
@@ -151,7 +153,7 @@ class Line:
                         lines.insert(0, next_line)
                     break
             try:
-                notes.append(Note.parse(txt_line))
+                notes.append(Note.parse(txt_line, logger))
             except errors.NotesParseError as err:
                 logger.warning(str(err))
         else:

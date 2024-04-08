@@ -510,7 +510,7 @@
      <normaloff>:/icons/document-import.png</normaloff>:/icons/document-import.png</iconset>
    </property>
    <property name="text">
-    <string>Export IDs to File</string>
+    <string>Export selected IDs to File</string>
    </property>
    <property name="toolTip">
     <string>Write the IDs of the selected songs to a file</string>
