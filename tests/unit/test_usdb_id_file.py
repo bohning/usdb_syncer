@@ -7,7 +7,7 @@ import pytest
 from usdb_syncer import SongId
 from usdb_syncer.usdb_id_file import (
     UsdbIdFileEmptyFileError,
-    UsdbIdFileEmptyJsonArrayError,
+    UsdbIdFileEmptySongsArrayError,
     UsdbIdFileError,
     UsdbIdFileInvalidDomainMalformedUrlFormatError,
     UsdbIdFileInvalidJsonError,
@@ -19,8 +19,8 @@ from usdb_syncer.usdb_id_file import (
     UsdbIdFileMissingTagFormatError,
     UsdbIdFileMissingUrlTagFormatError,
     UsdbIdFileMultipleUrlsFormatError,
-    UsdbIdFileNoJsonArrayError,
     UsdbIdFileNoParametersMalformedUrlFormatError,
+    UsdbIdFileWrongJsonSongsFormatError,
     parse_usdb_id_file,
 )
 
@@ -143,9 +143,12 @@ def test_valid_song_id_imports_from_files(
         ("multi-column.usdb_ids", UsdbIdFileInvalidUsdbIdError()),
         ("broken.json", UsdbIdFileInvalidJsonError()),
         ("empty.json", UsdbIdFileEmptyFileError()),
-        ("empty_array.json", UsdbIdFileEmptyJsonArrayError()),
-        ("no_array.json", UsdbIdFileNoJsonArrayError()),
+        ("empty_object.json", UsdbIdFileMissingKeyFormatError("songs")),
+        ("empty_array.json", UsdbIdFileEmptySongsArrayError("songs")),
+        ("no_array.json", UsdbIdFileWrongJsonSongsFormatError("songs")),
         ("missing_id_key.json", UsdbIdFileMissingKeyFormatError("id")),
+        ("missing_top_structure.json", UsdbIdFileInvalidJsonError()),
+        ("wrong_top_level.json", UsdbIdFileMissingKeyFormatError("songs")),
     ],
 )
 def test_invalid_song_id_imports_from_files(

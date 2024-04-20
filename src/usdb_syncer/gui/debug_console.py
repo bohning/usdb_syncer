@@ -7,8 +7,8 @@ from contextlib import redirect_stdout
 from PySide6.QtGui import QFontDatabase, QTextCursor
 from PySide6.QtWidgets import QDialog, QWidget
 
+from usdb_syncer.gui import gui_utils
 from usdb_syncer.gui.forms.DebugConsole import Ui_Dialog
-from usdb_syncer.gui.utils import scroll_to_bottom, set_shortcut
 
 
 class DebugConsole(Ui_Dialog, QDialog):
@@ -26,10 +26,10 @@ class DebugConsole(Ui_Dialog, QDialog):
         self.output.setFont(font)
 
     def _set_shortcuts(self) -> None:
-        set_shortcut("Ctrl+Return", self, self._execute)
-        set_shortcut("Ctrl+Shift+Return", self, self._execute_and_print)
-        set_shortcut("Ctrl+L", self, self.output.clear)
-        set_shortcut("Ctrl+Shift+L", self, self.input.clear)
+        gui_utils.set_shortcut("Ctrl+Return", self, self._execute)
+        gui_utils.set_shortcut("Ctrl+Shift+Return", self, self._execute_and_print)
+        gui_utils.set_shortcut("Ctrl+L", self, self.output.clear)
+        gui_utils.set_shortcut("Ctrl+Shift+L", self, self.input.clear)
 
     def _execute_and_print(self) -> None:
         cursor = self.input.textCursor()
@@ -47,11 +47,10 @@ class DebugConsole(Ui_Dialog, QDialog):
 
     def _execute(self) -> None:
         code = self.input.toPlainText()
-        locals()["mw"] = self.parent()
         with redirect_stdout(io.StringIO()) as captured:
             try:
-                exec(code)  # pylint: disable=exec-used
-            except:  # pylint: disable=bare-except
+                exec(code, {"mw": self.parent()})  # pylint: disable=exec-used
+            except Exception:  # pylint: disable=broad-exception-caught
                 print(traceback.format_exc())
         self._log_output(code, captured.getvalue())
 
@@ -59,7 +58,7 @@ class DebugConsole(Ui_Dialog, QDialog):
         indented_code = ">>> " + code.strip().replace("\n", "\n... ") + "\n"
         output = output or "<no output>"
         self.output.appendPlainText(indented_code + (output or "<no output>"))
-        scroll_to_bottom(self.output)
+        gui_utils.scroll_to_bottom(self.output)
 
 
 def split_off_leading_whitespace(text: str) -> tuple[str, str]:

@@ -1,5 +1,6 @@
 """Dialog to create meta tags."""
 
+import re
 from typing import Callable, Literal
 
 from pyshorteners.exceptions import (
@@ -20,7 +21,7 @@ from usdb_syncer.meta_tags import (
     MetaTags,
     ResizeMetaTags,
 )
-from usdb_syncer.utils import extract_youtube_id
+from usdb_syncer.utils import extract_vimeo_id, extract_youtube_id
 
 MAX_LEN = 255
 URL_TAG_NAMES = ("cover_url", "background_url", "audio_url", "video_url")
@@ -227,10 +228,16 @@ def _try_shorten_url(url: str) -> str:
 
 
 def _sanitize_video_url(url: str) -> str:
-    """Returns a YouTube id or sanitized URL."""
-    return extract_youtube_id(url) or url
+    """Returns a YouTube id, Vimeo id or sanitized URL."""
+    return extract_youtube_id(url) or extract_vimeo_id(url) or url
 
 
 def _sanitize_image_url(url: str) -> str:
     """Returns a fanart id or sanitized URL and whether it uses HTTP."""
-    return url.removeprefix("https://images.fanart.tv/fanart/")
+    if "fanart.tv" in url:
+        return url.removeprefix("https://images.fanart.tv/fanart/")
+    if "m.media-amazon.com" in url:
+        pattern = r"\._.*[^_\s]_"
+        return re.sub(pattern, "", url)
+
+    return url

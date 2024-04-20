@@ -1,5 +1,8 @@
 """General-purpose utilities."""
 
+import datetime
+import functools
+import itertools
 import os
 import re
 import subprocess
@@ -10,6 +13,7 @@ from pathlib import Path
 
 from appdirs import AppDirs
 
+from usdb_syncer import settings
 from usdb_syncer.logger import get_logger
 
 _logger = get_logger(__file__)
@@ -18,14 +22,33 @@ CACHE_LIFETIME = 60 * 60
 _app_dirs = AppDirs("usdb_syncer", "bohning")
 
 
-def _root() -> Path:
-    """Returns source root folder or temprory bundle folder if running as such.
+def is_bundle() -> bool:
+    """True if the app is running from a bundle.
 
     https://pyinstaller.org/en/stable/runtime-information.html#run-time-information
     """
+    return bool(getattr(sys, "frozen", False) and getattr(sys, "_MEIPASS", False))
+
+
+def _root() -> Path:
+    """Returns source root folder or temprory bundle folder if running as such."""
     if getattr(sys, "frozen", False) and (bundle := getattr(sys, "_MEIPASS", None)):
         return Path(bundle)
     return Path(__file__).parent.parent.parent.absolute()
+
+
+def url_from_resource(resource: str) -> str | None:
+    if "://" in resource:
+        return resource
+    if "/" in resource:
+        return f"https://{resource}"
+    vimeo_id_pattern = r"^\d{2,10}$"
+    if re.match(vimeo_id_pattern, resource):
+        return f"https://vimeo.com/{resource}"
+    yt_id_pattern = r"^[A-Za-z0-9_-]{11}$"
+    if re.match(yt_id_pattern, resource):
+        return f"https://www.youtube.com/watch?v={resource}"
+    return None
 
 
 class AppPaths:
@@ -36,6 +59,8 @@ class AppPaths:
     root = _root()
     fallback_song_list = Path(root, "data", "song_list.json")
     profile = Path(root, "usdb_syncer.prof")
+    db = Path(_app_dirs.user_data_dir, "usdb_syncer.db")
+    sql = Path(root, "src", "usdb_syncer", "db", "sql")
 
     @classmethod
     def make_dirs(cls) -> None:
@@ -90,11 +115,38 @@ def extract_youtube_id(url: str) -> str | None:
     return None
 
 
-def try_read_unknown_encoding(path: Path) -> str | None:
-    for codec in ["utf-8-sig", "cp1252"]:
+def extract_vimeo_id(url: str) -> str | None:
+    """Extracts the Vimeo id from a variety of URLs."""
+
+    pattern = r"""
+        (?:https?://)?
+        (?:
+            www\.
+            |
+            player\.
+        )?
+        (?:vimeo\.com/)
+        (?:video/)?
+        (\d{2,9})                   # the actual id
+        (?:[%#?&]|$)                # URL may contain additonal parameters
+        .*
+        """
+    if match := re.search(pattern, url, re.VERBOSE | re.IGNORECASE):
+        return match.group(1)
+    return None
+
+
+def read_file_head(
+    path: Path, length: int, encoding: str | None = None
+) -> list[str] | None:
+    """Return the first `length` lines of `path`. If `encoding` is None, try UTF-8 (with
+    BOM) first, then cp1252.
+    """
+    for enc in [encoding] if encoding else ["utf-8-sig", "cp1252"]:
         try:
-            with open(path, encoding=codec) as file:
-                return file.read()
+            with open(path, encoding=enc) as file:
+                # strip line break
+                return list(r[:-1] for r in itertools.islice(file, length))
         except UnicodeDecodeError:
             pass
     return None
@@ -154,3 +206,24 @@ def resource_file_ending(name: str) -> str:
     if match := regex.fullmatch(name):
         return match.group(1)
     return ""
+
+
+def get_mtime(path: Path) -> int:
+    """Helper for mtime in microseconds so it can be stored in db losslessly."""
+    return int(os.path.getmtime(path) * 1_000_000)
+
+
+@functools.cache
+def format_timestamp(micros: int) -> str:
+    return datetime.datetime.fromtimestamp(micros / 1_000_000).strftime(
+        "%Y-%m-%d %H:%M:%S"
+    )
+
+
+def get_song_dir() -> Path:
+    """Returns the stored song diretory, which may be overwritten by an environment
+    variable.
+    """
+    if path := os.environ.get("SONG_DIR"):
+        return Path(path)
+    return settings.get_song_dir()

@@ -15,10 +15,9 @@ from PySide6.QtCore import (
 )
 from PySide6.QtWidgets import QWidget
 
-from usdb_syncer.gui.utils import keyboard_modifiers
-from usdb_syncer.song_data import fuzz_text
+from usdb_syncer import db
 
-from .item import TreeItem
+from .item import Filter, TreeItem
 
 QIndex = QModelIndex | QPersistentModelIndex
 
@@ -69,12 +68,10 @@ class TreeModel(QAbstractItemModel):
         return self.createIndex(row, column, item)
 
     @overload
-    def parent(self) -> QObject:
-        ...
+    def parent(self) -> QObject: ...
 
     @overload
-    def parent(self, child: QIndex) -> QModelIndex:
-        ...
+    def parent(self, child: QIndex) -> QModelIndex: ...
 
     def parent(self, child: QIndex | None = None) -> QModelIndex | QObject:
         if child is None:
@@ -100,27 +97,7 @@ class TreeModel(QAbstractItemModel):
         return None
 
     def flags(self, index: QIndex) -> Qt.ItemFlag:
-        flags = Qt.ItemFlag.ItemIsEnabled
-        item = self.item_for_index(index)
-        if item.checkable:
-            flags |= Qt.ItemFlag.ItemIsUserCheckable
-        return flags
-
-    def setData(
-        self, index: QIndex, value: Any, role: int = Qt.ItemDataRole.DisplayRole
-    ) -> bool:
-        if not index.isValid():
-            return False
-        if role == Qt.ItemDataRole.CheckStateRole:
-            if value is not None:
-                # ignore signals sent by the check box itself as we connect our own
-                return False
-            self.item_for_index(index).toggle_checked(keyboard_modifiers().ctrl)
-            # other rows may have changed too
-            self.dataChanged.emit(self.root, self.root, Qt.ItemDataRole.CheckStateRole)
-        else:
-            return False
-        return True
+        return self.item_for_index(index).flags()
 
 
 class TreeProxyModel(QSortFilterProxyModel):
@@ -130,20 +107,32 @@ class TreeProxyModel(QSortFilterProxyModel):
         super().__init__(parent)
         self._source = source_model
         self.setSourceModel(source_model)
-        self._filter: list[str] = []
-
+        self._filter: str = ""
+        self._matches: dict[Filter, set[str]] = {}
         self._filter_invalidation_timer = QTimer(parent)
         self._filter_invalidation_timer.setSingleShot(True)
-        self._filter_invalidation_timer.setInterval(600)
-        self._filter_invalidation_timer.timeout.connect(self.invalidateRowsFilter)
+        self._filter_invalidation_timer.setInterval(400)
+        self._filter_invalidation_timer.timeout.connect(self._on_filter_changed)
 
     def filterAcceptsRow(self, source_row: int, source_parent: QIndex) -> bool:
         if not self._filter or not source_parent.isValid():
             return True
         parent = self._source.item_for_index(source_parent)
-        item = parent.children[source_row]
-        return item.filter_accepts_row(self._filter)
+        return parent.children[source_row].is_accepted(self._matches)
 
     def set_filter(self, text: str) -> None:
-        self._filter = fuzz_text(text).split()
-        self._filter_invalidation_timer.start()
+        if (new := text.strip()) != self._filter:
+            self._filter = new
+            self._filter_invalidation_timer.start()
+
+    def _on_filter_changed(self) -> None:
+        if self._filter:
+            self._matches = {
+                Filter.ARTIST: set(db.search_usdb_song_artists(self._filter)),
+                Filter.TITLE: set(db.search_usdb_song_titles(self._filter)),
+                Filter.EDITION: set(db.search_usdb_song_editions(self._filter)),
+                Filter.LANGUAGE: set(db.search_usdb_song_languages(self._filter)),
+            }
+        else:
+            self._matches = {}
+        self.invalidateRowsFilter()

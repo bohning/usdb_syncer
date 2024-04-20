@@ -91,6 +91,26 @@
        </widget>
       </item>
       <item>
+       <widget class="QToolButton" name="button_pause">
+        <property name="text">
+         <string>Pause</string>
+        </property>
+        <property name="icon">
+         <iconset resource="../resources/resources.qrc">
+          <normaloff>:/icons/control-pause.png</normaloff>:/icons/control-pause.png</iconset>
+        </property>
+        <property name="iconSize">
+         <size>
+          <width>20</width>
+          <height>20</height>
+         </size>
+        </property>
+        <property name="checkable">
+         <bool>true</bool>
+        </property>
+       </widget>
+      </item>
+      <item>
        <widget class="QProgressBar" name="bar_download_progress">
         <property name="value">
          <number>0</number>
@@ -176,6 +196,7 @@
     <addaction name="action_settings"/>
     <addaction name="action_meta_tags"/>
     <addaction name="action_generate_song_pdf"/>
+    <addaction name="action_generate_song_json"/>
    </widget>
    <widget class="QMenu" name="menu_usdb">
     <property name="title">
@@ -205,6 +226,7 @@
      <bool>true</bool>
     </property>
     <addaction name="action_songs_download"/>
+    <addaction name="action_songs_abort"/>
     <addaction name="action_show_in_usdb"/>
     <addaction name="separator"/>
     <addaction name="action_open_song_folder"/>
@@ -222,6 +244,12 @@
     <addaction name="action_import_usdb_ids"/>
     <addaction name="action_export_usdb_ids"/>
    </widget>
+   <widget class="QMenu" name="menu_view">
+    <property name="title">
+     <string>View</string>
+    </property>
+   </widget>
+   <addaction name="menu_view"/>
    <addaction name="menu_songs"/>
    <addaction name="menu_usdb"/>
    <addaction name="menu_local"/>
@@ -422,6 +450,15 @@
     <string>Generate Song List (PDF)</string>
    </property>
   </action>
+  <action name="action_generate_song_json">
+   <property name="icon">
+    <iconset resource="../resources/resources.qrc">
+     <normaloff>:/icons/report.png</normaloff>:/icons/report.png</iconset>
+   </property>
+   <property name="text">
+    <string>Generate Song List (JSON)</string>
+   </property>
+  </action>
   <action name="action_refetch_song_list">
    <property name="icon">
     <iconset resource="../resources/resources.qrc">
@@ -473,7 +510,7 @@
      <normaloff>:/icons/document-import.png</normaloff>:/icons/document-import.png</iconset>
    </property>
    <property name="text">
-    <string>Export IDs to File</string>
+    <string>Export selected IDs to File</string>
    </property>
    <property name="toolTip">
     <string>Write the IDs of the selected songs to a file</string>
@@ -495,11 +532,6 @@
    </property>
    <property name="text">
     <string>USDB Login</string>
-   </property>
-  </action>
-  <action name="actionHelp">
-   <property name="text">
-    <string>Help...</string>
    </property>
   </action>
   <action name="action_about">
@@ -532,7 +564,7 @@
   <action name="action_delete">
    <property name="icon">
     <iconset resource="../resources/resources.qrc">
-     <normaloff>:/icons/minus-circle.png</normaloff>:/icons/minus-circle.png</iconset>
+     <normaloff>:/icons/bin.png</normaloff>:/icons/bin.png</iconset>
    </property>
    <property name="text">
     <string>Delete</string>
@@ -554,6 +586,15 @@
    </property>
    <property name="toolTip">
     <string>Disable or reenable updates to local files</string>
+   </property>
+  </action>
+  <action name="action_songs_abort">
+   <property name="icon">
+    <iconset resource="../resources/resources.qrc">
+     <normaloff>:/icons/minus-circle.png</normaloff>:/icons/minus-circle.png</iconset>
+   </property>
+   <property name="text">
+    <string>Abort Download</string>
    </property>
   </action>
  </widget>

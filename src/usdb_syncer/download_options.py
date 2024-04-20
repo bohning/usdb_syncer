@@ -3,7 +3,7 @@
 from dataclasses import dataclass
 from pathlib import Path
 
-from usdb_syncer import settings
+from usdb_syncer import settings, utils
 
 
 @dataclass(frozen=True)
@@ -50,7 +50,7 @@ class VideoOptions:
 class CoverOptions:
     """Settings regarding the cover image to be downloaded."""
 
-    max_size: int | None
+    max_size: settings.CoverMaxSize | None
 
 
 @dataclass(frozen=True)
@@ -78,7 +78,7 @@ class Options:
 
 def download_options() -> Options:
     return Options(
-        song_dir=settings.get_song_dir(),
+        song_dir=utils.get_song_dir(),
         txt_options=_txt_options(),
         audio_options=_audio_options(),
         browser=settings.get_browser(),
@@ -111,9 +111,9 @@ def _video_options() -> VideoOptions | None:
         return None
     return VideoOptions(
         format=settings.get_video_format(),
-        reencode_format=settings.get_video_format_new()
-        if settings.get_video_reencode()
-        else None,
+        reencode_format=(
+            settings.get_video_format_new() if settings.get_video_reencode() else None
+        ),
         max_resolution=settings.get_video_resolution(),
         max_fps=settings.get_video_fps(),
     )

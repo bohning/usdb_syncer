@@ -1,7 +1,6 @@
 """Functions for downloading and processing media."""
 
 import os
-import re
 from enum import Enum
 from pathlib import Path
 from typing import Union, assert_never
@@ -16,13 +15,14 @@ from PIL.Image import Resampling
 from usdb_syncer.download_options import AudioOptions, VideoOptions
 from usdb_syncer.logger import Log, get_logger
 from usdb_syncer.meta_tags import ImageMetaTags
-from usdb_syncer.settings import Browser
+from usdb_syncer.settings import Browser, CoverMaxSize
 from usdb_syncer.usdb_scraper import SongDetails
+from usdb_syncer.utils import url_from_resource
 
 IMAGE_DOWNLOAD_HEADERS = {
     "User-Agent": (
         "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
-        "(KHTML, like Gecko) Chrome/42.0.2311.135 Safari/537.36 Edge/12.246"
+        "(KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36"
     )
 }
 
@@ -45,20 +45,6 @@ class ImageKind(Enum):
                 assert_never(unreachable)
 
 
-def _url_from_resource(resource: str) -> str | None:
-    if "://" in resource:
-        return resource
-    if "/" in resource:
-        return f"https://{resource}"
-    vimeo_id_pattern = r"^\d{2,10}$"
-    if re.match(vimeo_id_pattern, resource):
-        return f"https://vimeo.com/{resource}"
-    yt_id_pattern = r"^[A-Za-z0-9_-]{11}$"
-    if re.match(yt_id_pattern, resource):
-        return f"https://www.youtube.com/watch?v={resource}"
-    return None
-
-
 def download_audio(
     resource: str, options: AudioOptions, browser: Browser, path_stem: Path, logger: Log
 ) -> str | None:
@@ -78,7 +64,7 @@ def download_audio(
         postprocessor = {
             "key": "FFmpegExtractAudio",
             "preferredquality": options.bitrate.ytdl_format(),
-            "preferredcodec": options.format.value,
+            "preferredcodec": options.format.ytdl_codec(),
         }
         ydl_opts["postprocessors"] = [postprocessor]
 
@@ -141,13 +127,13 @@ def _ytdl_options(format_: str, browser: Browser, target_stem: Path) -> YtdlOpti
         "playlistend": 0,
         "overwrites": True,
     }
-    if browser.value:
-        options["cookiesfrombrowser"] = (browser.value,)
+    if path := browser.cookie_path():
+        options["cookies"] = (f"{browser.value}:{path}",)
     return options
 
 
 def _download_resource(options: YtdlOptions, resource: str, logger: Log) -> str | None:
-    if (url := _url_from_resource(resource)) is None:
+    if (url := url_from_resource(resource)) is None:
         logger.debug(f"invalid audio/video resource: {resource}")
         return None
 
@@ -164,6 +150,11 @@ def download_image(url: str, logger: Log) -> bytes | None:
         reply = requests.get(
             url, allow_redirects=True, headers=IMAGE_DOWNLOAD_HEADERS, timeout=60
         )
+    except requests.exceptions.SSLError:
+        logger.error(
+            f"Failed to retrieve {url}. The SSL certificate could not be verified."
+        )
+        return None
     except requests.RequestException:
         logger.error(
             f"Failed to retrieve {url}. The server may be down or your internet "
@@ -190,7 +181,7 @@ def download_and_process_image(
     meta_tags: ImageMetaTags | None,
     details: SongDetails,
     kind: ImageKind,
-    max_width: int | None,
+    max_width: CoverMaxSize | None,
 ) -> Path | None:
     logger = get_logger(__file__, details.song_id)
     if not (img_bytes := download_image(url, logger)):
@@ -210,7 +201,7 @@ def download_and_process_image(
 
 
 def _process_image(
-    meta_tags: ImageMetaTags | None, max_width: int | None, path: Path
+    meta_tags: ImageMetaTags | None, max_width: CoverMaxSize | None, path: Path
 ) -> None:
     processed = False
     with Image.open(path).convert("RGB") as image:
@@ -228,10 +219,14 @@ def _process_image(
                 image = ImageOps.autocontrast(image, cutoff=5)
             elif meta_tags.contrast:
                 image = ImageEnhance.Contrast(image).enhance(meta_tags.contrast)
-        if max_width and max_width < image.width:
+        if (
+            max_width
+            and max_width != CoverMaxSize.DISABLE
+            and max_width.value < image.width
+        ):
             processed = True
-            height = round(image.height * max_width / image.width)
-            image = image.resize((max_width, height), resample=Resampling.LANCZOS)
+            height = round(image.height * max_width.value / image.width)
+            image = image.resize((max_width.value, height), resample=Resampling.LANCZOS)
 
         if processed:
             image.save(path, "jpeg", quality=100, subsampling=0)

@@ -5,16 +5,20 @@ from __future__ import annotations
 import configparser
 import json
 import os
+from typing import Iterable
 from urllib.parse import parse_qs, urlparse
 
 import attrs
 from bs4 import BeautifulSoup
 
-from usdb_syncer import SongId
+from usdb_syncer import SongId, errors, logger
+from usdb_syncer.usdb_song import UsdbSong
+
+_logger = logger.get_logger(__file__)
 
 
 @attrs.define
-class UsdbIdFileError(Exception):
+class UsdbIdFileError(errors.UsdbSyncerError):
     """USDB File Parser root exception"""
 
 
@@ -226,19 +230,23 @@ class UsdbIdFileInvalidJsonError(UsdbIdFileError):
 
 
 @attrs.define
-class UsdbIdFileEmptyJsonArrayError(UsdbIdFileError):
-    """file content is an emty JSON array"""
+class UsdbIdFileEmptySongsArrayError(UsdbIdFileError):
+    """songs array is empty"""
+
+    songs_key: str
 
     def __str__(self) -> str:
-        return "empty JSON array"
+        return f"'{self.songs_key}' is empty"
 
 
 @attrs.define
-class UsdbIdFileNoJsonArrayError(UsdbIdFileError):
-    """file content is valid JSON, but not an array"""
+class UsdbIdFileWrongJsonSongsFormatError(UsdbIdFileError):
+    """songs value is not an array"""
+
+    songs_key: str
 
     def __str__(self) -> str:
-        return "file does not contain a JSON array"
+        return f"'{self.songs_key}' is not a JSON array"
 
 
 @attrs.define
@@ -263,6 +271,43 @@ class UsdbIdFileNoUrlFoundError(UsdbIdFileError):
 
     def __str__(self) -> str:
         return "no URL found"
+
+
+def get_available_song_ids_from_files(file_list: list[str]) -> list[SongId]:
+    song_ids: list[SongId] = []
+    for path in file_list:
+        try:
+            song_ids += parse_usdb_id_file(path)
+        except UsdbIdFileError as error:
+            _logger.error(f"Failed to import file '{path}': {str(error)}")
+            return []
+
+    unique_song_ids = list(set(song_ids))
+    unique_song_ids.sort()
+    _logger.info(
+        f"read {len(file_list)} file(s), "
+        f"found {len(unique_song_ids)} "
+        f"USDB IDs: {', '.join(str(id) for id in unique_song_ids)}"
+    )
+    if unavailable_song_ids := [
+        song_id for song_id in unique_song_ids if not UsdbSong.get(song_id)
+    ]:
+        _logger.warning(
+            f"{len(unavailable_song_ids)}/{len(unique_song_ids)} "
+            "imported USDB IDs are not available: "
+            f"{', '.join(str(song_id) for song_id in unavailable_song_ids)}"
+        )
+
+    if available_song_ids := [
+        song_id for song_id in unique_song_ids if song_id not in unavailable_song_ids
+    ]:
+        _logger.info(
+            f"available {len(available_song_ids)}/{len(unique_song_ids)} "
+            "imported USDB IDs will be selected: "
+            f"{', '.join(str(song_id) for song_id in available_song_ids)}"
+        )
+
+    return available_song_ids
 
 
 def _get_json_file_content(filepath: str) -> str:
@@ -290,15 +335,25 @@ def _parse_json_file(filepath: str) -> list[SongId]:
     except Exception as exception:
         raise UnexpectedUsdbIdFileError() from exception
 
-    if not isinstance(parsed_json, list):
-        raise UsdbIdFileNoJsonArrayError()
+    if not isinstance(parsed_json, dict):
+        raise UsdbIdFileInvalidJsonError()
 
-    if not parsed_json:
-        raise UsdbIdFileEmptyJsonArrayError()
+    return _parse_json_content(parsed_json)
+
+
+def _parse_json_content(parsed_json: dict) -> list[SongId]:
+    top_key = "songs"
+
+    if top_key not in parsed_json:
+        raise UsdbIdFileMissingKeyFormatError(top_key)
+    if not isinstance(parsed_json[top_key], list):
+        raise UsdbIdFileWrongJsonSongsFormatError(songs_key=top_key)
+    if not parsed_json[top_key]:
+        raise UsdbIdFileEmptySongsArrayError(songs_key=top_key)
 
     key = "id"
     try:
-        return [SongId.parse(element[key]) for element in parsed_json]
+        return [SongId.parse(element[key]) for element in parsed_json[top_key]]
     except ValueError as exception:
         raise UsdbIdFileInvalidUsdbIdError() from exception
     except (KeyError, IndexError) as exception:
@@ -441,6 +496,6 @@ def parse_usdb_id_file(filepath: str) -> list[SongId]:
     return song_ids
 
 
-def write_usdb_id_file(filepath: str, song_ids: list[SongId]) -> None:
+def write_usdb_id_file(filepath: str, song_ids: Iterable[SongId]) -> None:
     with open(filepath, encoding="utf-8", mode="w") as file:
         file.write("\n".join(str(id) for id in song_ids))

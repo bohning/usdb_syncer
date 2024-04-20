@@ -6,8 +6,8 @@ from pathlib import Path
 
 from requests import Session
 
-from usdb_syncer import song_list_fetcher
-from usdb_syncer.usdb_scraper import login_to_usdb
+from usdb_syncer import SongId, song_routines
+from usdb_syncer.usdb_scraper import get_usdb_available_songs, login_to_usdb
 
 
 def main(target: Path, user: str, password: str) -> None:
@@ -15,8 +15,8 @@ def main(target: Path, user: str, password: str) -> None:
     if not login_to_usdb(session, user, password):
         print("Invalid credentials!")
         sys.exit(1)
-    songs = song_list_fetcher.get_available_songs(force_reload=True, session=session)
-    song_list_fetcher.dump_available_songs(songs, target)
+    songs = get_usdb_available_songs(SongId(0), session=session)
+    song_routines.dump_available_songs(songs, target)
     print(f"{len(songs)} entries written to {target}.")
 
 

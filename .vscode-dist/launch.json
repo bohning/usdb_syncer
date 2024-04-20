@@ -8,10 +8,17 @@
       "name": "GUI",
       "type": "python",
       "request": "launch",
-      "program": "${workspaceFolder}/src/usdb_syncer/main.py",
+      "program": "${workspaceFolder}/src/usdb_syncer/gui/__init__.py",
       "console": "internalConsole",
       "justMyCode": true,
-      "env": {}
+      "env": {
+        // print every executed SQL statement
+        // "TRACESQL": "1",
+        // profile runtime performance
+        // "PROFILE": "1",
+        // overwrite song folder from settings
+        // "SONG_DIR": "c:/path/to/song_dir",
+      }
     }
   ]
 }

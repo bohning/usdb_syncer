@@ -8,6 +8,7 @@ and getters should be added to this module.
 from __future__ import annotations
 
 import os
+import traceback
 from enum import Enum
 from http.cookiejar import CookieJar
 from pathlib import Path
@@ -23,16 +24,30 @@ from usdb_syncer.logger import get_logger
 _logger = get_logger(__file__)
 
 SYSTEM_USDB = "USDB Syncer/USDB"
+NO_KEYRING_BACKEND_WARNING = (
+    "Your USDB password cannot be stored or retrieved because no keyring backend is "
+    "available. See https://pypi.org/project/keyring for details."
+)
 
 
 def get_usdb_auth() -> Tuple[str, str]:
     username = get_setting(SettingKey.USDB_USER_NAME, "")
-    return (username, keyring.get_password(SYSTEM_USDB, username) or "")
+    pwd = ""
+    try:
+        pwd = keyring.get_password(SYSTEM_USDB, username) or ""
+    except keyring.core.backend.errors.NoKeyringError as error:
+        _logger.debug(error)
+        _logger.warning(NO_KEYRING_BACKEND_WARNING)
+    return (username, pwd)
 
 
 def set_usdb_auth(username: str, password: str) -> None:
     set_setting(SettingKey.USDB_USER_NAME, username)
-    keyring.set_password(SYSTEM_USDB, username, password)
+    try:
+        keyring.set_password(SYSTEM_USDB, username, password)
+    except keyring.core.backend.errors.NoKeyringError as error:
+        _logger.debug(error)
+        _logger.warning(NO_KEYRING_BACKEND_WARNING)
 
 
 class SettingKey(Enum):
@@ -108,11 +123,35 @@ class Newline(Enum):
         return Newline.LF
 
 
+class CoverMaxSize(Enum):
+    """Maximum cover size."""
+
+    DISABLE = 0
+    PX_1920 = 1920
+    PX_1000 = 1000
+    PX_640 = 640
+
+    def __str__(self) -> str:
+        match self:
+            case CoverMaxSize.DISABLE:
+                return "disable"
+            case CoverMaxSize.PX_1920:
+                return "1920x1920 px"
+            case CoverMaxSize.PX_1000:
+                return "1000x1000 px"
+            case CoverMaxSize.PX_640:
+                return "640x640 px"
+            case _ as unreachable:
+                assert_never(unreachable)
+
+
 class AudioFormat(Enum):
     """Audio containers that can be requested when downloading with ytdl."""
 
     M4A = "m4a"
     MP3 = "mp3"
+    OGG = "ogg"
+    OPUS = "opus"
 
     def __str__(self) -> str:
         match self:
@@ -120,6 +159,10 @@ class AudioFormat(Enum):
                 return ".m4a (mp4a)"
             case AudioFormat.MP3:
                 return ".mp3 (MPEG)"
+            case AudioFormat.OGG:
+                return ".ogg (Ogg Vorbis)"
+            case AudioFormat.OPUS:
+                return ".opus (Ogg Opus)"
             case _ as unreachable:
                 assert_never(unreachable)
 
@@ -127,12 +170,29 @@ class AudioFormat(Enum):
         # prefer best audio-only codec; otherwise take a video codec and extract later
         return f"bestaudio[ext={self.value}]/bestaudio/bestaudio*"
 
+    def ytdl_codec(self) -> str:
+        match self:
+            case AudioFormat.M4A:
+                return "m4a"
+            case AudioFormat.MP3:
+                return "mp3"
+            case AudioFormat.OGG:
+                return "vorbis"
+            case AudioFormat.OPUS:
+                return "opus"
+            case _ as unreachable:
+                assert_never(unreachable)
+
     def ffmpeg_encoder(self) -> str:
         match self:
             case AudioFormat.M4A:
                 return "aac"
             case AudioFormat.MP3:
                 return "libmp3lame"
+            case AudioFormat.OGG:
+                return "libvorbis"
+            case AudioFormat.OPUS:
+                return "libopus"
             case _ as unreachable:
                 assert_never(unreachable)
 
@@ -221,10 +281,42 @@ class Browser(Enum):
                 assert_never(unreachable)
         try:
             return function(domain_name=Usdb.DOMAIN)
-        except Exception as error:  # pylint: disable=broad-exception-caught
-            _logger.debug(error)
+        except Exception:  # pylint: disable=broad-exception-caught
+            _logger.debug(traceback.format_exc())
         _logger.warning(f"Failed to retrieve {str(self).capitalize()} cookies.")
         return None
+
+    def cookie_path(self) -> str | None:
+        """Retrieve the path to the cookie as returned by browser_cookie3. This seems to
+        be more reliable than yt-dlp's cookie handling."""
+        try:
+            match self:
+                case Browser.NONE:
+                    path = None
+                case Browser.BRAVE:
+                    path = browser_cookie3.Brave().cookie_file
+                case Browser.CHROME:
+                    path = browser_cookie3.Chrome().cookie_file
+                case Browser.CHROMIUM:
+                    path = browser_cookie3.Chromium().cookie_file
+                case Browser.EDGE:
+                    path = browser_cookie3.Edge().cookie_file
+                case Browser.FIREFOX:
+                    path = browser_cookie3.Firefox().cookie_file
+                case Browser.OPERA:
+                    path = browser_cookie3.Opera().cookie_file
+                case Browser.SAFARI:
+                    safari = browser_cookie3.Safari()
+                    buf = safari.__buffer  # pylint: disable=protected-access
+                    path = buf.name if buf else None
+                case Browser.VIVALDI:
+                    path = browser_cookie3.Vivaldi().cookie_file
+                case _ as unreachable:
+                    assert_never(unreachable)
+        except Exception:  # pylint: disable=broad-exception-caught
+            _logger.debug(traceback.format_exc())
+            path = None
+        return path
 
 
 class VideoContainer(Enum):
@@ -435,11 +527,11 @@ def set_cover(value: bool) -> None:
     set_setting(SettingKey.COVER, value)
 
 
-def get_cover_max_size() -> int:
-    return get_setting(SettingKey.COVER_MAX_SIZE, 1920)
+def get_cover_max_size() -> CoverMaxSize:
+    return get_setting(SettingKey.COVER_MAX_SIZE, CoverMaxSize.PX_1920)
 
 
-def set_cover_max_size(value: int) -> None:
+def set_cover_max_size(value: CoverMaxSize) -> None:
     set_setting(SettingKey.COVER_MAX_SIZE, value)
 
 
@@ -452,11 +544,11 @@ def set_browser(value: Browser) -> None:
 
 
 def get_song_dir() -> Path:
-    return get_setting(SettingKey.SONG_DIR, Path.cwd().joinpath("songs"))
+    return get_setting(SettingKey.SONG_DIR, Path("songs").resolve())
 
 
-def set_song_dir(value: str) -> None:
-    set_setting(SettingKey.SONG_DIR, Path.cwd().joinpath(value))
+def set_song_dir(value: Path) -> None:
+    set_setting(SettingKey.SONG_DIR, value)
 
 
 def get_video() -> bool:

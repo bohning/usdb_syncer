@@ -1,8 +1,32 @@
+<!-- 0.5.0 -->
+
+# Changes
+
+## Features
+
+- Added an SQLite database.
+  - Vastly improved performance for loading, searching etc.
+  - Meta files are still being used, but are upgraded with a unique ID. Therefore,
+    initially launching the new release may take some time.
+  - SQLite's FTS5 is used for searching, which works slightly different than the
+    previous approach.
+- The download status column now shows the last sync time.
+- Files are downloaded into temporary folders first for better clean-up, especially if
+  the download fails.
+- Downloads may be aborted or paused.
+- Support Ogg/Opus (.opus) audio format.
+- Parse song tags from USDB comments (like "#TAGS:Love Songs, Movie, 80s").
+
 <!-- 0.4.0 -->
 
 # Changes
 
 ## Fixes
+
+- Don't fail download if mp3/m4a tags cannot be written.
+- Fix cover and background change detection.
+- Let users resize all text-based columns, as width is not calculated correctly on Linux and macOS.
+- Enable running the app even without keyring backend available (usually the case on Linux).
 
 ## Features
 
@@ -15,6 +39,9 @@
   - Delete (move to recycle bin)
   - Pin (prevent updates to local files)
 - Added tooltips for some more involved actions.
+- Support Vimeo IDs and shortening Amazon URLs in the meta tags dialog.
+- Show number of songs per artist, title, language and edition.
+- Support Ogg/Vorbis (.ogg) audio format.
 
 <!-- 0.3.0 -->
 

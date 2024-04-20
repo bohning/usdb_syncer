@@ -20,31 +20,31 @@ class SettingsDialog(Ui_Dialog, QDialog):
         self.groupBox_reencode_video.setVisible(False)
 
     def _populate_comboboxes(self) -> None:
-        for encoding in settings.Encoding:
-            self.comboBox_encoding.addItem(str(encoding), encoding)
-        for newline in settings.Newline:
-            self.comboBox_line_endings.addItem(str(newline), newline)
-        for container in settings.AudioFormat:
-            self.comboBox_audio_format.addItem(str(container), container)
-        for bitrate in settings.AudioBitrate:
-            self.comboBox_audio_bitrate.addItem(str(bitrate), bitrate)
+        combobox_settings = (
+            (self.comboBox_encoding, settings.Encoding),
+            (self.comboBox_line_endings, settings.Newline),
+            (self.comboBox_cover_max_size, settings.CoverMaxSize),
+            (self.comboBox_audio_format, settings.AudioFormat),
+            (self.comboBox_audio_bitrate, settings.AudioBitrate),
+            (self.comboBox_videocontainer, settings.VideoContainer),
+            (self.comboBox_videoencoder, settings.VideoCodec),
+            (self.comboBox_videoresolution, settings.VideoResolution),
+            (self.comboBox_fps, settings.VideoFps),
+        )
+        for combobox, setting in combobox_settings:
+            for item in setting:
+                combobox.addItem(str(item), item)
         for browser in settings.Browser:
             self.comboBox_browser.addItem(QIcon(browser.icon()), str(browser), browser)
-        for video_container in settings.VideoContainer:
-            self.comboBox_videocontainer.addItem(str(video_container), video_container)
-        for video_codec in settings.VideoCodec:
-            self.comboBox_videoencoder.addItem(str(video_codec), video_codec)
-        for resolution in settings.VideoResolution:
-            self.comboBox_videoresolution.addItem(str(resolution), resolution)
-        for fps in settings.VideoFps:
-            self.comboBox_fps.addItem(str(fps), fps)
 
     def _load_settings(self) -> None:
         self.comboBox_browser.setCurrentIndex(
             self.comboBox_browser.findData(settings.get_browser())
         )
         self.groupBox_cover.setChecked(settings.get_cover())
-        self.cover_max_size.setValue(settings.get_cover_max_size())
+        self.comboBox_cover_max_size.setCurrentIndex(
+            self.comboBox_cover_max_size.findData(settings.get_cover_max_size())
+        )
         self.groupBox_songfile.setChecked(settings.get_txt())
         self.comboBox_encoding.setCurrentIndex(
             self.comboBox_encoding.findData(settings.get_encoding())
@@ -88,7 +88,7 @@ class SettingsDialog(Ui_Dialog, QDialog):
     def _save_settings(self) -> None:
         settings.set_browser(self.comboBox_browser.currentData())
         settings.set_cover(self.groupBox_cover.isChecked())
-        settings.set_cover_max_size(self.cover_max_size.value())
+        settings.set_cover_max_size(self.comboBox_cover_max_size.currentData())
         settings.set_txt(self.groupBox_songfile.isChecked())
         settings.set_encoding(self.comboBox_encoding.currentData())
         settings.set_newline(self.comboBox_line_endings.currentData())

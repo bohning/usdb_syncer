@@ -3,154 +3,117 @@
 from __future__ import annotations
 
 import logging
-from collections import defaultdict
-from pathlib import Path
+from functools import partial
 from typing import TYPE_CHECKING, Any, Callable, Iterable, Iterator
 
-import attrs
 import send2trash
+from PySide6 import QtWidgets
 from PySide6.QtCore import (
-    QByteArray,
     QItemSelection,
     QItemSelectionModel,
     QModelIndex,
-    QObject,
     QPoint,
-    QSortFilterProxyModel,
     Qt,
-    Signal,
+    QTimer,
 )
 from PySide6.QtGui import QCursor
-from PySide6.QtWidgets import QHeaderView, QLabel, QMenu, QProgressBar, QTableView
+from PySide6.QtWidgets import QHeaderView, QMenu
 
-from usdb_syncer import SongId, settings
+from usdb_syncer import SongId, db, events, settings
+from usdb_syncer.gui import ffmpeg_dialog
 from usdb_syncer.gui.song_table.column import Column
-from usdb_syncer.gui.song_table.proxy_model import ProxyModel
-from usdb_syncer.gui.song_table.table_model import CustomRole, TableModel
+from usdb_syncer.gui.song_table.table_model import TableModel
 from usdb_syncer.logger import get_logger
-from usdb_syncer.song_data import (
-    DownloadErrorReason,
-    DownloadResult,
-    DownloadStatus,
-    LocalFiles,
-    SongData,
-    fuzz_text,
-)
-from usdb_syncer.song_loader import DownloadInfo, download_songs
-from usdb_syncer.song_txt import SongTxt
-from usdb_syncer.song_txt.headers import Headers
-from usdb_syncer.sync_meta import SyncMeta
-from usdb_syncer.usdb_scraper import UsdbSong
-from usdb_syncer.utils import try_read_unknown_encoding
+from usdb_syncer.song_loader import DownloadManager
+from usdb_syncer.usdb_song import DownloadStatus, UsdbSong
 
 if TYPE_CHECKING:
     from usdb_syncer.gui.mw import MainWindow
 
 _logger = logging.getLogger(__file__)
-_err_logger = get_logger(__file__ + "[errors]")
-_err_logger.setLevel(logging.ERROR)
 
 DEFAULT_COLUMN_WIDTH = 300
-
-
-class SongSignals(QObject):
-    """Signals relating to songs."""
-
-    started = Signal(SongId)
-    finished = Signal(DownloadResult)
-
-
-@attrs.define
-class Progress:
-    """Progress bar controller."""
-
-    _bar: QProgressBar
-    _label: QLabel
-    _running: int = 0
-    _finished: int = 0
-
-    def start(self, count: int) -> None:
-        if self._running == self._finished:
-            self._running = 0
-            self._finished = 0
-        self._running += count
-        self._update()
-
-    def finish(self, count: int) -> None:
-        self._finished += count
-        self._update()
-
-    def _update(self) -> None:
-        self._label.setText(f"{self._finished}/{self._running}")
-        self._bar.setValue(int((self._finished + 1) / (self._running + 1) * 100))
 
 
 class SongTable:
     """Controller for the song table."""
 
+    _search = db.SearchBuilder()
+
     def __init__(self, mw: MainWindow) -> None:
         self.mw = mw
         self._model = TableModel(mw)
-        self._proxy_model = ProxyModel(mw, mw.tree)
-        self.table_view = mw.table_view
-        self._setup_view(
-            mw.table_view, self._proxy_model, settings.get_table_view_header_state()
-        )
+        self._view = mw.table_view
+        self._setup_view()
+        self._header().sortIndicatorChanged.connect(self._on_sort_order_changed)
         mw.table_view.selectionModel().currentChanged.connect(
             self._on_current_song_changed
         )
-        self._signals = SongSignals()
-        self._signals.started.connect(self._on_download_started)
-        self._signals.finished.connect(self._on_download_finished)
-        self._progress = Progress(mw.bar_download_progress, mw.label_download_progress)
+        events.SongChanged.subscribe(self._on_song_changed)
+        self._setup_search_timer()
+        events.TreeFilterChanged.subscribe(self._on_tree_filter_changed)
+        events.TextFilterChanged.subscribe(self._on_text_filter_changed)
+
+    def _header(self) -> QtWidgets.QHeaderView:
+        return self._view.horizontalHeader()
+
+    def reset(self) -> None:
+        self._model.reset()
 
     def download_selection(self) -> None:
         self._download(self._selected_rows())
 
     def _download(self, rows: Iterable[int]) -> None:
-        to_download = []
-        for row in rows:
-            data = self._model.songs[row]
-            if data.local_files.pinned:
-                get_logger(__file__, data.data.song_id).info(
+        ffmpeg_dialog.check_ffmpeg(self.mw, partial(self._download_inner, rows))
+
+    def _download_inner(self, rows: Iterable[int]) -> None:
+        to_download: list[UsdbSong] = []
+        for song_id in self._model.ids_for_rows(rows):
+            song = UsdbSong.get(song_id)
+            assert song
+            if song.sync_meta and song.sync_meta.pinned:
+                get_logger(__file__, song.song_id).info(
                     "Not downloading song as it is pinned."
                 )
                 continue
-            if data.status.can_be_downloaded():
-                data.status = DownloadStatus.PENDING
-                to_download.append(data)
-                self._model.row_changed(row)
+            if song.status.can_be_downloaded():
+                song.status = DownloadStatus.PENDING
+                with db.transaction():
+                    song.upsert()
+                events.SongChanged(song.song_id).post()
+                to_download.append(song)
         if to_download:
-            self._progress.start(len(to_download))
-            download_songs(
-                map(DownloadInfo.from_song_data, to_download),
-                self._signals.started.emit,
-                self._signals.finished.emit,
-            )
+            events.DownloadsRequested(len(to_download)).post()
+            DownloadManager.download(to_download)
 
-    def _setup_view(
-        self, view: QTableView, model: QSortFilterProxyModel, state: QByteArray
-    ) -> None:
-        model.setSourceModel(self._model)
-        model.setSortRole(CustomRole.SORT)
-        view.setModel(model)
-        view.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
-        view.customContextMenuRequested.connect(self._context_menu)
-        view.doubleClicked.connect(self._on_double_clicked)
-        header = view.horizontalHeader()
+    def abort_selected_downloads(self) -> None:
+        DownloadManager.abort(self._model.ids_for_rows(self._selected_rows()))
+
+    def _setup_view(self) -> None:
+        state = settings.get_table_view_header_state()
+        self._view.setModel(self._model)
+        self._view.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
+        self._view.customContextMenuRequested.connect(self._context_menu)
+        self._view.doubleClicked.connect(lambda idx: self._download([idx.row()]))
+        header = self._header()
+        existing_state = False
         if not state.isEmpty():
             header.restoreState(state)
-            return
+            if header.count() != max(Column) + 1:
+                header.reset()
+            else:
+                existing_state = True
+                self._search.order = Column(header.sortIndicatorSection()).song_order()
+                self._search.descending = bool(header.sortIndicatorOrder())
         for column in Column:
-            if not model.filterAcceptsColumn(column, QModelIndex()):
-                continue
-            if size := column.fixed_size(header, self.mw):
+            if size := column.fixed_size():
                 header.setSectionResizeMode(column, QHeaderView.ResizeMode.Fixed)
                 header.resizeSection(column, size)
             # setting a (default) width on the last, stretching column seems to cause
             # issues, so we set it manually on the other columns
             elif column is not max(Column):
-                header.resizeSection(column, DEFAULT_COLUMN_WIDTH)
+                if not existing_state:
+                    header.resizeSection(column, DEFAULT_COLUMN_WIDTH)
                 header.setSectionResizeMode(column, QHeaderView.ResizeMode.Interactive)
 
     def _context_menu(self, _pos: QPoint) -> None:
@@ -159,41 +122,16 @@ class SongTable:
             menu.addAction(action)
         menu.exec(QCursor.pos())
 
-    def _on_double_clicked(self, index: QModelIndex) -> None:
-        self._download([self._proxy_model.mapToSource(index).row()])
-
-    def _on_download_started(self, song_id: SongId) -> None:
-        if (row := self._model.rows.get(song_id)) is None:
-            logger = get_logger(__file__, song_id)
-            logger.error("Unknown id. Ignoring download start signal.")
-            return
-        data = self._model.songs[row]
-        data.status = DownloadStatus.DOWNLOADING
-        self._model.row_changed(row)
-
-    def _on_download_finished(self, result: DownloadResult) -> None:
-        self._progress.finish(1)
-        logger = get_logger(__file__, result.song_id)
-        if result.error is not None:
-            if (row := self._model.row_for_id(result.song_id)) is None:
-                logger.error("Unknown id. Ignoring download finish signal.")
-                return
-            if result.error is DownloadErrorReason.NOT_FOUND:
-                self._model.remove_row(row)
-                logger.info("Removed song from local database.")
-            else:
-                self._model.songs[row].status = DownloadStatus.FAILED
-                self._model.row_changed(row)
-        elif result.data:
-            self._model.update_item(result.data)
-            logger.info("All done!")
-
     def save_state(self) -> None:
         settings.set_table_view_header_state(
             self.mw.table_view.horizontalHeader().saveState()
         )
 
     ### actions
+
+    def _on_song_changed(self, event: events.SongChanged) -> None:
+        if event.song_id == self.current_song_id():
+            self._on_current_song_changed()
 
     def _on_current_song_changed(self) -> None:
         song = self.current_song()
@@ -206,122 +144,112 @@ class SongTable:
             self.mw.action_delete,
             self.mw.action_pin,
         ):
-            action.setEnabled(bool(song.local_files.usdb_path))
-        self.mw.action_pin.setChecked(song.local_files.pinned)
+            action.setEnabled(song.is_local())
+        self.mw.action_pin.setChecked(song.is_pinned())
+        self.mw.action_songs_abort.setEnabled(song.status.can_be_aborted())
 
     def delete_selected_songs(self) -> None:
-        for song in self.selected_songs():
-            if not song.local_files.usdb_path:
-                continue
-            logger = get_logger(__file__, song.data.song_id)
-            if song.local_files.pinned:
-                logger.info("Not trashing song folder as it is pinned.")
-                continue
-            send2trash.send2trash(song.local_files.usdb_path.parent)
-            song.local_files = LocalFiles()
-            self._model.update_item(song)
-            logger.debug("Trashed song folder.")
+        with db.transaction():
+            for song in self.selected_songs():
+                if not song.sync_meta:
+                    continue
+                logger = get_logger(__file__, song.song_id)
+                if song.is_pinned():
+                    logger.info("Not trashing song folder as it is pinned.")
+                    continue
+                if song.sync_meta.path.exists():
+                    send2trash.send2trash(song.sync_meta.path)
+                song.remove_sync_meta()
+                events.SongChanged(song.song_id)
+                logger.debug("Trashed song folder.")
 
     def set_pin_selected_songs(self, pin: bool) -> None:
-        def setter(meta: SyncMeta) -> None:
-            meta.pinned = pin
-
         for song in self.selected_songs():
-            if song.local_files.pinned == pin or not song.local_files.usdb_path:
+            if not song.sync_meta or song.sync_meta.pinned == pin:
                 continue
-            song.local_files.pinned = pin
-            song.local_files.try_update_sync_meta(setter)
-            self._model.update_item(song)
+            song.sync_meta.pinned = pin
+            song.sync_meta.synchronize_to_file()
+            with db.transaction():
+                song.sync_meta.upsert()
+            events.SongChanged(song.song_id)
 
     ### selection model
 
-    def current_song(self) -> SongData | None:
-        if (idx := self.table_view.selectionModel().currentIndex()).isValid():
-            if rows := self._proxy_model.source_rows([idx]):
-                return self._model.songs[rows[0]]
+    def current_song_id(self) -> SongId | None:
+        if (idx := self._view.selectionModel().currentIndex()).isValid():
+            if ids := self._model.ids_for_indices([idx]):
+                return ids[0]
         return None
 
-    def selected_songs(self) -> Iterator[SongData]:
-        return (self._model.songs[row] for row in self._selected_rows())
+    def current_song(self) -> UsdbSong | None:
+        if (song_id := self.current_song_id()) is not None:
+            return UsdbSong.get(song_id)
+        return None
+
+    def selected_songs(self) -> Iterator[UsdbSong]:
+        return (
+            song
+            for song_id in self._model.ids_for_rows(self._selected_rows())
+            if (song := UsdbSong.get(song_id))
+        )
 
     def _selected_rows(self) -> Iterable[int]:
-        return self._proxy_model.source_rows(
-            self.table_view.selectionModel().selectedRows()
-        )
+        return (idx.row() for idx in self._view.selectionModel().selectedRows())
 
-    def select_local_songs(self, directory: Path) -> None:
-        song_map: defaultdict[tuple[str, str], list[int]] = defaultdict(list)
-        for row, song in enumerate(self._model.songs):
-            song_map[fuzzy_key(song.data)].append(row)
-        matched_rows: set[int] = set()
-        for path in directory.glob("**/*.txt"):
-            if txt := try_parse_txt(path):
-                name = txt.headers.artist_title_str()
-                if matches := song_map[fuzzy_key(txt.headers)]:
-                    plural = "es" if len(matches) > 1 else ""
-                    _logger.info(f"{len(matches)} match{plural} for '{name}'.")
-                    matched_rows.update(matches)
-                else:
-                    _logger.warning(f"No matches for '{name}'.")
-        self.set_selection_to_indices(
-            self._proxy_model.target_indices(
-                self._model.index(row, 0) for row in matched_rows
-            )
-        )
-        _logger.info(f"Selected {len(matched_rows)} songs.")
-
-    def set_selection_to_song_ids(self, select_song_ids: list[SongId]) -> None:
-        source_indices = self._model.indices_for_ids(select_song_ids)
-        self.set_selection_to_indices(self._proxy_model.target_indices(source_indices))
+    def set_selection_to_song_ids(self, select_song_ids: Iterable[SongId]) -> None:
+        self.set_selection_to_indices(self._model.indices_for_ids(select_song_ids))
 
     def set_selection_to_indices(self, rows: Iterable[QModelIndex]) -> None:
         selection = QItemSelection()
         for row in rows:
             selection.select(row, row)
-        self.table_view.selectionModel().select(
+        self._view.selectionModel().select(
             selection,
             QItemSelectionModel.SelectionFlag.Rows
             | QItemSelectionModel.SelectionFlag.ClearAndSelect,
         )
 
-    ### sort and filter model
+    ### sorting and filtering
 
-    def connect_row_count_changed(self, func: Callable[[int], None]) -> None:
-        """Calls `func` with the new row count."""
+    def connect_row_count_changed(self, func: Callable[[int, int], None]) -> None:
+        """Calls `func` with the new table row and selection counts."""
 
         def wrapped(*_: Any) -> None:
-            func(self._proxy_model.rowCount())
+            func(
+                self._model.rowCount(), len(self._view.selectionModel().selectedRows())
+            )
 
         self._model.modelReset.connect(wrapped)
-        self._proxy_model.rowsInserted.connect(wrapped)
-        self._proxy_model.rowsRemoved.connect(wrapped)
+        self._model.rowsInserted.connect(wrapped)
+        self._model.rowsRemoved.connect(wrapped)
+        self._view.selectionModel().selectionChanged.connect(wrapped)
 
-    def set_text_filter(self, text: str) -> None:
-        self._proxy_model.set_text_filter(text)
+    def _setup_search_timer(self) -> None:
+        self._search_timer = QTimer(self.mw)
+        self._search_timer.setSingleShot(True)
+        self._search_timer.timeout.connect(self.search_songs)
 
-    ### data model
+    def search_songs(self, msec_delay: int = 0) -> None:
+        self._search_timer.stop()
+        if msec_delay:
+            self._search_timer.setInterval(msec_delay)
+            self._search_timer.start()
+        else:
+            self._model.set_songs(db.search_usdb_songs(self._search))
+            self._on_current_song_changed()
 
-    def set_data(self, songs: tuple[SongData, ...]) -> None:
-        self._model.set_data(songs)
+    def _on_tree_filter_changed(self, event: events.TreeFilterChanged) -> None:
+        event.search.order = self._search.order
+        event.search.descending = self._search.descending
+        event.search.text = self._search.text
+        self._search = event.search
+        self.search_songs(100)
 
-    def get_all_data(self) -> tuple[SongData, ...]:
-        return self._model.songs
+    def _on_text_filter_changed(self, event: events.TextFilterChanged) -> None:
+        self._search.text = event.search
+        self.search_songs(400)
 
-    def all_local_songs(self) -> Iterator[UsdbSong]:
-        return self._model.all_local_songs()
-
-    def get_data(self, song_id: SongId) -> SongData | None:
-        return self._model.item_for_id(song_id)
-
-    def update_item(self, new: SongData) -> None:
-        self._model.update_item(new)
-
-
-def fuzzy_key(data: UsdbSong | Headers) -> tuple[str, str]:
-    return fuzz_text(data.artist), fuzz_text(data.title)
-
-
-def try_parse_txt(path: Path) -> SongTxt | None:
-    if contents := try_read_unknown_encoding(path):
-        return SongTxt.try_parse(contents, _err_logger)
-    return None
+    def _on_sort_order_changed(self, section: int, order: Qt.SortOrder) -> None:
+        self._search.order = Column(section).song_order()
+        self._search.descending = bool(order.value)
+        self.search_songs()

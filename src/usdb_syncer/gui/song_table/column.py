@@ -1,14 +1,15 @@
 """Table model for song data."""
 
+from __future__ import annotations
+
 import enum
 from enum import IntEnum
 from functools import cache
 from typing import assert_never
 
-from PySide6.QtGui import QIcon, QPaintDevice
-from PySide6.QtWidgets import QHeaderView
+from PySide6.QtGui import QIcon
 
-from usdb_syncer import SongId
+from usdb_syncer import db
 
 
 class Column(IntEnum):
@@ -22,6 +23,10 @@ class Column(IntEnum):
     GOLDEN_NOTES = enum.auto()
     RATING = enum.auto()
     VIEWS = enum.auto()
+    YEAR = enum.auto()
+    GENRE = enum.auto()
+    CREATOR = enum.auto()
+    TAGS = enum.auto()
     PINNED = enum.auto()
     TXT = enum.auto()
     AUDIO = enum.auto()
@@ -40,6 +45,14 @@ class Column(IntEnum):
                 return "Language"
             case Column.EDITION:
                 return "Edition"
+            case Column.YEAR:
+                return "Year"
+            case Column.GENRE:
+                return "Genre"
+            case Column.CREATOR:
+                return "Creator"
+            case Column.TAGS:
+                return "Tags"
             case Column.DOWNLOAD_STATUS:
                 return "Status"
             case (
@@ -78,6 +91,14 @@ class Column(IntEnum):
                 return QIcon(":/icons/rating.png")
             case Column.VIEWS:
                 return QIcon(":/icons/views.png")
+            case Column.YEAR:
+                return QIcon(":/icons/calendar.png")
+            case Column.GENRE:
+                return QIcon(":/icons/spectrum-absorption.png")
+            case Column.CREATOR:
+                return QIcon(":/icons/quill.png")
+            case Column.TAGS:
+                return QIcon(":/icons/price-tag.png")
             case Column.TXT:
                 return QIcon(":/icons/text.png")
             case Column.AUDIO:
@@ -95,22 +116,22 @@ class Column(IntEnum):
             case _ as unreachable:
                 assert_never(unreachable)
 
-    def fixed_size(self, header: QHeaderView, window: QPaintDevice) -> int | None:
+    def fixed_size(self) -> int | None:
         match self:
-            case Column.SONG_ID:
-                return _horizontal_size(str(SongId(0)), header, window)
-            case Column.VIEWS:
-                return _horizontal_size("99999", header, window)
-            case Column.RATING:
-                return _horizontal_size("★★★★★", header, window)
-            case Column.GOLDEN_NOTES:
-                return _horizontal_size("Yes", header, window)
             case (
                 Column.ARTIST
                 | Column.TITLE
                 | Column.LANGUAGE
                 | Column.EDITION
                 | Column.DOWNLOAD_STATUS
+                | Column.SONG_ID
+                | Column.VIEWS
+                | Column.RATING
+                | Column.GOLDEN_NOTES
+                | Column.YEAR
+                | Column.GENRE
+                | Column.CREATOR
+                | Column.TAGS
             ):
                 return None
             case (
@@ -125,12 +146,45 @@ class Column(IntEnum):
             case _ as unreachable:
                 assert_never(unreachable)
 
-
-def _horizontal_size(text: str, header: QHeaderView, window: QPaintDevice) -> int:
-    return (
-        int(header.fontMetrics().horizontalAdvance(text) * window.devicePixelRatio())
-        # for rounding down
-        + 1
-        # for cell padding
-        + 2 * 3
-    )
+    def song_order(self) -> db.SongOrder:
+        match self:
+            case Column.SONG_ID:
+                return db.SongOrder.SONG_ID
+            case Column.ARTIST:
+                return db.SongOrder.ARTIST
+            case Column.TITLE:
+                return db.SongOrder.TITLE
+            case Column.LANGUAGE:
+                return db.SongOrder.LANGUAGE
+            case Column.EDITION:
+                return db.SongOrder.EDITION
+            case Column.GOLDEN_NOTES:
+                return db.SongOrder.GOLDEN_NOTES
+            case Column.RATING:
+                return db.SongOrder.RATING
+            case Column.VIEWS:
+                return db.SongOrder.VIEWS
+            case Column.YEAR:
+                return db.SongOrder.YEAR
+            case Column.GENRE:
+                return db.SongOrder.GENRE
+            case Column.CREATOR:
+                return db.SongOrder.CREATOR
+            case Column.TAGS:
+                return db.SongOrder.TAGS
+            case Column.PINNED:
+                return db.SongOrder.PINNED
+            case Column.TXT:
+                return db.SongOrder.TXT
+            case Column.AUDIO:
+                return db.SongOrder.AUDIO
+            case Column.VIDEO:
+                return db.SongOrder.VIDEO
+            case Column.COVER:
+                return db.SongOrder.COVER
+            case Column.BACKGROUND:
+                return db.SongOrder.BACKGROUND
+            case Column.DOWNLOAD_STATUS:
+                return db.SongOrder.STATUS
+            case unreachable:
+                assert_never(unreachable)

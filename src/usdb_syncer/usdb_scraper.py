@@ -12,7 +12,7 @@ import requests
 from bs4 import BeautifulSoup, NavigableString, Tag
 from requests import Session
 
-from usdb_syncer import SongId, settings
+from usdb_syncer import SongId, errors, settings
 from usdb_syncer.constants import (
     SUPPORTED_VIDEO_SOURCES_REGEX,
     Usdb,
@@ -39,6 +39,7 @@ SONG_LIST_ROW_REGEX = re.compile(
 WELCOME_REGEX = re.compile(
     r"<td class='row3' colspan='2'>\s*<span class='gen'>([^<]+) <b>([^<]+)</b>"
 )
+TAGS_LINE_REGEX = re.compile("#TAGS:(.+)")
 
 
 def establish_usdb_login(session: Session) -> bool:
@@ -97,22 +98,6 @@ class SessionManager:
         return cls._session is not None
 
 
-class UsdbError(Exception):
-    """Super class for errors relating to USDB."""
-
-
-class UsdbParseError(UsdbError):
-    """Raised when HTML from USDB has unexpected format."""
-
-
-class UsdbLoginError(UsdbError):
-    """Raised when login was required, but not possible."""
-
-
-class UsdbNotFoundError(UsdbError):
-    """Raised when a requested USDB record is missing."""
-
-
 def get_logged_in_usdb_user(session: Session) -> str | None:
     response = session.get(Usdb.BASE_URL, timeout=10, params={"link": "profil"})
     response.raise_for_status()
@@ -143,17 +128,14 @@ class RequestMethod(Enum):
     POST = "POST"
 
 
+@attrs.define(kw_only=True)
 class CommentContents:
     """The parsed contents of a SongComment."""
 
     text: str
     youtube_ids: list[str]
     urls: list[str]
-
-    def __init__(self, *, text: str, youtube_ids: list[str], urls: list[str]) -> None:
-        self.text = text
-        self.youtube_ids = youtube_ids
-        self.urls = urls
+    tags: list[str]
 
 
 class SongComment:
@@ -198,10 +180,15 @@ class SongDetails:
         before URLs.
         """
         for comment in self.comments:
-            for ytid in comment.contents.youtube_ids:
-                yield ytid
-            for url in comment.contents.urls:
-                yield url
+            yield from comment.contents.youtube_ids
+            yield from comment.contents.urls
+
+    def comment_tags(self) -> list[str]:
+        """Return the first tags string sanitized, if any."""
+        for comment in self.comments:
+            if comment.contents.tags:
+                return comment.contents.tags
+        return []
 
 
 def get_usdb_page(
@@ -238,7 +225,7 @@ def get_usdb_page(
         return page()
     except requests.ConnectionError:
         _logger.debug("Connection failed; session may have expired; retrying ...")
-    except UsdbLoginError:
+    except errors.UsdbLoginError:
         # skip login retry if custom or just created session
         if session or not existing_session:
             raise
@@ -272,9 +259,9 @@ def _get_usdb_page_inner(
     response.raise_for_status()
     response.encoding = "utf-8"
     if UsdbStrings.NOT_LOGGED_IN in (page := normalize(response.text)):
-        raise UsdbLoginError
+        raise errors.UsdbLoginError
     if UsdbStrings.DATASET_NOT_FOUND in page:
-        raise UsdbNotFoundError
+        raise errors.UsdbNotFoundError
     return page
 
 
@@ -308,7 +295,7 @@ def _usdb_strings_from_soup(soup: BeautifulSoup) -> Type[UsdbStrings]:
 def _usdb_strings_from_html(html: str) -> Type[UsdbStrings]:
     if match := WELCOME_REGEX.search(html):
         return _usdb_strings_from_welcome(match.group(1))
-    raise UsdbParseError("welcome string not found")
+    raise errors.UsdbParseError("welcome string not found")
 
 
 def _usdb_strings_from_welcome(welcome_string: str) -> Type[UsdbStrings]:
@@ -319,7 +306,7 @@ def _usdb_strings_from_welcome(welcome_string: str) -> Type[UsdbStrings]:
             return UsdbStringsGerman
         case UsdbStringsFrench.WELCOME:
             return UsdbStringsFrench
-    raise UsdbParseError("Unknown USDB language.")
+    raise errors.UsdbParseError("Unknown USDB language.")
 
 
 def get_usdb_available_songs(
@@ -430,7 +417,7 @@ def _find_text_after(details_table: BeautifulSoup, label: str) -> str:
     if isinstance((tag := details_table.find(string=label)), NavigableString):
         if isinstance(tag.next, Tag):
             return tag.next.text.strip()
-    raise UsdbParseError(f"Text after {label} not found.")
+    raise errors.UsdbParseError(f"Text after {label} not found.")
 
 
 def _parse_comments_table(
@@ -464,7 +451,6 @@ def _parse_comment_contents(contents: BeautifulSoup, logger: Log) -> CommentCont
     for emoji in td_element.find_all("img"):
         emoji.replaceWith(emoji.get("title"))
 
-    # text = contents.find("td").text.strip()  # type: ignore
     text = td_element.text.strip()  # type: ignore
     urls: list[str] = []
     youtube_ids: list[str] = []
@@ -475,7 +461,12 @@ def _parse_comment_contents(contents: BeautifulSoup, logger: Log) -> CommentCont
         else:
             urls.append(url)
 
-    return CommentContents(text=text, urls=urls, youtube_ids=youtube_ids)
+    if match := TAGS_LINE_REGEX.search(text):
+        tags = [t for tag in match.group(1).split(",") if (t := tag.strip())]
+    else:
+        tags = []
+
+    return CommentContents(text=text, urls=urls, youtube_ids=youtube_ids, tags=tags)
 
 
 def _all_urls_in_comment(
@@ -513,4 +504,4 @@ def get_notes(song_id: SongId, logger: Log) -> str:
 def _parse_song_txt_from_txt_page(soup: BeautifulSoup) -> str:
     if isinstance(textarea := soup.find("textarea"), Tag):
         return textarea.string or ""
-    raise UsdbParseError("textarea for notes not found")
+    raise errors.UsdbParseError("textarea for notes not found")
