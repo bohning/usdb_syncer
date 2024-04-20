@@ -19,7 +19,7 @@ import mutagen.ogg
 import mutagen.oggopus
 import mutagen.oggvorbis
 import send2trash
-from audio_separator import Separator
+from audio_separator.separator import Separator
 from mutagen import id3
 from mutagen.flac import Picture
 from PIL import Image
@@ -185,9 +185,23 @@ class _TempResourceFiles:
     video: _TempResourceFile = attrs.field(factory=_TempResourceFile)
     cover: _TempResourceFile = attrs.field(factory=_TempResourceFile)
     background: _TempResourceFile = attrs.field(factory=_TempResourceFile)
+    intrumental: _TempResourceFile = attrs.field(factory=_TempResourceFile)
+    vocals: _TempResourceFile = attrs.field(factory=_TempResourceFile)
+    instrumental_txt: _TempResourceFile = attrs.field(factory=_TempResourceFile)
 
     def __iter__(self) -> Iterator[_TempResourceFile]:
-        return iter((self.txt, self.audio, self.video, self.cover, self.background))
+        return iter(
+            (
+                self.txt,
+                self.audio,
+                self.video,
+                self.cover,
+                self.background,
+                self.intrumental,
+                self.vocals,
+                self.instrumental_txt,
+            )
+        )
 
 
 @attrs.define
@@ -352,6 +366,7 @@ class _SongLoader(QtCore.QRunnable):
                 _maybe_download_cover,
                 _maybe_download_background,
                 _maybe_write_audio_tags,
+                _maybe_generate_instrumental,
             ):
                 self._check_flags()
                 job(ctx)
@@ -365,7 +380,6 @@ class _SongLoader(QtCore.QRunnable):
             _persist_tempfiles(ctx)
 
         _write_sync_meta(ctx)
-        _maybe_generate_instrumental(ctx)
         return ctx.song
 
     def _check_flags(self) -> None:
@@ -599,46 +613,48 @@ def _write_mp3_tags(
     tags.save(path)
 
 
-def _maybe_generate_instrumental(ctx: Context) -> None:
-    if not (audio_options := ctx.options.audio_options) or not (
-        meta := ctx.sync_meta.audio
-    ):
+def _maybe_generate_instrumental(ctx: _Context) -> None:
+    if not (audio_options := ctx.options.audio_options):  # or not (
+        # meta := ctx.song.sync_meta.audio
+        # ):
         return
     if not audio_options.instrumental:
         return
 
-    audio = os.path.join(ctx.locations.dir_path(), meta.fname)
-    ext = "mp3"
-    # Initialize the Separator with the audio file and model name
+    audio = ctx.out.audio.path()
+    ext = ctx.options.audio_options.format.value
+    print(ext)
+    # Initialize the Separator
     separator = Separator(
-        audio_file_path=f"{audio}",
-        model_name="UVR_MDXNET_KARA_2",
-        output_format=ext.upper(),
-        output_dir=ctx.locations.dir_path(),
-        denoise_enabled=True,
+        output_format=ext.upper(), output_dir=ctx.locations.temp_path()
     )
+    separator.load_model(model_filename="UVR-MDX-NET-Inst_HQ_3.onnx")
     # Perform the separation
-    # pylint: disable-next=unbalanced-tuple-unpacking
-    instrumental_file, vocals_file = separator.separate()
+    vocals_file, instrumental_file = separator.separate(audio)
     # Properly rename the files
     os.rename(
-        os.path.join(ctx.locations.dir_path(), instrumental_file),
-        f"{ctx.locations.file_path()} [Instrumental].{ext}",
+        os.path.join(ctx.locations.temp_path(), instrumental_file),
+        f"{ctx.locations.temp_path()} [Instrumental].{ext}",
+    )
+    ctx.out.intrumental.new_path = Path(
+        f"{ctx.locations.temp_path()} [Instrumental].{ext}"
     )
     os.rename(
-        os.path.join(ctx.locations.dir_path(), vocals_file),
-        f"{ctx.locations.file_path()} [Vocals].{ext}",
+        os.path.join(ctx.locations.temp_path(), vocals_file),
+        f"{ctx.locations.temp_path()} [Vocals].{ext}",
     )
+    ctx.out.vocals.new_path = Path(f"{ctx.locations.temp_path()} [Vocals].{ext}")
 
     if not (txt_options := ctx.options.txt_options):
         return
 
-    instrumental_txt = Path(f"{ctx.locations.file_path()} [Instrumental].txt")
+    instrumental_txt = Path(f"{ctx.locations.temp_path()} [Instrumental].txt")
     ctx.txt.headers.title = ctx.txt.headers.title + " [Instrumental]"
     ctx.txt.headers.mp3 = f"{ctx.locations.filename_stem} [Instrumental].{ext}"
     ctx.txt.write_to_file(
         instrumental_txt, txt_options.encoding.value, txt_options.newline.value
     )
+    ctx.out.instrumental_txt.new_path = instrumental_txt
     ctx.logger.info("Success! Created instrumental song txt.")
 
 

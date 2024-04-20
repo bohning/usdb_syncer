@@ -81,6 +81,9 @@ class SyncMeta:
     video: ResourceFile | None = None
     cover: ResourceFile | None = None
     background: ResourceFile | None = None
+    instrumental: ResourceFile | None = None
+    vocals: ResourceFile | None = None
+    instrumental_txt: ResourceFile | None = None
 
     @classmethod
     def new(cls, song_id: SongId, folder: Path, meta_tags: MetaTags) -> SyncMeta:
@@ -201,6 +204,9 @@ class SyncMeta:
             (self.video, db.ResourceFileKind.VIDEO),
             (self.cover, db.ResourceFileKind.COVER),
             (self.background, db.ResourceFileKind.BACKGROUND),
+            (self.instrumental, db.ResourceFileKind.INSTRUMENTAL),
+            (self.vocals, db.ResourceFileKind.VOCALS),
+            (self.instrumental_txt, db.ResourceFileKind.INSTRUMENTAL_TXT),
         )
 
     def db_params(self) -> db.SyncMetaParams:
