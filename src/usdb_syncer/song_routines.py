@@ -2,7 +2,9 @@
 
 import json
 import logging
+import os
 from pathlib import Path
+from typing import Generator
 
 from requests import Session
 
@@ -53,11 +55,20 @@ def dump_available_songs(songs: list[UsdbSong], target: Path | None = None) -> N
         json.dump(songs, file, cls=UsdbSongEncoder)
 
 
+def _iterate_usdb_files_in_folder_recursively(
+    folder: Path,
+) -> Generator[Path, None, None]:
+    for root, _, files in os.walk(folder):
+        for file in files:
+            if file.endswith(".usdb") and not file.startswith("."):
+                yield Path(root) / file
+
+
 def synchronize_sync_meta_folder(folder: Path) -> None:
     db_metas = {m.sync_meta_id: m for m in SyncMeta.get_in_folder(folder)}
     song_ids = set(db.all_song_ids())
     to_upsert: list[SyncMeta] = []
-    for path in folder.glob("**/[!.]*.usdb"):
+    for path in _iterate_usdb_files_in_folder_recursively(folder=folder):
         meta_id = SyncMetaId.from_path(path)
         meta = None if meta_id is None else db_metas.get(meta_id)
         if meta_id is not None and meta and meta.mtime == utils.get_mtime(path):
