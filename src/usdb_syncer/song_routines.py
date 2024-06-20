@@ -75,7 +75,7 @@ def synchronize_sync_meta_folder(folder: Path) -> None:
         if meta_id := SyncMetaId.from_path(path):
             if meta_id in found_metas:
                 send2trash.send2trash(path)
-                _logger.warn(f"Trashed duplicated meta file: '{path}'")
+                _logger.warning(f"Trashed duplicated meta file: '{path}'")
                 continue
             found_metas.add(meta_id)
 
