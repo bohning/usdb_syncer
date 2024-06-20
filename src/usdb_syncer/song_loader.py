@@ -156,10 +156,6 @@ class _TempResourceFile:
     new_path: Path | None = None
     resource: str | None = None
 
-    @classmethod
-    def from_existing(cls, old: ResourceFile, folder: Path) -> _TempResourceFile:
-        return cls(resource=old.resource, old_path=folder.joinpath(old.fname))
-
     def path_and_resource(self) -> tuple[Path, str] | None:
         if (path := self.new_path or self.old_path) and self.resource:
             return (path, self.resource)
@@ -357,12 +353,15 @@ class _SongLoader(QtCore.QRunnable):
             # last chance to abort before irreversible changes
             self._check_flags()
             _cleanup_existing_resources(ctx)
-            _ensure_correct_folder_name(ctx.locations)
             # only here so filenames in header are up-to-date
             _maybe_write_txt(ctx)
             _persist_tempfiles(ctx)
 
         _write_sync_meta(ctx)
+        _ensure_correct_folder_name(ctx.locations)
+        if sync_meta := ctx.song.sync_meta:
+            # update sync meta path in case folder was renamed
+            sync_meta.path = ctx.locations.file_path(sync_meta.path.name)
         return ctx.song
 
     def _check_flags(self) -> None:
