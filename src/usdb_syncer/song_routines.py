@@ -72,6 +72,11 @@ def synchronize_sync_meta_folder(folder: Path) -> None:
         meta_id = SyncMetaId.from_path(path)
         meta = None if meta_id is None else db_metas.get(meta_id)
         if meta_id is not None and meta and meta.mtime == utils.get_mtime(path):
+            # file is unchanged
+            if path != meta.path:
+                meta.path = path
+                to_upsert.append(meta)
+                _logger.info(f"Meta file was moved: '{path}'.")
             del db_metas[meta_id]
             continue
         if (meta := SyncMeta.try_from_file(path)) and meta.song_id in song_ids:
