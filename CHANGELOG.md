@@ -1,3 +1,14 @@
+<!-- 0.5.1 -->
+
+# Changes
+
+## Fixes
+
+- Fixed the app hanging on startup for some users with large collections on macOS.
+- Added detection and handling of moved meta files on startup or song folder change.
+- Downloading artist or title changes for existing songs no longer causes an error.
+- Fixed special characters causing issues on macOS in certain cases.
+
 <!-- 0.5.0 -->
 
 # Changes
