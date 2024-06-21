@@ -83,7 +83,7 @@ def synchronize_sync_meta_folder(folder: Path) -> None:
 
         if meta_id is not None and meta and meta.mtime == utils.get_mtime(path):
             # file is unchanged
-            if path != meta.path:
+            if not utils.compare_unicode_paths(path, meta.path):
                 meta.path = path
                 to_upsert.append(meta)
                 _logger.info(f"Meta file was moved: '{path}'.")
@@ -107,7 +107,9 @@ def find_local_songs(directory: Path) -> set[SongId]:
         if headers := try_parse_txt_headers(path):
             name = headers.artist_title_str()
             if matches := list(
-                db.find_similar_usdb_songs(headers.artist, headers.title)
+                db.find_similar_usdb_songs(
+                    utils.normalize(headers.artist), utils.normalize(headers.title)
+                )
             ):
                 plural = "es" if len(matches) > 1 else ""
                 _logger.info(f"{len(matches)} match{plural} for '{name}'.")
