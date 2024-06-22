@@ -6,6 +6,7 @@ import os
 from pathlib import Path
 from typing import Generator
 
+import send2trash
 from requests import Session
 
 from usdb_syncer import SongId, SyncMetaId, db, errors, song_txt, utils
@@ -68,20 +69,35 @@ def synchronize_sync_meta_folder(folder: Path) -> None:
     db_metas = {m.sync_meta_id: m for m in SyncMeta.get_in_folder(folder)}
     song_ids = set(db.all_song_ids())
     to_upsert: list[SyncMeta] = []
+    found_metas: set[SyncMetaId] = set()
+
     for path in _iterate_usdb_files_in_folder_recursively(folder=folder):
-        meta_id = SyncMetaId.from_path(path)
+        if meta_id := SyncMetaId.from_path(path):
+            if meta_id in found_metas:
+                send2trash.send2trash(path)
+                _logger.warning(f"Trashed duplicated meta file: '{path}'")
+                continue
+            found_metas.add(meta_id)
+
         meta = None if meta_id is None else db_metas.get(meta_id)
+
         if meta_id is not None and meta and meta.mtime == utils.get_mtime(path):
-            del db_metas[meta_id]
+            # file is unchanged
+            if not utils.compare_unicode_paths(path, meta.path):
+                meta.path = path
+                to_upsert.append(meta)
+                _logger.info(f"Meta file was moved: '{path}'.")
             continue
+
         if (meta := SyncMeta.try_from_file(path)) and meta.song_id in song_ids:
+            # file was changed and maybe moved
             to_upsert.append(meta)
             if meta.sync_meta_id in db_metas:
-                del db_metas[meta.sync_meta_id]
                 _logger.info(f"Updated meta file from disk: '{path}'.")
             else:
                 _logger.info(f"New meta file found on disk: '{path}'.")
-    SyncMeta.delete_many(tuple(db_metas.keys()))
+
+    SyncMeta.delete_many(tuple(db_metas.keys() - found_metas))
     SyncMeta.upsert_many(to_upsert)
 
 
@@ -91,7 +107,9 @@ def find_local_songs(directory: Path) -> set[SongId]:
         if headers := try_parse_txt_headers(path):
             name = headers.artist_title_str()
             if matches := list(
-                db.find_similar_usdb_songs(headers.artist, headers.title)
+                db.find_similar_usdb_songs(
+                    utils.normalize(headers.artist), utils.normalize(headers.title)
+                )
             ):
                 plural = "es" if len(matches) > 1 else ""
                 _logger.info(f"{len(matches)} match{plural} for '{name}'.")

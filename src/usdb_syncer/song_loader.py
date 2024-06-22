@@ -32,6 +32,7 @@ from usdb_syncer import (
     events,
     resource_dl,
     usdb_scraper,
+    utils,
 )
 from usdb_syncer.constants import ISO_639_2B_LANGUAGE_CODES
 from usdb_syncer.logger import Log, get_logger
@@ -40,12 +41,6 @@ from usdb_syncer.song_txt import Headers, SongTxt
 from usdb_syncer.sync_meta import ResourceFile, SyncMeta
 from usdb_syncer.usdb_scraper import SongDetails
 from usdb_syncer.usdb_song import DownloadStatus, UsdbSong
-from usdb_syncer.utils import (
-    is_name_maybe_with_suffix,
-    next_unique_directory,
-    resource_file_ending,
-    sanitize_filename,
-)
 
 
 class DownloadManager:
@@ -118,11 +113,11 @@ class _Locations:
     def new(
         cls, song: UsdbSong, song_dir: Path, headers: Headers, tempdir: Path
     ) -> _Locations:
-        filename_stem = sanitize_filename(headers.artist_title_str())
+        filename_stem = utils.sanitize_filename(headers.artist_title_str())
         if song.sync_meta:
             folder = song.sync_meta.path.parent
         else:
-            folder = next_unique_directory(song_dir.joinpath(filename_stem))
+            folder = utils.next_unique_directory(song_dir.joinpath(filename_stem))
         return cls(folder=folder, filename_stem=filename_stem, tempdir=tempdir)
 
     def file_path(self, file: str = "", ext: str = "") -> Path:
@@ -155,10 +150,6 @@ class _TempResourceFile:
     old_path: Path | None = None
     new_path: Path | None = None
     resource: str | None = None
-
-    @classmethod
-    def from_existing(cls, old: ResourceFile, folder: Path) -> _TempResourceFile:
-        return cls(resource=old.resource, old_path=folder.joinpath(old.fname))
 
     def path_and_resource(self) -> tuple[Path, str] | None:
         if (path := self.new_path or self.old_path) and self.resource:
@@ -357,12 +348,15 @@ class _SongLoader(QtCore.QRunnable):
             # last chance to abort before irreversible changes
             self._check_flags()
             _cleanup_existing_resources(ctx)
-            _ensure_correct_folder_name(ctx.locations)
             # only here so filenames in header are up-to-date
             _maybe_write_txt(ctx)
             _persist_tempfiles(ctx)
 
         _write_sync_meta(ctx)
+        _ensure_correct_folder_name(ctx.locations)
+        if sync_meta := ctx.song.sync_meta:
+            # update sync meta path in case folder was renamed
+            sync_meta.path = ctx.locations.file_path(sync_meta.path.name)
         return ctx.song
 
     def _check_flags(self) -> None:
@@ -650,7 +644,7 @@ def _cleanup_existing_resources(ctx: _Context) -> None:
             send2trash.send2trash(out.old_path)
             ctx.logger.debug(f"Trashed existing file: '{out.old_path}'.")
         elif out.old_path != (
-            path := ctx.locations.file_path(ext=resource_file_ending(old.fname))
+            path := ctx.locations.file_path(ext=utils.resource_file_ending(old.fname))
         ):
             # no new file; keep existing one, but ensure correct name
             out.old_path.rename(path)
@@ -660,9 +654,13 @@ def _cleanup_existing_resources(ctx: _Context) -> None:
 def _ensure_correct_folder_name(locations: _Locations) -> None:
     """Ensure the song folder exists and has the correct name."""
     locations.folder.mkdir(parents=True, exist_ok=True)
-    if is_name_maybe_with_suffix(locations.folder.name, locations.filename_stem):
+    if utils.is_name_maybe_with_suffix(
+        utils.normalize(locations.folder.name), locations.filename_stem
+    ):
         return
-    new = next_unique_directory(locations.folder.with_name(locations.filename_stem))
+    new = utils.next_unique_directory(
+        locations.folder.with_name(locations.filename_stem)
+    )
     locations.folder.rename(new)
     locations.folder = new
 
