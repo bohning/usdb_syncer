@@ -653,7 +653,6 @@ def _cleanup_existing_resources(ctx: _Context) -> None:
 
 def _ensure_correct_folder_name(locations: _Locations) -> None:
     """Ensure the song folder exists and has the correct name."""
-    locations.folder.mkdir(parents=True, exist_ok=True)
     if utils.is_name_maybe_with_suffix(
         utils.normalize(locations.folder.name), locations.filename_stem
     ):
@@ -666,6 +665,7 @@ def _ensure_correct_folder_name(locations: _Locations) -> None:
 
 
 def _persist_tempfiles(ctx: _Context) -> None:
+    ctx.locations.folder.mkdir(parents=True, exist_ok=True)
     for temp_file in ctx.out:
         if temp_file.new_path:
             target = ctx.locations.file_path(temp_file.new_path.name)
