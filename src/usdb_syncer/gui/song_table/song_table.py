@@ -158,7 +158,7 @@ class SongTable:
                     logger.info("Not trashing song folder as it is pinned.")
                     continue
                 if song.sync_meta.path.exists():
-                    send2trash.send2trash(song.sync_meta.path)
+                    send2trash.send2trash(song.sync_meta.path.parent)
                 song.remove_sync_meta()
                 events.SongChanged(song.song_id)
                 logger.debug("Trashed song folder.")
