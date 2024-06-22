@@ -9,11 +9,15 @@ from pathlib import Path
 from typing import Generator, Iterable, Iterator, assert_never, cast
 
 import attrs
+from more_itertools import batched
 
 from usdb_syncer import SongId, SyncMetaId, errors, logger
 from usdb_syncer.utils import AppPaths
 
 SCHEMA_VERSION = 1
+
+# https://www.sqlite.org/limits.html
+_SQL_VARIABLES_LIMIT = 32766
 
 
 _logger = logger.get_logger(__file__)
@@ -442,10 +446,11 @@ def delete_sync_meta(sync_meta_id: SyncMetaId) -> None:
 
 
 def delete_sync_metas(ids: tuple[SyncMetaId, ...]) -> None:
-    id_str = ", ".join("?" for _ in range(len(ids)))
-    _DbState.connection().execute(
-        f"DELETE FROM sync_meta WHERE sync_meta_id IN ({id_str})", ids
-    )
+    for batch in batched(ids, _SQL_VARIABLES_LIMIT):
+        id_str = ", ".join("?" for _ in range(len(batch)))
+        _DbState.connection().execute(
+            f"DELETE FROM sync_meta WHERE sync_meta_id IN ({id_str})", batch
+        )
 
 
 ### ResourceFile
@@ -473,11 +478,13 @@ class ResourceFileParams:
 
 
 def delete_resource_files(ids: Iterable[tuple[SyncMetaId, ResourceFileKind]]) -> None:
-    params = tuple(param for i, k in ids for param in (int(i), k.value))
-    tuples = ", ".join("(?, ?)" for _ in range(len(params) // 2))
-    _DbState.connection().execute(
-        f"DELETE FROM resource_file WHERE (sync_meta_id, kind) IN ({tuples})", params
-    )
+    for batch in batched(ids, _SQL_VARIABLES_LIMIT // 2):
+        params = tuple(param for i, k in batch for param in (int(i), k.value))
+        tuples = ", ".join("(?, ?)" for _ in range(len(params) // 2))
+        _DbState.connection().execute(
+            f"DELETE FROM resource_file WHERE (sync_meta_id, kind) IN ({tuples})",
+            params,
+        )
 
 
 def upsert_resource_files(params: Iterable[ResourceFileParams]) -> None:

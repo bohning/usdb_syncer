@@ -137,7 +137,7 @@ def _configure_logging(mw: MainWindow) -> None:
         datefmt="%Y-%m-%d %H:%M:%S",
         encoding="utf-8",
         handlers=(
-            logging.FileHandler(utils.AppPaths.log),
+            logging.FileHandler(utils.AppPaths.log, encoding="utf-8"),
             logging.StreamHandler(sys.stdout),
             _TextEditLogger(mw),
         ),
