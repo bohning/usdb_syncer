@@ -34,6 +34,9 @@ SONG_LIST_ROW_REGEX = re.compile(
     r'<td onclick="show_detail\(\d+\)">(.*)</td>\n'
     r'<td onclick="show_detail\(\d+\)">(.*)</td>\n'
     r'<td onclick="show_detail\(\d+\)">(.*)</td>\n'
+    r'<td onclick="show_detail\(\d+\)">(.*)</td>\n'
+    r'<td onclick="show_detail\(\d+\)">(.*)</td>\n'
+    r'<td onclick="show_detail\(\d+\)">(.*)</td>\n'
     r'<td onclick="show_detail\(\d+\)">(.*)</td>'
 )
 WELCOME_REGEX = re.compile(
@@ -338,11 +341,14 @@ def get_usdb_available_songs(
                 song_id=match[1],
                 artist=match[2],
                 title=match[3],
-                edition=match[4],
-                golden_notes=match[5],
-                language=match[6],
-                rating=match[7],
-                views=match[8],
+                genre=match[4],
+                year=match[5],
+                edition=match[6],
+                golden_notes=match[7],
+                language=match[8],
+                creator=match[9],
+                rating=match[10],
+                views=match[11],
             )
             for match in SONG_LIST_ROW_REGEX.finditer(html)
             if SongId.parse(match[1]) > max_skip_id
