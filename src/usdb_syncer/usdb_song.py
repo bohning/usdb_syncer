@@ -23,7 +23,7 @@ class UsdbSong:
     genre: str
     year: int | None = None
     language: str
-    creator: str = ""
+    creator: str
     edition: str
     golden_notes: bool
     rating: int
@@ -61,7 +61,7 @@ class UsdbSong:
             artist=artist,
             title=title,
             genre=genre,
-            year=int(year),
+            year=int(year) if len(year) == 4 and year.isdigit() else None,
             language=language,
             creator=creator,
             edition=edition,
