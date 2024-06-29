@@ -81,15 +81,20 @@ def _validate_schema(connection: sqlite3.Connection) -> None:
         "SELECT 1 FROM sqlite_schema WHERE type = 'table' AND name = 'meta'"
     ).fetchone()
     if meta_table is None:
-        connection.executescript(_SqlCache.get("setup_script.sql", cache=False))
-        connection.execute(
-            "INSERT INTO meta (id, version, ctime) VALUES (1, ?, ?)",
-            (SCHEMA_VERSION, int(time.time() * 1_000_000)),
-        )
+        version = 0
     else:
-        row = connection.execute("SELECT version FROM meta").fetchone()
-        if not row or row[0] != SCHEMA_VERSION:
+        row = connection.execute("SELECT version FROM meta WHERE id = 1").fetchone()
+        if not row or row[0] > SCHEMA_VERSION:
             raise errors.UnknownSchemaError
+        version = row[0]
+    for ver in range(version + 1, SCHEMA_VERSION + 1):
+        connection.executescript(_SqlCache.get(f"{ver}_migration.sql", cache=False))
+    if version < SCHEMA_VERSION:
+        connection.execute(
+            "INSERT INTO meta (id, version, ctime) VALUES (1, :version, :ctime) "
+            "ON CONFLICT (id) DO UPDATE SET version = :version",
+            {"version": SCHEMA_VERSION, "ctime": int(time.time() * 1_000_000)},
+        )
     connection.executescript(_SqlCache.get("setup_session_script.sql", cache=False))
 
 
