@@ -108,7 +108,7 @@ class TreeProxyModel(QSortFilterProxyModel):
         self._source = source_model
         self.setSourceModel(source_model)
         self._filter: str = ""
-        self._matches: dict[Filter, set[str]] = {}
+        self._matches: dict[Filter, set[str | int]] = {}
         self._filter_invalidation_timer = QTimer(parent)
         self._filter_invalidation_timer.setSingleShot(True)
         self._filter_invalidation_timer.setInterval(400)
@@ -132,6 +132,9 @@ class TreeProxyModel(QSortFilterProxyModel):
                 Filter.TITLE: set(db.search_usdb_song_titles(self._filter)),
                 Filter.EDITION: set(db.search_usdb_song_editions(self._filter)),
                 Filter.LANGUAGE: set(db.search_usdb_song_languages(self._filter)),
+                Filter.YEAR: set(db.search_usdb_song_years(self._filter)),
+                Filter.GENRE: set(db.search_usdb_song_genres(self._filter)),
+                Filter.CREATOR: set(db.search_usdb_song_creators(self._filter)),
             }
         else:
             self._matches = {}

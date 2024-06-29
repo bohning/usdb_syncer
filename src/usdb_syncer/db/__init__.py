@@ -14,7 +14,7 @@ from more_itertools import batched
 from usdb_syncer import SongId, SyncMetaId, errors, logger
 from usdb_syncer.utils import AppPaths
 
-SCHEMA_VERSION = 1
+SCHEMA_VERSION = 2
 
 # https://www.sqlite.org/limits.html
 _SQL_VARIABLES_LIMIT = 32766
@@ -89,6 +89,7 @@ def _validate_schema(connection: sqlite3.Connection) -> None:
         version = row[0]
     for ver in range(version + 1, SCHEMA_VERSION + 1):
         connection.executescript(_SqlCache.get(f"{ver}_migration.sql", cache=False))
+        _logger.debug(f"Database migrated to version {ver}.")
     if version < SCHEMA_VERSION:
         connection.execute(
             "INSERT INTO meta (id, version, ctime) VALUES (1, :version, :ctime) "
@@ -174,6 +175,9 @@ class SearchBuilder:
     statuses: list[DownloadStatus] = attrs.field(factory=list)
     languages: list[str] = attrs.field(factory=list)
     views: list[tuple[int, int | None]] = attrs.field(factory=list)
+    years: list[int] = attrs.field(factory=list)
+    genres: list[str] = attrs.field(factory=list)
+    creators: list[str] = attrs.field(factory=list)
     golden_notes: bool | None = None
     downloaded: bool | None = None
 
@@ -188,6 +192,7 @@ class SearchBuilder:
             (self.titles, "usdb_song.title"),
             (self.editions, "usdb_song.edition"),
             (self.ratings, "usdb_song.rating"),
+            (self.years, "usdb_song.year"),
             (self.statuses, "usdb_song_status.status"),
         ):
             if vals:
@@ -196,6 +201,16 @@ class SearchBuilder:
             yield (
                 "usdb_song.song_id IN (SELECT song_id FROM usdb_song_language WHERE"
                 f" {_in_values_clause('language', self.languages)})"
+            )
+        if self.genres:
+            yield (
+                "usdb_song.song_id IN (SELECT song_id FROM usdb_song_genre WHERE"
+                f" {_in_values_clause('genre', self.genres)})"
+            )
+        if self.creators:
+            yield (
+                "usdb_song.song_id IN (SELECT song_id FROM usdb_song_creator WHERE"
+                f" {_in_values_clause('creator', self.creators)})"
             )
         if self.views:
             yield _in_ranges_clause("usdb_song.views", self.views)
@@ -220,8 +235,11 @@ class SearchBuilder:
         yield from self.titles
         yield from self.editions
         yield from self.ratings
+        yield from self.years
         yield from self.statuses
         yield from self.languages
+        yield from self.genres
+        yield from self.creators
         for min_views, max_views in self.views:
             yield min_views
             if max_views is not None:
@@ -353,6 +371,28 @@ def upsert_usdb_songs_languages(params: list[tuple[SongId, Iterable[str]]]) -> N
     )
 
 
+def upsert_usdb_songs_genres(params: list[tuple[SongId, Iterable[str]]]) -> None:
+    _DbState.connection().execute(
+        f"DELETE FROM usdb_song_genre WHERE {_in_values_clause('song_id', params)}",
+        tuple(t[0] for t in params),
+    )
+    _DbState.connection().executemany(
+        "INSERT INTO usdb_song_genre (song_id, genre) VALUES (?, ?)",
+        ((song_id, lang) for song_id, langs in params for lang in langs),
+    )
+
+
+def upsert_usdb_songs_creators(params: list[tuple[SongId, Iterable[str]]]) -> None:
+    _DbState.connection().execute(
+        f"DELETE FROM usdb_song_creator WHERE {_in_values_clause('song_id', params)}",
+        tuple(t[0] for t in params),
+    )
+    _DbState.connection().executemany(
+        "INSERT INTO usdb_song_creator (song_id, creator) VALUES (?, ?)",
+        ((song_id, lang) for song_id, langs in params for lang in langs),
+    )
+
+
 def usdb_song_artists() -> list[tuple[str, int]]:
     stmt = "SELECT artist, COUNT(*) FROM usdb_song GROUP BY artist ORDER BY artist"
     return _DbState.connection().execute(stmt).fetchall()
@@ -376,6 +416,24 @@ def usdb_song_languages() -> list[tuple[str, int]]:
     return _DbState.connection().execute(stmt).fetchall()
 
 
+def usdb_song_years() -> list[tuple[int, int]]:
+    stmt = (
+        "SELECT year, COUNT(*) FROM usdb_song WHERE year IS NOT NULL "
+        "GROUP BY year ORDER BY year"
+    )
+    return _DbState.connection().execute(stmt).fetchall()
+
+
+def usdb_song_genres() -> list[tuple[str, int]]:
+    stmt = "SELECT genre, COUNT(*) FROM usdb_song_genre GROUP BY genre ORDER BY genre"
+    return _DbState.connection().execute(stmt).fetchall()
+
+
+def usdb_song_creators() -> list[tuple[str, int]]:
+    stmt = "SELECT creator, COUNT(*) FROM usdb_song_creator GROUP BY creator ORDER BY creator"
+    return _DbState.connection().execute(stmt).fetchall()
+
+
 def search_usdb_song_artists(search: str) -> set[str]:
     stmt = "SELECT artist FROM fts_usdb_song WHERE artist MATCH ?"
     rows = _DbState.connection().execute(stmt, (_fts5_phrases(search),)).fetchall()
@@ -396,6 +454,24 @@ def search_usdb_song_editions(search: str) -> set[str]:
 
 def search_usdb_song_languages(search: str) -> set[str]:
     stmt = "SELECT language FROM fts_usdb_song WHERE language MATCH ?"
+    rows = _DbState.connection().execute(stmt, (_fts5_phrases(search),)).fetchall()
+    return set(row[0] for row in rows)
+
+
+def search_usdb_song_years(search: str) -> set[int]:
+    stmt = "SELECT year FROM fts_usdb_song WHERE year MATCH ?"
+    rows = _DbState.connection().execute(stmt, (_fts5_phrases(search),)).fetchall()
+    return set(row[0] for row in rows)
+
+
+def search_usdb_song_genres(search: str) -> set[str]:
+    stmt = "SELECT genre FROM fts_usdb_song WHERE genre MATCH ?"
+    rows = _DbState.connection().execute(stmt, (_fts5_phrases(search),)).fetchall()
+    return set(row[0] for row in rows)
+
+
+def search_usdb_song_creators(search: str) -> set[str]:
+    stmt = "SELECT creator FROM fts_usdb_song WHERE creator MATCH ?"
     rows = _DbState.connection().execute(stmt, (_fts5_phrases(search),)).fetchall()
     return set(row[0] for row in rows)
 

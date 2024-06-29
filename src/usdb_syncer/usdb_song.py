@@ -118,6 +118,8 @@ class UsdbSong:
     def upsert(self) -> None:
         db.upsert_usdb_song(self.db_params())
         db.upsert_usdb_songs_languages([(self.song_id, self.languages())])
+        db.upsert_usdb_songs_genres([(self.song_id, self.genres())])
+        db.upsert_usdb_songs_creators([(self.song_id, self.creators())])
         if self.sync_meta:
             self.sync_meta.upsert()
         _UsdbSongCache.remove(self.song_id)
@@ -126,6 +128,8 @@ class UsdbSong:
     def upsert_many(cls, songs: list[UsdbSong]) -> None:
         db.upsert_usdb_songs(song.db_params() for song in songs)
         db.upsert_usdb_songs_languages([(s.song_id, s.languages()) for s in songs])
+        db.upsert_usdb_songs_genres([(s.song_id, s.genres()) for s in songs])
+        db.upsert_usdb_songs_creators([(s.song_id, s.creators()) for s in songs])
         SyncMeta.upsert_many([song.sync_meta for song in songs if song.sync_meta])
         for song in songs:
             _UsdbSongCache.remove(song.song_id)
@@ -155,6 +159,12 @@ class UsdbSong:
 
     def languages(self) -> Iterable[str]:
         return (l for lang in self.language.split(",") if (l := lang.strip()))
+
+    def genres(self) -> Iterable[str]:
+        return (l for lang in self.genre.split(",") if (l := lang.strip()))
+
+    def creators(self) -> Iterable[str]:
+        return (l for lang in self.creator.split(",") if (l := lang.strip()))
 
     @classmethod
     def clear_cache(cls) -> None:
