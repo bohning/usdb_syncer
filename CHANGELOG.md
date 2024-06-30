@@ -8,7 +8,7 @@
 - Added detection and handling of moved meta files on startup or song folder change.
 - Downloading artist or title changes for existing songs no longer causes an error.
 - Fixed special characters causing issues on macOS in certain cases.
-- Errors in background tasks are propogated to the main window instead of causing the
+- Errors in background tasks are propagated to the main window instead of causing the
   progress dialog to hang.
 
 ## Features
