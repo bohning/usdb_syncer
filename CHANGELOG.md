@@ -14,7 +14,7 @@
 ## Features
 
 - USDB has expanded their song list to include year, genre and creator. These fields are
-  now be populated without fully downloading a song, and respective filters were added.
+  now populated without fully downloading a song, and respective filters were added.
 
 <!-- 0.5.0 -->
 
