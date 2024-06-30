@@ -30,6 +30,8 @@ def test__parse_song_page_with_commented_embedded_video(resource_dir: Path) -> N
     assert details.artist == "Revolverheld"
     assert details.title == "Ich lass für dich das Licht an"
     assert details.cover_url == "https://usdb.animux.de/data/cover/26152.jpg"
+    assert details.year == 2013
+    assert details.genre == "Pop"
     assert details.bpm == 276.17
     assert details.gap == 120000
     assert details.golden_notes
@@ -70,6 +72,8 @@ def test__parse_song_page_without_comments_or_cover(resource_dir: Path) -> None:
     assert details.artist == "The Used"
     assert details.title == "River Stay"
     assert details.cover_url is None
+    assert details.year == 2020
+    assert details.genre == "Alternative"
     assert details.bpm == 305
     assert details.gap == 548
     assert details.golden_notes

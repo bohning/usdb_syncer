@@ -20,15 +20,15 @@ class UsdbSong:
     song_id: SongId
     artist: str
     title: str
+    genre: str
+    year: int | None = None
     language: str
+    creator: str
     edition: str
     golden_notes: bool
     rating: int
     views: int
     # not in USDB song list
-    year: int | None = None
-    genre: str = ""
-    creator: str = ""
     tags: str = ""
     # internal
     sync_meta: SyncMeta | None = None
@@ -47,7 +47,10 @@ class UsdbSong:
         song_id: str,
         artist: str,
         title: str,
+        genre: str,
+        year: str,
         language: str,
+        creator: str,
         edition: str,
         golden_notes: str,
         rating: str,
@@ -57,7 +60,10 @@ class UsdbSong:
             song_id=SongId.parse(song_id),
             artist=artist,
             title=title,
+            genre=genre,
+            year=int(year) if len(year) == 4 and year.isdigit() else None,
             language=language,
+            creator=creator,
             edition=edition,
             golden_notes=golden_notes == strings.YES,
             rating=rating.count("star.png"),
@@ -112,6 +118,8 @@ class UsdbSong:
     def upsert(self) -> None:
         db.upsert_usdb_song(self.db_params())
         db.upsert_usdb_songs_languages([(self.song_id, self.languages())])
+        db.upsert_usdb_songs_genres([(self.song_id, self.genres())])
+        db.upsert_usdb_songs_creators([(self.song_id, self.creators())])
         if self.sync_meta:
             self.sync_meta.upsert()
         _UsdbSongCache.remove(self.song_id)
@@ -120,6 +128,8 @@ class UsdbSong:
     def upsert_many(cls, songs: list[UsdbSong]) -> None:
         db.upsert_usdb_songs(song.db_params() for song in songs)
         db.upsert_usdb_songs_languages([(s.song_id, s.languages()) for s in songs])
+        db.upsert_usdb_songs_genres([(s.song_id, s.genres()) for s in songs])
+        db.upsert_usdb_songs_creators([(s.song_id, s.creators()) for s in songs])
         SyncMeta.upsert_many([song.sync_meta for song in songs if song.sync_meta])
         for song in songs:
             _UsdbSongCache.remove(song.song_id)
@@ -149,6 +159,12 @@ class UsdbSong:
 
     def languages(self) -> Iterable[str]:
         return (l for lang in self.language.split(",") if (l := lang.strip()))
+
+    def genres(self) -> Iterable[str]:
+        return (l for lang in self.genre.split(",") if (l := lang.strip()))
+
+    def creators(self) -> Iterable[str]:
+        return (l for lang in self.creator.split(",") if (l := lang.strip()))
 
     @classmethod
     def clear_cache(cls) -> None:

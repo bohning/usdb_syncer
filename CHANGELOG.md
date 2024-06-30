@@ -1,4 +1,4 @@
-<!-- 0.5.1 -->
+<!-- 0.6.0 -->
 
 # Changes
 
@@ -8,6 +8,13 @@
 - Added detection and handling of moved meta files on startup or song folder change.
 - Downloading artist or title changes for existing songs no longer causes an error.
 - Fixed special characters causing issues on macOS in certain cases.
+- Errors in background tasks are propagated to the main window instead of causing the
+  progress dialog to hang.
+
+## Features
+
+- USDB has expanded their song list to include year, genre and creator. These fields are
+  now populated without fully downloading a song, and respective filters were added.
 
 <!-- 0.5.0 -->
 
