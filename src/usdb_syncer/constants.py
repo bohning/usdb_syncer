@@ -89,6 +89,17 @@ class Usdb:
     DATETIME_STRF = "%d.%m.%y - %H:%M"
 
 
+class ImageQualityThresholds:
+    """Constants related to image resolutions"""
+
+    COVER_HIGH = 1000
+    COVER_MEDIUM = 600
+    BACKGROUND_HIGH = 1920
+    BACKGROUND_MEDIUM = 1280
+    BACKGROUND_WIDTH_FACTOR = 9
+    BACKGROUND_HEIGHT_FACTOR = 16
+
+
 SUPPORTED_VIDEO_SOURCES_REGEX = re.compile(
     r"""\b
         (

@@ -1,8 +1,10 @@
 """Table model for song data."""
 
 from functools import cache
+from pathlib import Path
 from typing import Any, Iterable, assert_never
 
+from PIL import Image
 from PySide6.QtCore import (
     QAbstractTableModel,
     QModelIndex,
@@ -13,6 +15,7 @@ from PySide6.QtCore import (
 from PySide6.QtGui import QIcon
 
 from usdb_syncer import SongId, events, utils
+from usdb_syncer.constants import ImageQualityThresholds
 from usdb_syncer.gui.song_table.column import Column
 from usdb_syncer.usdb_song import DownloadStatus, UsdbSong
 
@@ -90,6 +93,9 @@ class TableModel(QAbstractTableModel):
         if role == Qt.ItemDataRole.DecorationRole:
             if song := self._get_song(index):
                 return _decoration_data(song, index.column())
+        if role == Qt.ItemDataRole.ToolTipRole:
+            if song := self._get_song(index):
+                return _tooltip_data(song, index.column())
         return None
 
     def _get_song(self, index: QIndex) -> UsdbSong | None:
@@ -183,19 +189,151 @@ def _decoration_data(song: UsdbSong, column: int) -> QIcon | None:
         ):
             return None
         case Column.TXT:
-            return optional_check_icon(bool(song.sync_meta.txt))
+            return optional_check_icon_high(bool(song.sync_meta.txt))
         case Column.AUDIO:
-            return optional_check_icon(bool(song.sync_meta.audio))
+            return optional_check_icon_high(bool(song.sync_meta.audio))
         case Column.VIDEO:
-            return optional_check_icon(bool(song.sync_meta.video))
+            return optional_check_icon_high(bool(song.sync_meta.video))
         case Column.COVER:
-            return optional_check_icon(bool(song.sync_meta.cover))
+            if song.sync_meta.cover:
+                path = song.sync_meta.path.parent.joinpath(song.sync_meta.cover.fname)
+                return get_cover_image_quality_icon(path)
+            return None
         case Column.BACKGROUND:
-            return optional_check_icon(bool(song.sync_meta.background))
+            if song.sync_meta.background:
+                path = song.sync_meta.path.parent.joinpath(
+                    song.sync_meta.background.fname
+                )
+                return get_background_image_quality_icon(path)
+            return None
         case Column.PINNED:
             return pinned_icon(song.sync_meta.pinned)
         case _ as unreachable:
             assert_never(unreachable)
+
+
+def _tooltip_data(song: UsdbSong, column: int) -> str | None:
+    if not song.sync_meta:
+        return None
+    col = Column(column)
+    match col:
+        case (
+            Column.SONG_ID
+            | Column.ARTIST
+            | Column.TITLE
+            | Column.LANGUAGE
+            | Column.EDITION
+            | Column.GOLDEN_NOTES
+            | Column.RATING
+            | Column.VIEWS
+            | Column.DOWNLOAD_STATUS
+            | Column.YEAR
+            | Column.GENRE
+            | Column.CREATOR
+            | Column.TAGS
+            | Column.TXT
+            | Column.PINNED
+            | Column.AUDIO
+            | Column.VIDEO
+        ):
+            return None
+        case Column.COVER:
+            if song.sync_meta.cover:
+                path = song.sync_meta.path.parent.joinpath(song.sync_meta.cover.fname)
+                return get_cover_image_quality_tooltip(path)
+            return None
+        case Column.BACKGROUND:
+            if song.sync_meta.background:
+                path = song.sync_meta.path.parent.joinpath(
+                    song.sync_meta.background.fname
+                )
+                return get_background_image_quality_tooltip(path)
+            return None
+        case _ as unreachable:
+            assert_never(unreachable)
+
+
+def get_cover_image_quality_icon(image_path: Path) -> QIcon | None:
+    try:
+        with Image.open(image_path) as img:
+            width, height = img.size
+            if width == height:
+                match width:
+                    case _ if width >= ImageQualityThresholds.COVER_HIGH:
+                        return optional_check_icon_high(True)
+                    case _ if width >= ImageQualityThresholds.COVER_MEDIUM:
+                        return optional_check_icon_medium(True)
+                    case _:
+                        return optional_check_icon_low(True)
+            else:
+                match width:
+                    case _ if width >= ImageQualityThresholds.COVER_HIGH:
+                        return optional_check_icon_high_exclamation(True)
+                    case _ if width >= ImageQualityThresholds.COVER_MEDIUM:
+                        return optional_check_icon_medium_exclamation(True)
+                    case _:
+                        return optional_check_icon_low_exclamation(True)
+    except IOError:
+        return optional_warning(True)
+
+
+def get_background_image_quality_icon(image_path: Path) -> QIcon | None:
+    try:
+        with Image.open(image_path) as img:
+            width, height = img.size
+            if (
+                width * ImageQualityThresholds.BACKGROUND_WIDTH_FACTOR
+                == height * ImageQualityThresholds.BACKGROUND_HEIGHT_FACTOR
+            ):
+                match width:
+                    case _ if width >= ImageQualityThresholds.BACKGROUND_HIGH:
+                        return optional_check_icon_high(True)
+                    case _ if width >= ImageQualityThresholds.BACKGROUND_MEDIUM:
+                        return optional_check_icon_medium(True)
+                    case _:
+                        return optional_check_icon_low(True)
+            else:
+                match width:
+                    case _ if width >= ImageQualityThresholds.BACKGROUND_HIGH:
+                        return optional_check_icon_high_exclamation(True)
+                    case _ if width >= ImageQualityThresholds.BACKGROUND_MEDIUM:
+                        return optional_check_icon_medium_exclamation(True)
+                    case _:
+                        return optional_check_icon_low_exclamation(True)
+    except IOError:
+        return optional_warning(True)
+
+
+def get_cover_image_quality_tooltip(image_path: Path) -> str | None:
+    try:
+        with Image.open(image_path) as img:
+            width, height = img.size
+            if width == height:
+                return f"{width} x {height}"
+            min_size = min(width, height)
+            return f"{width} x {height} (crop to {min_size} x {min_size})"
+    except IOError:
+        return "IOError: File could not be opened."
+
+
+def get_background_image_quality_tooltip(image_path: Path) -> str | None:
+    try:
+        with Image.open(image_path) as img:
+            width, height = img.size
+            ratio = (width * ImageQualityThresholds.BACKGROUND_WIDTH_FACTOR) / (
+                height * ImageQualityThresholds.BACKGROUND_HEIGHT_FACTOR
+            )
+            match ratio:
+                case _ if ratio == 1:
+                    return f"{width} x {height}"
+                case _ if ratio > 1:
+                    return (
+                        f"{width} x {height} (crop to {round(height*16/9)} x {height})"
+                    )
+                case _:
+                    return f"{width} x {height} (crop to {width} x {round(width*9/16)})"
+    except IOError:
+        return "IOError: File could not be opened."
 
 
 @cache
@@ -211,8 +349,38 @@ def yes_no_str(yes: bool) -> str:
 # in a global, but we also don't want to keep recreating it.
 # So we store them in these convenience functions.
 @cache
-def optional_check_icon(yes: bool) -> QIcon | None:
-    return QIcon(":/icons/tick.png") if yes else None
+def optional_check_icon_high(yes: bool) -> QIcon | None:
+    return QIcon(":/icons/tick_high.png") if yes else None
+
+
+@cache
+def optional_check_icon_high_exclamation(yes: bool) -> QIcon | None:
+    return QIcon(":/icons/tick_high_exclamation.png") if yes else None
+
+
+@cache
+def optional_check_icon_medium(yes: bool) -> QIcon | None:
+    return QIcon(":/icons/tick_medium.png") if yes else None
+
+
+@cache
+def optional_check_icon_medium_exclamation(yes: bool) -> QIcon | None:
+    return QIcon(":/icons/tick_medium_exclamation.png") if yes else None
+
+
+@cache
+def optional_check_icon_low(yes: bool) -> QIcon | None:
+    return QIcon(":/icons/tick_low.png") if yes else None
+
+
+@cache
+def optional_check_icon_low_exclamation(yes: bool) -> QIcon | None:
+    return QIcon(":/icons/tick_low_exclamation.png") if yes else None
+
+
+@cache
+def optional_warning(yes: bool) -> QIcon | None:
+    return QIcon(":/icons/warning.png") if yes else None
 
 
 @cache
