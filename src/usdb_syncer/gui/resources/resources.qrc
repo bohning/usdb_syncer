@@ -1,5 +1,11 @@
 <RCC>
   <qresource prefix="icons">
+    <file>tick_high_exclamation.png</file>
+    <file>tick_high.png</file>
+    <file>tick_low_exclamation.png</file>
+    <file>tick_low.png</file>
+    <file>tick_medium_exclamation.png</file>
+    <file>tick_medium.png</file>
     <file>artist.png</file>
     <file>audio.png</file>
     <file>background.png</file>
