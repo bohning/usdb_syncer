@@ -165,8 +165,10 @@ class SongDetails:
     artist: str
     title: str
     cover_url: str | None
+    language: str
     year: int | None
     genre: str
+    edition: str
     bpm: float
     gap: float
     golden_notes: bool
@@ -406,8 +408,10 @@ def _parse_details_table(
         artist=details_table.find_next("td").text,  # type: ignore
         title=details_table.find_next("td").find_next("td").text,  # type: ignore
         cover_url=None if "nocover" in cover_url else Usdb.BASE_URL + cover_url,
+        language=_find_text_after(details_table, usdb_strings.SONG_LANGUAGE),
         year=year,
         genre=_find_text_after(details_table, "Genre"),
+        edition=_find_text_after(details_table, "Edition"),
         bpm=float(_find_text_after(details_table, "BPM").replace(",", ".")),
         gap=float(_find_text_after(details_table, "GAP").replace(",", ".") or 0),
         golden_notes=_find_text_after(details_table, usdb_strings.GOLDEN_NOTES)
