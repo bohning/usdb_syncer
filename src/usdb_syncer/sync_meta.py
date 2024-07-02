@@ -40,10 +40,10 @@ class ResourceFile:
         if (
             isinstance(dct, dict)
             and isinstance(fname := dct.get("fname"), str)
-            and isinstance(mtime := dct.get("mtime"), int)
+            and isinstance(mtime := dct.get("mtime"), (int, float))
             and isinstance(resource := dct.get("resource"), str)
         ):
-            return cls(fname=fname, mtime=mtime, resource=resource)
+            return cls(fname=fname, mtime=int(mtime), resource=resource)
         return None
 
     @classmethod
