@@ -17,7 +17,9 @@ from usdb_syncer.sync_meta import SyncMeta
 class UsdbSong:
     """Meta data about a song that USDB shows in the result list."""
 
+    sample_url: str
     song_id: SongId
+    cover_url: str
     artist: str
     title: str
     genre: str
@@ -44,7 +46,9 @@ class UsdbSong:
         cls,
         strings: Type[UsdbStrings],
         *,
+        sample_url: str,
         song_id: str,
+        cover_url: str,
         artist: str,
         title: str,
         genre: str,
@@ -57,7 +61,9 @@ class UsdbSong:
         views: str,
     ) -> UsdbSong:
         return cls(
+            sample_url=sample_url,
             song_id=SongId.parse(song_id),
+            cover_url=cover_url,
             artist=artist,
             title=title,
             genre=genre,
@@ -74,7 +80,9 @@ class UsdbSong:
     def from_db_row(cls, song_id: SongId, row: tuple) -> UsdbSong:
         assert len(row) == 34
         return cls(
+            sample_url="",
             song_id=song_id,
+            cover_url="",
             artist=row[1],
             title=row[2],
             language=row[3],
