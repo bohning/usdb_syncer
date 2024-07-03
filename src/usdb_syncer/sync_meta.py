@@ -37,8 +37,13 @@ class ResourceFile:
 
     @classmethod
     def from_nested_dict(cls, dct: Any) -> ResourceFile | None:
-        if dct:
-            return cls(**dct)
+        if (
+            isinstance(dct, dict)
+            and isinstance(fname := dct.get("fname"), str)
+            and isinstance(mtime := dct.get("mtime"), (int, float))
+            and isinstance(resource := dct.get("resource"), str)
+        ):
+            return cls(fname=fname, mtime=int(mtime), resource=resource)
         return None
 
     @classmethod
@@ -116,7 +121,7 @@ class SyncMeta:
                 path=path,
                 mtime=utils.get_mtime(path),
                 meta_tags=MetaTags.parse(dct["meta_tags"], _logger),
-                pinned=dct.get("pinned", False),
+                pinned=bool(dct.get("pinned", False)),
                 txt=ResourceFile.from_nested_dict(dct["txt"]),
                 audio=ResourceFile.from_nested_dict(dct["audio"]),
                 video=ResourceFile.from_nested_dict(dct["video"]),
