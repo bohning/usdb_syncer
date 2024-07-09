@@ -7,6 +7,7 @@ SELECT
     usdb_song.golden_notes,
     usdb_song.rating,
     usdb_song.views,
+    usdb_song.sample_url,
     usdb_song.year,
     usdb_song.genre,
     usdb_song.creator,
