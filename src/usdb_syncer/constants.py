@@ -52,7 +52,7 @@ class UsdbStringsGerman(UsdbStrings):
     """Relevant strings from USDB"""
 
     WELCOME = "Willkommen"
-    SONG_LANGUAGE_ = "Sprache"
+    SONG_LANGUAGE = "Sprache"
     SONG_YEAR = "Jahr"
     SONG_EDITED_BY = "Song editiert von:"
     SONG_RATING = "Bewertung"
