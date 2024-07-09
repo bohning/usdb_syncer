@@ -29,7 +29,6 @@ class UsdbSong:
     rating: int
     views: int
     sample_url: str
-    cover_url: str
     # not in USDB song list
     tags: str = ""
     # internal
@@ -58,7 +57,6 @@ class UsdbSong:
         rating: str,
         views: str,
         sample_url: str,
-        cover_url: str,
     ) -> UsdbSong:
         return cls(
             song_id=SongId.parse(song_id),
@@ -73,12 +71,11 @@ class UsdbSong:
             rating=rating.count("star.png"),
             views=int(views),
             sample_url=sample_url,
-            cover_url=cover_url,
         )
 
     @classmethod
     def from_db_row(cls, song_id: SongId, row: tuple) -> UsdbSong:
-        assert len(row) == 36
+        assert len(row) == 35
         return cls(
             song_id=song_id,
             artist=row[1],
@@ -89,13 +86,12 @@ class UsdbSong:
             rating=row[6],
             views=row[7],
             sample_url=row[8],
-            cover_url=row[9],
-            year=row[10],
-            genre=row[11],
-            creator=row[12],
-            tags=row[13],
-            status=DownloadStatus(row[14]),
-            sync_meta=None if row[15] is None else SyncMeta.from_db_row(row[15:]),
+            year=row[9],
+            genre=row[10],
+            creator=row[11],
+            tags=row[12],
+            status=DownloadStatus(row[13]),
+            sync_meta=None if row[14] is None else SyncMeta.from_db_row(row[14:]),
         )
 
     @classmethod
@@ -153,7 +149,6 @@ class UsdbSong:
             rating=self.rating,
             views=self.views,
             sample_url=self.sample_url,
-            cover_url=self.cover_url,
             year=self.year,
             genre=self.genre,
             creator=self.creator,

@@ -366,7 +366,6 @@ def _parse_songs_from_songlist(html: str) -> Iterator[UsdbSong]:
             _usdb_strings_from_html(html),
             sample_url=match["sample_url"] or "",
             song_id=match["song_id"],
-            cover_url=match["cover_url"],
             artist=match["artist"],
             title=match["title"],
             genre=match["genre"],

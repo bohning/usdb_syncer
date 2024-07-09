@@ -8,7 +8,6 @@ SELECT
     usdb_song.rating,
     usdb_song.views,
     usdb_song.sample_url,
-    usdb_song.cover_url,
     usdb_song.year,
     usdb_song.genre,
     usdb_song.creator,

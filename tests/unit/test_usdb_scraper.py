@@ -97,9 +97,8 @@ def test_parse_song_list(resource_dir: Path) -> None:
     songs = list(_parse_songs_from_songlist(html))
     assert len(songs) == 3
     # first song: no audio sample, but cover image
-    assert songs[0].sample_url is None
+    assert songs[0].sample_url == ""
     assert songs[0].song_id == SongId(29199)
-    assert songs[0].cover_url == "song_list_files/29199.jpg"
     assert songs[0].artist == "AUT of ORDA"
     assert songs[0].title == "hoch gwimmas (n)imma"
     assert songs[0].genre == "Austropop"
@@ -111,9 +110,8 @@ def test_parse_song_list(resource_dir: Path) -> None:
     assert songs[0].rating == 0
     assert songs[0].views == 0
     # second song: no audio sample, default nocover.png
-    assert songs[1].sample_url is None
+    assert songs[1].sample_url == ""
     assert songs[1].song_id == SongId(29198)
-    assert songs[1].cover_url == "song_list_files/nocover.png"
     assert songs[1].artist == "Les enfantastiques"
     assert songs[1].title == "Si j’allais en Chine"
     assert songs[1].genre == ""
@@ -127,7 +125,6 @@ def test_parse_song_list(resource_dir: Path) -> None:
     # third song: audio sample and cover
     assert songs[2].sample_url == "song_list_files/2239202.mp3"
     assert songs[2].song_id == SongId(29197)
-    assert songs[2].cover_url == "song_list_files/29197.jpg"
     assert songs[2].artist == "STEFAN"
     assert songs[2].title == "Hope (ESC 2022 Estonia)"
     assert songs[2].genre == "Western-Pop"

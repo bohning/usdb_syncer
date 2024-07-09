@@ -12,7 +12,6 @@ def test_encoding_and_decoding_song_meta() -> None:
     song = UsdbSong(
         sample_url="",
         song_id=SongId(123),
-        cover_url="",
         artist="Foo",
         title="Bar",
         genre="Pop",

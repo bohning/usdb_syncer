@@ -300,7 +300,6 @@ class UsdbSongParams:
     rating: int
     views: int
     sample_url: str
-    cover_url: str
     year: int | None
     genre: str
     creator: str
