@@ -16,7 +16,8 @@ from PySide6.QtCore import (
     Qt,
     QTimer,
 )
-from PySide6.QtGui import QCursor
+from PySide6.QtGui import QCursor, QShortcut
+from PySide6.QtMultimedia import QAudioOutput, QMediaPlayer
 from PySide6.QtWidgets import QHeaderView, QMenu
 
 from usdb_syncer import SongId, db, events, settings
@@ -44,6 +45,10 @@ class SongTable:
         self.mw = mw
         self._model = TableModel(mw)
         self._view = mw.table_view
+        self.media_player = QMediaPlayer()
+        self.audio_output = QAudioOutput()
+        self.media_player.setAudioOutput(self.audio_output)
+        self.is_playing = False
         self._setup_view()
         self._header().sortIndicatorChanged.connect(self._on_sort_order_changed)
         mw.table_view.selectionModel().currentChanged.connect(
@@ -53,6 +58,41 @@ class SongTable:
         self._setup_search_timer()
         events.TreeFilterChanged.subscribe(self._on_tree_filter_changed)
         events.TextFilterChanged.subscribe(self._on_text_filter_changed)
+        self.space_shortcut = QShortcut(Qt.Key.Key_Space, self._view)
+        self.space_shortcut.activated.connect(self.play_pause_sample)
+
+    def play_pause_sample(self) -> None:
+        selected_indexes = self.mw.table_view.selectionModel().selectedRows()
+        if selected_indexes:
+            if self.is_playing:
+                self.pause_sample()
+            else:
+                row = selected_indexes[0].row()
+                song_id = self._model.index(row, 0).data()
+                song = UsdbSong.get(song_id)
+                assert song
+                if song.sync_meta and song.sync_meta.audio:
+                    local_audio = song.sync_meta.path.parent.joinpath(
+                        song.sync_meta.audio.fname
+                    )
+                    if song.sync_meta.meta_tags.preview:
+                        position = int(song.sync_meta.meta_tags.preview * 1000)
+                    else:
+                        position = 0
+                    self.play_sample(local_audio.absolute().as_posix(), position)
+                else:
+                    if sample_audio := song.sample_url:
+                        self.play_sample(sample_audio)
+
+    def play_sample(self, url: str, position: int = 0) -> None:
+        self.media_player.setSource(url)
+        self.media_player.setPosition(position)
+        self.media_player.play()
+        self.is_playing = True
+
+    def pause_sample(self) -> None:
+        self.media_player.pause()
+        self.is_playing = False
 
     def _header(self) -> QtWidgets.QHeaderView:
         return self._view.horizontalHeader()
@@ -134,6 +174,8 @@ class SongTable:
             self._on_current_song_changed()
 
     def _on_current_song_changed(self) -> None:
+        if self.is_playing:
+            self.pause_sample()
         song = self.current_song()
         for action in self.mw.menu_songs.actions():
             action.setEnabled(bool(song))
