@@ -14,7 +14,7 @@ from more_itertools import batched
 from usdb_syncer import SongId, SyncMetaId, errors, logger
 from usdb_syncer.utils import AppPaths
 
-SCHEMA_VERSION = 2
+SCHEMA_VERSION = 3
 
 # https://www.sqlite.org/limits.html
 _SQL_VARIABLES_LIMIT = 32766
@@ -299,6 +299,8 @@ class UsdbSongParams:
     golden_notes: bool
     rating: int
     views: int
+    sample_url: str
+    cover_url: str
     year: int | None
     genre: str
     creator: str

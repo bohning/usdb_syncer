@@ -17,9 +17,7 @@ from usdb_syncer.sync_meta import SyncMeta
 class UsdbSong:
     """Meta data about a song that USDB shows in the result list."""
 
-    sample_url: str
     song_id: SongId
-    cover_url: str
     artist: str
     title: str
     genre: str
@@ -30,6 +28,8 @@ class UsdbSong:
     golden_notes: bool
     rating: int
     views: int
+    sample_url: str
+    cover_url: str
     # not in USDB song list
     tags: str = ""
     # internal
@@ -46,9 +46,7 @@ class UsdbSong:
         cls,
         strings: Type[UsdbStrings],
         *,
-        sample_url: str,
         song_id: str,
-        cover_url: str,
         artist: str,
         title: str,
         genre: str,
@@ -59,11 +57,11 @@ class UsdbSong:
         golden_notes: str,
         rating: str,
         views: str,
+        sample_url: str,
+        cover_url: str,
     ) -> UsdbSong:
         return cls(
-            sample_url=sample_url,
             song_id=SongId.parse(song_id),
-            cover_url=cover_url,
             artist=artist,
             title=title,
             genre=genre,
@@ -74,15 +72,15 @@ class UsdbSong:
             golden_notes=golden_notes == strings.YES,
             rating=rating.count("star.png"),
             views=int(views),
+            sample_url=sample_url,
+            cover_url=cover_url,
         )
 
     @classmethod
     def from_db_row(cls, song_id: SongId, row: tuple) -> UsdbSong:
-        assert len(row) == 34
+        assert len(row) == 36
         return cls(
-            sample_url="",
             song_id=song_id,
-            cover_url="",
             artist=row[1],
             title=row[2],
             language=row[3],
@@ -90,12 +88,14 @@ class UsdbSong:
             golden_notes=bool(row[5]),  # else would be 0/1 instead of False/True
             rating=row[6],
             views=row[7],
-            year=row[8],
-            genre=row[9],
-            creator=row[10],
-            tags=row[11],
-            status=DownloadStatus(row[12]),
-            sync_meta=None if row[13] is None else SyncMeta.from_db_row(row[13:]),
+            sample_url=row[8],
+            cover_url=row[9],
+            year=row[10],
+            genre=row[11],
+            creator=row[12],
+            tags=row[13],
+            status=DownloadStatus(row[14]),
+            sync_meta=None if row[15] is None else SyncMeta.from_db_row(row[15:]),
         )
 
     @classmethod
@@ -152,6 +152,8 @@ class UsdbSong:
             golden_notes=self.golden_notes,
             rating=self.rating,
             views=self.views,
+            sample_url=self.sample_url,
+            cover_url=self.cover_url,
             year=self.year,
             genre=self.genre,
             creator=self.creator,
