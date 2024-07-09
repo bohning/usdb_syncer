@@ -31,7 +31,7 @@ SONG_LIST_ROW_REGEX = re.compile(
     r'<td(?:.*?<source src="(?P<sample_url>.*?)".*?)?></td>'
     r'<td onclick="show_detail\((?P<song_id>\d+)\)".*?><img src="(?P<cover_url>.*?)".*?></td>'
     r'<td onclick="show_detail\(\d+\)">(?P<artist>.*?)</td>\n'
-    r'<td onclick="show_detail\(\d+\)"><a href=.*?>(?P<title>.*?)</a></td>\n'
+    r'<td onclick="show_detail\(\d+\)"><a href=.*?>(?P<title>.*?)</td>\n'
     r'<td onclick="show_detail\(\d+\)">(?P<genre>.*?)</td>\n'
     r'<td onclick="show_detail\(\d+\)">(?P<year>.*?)</td>\n'
     r'<td onclick="show_detail\(\d+\)">(?P<edition>.*?)</td>\n'
@@ -42,7 +42,7 @@ SONG_LIST_ROW_REGEX = re.compile(
     r'<td onclick="show_detail\(\d+\)">(?P<views>.*?)</td>'
 )
 WELCOME_REGEX = re.compile(
-    r'<td class="row3" colspan="2">\s*<span class="gen">([^<]+) <b>([^<]+)</b>'
+    r"<td class='row3' colspan='2'>\s*<span class='gen'>([^<]+) <b>([^<]+)</b>"
 )
 TAGS_LINE_REGEX = re.compile("#TAGS:(.+)")
 
@@ -364,7 +364,7 @@ def _parse_songs_from_songlist(html: str) -> Iterator[UsdbSong]:
     return (
         UsdbSong.from_html(
             _usdb_strings_from_html(html),
-            sample_url=match["sample_url"],
+            sample_url=match["sample_url"] or "",
             song_id=match["song_id"],
             cover_url=match["cover_url"],
             artist=match["artist"],
