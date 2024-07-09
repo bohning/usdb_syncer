@@ -364,19 +364,19 @@ def _parse_songs_from_songlist(html: str) -> Iterator[UsdbSong]:
     return (
         UsdbSong.from_html(
             _usdb_strings_from_html(html),
-            sample_url=match[1],
-            song_id=match[2],
-            cover_url=match[3],
-            artist=match[4],
-            title=match[5],
-            genre=match[6],
-            year=match[7],
-            edition=match[8],
-            golden_notes=match[9],
-            language=match[10],
-            creator=match[11],
-            rating=match[12],
-            views=match[13],
+            sample_url=match["sample_url"],
+            song_id=match["song_id"],
+            cover_url=match["cover_url"],
+            artist=match["artist"],
+            title=match["title"],
+            genre=match["genre"],
+            year=match["year"],
+            edition=match["edition"],
+            golden_notes=match["golden_notes"],
+            language=match["language"],
+            creator=match["creator"],
+            rating=match["rating"],
+            views=match["views"],
         )
         for match in SONG_LIST_ROW_REGEX.finditer(html)
     )
