@@ -65,7 +65,7 @@ class SongTable:
         selected_indexes = self.mw.table_view.selectionModel().selectedRows()
         if selected_indexes:
             if self.is_playing:
-                self.pause_sample()
+                self.stop_sample()
             else:
                 row = selected_indexes[0].row()
                 song_id = self._model.index(row, 0).data()
@@ -90,8 +90,8 @@ class SongTable:
         self.media_player.play()
         self.is_playing = True
 
-    def pause_sample(self) -> None:
-        self.media_player.pause()
+    def stop_sample(self) -> None:
+        self.media_player.stop()
         self.is_playing = False
 
     def _header(self) -> QtWidgets.QHeaderView:
@@ -175,7 +175,7 @@ class SongTable:
 
     def _on_current_song_changed(self) -> None:
         if self.is_playing:
-            self.pause_sample()
+            self.stop_sample()
         song = self.current_song()
         for action in self.mw.menu_songs.actions():
             action.setEnabled(bool(song))
