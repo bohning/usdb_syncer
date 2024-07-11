@@ -59,16 +59,17 @@ class SongTable:
         events.TreeFilterChanged.subscribe(self._on_tree_filter_changed)
         events.TextFilterChanged.subscribe(self._on_text_filter_changed)
         self.space_shortcut = QShortcut(Qt.Key.Key_Space, self._view)
-        self.space_shortcut.activated.connect(self.play_pause_sample)
+        self.space_shortcut.activated.connect(self.play_or_stop_sample)
 
-    def play_pause_sample(self) -> None:
+    def play_or_stop_sample(self) -> None:
         selected_indexes = self.mw.table_view.selectionModel().selectedRows()
+        row = selected_indexes[0].row()
         if selected_indexes:
             if self.is_playing:
                 self.stop_sample()
             else:
                 row = selected_indexes[0].row()
-                song_id = self._model.index(row, 0).data()
+                song_id = self._model.index(row, Column.SONG_ID).data()
                 song = UsdbSong.get(song_id)
                 assert song
                 if song.sync_meta and song.sync_meta.audio:

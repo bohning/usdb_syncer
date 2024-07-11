@@ -139,6 +139,10 @@ class SongOrder(enum.Enum):
     """Attributes songs can be sorted by."""
 
     NONE = None
+    SAMPLE_URL = (
+        "CASE WHEN audio.sync_meta_id IS NOT NULL THEN 1"
+        " WHEN usdb_song.sample_url != '' THEN 2 ELSE 3 END"
+    )
     SONG_ID = "usdb_song.song_id"
     ARTIST = "usdb_song.artist"
     TITLE = "usdb_song.title"
