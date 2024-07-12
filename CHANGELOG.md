@@ -1,3 +1,16 @@
+<!-- 0.7.0 -->
+
+# Changes
+
+## Fixes
+
+## Features
+
+- USDB has expanded their song list to include the audio sample URL. By pressing space,
+  you can start/stop playing this audio sample (playback stops when you select a
+  different song). If the song is locally available, the local file is played instead
+  (starting at #PREVIEW if it is set).
+
 <!-- 0.6.0 -->
 
 # Changes
@@ -15,10 +28,6 @@
 
 - USDB has expanded their song list to include year, genre and creator. These fields are
   now populated without fully downloading a song, and respective filters were added.
-- USDB has expanded their song list to include the audio sample URL. By pressing space,
-  you can start/stop playing this audio sample (playback stops when you select a
-  different song). If the song is locally available, the local file is played instead
-  (starting at #PREVIEW if it is set).
 
 <!-- 0.5.0 -->
 
