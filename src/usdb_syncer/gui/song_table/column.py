@@ -78,7 +78,7 @@ class Column(IntEnum):
     def decoration_data(self) -> QIcon | None:
         match self:
             case Column.SAMPLE_URL:
-                return None
+                return QIcon(":/icons/sample.png")
             case Column.SONG_ID:
                 return QIcon(":/icons/id.png")
             case Column.ARTIST:
