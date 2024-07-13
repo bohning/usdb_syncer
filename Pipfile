@@ -10,6 +10,7 @@ beautifulsoup4 = "*"
 browser_cookie3 = "*"
 dbus-python = {version = "*", markers="sys_platform == 'linux'"}
 ffmpeg-normalize = ">=1.27"
+ffpyplayer = "*"
 filetype = "*"
 importlib-metadata = "*"
 keyring = "*"

@@ -17,10 +17,9 @@ from PySide6.QtCore import (
     QTimer,
 )
 from PySide6.QtGui import QCursor, QShortcut
-from PySide6.QtMultimedia import QAudioOutput, QMediaPlayer
 from PySide6.QtWidgets import QHeaderView, QMenu
 
-from usdb_syncer import SongId, db, events, settings
+from usdb_syncer import SongId, db, events, media_player, settings
 from usdb_syncer.gui import ffmpeg_dialog
 from usdb_syncer.gui.song_table.column import Column
 from usdb_syncer.gui.song_table.table_model import TableModel
@@ -45,9 +44,6 @@ class SongTable:
         self.mw = mw
         self._model = TableModel(mw)
         self._view = mw.table_view
-        self.media_player = QMediaPlayer()
-        self.audio_output = QAudioOutput()
-        self.media_player.setAudioOutput(self.audio_output)
         self.is_playing = False
         self._setup_view()
         self._header().sortIndicatorChanged.connect(self._on_sort_order_changed)
@@ -62,37 +58,17 @@ class SongTable:
         self.space_shortcut.activated.connect(self.play_or_stop_sample)
 
     def play_or_stop_sample(self) -> None:
-        selected_indexes = self.mw.table_view.selectionModel().selectedRows()
-        row = selected_indexes[0].row()
-        if selected_indexes:
-            if self.is_playing:
-                self.stop_sample()
-            else:
-                row = selected_indexes[0].row()
-                song_id = self._model.index(row, Column.SONG_ID).data()
-                song = UsdbSong.get(song_id)
-                assert song
-                if song.sync_meta and song.sync_meta.audio:
-                    local_audio = song.sync_meta.path.parent.joinpath(
-                        song.sync_meta.audio.fname
-                    )
-                    if song.sync_meta.meta_tags.preview:
-                        position = int(song.sync_meta.meta_tags.preview * 1000)
-                    else:
-                        position = 0
-                    self.play_sample(local_audio.absolute().as_posix(), position)
-                else:
-                    if sample_audio := song.sample_url:
-                        self.play_sample(sample_audio)
-
-    def play_sample(self, url: str, position: int = 0) -> None:
-        self.media_player.setSource(url)
-        self.media_player.setPosition(position)
-        self.media_player.play()
-        self.is_playing = True
+        if media_player.is_playing():
+            media_player.stop()
+        elif song := self.current_song():
+            if (meta := song.sync_meta) and meta.audio:
+                seek_secs = meta.meta_tags.preview or 0.0
+                media_player.play_file(meta.path.parent / meta.audio.fname, seek_secs)
+            elif song.sample_url:
+                media_player.play_url(song.sample_url)
 
     def stop_sample(self) -> None:
-        self.media_player.stop()
+        # self.media_player.stop()
         self.is_playing = False
 
     def _header(self) -> QtWidgets.QHeaderView:
