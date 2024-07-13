@@ -442,7 +442,7 @@ def _maybe_download_cover(ctx: _Context) -> None:
 def _maybe_download_background(ctx: _Context) -> None:
     if not (options := ctx.options.background_options):
         return
-    if not options.download_background(bool(ctx.txt.headers.video)):
+    if not options.download_background(bool(ctx.out.video.resource)):
         return
     if not (url := ctx.background_url()):
         ctx.logger.warning("No background resource found.")
