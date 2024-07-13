@@ -39,6 +39,7 @@ class SongTable:
     """Controller for the song table."""
 
     _search = db.SearchBuilder()
+    _player_handle: media_player.Handle | None = None
 
     def __init__(self, mw: MainWindow) -> None:
         self.mw = mw
@@ -58,18 +59,15 @@ class SongTable:
         self.space_shortcut.activated.connect(self.play_or_stop_sample)
 
     def play_or_stop_sample(self) -> None:
-        if media_player.is_playing():
-            media_player.stop()
+        if self._player_handle and self._player_handle.is_playing():
+            self._player_handle.stop()
         elif song := self.current_song():
             if (meta := song.sync_meta) and meta.audio:
-                seek_secs = meta.meta_tags.preview or 0.0
-                media_player.play_file(meta.path.parent / meta.audio.fname, seek_secs)
+                self._player_handle = media_player.play_file(
+                    meta.path.parent / meta.audio.fname, meta.meta_tags.preview or 0.0
+                )
             elif song.sample_url:
-                media_player.play_url(song.sample_url)
-
-    def stop_sample(self) -> None:
-        # self.media_player.stop()
-        self.is_playing = False
+                self._player_handle = media_player.play_url(song.sample_url)
 
     def _header(self) -> QtWidgets.QHeaderView:
         return self._view.horizontalHeader()
@@ -151,8 +149,6 @@ class SongTable:
             self._on_current_song_changed()
 
     def _on_current_song_changed(self) -> None:
-        if self.is_playing:
-            self.stop_sample()
         song = self.current_song()
         for action in self.mw.menu_songs.actions():
             action.setEnabled(bool(song))
