@@ -137,7 +137,9 @@ class SongTable:
             menu.addAction(action)
         menu.exec(QCursor.pos())
 
-    def save_state(self) -> None:
+    def close(self) -> None:
+        if self._player_handle:
+            self._player_handle.stop()
         settings.set_table_view_header_state(
             self.mw.table_view.horizontalHeader().saveState()
         )

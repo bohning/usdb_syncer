@@ -251,7 +251,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
 
     def closeEvent(self, event: QtGui.QCloseEvent) -> None:
         DownloadManager.quit()
-        self.table.save_state()
+        self.table.close()
         self._save_state()
         db.close()
         event.accept()
