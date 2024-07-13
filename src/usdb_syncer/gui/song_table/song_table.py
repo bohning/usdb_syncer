@@ -145,7 +145,7 @@ class SongTable:
             else:
                 existing_state = True
                 self._search.order = Column(header.sortIndicatorSection()).song_order()
-                self._search.descending = bool(header.sortIndicatorOrder())
+                self._search.descending = bool(header.sortIndicatorOrder().value)
         for column in Column:
             if size := column.fixed_size():
                 header.setSectionResizeMode(column, QHeaderView.ResizeMode.Fixed)
