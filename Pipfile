@@ -25,8 +25,9 @@ unidecode = "*"
 yt_dlp = "*"
 wheel = "*"
 # build
-pyinstaller = "*"
+pyinstaller = "6.3.*"
 pyinstaller-hooks-contrib = "*"
+setuptools = "69.*"
 # specifically required for pyinstaller (Note: darwin -> macos)
 altgraph = "*"
 macholib = {version = "*", markers="sys_platform == 'darwin'"}
