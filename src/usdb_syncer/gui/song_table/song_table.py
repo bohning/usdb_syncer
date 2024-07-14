@@ -7,18 +7,8 @@ from functools import partial
 from typing import TYPE_CHECKING, Any, Callable, Iterable, Iterator
 
 import send2trash
-from PySide6 import QtWidgets
-from PySide6.QtCore import (
-    QItemSelection,
-    QItemSelectionModel,
-    QModelIndex,
-    QPoint,
-    Qt,
-    QTimer,
-)
-from PySide6.QtGui import QCursor, QShortcut
-from PySide6.QtMultimedia import QAudioOutput, QMediaPlayer
-from PySide6.QtWidgets import QHeaderView, QMenu
+from PySide6 import QtCore, QtGui, QtMultimedia, QtWidgets
+from PySide6.QtCore import QItemSelectionModel, Qt
 
 from usdb_syncer import SongId, db, events, settings
 from usdb_syncer.gui import ffmpeg_dialog
@@ -45,8 +35,8 @@ class SongTable:
         self.mw = mw
         self._model = TableModel(mw)
         self._view = mw.table_view
-        self.media_player = QMediaPlayer()
-        self.audio_output = QAudioOutput()
+        self.media_player = QtMultimedia.QMediaPlayer()
+        self.audio_output = QtMultimedia.QAudioOutput()
         self.media_player.setAudioOutput(self.audio_output)
         self.is_playing = False
         self._setup_view()
@@ -58,7 +48,7 @@ class SongTable:
         self._setup_search_timer()
         events.TreeFilterChanged.subscribe(self._on_tree_filter_changed)
         events.TextFilterChanged.subscribe(self._on_text_filter_changed)
-        self.space_shortcut = QShortcut(Qt.Key.Key_Space, self._view)
+        self.space_shortcut = QtGui.QShortcut(Qt.Key.Key_Space, self._view)
         self.space_shortcut.activated.connect(self.play_or_stop_sample)
 
     def play_or_stop_sample(self) -> None:
@@ -136,6 +126,7 @@ class SongTable:
         self._view.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
         self._view.customContextMenuRequested.connect(self._context_menu)
         self._view.doubleClicked.connect(lambda idx: self._download([idx.row()]))
+        self._view.clicked.connect(self._on_click)
         header = self._header()
         existing_state = False
         if not state.isEmpty():
@@ -148,20 +139,42 @@ class SongTable:
                 self._search.descending = bool(header.sortIndicatorOrder().value)
         for column in Column:
             if size := column.fixed_size():
-                header.setSectionResizeMode(column, QHeaderView.ResizeMode.Fixed)
+                header.setSectionResizeMode(
+                    column, QtWidgets.QHeaderView.ResizeMode.Fixed
+                )
                 header.resizeSection(column, size)
             # setting a (default) width on the last, stretching column seems to cause
             # issues, so we set it manually on the other columns
             elif column is not max(Column):
                 if not existing_state:
                     header.resizeSection(column, DEFAULT_COLUMN_WIDTH)
-                header.setSectionResizeMode(column, QHeaderView.ResizeMode.Interactive)
+                header.setSectionResizeMode(
+                    column, QtWidgets.QHeaderView.ResizeMode.Interactive
+                )
 
-    def _context_menu(self, _pos: QPoint) -> None:
-        menu = QMenu()
+    def _context_menu(self, _pos: QtCore.QPoint) -> None:
+        menu = QtWidgets.QMenu()
         for action in self.mw.menu_songs.actions():
             menu.addAction(action)
-        menu.exec(QCursor.pos())
+        menu.exec(QtGui.QCursor.pos())
+
+    def _on_click(self, index: QtCore.QModelIndex) -> None:
+        if index.column() != Column.SAMPLE_URL.value or not (
+            song := UsdbSong.get(self._model.ids_for_indices([index])[0])
+        ):
+            return
+        if song.sync_meta and song.sync_meta.audio:
+            local_audio = song.sync_meta.path.parent.joinpath(
+                song.sync_meta.audio.fname
+            )
+            if song.sync_meta.meta_tags.preview:
+                position = int(song.sync_meta.meta_tags.preview * 1000)
+            else:
+                position = 0
+            self.play_sample(local_audio.absolute().as_posix(), position)
+        else:
+            if sample_audio := song.sample_url:
+                self.play_sample(sample_audio)
 
     def save_state(self) -> None:
         settings.set_table_view_header_state(
@@ -242,8 +255,8 @@ class SongTable:
     def set_selection_to_song_ids(self, select_song_ids: Iterable[SongId]) -> None:
         self.set_selection_to_indices(self._model.indices_for_ids(select_song_ids))
 
-    def set_selection_to_indices(self, rows: Iterable[QModelIndex]) -> None:
-        selection = QItemSelection()
+    def set_selection_to_indices(self, rows: Iterable[QtCore.QModelIndex]) -> None:
+        selection = QtCore.QItemSelection()
         for row in rows:
             selection.select(row, row)
         self._view.selectionModel().select(
@@ -268,7 +281,7 @@ class SongTable:
         self._view.selectionModel().selectionChanged.connect(wrapped)
 
     def _setup_search_timer(self) -> None:
-        self._search_timer = QTimer(self.mw)
+        self._search_timer = QtCore.QTimer(self.mw)
         self._search_timer.setSingleShot(True)
         self._search_timer.timeout.connect(self.search_songs)
 
