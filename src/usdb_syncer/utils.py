@@ -12,6 +12,7 @@ import unicodedata
 from pathlib import Path
 
 from appdirs import AppDirs
+from PySide6 import QtMultimedia
 
 from usdb_syncer import settings
 from usdb_syncer.logger import get_logger
@@ -237,3 +238,16 @@ def get_song_dir() -> Path:
     if path := os.environ.get("SONG_DIR"):
         return Path(path)
     return settings.get_song_dir()
+
+
+class _MediaPlayer:
+    player: QtMultimedia.QMediaPlayer | None = None
+
+
+def media_player() -> QtMultimedia.QMediaPlayer:
+    if _MediaPlayer.player is None:
+        _MediaPlayer.player = QtMultimedia.QMediaPlayer()
+        _MediaPlayer.player.setAudioOutput(
+            QtMultimedia.QAudioOutput(_MediaPlayer.player)
+        )
+    return _MediaPlayer.player

@@ -10,7 +10,7 @@ import send2trash
 from PySide6 import QtCore, QtGui, QtMultimedia, QtWidgets
 from PySide6.QtCore import QItemSelectionModel, Qt
 
-from usdb_syncer import SongId, db, events, settings
+from usdb_syncer import SongId, db, events, settings, utils
 from usdb_syncer.gui import ffmpeg_dialog
 from usdb_syncer.gui.song_table.column import Column
 from usdb_syncer.gui.song_table.table_model import TableModel
@@ -36,10 +36,8 @@ class SongTable:
         self.mw = mw
         self._model = TableModel(mw)
         self._view = mw.table_view
-        self.media_player = QtMultimedia.QMediaPlayer()
-        self.audio_output = QtMultimedia.QAudioOutput()
-        self.media_player.setAudioOutput(self.audio_output)
-        self.media_player.playbackStateChanged.connect(self._on_playback_state_changed)
+        self._media_player = utils.media_player()
+        self._media_player.playbackStateChanged.connect(self._on_playback_state_changed)
         self._setup_view()
         self._header().sortIndicatorChanged.connect(self._on_sort_order_changed)
         mw.table_view.selectionModel().currentChanged.connect(
@@ -149,7 +147,7 @@ class SongTable:
 
     def _play_or_stop_sample(self, song: UsdbSong) -> None:
         if song.is_playing:
-            self.media_player.stop()
+            self._media_player.stop()
             return
         position = 0
         if song.sync_meta and song.sync_meta.audio:
@@ -165,9 +163,9 @@ class SongTable:
         with db.transaction():
             song.upsert()
         events.SongChanged(song.song_id).post()
-        self.media_player.setSource(url)
-        self.media_player.setPosition(position)
-        self.media_player.play()
+        self._media_player.setSource(url)
+        self._media_player.setPosition(position)
+        self._media_player.play()
         self._playing_song = song
 
     def save_state(self) -> None:
