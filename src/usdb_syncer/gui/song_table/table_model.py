@@ -187,10 +187,13 @@ def _decoration_data(song: UsdbSong, column: int) -> QIcon | None:
             return None
         case Column.SAMPLE_URL:
             if song.sync_meta.audio:
-                return icon(":/icons/control-play-local.png")
-            if song.sample_url:
-                return icon(":/icons/control-play.png")
-            return None
+                suffix = "-local"
+            elif song.sample_url:
+                suffix = ""
+            else:
+                return None
+            kind = "pause" if song.is_playing else "play"
+            return icon(f":/icons/control-{kind}{suffix}.png")
         case Column.TXT:
             return icon(":/icons/tick.png", bool(song.sync_meta.txt))
         case Column.AUDIO:

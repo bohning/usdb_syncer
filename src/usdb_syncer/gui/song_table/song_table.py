@@ -30,6 +30,7 @@ class SongTable:
     """Controller for the song table."""
 
     _search = db.SearchBuilder()
+    _playing_song: UsdbSong | None = None
 
     def __init__(self, mw: MainWindow) -> None:
         self.mw = mw
@@ -38,7 +39,7 @@ class SongTable:
         self.media_player = QtMultimedia.QMediaPlayer()
         self.audio_output = QtMultimedia.QAudioOutput()
         self.media_player.setAudioOutput(self.audio_output)
-        self.is_playing = False
+        self.media_player.playbackStateChanged.connect(self._on_playback_state_changed)
         self._setup_view()
         self._header().sortIndicatorChanged.connect(self._on_sort_order_changed)
         mw.table_view.selectionModel().currentChanged.connect(
@@ -48,42 +49,24 @@ class SongTable:
         self._setup_search_timer()
         events.TreeFilterChanged.subscribe(self._on_tree_filter_changed)
         events.TextFilterChanged.subscribe(self._on_text_filter_changed)
-        self.space_shortcut = QtGui.QShortcut(Qt.Key.Key_Space, self._view)
-        self.space_shortcut.activated.connect(self.play_or_stop_sample)
+        QtGui.QShortcut(Qt.Key.Key_Space, self._view).activated.connect(self._on_space)
 
-    def play_or_stop_sample(self) -> None:
-        selected_indexes = self.mw.table_view.selectionModel().selectedRows()
-        row = selected_indexes[0].row()
-        if selected_indexes:
-            if self.is_playing:
-                self.stop_sample()
-            else:
-                row = selected_indexes[0].row()
-                song_id = self._model.index(row, Column.SONG_ID).data()
-                song = UsdbSong.get(song_id)
-                assert song
-                if song.sync_meta and song.sync_meta.audio:
-                    local_audio = song.sync_meta.path.parent.joinpath(
-                        song.sync_meta.audio.fname
-                    )
-                    if song.sync_meta.meta_tags.preview:
-                        position = int(song.sync_meta.meta_tags.preview * 1000)
-                    else:
-                        position = 0
-                    self.play_sample(local_audio.absolute().as_posix(), position)
-                else:
-                    if sample_audio := song.sample_url:
-                        self.play_sample(sample_audio)
+    def _on_playback_state_changed(
+        self, state: QtMultimedia.QMediaPlayer.PlaybackState
+    ) -> None:
+        if (
+            state == QtMultimedia.QMediaPlayer.PlaybackState.StoppedState
+            and self._playing_song
+        ):
+            self._playing_song.is_playing = False
+            with db.transaction():
+                self._playing_song.upsert()
+            events.SongChanged(self._playing_song.song_id).post()
+            self._playing_song = None
 
-    def play_sample(self, url: str, position: int = 0) -> None:
-        self.media_player.setSource(url)
-        self.media_player.setPosition(position)
-        self.media_player.play()
-        self.is_playing = True
-
-    def stop_sample(self) -> None:
-        self.media_player.stop()
-        self.is_playing = False
+    def _on_space(self) -> None:
+        if song := self.current_song():
+            self._play_or_stop_sample(song)
 
     def _header(self) -> QtWidgets.QHeaderView:
         return self._view.horizontalHeader()
@@ -159,22 +142,33 @@ class SongTable:
         menu.exec(QtGui.QCursor.pos())
 
     def _on_click(self, index: QtCore.QModelIndex) -> None:
-        if index.column() != Column.SAMPLE_URL.value or not (
+        if index.column() == Column.SAMPLE_URL.value and (
             song := UsdbSong.get(self._model.ids_for_indices([index])[0])
         ):
+            self._play_or_stop_sample(song)
+
+    def _play_or_stop_sample(self, song: UsdbSong) -> None:
+        if song.is_playing:
+            self.media_player.stop()
             return
+        position = 0
         if song.sync_meta and song.sync_meta.audio:
-            local_audio = song.sync_meta.path.parent.joinpath(
-                song.sync_meta.audio.fname
-            )
+            path = song.sync_meta.path.parent / song.sync_meta.audio.fname
+            url = path.absolute().as_posix()
             if song.sync_meta.meta_tags.preview:
                 position = int(song.sync_meta.meta_tags.preview * 1000)
-            else:
-                position = 0
-            self.play_sample(local_audio.absolute().as_posix(), position)
+        elif song.sample_url:
+            url = song.sample_url
         else:
-            if sample_audio := song.sample_url:
-                self.play_sample(sample_audio)
+            return
+        song.is_playing = True
+        with db.transaction():
+            song.upsert()
+        events.SongChanged(song.song_id).post()
+        self.media_player.setSource(url)
+        self.media_player.setPosition(position)
+        self.media_player.play()
+        self._playing_song = song
 
     def save_state(self) -> None:
         settings.set_table_view_header_state(
@@ -188,8 +182,6 @@ class SongTable:
             self._on_current_song_changed()
 
     def _on_current_song_changed(self) -> None:
-        if self.is_playing:
-            self.stop_sample()
         song = self.current_song()
         for action in self.mw.menu_songs.actions():
             action.setEnabled(bool(song))
