@@ -140,7 +140,8 @@ class SongOrder(enum.Enum):
 
     NONE = None
     SAMPLE_URL = (
-        "CASE WHEN audio.sync_meta_id IS NOT NULL THEN 1"
+        "CASE WHEN session_usdb_song.is_playing == true THEN 0"
+        " WHEN audio.sync_meta_id IS NOT NULL THEN 1"
         " WHEN usdb_song.sample_url != '' THEN 2 ELSE 3 END"
     )
     SONG_ID = "usdb_song.song_id"
