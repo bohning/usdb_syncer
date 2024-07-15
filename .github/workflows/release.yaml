@@ -72,6 +72,7 @@ jobs:
       - name: Install Linux specific dependencies for dbus-python
         if: matrix.TARGET == 'Linux'
         run: |
+          sudo apt update
           sudo apt install -y gcc python3-dev libdbus-1-dev
           pkg-config --cflags --libs dbus-1
       - name: Set up Python
@@ -81,8 +82,9 @@ jobs:
       - name: Install Qt
         uses: jurplel/install-qt-action@v4
         with:
-          version: "6.5.*"
+          version: "6.6.*"
           setup-python: false
+          modules: qtmultimedia
       - name: Install Pipenv
         run: |
           python -m pip install pipenv

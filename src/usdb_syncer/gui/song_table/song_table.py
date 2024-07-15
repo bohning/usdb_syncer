@@ -7,19 +7,10 @@ from functools import partial
 from typing import TYPE_CHECKING, Any, Callable, Iterable, Iterator
 
 import send2trash
-from PySide6 import QtWidgets
-from PySide6.QtCore import (
-    QItemSelection,
-    QItemSelectionModel,
-    QModelIndex,
-    QPoint,
-    Qt,
-    QTimer,
-)
-from PySide6.QtGui import QCursor
-from PySide6.QtWidgets import QHeaderView, QMenu
+from PySide6 import QtCore, QtGui, QtMultimedia, QtWidgets
+from PySide6.QtCore import QItemSelectionModel, Qt
 
-from usdb_syncer import SongId, db, events, settings
+from usdb_syncer import SongId, db, events, settings, utils
 from usdb_syncer.gui import ffmpeg_dialog
 from usdb_syncer.gui.song_table.column import Column
 from usdb_syncer.gui.song_table.table_model import TableModel
@@ -39,11 +30,16 @@ class SongTable:
     """Controller for the song table."""
 
     _search = db.SearchBuilder()
+    _playing_song: UsdbSong | None = None
+    _next_playing_song: UsdbSong | None = None
 
     def __init__(self, mw: MainWindow) -> None:
         self.mw = mw
         self._model = TableModel(mw)
         self._view = mw.table_view
+        self._media_player = utils.media_player()
+        self._media_player.playbackStateChanged.connect(self._on_playback_state_changed)
+        self._media_player.errorChanged.connect(self._on_playback_error_changed)
         self._setup_view()
         self._header().sortIndicatorChanged.connect(self._on_sort_order_changed)
         mw.table_view.selectionModel().currentChanged.connect(
@@ -53,6 +49,36 @@ class SongTable:
         self._setup_search_timer()
         events.TreeFilterChanged.subscribe(self._on_tree_filter_changed)
         events.TextFilterChanged.subscribe(self._on_text_filter_changed)
+        QtGui.QShortcut(Qt.Key.Key_Space, self._view).activated.connect(self._on_space)
+
+    def _on_playback_state_changed(
+        self, state: QtMultimedia.QMediaPlayer.PlaybackState
+    ) -> None:
+        if state == QtMultimedia.QMediaPlayer.PlaybackState.PlayingState:
+            assert self._next_playing_song
+            self._playing_song = song = self._next_playing_song
+            self._next_playing_song = None
+            song.is_playing = True
+        elif state == QtMultimedia.QMediaPlayer.PlaybackState.StoppedState:
+            assert self._playing_song
+            song = self._playing_song
+            self._playing_song = None
+            song.is_playing = False
+        with db.transaction():
+            song.upsert()
+        events.SongChanged(song.song_id).post()
+
+    def _on_playback_error_changed(self) -> None:
+        if not self._media_player.error().value or self._next_playing_song is None:
+            return
+        logger = get_logger(__file__, self._next_playing_song.song_id)
+        source = self._media_player.source().url()
+        logger.error(f"Failed to play back source: {source}")
+        logger.debug(self._media_player.errorString())
+
+    def _on_space(self) -> None:
+        if song := self.current_song():
+            self._play_or_stop_sample(song)
 
     def _header(self) -> QtWidgets.QHeaderView:
         return self._view.horizontalHeader()
@@ -95,6 +121,7 @@ class SongTable:
         self._view.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
         self._view.customContextMenuRequested.connect(self._context_menu)
         self._view.doubleClicked.connect(lambda idx: self._download([idx.row()]))
+        self._view.clicked.connect(self._on_click)
         header = self._header()
         existing_state = False
         if not state.isEmpty():
@@ -104,23 +131,53 @@ class SongTable:
             else:
                 existing_state = True
                 self._search.order = Column(header.sortIndicatorSection()).song_order()
-                self._search.descending = bool(header.sortIndicatorOrder())
+                self._search.descending = bool(header.sortIndicatorOrder().value)
         for column in Column:
             if size := column.fixed_size():
-                header.setSectionResizeMode(column, QHeaderView.ResizeMode.Fixed)
+                header.setSectionResizeMode(
+                    column, QtWidgets.QHeaderView.ResizeMode.Fixed
+                )
                 header.resizeSection(column, size)
             # setting a (default) width on the last, stretching column seems to cause
             # issues, so we set it manually on the other columns
             elif column is not max(Column):
                 if not existing_state:
                     header.resizeSection(column, DEFAULT_COLUMN_WIDTH)
-                header.setSectionResizeMode(column, QHeaderView.ResizeMode.Interactive)
+                header.setSectionResizeMode(
+                    column, QtWidgets.QHeaderView.ResizeMode.Interactive
+                )
 
-    def _context_menu(self, _pos: QPoint) -> None:
-        menu = QMenu()
+    def _context_menu(self, _pos: QtCore.QPoint) -> None:
+        menu = QtWidgets.QMenu()
         for action in self.mw.menu_songs.actions():
             menu.addAction(action)
-        menu.exec(QCursor.pos())
+        menu.exec(QtGui.QCursor.pos())
+
+    def _on_click(self, index: QtCore.QModelIndex) -> None:
+        if index.column() == Column.SAMPLE_URL.value and (
+            song := UsdbSong.get(self._model.ids_for_indices([index])[0])
+        ):
+            self._play_or_stop_sample(song)
+
+    def _play_or_stop_sample(self, song: UsdbSong) -> None:
+        if self._playing_song and song.song_id == self._playing_song.song_id:
+            # second play() in a row is a stop()
+            self._media_player.stop()
+            return
+        position = 0
+        if song.sync_meta and song.sync_meta.audio:
+            path = song.sync_meta.path.parent / song.sync_meta.audio.fname
+            url = path.absolute().as_posix()
+            if song.sync_meta.meta_tags.preview:
+                position = int(song.sync_meta.meta_tags.preview * 1000)
+        elif song.sample_url:
+            url = song.sample_url
+        else:
+            return
+        self._next_playing_song = song
+        self._media_player.setSource(url)
+        self._media_player.setPosition(position)
+        self._media_player.play()
 
     def save_state(self) -> None:
         settings.set_table_view_header_state(
@@ -199,8 +256,8 @@ class SongTable:
     def set_selection_to_song_ids(self, select_song_ids: Iterable[SongId]) -> None:
         self.set_selection_to_indices(self._model.indices_for_ids(select_song_ids))
 
-    def set_selection_to_indices(self, rows: Iterable[QModelIndex]) -> None:
-        selection = QItemSelection()
+    def set_selection_to_indices(self, rows: Iterable[QtCore.QModelIndex]) -> None:
+        selection = QtCore.QItemSelection()
         for row in rows:
             selection.select(row, row)
         self._view.selectionModel().select(
@@ -225,7 +282,7 @@ class SongTable:
         self._view.selectionModel().selectionChanged.connect(wrapped)
 
     def _setup_search_timer(self) -> None:
-        self._search_timer = QTimer(self.mw)
+        self._search_timer = QtCore.QTimer(self.mw)
         self._search_timer.setSingleShot(True)
         self._search_timer.timeout.connect(self.search_songs)
 

@@ -139,6 +139,11 @@ class SongOrder(enum.Enum):
     """Attributes songs can be sorted by."""
 
     NONE = None
+    SAMPLE_URL = (
+        "CASE WHEN session_usdb_song.is_playing == true THEN 0"
+        " WHEN audio.sync_meta_id IS NOT NULL THEN 1"
+        " WHEN usdb_song.sample_url != '' THEN 2 ELSE 3 END"
+    )
     SONG_ID = "usdb_song.song_id"
     ARTIST = "usdb_song.artist"
     TITLE = "usdb_song.title"
@@ -158,7 +163,7 @@ class SongOrder(enum.Enum):
     COVER = "cover.sync_meta_id IS NULL"
     BACKGROUND = "background.sync_meta_id IS NULL"
     # max integer in SQLite
-    STATUS = "coalesce(usdb_song_status.status, sync_meta.mtime, 9223372036854775807)"
+    STATUS = "coalesce(session_usdb_song.status, sync_meta.mtime, 9223372036854775807)"
 
 
 @attrs.define
@@ -193,7 +198,7 @@ class SearchBuilder:
             (self.editions, "usdb_song.edition"),
             (self.ratings, "usdb_song.rating"),
             (self.years, "usdb_song.year"),
-            (self.statuses, "usdb_song_status.status"),
+            (self.statuses, "session_usdb_song.status"),
         ):
             if vals:
                 yield _in_values_clause(col, cast(list, vals))
@@ -305,18 +310,14 @@ class UsdbSongParams:
     creator: str
     tags: str
     status: DownloadStatus
+    is_playing: bool
 
 
 def upsert_usdb_song(params: UsdbSongParams) -> None:
     stmt = _SqlCache.get("upsert_usdb_song.sql")
     _DbState.connection().execute(stmt, params.__dict__)
-    if params.status is DownloadStatus.NONE:
-        _DbState.connection().execute(
-            "DELETE FROM usdb_song_status WHERE song_id = ?", (params.song_id,)
-        )
-    else:
-        stmt = _SqlCache.get("upsert_usdb_song_status.sql")
-        _DbState.connection().execute(stmt, params.__dict__)
+    stmt = _SqlCache.get("upsert_session_usdb_song.sql")
+    _DbState.connection().execute(stmt, params.__dict__)
 
 
 def upsert_usdb_songs(params: Iterable[UsdbSongParams]) -> None:

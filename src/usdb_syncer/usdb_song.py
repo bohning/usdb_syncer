@@ -34,6 +34,7 @@ class UsdbSong:
     # internal
     sync_meta: SyncMeta | None = None
     status: DownloadStatus = DownloadStatus.NONE
+    is_playing: bool = False
 
     @classmethod
     def from_json(cls, dct: dict[str, Any]) -> UsdbSong:
@@ -75,7 +76,7 @@ class UsdbSong:
 
     @classmethod
     def from_db_row(cls, song_id: SongId, row: tuple) -> UsdbSong:
-        assert len(row) == 35
+        assert len(row) == 36
         return cls(
             song_id=song_id,
             artist=row[1],
@@ -91,7 +92,8 @@ class UsdbSong:
             creator=row[11],
             tags=row[12],
             status=DownloadStatus(row[13]),
-            sync_meta=None if row[14] is None else SyncMeta.from_db_row(row[14:]),
+            is_playing=bool(row[14]),
+            sync_meta=None if row[15] is None else SyncMeta.from_db_row(row[15:]),
         )
 
     @classmethod
@@ -154,6 +156,7 @@ class UsdbSong:
             creator=self.creator,
             tags=self.tags,
             status=self.status,
+            is_playing=self.is_playing,
         )
 
     def is_local(self) -> bool:
@@ -182,7 +185,9 @@ class UsdbSongEncoder(JSONEncoder):
     def default(self, o: Any) -> Any:
         if isinstance(o, UsdbSong):
             fields = attrs.fields(UsdbSong)
-            filt = attrs.filters.exclude(fields.status, fields.sync_meta)
+            filt = attrs.filters.exclude(
+                fields.status, fields.sync_meta, fields.is_playing
+            )
             dct = attrs.asdict(o, recurse=False, filter=filt)
             return dct
         return super().default(o)
