@@ -10,7 +10,7 @@ import send2trash
 from PySide6 import QtCore, QtGui, QtMultimedia, QtWidgets
 from PySide6.QtCore import QItemSelectionModel, Qt
 
-from usdb_syncer import SongId, db, events, settings, utils
+from usdb_syncer import SongId, db, events, media_player, settings
 from usdb_syncer.gui import ffmpeg_dialog
 from usdb_syncer.gui.song_table.column import Column
 from usdb_syncer.gui.song_table.table_model import TableModel
@@ -37,7 +37,7 @@ class SongTable:
         self.mw = mw
         self._model = TableModel(mw)
         self._view = mw.table_view
-        self._media_player = utils.media_player()
+        self._media_player = media_player.media_player()
         self._media_player.playbackStateChanged.connect(self._on_playback_state_changed)
         self._media_player.errorChanged.connect(self._on_playback_error_changed)
         self._setup_view()
