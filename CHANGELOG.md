@@ -4,11 +4,13 @@
 
 ## Fixes
 
+- Fixed xcb and wayland not being bundled, which prevented the app to run on Linux.
+
 ## Features
 
-- USDB has expanded their song list to include the audio sample URL. By pressing space,
-  you can start/stop playing this audio sample (playback stops when you select a
-  different song). If the song is locally available, the local file is played instead
+- USDB has expanded their song list to include the audio sample URL. By pressing space or
+  clicking the play icon you can play back this sample.
+  If the song is locally available, the local file is played instead
   (starting at #PREVIEW if it is set).
 
 <!-- 0.6.0 -->

@@ -164,11 +164,6 @@ def _display_data(song: UsdbSong, column: int) -> str | None:
 
 def _decoration_data(song: UsdbSong, column: int) -> QIcon | None:
     col = Column(column)
-    if not song.sync_meta:
-        if col == Column.SAMPLE_URL:
-            action = "pause" if song.is_playing else "play"
-            return icon(f":/icons/control-{action}.png", bool(song.sample_url))
-        return None
     match col:
         case (
             Column.SONG_ID
@@ -187,22 +182,36 @@ def _decoration_data(song: UsdbSong, column: int) -> QIcon | None:
         ):
             return None
         case Column.SAMPLE_URL:
-            if not song.sync_meta.audio:
+            if song.sync_meta and song.sync_meta.audio:
+                suffix = "-local"
+            elif song.sample_url:
+                suffix = ""
+            else:
                 return None
             action = "pause" if song.is_playing else "play"
-            return icon(f":/icons/control-{action}-local.png")
+            return icon(f":/icons/control-{action}{suffix}.png")
         case Column.TXT:
-            return icon(":/icons/tick.png", bool(song.sync_meta.txt))
+            return icon(":/icons/tick.png", bool(song.sync_meta and song.sync_meta.txt))
         case Column.AUDIO:
-            return icon(":/icons/tick.png", bool(song.sync_meta.audio))
+            return icon(
+                ":/icons/tick.png", bool(song.sync_meta and song.sync_meta.audio)
+            )
         case Column.VIDEO:
-            return icon(":/icons/tick.png", bool(song.sync_meta.video))
+            return icon(
+                ":/icons/tick.png", bool(song.sync_meta and song.sync_meta.video)
+            )
         case Column.COVER:
-            return icon(":/icons/tick.png", bool(song.sync_meta.cover))
+            return icon(
+                ":/icons/tick.png", bool(song.sync_meta and song.sync_meta.cover)
+            )
         case Column.BACKGROUND:
-            return icon(":/icons/tick.png", bool(song.sync_meta.background))
+            return icon(
+                ":/icons/tick.png", bool(song.sync_meta and song.sync_meta.background)
+            )
         case Column.PINNED:
-            return icon(":/icons/pin.png", song.sync_meta.pinned)
+            return icon(
+                ":/icons/pin.png", bool(song.sync_meta and song.sync_meta.pinned)
+            )
         case _ as unreachable:
             assert_never(unreachable)
 
