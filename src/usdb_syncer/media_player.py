@@ -1,3 +1,5 @@
+"""Manages the media player singleton."""
+
 from PySide6 import QtMultimedia
 
 
