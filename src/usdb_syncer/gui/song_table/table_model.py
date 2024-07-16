@@ -210,7 +210,7 @@ def _decoration_data(song: UsdbSong, column: int) -> QIcon | None:
             )
         case Column.PINNED:
             return icon(
-                ":/icons/pin.png", bool(song.sync_meta) and song.sync_meta.pinned
+                ":/icons/pin.png", bool(song.sync_meta and song.sync_meta.pinned)
             )
         case _ as unreachable:
             assert_never(unreachable)
