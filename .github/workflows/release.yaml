@@ -111,10 +111,6 @@ jobs:
         run: python -m src.tools.generate_pyside_files
         env:
           PYTHONPATH: ${{ env.PERSISTENT_PYTHONPATH }}
-      - name: add dependencies for xcb support
-        if: matrix.TARGET == 'Linux'
-        run: |
-          sudo apt install libxcb-cursor0
       - name: Build with pyinstaller for ${{matrix.os}}
         run: >
           pyinstaller
