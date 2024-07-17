@@ -17,19 +17,13 @@ jobs:
       - uses: actions/checkout@v3
       - name: Install Linux specific dependencies for dbus-python
         run: |
-          sudo apt update
-          sudo apt install -y gcc python3-dev libdbus-1-dev
+          sudo apt-get update
+          sudo apt-get install -y gcc python3-dev libdbus-1-dev
           pkg-config --cflags --libs dbus-1
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v4
         with:
           python-version: ${{ matrix.python-version }}
-      - name: Install Qt
-        uses: jurplel/install-qt-action@v4
-        with:
-          version: "6.6.*"
-          setup-python: false
-          modules: qtmultimedia
       - name: Install tox and pipenv
         run: python -m pip install tox pipenv
       - name: Test with tox
