@@ -62,6 +62,8 @@ class Headers:
     year: str | None = None
     creator: str | None = None
     mp3: str | None = None
+    instrumental: str | None = None
+    vocals: str | None = None
     cover: str | None = None
     background: str | None = None
     video: str | None = None
@@ -121,6 +123,8 @@ class Headers:
                 "year",
                 "creator",
                 "mp3",
+                "instrumental",
+                "vocals",
                 "cover",
                 "background",
                 "video",

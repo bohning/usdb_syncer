@@ -31,8 +31,7 @@ pyinstaller-hooks-contrib = "*"
 altgraph = "*"
 macholib = {version = "*", markers="sys_platform == 'darwin'"}
 pywin32-ctypes = {version = "*", markers="sys_platform == 'win32'"}
-audio-separator = "*"
-onnxruntime = "*"
+demucs = "*"
 
 [dev-packages]
 tox = "*"

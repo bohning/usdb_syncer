@@ -549,7 +549,6 @@ class ResourceFileKind(str, enum.Enum):
     BACKGROUND = "background"
     INSTRUMENTAL = "instrumental"
     VOCALS = "vocals"
-    INSTRUMENTAL_TXT = "instrumental_txt"
 
 
 @attrs.define(frozen=True, slots=False)

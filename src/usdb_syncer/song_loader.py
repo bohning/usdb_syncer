@@ -14,12 +14,12 @@ from pathlib import Path
 from typing import Iterable, Iterator
 
 import attrs
+import demucs.separate
 import mutagen.mp4
 import mutagen.ogg
 import mutagen.oggopus
 import mutagen.oggvorbis
 import send2trash
-from audio_separator.separator import Separator
 from mutagen import id3
 from mutagen.flac import Picture
 from PIL import Image
@@ -176,9 +176,8 @@ class _TempResourceFiles:
     video: _TempResourceFile = attrs.field(factory=_TempResourceFile)
     cover: _TempResourceFile = attrs.field(factory=_TempResourceFile)
     background: _TempResourceFile = attrs.field(factory=_TempResourceFile)
-    intrumental: _TempResourceFile = attrs.field(factory=_TempResourceFile)
+    instrumental: _TempResourceFile = attrs.field(factory=_TempResourceFile)
     vocals: _TempResourceFile = attrs.field(factory=_TempResourceFile)
-    instrumental_txt: _TempResourceFile = attrs.field(factory=_TempResourceFile)
 
     def __iter__(self) -> Iterator[_TempResourceFile]:
         return iter(
@@ -188,9 +187,8 @@ class _TempResourceFiles:
                 self.video,
                 self.cover,
                 self.background,
-                self.intrumental,
+                self.instrumental,
                 self.vocals,
-                self.instrumental_txt,
             )
         )
 
@@ -496,6 +494,10 @@ def _maybe_write_txt(ctx: _Context) -> None:
 def _write_headers(ctx: _Context) -> None:
     if path := ctx.out.audio.path():
         ctx.txt.headers.mp3 = path.name
+    if path := ctx.out.instrumental.path():
+        ctx.txt.headers.instrumental = path.name
+    if path := ctx.out.vocals.path():
+        ctx.txt.headers.vocals = path.name
     if path := ctx.out.video.path():
         ctx.txt.headers.video = path.name
     if path := ctx.out.cover.path():
@@ -616,40 +618,37 @@ def _maybe_generate_instrumental(ctx: _Context) -> None:
         return
 
     audio = ctx.out.audio.path()
-    ext = ctx.options.audio_options.format.value
-    print(ext)
-    # Initialize the Separator
-    separator = Separator(
-        output_format=ext.upper(), output_dir=ctx.locations.temp_path()
+    model = "mdx_extra"
+    demucs.separate.main(
+        [
+            "--mp3",
+            "--two-stems",
+            "vocals",
+            "-n",
+            model,
+            f"{audio}",
+            "-o",
+            f"{ctx.locations.tempdir.as_posix()}",
+        ]
     )
-    separator.load_model(model_filename="UVR-MDX-NET-Inst_HQ_3.onnx")
-    # Perform the separation
-    vocals_file, instrumental_file = separator.separate(audio)
     # Properly rename the files
     os.rename(
-        os.path.join(ctx.locations.temp_path(), instrumental_file),
-        f"{ctx.locations.temp_path()} [Instrumental].{ext}",
+        os.path.join(
+            ctx.locations.tempdir, model, ctx.locations.filename_stem, "no_vocals.mp3"
+        ),
+        f"{ctx.locations.temp_path()} [Instrumental].mp3",
     )
-    ctx.out.intrumental.new_path = Path(
-        f"{ctx.locations.temp_path()} [Instrumental].{ext}"
+    ctx.out.instrumental.new_path = Path(
+        f"{ctx.locations.temp_path()} [Instrumental].mp3"
     )
     os.rename(
-        os.path.join(ctx.locations.temp_path(), vocals_file),
-        f"{ctx.locations.temp_path()} [Vocals].{ext}",
+        os.path.join(
+            ctx.locations.tempdir, model, ctx.locations.filename_stem, "vocals.mp3"
+        ),
+        f"{ctx.locations.temp_path()} [Vocals].mp3",
     )
-    ctx.out.vocals.new_path = Path(f"{ctx.locations.temp_path()} [Vocals].{ext}")
-
-    if not (txt_options := ctx.options.txt_options):
-        return
-
-    instrumental_txt = Path(f"{ctx.locations.temp_path()} [Instrumental].txt")
-    ctx.txt.headers.title = ctx.txt.headers.title + " [Instrumental]"
-    ctx.txt.headers.mp3 = f"{ctx.locations.filename_stem} [Instrumental].{ext}"
-    ctx.txt.write_to_file(
-        instrumental_txt, txt_options.encoding.value, txt_options.newline.value
-    )
-    ctx.out.instrumental_txt.new_path = instrumental_txt
-    ctx.logger.info("Success! Created instrumental song txt.")
+    ctx.out.vocals.new_path = Path(f"{ctx.locations.temp_path()} [Vocals].mp3")
+    ctx.logger.info("Success! Separated audio file into vocals and instrumental.")
 
 
 def _write_ogg_tags(
