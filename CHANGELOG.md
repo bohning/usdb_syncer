@@ -1,3 +1,36 @@
+<!-- 0.7.0 -->
+
+# Changes
+
+## Fixes
+
+- Fixed xcb and wayland not being bundled, which prevented the app to run on Linux.
+
+## Features
+
+- USDB has expanded their song list to include the audio sample URL. By pressing space or
+  clicking the play icon you can play back this sample.
+  If the song is locally available, the local file is played instead
+  (starting at #PREVIEW if it is set).
+
+<!-- 0.6.0 -->
+
+# Changes
+
+## Fixes
+
+- Fixed the app hanging on startup for some users with large collections on macOS.
+- Added detection and handling of moved meta files on startup or song folder change.
+- Downloading artist or title changes for existing songs no longer causes an error.
+- Fixed special characters causing issues on macOS in certain cases.
+- Errors in background tasks are propagated to the main window instead of causing the
+  progress dialog to hang.
+
+## Features
+
+- USDB has expanded their song list to include year, genre and creator. These fields are
+  now populated without fully downloading a song, and respective filters were added.
+
 <!-- 0.5.0 -->
 
 # Changes
@@ -24,9 +57,10 @@
 ## Fixes
 
 - Don't fail download if mp3/m4a tags cannot be written.
-- Fix cover and background change detection.
+- Fixed cover and background change detection.
 - Let users resize all text-based columns, as width is not calculated correctly on Linux and macOS.
 - Enable running the app even without keyring backend available (usually the case on Linux).
+- Initializing the database with very many files works now.
 
 ## Features
 

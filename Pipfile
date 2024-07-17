@@ -18,15 +18,18 @@ mutagen = "*"
 pdfme = "*"
 pillow = ">=10"
 pyshorteners = "*"
-PySide6 = "==6.5.*"
+PySide6 = "==6.6.*"
 requests = "*"
 send2trash = "*"
 unidecode = "*"
 yt_dlp = "*"
 wheel = "*"
 # build
-pyinstaller = "*"
+# later versions do not bundle xcb and wayland correctly, so the app won't launch on Linux
+pyinstaller = "6.3.*"
 pyinstaller-hooks-contrib = "*"
+# setuptools 70+ requires a later pyinstaller version
+setuptools = "69.*"
 # specifically required for pyinstaller (Note: darwin -> macos)
 altgraph = "*"
 macholib = {version = "*", markers="sys_platform == 'darwin'"}

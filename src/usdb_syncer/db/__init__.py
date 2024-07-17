@@ -9,11 +9,15 @@ from pathlib import Path
 from typing import Generator, Iterable, Iterator, assert_never, cast
 
 import attrs
+from more_itertools import batched
 
 from usdb_syncer import SongId, SyncMetaId, errors, logger
 from usdb_syncer.utils import AppPaths
 
-SCHEMA_VERSION = 1
+SCHEMA_VERSION = 3
+
+# https://www.sqlite.org/limits.html
+_SQL_VARIABLES_LIMIT = 32766
 
 
 _logger = logger.get_logger(__file__)
@@ -77,15 +81,21 @@ def _validate_schema(connection: sqlite3.Connection) -> None:
         "SELECT 1 FROM sqlite_schema WHERE type = 'table' AND name = 'meta'"
     ).fetchone()
     if meta_table is None:
-        connection.executescript(_SqlCache.get("setup_script.sql", cache=False))
-        connection.execute(
-            "INSERT INTO meta (id, version, ctime) VALUES (1, ?, ?)",
-            (SCHEMA_VERSION, int(time.time() * 1_000_000)),
-        )
+        version = 0
     else:
-        row = connection.execute("SELECT version FROM meta").fetchone()
-        if not row or row[0] != SCHEMA_VERSION:
+        row = connection.execute("SELECT version FROM meta WHERE id = 1").fetchone()
+        if not row or row[0] > SCHEMA_VERSION:
             raise errors.UnknownSchemaError
+        version = row[0]
+    for ver in range(version + 1, SCHEMA_VERSION + 1):
+        connection.executescript(_SqlCache.get(f"{ver}_migration.sql", cache=False))
+        _logger.debug(f"Database migrated to version {ver}.")
+    if version < SCHEMA_VERSION:
+        connection.execute(
+            "INSERT INTO meta (id, version, ctime) VALUES (1, :version, :ctime) "
+            "ON CONFLICT (id) DO UPDATE SET version = :version",
+            {"version": SCHEMA_VERSION, "ctime": int(time.time() * 1_000_000)},
+        )
     connection.executescript(_SqlCache.get("setup_session_script.sql", cache=False))
 
 
@@ -129,6 +139,11 @@ class SongOrder(enum.Enum):
     """Attributes songs can be sorted by."""
 
     NONE = None
+    SAMPLE_URL = (
+        "CASE WHEN session_usdb_song.is_playing == true THEN 0"
+        " WHEN audio.sync_meta_id IS NOT NULL THEN 1"
+        " WHEN usdb_song.sample_url != '' THEN 2 ELSE 3 END"
+    )
     SONG_ID = "usdb_song.song_id"
     ARTIST = "usdb_song.artist"
     TITLE = "usdb_song.title"
@@ -148,7 +163,7 @@ class SongOrder(enum.Enum):
     COVER = "cover.sync_meta_id IS NULL"
     BACKGROUND = "background.sync_meta_id IS NULL"
     # max integer in SQLite
-    STATUS = "coalesce(usdb_song_status.status, sync_meta.mtime, 9223372036854775807)"
+    STATUS = "coalesce(session_usdb_song.status, sync_meta.mtime, 9223372036854775807)"
 
 
 @attrs.define
@@ -165,6 +180,9 @@ class SearchBuilder:
     statuses: list[DownloadStatus] = attrs.field(factory=list)
     languages: list[str] = attrs.field(factory=list)
     views: list[tuple[int, int | None]] = attrs.field(factory=list)
+    years: list[int] = attrs.field(factory=list)
+    genres: list[str] = attrs.field(factory=list)
+    creators: list[str] = attrs.field(factory=list)
     golden_notes: bool | None = None
     downloaded: bool | None = None
 
@@ -179,7 +197,8 @@ class SearchBuilder:
             (self.titles, "usdb_song.title"),
             (self.editions, "usdb_song.edition"),
             (self.ratings, "usdb_song.rating"),
-            (self.statuses, "usdb_song_status.status"),
+            (self.years, "usdb_song.year"),
+            (self.statuses, "session_usdb_song.status"),
         ):
             if vals:
                 yield _in_values_clause(col, cast(list, vals))
@@ -187,6 +206,16 @@ class SearchBuilder:
             yield (
                 "usdb_song.song_id IN (SELECT song_id FROM usdb_song_language WHERE"
                 f" {_in_values_clause('language', self.languages)})"
+            )
+        if self.genres:
+            yield (
+                "usdb_song.song_id IN (SELECT song_id FROM usdb_song_genre WHERE"
+                f" {_in_values_clause('genre', self.genres)})"
+            )
+        if self.creators:
+            yield (
+                "usdb_song.song_id IN (SELECT song_id FROM usdb_song_creator WHERE"
+                f" {_in_values_clause('creator', self.creators)})"
             )
         if self.views:
             yield _in_ranges_clause("usdb_song.views", self.views)
@@ -211,8 +240,11 @@ class SearchBuilder:
         yield from self.titles
         yield from self.editions
         yield from self.ratings
+        yield from self.years
         yield from self.statuses
         yield from self.languages
+        yield from self.genres
+        yield from self.creators
         for min_views, max_views in self.views:
             yield min_views
             if max_views is not None:
@@ -272,23 +304,20 @@ class UsdbSongParams:
     golden_notes: bool
     rating: int
     views: int
+    sample_url: str
     year: int | None
     genre: str
     creator: str
     tags: str
     status: DownloadStatus
+    is_playing: bool
 
 
 def upsert_usdb_song(params: UsdbSongParams) -> None:
     stmt = _SqlCache.get("upsert_usdb_song.sql")
     _DbState.connection().execute(stmt, params.__dict__)
-    if params.status is DownloadStatus.NONE:
-        _DbState.connection().execute(
-            "DELETE FROM usdb_song_status WHERE song_id = ?", (params.song_id,)
-        )
-    else:
-        stmt = _SqlCache.get("upsert_usdb_song_status.sql")
-        _DbState.connection().execute(stmt, params.__dict__)
+    stmt = _SqlCache.get("upsert_session_usdb_song.sql")
+    _DbState.connection().execute(stmt, params.__dict__)
 
 
 def upsert_usdb_songs(params: Iterable[UsdbSongParams]) -> None:
@@ -344,6 +373,28 @@ def upsert_usdb_songs_languages(params: list[tuple[SongId, Iterable[str]]]) -> N
     )
 
 
+def upsert_usdb_songs_genres(params: list[tuple[SongId, Iterable[str]]]) -> None:
+    _DbState.connection().execute(
+        f"DELETE FROM usdb_song_genre WHERE {_in_values_clause('song_id', params)}",
+        tuple(t[0] for t in params),
+    )
+    _DbState.connection().executemany(
+        "INSERT INTO usdb_song_genre (song_id, genre) VALUES (?, ?)",
+        ((song_id, lang) for song_id, langs in params for lang in langs),
+    )
+
+
+def upsert_usdb_songs_creators(params: list[tuple[SongId, Iterable[str]]]) -> None:
+    _DbState.connection().execute(
+        f"DELETE FROM usdb_song_creator WHERE {_in_values_clause('song_id', params)}",
+        tuple(t[0] for t in params),
+    )
+    _DbState.connection().executemany(
+        "INSERT INTO usdb_song_creator (song_id, creator) VALUES (?, ?)",
+        ((song_id, lang) for song_id, langs in params for lang in langs),
+    )
+
+
 def usdb_song_artists() -> list[tuple[str, int]]:
     stmt = "SELECT artist, COUNT(*) FROM usdb_song GROUP BY artist ORDER BY artist"
     return _DbState.connection().execute(stmt).fetchall()
@@ -367,6 +418,24 @@ def usdb_song_languages() -> list[tuple[str, int]]:
     return _DbState.connection().execute(stmt).fetchall()
 
 
+def usdb_song_years() -> list[tuple[int, int]]:
+    stmt = (
+        "SELECT year, COUNT(*) FROM usdb_song WHERE year IS NOT NULL "
+        "GROUP BY year ORDER BY year"
+    )
+    return _DbState.connection().execute(stmt).fetchall()
+
+
+def usdb_song_genres() -> list[tuple[str, int]]:
+    stmt = "SELECT genre, COUNT(*) FROM usdb_song_genre GROUP BY genre ORDER BY genre"
+    return _DbState.connection().execute(stmt).fetchall()
+
+
+def usdb_song_creators() -> list[tuple[str, int]]:
+    stmt = "SELECT creator, COUNT(*) FROM usdb_song_creator GROUP BY creator ORDER BY creator"
+    return _DbState.connection().execute(stmt).fetchall()
+
+
 def search_usdb_song_artists(search: str) -> set[str]:
     stmt = "SELECT artist FROM fts_usdb_song WHERE artist MATCH ?"
     rows = _DbState.connection().execute(stmt, (_fts5_phrases(search),)).fetchall()
@@ -387,6 +456,24 @@ def search_usdb_song_editions(search: str) -> set[str]:
 
 def search_usdb_song_languages(search: str) -> set[str]:
     stmt = "SELECT language FROM fts_usdb_song WHERE language MATCH ?"
+    rows = _DbState.connection().execute(stmt, (_fts5_phrases(search),)).fetchall()
+    return set(row[0] for row in rows)
+
+
+def search_usdb_song_years(search: str) -> set[int]:
+    stmt = "SELECT year FROM fts_usdb_song WHERE year MATCH ?"
+    rows = _DbState.connection().execute(stmt, (_fts5_phrases(search),)).fetchall()
+    return set(row[0] for row in rows)
+
+
+def search_usdb_song_genres(search: str) -> set[str]:
+    stmt = "SELECT genre FROM fts_usdb_song WHERE genre MATCH ?"
+    rows = _DbState.connection().execute(stmt, (_fts5_phrases(search),)).fetchall()
+    return set(row[0] for row in rows)
+
+
+def search_usdb_song_creators(search: str) -> set[str]:
+    stmt = "SELECT creator FROM fts_usdb_song WHERE creator MATCH ?"
     rows = _DbState.connection().execute(stmt, (_fts5_phrases(search),)).fetchall()
     return set(row[0] for row in rows)
 
@@ -442,10 +529,11 @@ def delete_sync_meta(sync_meta_id: SyncMetaId) -> None:
 
 
 def delete_sync_metas(ids: tuple[SyncMetaId, ...]) -> None:
-    id_str = ", ".join("?" for _ in range(len(ids)))
-    _DbState.connection().execute(
-        f"DELETE FROM sync_meta WHERE sync_meta_id IN ({id_str})", ids
-    )
+    for batch in batched(ids, _SQL_VARIABLES_LIMIT):
+        id_str = ", ".join("?" for _ in range(len(batch)))
+        _DbState.connection().execute(
+            f"DELETE FROM sync_meta WHERE sync_meta_id IN ({id_str})", batch
+        )
 
 
 ### ResourceFile
@@ -476,11 +564,13 @@ class ResourceFileParams:
 
 
 def delete_resource_files(ids: Iterable[tuple[SyncMetaId, ResourceFileKind]]) -> None:
-    params = tuple(param for i, k in ids for param in (int(i), k.value))
-    tuples = ", ".join("(?, ?)" for _ in range(len(params) // 2))
-    _DbState.connection().execute(
-        f"DELETE FROM resource_file WHERE (sync_meta_id, kind) IN ({tuples})", params
-    )
+    for batch in batched(ids, _SQL_VARIABLES_LIMIT // 2):
+        params = tuple(param for i, k in batch for param in (int(i), k.value))
+        tuples = ", ".join("(?, ?)" for _ in range(len(params) // 2))
+        _DbState.connection().execute(
+            f"DELETE FROM resource_file WHERE (sync_meta_id, kind) IN ({tuples})",
+            params,
+        )
 
 
 def upsert_resource_files(params: Iterable[ResourceFileParams]) -> None:

@@ -12,10 +12,14 @@ from usdb_syncer.usdb_song import UsdbSong
 
 def test_persisting_usdb_song() -> None:
     song = UsdbSong(
+        sample_url="",
         song_id=SongId(123),
         artist="Foo",
         title="Bar",
+        genre="Pop",
+        year=1999,
         language="Esperanto",
+        creator="unknown",
         edition="",
         golden_notes=True,
         rating=0,

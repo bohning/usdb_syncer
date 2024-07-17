@@ -149,7 +149,8 @@ def _display_data(song: UsdbSong, column: int) -> str | None:
                 else str(song.status)
             )
         case (
-            Column.TXT
+            Column.SAMPLE_URL
+            | Column.TXT
             | Column.AUDIO
             | Column.VIDEO
             | Column.COVER
@@ -162,8 +163,6 @@ def _display_data(song: UsdbSong, column: int) -> str | None:
 
 
 def _decoration_data(song: UsdbSong, column: int) -> QIcon | None:
-    if not song.sync_meta:
-        return None
     col = Column(column)
     match col:
         case (
@@ -182,18 +181,37 @@ def _decoration_data(song: UsdbSong, column: int) -> QIcon | None:
             | Column.TAGS
         ):
             return None
+        case Column.SAMPLE_URL:
+            if song.sync_meta and song.sync_meta.audio:
+                suffix = "-local"
+            elif song.sample_url:
+                suffix = ""
+            else:
+                return None
+            action = "pause" if song.is_playing else "play"
+            return icon(f":/icons/control-{action}{suffix}.png")
         case Column.TXT:
-            return optional_check_icon(bool(song.sync_meta.txt))
+            return icon(":/icons/tick.png", bool(song.sync_meta and song.sync_meta.txt))
         case Column.AUDIO:
-            return optional_check_icon(bool(song.sync_meta.audio))
+            return icon(
+                ":/icons/tick.png", bool(song.sync_meta and song.sync_meta.audio)
+            )
         case Column.VIDEO:
-            return optional_check_icon(bool(song.sync_meta.video))
+            return icon(
+                ":/icons/tick.png", bool(song.sync_meta and song.sync_meta.video)
+            )
         case Column.COVER:
-            return optional_check_icon(bool(song.sync_meta.cover))
+            return icon(
+                ":/icons/tick.png", bool(song.sync_meta and song.sync_meta.cover)
+            )
         case Column.BACKGROUND:
-            return optional_check_icon(bool(song.sync_meta.background))
+            return icon(
+                ":/icons/tick.png", bool(song.sync_meta and song.sync_meta.background)
+            )
         case Column.PINNED:
-            return pinned_icon(song.sync_meta.pinned)
+            return icon(
+                ":/icons/pin.png", bool(song.sync_meta and song.sync_meta.pinned)
+            )
         case _ as unreachable:
             assert_never(unreachable)
 
@@ -211,10 +229,5 @@ def yes_no_str(yes: bool) -> str:
 # in a global, but we also don't want to keep recreating it.
 # So we store them in these convenience functions.
 @cache
-def optional_check_icon(yes: bool) -> QIcon | None:
-    return QIcon(":/icons/tick.png") if yes else None
-
-
-@cache
-def pinned_icon(yes: bool) -> QIcon | None:
-    return QIcon(":/icons/pin.png") if yes else None
+def icon(resource: str, yes: bool = True) -> QIcon | None:
+    return QIcon(resource) if yes else None

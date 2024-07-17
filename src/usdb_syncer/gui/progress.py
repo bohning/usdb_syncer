@@ -18,18 +18,26 @@ def run_with_progress(label: str, task: Callable[[QtWidgets.QProgressDialog], T]
     )
     dialog.setCancelButton(None)  # type: ignore
     dialog.setWindowModality(QtCore.Qt.WindowModality.ApplicationModal)
+    dialog.setWindowTitle("USDB Syncer")
     # show immediately
     dialog.setMinimumDuration(0)
     dialog.setValue(1)
     out: T | None = None
+    exception: Exception | None = None
     finished = False
 
     def wrapped_task() -> None:
-        nonlocal out, finished
-        out = task(dialog)
+        nonlocal out, exception, finished
+        try:
+            out = task(dialog)
+        except Exception as exc:  # pylint: disable=broad-exception-caught
+            exception = exc
         finished = True
 
     QtCore.QThreadPool.globalInstance().start(wrapped_task)
     while not finished:
         QtCore.QCoreApplication.processEvents()
+    dialog.close()
+    if exception:
+        raise cast(Exception, exception)  # pylint: disable=raising-bad-type
     return cast(T, out)

@@ -15,7 +15,8 @@ from usdb_syncer import db
 class Column(IntEnum):
     """Table columns."""
 
-    SONG_ID = 0
+    SAMPLE_URL = 0
+    SONG_ID = enum.auto()
     ARTIST = enum.auto()
     TITLE = enum.auto()
     LANGUAGE = enum.auto()
@@ -56,7 +57,8 @@ class Column(IntEnum):
             case Column.DOWNLOAD_STATUS:
                 return "Status"
             case (
-                Column.SONG_ID
+                Column.SAMPLE_URL
+                | Column.SONG_ID
                 | Column.GOLDEN_NOTES
                 | Column.RATING
                 | Column.VIEWS
@@ -73,8 +75,10 @@ class Column(IntEnum):
 
     # https://github.com/PyCQA/pylint/issues/7857
     @cache  # pylint: disable=method-cache-max-size-none
-    def decoration_data(self) -> QIcon:
+    def decoration_data(self) -> QIcon | None:
         match self:
+            case Column.SAMPLE_URL:
+                return QIcon(":/icons/sample.png")
             case Column.SONG_ID:
                 return QIcon(":/icons/id.png")
             case Column.ARTIST:
@@ -135,7 +139,8 @@ class Column(IntEnum):
             ):
                 return None
             case (
-                Column.TXT
+                Column.SAMPLE_URL
+                | Column.TXT
                 | Column.AUDIO
                 | Column.VIDEO
                 | Column.COVER
@@ -148,6 +153,8 @@ class Column(IntEnum):
 
     def song_order(self) -> db.SongOrder:
         match self:
+            case Column.SAMPLE_URL:
+                return db.SongOrder.SAMPLE_URL
             case Column.SONG_ID:
                 return db.SongOrder.SONG_ID
             case Column.ARTIST:

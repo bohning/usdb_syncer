@@ -197,7 +197,17 @@ def add_to_system_path(path: str) -> None:
 
 
 def normalize(text: str) -> str:
+    """Return the Unicode NFC form of the string."""
     return unicodedata.normalize("NFC", text)
+
+
+def compare_unicode_paths(lhs: Path, rhs: Path) -> bool:
+    """Checks two paths for equality, taking into account implicit Unicode normalization
+    on macOS.
+    """
+    if sys.platform == "darwin":
+        return normalize(str(lhs)) == normalize(str(rhs))
+    return lhs == rhs
 
 
 def resource_file_ending(name: str) -> str:

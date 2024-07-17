@@ -10,10 +10,14 @@ from usdb_syncer.usdb_song import UsdbSong, UsdbSongEncoder
 
 def test_encoding_and_decoding_song_meta() -> None:
     song = UsdbSong(
+        sample_url="",
         song_id=SongId(123),
         artist="Foo",
         title="Bar",
+        genre="Pop",
+        year=1999,
         language="Esperanto",
+        creator="unknown",
         edition="",
         golden_notes=True,
         rating=0,

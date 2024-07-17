@@ -28,13 +28,18 @@ from usdb_syncer.utils import extract_youtube_id, normalize
 _logger: logging.Logger = logging.getLogger(__file__)
 
 SONG_LIST_ROW_REGEX = re.compile(
-    r'<td onclick="show_detail\((\d+)\)">(.*)</td>\n'
-    r'<td onclick="show_detail\(\d+\)"><a href=.*>(.*)</td>\n'
-    r'<td onclick="show_detail\(\d+\)">(.*)</td>\n'
-    r'<td onclick="show_detail\(\d+\)">(.*)</td>\n'
-    r'<td onclick="show_detail\(\d+\)">(.*)</td>\n'
-    r'<td onclick="show_detail\(\d+\)">(.*)</td>\n'
-    r'<td onclick="show_detail\(\d+\)">(.*)</td>'
+    r'<td(?:.*?<source src="(?P<sample_url>.*?)".*?)?></td>'
+    r'<td onclick="show_detail\((?P<song_id>\d+)\)".*?><img src="(?P<cover_url>.*?)".*?></td>'
+    r'<td onclick="show_detail\(\d+\)">(?P<artist>.*?)</td>\n'
+    r'<td onclick="show_detail\(\d+\)"><a href=.*?>(?P<title>.*?)</td>\n'
+    r'<td onclick="show_detail\(\d+\)">(?P<genre>.*?)</td>\n'
+    r'<td onclick="show_detail\(\d+\)">(?P<year>.*?)</td>\n'
+    r'<td onclick="show_detail\(\d+\)">(?P<edition>.*?)</td>\n'
+    r'<td onclick="show_detail\(\d+\)">(?P<golden_notes>.*?)</td>\n'
+    r'<td onclick="show_detail\(\d+\)">(?P<language>.*?)</td>\n'
+    r'<td onclick="show_detail\(\d+\)">(?P<creator>.*?)</td>\n'
+    r'<td onclick="show_detail\(\d+\)">(?P<rating>.*?)</td>\n'
+    r'<td onclick="show_detail\(\d+\)">(?P<views>.*?)</td>'
 )
 WELCOME_REGEX = re.compile(
     r"<td class='row3' colspan='2'>\s*<span class='gen'>([^<]+) <b>([^<]+)</b>"
@@ -162,6 +167,10 @@ class SongDetails:
     artist: str
     title: str
     cover_url: str | None
+    language: str
+    year: int | None
+    genre: str
+    edition: str
     bpm: float
     gap: float
     golden_notes: bool
@@ -321,7 +330,12 @@ def get_usdb_available_songs(
         content_filter: filters response (e.g. {'artist': 'The Beatles'})
     """
     available_songs: list[UsdbSong] = []
-    payload = {"order": "id", "ud": "desc", "limit": str(Usdb.MAX_SONGS_PER_PAGE)}
+    payload = {
+        "order": "id",
+        "ud": "desc",
+        "limit": str(Usdb.MAX_SONGS_PER_PAGE),
+        "details": "1",
+    }
     payload.update(content_filter or {})
     for start in range(0, Usdb.MAX_SONG_ID, Usdb.MAX_SONGS_PER_PAGE):
         payload["start"] = str(start)
@@ -333,19 +347,9 @@ def get_usdb_available_songs(
             session=session,
         )
         songs = list(
-            UsdbSong.from_html(
-                _usdb_strings_from_html(html),
-                song_id=match[1],
-                artist=match[2],
-                title=match[3],
-                edition=match[4],
-                golden_notes=match[5],
-                language=match[6],
-                rating=match[7],
-                views=match[8],
-            )
-            for match in SONG_LIST_ROW_REGEX.finditer(html)
-            if SongId.parse(match[1]) > max_skip_id
+            song
+            for song in _parse_songs_from_songlist(html)
+            if song.song_id > max_skip_id
         )
         available_songs.extend(songs)
 
@@ -354,6 +358,27 @@ def get_usdb_available_songs(
 
     _logger.info(f"Fetched {len(available_songs)} new song(s) from USDB.")
     return available_songs
+
+
+def _parse_songs_from_songlist(html: str) -> Iterator[UsdbSong]:
+    return (
+        UsdbSong.from_html(
+            _usdb_strings_from_html(html),
+            sample_url=match["sample_url"] or "",
+            song_id=match["song_id"],
+            artist=match["artist"],
+            title=match["title"],
+            genre=match["genre"],
+            year=match["year"],
+            edition=match["edition"],
+            golden_notes=match["golden_notes"],
+            language=match["language"],
+            creator=match["creator"],
+            rating=match["rating"],
+            views=match["views"],
+        )
+        for match in SONG_LIST_ROW_REGEX.finditer(html)
+    )
 
 
 def _parse_details_table(
@@ -390,11 +415,18 @@ def _parse_details_table(
     if "nocover" in cover_url:
         logger.debug("No USDB cover. Consider adding one!")
 
+    year_str = _find_text_after(details_table, usdb_strings.SONG_YEAR)
+    year = int(year_str) if len(year_str) == 4 and year_str.isdigit() else None
+
     return SongDetails(
         song_id=song_id,
         artist=details_table.find_next("td").text,  # type: ignore
         title=details_table.find_next("td").find_next("td").text,  # type: ignore
         cover_url=None if "nocover" in cover_url else Usdb.BASE_URL + cover_url,
+        language=_find_text_after(details_table, usdb_strings.SONG_LANGUAGE),
+        year=year,
+        genre=_find_text_after(details_table, "Genre"),
+        edition=_find_text_after(details_table, "Edition"),
         bpm=float(_find_text_after(details_table, "BPM").replace(",", ".")),
         gap=float(_find_text_after(details_table, "GAP").replace(",", ".") or 0),
         golden_notes=_find_text_after(details_table, usdb_strings.GOLDEN_NOTES)

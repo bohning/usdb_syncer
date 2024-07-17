@@ -25,7 +25,7 @@ ignore-paths = [
 load-plugins = "pylint.extensions.mccabe"
 
 [tool.pylint.basic]
-good-names = ["mw", "p1", "p2", "closeEvent"]
+good-names = ["mw", "p1", "p2", "closeEvent", "customEvent"]
 
 [tool.pylint.messages_control]
 extension-pkg-whitelist = ["PySide6"]

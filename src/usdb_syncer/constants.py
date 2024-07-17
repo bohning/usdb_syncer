@@ -14,6 +14,8 @@ class UsdbStrings:
     """Relevant strings from USDB"""
 
     WELCOME: str
+    SONG_LANGUAGE: str
+    SONG_YEAR: str
     SONG_EDITED_BY: str
     SONG_RATING: str
     GOLDEN_NOTES: str
@@ -33,6 +35,8 @@ class UsdbStringsEnglish(UsdbStrings):
     """Relevant strings from USDB"""
 
     WELCOME = "Welcome"
+    SONG_LANGUAGE = "Language"
+    SONG_YEAR = "Year"
     SONG_EDITED_BY = "Song edited by:"
     SONG_RATING = "Rating"
     GOLDEN_NOTES = "Golden Notes"
@@ -48,6 +52,8 @@ class UsdbStringsGerman(UsdbStrings):
     """Relevant strings from USDB"""
 
     WELCOME = "Willkommen"
+    SONG_LANGUAGE = "Sprache"
+    SONG_YEAR = "Jahr"
     SONG_EDITED_BY = "Song editiert von:"
     SONG_RATING = "Bewertung"
     GOLDEN_NOTES = "Goldene Noten"
@@ -63,6 +69,8 @@ class UsdbStringsFrench(UsdbStrings):
     """Relevant strings from USDB"""
 
     WELCOME = "Bienvenue"
+    SONG_LANGUAGE = "Langue"
+    SONG_YEAR = "An"
     SONG_EDITED_BY = "Chanson modifiée par:"
     SONG_RATING = "Classement"
     GOLDEN_NOTES = "Notes en or"

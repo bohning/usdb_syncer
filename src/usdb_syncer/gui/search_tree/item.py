@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import enum
 from functools import cache
-from typing import Any, Iterable, assert_never
+from typing import Any, Generic, Iterable, TypeVar, assert_never
 
 import attrs
 from PySide6.QtCore import Qt
@@ -19,15 +19,18 @@ class SongMatch:
     def build_search(self, search: db.SearchBuilder) -> None:
         raise NotImplementedError
 
-    def is_accepted(self, _matches: set[str]) -> bool:
+    def is_accepted(self, _matches: set[str | int]) -> bool:
         return True
 
 
+T = TypeVar("T")
+
+
 @attrs.define
-class SongValueMatch(SongMatch):
+class SongValueMatch(SongMatch, Generic[T]):
     """str that can be matched against a specific attribute of a song."""
 
-    val: str
+    val: T
     count: int
 
     def __str__(self) -> str:
@@ -36,7 +39,7 @@ class SongValueMatch(SongMatch):
     def build_search(self, search: db.SearchBuilder) -> None:
         raise NotImplementedError
 
-    def is_accepted(self, matches: set[str]) -> bool:
+    def is_accepted(self, matches: set[str | int]) -> bool:
         return self.val in matches
 
 
@@ -68,6 +71,27 @@ class SongLanguageMatch(SongValueMatch):
         search.languages.append(self.val)
 
 
+class SongYearMatch(SongValueMatch):
+    """str that can be matched against a song's year."""
+
+    def build_search(self, search: db.SearchBuilder) -> None:
+        search.years.append(self.val)
+
+
+class SongGenreMatch(SongValueMatch):
+    """str that can be matched against a song's genre."""
+
+    def build_search(self, search: db.SearchBuilder) -> None:
+        search.genres.append(self.val)
+
+
+class SongCreatorMatch(SongValueMatch):
+    """str that can be matched against a song's creator."""
+
+    def build_search(self, search: db.SearchBuilder) -> None:
+        search.creators.append(self.val)
+
+
 @attrs.define(kw_only=True)
 class TreeItem:
     """A row in the tree."""
@@ -88,7 +112,7 @@ class TreeItem:
     def flags(self) -> Qt.ItemFlag:
         return Qt.ItemFlag.ItemIsEnabled
 
-    def is_accepted(self, _matches: dict[Filter, set[str]]) -> bool:
+    def is_accepted(self, _matches: dict[Filter, set[str | int]]) -> bool:
         return True
 
 
@@ -188,7 +212,7 @@ class VariantItem(TreeItem):
             self.row_in_parent, not self.checked, keep_siblings
         )
 
-    def is_accepted(self, matches: dict[Filter, set[str]]) -> bool:
+    def is_accepted(self, matches: dict[Filter, set[str | int]]) -> bool:
         if (parent_matches := matches.get(self.parent.data)) is None:
             return True
         return self.data.is_accepted(parent_matches)
@@ -205,6 +229,9 @@ class Filter(enum.Enum):
     GOLDEN_NOTES = enum.auto()
     RATING = enum.auto()
     VIEWS = enum.auto()
+    YEAR = enum.auto()
+    GENRE = enum.auto()
+    CREATOR = enum.auto()
 
     def __str__(self) -> str:
         match self:
@@ -224,6 +251,12 @@ class Filter(enum.Enum):
                 return "Rating"
             case Filter.VIEWS:
                 return "Views"
+            case Filter.YEAR:
+                return "Year"
+            case Filter.GENRE:
+                return "Genre"
+            case Filter.CREATOR:
+                return "Creator"
             case _ as unreachable:
                 assert_never(unreachable)
 
@@ -245,6 +278,12 @@ class Filter(enum.Enum):
                 return RatingVariant
             case Filter.VIEWS:
                 return ViewsVariant
+            case Filter.YEAR:
+                return (SongYearMatch(v, c) for v, c in db.usdb_song_years())
+            case Filter.GENRE:
+                return (SongGenreMatch(v, c) for v, c in db.usdb_song_genres())
+            case Filter.CREATOR:
+                return (SongCreatorMatch(v, c) for v, c in db.usdb_song_creators())
             case _ as unreachable:
                 assert_never(unreachable)
 
@@ -268,6 +307,12 @@ class Filter(enum.Enum):
                 return QIcon(":/icons/rating.png")
             case Filter.VIEWS:
                 return QIcon(":/icons/views.png")
+            case Filter.YEAR:
+                return QIcon(":/icons/calendar.png")
+            case Filter.GENRE:
+                return QIcon(":/icons/spectrum-absorption.png")
+            case Filter.CREATOR:
+                return QIcon(":/icons/quill.png")
             case _ as unreachable:
                 assert_never(unreachable)
 

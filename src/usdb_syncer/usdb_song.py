@@ -20,19 +20,21 @@ class UsdbSong:
     song_id: SongId
     artist: str
     title: str
+    genre: str
+    year: int | None = None
     language: str
+    creator: str
     edition: str
     golden_notes: bool
     rating: int
     views: int
+    sample_url: str
     # not in USDB song list
-    year: int | None = None
-    genre: str = ""
-    creator: str = ""
     tags: str = ""
     # internal
     sync_meta: SyncMeta | None = None
     status: DownloadStatus = DownloadStatus.NONE
+    is_playing: bool = False
 
     @classmethod
     def from_json(cls, dct: dict[str, Any]) -> UsdbSong:
@@ -47,26 +49,34 @@ class UsdbSong:
         song_id: str,
         artist: str,
         title: str,
+        genre: str,
+        year: str,
         language: str,
+        creator: str,
         edition: str,
         golden_notes: str,
         rating: str,
         views: str,
+        sample_url: str,
     ) -> UsdbSong:
         return cls(
             song_id=SongId.parse(song_id),
             artist=artist,
             title=title,
+            genre=genre,
+            year=int(year) if len(year) == 4 and year.isdigit() else None,
             language=language,
+            creator=creator,
             edition=edition,
             golden_notes=golden_notes == strings.YES,
             rating=rating.count("star.png"),
             views=int(views),
+            sample_url=sample_url,
         )
 
     @classmethod
     def from_db_row(cls, song_id: SongId, row: tuple) -> UsdbSong:
-        assert len(row) == 34
+        assert len(row) == 36
         return cls(
             song_id=song_id,
             artist=row[1],
@@ -76,12 +86,14 @@ class UsdbSong:
             golden_notes=bool(row[5]),  # else would be 0/1 instead of False/True
             rating=row[6],
             views=row[7],
-            year=row[8],
-            genre=row[9],
-            creator=row[10],
-            tags=row[11],
-            status=DownloadStatus(row[12]),
-            sync_meta=None if row[13] is None else SyncMeta.from_db_row(row[13:]),
+            sample_url=row[8],
+            year=row[9],
+            genre=row[10],
+            creator=row[11],
+            tags=row[12],
+            status=DownloadStatus(row[13]),
+            is_playing=bool(row[14]),
+            sync_meta=None if row[15] is None else SyncMeta.from_db_row(row[15:]),
         )
 
     @classmethod
@@ -112,6 +124,8 @@ class UsdbSong:
     def upsert(self) -> None:
         db.upsert_usdb_song(self.db_params())
         db.upsert_usdb_songs_languages([(self.song_id, self.languages())])
+        db.upsert_usdb_songs_genres([(self.song_id, self.genres())])
+        db.upsert_usdb_songs_creators([(self.song_id, self.creators())])
         if self.sync_meta:
             self.sync_meta.upsert()
         _UsdbSongCache.remove(self.song_id)
@@ -120,6 +134,8 @@ class UsdbSong:
     def upsert_many(cls, songs: list[UsdbSong]) -> None:
         db.upsert_usdb_songs(song.db_params() for song in songs)
         db.upsert_usdb_songs_languages([(s.song_id, s.languages()) for s in songs])
+        db.upsert_usdb_songs_genres([(s.song_id, s.genres()) for s in songs])
+        db.upsert_usdb_songs_creators([(s.song_id, s.creators()) for s in songs])
         SyncMeta.upsert_many([song.sync_meta for song in songs if song.sync_meta])
         for song in songs:
             _UsdbSongCache.remove(song.song_id)
@@ -134,11 +150,13 @@ class UsdbSong:
             golden_notes=self.golden_notes,
             rating=self.rating,
             views=self.views,
+            sample_url=self.sample_url,
             year=self.year,
             genre=self.genre,
             creator=self.creator,
             tags=self.tags,
             status=self.status,
+            is_playing=self.is_playing,
         )
 
     def is_local(self) -> bool:
@@ -149,6 +167,12 @@ class UsdbSong:
 
     def languages(self) -> Iterable[str]:
         return (l for lang in self.language.split(",") if (l := lang.strip()))
+
+    def genres(self) -> Iterable[str]:
+        return (l for lang in self.genre.split(",") if (l := lang.strip()))
+
+    def creators(self) -> Iterable[str]:
+        return (l for lang in self.creator.split(",") if (l := lang.strip()))
 
     @classmethod
     def clear_cache(cls) -> None:
@@ -161,7 +185,9 @@ class UsdbSongEncoder(JSONEncoder):
     def default(self, o: Any) -> Any:
         if isinstance(o, UsdbSong):
             fields = attrs.fields(UsdbSong)
-            filt = attrs.filters.exclude(fields.status, fields.sync_meta)
+            filt = attrs.filters.exclude(
+                fields.status, fields.sync_meta, fields.is_playing
+            )
             dct = attrs.asdict(o, recurse=False, filter=filt)
             return dct
         return super().default(o)

@@ -1,0 +1,230 @@
+<html><head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" utf-8"="">
+<link rel="SHORTCUT ICON" href="https://usdb.animux.de/images/browser_icon.ico">
+<link title="USDB" href="http://usdb.animux.de/scripts/opensearch_desc.xml" type="application/opensearchdescription+xml" rel="search">
+<link rel="stylesheet" href="song_list_files/css.css" type="text/css">
+<link rel="stylesheet" href="song_list_files/niksac.css" type="text/css">
+<link rel="stylesheet" href="song_list_files/l19g2004.css" type="text/css">
+<link rel="alternate" type="application/rss+xml" title="US New Songs Top 10" href="https://usdb.animux.de/rss/rss_new_top10.php">
+<link rel="alternate" type="application/rss+xml" title="US Downloads Top 10" href="https://usdb.animux.de/rss/rss_downloads_top10.php">
+
+<title>USDB - Your Search Results</title>
+</head>
+<body onload='getCookieCounter("Songs selected")'>
+
+
+<center></center><table width="100%" cellspacing="0" cellpadding="0" border="0">
+	<tbody><tr>
+
+			<td width="20%" valign="top">
+    <table class="tablebg" width="100%" cellspacing="1">
+
+		<tbody><tr><th><span class="syntaxcomment style3"><b>Options</b></span></th></tr>
+			<tr>
+
+				<td class="row1"><b class="nav">Options</b>
+
+			<ul class="nav" style="margin: 0px; padding: 0px; list-style-type: none; line-height: 175%;">
+
+	
+			<li>» <a href="https://usdb.animux.de/?link=home" class="Linkz">Home</a></li>
+			<li>» <a href="https://usdb.animux.de/?link=browse" class="Linkz">Browse Songs</a></li>
+			<li>» <a href="https://usdb.animux.de/?link=singstar_editions" class="Linkz">Singstar Editions</a></li>
+			<li>» <a href="https://usdb.animux.de/?link=addsongs" class="Linkz">Add Songs</a></li>
+			<li>» <a href="https://usdb.animux.de/?link=calendar" class="Linkz">Song Calendar</a></li>
+			<li>» <a href="https://usdb.animux.de/?link=pm" class="Linkz">Private Messages</a></li>
+			<li>» <a href="https://usdb.animux.de/?link=profil" class="Linkz">Profile</a></li>
+			<li>» <a href="https://usdb.animux.de/?link=profil&amp;edit=Einstellungen" class="Linkz">Settings</a></li>
+			<li>» <a href="https://usdb.animux.de/?link=userlist" class="Linkz">Userlist</a></li>
+			<li>» <a href="https://usdb.animux.de/?link=logout" class="Linkz"><font color="red">Logout</font></a></li>
+			<li>» <a href="https://usdb.animux.de/?link=feature_request" class="Linkz">Feature- &amp; Buglist</a></li>
+			<li>» <a href="https://usdb.animux.de/?link=say_smthng" class="Linkz">Say Something</a></li>
+			<li>» <a href="https://usdb.animux.de/?link=wishlist" class="Linkz">Wishlist</a></li>
+			<li>» <a href="https://usdb.animux.de/?link=editsongs" class="Linkz">Edit Songs</a></li>
+			<li>» <a href="https://usdb.animux.de/?link=recheck" class="Linkz">Recheck Songs</a></li>
+			<li>» <a href="https://usdb.animux.de/?link=deletesongs" class="Linkz">Delete Songs</a></li>
+			<li>» <a href="https://usdb.animux.de/?link=verify" class="Linkz">Verify New Songs</a></li></ul>
+			</td>
+		</tr>
+	</tbody></table>
+</td><td><img src="song_list_files/spacer.gif" width="4" alt=""></td>
+
+<td width="80%" valign="top">
+
+<script src="song_list_files/ziparchiv.js" type="text/javascript"></script>
+
+
+
+<center></center><table class="tablebg" width="100%" cellspacing="1" id="tablebg">
+
+	<tbody><tr>
+		<th colspan="2" valign="middle"><span class="syntaxcomment style3"><b>Your Search Results</b></span></th>
+	</tr>
+
+	<tr>
+		<td class='row3' colspan='2'>
+		<span class='gen'>Welcome <b>bohning</b>, you've got <a href="https://usdb.animux.de/?link=pm"><span class="style_pm">no</span> messages</a><br><br></span>
+			<span class="gen">There are  no new  Songs, <a href="https://usdb.animux.de/?link=verify">Check?</a></span><br>
+			<span class="gen">There are  no new  Songs, <a href="https://usdb.animux.de/?link=recheck">Recheck?</a></span>
+		</td>
+	</tr>
+
+<tr><td class="row1">
+	
+<script type="text/javascript">
+function vorladen()
+{
+    var Bild  = new Image();
+    Bild.src  = "images/rss-icon_over.png";
+    var Bild2 = new Image();
+    Bild2.src = "images/rss-icon.png";
+}
+function changepage(start)
+{
+document.getElementById('form_start').value = start; //Funktion setzt den Wert Start im Formular unten (hidden) auf parameter und
+document.getElementById('oaform').submit();          //sendet das Ding ab
+}
+
+function show_detail(id) //tabellenzeilen haben onclick das hier und geben id mit (link)
+{
+window.location.href = '?link=detail&id='+id;
+}
+</script>
+
+<script type="text/javascript">
+function hide_play(evt) {
+  var audio = evt.currentTarget;
+  var myId = audio.id.substring(6);
+  document.getElementById('play' + myId).style.display = 'none';
+  document.getElementById('pause' + myId).style.display = 'inline-block';
+
+  audio.removeEventListener('playing', hide_play);
+  audio.addEventListener('pause', show_play, false);
+}
+function show_play(evt) {
+  var audio = evt.currentTarget;
+  var myId = audio.id.substring(6);
+  document.getElementById('pause' + myId).style.display = 'none';
+  document.getElementById('play' + myId).style.display = 'inline-block';
+
+  audio.removeEventListener('pause', show_play);
+}
+function sample_play(id) {
+  var audios = document.getElementsByTagName('audio');
+  var audioList = Array.prototype.slice.call(audios);
+  audioList.forEach(function(audio) {
+    if (!audio.paused) audio.pause();
+  });
+
+  var audio = document.getElementById('sample' + id);
+  audio.addEventListener('playing', hide_play, false);
+  audio.play();
+}
+function sample_pause(id) {
+  document.getElementById('sample' + id).pause();
+}
+</script>
+  <br>There are  26463  results on  8821 page(s)<br><br>
+
+<table border="0" width="100%">
+<tbody><tr class="list_head"><td>Sample</td><td>Cover</td><td><a href="https://usdb.animux.de/?link=list&amp;start=0&amp;order=interpret" id="list_artist">Artist</a></td><td><a href="https://usdb.animux.de/?link=list&amp;start=0&amp;order=title" id="list_title">Title</a></td><td><a href="https://usdb.animux.de/?link=list&amp;start=0&amp;order=genre" id="list_genre">Genre</a></td><td><a href="https://usdb.animux.de/?link=list&amp;start=0&amp;order=year" id="list_year">Year</a></td><td><a href="https://usdb.animux.de/?link=list&amp;start=0&amp;order=edition" id="list_edition">Edition</a></td><td><a href="https://usdb.animux.de/?link=list&amp;start=0&amp;order=golden" id="list_gnotes">Golden Notes</a></td><td><a href="https://usdb.animux.de/?link=list&amp;start=0&amp;order=language" id="list_language">Language</a></td><td><a href="https://usdb.animux.de/?link=list&amp;start=0&amp;order=autor" id="list_autor">Creator</a></td><td><a href="https://usdb.animux.de/?link=list&amp;start=0&amp;order=rating" id="list_rating">Rating</a></td><td><a href="https://usdb.animux.de/?link=list&amp;start=0&amp;order=views" id="list_views">Views</a></td><td>&nbsp;</td></tr><tr class="list_tr2" onmouseover="this.className='list_hover'" onmouseout="this.className='list_tr2'"><td></td><td onclick="show_detail(29199)" style="text-align: center"><img src="song_list_files/29199.jpg" height="40px" width="40px"></td><td onclick="show_detail(29199)">AUT of ORDA</td>
+<td onclick="show_detail(29199)"><a href="https://usdb.animux.de/?link=detail&amp;id=29199">hoch gwimmas (n)imma</td>
+<td onclick="show_detail(29199)">Austropop</td>
+<td onclick="show_detail(29199)">2023</td>
+<td onclick="show_detail(29199)"></td>
+<td onclick="show_detail(29199)">No</td>
+<td onclick="show_detail(29199)">German</td>
+<td onclick="show_detail(29199)">ultron</td>
+<td onclick="show_detail(29199)"><img src="song_list_files/star2.png"> <img src="song_list_files/star2.png"> <img src="song_list_files/star2.png"> <img src="song_list_files/star2.png"> <img src="song_list_files/star2.png"> </td>
+<td onclick="show_detail(29199)">0</td>
+<td><a href="#" onclick="addToList(29199, 3)"><img src="song_list_files/mini-zip.png" border="0"></a></td>
+</tr><tr class="list_tr1" onmouseover="this.className='list_hover'" onmouseout="this.className='list_tr1'"><td></td><td onclick="show_detail(29198)" style="text-align: center"><img src="song_list_files/nocover.png" height="40px" width="68px"></td><td onclick="show_detail(29198)">Les enfantastiques</td>
+<td onclick="show_detail(29198)"><a href="https://usdb.animux.de/?link=detail&amp;id=29198">Si j’allais en Chine</td>
+<td onclick="show_detail(29198)"></td>
+<td onclick="show_detail(29198)"></td>
+<td onclick="show_detail(29198)"></td>
+<td onclick="show_detail(29198)">Yes</td>
+<td onclick="show_detail(29198)">French</td>
+<td onclick="show_detail(29198)">ultrastarlover75</td>
+<td onclick="show_detail(29198)"><img src="song_list_files/star2.png"> <img src="song_list_files/star2.png"> <img src="song_list_files/star2.png"> <img src="song_list_files/star2.png"> <img src="song_list_files/star2.png"> </td>
+<td onclick="show_detail(29198)">1</td>
+<td><a href="#" onclick="addToList(29198, 3)"><img src="song_list_files/mini-zip.png" border="0"></a></td>
+</tr><tr class="list_tr2" onmouseover="this.className='list_hover'" onmouseout="this.className='list_tr2'"><td style="text-align: center"><audio id="sample29197"><source src="song_list_files/2239202.mp3" type="audio/mpeg"></audio> <button class="samplePlay" id="play29197" onclick="sample_play(29197)"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512"><path d="M73 39c-14.8-9.1-33.4-9.4-48.5-.9S0 62.6 0 80V432c0 17.4 9.4 33.4 24.5 41.9s33.7 8.1 48.5-.9L361 297c14.3-8.7 23-24.2 23-41s-8.7-32.2-23-41L73 39z"></path></svg></button><button class="samplePause" style="display: none" id="pause29197" onclick="sample_pause(29197)"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><path d="M48 64C21.5 64 0 85.5 0 112V400c0 26.5 21.5 48 48 48H80c26.5 0 48-21.5 48-48V112c0-26.5-21.5-48-48-48H48zm192 0c-26.5 0-48 21.5-48 48V400c0 26.5 21.5 48 48 48h32c26.5 0 48-21.5 48-48V112c0-26.5-21.5-48-48-48H240z"></path></svg></button></td><td onclick="show_detail(29197)" style="text-align: center"><img src="song_list_files/29197.jpg" height="40px" width="40px"></td><td onclick="show_detail(29197)">STEFAN</td>
+<td onclick="show_detail(29197)"><a href="https://usdb.animux.de/?link=detail&amp;id=29197">Hope (ESC 2022 Estonia)</td>
+<td onclick="show_detail(29197)">Western-Pop</td>
+<td onclick="show_detail(29197)">2022</td>
+<td onclick="show_detail(29197)">Eurovision Song Contest 2022</td>
+<td onclick="show_detail(29197)">Yes</td>
+<td onclick="show_detail(29197)">English</td>
+<td onclick="show_detail(29197)">Dragon33</td>
+<td onclick="show_detail(29197)"><img src="song_list_files/star2.png"> <img src="song_list_files/star2.png"> <img src="song_list_files/star2.png"> <img src="song_list_files/star2.png"> <img src="song_list_files/star2.png"> </td>
+<td onclick="show_detail(29197)">2</td>
+<td><a href="#" onclick="addToList(29197, 3)"><img src="song_list_files/mini-zip.png" border="0"></a></td>
+</tr>
+
+</tbody></table>
+
+<!-- Formular mit Standartwerden beladen -->
+
+<form id="oaform" method="post" name="listform" action="?link=list">
+<input name="interpret"> Artist (empty to ignore)<br>
+<input name="title"> Title (empty to ignore)<br>
+<input name="edition"> Edition (empty to ignore)<br>
+<input name="language"> Language (empty to ignore)<br>
+<input name="genre"> Genre (empty to ignore)<br>
+<input name="year"> Year (empty to ignore)<br>
+<input name="creator"> Creator (empty to ignore)<br>
+<input type="hidden" name="user" value="">Sort by <select name="order">
+<option value="id" selected="selected">Date</option>
+<option value="interpret">Artist</option>
+<option value="title">Title</option>
+<option value="genre">Genre</option>
+<option value="year">Year</option>
+<option value="edition">Edition</option>
+<option value="golden">Golden Notes</option>
+<option value="language">Language</option>
+<option value="autor">Creator</option>
+<option value="rating">Rating</option>
+<option value="views">Views</option>
+</select> in<select name="ud">
+<option value="asc">ascending</option>
+<option value="desc" selected="selected">descending</option>
+</select> order<br>
+<input name="limit" value="3"> Entries each side<br>
+<input type="checkbox" id="cb_golden" name="golden" value="1"><label for="cb_golden">only with golden notes</label><br>
+<input type="checkbox" id="cb_songcheck" name="songcheck" value="1"><label for="cb_songcheck">only [SC]-Songs</label><br>
+<input type="checkbox" id="cb_details" name="details" value="1" checked="checked"><label for="cb_details">Show audio sample and cover</label><br>
+<input id="form_start" type="hidden" name="start" value="0">
+<input id="form_search" type="submit" name="newsearch" value="Start Search">
+</form>
+
+
+</td></tr>
+<tr>
+	<td class="cat" colspan="2" align="center"><input class="btnmain" type="hidden" name="submit" value="Submit">&nbsp;&nbsp;
+	  <input class="btnlite" type="hidden" value="Reset" name="reset"></td>
+</tr>
+</tbody></table>
+</td>
+	</tr>
+		</tbody></table>
+	
+
+<script type="text/javascript">
+function artist(name)
+{
+document.getElementById('artistform_name').value = name;
+document.getElementById('artistform').submit();
+}
+</script>
+<form id="artistform" action="?link=list" method="post">
+<input id="artistform_name" type="hidden" name="interpret">
+</form>
+
+<style type="text/css">
+<!--
+.style_pm {color: #990000}
+.style4 {font-size: 12px}
+-->
+</style>
+</body></html>
