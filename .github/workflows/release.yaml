@@ -82,9 +82,9 @@ jobs:
       - name: Install Qt
         uses: jurplel/install-qt-action@v4
         with:
-          version: "6.6.*"
+          version: "6.7.*"
           setup-python: false
-          modules: qtmultimedia
+          no-qt-binaries: true
       - name: Install Pipenv
         run: |
           python -m pip install pipenv
