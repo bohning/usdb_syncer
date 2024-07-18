@@ -153,6 +153,7 @@ def read_file_head(
 
 
 FILENAME_REPLACEMENTS = (('?:"', ""), ("<", "("), (">", ")"), ("/\\|*", "-"))
+PATH_FORBIDDEN_CHARS = "".join(c for tup in FILENAME_REPLACEMENTS for c in tup[0])
 
 
 def sanitize_filename(fname: str) -> str:
