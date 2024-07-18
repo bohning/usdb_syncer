@@ -29,6 +29,8 @@ _FALLBACK_SONG = UsdbSong(
 class SettingsDialog(Ui_Dialog, QDialog):
     """Dialog with app settings."""
 
+    _path_template: PathTemplate | None = None
+
     def __init__(self, parent: QWidget, song: UsdbSong | None) -> None:
         super().__init__(parent=parent)
         self._song = song or _FALLBACK_SONG
@@ -113,26 +115,24 @@ class SettingsDialog(Ui_Dialog, QDialog):
 
     def _on_path_template_changed(self, text: str) -> None:
         try:
-            template = PathTemplate.parse(text) if text else PathTemplate.default()
+            self._path_template = (
+                PathTemplate.parse(text) if text else PathTemplate.default()
+            )
         except path_template.PathTemplateError as error:
             result = str(error)
+            self._path_template = None
         else:
-            result = str(template.evaluate(self._song).with_suffix(".txt"))
+            result = str(self._path_template.evaluate(self._song).with_suffix(".txt"))
         self.edit_path_template_result.setText(result)
 
     def accept(self) -> None:
-        try:
-            self._save_settings()
-        except path_template.PathTemplateError:
-            QtWidgets.QMessageBox.warning(
-                self, "Invalid setting", "Please provide a valid path template!"
-            )
+        if not self._save_settings():
             return
         if self._browser != self.comboBox_browser.currentData():
             SessionManager.reset_session()
         super().accept()
 
-    def _save_settings(self) -> None:
+    def _save_settings(self) -> bool:
         settings.set_browser(self.comboBox_browser.currentData())
         settings.set_cover(self.groupBox_cover.isChecked())
         settings.set_cover_max_size(self.comboBox_cover_max_size.currentData())
@@ -152,4 +152,11 @@ class SettingsDialog(Ui_Dialog, QDialog):
         settings.set_video_fps(self.comboBox_fps.currentData())
         settings.set_background(self.groupBox_background.isChecked())
         settings.set_background_always(self.checkBox_background_always.isChecked())
-        settings.set_path_template(PathTemplate.parse(self.edit_path_template.text()))
+        if self._path_template:
+            settings.set_path_template(self._path_template)
+        else:
+            QtWidgets.QMessageBox.warning(
+                self, "Invalid setting", "Please provide a valid path template!"
+            )
+            return False
+        return True
