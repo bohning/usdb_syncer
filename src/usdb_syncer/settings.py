@@ -18,6 +18,7 @@ import browser_cookie3
 import keyring
 from PySide6.QtCore import QByteArray, QSettings
 
+from usdb_syncer import path_template
 from usdb_syncer.constants import Usdb
 from usdb_syncer.logger import get_logger
 
@@ -79,6 +80,7 @@ class SettingKey(Enum):
     MAIN_WINDOW_STATE = "state/main_window"
     TABLE_VIEW_HEADER_STATE = "list_view/header/state"
     USDB_USER_NAME = "usdb/username"
+    PATH_TEMPLATE = "files/path_template"
 
 
 class Encoding(Enum):
@@ -644,3 +646,11 @@ def get_table_view_header_state() -> QByteArray:
 
 def set_table_view_header_state(state: QByteArray) -> None:
     set_setting(SettingKey.TABLE_VIEW_HEADER_STATE, state)
+
+
+def get_path_template() -> path_template.PathTemplate:
+    return get_setting(SettingKey.PATH_TEMPLATE, path_template.PathTemplate.default())
+
+
+def set_path_template(template: path_template.PathTemplate) -> None:
+    set_setting(SettingKey.PATH_TEMPLATE, template)

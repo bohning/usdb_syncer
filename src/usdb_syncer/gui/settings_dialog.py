@@ -1,21 +1,41 @@
 """Dialog with app settings."""
 
+from PySide6 import QtWidgets
 from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import QDialog, QWidget
 
-from usdb_syncer import settings
+from usdb_syncer import SongId, path_template, settings
 from usdb_syncer.gui.forms.SettingsDialog import Ui_Dialog
+from usdb_syncer.path_template import PathTemplate
 from usdb_syncer.usdb_scraper import SessionManager
+from usdb_syncer.usdb_song import UsdbSong
+
+_FALLBACK_SONG = UsdbSong(
+    song_id=SongId(3715),
+    artist="Queen",
+    title="Bohemian Rhapsody",
+    genre="Genre",
+    year=1975,
+    creator="IC",
+    edition="[SC]-Songs",
+    language="English",
+    golden_notes=True,
+    rating=5,
+    views=4050,
+    sample_url="",
+)
 
 
 class SettingsDialog(Ui_Dialog, QDialog):
     """Dialog with app settings."""
 
-    def __init__(self, parent: QWidget) -> None:
+    def __init__(self, parent: QWidget, song: UsdbSong | None) -> None:
         super().__init__(parent=parent)
+        self._song = song or _FALLBACK_SONG
         self.setupUi(self)
         self._populate_comboboxes()
         self._load_settings()
+        self._setup_path_template()
         self._browser = self.comboBox_browser.currentData()
         self.groupBox_reencode_video.setVisible(False)
 
@@ -78,8 +98,36 @@ class SettingsDialog(Ui_Dialog, QDialog):
         self.groupBox_background.setChecked(settings.get_background())
         self.checkBox_background_always.setChecked(settings.get_background_always())
 
+    def _setup_path_template(self) -> None:
+        self.edit_path_template.textChanged.connect(self._on_path_template_changed)
+        self.edit_path_template.setText(str(settings.get_path_template()))
+        self.edit_path_template.setPlaceholderText(PathTemplate.DEFAULT_STR)
+        self.button_default_path_template.pressed.connect(self.edit_path_template.clear)
+        self.button_insert_placeholder.pressed.connect(
+            lambda: self.edit_path_template.insert(
+                self.comboBox_placeholder.currentText()
+            )
+        )
+        for item in path_template.PathTemplatePlaceholder:
+            self.comboBox_placeholder.addItem(str(item), item)
+
+    def _on_path_template_changed(self, text: str) -> None:
+        try:
+            template = PathTemplate.parse(text) if text else PathTemplate.default()
+        except path_template.PathTemplateError as error:
+            result = str(error)
+        else:
+            result = str(template.evaluate(self._song).with_suffix(".txt"))
+        self.edit_path_template_result.setText(result)
+
     def accept(self) -> None:
-        self._save_settings()
+        try:
+            self._save_settings()
+        except path_template.PathTemplateError:
+            QtWidgets.QMessageBox.warning(
+                self, "Invalid setting", "Please provide a valid path template!"
+            )
+            return
         if self._browser != self.comboBox_browser.currentData():
             SessionManager.reset_session()
         super().accept()
@@ -104,3 +152,4 @@ class SettingsDialog(Ui_Dialog, QDialog):
         settings.set_video_fps(self.comboBox_fps.currentData())
         settings.set_background(self.groupBox_background.isChecked())
         settings.set_background_always(self.checkBox_background_always.isChecked())
+        settings.set_path_template(PathTemplate.parse(self.edit_path_template.text()))

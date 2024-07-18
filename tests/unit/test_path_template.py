@@ -35,10 +35,10 @@ def test_parse_path_template() -> None:
     assert path == Path("None", "Foo - Bar")
 
 
-@pytest.mark.parametrize("char", '?:"<>|*')
+@pytest.mark.parametrize("char", '?:"<>|*.')
 def test_parse_path_template_raises_forbidden_char_error(char: str) -> None:
     with pytest.raises(InvalidCharError) as error:
-        PathTemplate.parse(f":artist: {char} :title:")
+        PathTemplate.parse(f":artist: {char} :title: / song")
     assert error.value.char == char
 
 

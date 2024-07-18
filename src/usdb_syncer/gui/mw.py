@@ -86,7 +86,10 @@ class MainWindow(Ui_MainWindow, QMainWindow):
             (self.action_refetch_song_list, self._refetch_song_list),
             (self.action_usdb_login, lambda: UsdbLoginDialog(self).show()),
             (self.action_meta_tags, lambda: MetaTagsDialog(self).show()),
-            (self.action_settings, lambda: SettingsDialog(self).show()),
+            (
+                self.action_settings,
+                lambda: SettingsDialog(self, self.table.current_song()).show(),
+            ),
             (self.action_about, lambda: AboutDialog(self).show()),
             (self.action_generate_song_pdf, self._generate_song_pdf),
             (self.action_generate_song_json, self._generate_song_json),

@@ -4,15 +4,19 @@ from __future__ import annotations
 
 import enum
 from pathlib import Path
-from typing import assert_never
+from typing import TYPE_CHECKING, assert_never
 
 import attrs
 
-from usdb_syncer import errors, utils
-from usdb_syncer.usdb_song import UsdbSong
+from usdb_syncer import errors
+
+if TYPE_CHECKING:
+    from usdb_syncer.usdb_song import UsdbSong
+
+FORBIDDEN_CHARACTERS = '?"<>|*.'
 
 
-class PathTemplateError(errors.UsdbSyncerError):
+class PathTemplateError(errors.UsdbSyncerError, ValueError):
     """Raised when the path template is invalid."""
 
 
@@ -22,6 +26,9 @@ class InvalidCharError(PathTemplateError):
 
     char: str
 
+    def __str__(self) -> str:
+        return f"Invalid character in path template: '{self.char}'"
+
 
 @attrs.define
 class UnknownPlaceholderError(PathTemplateError):
@@ -29,10 +36,16 @@ class UnknownPlaceholderError(PathTemplateError):
 
     name: str
 
+    def __str__(self) -> str:
+        return f"Unknown placeholder in path template: '{self.name}'"
+
 
 @attrs.define
 class NotEnoughComponentsError(PathTemplateError):
     """Raised when the path template contains less than two components."""
+
+    def __str__(self) -> str:
+        return "Path template must contain at least two components separated by '/'!"
 
 
 @attrs.define
@@ -43,11 +56,12 @@ class PathTemplate:
     """
 
     _components: list[PathTemplateComponent]
+    DEFAULT_STR = ":artist: - :title: / :artist: - :title:"
 
     @classmethod
     def parse(cls, template: str) -> PathTemplate:
-        for char in utils.PATH_FORBIDDEN_CHARS:
-            if char not in "/\\:" and char in template:
+        for char in FORBIDDEN_CHARACTERS:
+            if char in template:
                 raise InvalidCharError(char)
         parts = [
             p for part in template.replace("\\", "/").split("/") if (p := part.strip())
@@ -58,6 +72,13 @@ class PathTemplate:
 
     def evaluate(self, song: UsdbSong) -> Path:
         return Path(*(c.evaluate(song) for c in self._components))
+
+    @classmethod
+    def default(cls) -> PathTemplate:
+        return cls.parse(cls.DEFAULT_STR)
+
+    def __str__(self) -> str:
+        return " / ".join(map(str, self._components))
 
 
 @attrs.define
@@ -88,6 +109,9 @@ class PathTemplateComponent:
 
     def evaluate(self, song: UsdbSong) -> str:
         return "".join(t.evaluate(song) for t in self._tokens)
+
+    def __str__(self) -> str:
+        return "".join(map(str, self._tokens))
 
 
 class PathTemplateComponentToken:
@@ -146,3 +170,6 @@ class PathTemplatePlaceholder(PathTemplateComponentToken, enum.Enum):
                 return str(song.rating)
             case _ as unreachable:
                 assert_never(unreachable)
+
+    def __str__(self) -> str:
+        return f":{self.value}:"
