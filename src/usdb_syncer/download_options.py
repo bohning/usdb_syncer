@@ -3,7 +3,7 @@
 from dataclasses import dataclass
 from pathlib import Path
 
-from usdb_syncer import settings, utils
+from usdb_syncer import path_template, settings, utils
 
 
 @dataclass(frozen=True)
@@ -67,6 +67,7 @@ class Options:
     """Settings for downloading songs."""
 
     song_dir: Path
+    path_template: path_template.PathTemplate
     txt_options: TxtOptions | None
     audio_options: AudioOptions | None
     browser: settings.Browser
@@ -78,6 +79,7 @@ class Options:
 def download_options() -> Options:
     return Options(
         song_dir=utils.get_song_dir(),
+        path_template=settings.get_path_template(),
         txt_options=_txt_options(),
         audio_options=_audio_options(),
         browser=settings.get_browser(),

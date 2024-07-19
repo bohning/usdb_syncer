@@ -59,7 +59,7 @@ class SongTable:
             self._playing_song = song = self._next_playing_song
             self._next_playing_song = None
             song.is_playing = True
-        elif state == QtMultimedia.QMediaPlayer.PlaybackState.StoppedState:
+        else:
             assert self._playing_song
             song = self._playing_song
             self._playing_song = None

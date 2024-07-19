@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING, assert_never
 
 import attrs
 
-from usdb_syncer import errors
+from usdb_syncer import errors, utils
 
 if TYPE_CHECKING:
     from usdb_syncer.usdb_song import UsdbSong
@@ -70,8 +70,14 @@ class PathTemplate:
             raise NotEnoughComponentsError
         return cls([PathTemplateComponent.parse(part) for part in parts])
 
-    def evaluate(self, song: UsdbSong) -> Path:
-        return Path(*(c.evaluate(song) for c in self._components))
+    def evaluate(self, song: UsdbSong, parent: Path = Path()) -> Path:
+        """Returns a valid path relative to `parent` with placeholders replaced with
+        the values from `song`. The final component is the filename stem.
+        """
+        return Path(
+            parent,
+            *(utils.sanitize_filename(c.evaluate(song)) for c in self._components),
+        )
 
     @classmethod
     def default(cls) -> PathTemplate:
