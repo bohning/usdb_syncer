@@ -16,23 +16,9 @@ from usdb_syncer.path_template import (
 from usdb_syncer.usdb_song import UsdbSong
 
 
-def test_parse_path_template() -> None:
-    song = UsdbSong(
-        sample_url="",
-        song_id=SongId(123),
-        artist="Foo",
-        title="Bar",
-        genre="Pop",
-        year=None,
-        language="Esperanto",
-        creator="unknown",
-        edition="",
-        golden_notes=True,
-        rating=0,
-        views=1,
-    )
+def test_parse_path_template(song: UsdbSong) -> None:
     path = PathTemplate.parse(":year: // / :artist: - :title: \\").evaluate(song)
-    assert path == Path("None", "Foo - Bar")
+    assert path == Path(str(song.year), f"{song.artist} - {song.title}")
 
 
 @pytest.mark.parametrize("char", '?:"<>|*.')
