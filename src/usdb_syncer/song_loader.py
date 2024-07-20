@@ -680,8 +680,8 @@ def _cleanup_existing_resources(ctx: _Context) -> None:
                 send2trash.send2trash(old_path)
                 ctx.logger.debug(f"Trashed untracked file: '{old_path}'.")
         elif out.new_fname:
-            send2trash.send2trash(path)
-            ctx.logger.debug(f"Trashed existing file: '{path}'.")
+            send2trash.send2trash(old_path)
+            ctx.logger.debug(f"Trashed existing file: '{old_path}'.")
         else:
             target = ctx.locations.filename(ext=utils.resource_file_ending(old.fname))
             if out.old_fname != target:
