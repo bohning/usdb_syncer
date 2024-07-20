@@ -6,7 +6,6 @@ from pathlib import Path
 
 import pytest
 
-from usdb_syncer import SongId
 from usdb_syncer.path_template import (
     InvalidCharError,
     NotEnoughComponentsError,
