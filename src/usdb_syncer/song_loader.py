@@ -36,7 +36,6 @@ from usdb_syncer import (
 )
 from usdb_syncer.constants import ISO_639_2B_LANGUAGE_CODES
 from usdb_syncer.logger import Log, get_logger
-from usdb_syncer.resource_dl import ImageKind, download_and_process_image
 from usdb_syncer.song_txt import SongTxt
 from usdb_syncer.sync_meta import ResourceFile, SyncMeta
 from usdb_syncer.usdb_scraper import SongDetails
@@ -118,8 +117,8 @@ class _Locations:
         target = options.path_template.evaluate(song, options.song_dir)
         if (
             _current := song.sync_meta.path.parent if song.sync_meta else None
-        ) and utils.path_matches_maybe_with_suffix(_current, target):
-            target = _current
+        ) and utils.path_matches_maybe_with_suffix(_current, target.parent):
+            target = _current / target.name
         else:
             target = utils.next_unique_directory(target.parent) / target.name
         return cls(current=_current, target=target, tempdir=tempdir)  # pyright: ignore
@@ -458,12 +457,12 @@ def _maybe_download_cover(ctx: _Context) -> None:
     if ctx.out.cover.resource == url:
         ctx.logger.info("Cover resource is unchanged.")
         return
-    if path := download_and_process_image(
+    if path := resource_dl.download_and_process_image(
         url,
         ctx.locations.temp_path(),
         ctx.txt.meta_tags.cover,
         ctx.details,
-        ImageKind.COVER,
+        resource_dl.ImageKind.COVER,
         max_width=ctx.options.cover.max_size,
     ):
         ctx.out.cover.resource = url
@@ -485,12 +484,12 @@ def _maybe_download_background(ctx: _Context) -> None:
     if ctx.out.background.resource == url:
         ctx.logger.info("Background resource is unchanged.")
         return
-    if path := download_and_process_image(
+    if path := resource_dl.download_and_process_image(
         url,
         ctx.locations.temp_path(),
         ctx.txt.meta_tags.background,
         ctx.details,
-        ImageKind.BACKGROUND,
+        resource_dl.ImageKind.BACKGROUND,
         max_width=None,
     ):
         ctx.out.background.resource = url
