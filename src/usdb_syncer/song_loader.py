@@ -162,6 +162,7 @@ class _Locations:
         if self._current and self._current != self._target:
             self._target.parent.parent.mkdir(parents=True, exist_ok=True)
             self._current.rename(self._target.parent)
+            self._current = self._target.parent
         else:
             self._target.parent.mkdir(parents=True, exist_ok=True)
 

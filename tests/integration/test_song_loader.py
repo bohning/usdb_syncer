@@ -14,6 +14,7 @@ from tests.conftest import (
     example_usdb_song,
 )
 from usdb_syncer import download_options, utils
+from usdb_syncer.db import DownloadStatus
 from usdb_syncer.meta_tags import MetaTags
 from usdb_syncer.path_template import PathTemplate
 from usdb_syncer.resource_dl import ImageKind
@@ -79,7 +80,7 @@ _db = mock.MagicMock()
 @mock.patch("usdb_syncer.song_loader.db", _db)
 @mock.patch("usdb_syncer.usdb_song.db", _db)
 @mock.patch("usdb_syncer.sync_meta.db", _db)
-@mock.patch("usdb_syncer.resource_dl.download_audio", _download_audio)
+@mock.patch("usdb_syncer.resource_dl.download_audio", side_effect=_download_audio)
 @mock.patch("usdb_syncer.resource_dl.download_video", _download_video)
 @mock.patch(
     "usdb_syncer.resource_dl.download_and_process_image", _download_and_process_image
@@ -91,7 +92,7 @@ class SongLoaderTestCase(unittest.TestCase):
     @mock.patch("usdb_syncer.usdb_scraper.get_usdb_details")
     @mock.patch("usdb_syncer.usdb_scraper.get_notes")
     def test_download_new_song(
-        self, notes_mock: mock.Mock, details_mock: mock.Mock
+        self, notes_mock: mock.Mock, details_mock: mock.Mock, _audio_mock: mock.Mock
     ) -> None:
         song = example_usdb_song()
         song.sync_meta = None
@@ -113,6 +114,7 @@ class SongLoaderTestCase(unittest.TestCase):
             loader.run()
 
             out = loader.song
+            assert out.status == DownloadStatus.NONE
             path_stem = song_dir / out.artist / out.title / str(out.song_id)
             assert out.sync_meta
             assert path_stem.parent.exists()
@@ -132,11 +134,10 @@ class SongLoaderTestCase(unittest.TestCase):
                         path_stem.with_name(meta.fname)
                     )
 
-    @mock.patch("usdb_syncer.resource_dl.download_audio")
     @mock.patch("usdb_syncer.usdb_scraper.get_usdb_details")
     @mock.patch("usdb_syncer.usdb_scraper.get_notes")
     def test_download_unchanged_resource(
-        self, notes_mock: mock.Mock, details_mock: mock.Mock, download_mock: mock.Mock
+        self, notes_mock: mock.Mock, details_mock: mock.Mock, audio_mock: mock.Mock
     ) -> None:
         song = example_usdb_song()
         assert song.sync_meta
@@ -155,10 +156,66 @@ class SongLoaderTestCase(unittest.TestCase):
             loader = _SongLoader(copy.deepcopy(song), options)
             loader.run()
 
-            download_mock.assert_not_called()
-            out = loader.song
-            assert out.sync_meta
+            audio_mock.assert_not_called()
+            assert loader.song.status == DownloadStatus.NONE
+            assert loader.song.sync_meta
             assert mp3_path.exists()
+
+    @mock.patch("usdb_syncer.usdb_scraper.get_usdb_details")
+    @mock.patch("usdb_syncer.usdb_scraper.get_notes")
+    def test_download_misnamed_resource(
+        self, notes_mock: mock.Mock, details_mock: mock.Mock, audio_mock: mock.Mock
+    ) -> None:
+        song = example_usdb_song()
+        assert song.sync_meta
+        notes_mock.return_value = example_notes_str(MetaTags(audio="audio.com"))
+        details_mock.return_value = details_from_song(song)
+
+        with tempfile.TemporaryDirectory() as song_dir_str:
+            song_dir = Path(song_dir_str)
+            options = _options(song_dir, ":title: / song", audio=True)
+            song.sync_meta.path = (
+                song_dir / song.artist / song.sync_meta.sync_meta_id.to_filename()
+            )
+            mp3_path = song.sync_meta.path.parent / "_.mp3"
+            song.sync_meta.audio = _mock_resource_file(mp3_path, "audio.com")
+
+            loader = _SongLoader(copy.deepcopy(song), options)
+            loader.run()
+
+            assert loader.song.status == DownloadStatus.NONE
+            audio_mock.assert_not_called()
+            assert loader.song.sync_meta
+            assert not mp3_path.exists()
+            assert (song_dir / song.title / "song.mp3").exists()
+
+    @mock.patch("usdb_syncer.usdb_scraper.get_usdb_details")
+    @mock.patch("usdb_syncer.usdb_scraper.get_notes")
+    def test_download_outdated_resource(
+        self, notes_mock: mock.Mock, details_mock: mock.Mock, audio_mock: mock.Mock
+    ) -> None:
+        song = example_usdb_song()
+        assert song.sync_meta
+        notes_mock.return_value = example_notes_str(MetaTags(audio="audio.com"))
+        details_mock.return_value = details_from_song(song)
+
+        with tempfile.TemporaryDirectory() as song_dir_str:
+            song_dir = Path(song_dir_str)
+            options = _options(song_dir, ":title: / song", audio=True)
+            song.sync_meta.path = (
+                song_dir / song.title / song.sync_meta.sync_meta_id.to_filename()
+            )
+            mp3_path = song.sync_meta.path.parent / "song.mp3"
+            song.sync_meta.audio = _mock_resource_file(mp3_path, "audio.com")
+            # simulate changed file
+            song.sync_meta.audio.mtime -= 1
+
+            loader = _SongLoader(copy.deepcopy(song), options)
+            loader.run()
+
+            audio_mock.assert_called_once()
+            assert loader.song.status == DownloadStatus.NONE
+            assert utils.get_mtime(mp3_path) > song.sync_meta.audio.mtime
 
 
 def _mock_resource_file(path: Path, resource: str | None = None) -> ResourceFile:
