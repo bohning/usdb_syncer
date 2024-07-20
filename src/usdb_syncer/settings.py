@@ -537,6 +537,11 @@ def set_browser(value: Browser) -> None:
 
 
 def get_song_dir() -> Path:
+    """Returns the stored song diretory, which may be overwritten by an environment
+    variable.
+    """
+    if path := os.environ.get("SONG_DIR"):
+        return Path(path)
     return get_setting(SettingKey.SONG_DIR, Path("songs").resolve())
 
 

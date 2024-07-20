@@ -187,8 +187,7 @@ class _TempResourceFile:
         if self.new_fname:
             if temp:
                 return locations.temp_path(self.new_fname)
-            else:
-                return locations.target_path(self.new_fname)
+            return locations.target_path(self.new_fname)
         if self.old_fname:
             return locations.current_path(self.old_fname)
         return None

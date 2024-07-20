@@ -8,7 +8,7 @@ from pathlib import Path
 from PySide6 import QtGui
 from PySide6.QtWidgets import QFileDialog, QLabel, QMainWindow
 
-from usdb_syncer import db, events, settings, song_routines, usdb_id_file, utils
+from usdb_syncer import db, events, settings, song_routines, usdb_id_file
 from usdb_syncer.constants import Usdb
 from usdb_syncer.gui import gui_utils, progress_bar
 from usdb_syncer.gui.about_dialog import AboutDialog
@@ -107,7 +107,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         gui_utils.set_shortcut("Ctrl+.", self, lambda: DebugConsole(self).show())
 
     def _setup_song_dir(self) -> None:
-        self.lineEdit_song_dir.setText(str(utils.get_song_dir()))
+        self.lineEdit_song_dir.setText(str(settings.get_song_dir()))
         self.pushButton_select_song_dir.clicked.connect(self._select_song_dir)
 
     def _setup_buttons(self) -> None:
@@ -182,14 +182,14 @@ class MainWindow(Ui_MainWindow, QMainWindow):
 
     def _generate_song_pdf(self) -> None:
         fname = f"{datetime.datetime.now():%Y-%m-%d}_songlist.pdf"
-        path = os.path.join(utils.get_song_dir(), fname)
+        path = os.path.join(settings.get_song_dir(), fname)
         path = QFileDialog.getSaveFileName(self, dir=path, filter="PDF (*.pdf)")[0]
         if path:
             generate_song_pdf(db.all_local_usdb_songs(), path)
 
     def _generate_song_json(self) -> None:
         fname = f"{datetime.datetime.now():%Y-%m-%d}_songlist.json"
-        path = os.path.join(utils.get_song_dir(), fname)
+        path = os.path.join(settings.get_song_dir(), fname)
         path = QFileDialog.getSaveFileName(self, dir=path, filter="JSON (*.json)")[0]
         if path:
             num_of_songs = generate_song_json(db.all_local_usdb_songs(), Path(path))
