@@ -1,3 +1,17 @@
+<!-- 0.8.0 -->
+
+# Changes
+
+## Fixes
+
+## Features
+
+- The download path can now be customized using a dedicated template syntax (see
+  _Settings_). The template must contain at least two components, which are separated
+  using slashes. The last component specifies the filename, excluding its extension.
+  Example: `:year: / :artist: / :title: / song` will store files like
+  `1975/Queen/Bohemian Rhapsody/song.txt` and so on.
+
 <!-- 0.7.0 -->
 
 # Changes
