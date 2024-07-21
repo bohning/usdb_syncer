@@ -38,6 +38,11 @@ class FilterTree:
 
     def populate(self) -> None:
         self._model.populate()
+        self.view.expand(
+            self._proxy_model.mapFromSource(
+                self._model.index_for_item(self._model.root.children[0])
+            )
+        )
 
     def _on_click(self, index: QModelIndex) -> None:
         item = self._model.item_for_index(self._proxy_model.mapToSource(index))
