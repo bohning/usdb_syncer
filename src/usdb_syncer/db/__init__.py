@@ -352,25 +352,50 @@ class _SearchEnoder(json.JSONEncoder):
         return super().default(o)
 
 
-def load_saved_searches() -> list[tuple[str, SearchBuilder]]:
-    out = []
-    for row in (
-        _DbState.connection()
+def load_saved_searches() -> Iterable[tuple[str, SearchBuilder]]:
+    return (
+        search
+        for row in _DbState.connection()
         .execute("SELECT name, search FROM saved_search ORDER BY name")
         .fetchall()
-    ):
-        if search := SearchBuilder.from_json(row[1]):
-            out.append((row[0], search))
-        else:
-            _DbState.connection().execute(
-                "DELETE FROM saved_search WHERE name = ?", (row[0],)
-            )
-            _logger.warning(f"Dropped invalid saved search '{row[0]}'.")
-    return out
+        if (search := _validate_saved_search_row(*row))
+    )
+
+
+def _validate_saved_search_row(
+    name: str, json_str: str
+) -> tuple[str, SearchBuilder] | None:
+    if search := SearchBuilder.from_json(json_str):
+        return name, search
+    _DbState.connection().execute("DELETE FROM saved_search WHERE name = ?", (name,))
+    _logger.warning(f"Dropped invalid saved search '{name}'.")
+    return None
 
 
 def delete_saved_search(name: str) -> None:
     _DbState.connection().execute("DELETE FROM saved_search WHERE name = ?", (name,))
+
+
+def get_saved_search(name: str) -> SearchBuilder | None:
+    row = (
+        _DbState.connection()
+        .execute("SELECT name, search FROM saved_search WHERE name = ?", (name,))
+        .fetchone()
+    )
+    if row and (search := _validate_saved_search_row(*row)):
+        return search[1]
+    return None
+
+
+def rename_saved_search(name: str, new_name: str) -> bool:
+    """True if successfull, False means constraint error."""
+    try:
+        _DbState.connection().execute(
+            "UPDATE saved_search SET name = ? WHERE name = ?", (new_name, name)
+        )
+    except sqlite3.IntegrityError:
+        return False
+    return True
 
 
 def _in_values_clause(attribute: str, values: list) -> str:

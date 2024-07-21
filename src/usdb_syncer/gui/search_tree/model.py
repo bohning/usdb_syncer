@@ -123,6 +123,17 @@ class TreeModel(QAbstractItemModel):
     def flags(self, index: QIndex) -> Qt.ItemFlag:
         return self.item_for_index(index).flags()
 
+    def setData(self, index: QIndex, value: Any, role: int = 0) -> bool:
+        if role != Qt.ItemDataRole.EditRole or not value or not isinstance(value, str):
+            return False
+        item = self.item_for_index(index)
+        if not isinstance(item.data, SavedSearch) or item.data.name == value:
+            return False
+        if db.rename_saved_search(item.data.name, value):
+            item.data.name = value
+            return True
+        return False
+
 
 class TreeProxyModel(QSortFilterProxyModel):
     """Proxy model for filtering the filter tree by text."""

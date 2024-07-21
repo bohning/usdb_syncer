@@ -69,7 +69,13 @@ class FilterTree:
         menu.exec(QtGui.QCursor.pos())
 
     def _add_saved_search(self) -> None:
-        data = SavedSearch("", self._search)
+        name = first_name = "My search"
+        i = 0
+        while db.get_saved_search(name):
+            i += 1
+            name = f"{first_name} ({i})"
+        self._search.upsert(name)
+        data = SavedSearch(name, self._search)
         index = self._proxy_model.mapFromSource(self._model.insert_saved_search(data))
         self.view.setCurrentIndex(index)
         self.view.edit(index)
