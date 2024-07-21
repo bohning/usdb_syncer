@@ -65,12 +65,32 @@ class FilterTree:
             actions = [QtGui.QAction("Save current search", self.view)]
             actions[0].triggered.connect(self._add_saved_search)
         elif isinstance(item.data, SavedSearch):
-            actions = []
+            actions = [
+                QtGui.QAction("Update with current search", self.view),
+                QtGui.QAction("Delete", self.view),
+            ]
+            actions[0].triggered.connect(self._update_saved_search)
+            actions[1].triggered.connect(self._delete_saved_search)
         else:
             return
         menu = QtWidgets.QMenu()
         menu.addActions(actions)
         menu.exec(QtGui.QCursor.pos())
+
+    def _delete_saved_search(self) -> None:
+        self._model.delete_saved_search(
+            self._proxy_model.mapToSource(self.view.currentIndex())
+        )
+
+    def _update_saved_search(self) -> None:
+        item = self._model.item_for_index(
+            self._proxy_model.mapToSource(self.view.currentIndex())
+        )
+        if not isinstance(item.data, SavedSearch):
+            return
+        with db.transaction():
+            self._search.upsert(item.data.name)
+        item.data.search = self._search
 
     def _add_saved_search(self) -> None:
         name = first_name = "My search"
@@ -78,7 +98,8 @@ class FilterTree:
         while db.get_saved_search(name):
             i += 1
             name = f"{first_name} ({i})"
-        self._search.upsert(name)
+        with db.transaction():
+            self._search.upsert(name)
         data = SavedSearch(name, self._search)
         index = self._proxy_model.mapFromSource(self._model.insert_saved_search(data))
         self.view.setCurrentIndex(index)

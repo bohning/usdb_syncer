@@ -71,6 +71,17 @@ class TreeModel(QAbstractItemModel):
         self.endInsertRows()
         return self.index(0, 0, parent_idx)
 
+    def delete_saved_search(self, index: QModelIndex) -> None:
+        item = self.item_for_index(index)
+        if not isinstance(item.data, SavedSearch) or not item.parent:
+            return
+        self.beginRemoveRows(index.parent(), index.row(), index.row())
+        with db.transaction():
+            db.delete_saved_search(item.data.name)
+        children = item.parent.children
+        item.parent.children = (*children[: index.row()], *children[index.row() + 1 :])
+        self.endRemoveRows()
+
     ### QAbstractItemModel implementation
 
     def rowCount(self, parent: QIndex = QModelIndex()) -> int:
