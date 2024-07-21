@@ -24,6 +24,8 @@ class FilterTree:
         self.view = mw.search_view
         self.root = RootItem()
         self.root.set_children(FilterItem(data=f, parent=self.root) for f in Filter)
+        # saved searches is not checkable
+        self.root.children[0].checked = None
         self._model = TreeModel(mw, self.root)
         self._proxy_model = TreeProxyModel(self.view, self._model)
         self.view.setHeaderHidden(True)

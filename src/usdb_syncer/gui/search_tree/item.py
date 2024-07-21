@@ -100,7 +100,7 @@ class TreeItem:
     parent: TreeItem | None
     row_in_parent: int = attrs.field(default=0, init=False)
     children: tuple[TreeItem, ...] = attrs.field(factory=tuple, init=False)
-    checked: bool = attrs.field(default=False, init=False)
+    checked: bool | None = attrs.field(default=False, init=False)
 
     def toggle_checked(self, _keep_siblings: bool) -> tuple[TreeItem, ...]:
         """Returns toggled items."""
@@ -221,7 +221,8 @@ class VariantItem(TreeItem):
 class Filter(enum.Enum):
     """Kinds of filters in the tree."""
 
-    STATUS = 0
+    SAVED = 0
+    STATUS = enum.auto()
     ARTIST = enum.auto()
     TITLE = enum.auto()
     EDITION = enum.auto()
@@ -235,6 +236,8 @@ class Filter(enum.Enum):
 
     def __str__(self) -> str:
         match self:
+            case Filter.SAVED:
+                return "Saved Searches"
             case Filter.STATUS:
                 return "Status"
             case Filter.ARTIST:
@@ -262,6 +265,8 @@ class Filter(enum.Enum):
 
     def variants(self) -> Iterable[SongMatch]:
         match self:
+            case Filter.SAVED:
+                return SavedSearch.load_all()
             case Filter.ARTIST:
                 return (SongArtistMatch(v, c) for v, c in db.usdb_song_artists())
             case Filter.TITLE:
@@ -291,6 +296,8 @@ class Filter(enum.Enum):
     @cache  # pylint: disable=method-cache-max-size-none
     def decoration(self) -> QIcon:
         match self:
+            case Filter.SAVED:
+                return QIcon(":/icons/heart.png")
             case Filter.STATUS:
                 return QIcon(":/icons/status.png")
             case Filter.ARTIST:
@@ -414,3 +421,18 @@ class ViewsVariant(SongMatch, enum.Enum):
 
     def build_search(self, search: db.SearchBuilder) -> None:
         search.views.append(self.value)
+
+
+@attrs.define
+class SavedSearch(SongMatch):
+    """A search saved by the user."""
+
+    name: str
+    search: db.SearchBuilder
+
+    @classmethod
+    def load_all(cls) -> Iterable[SavedSearch]:
+        return (cls(*row) for row in db.load_saved_searches())
+
+    def build_search(self, search: db.SearchBuilder) -> None:
+        pass
