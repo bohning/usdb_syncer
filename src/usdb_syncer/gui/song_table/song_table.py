@@ -49,6 +49,7 @@ class SongTable:
         self._setup_search_timer()
         events.TreeFilterChanged.subscribe(self._on_tree_filter_changed)
         events.TextFilterChanged.subscribe(self._on_text_filter_changed)
+        events.SavedSearchRestored.subscribe(self._on_saved_search_restored)
         QtGui.QShortcut(Qt.Key.Key_Space, self._view).activated.connect(self._on_space)
 
     def _on_playback_state_changed(
@@ -300,6 +301,20 @@ class SongTable:
         event.search.descending = self._search.descending
         event.search.text = self._search.text
         self._search = event.search
+        self.search_songs(100)
+
+    def _on_saved_search_restored(self, event: events.SavedSearchRestored) -> None:
+        self._search.order = event.search.order
+        self._search.descending = event.search.descending
+        self._search.text = event.search.text
+        self._header().setSortIndicator(
+            Column.from_song_order(event.search.order),
+            (
+                Qt.SortOrder.DescendingOrder
+                if event.search.descending
+                else Qt.SortOrder.AscendingOrder
+            ),
+        )
         self.search_songs(100)
 
     def _on_text_filter_changed(self, event: events.TextFilterChanged) -> None:

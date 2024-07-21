@@ -195,7 +195,7 @@ class FilterItem(TreeItem):
         return changed
 
     def set_checked_children(self, search: db.SearchBuilder) -> list[TreeItem]:
-        changed: list[TreeItem] = [self]
+        changed: list[TreeItem] = []
         for idx, child in enumerate(self.children):
             if child.data.is_in_search(search) == child.checked:
                 continue
@@ -205,7 +205,9 @@ class FilterItem(TreeItem):
                 self.checked_children.add(idx)
             else:
                 self.checked_children.remove(idx)
-        self.checked = bool(self.checked_children)
+        if self.checked != bool(self.checked_children):
+            changed.append(self)
+            self.checked = not self.checked
         return changed
 
     def decoration(self) -> QIcon:

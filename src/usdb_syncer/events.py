@@ -77,6 +77,13 @@ class TextFilterChanged(SubscriptableEvent):
     search: str
 
 
+@attrs.define(slots=False)
+class SavedSearchRestored(SubscriptableEvent):
+    """Sent when the a save search is set."""
+
+    search: db.SearchBuilder
+
+
 # songs
 
 

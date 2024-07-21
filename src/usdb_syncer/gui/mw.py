@@ -50,6 +50,9 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         self.lineEdit_search.textChanged.connect(
             lambda txt: events.TextFilterChanged(txt).post()
         )
+        events.SavedSearchRestored.subscribe(
+            lambda event: self.lineEdit_search.setText(event.search.text)
+        )
         self._setup_buttons()
         self._restore_state()
 

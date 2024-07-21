@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import copy
 from typing import TYPE_CHECKING, Callable
 
 from PySide6 import QtCore, QtGui, QtWidgets
@@ -44,6 +45,7 @@ class FilterTree:
             for filt in self._model.root.children:
                 for changed in filt.set_checked_children(item.data.search):
                     self._model.emit_item_changed(changed)
+            events.SavedSearchRestored(item.data.search).post()
         else:
             for changed in item.toggle_checked(keyboard_modifiers().ctrl):
                 self._model.emit_item_changed(changed)
@@ -90,7 +92,7 @@ class FilterTree:
             return
         with db.transaction():
             self._search.upsert(item.data.name)
-        item.data.search = self._search
+        item.data.search = copy.deepcopy(self._search)
 
     def _add_saved_search(self) -> None:
         name = first_name = "My search"
