@@ -40,9 +40,13 @@ class FilterTree:
 
     def _on_click(self, index: QModelIndex) -> None:
         item = self._model.item_for_index(self._proxy_model.mapToSource(index))
-        for changed in item.toggle_checked(keyboard_modifiers().ctrl):
-            idx = self._model.index_for_item(changed)
-            self._model.dataChanged.emit(idx, idx, [Qt.ItemDataRole.CheckStateRole])
+        if isinstance(item.data, SavedSearch):
+            for filt in self._model.root.children:
+                for changed in filt.set_checked_children(item.data.search):
+                    self._model.emit_item_changed(changed)
+        else:
+            for changed in item.toggle_checked(keyboard_modifiers().ctrl):
+                self._model.emit_item_changed(changed)
 
     def connect_filter_changed(self, func: Callable[[], None]) -> None:
         self._model.dataChanged.connect(func)

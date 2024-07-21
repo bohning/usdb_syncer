@@ -38,6 +38,10 @@ class TreeModel(QAbstractItemModel):
     def index_for_item(self, item: TreeItem) -> QModelIndex:
         return self.createIndex(item.row_in_parent, 0, item)
 
+    def emit_item_changed(self, item: TreeItem) -> None:
+        idx = self.index_for_item(item)
+        self.dataChanged.emit(idx, idx, [Qt.ItemDataRole.CheckStateRole])
+
     ### change data
 
     def populate(self) -> None:

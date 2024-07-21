@@ -28,7 +28,7 @@ def test_persisting_saved_search() -> None:
     )
     db.connect(":memory:")
     search.upsert("name")
-    saved = db.load_saved_searches()
+    saved = list(db.load_saved_searches())
     assert len(saved) == 1
     assert saved[0][0] == "name"
     assert search == saved[0][1]
