@@ -17,7 +17,7 @@ from PySide6.QtWidgets import QWidget
 
 from usdb_syncer import db
 
-from .item import Filter, TreeItem
+from .item import Filter, FilterItem, RootItem, SavedSearch, TreeItem, VariantItem
 
 QIndex = QModelIndex | QPersistentModelIndex
 
@@ -25,9 +25,12 @@ QIndex = QModelIndex | QPersistentModelIndex
 class TreeModel(QAbstractItemModel):
     """Model for the filter tree."""
 
-    def __init__(self, parent: QWidget, root: TreeItem) -> None:
+    def __init__(self, parent: QWidget) -> None:
         super().__init__(parent)
-        self.root = root
+        self.root = RootItem()
+        self.root.set_children(FilterItem(data=f, parent=self.root) for f in Filter)
+        # saved searches is not checkable
+        self.root.children[0].checked = None
 
     def item_for_index(self, idx: QIndex) -> TreeItem:
         return cast(TreeItem, idx.internalPointer())
@@ -37,12 +40,32 @@ class TreeModel(QAbstractItemModel):
 
     ### change data
 
+    def populate(self) -> None:
+        self.beginResetModel()
+        for item in self.root.children:
+            item.set_children(
+                VariantItem(data=var, parent=item, checkable=item.checkable)
+                for var in item.data.variants()
+            )
+        self.endResetModel()
+
     def set_checked(self, item: TreeItem, checked: bool) -> None:
         if checked and item.parent:
             for sibling in item.parent.children:
                 sibling.checked = False
 
         item.checked = checked
+
+    def insert_saved_search(self, data: SavedSearch) -> QModelIndex:
+        parent = self.root.children[0]
+        parent_idx = self.index_for_item(parent)
+        self.beginInsertRows(parent_idx, 0, 0)
+        self.root.children[0].children = (
+            VariantItem(data=data, parent=parent),
+            *self.root.children[0].children,
+        )
+        self.endInsertRows()
+        return self.index(0, 0, parent_idx)
 
     ### QAbstractItemModel implementation
 
@@ -60,10 +83,10 @@ class TreeModel(QAbstractItemModel):
     ) -> QModelIndex:
         if not self.hasIndex(row, column, parent):
             return QModelIndex()
-        if not parent.isValid():
-            parent_item = self.root
-        else:
+        if parent.isValid():
             parent_item = cast(TreeItem, parent.internalPointer())
+        else:
+            parent_item = self.root
         item = parent_item.children[row]
         return self.createIndex(row, column, item)
 
@@ -88,10 +111,11 @@ class TreeModel(QAbstractItemModel):
         if not index.isValid():
             return None
 
-        if role == Qt.ItemDataRole.DisplayRole:
+        if role in (Qt.ItemDataRole.DisplayRole, Qt.ItemDataRole.EditRole):
             return str(self.item_for_index(index).data)
         if role == Qt.ItemDataRole.CheckStateRole:
-            return self.item_for_index(index).checked
+            item = self.item_for_index(index)
+            return item.checked if item.checkable else None
         if role == Qt.ItemDataRole.DecorationRole:
             return self.item_for_index(index).decoration()
         return None

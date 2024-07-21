@@ -98,6 +98,7 @@ class TreeItem:
 
     data: Any
     parent: TreeItem | None
+    checkable: bool = False
     row_in_parent: int = attrs.field(default=0, init=False)
     children: tuple[TreeItem, ...] = attrs.field(factory=tuple, init=False)
     checked: bool | None = attrs.field(default=False, init=False)
@@ -139,6 +140,9 @@ class FilterItem(TreeItem):
     parent: RootItem
     children: tuple[VariantItem, ...] = attrs.field(factory=tuple, init=False)
     checked_children: set[int] = attrs.field(factory=set, init=False)
+
+    def __attrs_post_init__(self) -> None:
+        self.checkable = self.data != Filter.SAVED
 
     def add_child(self, child: VariantItem) -> None:
         child.parent = self
@@ -199,13 +203,26 @@ class VariantItem(TreeItem):
     data: SongMatch
     parent: FilterItem
     children: tuple[TreeItem, ...] = attrs.field(factory=tuple, init=False)
+    _flags: Qt.ItemFlag = attrs.field(init=False)
+
+    def __attrs_post_init__(self) -> None:
+        if self.parent.data == Filter.SAVED:
+            self.checkable = False
+            self._flags = (
+                Qt.ItemFlag.ItemIsEnabled
+                | Qt.ItemFlag.ItemNeverHasChildren
+                | Qt.ItemFlag.ItemIsEditable
+            )
+        else:
+            self.checkable = True
+            self._flags = (
+                Qt.ItemFlag.ItemIsEnabled
+                | Qt.ItemFlag.ItemIsUserCheckable
+                | Qt.ItemFlag.ItemNeverHasChildren
+            )
 
     def flags(self) -> Qt.ItemFlag:
-        return (
-            Qt.ItemFlag.ItemIsEnabled
-            | Qt.ItemFlag.ItemIsUserCheckable
-            | Qt.ItemFlag.ItemNeverHasChildren
-        )
+        return self._flags
 
     def toggle_checked(self, keep_siblings: bool) -> tuple[TreeItem, ...]:
         return self.parent.set_child_checked(
@@ -436,3 +453,6 @@ class SavedSearch(SongMatch):
 
     def build_search(self, search: db.SearchBuilder) -> None:
         pass
+
+    def __str__(self) -> str:
+        return self.name

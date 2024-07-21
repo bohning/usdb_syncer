@@ -369,6 +369,10 @@ def load_saved_searches() -> list[tuple[str, SearchBuilder]]:
     return out
 
 
+def delete_saved_search(name: str) -> None:
+    _DbState.connection().execute("DELETE FROM saved_search WHERE name = ?", (name,))
+
+
 def _in_values_clause(attribute: str, values: list) -> str:
     return f"{attribute} IN ({', '.join('?' * len(values))})"
 
