@@ -8,6 +8,7 @@ import json
 import sqlite3
 import threading
 import time
+import traceback
 from pathlib import Path
 from typing import Any, Generator, Iterable, Iterator, assert_never, cast
 
@@ -329,16 +330,9 @@ class SearchBuilder:
             TypeError,
             KeyError,
             ValueError,
-        ) as err:
-            _logger.debug(err)
+        ):
+            _logger.debug(traceback.format_exc())
         return None
-
-    def upsert(self, name: str) -> None:
-        _DbState.connection().execute(
-            "INSERT INTO saved_search (name, search) VALUES (:name, json(:search))"
-            " ON CONFLICT (name) DO UPDATE SET search = :search",
-            {"name": name, "search": self.to_json()},
-        )
 
 
 class _SearchEnoder(json.JSONEncoder):
@@ -352,50 +346,83 @@ class _SearchEnoder(json.JSONEncoder):
         return super().default(o)
 
 
-def load_saved_searches() -> Iterable[tuple[str, SearchBuilder]]:
-    return (
-        search
-        for row in _DbState.connection()
-        .execute("SELECT name, search FROM saved_search ORDER BY name")
-        .fetchall()
-        if (search := _validate_saved_search_row(*row))
-    )
+@attrs.define
+class SavedSearch:
+    """A search saved to the database by the user."""
 
+    name: str
+    search: SearchBuilder
+    is_default: bool = False
 
-def _validate_saved_search_row(
-    name: str, json_str: str
-) -> tuple[str, SearchBuilder] | None:
-    if search := SearchBuilder.from_json(json_str):
-        return name, search
-    _DbState.connection().execute("DELETE FROM saved_search WHERE name = ?", (name,))
-    _logger.warning(f"Dropped invalid saved search '{name}'.")
-    return None
+    def insert(self) -> None:
+        self.name = (
+            _DbState.connection()
+            .execute(
+                _SqlCache.get("insert_saved_search.sql"),
+                {
+                    "name": self.name,
+                    "search": self.search.to_json(),
+                    "is_default": self.is_default,
+                },
+            )
+            .fetchone()
+        )[0]
 
-
-def delete_saved_search(name: str) -> None:
-    _DbState.connection().execute("DELETE FROM saved_search WHERE name = ?", (name,))
-
-
-def get_saved_search(name: str) -> SearchBuilder | None:
-    row = (
-        _DbState.connection()
-        .execute("SELECT name, search FROM saved_search WHERE name = ?", (name,))
-        .fetchone()
-    )
-    if row and (search := _validate_saved_search_row(*row)):
-        return search[1]
-    return None
-
-
-def rename_saved_search(name: str, new_name: str) -> bool:
-    """True if successfull, False means constraint error."""
-    try:
+    def delete(self) -> None:
         _DbState.connection().execute(
-            "UPDATE saved_search SET name = ? WHERE name = ?", (new_name, name)
+            "DELETE FROM saved_search WHERE name = ?", (self.name,)
         )
-    except sqlite3.IntegrityError:
-        return False
-    return True
+
+    @classmethod
+    def get(cls, name: str) -> SavedSearch | None:
+        row = (
+            _DbState.connection()
+            .execute(
+                "SELECT name, search, is_default FROM saved_search WHERE name = ?",
+                (name,),
+            )
+            .fetchone()
+        )
+        if row and (search := cls._validate_saved_search_row(*row)):
+            return search
+        return None
+
+    def update(self, new_name: str | None = None) -> None:
+        self.name = (
+            _DbState.connection()
+            .execute(
+                _SqlCache.get("update_saved_search.sql"),
+                {
+                    "old_name": self.name,
+                    "new_name": new_name or self.name,
+                    "search": self.search.to_json(),
+                    "is_default": self.is_default,
+                },
+            )
+            .fetchone()
+        )[0]
+
+    @classmethod
+    def load_saved_searches(cls) -> Iterable[SavedSearch]:
+        return (
+            search
+            for row in _DbState.connection()
+            .execute("SELECT name, search, is_default FROM saved_search ORDER BY name")
+            .fetchall()
+            if (search := cls._validate_saved_search_row(*row))
+        )
+
+    @classmethod
+    def _validate_saved_search_row(
+        cls, name: str, json_str: str, is_default: int
+    ) -> SavedSearch | None:
+        if search := SearchBuilder.from_json(json_str):
+            return cls(name, search, bool(is_default))
+        _DbState.connection().execute(
+            "DELETE FROM saved_search WHERE name = ?", (name,)
+        )
+        _logger.warning(f"Dropped invalid saved search '{name}'.")
+        return None
 
 
 def _in_values_clause(attribute: str, values: list) -> str:

@@ -60,12 +60,14 @@ class TreeModel(QAbstractItemModel):
 
         item.checked = checked
 
-    def insert_saved_search(self, data: SavedSearch) -> QModelIndex:
+    def insert_saved_search(self, search: SavedSearch) -> QModelIndex:
+        with db.transaction():
+            search.insert()
         parent = self.root.children[0]
         parent_idx = self.index_for_item(parent)
         self.beginInsertRows(parent_idx, 0, 0)
         self.root.children[0].children = (
-            VariantItem(data=data, parent=parent),
+            VariantItem(data=search, parent=parent),
             *self.root.children[0].children,
         )
         self.endInsertRows()
@@ -77,7 +79,7 @@ class TreeModel(QAbstractItemModel):
             return
         self.beginRemoveRows(index.parent(), index.row(), index.row())
         with db.transaction():
-            db.delete_saved_search(item.data.name)
+            item.data.delete()
         children = item.parent.children
         item.parent.children = (*children[: index.row()], *children[index.row() + 1 :])
         self.endRemoveRows()
@@ -144,10 +146,8 @@ class TreeModel(QAbstractItemModel):
         item = self.item_for_index(index)
         if not isinstance(item.data, SavedSearch) or item.data.name == value:
             return False
-        if db.rename_saved_search(item.data.name, value):
-            item.data.name = value
-            return True
-        return False
+        item.data.update(new_name=value)
+        return True
 
 
 class TreeProxyModel(QSortFilterProxyModel):

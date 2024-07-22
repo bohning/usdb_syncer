@@ -19,16 +19,27 @@ def test_persisting_usdb_song(song: UsdbSong) -> None:
 
 
 def test_persisting_saved_search() -> None:
-    search = db.SearchBuilder(
-        order=db.SongOrder.ARTIST,
-        text="foo bar",
-        genres=["Rock", "Pop"],
-        views=[(0, 100)],
-        years=[1990, 2000, 2010],
+    search = db.SavedSearch(
+        "name",
+        db.SearchBuilder(
+            order=db.SongOrder.ARTIST,
+            text="foo bar",
+            genres=["Rock", "Pop"],
+            views=[(0, 100)],
+            years=[1990, 2000, 2010],
+        ),
     )
     db.connect(":memory:")
-    search.upsert("name")
-    saved = list(db.load_saved_searches())
+    search.insert()
+    saved = list(db.SavedSearch.load_saved_searches())
     assert len(saved) == 1
-    assert saved[0][0] == "name"
-    assert search == saved[0][1]
+    assert search.name == "name"
+    assert saved[0] == search
+
+    search.insert()
+    assert search.name == "name (1)"
+    assert len(list(db.SavedSearch.load_saved_searches())) == 2
+
+    search.update(new_name="name")
+    assert search.name == "name (1)"
+    assert len(list(db.SavedSearch.load_saved_searches())) == 2

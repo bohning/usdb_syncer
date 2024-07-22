@@ -491,17 +491,14 @@ class ViewsVariant(SongMatch, enum.Enum):
 
 
 @attrs.define
-class SavedSearch(SongMatch):
+class SavedSearch(SongMatch, db.SavedSearch):
     """A search saved by the user."""
-
-    name: str
-    search: db.SearchBuilder
 
     @classmethod
     def load_all(cls) -> Iterable[SavedSearch]:
         with db.transaction():
-            rows = db.load_saved_searches()
-        return (cls(*row) for row in rows)
+            searches = db.SavedSearch.load_saved_searches()
+        return (cls(s.name, s.search, s.is_default) for s in searches)
 
     def build_search(self, search: db.SearchBuilder) -> None:
         pass

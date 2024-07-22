@@ -95,19 +95,13 @@ class FilterTree:
         )
         if not isinstance(item.data, SavedSearch):
             return
-        with db.transaction():
-            self._search.upsert(item.data.name)
         item.data.search = copy.deepcopy(self._search)
+        with db.transaction():
+            item.data.update()
 
     def _add_saved_search(self) -> None:
-        name = first_name = "My search"
-        i = 0
-        while db.get_saved_search(name):
-            i += 1
-            name = f"{first_name} ({i})"
-        with db.transaction():
-            self._search.upsert(name)
-        data = SavedSearch(name, self._search)
-        index = self._proxy_model.mapFromSource(self._model.insert_saved_search(data))
+        index = self._proxy_model.mapFromSource(
+            self._model.insert_saved_search(SavedSearch("My search", self._search))
+        )
         self.view.setCurrentIndex(index)
         self.view.edit(index)
