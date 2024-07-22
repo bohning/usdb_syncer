@@ -15,7 +15,16 @@ from PySide6 import QtCore, QtGui, QtWidgets
 from PySide6.QtCore import Qt
 
 import tools
-from usdb_syncer import constants, db, errors, settings, song_routines, sync_meta, utils
+from usdb_syncer import (
+    constants,
+    db,
+    errors,
+    events,
+    settings,
+    song_routines,
+    sync_meta,
+    utils,
+)
 
 if TYPE_CHECKING:
     # only import from gui after pyside file generation
@@ -83,7 +92,11 @@ def _load_main_window(mw: MainWindow) -> None:
         song_routines.load_available_songs(force_reload=False)
         song_routines.synchronize_sync_meta_folder(folder)
         sync_meta.SyncMeta.reset_active(folder)
+        default_search = db.SavedSearch.get_default()
     mw.tree.populate()
+    if default_search:
+        events.SavedSearchRestored(default_search.search).post()
+        logging.info(f"Applied default search '{default_search.name}'.")
     mw.table.search_songs()
     splash.showMessage("Song database successfully loaded.", color=Qt.GlobalColor.gray)
     mw.show()

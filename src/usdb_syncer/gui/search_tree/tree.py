@@ -36,6 +36,7 @@ class FilterTree:
         self._model.dataChanged.connect(self._on_data_changed)
         mw.line_edit_search_filters.textChanged.connect(self._proxy_model.set_filter)
         self._setup_actions()
+        events.SavedSearchRestored.subscribe(self._restore_saved_search)
 
     def _setup_actions(self) -> None:
         self.mw.action_add_saved_search.triggered.connect(self._add_saved_search)
@@ -50,26 +51,21 @@ class FilterTree:
 
     def populate(self) -> None:
         self._model.populate()
-        for item in self._model.root.children[0].children:
-            if isinstance(item.data, SavedSearch) and item.data.is_default:
-                self._restore_saved_search(item.data.search)
-                break
         self.view.expand(
             self._proxy_model.mapFromSource(
                 self._model.index_for_item(self._model.root.children[0])
             )
         )
 
-    def _restore_saved_search(self, search: db.SearchBuilder) -> None:
+    def _restore_saved_search(self, event: events.SavedSearchRestored) -> None:
         for filt in self._model.root.children:
-            for changed in filt.set_checked_children(search):
+            for changed in filt.set_checked_children(event.search):
                 self._model.emit_item_changed(changed)
-        events.SavedSearchRestored(search).post()
 
     def _on_click(self, index: QModelIndex) -> None:
         item = self._model.item_for_index(self._proxy_model.mapToSource(index))
         if isinstance(item.data, SavedSearch):
-            self._restore_saved_search(item.data.search)
+            events.SavedSearchRestored(item.data.search).post()
         else:
             for changed in item.toggle_checked(keyboard_modifiers().ctrl):
                 self._model.emit_item_changed(changed)

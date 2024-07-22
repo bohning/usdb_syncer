@@ -386,6 +386,17 @@ class SavedSearch:
             return search
         return None
 
+    @classmethod
+    def get_default(cls) -> SavedSearch | None:
+        stmt = (
+            "SELECT name, search, is_default, subscribed FROM saved_search"
+            " WHERE is_default = true"
+        )
+        row = _DbState.connection().execute(stmt).fetchone()
+        if row and (search := cls._validate_saved_search_row(*row)):
+            return search
+        return None
+
     def update(self, new_name: str | None = None) -> None:
         self.name = (
             _DbState.connection()
