@@ -498,7 +498,7 @@ class SavedSearch(SongMatch, db.SavedSearch):
     def load_all(cls) -> Iterable[SavedSearch]:
         with db.transaction():
             searches = db.SavedSearch.load_saved_searches()
-        return (cls(s.name, s.search, s.is_default) for s in searches)
+        return (cls(s.name, s.search, s.is_default, s.subscribed) for s in searches)
 
     def build_search(self, search: db.SearchBuilder) -> None:
         pass

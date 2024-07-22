@@ -353,6 +353,7 @@ class SavedSearch:
     name: str
     search: SearchBuilder
     is_default: bool = False
+    subscribed: bool = False
 
     def insert(self) -> None:
         self.name = (
@@ -363,6 +364,7 @@ class SavedSearch:
                     "name": self.name,
                     "search": self.search.to_json(),
                     "is_default": self.is_default,
+                    "subscribed": self.subscribed,
                 },
             )
             .fetchone()
@@ -375,14 +377,11 @@ class SavedSearch:
 
     @classmethod
     def get(cls, name: str) -> SavedSearch | None:
-        row = (
-            _DbState.connection()
-            .execute(
-                "SELECT name, search, is_default FROM saved_search WHERE name = ?",
-                (name,),
-            )
-            .fetchone()
+        stmt = (
+            "SELECT name, search, is_default, subscribed FROM saved_search"
+            " WHERE name = ?"
         )
+        row = _DbState.connection().execute(stmt, (name,)).fetchone()
         if row and (search := cls._validate_saved_search_row(*row)):
             return search
         return None
@@ -397,6 +396,7 @@ class SavedSearch:
                     "new_name": new_name or self.name,
                     "search": self.search.to_json(),
                     "is_default": self.is_default,
+                    "subscribed": self.subscribed,
                 },
             )
             .fetchone()
@@ -404,20 +404,22 @@ class SavedSearch:
 
     @classmethod
     def load_saved_searches(cls) -> Iterable[SavedSearch]:
+        stmt = (
+            "SELECT name, search, is_default, subscribed FROM saved_search "
+            "ORDER BY name"
+        )
         return (
             search
-            for row in _DbState.connection()
-            .execute("SELECT name, search, is_default FROM saved_search ORDER BY name")
-            .fetchall()
+            for row in _DbState.connection().execute(stmt).fetchall()
             if (search := cls._validate_saved_search_row(*row))
         )
 
     @classmethod
     def _validate_saved_search_row(
-        cls, name: str, json_str: str, is_default: int
+        cls, name: str, json_str: str, is_default: int, subscribed: int
     ) -> SavedSearch | None:
         if search := SearchBuilder.from_json(json_str):
-            return cls(name, search, bool(is_default))
+            return cls(name, search, bool(is_default), bool(subscribed))
         _DbState.connection().execute(
             "DELETE FROM saved_search WHERE name = ?", (name,)
         )

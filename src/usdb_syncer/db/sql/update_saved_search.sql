@@ -30,6 +30,6 @@ SET
             suffix DESC
         LIMIT
             1
-    ), search = json(:search), is_default = :is_default
+    ), search = json(:search), is_default = :is_default, subscribed = :subscribed
 WHERE
     name = :old_name RETURNING name;

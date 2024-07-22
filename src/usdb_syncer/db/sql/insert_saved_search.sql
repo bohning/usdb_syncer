@@ -18,11 +18,12 @@ WITH RECURSIVE candidates AS (
         )
 )
 INSERT INTO
-    saved_search (name, search, is_default)
+    saved_search (name, search, is_default, subscribed)
 SELECT
     name,
     json(:search),
-    :is_default
+    :is_default,
+    :subscribed
 FROM
     candidates
 ORDER BY

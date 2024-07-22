@@ -89,6 +89,12 @@ class FilterTree:
             make_default.triggered.connect(
                 lambda check: self._set_search_is_default(item.data, check)
             )
+            subscribe = QtGui.QAction("Download new matches", self.view)
+            subscribe.setCheckable(True)
+            subscribe.setChecked(item.data.subscribed)
+            subscribe.triggered.connect(
+                lambda check: self._set_search_subscribed(item.data, check)
+            )
             actions = [update, delete, make_default]
         else:
             return
@@ -124,5 +130,10 @@ class FilterTree:
                 if isinstance(item.data, SavedSearch) and item.data.is_default:
                     item.data.is_default = False
         search.is_default = default
+        with db.transaction():
+            search.update()
+
+    def _set_search_subscribed(self, search: SavedSearch, subscribe: bool) -> None:
+        search.subscribed = subscribe
         with db.transaction():
             search.update()
