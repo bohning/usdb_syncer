@@ -35,6 +35,18 @@ class FilterTree:
         self.view.customContextMenuRequested.connect(self._context_menu)
         self._model.dataChanged.connect(self._on_data_changed)
         mw.line_edit_search_filters.textChanged.connect(self._proxy_model.set_filter)
+        self._setup_actions()
+
+    def _setup_actions(self) -> None:
+        self.mw.action_add_saved_search.triggered.connect(self._add_saved_search)
+        self.mw.action_update_saved_search.triggered.connect(self._update_saved_search)
+        self.mw.action_delete_saved_search.triggered.connect(self._delete_saved_search)
+        self.mw.action_set_saved_search_default.triggered.connect(
+            self._set_search_is_default
+        )
+        self.mw.action_set_saved_search_subscribed.triggered.connect(
+            self._set_search_subscribed
+        )
 
     def populate(self) -> None:
         self._model.populate()
@@ -76,26 +88,16 @@ class FilterTree:
             self._proxy_model.mapToSource(self.view.currentIndex())
         )
         if item.data == Filter.SAVED:
-            actions = [QtGui.QAction("Save current search", self.view)]
-            actions[0].triggered.connect(self._add_saved_search)
+            actions = [self.mw.action_add_saved_search]
         elif isinstance(item.data, SavedSearch):
-            update = QtGui.QAction("Update with current search", self.view)
-            update.triggered.connect(self._update_saved_search)
-            delete = QtGui.QAction("Delete", self.view)
-            delete.triggered.connect(self._delete_saved_search)
-            make_default = QtGui.QAction("Apply on startup", self.view)
-            make_default.setCheckable(True)
-            make_default.setChecked(item.data.is_default)
-            make_default.triggered.connect(
-                lambda check: self._set_search_is_default(item.data, check)
-            )
-            subscribe = QtGui.QAction("Download new matches", self.view)
-            subscribe.setCheckable(True)
-            subscribe.setChecked(item.data.subscribed)
-            subscribe.triggered.connect(
-                lambda check: self._set_search_subscribed(item.data, check)
-            )
-            actions = [update, delete, make_default]
+            self.mw.action_set_saved_search_default.setChecked(item.data.is_default)
+            self.mw.action_set_saved_search_subscribed.setChecked(item.data.subscribed)
+            actions = [
+                self.mw.action_update_saved_search,
+                self.mw.action_delete_saved_search,
+                self.mw.action_set_saved_search_default,
+                self.mw.action_set_saved_search_subscribed,
+            ]
         else:
             return
         menu = QtWidgets.QMenu()
@@ -107,15 +109,19 @@ class FilterTree:
             self._proxy_model.mapToSource(self.view.currentIndex())
         )
 
-    def _update_saved_search(self) -> None:
+    def _get_current_saved_search(self) -> SavedSearch | None:
         item = self._model.item_for_index(
             self._proxy_model.mapToSource(self.view.currentIndex())
         )
-        if not isinstance(item.data, SavedSearch):
-            return
-        item.data.search = copy.deepcopy(self._search)
-        with db.transaction():
-            item.data.update()
+        if isinstance(item.data, SavedSearch):
+            return item.data
+        return None
+
+    def _update_saved_search(self) -> None:
+        if search := self._get_current_saved_search():
+            search.search = copy.deepcopy(self._search)
+            with db.transaction():
+                search.update()
 
     def _add_saved_search(self) -> None:
         index = self._proxy_model.mapFromSource(
@@ -124,16 +130,18 @@ class FilterTree:
         self.view.setCurrentIndex(index)
         self.view.edit(index)
 
-    def _set_search_is_default(self, search: SavedSearch, default: bool) -> None:
-        if default:
-            for item in self._model.root.children[0].children:
-                if isinstance(item.data, SavedSearch) and item.data.is_default:
-                    item.data.is_default = False
-        search.is_default = default
-        with db.transaction():
-            search.update()
+    def _set_search_is_default(self, default: bool) -> None:
+        if search := self._get_current_saved_search():
+            if default:
+                for item in self._model.root.children[0].children:
+                    if isinstance(item.data, SavedSearch) and item.data.is_default:
+                        item.data.is_default = False
+            search.is_default = default
+            with db.transaction():
+                search.update()
 
-    def _set_search_subscribed(self, search: SavedSearch, subscribe: bool) -> None:
-        search.subscribed = subscribe
-        with db.transaction():
-            search.update()
+    def _set_search_subscribed(self, subscribe: bool) -> None:
+        if search := self._get_current_saved_search():
+            search.subscribed = subscribe
+            with db.transaction():
+                search.update()
