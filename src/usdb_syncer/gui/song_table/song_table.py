@@ -324,4 +324,5 @@ class SongTable:
     def _on_sort_order_changed(self, section: int, order: Qt.SortOrder) -> None:
         self._search.order = Column(section).song_order()
         self._search.descending = bool(order.value)
+        events.SearchOrderChanged(self._search.order, self._search.descending).post()
         self.search_songs()

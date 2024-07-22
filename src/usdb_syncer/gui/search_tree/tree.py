@@ -36,6 +36,8 @@ class FilterTree:
         self._model.dataChanged.connect(self._on_data_changed)
         mw.line_edit_search_filters.textChanged.connect(self._proxy_model.set_filter)
         self._setup_actions()
+        events.SearchOrderChanged.subscribe(self._on_search_order_changed)
+        events.TextFilterChanged.subscribe(self._on_text_filter_changed)
         events.SavedSearchRestored.subscribe(self._restore_saved_search)
 
     def _setup_actions(self) -> None:
@@ -74,7 +76,11 @@ class FilterTree:
         self._model.dataChanged.connect(func)
 
     def _on_data_changed(self) -> None:
-        self._search = db.SearchBuilder()
+        self._search = db.SearchBuilder(
+            order=self._search.order,
+            descending=self._search.descending,
+            text=self._search.text,
+        )
         for filt in self._model.root.children:
             filt.build_search(self._search)
         events.TreeFilterChanged(self._search).post()
@@ -141,3 +147,10 @@ class FilterTree:
             search.subscribed = subscribe
             with db.transaction():
                 search.update()
+
+    def _on_search_order_changed(self, event: events.SearchOrderChanged) -> None:
+        self._search.descending = event.descending
+        self._search.order = event.order
+
+    def _on_text_filter_changed(self, event: events.TextFilterChanged) -> None:
+        self._search.text = event.search

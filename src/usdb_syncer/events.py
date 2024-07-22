@@ -78,6 +78,14 @@ class TextFilterChanged(SubscriptableEvent):
 
 
 @attrs.define(slots=False)
+class SearchOrderChanged(SubscriptableEvent):
+    """Sent when the search order has been changed or reversed."""
+
+    order: db.SongOrder
+    descending: bool
+
+
+@attrs.define(slots=False)
 class SavedSearchRestored(SubscriptableEvent):
     """Sent when the a save search is set."""
 

@@ -1,7 +1,6 @@
 """Dialog to report missing ffmpeg."""
 
 import os
-import shutil
 import sys
 from typing import Callable
 
@@ -16,16 +15,10 @@ def check_ffmpeg(parent: QWidget, on_success: Callable[[], None]) -> None:
     """If ffmpeg is available, can be restored from the settings or is provided
     by the user, executes `on_sucess`.
     """
-    if shutil.which("ffmpeg"):
+    if settings.ffmpeg_is_available():
         on_success()
-        return
-    if (path := settings.get_ffmpeg_dir()) and path not in os.environ["PATH"]:
-        # first run; restore path from settings
-        add_to_system_path(path)
-        if shutil.which("ffmpeg"):
-            on_success()
-            return
-    FfmpegDialog(parent, on_success).show()
+    else:
+        FfmpegDialog(parent, on_success).show()
 
 
 class FfmpegDialog(Ui_Dialog, QDialog):

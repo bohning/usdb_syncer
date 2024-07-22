@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import contextlib
 import enum
+import itertools
 import json
 import sqlite3
 import threading
@@ -238,7 +239,7 @@ class SearchBuilder:
     golden_notes: bool | None = None
     downloaded: bool | None = None
 
-    def _filters(self) -> Iterator[str]:
+    def filters(self) -> Iterator[str]:
         if _fts5_phrases(self.text):
             yield (
                 "usdb_song.song_id IN (SELECT rowid FROM fts_usdb_song WHERE"
@@ -277,7 +278,7 @@ class SearchBuilder:
             yield f"sync_meta.sync_meta_id IS {'NOT ' if self.downloaded else ''}NULL"
 
     def _where_clause(self) -> str:
-        where = " AND ".join(self._filters())
+        where = " AND ".join(self.filters())
         return f" WHERE {where}" if where else ""
 
     def _order_by_clause(self) -> str:
@@ -414,10 +415,12 @@ class SavedSearch:
         )[0]
 
     @classmethod
-    def load_saved_searches(cls) -> Iterable[SavedSearch]:
+    def load_saved_searches(
+        cls, subscribed_only: bool = False
+    ) -> Iterable[SavedSearch]:
         stmt = (
-            "SELECT name, search, is_default, subscribed FROM saved_search "
-            "ORDER BY name"
+            "SELECT name, search, is_default, subscribed FROM saved_search"
+            f"{' WHERE subscribed' if subscribed_only else ''} ORDER BY name"
         )
         return (
             search
@@ -436,6 +439,16 @@ class SavedSearch:
         )
         _logger.warning(f"Dropped invalid saved search '{name}'.")
         return None
+
+    @classmethod
+    def get_subscribed_song_ids(cls) -> Iterable[SongId]:
+        if not (searches := list(cls.load_saved_searches(subscribed_only=True))):
+            return []
+        for search in searches:
+            search.search.order = SongOrder.NONE
+        stmt = "\nUNION\n".join(s.search.statement() for s in searches)
+        params = tuple(p for s in searches for p in s.search.parameters())
+        return (SongId(r[0]) for r in _DbState.connection().execute(stmt, params))
 
 
 def _in_values_clause(attribute: str, values: list) -> str:

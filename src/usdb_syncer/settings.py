@@ -8,6 +8,7 @@ and getters should be added to this module.
 from __future__ import annotations
 
 import os
+import shutil
 import traceback
 from enum import Enum
 from http.cookiejar import CookieJar
@@ -18,7 +19,7 @@ import browser_cookie3
 import keyring
 from PySide6.QtCore import QByteArray, QSettings
 
-from usdb_syncer import path_template
+from usdb_syncer import path_template, utils
 from usdb_syncer.constants import Usdb
 from usdb_syncer.logger import get_logger
 
@@ -49,6 +50,17 @@ def set_usdb_auth(username: str, password: str) -> None:
     except keyring.core.backend.errors.NoKeyringError as error:
         _logger.debug(error)
         _logger.warning(NO_KEYRING_BACKEND_WARNING)
+
+
+def ffmpeg_is_available() -> bool:
+    if shutil.which("ffmpeg"):
+        return True
+    if (path := get_ffmpeg_dir()) and path not in os.environ["PATH"]:
+        # first run; restore path from settings
+        utils.add_to_system_path(path)
+        if shutil.which("ffmpeg"):
+            return True
+    return False
 
 
 class SettingKey(Enum):
