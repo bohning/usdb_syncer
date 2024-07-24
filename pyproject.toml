@@ -1,10 +1,63 @@
 [build-system]
-requires = ["setuptools>=42", "wheel", "setuptools_scm[toml]>=3.4"]
-build-backend = "setuptools.build_meta"
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
 
-# Enables the usage of setuptools_scm
-[tool.setuptools_scm]
-"root" = "."
+[tool.poetry]
+name = "usdb_syncer"
+version = "0.7.0"
+authors = ["Markus Böhning <markus.boehning@gmail.com>"]
+description = "A download manager for USDB songs."
+readme = ["README.md"]
+repository = "https://github.com/bohning/usdb_syncer"
+
+[tool.poetry.dependencies]
+python = "3.11.*"
+appdirs = "*"
+attrs = "*"
+beautifulsoup4 = "*"
+browser_cookie3 = "*"
+dbus-python = {version = "*", markers="sys_platform == 'linux'"}
+ffmpeg-normalize = ">=1.27"
+filetype = "*"
+importlib-metadata = "*"
+keyring = "*"
+lxml = "*"
+mutagen = "*"
+pdfme = "*"
+pillow = ">=10"
+pyshorteners = "*"
+PySide6 = "==6.7.*"
+requests = "*"
+send2trash = "*"
+unidecode = "*"
+yt_dlp = "*"
+wheel = "*"
+# build
+pyinstaller = "*"
+pyinstaller-hooks-contrib = "*"
+# specifically required for pyinstaller (Note: darwin -> macos)
+altgraph = "*"
+macholib = {version = "*", markers="sys_platform == 'darwin'"}
+pywin32-ctypes = {version = "*", markers="sys_platform == 'win32'"}
+
+[tool.poetry.group.dev.dependencies]
+tox = "*"
+# lint
+black = "*"
+isort = "*"
+mypy = "*"
+pylint = "*"
+types-setuptools = "*"
+types-requests = "*"
+# test
+pytest = "*"
+snakeviz = "*"
+
+[tool.poetry.scripts]
+usdb_syncer = "usdb_syncer.gui:main"
+generate_pyside_files = "tools.generate_pyside_files:cli_entry"
+generate_song_list_json = "tools.generate_song_list_json:cli_entry"
+write_release_info = "tools.write_release_info:cli_entry"
 
 [tool.isort]
 profile = "black"

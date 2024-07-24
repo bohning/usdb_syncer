@@ -20,16 +20,15 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y gcc python3-dev libdbus-1-dev
           pkg-config --cflags --libs dbus-1
-      - name: Install Pipenv
+      - name: Install poetry
         run: |
-          python -m pip install pipenv
+          python -m pip install poetry
       - name: Install dependencies
         run: |
-          pipenv sync --system
+          poetry install
       - name: Scrape USDB song list to ship with the bundle
         run: >
-          env PYTHONPATH=$(pwd)/src
-          python -m src.tools.generate_song_list_json
+          poetry run generate_song_list_json
           -t 'song_list.json'
           -u '${{ secrets.USDB_USER }}'
           -p '${{ secrets.USDB_PASSWORD }}'
@@ -86,35 +85,23 @@ jobs:
           version: "6.7.*"
           setup-python: false
           no-qt-binaries: true
-      - name: Install Pipenv
+      - name: Install poetry
         run: |
-          python -m pip install pipenv
+          python -m pip install poetry
       - name: Install dependencies
         run: |
-          pipenv sync --system
-      - name: Prepend src to PYTHONPATH (Windows)
-        run: |
-          echo "PERSISTENT_PYTHONPATH=$(pwd)\src;$env:PYTHONPATH" >> $env:GITHUB_ENV
-        if: matrix.TARGET == 'Windows'
-      - name: Prepend src to PYTHONPATH (Linux/macOS)
-        run: |
-          echo "PERSISTENT_PYTHONPATH=$(pwd)/src:$PYTHONPATH" >> $GITHUB_ENV
-        if: matrix.TARGET == 'Linux' || matrix.TARGET == 'macOS'
+          poetry install --without dev
       - name: Write version and commit hash
         run: >
-          python -m src.tools.write_release_info
+          poetry run write_release_info
           -p src/usdb_syncer/constants.py
           -v ${{ github.ref_name }}
           -c ${{ github.workflow_sha }}
-        env:
-          PYTHONPATH: ${{ env.PERSISTENT_PYTHONPATH }}
       - name: Generate GUI elements
-        run: python -m src.tools.generate_pyside_files
-        env:
-          PYTHONPATH: ${{ env.PERSISTENT_PYTHONPATH }}
+        run: poetry run generate_pyside_files
       - name: Build with pyinstaller for ${{matrix.os}}
         run: >
-          pyinstaller
+          poetry run pyinstaller
           -n 'USDB_Syncer-${{github.ref_name}}-${{matrix.TARGET}}'
           ${{matrix.PYINSTALLER_ARGS}}
           src/usdb_syncer/gui/__init__.py
