@@ -11,6 +11,10 @@
   using slashes. The last component specifies the filename, excluding its extension.
   Example: `:year: / :artist: / :title: / song` will store files like
   `1975/Queen/Bohemian Rhapsody/song.txt` and so on.
+- Searches can be saved to the sidebar.
+  - A single saved search may be made the default to automatically apply it on startup.
+  - You can subscribe to saved searches to automatically download matches when new songs
+    are found on USDB.
 
 <!-- 0.7.0 -->
 
