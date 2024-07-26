@@ -12,6 +12,7 @@ from PySide6.QtCore import QItemSelectionModel, Qt
 
 from usdb_syncer import SongId, db, events, media_player, settings
 from usdb_syncer.gui import ffmpeg_dialog
+from usdb_syncer.gui.progress import run_with_progress
 from usdb_syncer.gui.song_table.column import Column
 from usdb_syncer.gui.song_table.table_model import TableModel
 from usdb_syncer.logger import get_logger
@@ -87,11 +88,22 @@ class SongTable:
     def reset(self) -> None:
         self._model.reset()
 
+    def begin_reset(self) -> None:
+        self._model.beginResetModel()
+
+    def end_reset(self) -> None:
+        self._model.endResetModel()
+
     def download_selection(self) -> None:
         self._download(self._selected_rows())
 
     def _download(self, rows: Iterable[int]) -> None:
-        ffmpeg_dialog.check_ffmpeg(self.mw, partial(self._download_inner, rows))
+        ffmpeg_dialog.check_ffmpeg(
+            self.mw,
+            lambda: run_with_progress(
+                "Initializing downloads ...", partial(self._download_inner, rows)
+            ),
+        )
 
     def _download_inner(self, rows: Iterable[int]) -> None:
         to_download: list[UsdbSong] = []
