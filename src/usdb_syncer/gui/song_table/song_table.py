@@ -126,7 +126,8 @@ class SongTable:
             DownloadManager.download(to_download)
 
     def abort_selected_downloads(self) -> None:
-        DownloadManager.abort(self._model.ids_for_rows(self._selected_rows()))
+        ids = self._model.ids_for_rows(self._selected_rows())
+        run_with_progress("Aborting downloads ...", lambda: DownloadManager.abort(ids))
 
     def _setup_view(self) -> None:
         state = settings.get_table_view_header_state()
