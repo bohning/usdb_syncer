@@ -12,6 +12,7 @@ from PySide6.QtCore import QItemSelectionModel, Qt
 
 from usdb_syncer import SongId, db, events, media_player, settings
 from usdb_syncer.gui import ffmpeg_dialog
+from usdb_syncer.gui.progress import run_with_progress
 from usdb_syncer.gui.song_table.column import Column
 from usdb_syncer.gui.song_table.table_model import TableModel
 from usdb_syncer.logger import get_logger
@@ -49,6 +50,7 @@ class SongTable:
         self._setup_search_timer()
         events.TreeFilterChanged.subscribe(self._on_tree_filter_changed)
         events.TextFilterChanged.subscribe(self._on_text_filter_changed)
+        events.SavedSearchRestored.subscribe(self._on_saved_search_restored)
         QtGui.QShortcut(Qt.Key.Key_Space, self._view).activated.connect(self._on_space)
 
     def _on_playback_state_changed(
@@ -59,7 +61,7 @@ class SongTable:
             self._playing_song = song = self._next_playing_song
             self._next_playing_song = None
             song.is_playing = True
-        elif state == QtMultimedia.QMediaPlayer.PlaybackState.StoppedState:
+        else:
             assert self._playing_song
             song = self._playing_song
             self._playing_song = None
@@ -86,11 +88,22 @@ class SongTable:
     def reset(self) -> None:
         self._model.reset()
 
+    def begin_reset(self) -> None:
+        self._model.beginResetModel()
+
+    def end_reset(self) -> None:
+        self._model.endResetModel()
+
     def download_selection(self) -> None:
         self._download(self._selected_rows())
 
     def _download(self, rows: Iterable[int]) -> None:
-        ffmpeg_dialog.check_ffmpeg(self.mw, partial(self._download_inner, rows))
+        ffmpeg_dialog.check_ffmpeg(
+            self.mw,
+            lambda: run_with_progress(
+                "Initializing downloads ...", partial(self._download_inner, rows)
+            ),
+        )
 
     def _download_inner(self, rows: Iterable[int]) -> None:
         to_download: list[UsdbSong] = []
@@ -113,7 +126,8 @@ class SongTable:
             DownloadManager.download(to_download)
 
     def abort_selected_downloads(self) -> None:
-        DownloadManager.abort(self._model.ids_for_rows(self._selected_rows()))
+        ids = self._model.ids_for_rows(self._selected_rows())
+        run_with_progress("Aborting downloads ...", lambda: DownloadManager.abort(ids))
 
     def _setup_view(self) -> None:
         state = settings.get_table_view_header_state()
@@ -302,6 +316,20 @@ class SongTable:
         self._search = event.search
         self.search_songs(100)
 
+    def _on_saved_search_restored(self, event: events.SavedSearchRestored) -> None:
+        self._search.order = event.search.order
+        self._search.descending = event.search.descending
+        self._search.text = event.search.text
+        self._header().setSortIndicator(
+            Column.from_song_order(event.search.order),
+            (
+                Qt.SortOrder.DescendingOrder
+                if event.search.descending
+                else Qt.SortOrder.AscendingOrder
+            ),
+        )
+        self.search_songs(100)
+
     def _on_text_filter_changed(self, event: events.TextFilterChanged) -> None:
         self._search.text = event.search
         self.search_songs(400)
@@ -309,4 +337,5 @@ class SongTable:
     def _on_sort_order_changed(self, section: int, order: Qt.SortOrder) -> None:
         self._search.order = Column(section).song_order()
         self._search.descending = bool(order.value)
+        events.SearchOrderChanged(self._search.order, self._search.descending).post()
         self.search_songs()

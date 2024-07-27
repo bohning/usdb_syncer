@@ -19,6 +19,9 @@ class SongMatch:
     def build_search(self, search: db.SearchBuilder) -> None:
         raise NotImplementedError
 
+    def is_in_search(self, search: db.SearchBuilder) -> bool:
+        raise NotImplementedError
+
     def is_accepted(self, _matches: set[str | int]) -> bool:
         return True
 
@@ -36,8 +39,14 @@ class SongValueMatch(SongMatch, Generic[T]):
     def __str__(self) -> str:
         return f"{self.val} [{self.count}]"
 
-    def build_search(self, search: db.SearchBuilder) -> None:
+    def search_attr(self, search: db.SearchBuilder) -> list[T]:
         raise NotImplementedError
+
+    def build_search(self, search: db.SearchBuilder) -> None:
+        self.search_attr(search).append(self.val)
+
+    def is_in_search(self, search: db.SearchBuilder) -> bool:
+        return self.val in self.search_attr(search)
 
     def is_accepted(self, matches: set[str | int]) -> bool:
         return self.val in matches
@@ -46,50 +55,50 @@ class SongValueMatch(SongMatch, Generic[T]):
 class SongArtistMatch(SongValueMatch):
     """str that can be matched against a song's artist."""
 
-    def build_search(self, search: db.SearchBuilder) -> None:
-        search.artists.append(self.val)
+    def search_attr(self, search: db.SearchBuilder) -> list[str]:
+        return search.artists
 
 
 class SongTitleMatch(SongValueMatch):
     """str that can be matched against a song's title."""
 
-    def build_search(self, search: db.SearchBuilder) -> None:
-        search.titles.append(self.val)
+    def search_attr(self, search: db.SearchBuilder) -> list[str]:
+        return search.titles
 
 
 class SongEditionMatch(SongValueMatch):
     """str that can be matched against a song's edition."""
 
-    def build_search(self, search: db.SearchBuilder) -> None:
-        search.editions.append(self.val)
+    def search_attr(self, search: db.SearchBuilder) -> list[str]:
+        return search.editions
 
 
 class SongLanguageMatch(SongValueMatch):
     """str that can be matched against a song's language."""
 
-    def build_search(self, search: db.SearchBuilder) -> None:
-        search.languages.append(self.val)
+    def search_attr(self, search: db.SearchBuilder) -> list[str]:
+        return search.languages
 
 
 class SongYearMatch(SongValueMatch):
     """str that can be matched against a song's year."""
 
-    def build_search(self, search: db.SearchBuilder) -> None:
-        search.years.append(self.val)
+    def search_attr(self, search: db.SearchBuilder) -> list[int]:
+        return search.years
 
 
 class SongGenreMatch(SongValueMatch):
     """str that can be matched against a song's genre."""
 
-    def build_search(self, search: db.SearchBuilder) -> None:
-        search.genres.append(self.val)
+    def search_attr(self, search: db.SearchBuilder) -> list[str]:
+        return search.genres
 
 
 class SongCreatorMatch(SongValueMatch):
     """str that can be matched against a song's creator."""
 
-    def build_search(self, search: db.SearchBuilder) -> None:
-        search.creators.append(self.val)
+    def search_attr(self, search: db.SearchBuilder) -> list[str]:
+        return search.creators
 
 
 @attrs.define(kw_only=True)
@@ -98,9 +107,10 @@ class TreeItem:
 
     data: Any
     parent: TreeItem | None
+    checkable: bool = False
     row_in_parent: int = attrs.field(default=0, init=False)
     children: tuple[TreeItem, ...] = attrs.field(factory=tuple, init=False)
-    checked: bool = attrs.field(default=False, init=False)
+    checked: bool | None = attrs.field(default=False, init=False)
 
     def toggle_checked(self, _keep_siblings: bool) -> tuple[TreeItem, ...]:
         """Returns toggled items."""
@@ -139,6 +149,9 @@ class FilterItem(TreeItem):
     parent: RootItem
     children: tuple[VariantItem, ...] = attrs.field(factory=tuple, init=False)
     checked_children: set[int] = attrs.field(factory=set, init=False)
+
+    def __attrs_post_init__(self) -> None:
+        self.checkable = self.data != Filter.SAVED
 
     def add_child(self, child: VariantItem) -> None:
         child.parent = self
@@ -181,6 +194,22 @@ class FilterItem(TreeItem):
         self.checked = bool(self.checked_children)
         return changed
 
+    def set_checked_children(self, search: db.SearchBuilder) -> list[TreeItem]:
+        changed: list[TreeItem] = []
+        for idx, child in enumerate(self.children):
+            if child.data.is_in_search(search) == child.checked:
+                continue
+            changed.append(child)
+            child.checked = not child.checked
+            if child.checked:
+                self.checked_children.add(idx)
+            else:
+                self.checked_children.remove(idx)
+        if self.checked != bool(self.checked_children):
+            changed.append(self)
+            self.checked = not self.checked
+        return changed
+
     def decoration(self) -> QIcon:
         return self.data.decoration()
 
@@ -199,13 +228,26 @@ class VariantItem(TreeItem):
     data: SongMatch
     parent: FilterItem
     children: tuple[TreeItem, ...] = attrs.field(factory=tuple, init=False)
+    _flags: Qt.ItemFlag = attrs.field(init=False)
+
+    def __attrs_post_init__(self) -> None:
+        if self.parent.data == Filter.SAVED:
+            self.checkable = False
+            self._flags = (
+                Qt.ItemFlag.ItemIsEnabled
+                | Qt.ItemFlag.ItemNeverHasChildren
+                | Qt.ItemFlag.ItemIsEditable
+            )
+        else:
+            self.checkable = True
+            self._flags = (
+                Qt.ItemFlag.ItemIsEnabled
+                | Qt.ItemFlag.ItemIsUserCheckable
+                | Qt.ItemFlag.ItemNeverHasChildren
+            )
 
     def flags(self) -> Qt.ItemFlag:
-        return (
-            Qt.ItemFlag.ItemIsEnabled
-            | Qt.ItemFlag.ItemIsUserCheckable
-            | Qt.ItemFlag.ItemNeverHasChildren
-        )
+        return self._flags
 
     def toggle_checked(self, keep_siblings: bool) -> tuple[TreeItem, ...]:
         return self.parent.set_child_checked(
@@ -221,7 +263,8 @@ class VariantItem(TreeItem):
 class Filter(enum.Enum):
     """Kinds of filters in the tree."""
 
-    STATUS = 0
+    SAVED = 0
+    STATUS = enum.auto()
     ARTIST = enum.auto()
     TITLE = enum.auto()
     EDITION = enum.auto()
@@ -235,6 +278,8 @@ class Filter(enum.Enum):
 
     def __str__(self) -> str:
         match self:
+            case Filter.SAVED:
+                return "Saved Searches"
             case Filter.STATUS:
                 return "Status"
             case Filter.ARTIST:
@@ -262,6 +307,8 @@ class Filter(enum.Enum):
 
     def variants(self) -> Iterable[SongMatch]:
         match self:
+            case Filter.SAVED:
+                return SavedSearch.load_all()
             case Filter.ARTIST:
                 return (SongArtistMatch(v, c) for v, c in db.usdb_song_artists())
             case Filter.TITLE:
@@ -291,6 +338,8 @@ class Filter(enum.Enum):
     @cache  # pylint: disable=method-cache-max-size-none
     def decoration(self) -> QIcon:
         match self:
+            case Filter.SAVED:
+                return QIcon(":/icons/heart.png")
             case Filter.STATUS:
                 return QIcon(":/icons/status.png")
             case Filter.ARTIST:
@@ -354,6 +403,22 @@ class StatusVariant(SongMatch, enum.Enum):
             case unreachable:
                 assert_never(unreachable)
 
+    def is_in_search(self, search: db.SearchBuilder) -> bool:
+        match self:
+            case StatusVariant.IN_PROGRESS:
+                return (
+                    db.DownloadStatus.PENDING in search.statuses
+                    and db.DownloadStatus.DOWNLOADING in search.statuses
+                )
+            case StatusVariant.FAILED:
+                return db.DownloadStatus.FAILED in search.statuses
+            case StatusVariant.NONE:
+                return search.downloaded is False
+            case StatusVariant.DOWNLOADED:
+                return search.downloaded is True
+            case unreachable:
+                assert_never(unreachable)
+
 
 class RatingVariant(SongMatch, enum.Enum):
     """Selectable variants for the song rating filter."""
@@ -372,6 +437,9 @@ class RatingVariant(SongMatch, enum.Enum):
 
     def build_search(self, search: db.SearchBuilder) -> None:
         search.ratings.append(self.value or 0)
+
+    def is_in_search(self, search: db.SearchBuilder) -> bool:
+        return (self.value or 0) in search.ratings
 
 
 class GoldenNotesVariant(SongMatch, enum.Enum):
@@ -396,6 +464,9 @@ class GoldenNotesVariant(SongMatch, enum.Enum):
             # Yes *and* No is the same as no filter
             search.golden_notes = None
 
+    def is_in_search(self, search: db.SearchBuilder) -> bool:
+        return self.value == search.golden_notes
+
 
 class ViewsVariant(SongMatch, enum.Enum):
     """Selectable variants for the views filter."""
@@ -414,3 +485,26 @@ class ViewsVariant(SongMatch, enum.Enum):
 
     def build_search(self, search: db.SearchBuilder) -> None:
         search.views.append(self.value)
+
+    def is_in_search(self, search: db.SearchBuilder) -> bool:
+        return self.value in search.views
+
+
+@attrs.define
+class SavedSearch(SongMatch, db.SavedSearch):
+    """A search saved by the user."""
+
+    @classmethod
+    def load_all(cls) -> Iterable[SavedSearch]:
+        with db.transaction():
+            searches = db.SavedSearch.load_saved_searches()
+        return (cls(s.name, s.search, s.is_default, s.subscribed) for s in searches)
+
+    def build_search(self, search: db.SearchBuilder) -> None:
+        pass
+
+    def __str__(self) -> str:
+        return self.name
+
+    def is_in_search(self, search: db.SearchBuilder) -> bool:
+        return False

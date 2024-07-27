@@ -17,7 +17,7 @@ from PySide6.QtWidgets import QWidget
 
 from usdb_syncer import db
 
-from .item import Filter, TreeItem
+from .item import Filter, FilterItem, RootItem, SavedSearch, TreeItem, VariantItem
 
 QIndex = QModelIndex | QPersistentModelIndex
 
@@ -25,9 +25,12 @@ QIndex = QModelIndex | QPersistentModelIndex
 class TreeModel(QAbstractItemModel):
     """Model for the filter tree."""
 
-    def __init__(self, parent: QWidget, root: TreeItem) -> None:
+    def __init__(self, parent: QWidget) -> None:
         super().__init__(parent)
-        self.root = root
+        self.root = RootItem()
+        self.root.set_children(FilterItem(data=f, parent=self.root) for f in Filter)
+        # saved searches is not checkable
+        self.root.children[0].checked = None
 
     def item_for_index(self, idx: QIndex) -> TreeItem:
         return cast(TreeItem, idx.internalPointer())
@@ -35,7 +38,20 @@ class TreeModel(QAbstractItemModel):
     def index_for_item(self, item: TreeItem) -> QModelIndex:
         return self.createIndex(item.row_in_parent, 0, item)
 
+    def emit_item_changed(self, item: TreeItem) -> None:
+        idx = self.index_for_item(item)
+        self.dataChanged.emit(idx, idx, [Qt.ItemDataRole.CheckStateRole])
+
     ### change data
+
+    def populate(self) -> None:
+        self.beginResetModel()
+        for item in self.root.children:
+            item.set_children(
+                VariantItem(data=var, parent=item, checkable=item.checkable)
+                for var in item.data.variants()
+            )
+        self.endResetModel()
 
     def set_checked(self, item: TreeItem, checked: bool) -> None:
         if checked and item.parent:
@@ -43,6 +59,30 @@ class TreeModel(QAbstractItemModel):
                 sibling.checked = False
 
         item.checked = checked
+
+    def insert_saved_search(self, search: SavedSearch) -> QModelIndex:
+        with db.transaction():
+            search.insert()
+        parent = self.root.children[0]
+        parent_idx = self.index_for_item(parent)
+        self.beginInsertRows(parent_idx, 0, 0)
+        self.root.children[0].children = (
+            VariantItem(data=search, parent=parent),
+            *self.root.children[0].children,
+        )
+        self.endInsertRows()
+        return self.index(0, 0, parent_idx)
+
+    def delete_saved_search(self, index: QModelIndex) -> None:
+        item = self.item_for_index(index)
+        if not isinstance(item.data, SavedSearch) or not item.parent:
+            return
+        self.beginRemoveRows(index.parent(), index.row(), index.row())
+        with db.transaction():
+            item.data.delete()
+        children = item.parent.children
+        item.parent.children = (*children[: index.row()], *children[index.row() + 1 :])
+        self.endRemoveRows()
 
     ### QAbstractItemModel implementation
 
@@ -60,10 +100,10 @@ class TreeModel(QAbstractItemModel):
     ) -> QModelIndex:
         if not self.hasIndex(row, column, parent):
             return QModelIndex()
-        if not parent.isValid():
-            parent_item = self.root
-        else:
+        if parent.isValid():
             parent_item = cast(TreeItem, parent.internalPointer())
+        else:
+            parent_item = self.root
         item = parent_item.children[row]
         return self.createIndex(row, column, item)
 
@@ -88,16 +128,26 @@ class TreeModel(QAbstractItemModel):
         if not index.isValid():
             return None
 
-        if role == Qt.ItemDataRole.DisplayRole:
+        if role in (Qt.ItemDataRole.DisplayRole, Qt.ItemDataRole.EditRole):
             return str(self.item_for_index(index).data)
         if role == Qt.ItemDataRole.CheckStateRole:
-            return self.item_for_index(index).checked
+            item = self.item_for_index(index)
+            return item.checked if item.checkable else None
         if role == Qt.ItemDataRole.DecorationRole:
             return self.item_for_index(index).decoration()
         return None
 
     def flags(self, index: QIndex) -> Qt.ItemFlag:
         return self.item_for_index(index).flags()
+
+    def setData(self, index: QIndex, value: Any, role: int = 0) -> bool:
+        if role != Qt.ItemDataRole.EditRole or not value or not isinstance(value, str):
+            return False
+        item = self.item_for_index(index)
+        if not isinstance(item.data, SavedSearch) or item.data.name == value:
+            return False
+        item.data.update(new_name=value)
+        return True
 
 
 class TreeProxyModel(QSortFilterProxyModel):

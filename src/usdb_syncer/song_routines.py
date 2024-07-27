@@ -9,8 +9,18 @@ from typing import Generator
 import send2trash
 from requests import Session
 
-from usdb_syncer import SongId, SyncMetaId, db, errors, song_txt, utils
+from usdb_syncer import (
+    SongId,
+    SyncMetaId,
+    db,
+    errors,
+    events,
+    settings,
+    song_txt,
+    utils,
+)
 from usdb_syncer.logger import get_logger
+from usdb_syncer.song_loader import DownloadManager
 from usdb_syncer.sync_meta import SyncMeta
 from usdb_syncer.usdb_scraper import get_usdb_available_songs
 from usdb_syncer.usdb_song import UsdbSong, UsdbSongEncoder
@@ -32,9 +42,25 @@ def load_available_songs(force_reload: bool, session: Session | None = None) -> 
         songs = get_usdb_available_songs(max_skip_id, session=session)
     except errors.UsdbLoginError:
         _logger.debug("Skipping fetching new songs as there is no login.")
-    else:
-        if songs:
-            UsdbSong.upsert_many(songs)
+    if songs:
+        UsdbSong.upsert_many(songs)
+        _download_subscribed_songs(songs)
+
+
+def _download_subscribed_songs(songs: list[UsdbSong]) -> None:
+    if not settings.ffmpeg_is_available():
+        return
+    subscribed = set(db.SavedSearch.get_subscribed_song_ids())
+    to_download = []
+    if subscribed:
+        for song in songs:
+            if song.song_id in subscribed:
+                song.status = db.DownloadStatus.PENDING
+                UsdbSong.upsert(song)
+                to_download.append(song)
+    if to_download:
+        events.DownloadsRequested(len(to_download)).post()
+        DownloadManager.download(to_download)
 
 
 def load_cached_songs() -> list[UsdbSong] | None:

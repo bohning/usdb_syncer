@@ -13,7 +13,6 @@ from pathlib import Path
 
 from appdirs import AppDirs
 
-from usdb_syncer import settings
 from usdb_syncer.logger import get_logger
 
 _logger = get_logger(__file__)
@@ -182,6 +181,17 @@ def is_name_maybe_with_suffix(text: str, name: str) -> bool:
     return not tail or re.fullmatch(r" \(\d+\)", tail) is not None
 
 
+def path_matches_maybe_with_suffix(path: Path, search: Path) -> bool:
+    """True if `path` matches `search`, with an optional suffix ` (n)` for some
+    number n.
+    """
+    path = normalize_path(path)
+    search = normalize_path(search)
+    if path.parent != search.parent:
+        return False
+    return is_name_maybe_with_suffix(path.name, search.name)
+
+
 def open_file_explorer(path: Path) -> None:
     _logger.debug(f"Opening '{path}' with file explorer.")
     if sys.platform == "win32":
@@ -199,6 +209,10 @@ def add_to_system_path(path: str) -> None:
 def normalize(text: str) -> str:
     """Return the Unicode NFC form of the string."""
     return unicodedata.normalize("NFC", text)
+
+
+def normalize_path(path: Path) -> Path:
+    return Path(*(normalize(p) for p in path.parts))
 
 
 def compare_unicode_paths(lhs: Path, rhs: Path) -> bool:
@@ -228,12 +242,3 @@ def format_timestamp(micros: int) -> str:
     return datetime.datetime.fromtimestamp(micros / 1_000_000).strftime(
         "%Y-%m-%d %H:%M:%S"
     )
-
-
-def get_song_dir() -> Path:
-    """Returns the stored song diretory, which may be overwritten by an environment
-    variable.
-    """
-    if path := os.environ.get("SONG_DIR"):
-        return Path(path)
-    return settings.get_song_dir()

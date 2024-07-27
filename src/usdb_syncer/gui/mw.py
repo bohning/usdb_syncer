@@ -8,9 +8,9 @@ from pathlib import Path
 from PySide6 import QtGui
 from PySide6.QtWidgets import QFileDialog, QLabel, QMainWindow
 
-from usdb_syncer import db, events, settings, song_routines, usdb_id_file, utils
+from usdb_syncer import SongId, db, events, settings, song_routines, usdb_id_file
 from usdb_syncer.constants import Usdb
-from usdb_syncer.gui import gui_utils, progress_bar
+from usdb_syncer.gui import gui_utils, progress, progress_bar
 from usdb_syncer.gui.about_dialog import AboutDialog
 from usdb_syncer.gui.debug_console import DebugConsole
 from usdb_syncer.gui.forms.MainWindow import Ui_MainWindow
@@ -34,6 +34,8 @@ _logger = get_logger(__file__)
 class MainWindow(Ui_MainWindow, QMainWindow):
     """The app's main window and entry point to the GUI."""
 
+    _cleaned_up = False
+
     def __init__(self) -> None:
         super().__init__()
         self.setupUi(self)
@@ -49,6 +51,9 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         self._setup_song_dir()
         self.lineEdit_search.textChanged.connect(
             lambda txt: events.TextFilterChanged(txt).post()
+        )
+        events.SavedSearchRestored.subscribe(
+            lambda event: self.lineEdit_search.setText(event.search.text)
         )
         self._setup_buttons()
         self._restore_state()
@@ -86,7 +91,10 @@ class MainWindow(Ui_MainWindow, QMainWindow):
             (self.action_refetch_song_list, self._refetch_song_list),
             (self.action_usdb_login, lambda: UsdbLoginDialog(self).show()),
             (self.action_meta_tags, lambda: MetaTagsDialog(self).show()),
-            (self.action_settings, lambda: SettingsDialog(self).show()),
+            (
+                self.action_settings,
+                lambda: SettingsDialog(self, self.table.current_song()).show(),
+            ),
             (self.action_about, lambda: AboutDialog(self).show()),
             (self.action_generate_song_pdf, self._generate_song_pdf),
             (self.action_generate_song_json, self._generate_song_json),
@@ -104,7 +112,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         gui_utils.set_shortcut("Ctrl+.", self, lambda: DebugConsole(self).show())
 
     def _setup_song_dir(self) -> None:
-        self.lineEdit_song_dir.setText(str(utils.get_song_dir()))
+        self.lineEdit_song_dir.setText(str(settings.get_song_dir()))
         self.pushButton_select_song_dir.clicked.connect(self._select_song_dir)
 
     def _setup_buttons(self) -> None:
@@ -145,48 +153,60 @@ class MainWindow(Ui_MainWindow, QMainWindow):
                     self.plainTextEdit.appendPlainText(message)
 
     def _select_local_songs(self) -> None:
-        if directory := QFileDialog.getExistingDirectory(self, "Select Song Directory"):
-            songs = run_with_progress(
-                "Reading song txts ...",
-                lambda _: song_routines.find_local_songs(Path(directory)),
-            )
+        def on_done(result: progress.Result[set[SongId]]) -> None:
+            songs = result.result()
             self.table.set_selection_to_song_ids(songs)
             _logger.info(f"Selected {len(songs)} songs.")
 
-    def _refetch_song_list(self) -> None:
-        with db.transaction():
+        if directory := QFileDialog.getExistingDirectory(self, "Select Song Directory"):
             run_with_progress(
-                "Fetching song list ...",
-                lambda _: song_routines.load_available_songs(force_reload=True),
+                "Reading song txts ...",
+                lambda: song_routines.find_local_songs(Path(directory)),
+                on_done=on_done,
             )
-        self.table.reset()
+
+    def _refetch_song_list(self) -> None:
+        def task() -> None:
+            with db.transaction():
+                song_routines.load_available_songs(force_reload=True)
+
+        def on_done(result: progress.Result[None]) -> None:
+            self.table.end_reset()
+            result.result()
+
+        self.table.begin_reset()
+        run_with_progress("Fetching song list ...", task=task, on_done=on_done)
 
     def _select_song_dir(self) -> None:
         song_dir = QFileDialog.getExistingDirectory(self, "Select Song Directory")
         if not song_dir:
             return
         path = Path(song_dir).resolve(strict=True)
-        with db.transaction():
-            run_with_progress(
-                "Reading meta files ...",
-                lambda _: song_routines.synchronize_sync_meta_folder(path),
-            )
-            SyncMeta.reset_active(path)
-        self.lineEdit_song_dir.setText(str(path))
-        settings.set_song_dir(path)
-        UsdbSong.clear_cache()
-        events.SongDirChanged(path).post()
+
+        def task() -> None:
+            with db.transaction():
+                song_routines.synchronize_sync_meta_folder(path)
+                SyncMeta.reset_active(path)
+
+        def on_done(result: progress.Result[None]) -> None:
+            result.result()
+            self.lineEdit_song_dir.setText(str(path))
+            settings.set_song_dir(path)
+            UsdbSong.clear_cache()
+            events.SongDirChanged(path).post()
+
+        run_with_progress("Reading meta files ...", task=task, on_done=on_done)
 
     def _generate_song_pdf(self) -> None:
         fname = f"{datetime.datetime.now():%Y-%m-%d}_songlist.pdf"
-        path = os.path.join(utils.get_song_dir(), fname)
+        path = os.path.join(settings.get_song_dir(), fname)
         path = QFileDialog.getSaveFileName(self, dir=path, filter="PDF (*.pdf)")[0]
         if path:
             generate_song_pdf(db.all_local_usdb_songs(), path)
 
     def _generate_song_json(self) -> None:
         fname = f"{datetime.datetime.now():%Y-%m-%d}_songlist.json"
-        path = os.path.join(utils.get_song_dir(), fname)
+        path = os.path.join(settings.get_song_dir(), fname)
         path = QFileDialog.getSaveFileName(self, dir=path, filter="JSON (*.json)")[0]
         if path:
             num_of_songs = generate_song_json(db.all_local_usdb_songs(), Path(path))
@@ -250,11 +270,19 @@ class MainWindow(Ui_MainWindow, QMainWindow):
             _logger.info("No current song.")
 
     def closeEvent(self, event: QtGui.QCloseEvent) -> None:
-        DownloadManager.quit()
-        self.table.save_state()
-        self._save_state()
-        db.close()
-        event.accept()
+        def on_done(result: progress.Result) -> None:
+            result.log_error()
+            self.table.save_state()
+            self._save_state()
+            db.close()
+            self._cleaned_up = True
+            self.close()
+
+        if self._cleaned_up:
+            event.accept()
+        else:
+            run_with_progress("Shutting down ...", DownloadManager.quit, on_done)
+            event.ignore()
 
     def _restore_state(self) -> None:
         self.restoreGeometry(settings.get_geometry_main_window())

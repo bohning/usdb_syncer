@@ -195,3 +195,49 @@ class Column(IntEnum):
                 return db.SongOrder.STATUS
             case unreachable:
                 assert_never(unreachable)
+
+    @classmethod
+    def from_song_order(cls, song_order: db.SongOrder) -> Column:
+        match song_order:
+            case db.SongOrder.SAMPLE_URL:
+                return Column.SAMPLE_URL
+            case db.SongOrder.SONG_ID | db.SongOrder.NONE:
+                return Column.SONG_ID
+            case db.SongOrder.ARTIST:
+                return Column.ARTIST
+            case db.SongOrder.TITLE:
+                return Column.TITLE
+            case db.SongOrder.LANGUAGE:
+                return Column.LANGUAGE
+            case db.SongOrder.EDITION:
+                return Column.EDITION
+            case db.SongOrder.GOLDEN_NOTES:
+                return Column.GOLDEN_NOTES
+            case db.SongOrder.RATING:
+                return Column.RATING
+            case db.SongOrder.VIEWS:
+                return Column.VIEWS
+            case db.SongOrder.YEAR:
+                return Column.YEAR
+            case db.SongOrder.GENRE:
+                return Column.GENRE
+            case db.SongOrder.CREATOR:
+                return Column.CREATOR
+            case db.SongOrder.TAGS:
+                return Column.TAGS
+            case db.SongOrder.PINNED:
+                return Column.PINNED
+            case db.SongOrder.TXT:
+                return Column.TXT
+            case db.SongOrder.AUDIO:
+                return Column.AUDIO
+            case db.SongOrder.VIDEO:
+                return Column.VIDEO
+            case db.SongOrder.COVER:
+                return Column.COVER
+            case db.SongOrder.BACKGROUND:
+                return Column.BACKGROUND
+            case db.SongOrder.STATUS:
+                return Column.DOWNLOAD_STATUS
+            case unreachable:
+                assert_never(unreachable)
