@@ -16,6 +16,11 @@
   - You can subscribe to saved searches to automatically download matches when new songs
     are found on USDB.
 
+## Developer notes
+
+- The build process was migrated to Poetry. Pipenv is no longer used.
+  See the README for instructions.
+
 <!-- 0.7.0 -->
 
 # Changes
