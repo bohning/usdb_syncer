@@ -48,6 +48,8 @@ class _ResultSignal(QtCore.QObject):
 
 
 class ProgressDialog(QtWidgets.QProgressDialog):
+    """Progress dialog that cannot be closed by the user."""
+
     def closeEvent(self, event: QtGui.QCloseEvent) -> None:
         event.ignore()
 
