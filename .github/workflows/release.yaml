@@ -100,9 +100,11 @@ jobs:
       - name: Generate GUI elements
         run: poetry run generate_pyside_files
       - name: Build with pyinstaller for ${{matrix.os}}
+        # _tkinter hook is run erroneously?
         run: >
           poetry run pyinstaller
           -n 'USDB_Syncer-${{github.ref_name}}-${{matrix.TARGET}}'
+          --exclude-module _tkinter
           ${{matrix.PYINSTALLER_ARGS}}
           src/usdb_syncer/gui/__init__.py
       - name: Create DMG
