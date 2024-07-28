@@ -11,7 +11,7 @@ readme = ["README.md"]
 repository = "https://github.com/bohning/usdb_syncer"
 
 [tool.poetry.dependencies]
-python = "3.11.*"
+python = "3.12.*"
 appdirs = "*"
 attrs = "*"
 beautifulsoup4 = "*"

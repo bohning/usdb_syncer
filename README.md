@@ -21,7 +21,7 @@ The following explains how to set up a development environment.
 ### Prerequisites
 
 - [git](https://www.git-scm.com/downloads)
-- [Python 3.11](https://www.python.org/downloads/)
+- [Python 3.12](https://www.python.org/downloads/)
 - [Poetry](https://python-poetry.org/docs/#installation)
 
 ### Project Setup
@@ -40,7 +40,7 @@ apt install -y gcc python3-dev libdbus-1-dev
 pkg-config --cflags --libs dbus-1
 ```
 
-Now make sure the Python 3.11 environment you installed Poetry to is activated and run:
+Now make sure the Python 3.12 environment you installed Poetry to is activated and run:
 
 ```bash
 poetry install
