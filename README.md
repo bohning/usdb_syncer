@@ -38,6 +38,8 @@ Additionally requires extra packages when developing **on Linux**:
 ```bash
 apt install -y gcc python3-dev libdbus-1-dev
 pkg-config --cflags --libs dbus-1
+# fix for installing dbus-python
+export LDFLAGS="-lm"
 ```
 
 Now make sure the Python 3.12 environment you installed Poetry to is activated and run:
