@@ -42,6 +42,7 @@ def load_available_songs(force_reload: bool, session: Session | None = None) -> 
         songs = get_usdb_available_songs(max_skip_id, session=session)
     except errors.UsdbLoginError:
         _logger.debug("Skipping fetching new songs as there is no login.")
+        return
     if songs:
         UsdbSong.upsert_many(songs)
         _download_subscribed_songs(songs)
