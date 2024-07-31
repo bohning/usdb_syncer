@@ -28,6 +28,24 @@ class FfmpegDialog(Ui_Dialog, QDialog):
         self.on_success = on_success
         super().__init__(parent=parent)
         self.setupUi(self)
+        match sys.platform:
+            case "win32":
+                self.label_windows.setVisible(True)
+                self.label_macos.setVisible(False)
+                self.label_linux.setVisible(False)
+                self.setFixedHeight(194)
+            case "darwin":
+                self.label_windows.setVisible(False)
+                self.label_macos.setVisible(True)
+                self.label_linux.setVisible(False)
+                self.setFixedHeight(140)
+            case "linux" | "linux2":
+                self.label_windows.setVisible(False)
+                self.label_macos.setVisible(False)
+                self.label_linux.setVisible(True)
+                self.setFixedHeight(140)
+            case _:
+                pass
         self.set_location.clicked.connect(self._set_location)
 
     def _set_location(self) -> None:
