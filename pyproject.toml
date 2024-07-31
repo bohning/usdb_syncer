@@ -30,7 +30,7 @@ PySide6 = "==6.7.*"
 requests = "*"
 send2trash = "*"
 unidecode = "*"
-yt_dlp = "*"
+yt-dlp = {version = "*", extras = ["default", "curl_cffi"]}
 wheel = "*"
 # build
 pyinstaller = "*"
