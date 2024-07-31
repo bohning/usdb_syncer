@@ -18,6 +18,7 @@
 
 ## Developer notes
 
+- We have upgraded to Python 3.12.
 - The build process was migrated to Poetry. Pipenv is no longer used.
   See the README for instructions.
 
