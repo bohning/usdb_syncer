@@ -66,7 +66,7 @@ class BackgroundOptions:
 class CommandOptions:
     """Settings regarding the command to be executed."""
 
-    command: settings.Command
+    command: str
 
 
 @dataclass(frozen=True)
@@ -143,4 +143,4 @@ def _background_options() -> BackgroundOptions | None:
 def _command_options() -> CommandOptions | None:
     if not settings.get_command():
         return None
-    return CommandOptions(command=settings.get_command())
+    return CommandOptions(command=settings.get_command_text())

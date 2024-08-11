@@ -728,12 +728,11 @@ def _write_sync_meta(ctx: _Context) -> None:
 
 
 def _run_command(ctx: _Context) -> None:
-    # Run command if set
-    command = str(ctx.options.command_options.command)
-    if command is None:
+    if not ctx.options.command_options:
         return
+
+    command = str(ctx.options.command_options.command)
+
     run_command.run_command(
-        command=command,
-        directory=ctx.locations.target_path().parent,
-        logger=ctx.logger,
+        command=command, directory=ctx.locations.target_path().parent, logger=ctx.logger
     )
