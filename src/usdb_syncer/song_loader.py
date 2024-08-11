@@ -31,6 +31,7 @@ from usdb_syncer import (
     errors,
     events,
     resource_dl,
+    run_command,
     usdb_scraper,
     utils,
 )
@@ -391,6 +392,7 @@ class _SongLoader(QtCore.QRunnable):
             ctx.locations.move_to_target_folder()
             _persist_tempfiles(ctx)
         _write_sync_meta(ctx)
+        _run_command(ctx)
         return ctx.song
 
     def _check_flags(self) -> None:
@@ -723,3 +725,15 @@ def _write_sync_meta(ctx: _Context) -> None:
         ctx.locations, temp=False
     )
     ctx.song.sync_meta.synchronize_to_file()
+
+
+def _run_command(ctx: _Context) -> None:
+    # Run command if set
+    command = str(ctx.options.command_options.command)
+    if command is None:
+        return
+    run_command.run_command(
+        command=command,
+        directory=ctx.locations.target_path().parent,
+        logger=ctx.logger,
+    )

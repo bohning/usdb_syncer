@@ -10,6 +10,7 @@ from __future__ import annotations
 import os
 import shutil
 import traceback
+from dataclasses import dataclass
 from enum import Enum
 from http.cookiejar import CookieJar
 from pathlib import Path
@@ -87,6 +88,7 @@ class SettingKey(Enum):
     COVER_MAX_SIZE = "downloads/cover_max_size"
     BACKGROUND = "downloads/background"
     BACKGROUND_ALWAYS = "downloads/background_always"
+    COMMAND = "downloads/command"
     MAIN_WINDOW_GEOMETRY = "geometry/main_window"
     DOCK_LOG_GEOMETRY = "geometry/dock_log"
     MAIN_WINDOW_STATE = "state/main_window"
@@ -436,6 +438,13 @@ class VideoFps(Enum):
         return str(self.value)
 
 
+@dataclass(frozen=True)
+class Command:
+    """Command to execute."""
+
+    command: str = ""
+
+
 T = TypeVar("T")
 
 
@@ -631,6 +640,14 @@ def get_ffmpeg_dir() -> str:
 
 def set_ffmpeg_dir(value: str) -> None:
     set_setting(SettingKey.FFMPEG_DIR, value)
+
+
+def get_command() -> Command:
+    return get_setting(SettingKey.COMMAND, Command.command)
+
+
+def set_command(value: Command) -> None:
+    set_setting(SettingKey.COMMAND, value)
 
 
 def get_geometry_main_window() -> QByteArray:

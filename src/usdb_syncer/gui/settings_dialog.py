@@ -100,6 +100,8 @@ class SettingsDialog(Ui_Dialog, QDialog):
         self.groupBox_background.setChecked(settings.get_background())
         self.checkBox_background_always.setChecked(settings.get_background_always())
 
+        self.textEdit_command.setPlainText(settings.get_command())
+
     def _setup_path_template(self) -> None:
         self.edit_path_template.textChanged.connect(self._on_path_template_changed)
         self.edit_path_template.setText(str(settings.get_path_template()))
@@ -152,6 +154,7 @@ class SettingsDialog(Ui_Dialog, QDialog):
         settings.set_video_fps(self.comboBox_fps.currentData())
         settings.set_background(self.groupBox_background.isChecked())
         settings.set_background_always(self.checkBox_background_always.isChecked())
+        settings.set_command(self.textEdit_command.toPlainText())
         if self._path_template:
             settings.set_path_template(self._path_template)
         else:

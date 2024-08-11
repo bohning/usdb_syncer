@@ -63,6 +63,13 @@ class BackgroundOptions:
 
 
 @dataclass(frozen=True)
+class CommandOptions:
+    """Settings regarding the command to be executed."""
+
+    command: settings.Command
+
+
+@dataclass(frozen=True)
 class Options:
     """Settings for downloading songs."""
 
@@ -74,6 +81,7 @@ class Options:
     video_options: VideoOptions | None
     cover: CoverOptions | None
     background_options: BackgroundOptions | None
+    command_options: CommandOptions | None
 
 
 def download_options() -> Options:
@@ -86,6 +94,7 @@ def download_options() -> Options:
         video_options=_video_options(),
         cover=_cover_options(),
         background_options=_background_options(),
+        command_options=_command_options(),
     )
 
 
@@ -129,3 +138,9 @@ def _background_options() -> BackgroundOptions | None:
     if not settings.get_background():
         return None
     return BackgroundOptions(even_with_video=settings.get_background_always())
+
+
+def _command_options() -> CommandOptions | None:
+    if not settings.get_command():
+        return None
+    return CommandOptions(command=settings.get_command())
