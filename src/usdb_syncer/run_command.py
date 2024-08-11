@@ -1,7 +1,6 @@
 """Functions for running commands on the local machine."""
 
 import subprocess
-import os
 from pathlib import Path
 
 from usdb_syncer.logger import Log
@@ -11,8 +10,8 @@ def run_command(command: str, directory: Path, logger: Log) -> int:
     """Run a command on the local machine.
 
     Parameters:
-        command: the command to run
-        args: the arguments to pass to the command
+        command: the command to run. $dir$ will be replaced with the directory.
+        directory: the directory to run the command in
         logger: the logger to use
 
     Returns:
