@@ -45,19 +45,21 @@ def run_command(
             args=args, cwd=directory.parent, shell=True, check=True, timeout=timeout
         )
     except ValueError:
-        logger.error("Custom command is invalid.")
+        logger.error("Custom command is invalid.", exc_info=False)
         return 1
     except OSError:
         logger.error(
-            "Running custom command failed because a shell could not be invoked."
+            "Running custom command failed because a shell could not be invoked.",
+            exc_info=False,
         )
         return 1
     except subprocess.TimeoutExpired:
-        logger.error("Custom command timed out.")
+        logger.error("Custom command timed out.", exc_info=False)
         return 1
     except subprocess.CalledProcessError as e:
         logger.error(
-            f"Custom command failed while running with error code: {e.returncode}"
+            f"Custom command failed while running with error code: {e.returncode}",
+            exc_info=False,
         )
         return e.returncode
 
