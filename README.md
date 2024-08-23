@@ -11,8 +11,6 @@
 The project [extensively uses the `#VIDEO` tag](https://github.com/bohning/usdb_syncer/wiki/Meta-Tags#format) to automaticly retrieve the resources (audio, video, images, etc...) to make the UltraStar song complete.
 Once a song is downloaded it can be synchronized (new notes, audio, video, images...) by redownloading the song. If a resource didn't change it's skipped.
 
-````
-
 ## Development
 
 **USDB Syncer** is written in Python, and uses Poetry to manage its dependencies.
@@ -31,7 +29,7 @@ Clone the project:
 ```bash
 git clone https://github.com/bohning/usdb_syncer.git
 cd usdb_syncer
-````
+```
 
 Additionally requires extra packages when developing **on Linux**:
 
