@@ -277,11 +277,6 @@ class _Context:
         if self.txt.meta_tags.cover:
             url = self.txt.meta_tags.cover.source_url(self.logger)
             self.logger.debug(f"downloading cover from #VIDEO params: {url}")
-        elif self.details.cover_url:
-            url = self.details.cover_url
-            self.logger.warning(
-                "no cover resource in #VIDEO tag, so fallback to small usdb cover!"
-            )
         return url
 
     def background_url(self) -> str | None:

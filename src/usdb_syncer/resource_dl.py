@@ -145,33 +145,39 @@ def _download_resource(options: YtdlOptions, resource: str, logger: Log) -> str 
             return None
 
 
-def download_image(url: str, logger: Log) -> bytes | None:
-    try:
-        reply = requests.get(
-            url, allow_redirects=True, headers=IMAGE_DOWNLOAD_HEADERS, timeout=60
-        )
-    except requests.exceptions.SSLError:
-        logger.error(
-            f"Failed to retrieve {url}. The SSL certificate could not be verified."
-        )
-        return None
-    except requests.RequestException:
-        logger.error(
-            f"Failed to retrieve {url}. The server may be down or your internet "
-            "connection is currently unavailable."
-        )
-        return None
-    if reply.status_code in range(100, 399):
-        # 1xx informational response, 2xx success, 3xx redirection
-        return reply.content
-    if reply.status_code in range(400, 499):
-        logger.error(
-            f"Client error {reply.status_code}. Failed to download {reply.url}"
-        )
-    elif reply.status_code in range(500, 599):
-        logger.error(
-            f"Server error {reply.status_code}. Failed to download {reply.url}"
-        )
+def download_image(urls: list[str], logger: Log) -> bytes | None:
+    for url in urls:
+        if not url:
+            logger.error("Empty URL provided.")
+            continue
+        try:
+            reply = requests.get(
+                url, allow_redirects=True, headers=IMAGE_DOWNLOAD_HEADERS, timeout=60
+            )
+        except requests.exceptions.SSLError:
+            logger.error(
+                f"Failed to retrieve {url}. The SSL certificate could not be verified."
+            )
+            continue
+        except requests.RequestException:
+            logger.error(
+                f"Failed to retrieve {url}. The server may be down or your internet "
+                "connection is currently unavailable."
+            )
+            continue
+        if reply.status_code in range(100, 399):
+            # 1xx informational response, 2xx success, 3xx redirection
+            return reply.content
+        if reply.status_code in range(400, 499):
+            logger.error(
+                f"Client error {reply.status_code}. Failed to download {reply.url}"
+            )
+            continue
+        elif reply.status_code in range(500, 599):
+            logger.error(
+                f"Server error {reply.status_code}. Failed to download {reply.url}"
+            )
+            continue
     return None
 
 
@@ -184,7 +190,10 @@ def download_and_process_image(
     max_width: CoverMaxSize | None,
 ) -> Path | None:
     logger = get_logger(__file__, details.song_id)
-    if not (img_bytes := download_image(url, logger)):
+
+    urls = [url, details.cover_url] if kind == ImageKind.COVER else [url]
+
+    if not (img_bytes := download_image(urls, logger)):
         logger.error(f"#{str(kind).upper()}: file does not exist at url: {url}")
         return None
 
