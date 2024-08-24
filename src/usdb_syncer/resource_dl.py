@@ -173,7 +173,7 @@ def download_image(urls: list[str], logger: Log) -> bytes | None:
                 f"Client error {reply.status_code}. Failed to download {reply.url}"
             )
             continue
-        elif reply.status_code in range(500, 599):
+        if reply.status_code in range(500, 599):
             logger.error(
                 f"Server error {reply.status_code}. Failed to download {reply.url}"
             )
@@ -191,7 +191,11 @@ def download_and_process_image(
 ) -> Path | None:
     logger = get_logger(__file__, details.song_id)
 
-    urls = [url, details.cover_url] if kind == ImageKind.COVER else [url]
+    urls = (
+        [url, details.cover_url]
+        if kind == ImageKind.COVER and details.cover_url
+        else [url]
+    )
 
     if not (img_bytes := download_image(urls, logger)):
         logger.error(f"#{str(kind).upper()}: file does not exist at url: {url}")
