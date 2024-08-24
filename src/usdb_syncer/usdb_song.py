@@ -114,7 +114,7 @@ class UsdbSong:
         if self.sync_meta:
             self.sync_meta.delete()
             self.sync_meta = None
-            _UsdbSongCache.remove(self.song_id)
+            _UsdbSongCache.update(self)
 
     @classmethod
     def delete_all(cls) -> None:
@@ -128,7 +128,7 @@ class UsdbSong:
         db.upsert_usdb_songs_creators([(self.song_id, self.creators())])
         if self.sync_meta:
             self.sync_meta.upsert()
-        _UsdbSongCache.remove(self.song_id)
+        _UsdbSongCache.update(self)
 
     @classmethod
     def upsert_many(cls, songs: list[UsdbSong]) -> None:
@@ -138,7 +138,7 @@ class UsdbSong:
         db.upsert_usdb_songs_creators([(s.song_id, s.creators()) for s in songs])
         SyncMeta.upsert_many([song.sync_meta for song in songs if song.sync_meta])
         for song in songs:
-            _UsdbSongCache.remove(song.song_id)
+            _UsdbSongCache.update(song)
 
     def db_params(self) -> db.UsdbSongParams:
         return db.UsdbSongParams(
