@@ -1,3 +1,5 @@
+PRAGMA journal_mode = WAL;
+
 BEGIN;
 
 CREATE TEMPORARY TABLE IF NOT EXISTS session_usdb_song (
@@ -9,7 +11,5 @@ CREATE TEMPORARY TABLE IF NOT EXISTS session_usdb_song (
 );
 
 PRAGMA foreign_keys = ON;
-
-PRAGMA journal_mode = WAL;
 
 COMMIT;
