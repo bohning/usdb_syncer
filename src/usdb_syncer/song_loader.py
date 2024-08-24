@@ -18,6 +18,7 @@ import mutagen.ogg
 import mutagen.oggopus
 import mutagen.oggvorbis
 import send2trash
+import shiboken6
 from mutagen import id3
 from mutagen.flac import Picture
 from PIL import Image
@@ -63,7 +64,7 @@ class DownloadManager:
     @classmethod
     def abort(cls, songs: Iterable[SongId]) -> None:
         for song in songs:
-            if job := cls._jobs.get(song):
+            if (job := cls._jobs.get(song)) and shiboken6.isValid(job):
                 if cls._threadpool().tryTake(job):
                     job.logger.info("Download aborted by user request.")
                     job.song.status = DownloadStatus.NONE
