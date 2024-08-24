@@ -81,7 +81,7 @@ def run_with_progress(
 
     def wrapped_on_done() -> None:
         assert result
-        dialog.close()
+        dialog.deleteLater()
         on_done(result)
 
     signal.result.connect(wrapped_on_done)
