@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import contextlib
 import enum
-import itertools
 import json
+import os
 import sqlite3
 import threading
 import time
@@ -40,45 +40,50 @@ class _SqlCache:
         return stmt
 
 
+class _LocalConnection(threading.local):
+    """A thread-local database connection."""
+
+    connection: sqlite3.Connection | None = None
+
+
 class _DbState:
     """Singleton for managing the global database connection."""
 
-    lock = threading.Lock()
-    _connection: sqlite3.Connection | None = None
+    _local: _LocalConnection = _LocalConnection()
 
     @classmethod
     def connect(cls, db_path: Path | str, trace: bool = False) -> None:
-        with cls.lock:
-            cls._connection = sqlite3.connect(
-                db_path, check_same_thread=False, isolation_level=None
-            )
-            if trace:
-                cls._connection.set_trace_callback(_logger.debug)
-            _validate_schema(cls._connection)
+        if cls._local.connection:
+            raise errors.DatabaseError("Already connected to database!")
+        cls._local.connection = sqlite3.connect(
+            db_path, check_same_thread=False, isolation_level=None
+        )
+        if trace:
+            cls._local.connection.set_trace_callback(_logger.debug)
+        _validate_schema(cls._local.connection)
 
     @classmethod
     def connection(cls) -> sqlite3.Connection:
-        if cls._connection is None:
+        if cls._local.connection is None:
             raise errors.DatabaseError("Not connected to database!")
-        return cls._connection
+        return cls._local.connection
 
     @classmethod
     def close(cls) -> None:
-        if _DbState._connection is not None:
-            _DbState._connection.close()
-            _DbState._connection = None
+        if _DbState._local.connection is not None:
+            _DbState._local.connection.close()
+            _DbState._local.connection = None
 
 
 @contextlib.contextmanager
 def transaction() -> Generator[None, None, None]:
-    with _DbState.lock:
-        try:
-            _DbState.connection().execute("BEGIN")
-            yield None
-        except Exception:  # pylint: disable=broad-except
-            _DbState.connection().rollback()
-            raise
-        _DbState.connection().commit()
+    try:
+        _DbState.connection().execute("BEGIN IMMEDIATE")
+        yield None
+    except Exception:  # pylint: disable=broad-except
+        _DbState.connection().rollback()
+        raise
+    _DbState.connection().commit()
 
 
 def _validate_schema(connection: sqlite3.Connection) -> None:
@@ -104,12 +109,21 @@ def _validate_schema(connection: sqlite3.Connection) -> None:
     connection.executescript(_SqlCache.get("setup_session_script.sql", cache=False))
 
 
-def connect(db_path: Path | str, trace: bool = False) -> None:
-    _DbState.connect(db_path, trace=trace)
+def connect(db_path: Path | str) -> None:
+    _DbState.connect(db_path, trace=bool(os.environ.get("TRACESQL")))
 
 
 def close() -> None:
     _DbState.close()
+
+
+@contextlib.contextmanager
+def managed_connection(db_path: Path | str) -> Generator[None, None, None]:
+    try:
+        _DbState.connect(db_path)
+        yield None
+    finally:
+        _DbState.close()
 
 
 class DownloadStatus(enum.IntEnum):

@@ -81,7 +81,7 @@ load-plugins = "pylint.extensions.mccabe"
 good-names = ["mw", "p1", "p2", "closeEvent", "customEvent"]
 
 [tool.pylint.messages_control]
-extension-pkg-whitelist = ["PySide6"]
+extension-pkg-whitelist = ["PySide6", "shiboken6"]
 disable = [
     "too-few-public-methods",
     "logging-fstring-interpolation",

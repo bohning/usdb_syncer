@@ -7,7 +7,7 @@ from typing import Any, Callable, Generic, TypeVar
 import attrs
 from PySide6 import QtCore, QtGui, QtWidgets
 
-from usdb_syncer import logger
+from usdb_syncer import db, logger, utils
 
 _logger = logger.get_logger(__file__)
 T = TypeVar("T")
@@ -74,14 +74,15 @@ def run_with_progress(
     def wrapped_task() -> None:
         nonlocal result
         try:
-            result = Result(task())
+            with db.managed_connection(utils.AppPaths.db):
+                result = Result(task())
         except Exception as exc:  # pylint: disable=broad-exception-caught
             result = Result(_Error(exc))
         signal.result.emit()
 
     def wrapped_on_done() -> None:
         assert result
-        dialog.close()
+        dialog.deleteLater()
         on_done(result)
 
     signal.result.connect(wrapped_on_done)
