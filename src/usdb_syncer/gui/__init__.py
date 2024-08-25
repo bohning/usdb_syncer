@@ -23,6 +23,7 @@ from usdb_syncer import (
     settings,
     song_routines,
     sync_meta,
+    usdb_song,
     utils,
 )
 
@@ -92,6 +93,7 @@ def _load_main_window(mw: MainWindow) -> None:
         song_routines.load_available_songs(force_reload=False)
         song_routines.synchronize_sync_meta_folder(folder)
         sync_meta.SyncMeta.reset_active(folder)
+        usdb_song.UsdbSong.clear_cache()
         default_search = db.SavedSearch.get_default()
     mw.tree.populate()
     if default_search:
