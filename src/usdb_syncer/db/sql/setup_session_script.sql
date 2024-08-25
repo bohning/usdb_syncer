@@ -1,6 +1,8 @@
+PRAGMA journal_mode = WAL;
+
 BEGIN;
 
-CREATE TEMPORARY TABLE session_usdb_song (
+CREATE TEMPORARY TABLE IF NOT EXISTS session_usdb_song (
     song_id INTEGER NOT NULL,
     status INTEGER NOT NULL DEFAULT 0,
     is_playing BOOLEAN NOT NULL DEFAULT false,

@@ -18,6 +18,7 @@ import mutagen.ogg
 import mutagen.oggopus
 import mutagen.oggvorbis
 import send2trash
+import shiboken6
 from mutagen import id3
 from mutagen.flac import Picture
 from PIL import Image
@@ -63,7 +64,7 @@ class DownloadManager:
     @classmethod
     def abort(cls, songs: Iterable[SongId]) -> None:
         for song in songs:
-            if job := cls._jobs.get(song):
+            if (job := cls._jobs.get(song)) and shiboken6.isValid(job):
                 if cls._threadpool().tryTake(job):
                     job.logger.info("Download aborted by user request.")
                     job.song.status = DownloadStatus.NONE
@@ -335,33 +336,34 @@ class _SongLoader(QtCore.QRunnable):
         self.logger = get_logger(__file__, self.song_id)
 
     def run(self) -> None:
-        try:
-            self.song = self._run_inner()
-        except errors.AbortError:
-            self.logger.info("Download aborted by user request.")
-            self.song.status = DownloadStatus.NONE
-        except errors.UsdbLoginError:
-            self.logger.error("Aborted; download requires login.")
-            self.song.status = DownloadStatus.FAILED
-        except errors.UsdbNotFoundError:
-            self.logger.error("Song has been deleted from USDB.")
+        with db.managed_connection(utils.AppPaths.db):
+            try:
+                self.song = self._run_inner()
+            except errors.AbortError:
+                self.logger.info("Download aborted by user request.")
+                self.song.status = DownloadStatus.NONE
+            except errors.UsdbLoginError:
+                self.logger.error("Aborted; download requires login.")
+                self.song.status = DownloadStatus.FAILED
+            except errors.UsdbNotFoundError:
+                self.logger.error("Song has been deleted from USDB.")
+                with db.transaction():
+                    self.song.delete()
+                events.SongDeleted(self.song_id).post()
+                events.DownloadFinished(self.song_id).post()
+                return
+            except Exception:  # pylint: disable=broad-except
+                self.logger.debug(traceback.format_exc())
+                self.logger.error(
+                    "Failed to finish download due to an unexpected error. "
+                    "See debug log for more information."
+                )
+                self.song.status = DownloadStatus.FAILED
+            else:
+                self.song.status = DownloadStatus.NONE
+                self.logger.info("All done!")
             with db.transaction():
-                self.song.delete()
-            events.SongDeleted(self.song_id).post()
-            events.DownloadFinished(self.song_id).post()
-            return
-        except Exception:  # pylint: disable=broad-except
-            self.logger.debug(traceback.format_exc())
-            self.logger.error(
-                "Failed to finish download due to an unexpected error. "
-                "See debug log for more information."
-            )
-            self.song.status = DownloadStatus.FAILED
-        else:
-            self.song.status = DownloadStatus.NONE
-            self.logger.info("All done!")
-        with db.transaction():
-            self.song.upsert()
+                self.song.upsert()
         events.SongChanged(self.song_id).post()
         events.DownloadFinished(self.song_id).post()
 
