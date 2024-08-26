@@ -163,16 +163,16 @@ class PathTemplatePlaceholder(PathTemplateComponentToken, enum.Enum):
             case PathTemplatePlaceholder.TITLE:
                 return song.title
             case PathTemplatePlaceholder.GENRE:
-                firstGenre, _, _ = song.genre.partition(",")
-                return firstGenre.strip()
+                first_genre, _, _ = song.genre.partition(",")
+                return first_genre.strip()
             case PathTemplatePlaceholder.YEAR:
                 return str(song.year)
             case PathTemplatePlaceholder.LANGUAGE:
-                firstLanguage, _, _ = song.language.partition(",")
-                return firstLanguage.strip()
+                first_language, _, _ = song.language.partition(",")
+                return first_language.strip()
             case PathTemplatePlaceholder.CREATOR:
-                firstCreator, _, _ = song.creator.partition(",")
-                return firstCreator.strip()
+                first_creator, _, _ = song.creator.partition(",")
+                return first_creator.strip()
             case PathTemplatePlaceholder.EDITION:
                 return song.edition
             case PathTemplatePlaceholder.RATING:
