@@ -171,6 +171,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
                 song_routines.load_available_songs(force_reload=True)
 
         def on_done(result: progress.Result[None]) -> None:
+            UsdbSong.clear_cache()
             self.table.end_reset()
             result.result()
 
