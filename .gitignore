@@ -5,6 +5,7 @@ venv
 # IDEs
 .qt_for_python
 .vscode
+.vs
 
 # tooling
 .tox
