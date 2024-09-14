@@ -19,7 +19,7 @@ from more_itertools import batched
 from usdb_syncer import SongId, SyncMetaId, errors, logger
 from usdb_syncer.utils import AppPaths
 
-SCHEMA_VERSION = 4
+SCHEMA_VERSION = 5
 
 # https://www.sqlite.org/limits.html
 _SQL_VARIABLES_LIMIT = 32766
@@ -741,6 +741,28 @@ def delete_sync_metas(ids: tuple[SyncMetaId, ...]) -> None:
         id_str = ", ".join("?" for _ in range(len(batch)))
         _DbState.connection().execute(
             f"DELETE FROM sync_meta WHERE sync_meta_id IN ({id_str})", batch
+        )
+
+
+@attrs.define(frozen=True, slots=False)
+class CustomMetaDataParams:
+    """Parameters for inserting or updating a resource file."""
+
+    sync_meta_id: SyncMetaId
+    key: str
+    value: str
+
+
+def upsert_custom_meta_data(params: Iterable[CustomMetaDataParams]) -> None:
+    stmt = _SqlCache.get("upsert_custom_meta_data.sql")
+    _DbState.connection().executemany(stmt, (p.__dict__ for p in params))
+
+
+def delete_custom_meta_data(ids: Iterable[SyncMetaId]) -> None:
+    for batch in batched(ids, _SQL_VARIABLES_LIMIT):
+        id_str = ", ".join("?" for _ in range(len(batch)))
+        _DbState.connection().execute(
+            f"DELETE FROM custom_meta_data WHERE sync_meta_id IN ({id_str})", batch
         )
 
 

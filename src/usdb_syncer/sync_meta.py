@@ -86,6 +86,7 @@ class SyncMeta:
     video: ResourceFile | None = None
     cover: ResourceFile | None = None
     background: ResourceFile | None = None
+    custom_data: dict[str, str] = attrs.field(factory=dict)
 
     @classmethod
     def new(cls, song_id: SongId, folder: Path, meta_tags: MetaTags) -> SyncMeta:
@@ -172,6 +173,11 @@ class SyncMeta:
         db.delete_resource_files(
             (self.sync_meta_id, kind) for file, kind in files if not file
         )
+        db.delete_custom_meta_data((self.sync_meta_id,))
+        db.upsert_custom_meta_data(
+            db.CustomMetaDataParams(self.sync_meta_id, k, v)
+            for k, v in self.custom_data.items()
+        )
 
     @classmethod
     def upsert_many(cls, metas: list[SyncMeta]) -> None:
@@ -188,6 +194,12 @@ class SyncMeta:
             for meta in metas
             for file, kind in meta.all_resource_files()
             if not file
+        )
+        db.delete_custom_meta_data(m.sync_meta_id for m in metas)
+        db.upsert_custom_meta_data(
+            db.CustomMetaDataParams(m.sync_meta_id, k, v)
+            for m in metas
+            for k, v in m.custom_data.items()
         )
 
     def delete(self) -> None:
