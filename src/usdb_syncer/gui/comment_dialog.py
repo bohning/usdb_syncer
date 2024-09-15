@@ -31,7 +31,7 @@ class CommentDialog(Ui_Dialog, QDialog):
             headers={"Content-Type": "application/x-www-form-urlencoded"},
             params={
                 "link": "detail",
-                "id": str(self._selected_song.song_id),
+                "id": str(int(self._selected_song.song_id)),
                 "comment": str(1),
             },
             payload=payload,
