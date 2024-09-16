@@ -10,6 +10,7 @@ import sqlite3
 import threading
 import time
 import traceback
+from collections import defaultdict
 from pathlib import Path
 from typing import Any, Generator, Iterable, Iterator, assert_never, cast
 
@@ -764,6 +765,24 @@ def delete_custom_meta_data(ids: Iterable[SyncMetaId]) -> None:
         _DbState.connection().execute(
             f"DELETE FROM custom_meta_data WHERE sync_meta_id IN ({id_str})", batch
         )
+
+
+def get_custom_data(sync_meta_id: SyncMetaId) -> dict[str, str]:
+    return dict(
+        _DbState.connection().execute(
+            "SELECT key, value FROM custom_meta_data WHERE sync_meta_id = ?",
+            (int(sync_meta_id),),
+        )
+    )
+
+
+def get_custom_data_map() -> defaultdict[str, set[str]]:
+    data: defaultdict[str, set[str]] = defaultdict(set)
+    for key, value in _DbState.connection().execute(
+        "SELECT DISTINCT key, value FROM custom_meta_data"
+    ):
+        data[key].add(value)
+    return data
 
 
 ### ResourceFile
