@@ -109,6 +109,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
             (self.action_pin, self.table.set_pin_selected_songs),
         ):
             action.triggered.connect(func)
+        self.menu_custom_data.aboutToShow.connect(self.table.build_custom_data_menu)
 
     def _setup_shortcuts(self) -> None:
         gui_utils.set_shortcut("Ctrl+.", self, lambda: DebugConsole(self).show())

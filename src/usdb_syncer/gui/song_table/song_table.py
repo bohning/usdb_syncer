@@ -10,8 +10,9 @@ import send2trash
 from PySide6 import QtCore, QtGui, QtMultimedia, QtWidgets
 from PySide6.QtCore import QItemSelectionModel, Qt
 
-from usdb_syncer import SongId, db, events, media_player, settings
+from usdb_syncer import SongId, db, events, media_player, settings, sync_meta
 from usdb_syncer.gui import ffmpeg_dialog
+from usdb_syncer.gui.custom_data_dialog import CustomDataDialog
 from usdb_syncer.gui.progress import run_with_progress
 from usdb_syncer.gui.song_table.column import Column
 from usdb_syncer.gui.song_table.table_model import TableModel
@@ -133,7 +134,9 @@ class SongTable:
         state = settings.get_table_view_header_state()
         self._view.setModel(self._model)
         self._view.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
-        self._view.customContextMenuRequested.connect(self._context_menu)
+        self._view.customContextMenuRequested.connect(
+            lambda: self.mw.menu_songs.exec(QtGui.QCursor.pos())
+        )
         self._view.doubleClicked.connect(lambda idx: self._download([idx.row()]))
         self._view.clicked.connect(self._on_click)
         header = self._header()
@@ -161,11 +164,41 @@ class SongTable:
                     column, QtWidgets.QHeaderView.ResizeMode.Interactive
                 )
 
-    def _context_menu(self, _pos: QtCore.QPoint) -> None:
-        menu = QtWidgets.QMenu()
-        for action in self.mw.menu_songs.actions():
-            menu.addAction(action)
-        menu.exec(QtGui.QCursor.pos())
+    def build_custom_data_menu(self) -> None:
+        if not (song := self.current_song()) or not song.sync_meta:
+            return
+        data_map = sync_meta.CustomDataOptions.map()
+
+        def update(key: str, value: str | None) -> None:
+            if not song.sync_meta:
+                return
+            if value is None:
+                del song.sync_meta.custom_data[key]
+            else:
+                song.sync_meta.custom_data[key] = value
+                # pylingt bug: https://github.com/pylint-dev/pylint/issues/9515
+                data_map[key].add(value)  # pylint: disable=unsubscriptable-object
+            with db.transaction():
+                song.upsert()
+            events.SongChanged(song.song_id).post()
+
+        def run_custom_data_dialog(key: str | None = None) -> None:
+            CustomDataDialog(self.mw, update, key).open()
+
+        self.mw.menu_custom_data.clear()
+        _add_action("New ...", self.mw.menu_custom_data, run_custom_data_dialog)
+        self.mw.menu_custom_data.addSeparator()
+        for key, value in song.sync_meta.custom_data.items():
+            key_menu = QtWidgets.QMenu(key, self.mw.menu_custom_data)
+            self.mw.menu_custom_data.addMenu(key_menu)
+            _add_action("New ...", key_menu, partial(run_custom_data_dialog, key))
+            key_menu.addSeparator()
+            _add_action(value, key_menu, partial(update, key, None), checked=True)
+            for option in data_map[key]:  # pylint: disable=unsubscriptable-object
+                if option != value:
+                    _add_action(
+                        option, key_menu, partial(update, key, option), checked=False
+                    )
 
     def _on_click(self, index: QtCore.QModelIndex) -> None:
         if index.column() == Column.SAMPLE_URL.value and (
@@ -214,6 +247,7 @@ class SongTable:
             self.mw.action_open_song_folder,
             self.mw.action_delete,
             self.mw.action_pin,
+            self.mw.menu_custom_data,
         ):
             action.setEnabled(song.is_local())
         self.mw.action_pin.setChecked(song.is_pinned())
@@ -339,3 +373,17 @@ class SongTable:
         self._search.descending = bool(order.value)
         events.SearchOrderChanged(self._search.order, self._search.descending).post()
         self.search_songs()
+
+
+def _add_action(
+    name: str,
+    menu: QtWidgets.QMenu,
+    slot: Callable[[], None],
+    checked: bool | None = None,
+) -> None:
+    action = QtGui.QAction(name, menu)
+    if checked is not None:
+        action.setCheckable(True)
+        action.setChecked(checked)
+    action.triggered.connect(slot)
+    menu.addAction(action)

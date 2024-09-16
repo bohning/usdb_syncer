@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from collections import defaultdict
 from pathlib import Path
 from typing import Any, Iterator
 
@@ -128,6 +129,7 @@ class SyncMeta:
                 video=ResourceFile.from_nested_dict(dct["video"]),
                 cover=ResourceFile.from_nested_dict(dct["cover"]),
                 background=ResourceFile.from_nested_dict(dct["background"]),
+                custom_data=dct.get("custom_data") or {},
             )
         except (TypeError, KeyError, ValueError):
             return None
@@ -153,6 +155,7 @@ class SyncMeta:
         meta.video = ResourceFile.from_db_row(row[12:15])
         meta.cover = ResourceFile.from_db_row(row[15:18])
         meta.background = ResourceFile.from_db_row(row[18:])
+        meta.custom_data = db.get_custom_data(meta.sync_meta_id)
         return meta
 
     @classmethod
@@ -257,3 +260,15 @@ class SyncMetaEncoder(json.JSONEncoder):
             dct["version"] = SYNC_META_VERSION
             return dct
         return super().default(o)
+
+
+class CustomDataOptions:
+    """Cache of custom data values per key."""
+
+    _map: defaultdict[str, set[str]] | None = None
+
+    @classmethod
+    def map(cls) -> defaultdict[str, set[str]]:
+        if cls._map is None:
+            cls._map = db.get_custom_data_map()
+        return cls._map
