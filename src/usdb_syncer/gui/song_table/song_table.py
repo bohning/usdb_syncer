@@ -167,17 +167,11 @@ class SongTable:
     def build_custom_data_menu(self) -> None:
         if not (song := self.current_song()) or not song.sync_meta:
             return
-        data_map = sync_meta.CustomDataOptions.map()
 
         def update(key: str, value: str | None) -> None:
             if not song.sync_meta:
                 return
-            if value is None:
-                del song.sync_meta.custom_data[key]
-            else:
-                song.sync_meta.custom_data[key] = value
-                # pylingt bug: https://github.com/pylint-dev/pylint/issues/9515
-                data_map[key].add(value)  # pylint: disable=unsubscriptable-object
+            song.sync_meta.custom_data.set(key, value)
             with db.transaction():
                 song.upsert()
             events.SongChanged(song.song_id).post()
@@ -194,7 +188,7 @@ class SongTable:
             _add_action("New ...", key_menu, partial(run_custom_data_dialog, key))
             key_menu.addSeparator()
             _add_action(value, key_menu, partial(update, key, None), checked=True)
-            for option in data_map[key]:  # pylint: disable=unsubscriptable-object
+            for option in sync_meta.CustomData.key_options(key):
                 if option != value:
                     _add_action(
                         option, key_menu, partial(update, key, option), checked=False
