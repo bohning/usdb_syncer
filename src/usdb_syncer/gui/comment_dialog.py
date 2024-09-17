@@ -15,14 +15,14 @@ class CommentDialog(Ui_Dialog, QDialog):
         self._parent = parent
         self.setupUi(self)
         self._selected_song = selected_song
-        self.combobox_rating.addItem("neutral")
-        self.combobox_rating.addItem("positiv")
-        self.combobox_rating.addItem("negativ")
+        self.combobox_rating.addItem("Neutral", "neutral")
+        self.combobox_rating.addItem("Positive", "positiv")
+        self.combobox_rating.addItem("Negative", "negativ")
 
     def accept(self) -> None:
         payload = {
             "text": self.text_edit_comment.toPlainText(),
-            "stars": self.combobox_rating.currentText(),
+            "stars": self.combobox_rating.currentData(),
         }
 
         get_usdb_page(
