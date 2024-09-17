@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import collections.abc
 import json
 from collections import defaultdict
 from pathlib import Path
@@ -72,6 +73,38 @@ class ResourceFile:
         )
 
 
+class CustomData:
+    """Dict of custom data."""
+
+    _data: dict[str, str]
+    _options: defaultdict[str, set[str]] | None = None
+
+    @classmethod
+    def key_options(cls, key: str) -> tuple[str, ...]:
+        if cls._options is None:
+            cls._options = db.get_custom_data_map()
+        # pylingt bug: https://github.com/pylint-dev/pylint/issues/9515
+        return tuple(cls._options[key])  # pylint: disable=unsubscriptable-object
+
+    def __init__(self, data: dict[str, str] | None = None) -> None:
+        self._data = dict(data) if data else {}
+
+    def get(self, key: str) -> str | None:
+        return self._data.get(key)
+
+    def set(self, key: str, value: str | None) -> None:
+        if value is None:
+            if key in self._data:
+                del self._data[key]
+        else:
+            self._data[key] = value
+            if self._options is not None:
+                self._options[key].add(value)  # pylint: disable=unsubscriptable-object
+
+    def items(self) -> collections.abc.ItemsView[str, str]:
+        return self._data.items()
+
+
 @attrs.define
 class SyncMeta:
     """Meta data about the synchronization state of a USDB song."""
@@ -87,7 +120,7 @@ class SyncMeta:
     video: ResourceFile | None = None
     cover: ResourceFile | None = None
     background: ResourceFile | None = None
-    custom_data: dict[str, str] = attrs.field(factory=dict)
+    custom_data: CustomData = attrs.field(factory=CustomData)
 
     @classmethod
     def new(cls, song_id: SongId, folder: Path, meta_tags: MetaTags) -> SyncMeta:
@@ -129,7 +162,7 @@ class SyncMeta:
                 video=ResourceFile.from_nested_dict(dct["video"]),
                 cover=ResourceFile.from_nested_dict(dct["cover"]),
                 background=ResourceFile.from_nested_dict(dct["background"]),
-                custom_data=dct.get("custom_data") or {},
+                custom_data=CustomData(dct.get("custom_data")),
             )
         except (TypeError, KeyError, ValueError):
             return None
@@ -155,7 +188,7 @@ class SyncMeta:
         meta.video = ResourceFile.from_db_row(row[12:15])
         meta.cover = ResourceFile.from_db_row(row[15:18])
         meta.background = ResourceFile.from_db_row(row[18:])
-        meta.custom_data = db.get_custom_data(meta.sync_meta_id)
+        meta.custom_data = CustomData(db.get_custom_data(meta.sync_meta_id))
         return meta
 
     @classmethod
