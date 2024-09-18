@@ -2,15 +2,14 @@
 
 from __future__ import annotations
 
-import collections.abc
 import json
-from collections import defaultdict
 from pathlib import Path
 from typing import Any, Iterator
 
 import attrs
 
 from usdb_syncer import SongId, SyncMetaId, db, settings, utils
+from usdb_syncer.custom_data import CustomData
 from usdb_syncer.logger import get_logger
 from usdb_syncer.meta_tags import MetaTags
 
@@ -71,38 +70,6 @@ class ResourceFile:
             mtime=self.mtime,
             resource=self.resource,
         )
-
-
-class CustomData:
-    """Dict of custom data."""
-
-    _data: dict[str, str]
-    _options: defaultdict[str, set[str]] | None = None
-
-    @classmethod
-    def key_options(cls, key: str) -> tuple[str, ...]:
-        if cls._options is None:
-            cls._options = db.get_custom_data_map()
-        # pylingt bug: https://github.com/pylint-dev/pylint/issues/9515
-        return tuple(cls._options[key])  # pylint: disable=unsubscriptable-object
-
-    def __init__(self, data: dict[str, str] | None = None) -> None:
-        self._data = dict(data) if data else {}
-
-    def get(self, key: str) -> str | None:
-        return self._data.get(key)
-
-    def set(self, key: str, value: str | None) -> None:
-        if value is None:
-            if key in self._data:
-                del self._data[key]
-        else:
-            self._data[key] = value
-            if self._options is not None:
-                self._options[key].add(value)  # pylint: disable=unsubscriptable-object
-
-    def items(self) -> collections.abc.ItemsView[str, str]:
-        return self._data.items()
 
 
 @attrs.define
@@ -292,16 +259,6 @@ class SyncMetaEncoder(json.JSONEncoder):
             dct = attrs.asdict(o, recurse=False, filter=filt)
             dct["version"] = SYNC_META_VERSION
             return dct
+        if isinstance(o, CustomData):
+            return o.inner()
         return super().default(o)
-
-
-class CustomDataOptions:
-    """Cache of custom data values per key."""
-
-    _map: defaultdict[str, set[str]] | None = None
-
-    @classmethod
-    def map(cls) -> defaultdict[str, set[str]]:
-        if cls._map is None:
-            cls._map = db.get_custom_data_map()
-        return cls._map

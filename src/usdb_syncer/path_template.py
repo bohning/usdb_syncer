@@ -4,11 +4,12 @@ from __future__ import annotations
 
 import enum
 from pathlib import Path
-from typing import TYPE_CHECKING, assert_never
+from typing import TYPE_CHECKING, Iterable, assert_never
 
 import attrs
 
 from usdb_syncer import errors, utils
+from usdb_syncer.custom_data import CustomData
 
 if TYPE_CHECKING:
     from usdb_syncer.usdb_song import UsdbSong
@@ -31,13 +32,13 @@ class InvalidCharError(PathTemplateError):
 
 
 @attrs.define
-class UnknownPlaceholderError(PathTemplateError):
+class InvalidPlaceholderError(PathTemplateError):
     """Raised when the path template contains an unknown placeholder name."""
 
     name: str
 
     def __str__(self) -> str:
-        return f"Unknown placeholder in path template: '{self.name}'"
+        return f"Invalid placeholder in path template: '{self.name}'"
 
 
 @attrs.define
@@ -60,9 +61,6 @@ class PathTemplate:
 
     @classmethod
     def parse(cls, template: str) -> PathTemplate:
-        for char in FORBIDDEN_CHARACTERS:
-            if char in template:
-                raise InvalidCharError(char)
         parts = [
             p for part in template.replace("\\", "/").split("/") if (p := part.strip())
         ]
@@ -107,9 +105,10 @@ class PathTemplateComponent:
                 if token:
                     tokens.append(PathTemplateLiteral(token))
             else:
-                if not token:
-                    raise UnknownPlaceholderError("")
-                tokens.append(PathTemplatePlaceholder.from_name(token))
+                if token[:1] == "*":
+                    tokens.append(PathTemplateCustomPlaceholder(token[1:]))
+                else:
+                    tokens.append(PathTemplatePlaceholder.from_name(token))
             literal = not literal
         return cls(tokens)
 
@@ -129,6 +128,11 @@ class PathTemplateComponentToken:
 
 class PathTemplateLiteral(PathTemplateComponentToken, str):
     """A literal string that is part of a path template."""
+
+    def __init__(self, literal: str) -> None:
+        for char in FORBIDDEN_CHARACTERS:
+            if char in literal:
+                raise InvalidCharError(char)
 
     def evaluate(self, _song: UsdbSong) -> str:
         return str(self)
@@ -152,7 +156,7 @@ class PathTemplatePlaceholder(PathTemplateComponentToken, enum.Enum):
         try:
             return PathTemplatePlaceholder(name)
         except ValueError as error:
-            raise UnknownPlaceholderError(name) from error
+            raise InvalidPlaceholderError(name) from error
 
     def evaluate(self, song: UsdbSong) -> str:
         match self:
@@ -179,3 +183,26 @@ class PathTemplatePlaceholder(PathTemplateComponentToken, enum.Enum):
 
     def __str__(self) -> str:
         return f":{self.value}:"
+
+
+class PathTemplateCustomPlaceholder(PathTemplateComponentToken):
+    """A path template placeholder representing a custom data key."""
+
+    _key: str
+
+    def __init__(self, key: str) -> None:
+        if not CustomData.is_valid_key(key):
+            raise InvalidPlaceholderError(key)
+        self._key = key
+
+    def evaluate(self, song: UsdbSong) -> str:
+        if song.sync_meta:
+            return song.sync_meta.custom_data.get(self._key) or ""
+        return ""
+
+    def __str__(self) -> str:
+        return f":*{self._key}:"
+
+    @classmethod
+    def options(cls) -> Iterable[PathTemplateCustomPlaceholder]:
+        return (cls(k) for k in CustomData.key_options())
