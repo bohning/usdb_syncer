@@ -188,7 +188,7 @@ class SongTable:
             _add_action("New ...", key_menu, partial(run_custom_data_dialog, key))
             key_menu.addSeparator()
             _add_action(value, key_menu, partial(update, key, None), checked=True)
-            for option in sync_meta.CustomData.key_options(key):
+            for option in sync_meta.CustomData.value_options(key):
                 if option != value:
                     _add_action(
                         option, key_menu, partial(update, key, option), checked=False

@@ -4,6 +4,7 @@ from typing import Callable
 
 from PySide6 import QtWidgets
 
+from usdb_syncer.custom_data import CustomData
 from usdb_syncer.gui.forms.CustomDataDialog import Ui_Dialog
 
 FORBIDDEN_CHARS = '?"<>|*.:/\\'
@@ -32,8 +33,11 @@ class CustomDataDialog(Ui_Dialog, QtWidgets.QDialog):
             QtWidgets.QMessageBox.warning(
                 self, "Warning", "Both key and value must be supplied!"
             )
-        elif any(c in key for c in FORBIDDEN_CHARS):
-            warning = f"Key must not contain any of these characters: {FORBIDDEN_CHARS}"
+        elif not CustomData.is_valid_key(key):
+            warning = (
+                "Key must not contain any of these characters: "
+                + CustomData.FORBIDDEN_KEY_CHARS
+            )
         else:
             self._on_accept(key, value)
             super().accept()

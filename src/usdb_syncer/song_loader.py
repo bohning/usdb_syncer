@@ -37,6 +37,7 @@ from usdb_syncer import (
     utils,
 )
 from usdb_syncer.constants import ISO_639_2B_LANGUAGE_CODES
+from usdb_syncer.custom_data import CustomData
 from usdb_syncer.logger import Log, get_logger
 from usdb_syncer.song_txt import SongTxt
 from usdb_syncer.sync_meta import ResourceFile, SyncMeta
@@ -709,7 +710,6 @@ def _persist_tempfiles(ctx: _Context) -> None:
 
 
 def _write_sync_meta(ctx: _Context) -> None:
-    # BUG: resources are always redownloading
     old = ctx.song.sync_meta
     sync_meta_id = old.sync_meta_id if old else SyncMetaId.new()
     ctx.song.sync_meta = SyncMeta(
@@ -719,6 +719,7 @@ def _write_sync_meta(ctx: _Context) -> None:
         mtime=0,
         meta_tags=ctx.txt.meta_tags,
         pinned=old.pinned if old else False,
+        custom_data=CustomData(old.custom_data.inner() if old else None),
     )
     ctx.song.sync_meta.txt = ctx.out.txt.to_resource_file(ctx.locations, temp=False)
     ctx.song.sync_meta.audio = ctx.out.audio.to_resource_file(ctx.locations, temp=False)
