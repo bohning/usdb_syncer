@@ -15,6 +15,8 @@
   - A single saved search may be made the default to automatically apply it on startup.
   - You can subscribe to saved searches to automatically download matches when new songs
     are found on USDB.
+- Comments can now be posted on songs. Each comment includes a message and a rating. 
+  Ratings can be negative, neutral, or positive, with neutral being the default.
 
 ## Developer notes
 

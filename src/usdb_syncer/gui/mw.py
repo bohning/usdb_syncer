@@ -12,6 +12,7 @@ from usdb_syncer import SongId, db, events, settings, song_routines, usdb_id_fil
 from usdb_syncer.constants import Usdb
 from usdb_syncer.gui import gui_utils, progress, progress_bar
 from usdb_syncer.gui.about_dialog import AboutDialog
+from usdb_syncer.gui.comment_dialog import CommentDialog
 from usdb_syncer.gui.debug_console import DebugConsole
 from usdb_syncer.gui.forms.MainWindow import Ui_MainWindow
 from usdb_syncer.gui.meta_tags_dialog import MetaTagsDialog
@@ -102,6 +103,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
             (self.action_export_usdb_ids, self._export_usdb_ids_to_file),
             (self.action_show_log, lambda: open_file_explorer(AppPaths.log)),
             (self.action_show_in_usdb, self._show_current_song_in_usdb),
+            (self.action_post_comment_in_usdb, self._show_comment_dialog),
             (self.action_open_song_folder, self._open_current_song_folder),
             (self.action_delete, self.table.delete_selected_songs),
             (self.action_pin, self.table.set_pin_selected_songs),
@@ -254,6 +256,13 @@ class MainWindow(Ui_MainWindow, QMainWindow):
             webbrowser.open(f"{Usdb.BASE_URL}?link=detail&id={song.song_id:d}")
         else:
             _logger.info("No current song.")
+
+    def _show_comment_dialog(self) -> None:
+        song = self.table.current_song()
+        if song:
+            CommentDialog(self, song).show()
+        else:
+            _logger.debug("Not opening comment dialog: no song selected.")
 
     def _open_current_song_folder(self) -> None:
         if song := self.table.current_song():

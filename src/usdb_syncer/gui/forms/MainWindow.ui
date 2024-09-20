@@ -231,6 +231,7 @@
     <addaction name="action_songs_download"/>
     <addaction name="action_songs_abort"/>
     <addaction name="action_show_in_usdb"/>
+    <addaction name="action_post_comment_in_usdb"/>
     <addaction name="separator"/>
     <addaction name="action_open_song_folder"/>
     <addaction name="action_delete"/>
@@ -553,6 +554,15 @@
    </property>
    <property name="text">
     <string>Show on USDB</string>
+   </property>
+  </action>
+  <action name="action_post_comment_in_usdb">
+   <property name="icon">
+    <iconset resource="../resources/resources.qrc">
+     <normaloff>:/icons/balloon.png</normaloff>:/icons/balloon.png</iconset>
+   </property>
+   <property name="text">
+    <string>Post Comment</string>
    </property>
   </action>
   <action name="action_open_song_folder">
