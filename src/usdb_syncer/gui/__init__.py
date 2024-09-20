@@ -16,6 +16,7 @@ from PySide6.QtCore import Qt
 
 import tools
 from usdb_syncer import (
+    addons,
     constants,
     db,
     errors,
@@ -62,6 +63,7 @@ def _run() -> None:
     except errors.UnknownSchemaError:
         QtWidgets.QMessageBox.critical(mw, "Version conflict", SCHEMA_ERROR_MESSAGE)
         return
+    addons.load_all()
     app.exec()
 
 

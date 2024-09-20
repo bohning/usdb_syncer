@@ -31,6 +31,7 @@ from usdb_syncer import (
     download_options,
     errors,
     events,
+    hooks,
     resource_dl,
     usdb_scraper,
     utils,
@@ -393,6 +394,7 @@ class _SongLoader(QtCore.QRunnable):
             ctx.locations.move_to_target_folder()
             _persist_tempfiles(ctx)
         _write_sync_meta(ctx)
+        hooks.SongLoaderDidFinish.call(ctx.song)
         return ctx.song
 
     def _check_flags(self) -> None:

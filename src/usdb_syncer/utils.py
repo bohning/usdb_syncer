@@ -60,10 +60,11 @@ class AppPaths:
     profile = Path(root, "usdb_syncer.prof")
     db = Path(_app_dirs.user_data_dir, "usdb_syncer.db")
     sql = Path(root, "src", "usdb_syncer", "db", "sql")
+    addons = Path(_app_dirs.user_data_dir, "addons")
 
     @classmethod
     def make_dirs(cls) -> None:
-        cls.log.parent.mkdir(parents=True, exist_ok=True)
+        cls.addons.mkdir(parents=True, exist_ok=True)
         cls.song_list.parent.mkdir(parents=True, exist_ok=True)
 
 

@@ -101,7 +101,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
             (self.action_generate_song_json, self._generate_song_json),
             (self.action_import_usdb_ids, self._import_usdb_ids_from_files),
             (self.action_export_usdb_ids, self._export_usdb_ids_to_file),
-            (self.action_show_log, lambda: open_file_explorer(AppPaths.log)),
+            (self.action_show_log, lambda: open_file_explorer(AppPaths.log.parent)),
             (self.action_show_in_usdb, self._show_current_song_in_usdb),
             (self.action_post_comment_in_usdb, self._show_comment_dialog),
             (self.action_open_song_folder, self._open_current_song_folder),
