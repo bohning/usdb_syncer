@@ -4,6 +4,9 @@
 
 ## Fixes
 
+- Age-restricted content can now be successfully downloaded if you are logged in to
+  YouTube in your browser.
+
 ## Features
 
 - The download path can now be customized using a dedicated template syntax (see
