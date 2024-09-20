@@ -532,7 +532,7 @@
   <action name="action_usdb_login">
    <property name="icon">
     <iconset resource="../resources/resources.qrc">
-     <normaloff>:/icons/faviconUSDB.ico</normaloff>:/icons/faviconUSDB.ico</iconset>
+     <normaloff>:/icons/faviconUSDB.png</normaloff>:/icons/faviconUSDB.png</iconset>
    </property>
    <property name="text">
     <string>USDB Login</string>
@@ -550,7 +550,7 @@
   <action name="action_show_in_usdb">
    <property name="icon">
     <iconset resource="../resources/resources.qrc">
-     <normaloff>:/icons/faviconUSDB.ico</normaloff>:/icons/faviconUSDB.ico</iconset>
+     <normaloff>:/icons/faviconUSDB.png</normaloff>:/icons/faviconUSDB.png</iconset>
    </property>
    <property name="text">
     <string>Show on USDB</string>
