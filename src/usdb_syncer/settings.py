@@ -336,24 +336,33 @@ class VideoContainer(Enum):
     """Video containers that can be requested when downloading with ytdl."""
 
     MP4 = "mp4"
+    MP4_NO_VP9 = "mp4_no_vp9"
     WEBM = "webm"
     BEST = "bestvideo"
 
     def __str__(self) -> str:
         match self:
             case VideoContainer.MP4:
-                return ".mp4"
+                return ".mp4 (any codec)"
+            case VideoContainer.MP4_NO_VP9:
+                return ".mp4 (no VP9)"
             case VideoContainer.WEBM:
-                return ".webm"
+                return ".webm (VP9)"
             case VideoContainer.BEST:
                 return "Best available"
             case _ as unreachable:
                 assert_never(unreachable)
 
     def ytdl_format(self) -> str:
-        if self is VideoContainer.BEST:
-            return "bestvideo*"
-        return f"bestvideo*[ext={self.value}]"
+        match self:
+            case VideoContainer.MP4 | VideoContainer.WEBM:
+                return f"bestvideo*[ext={self.value}]"
+            case VideoContainer.MP4_NO_VP9:
+                return "bestvideo*[ext=mp4][vcodec!~='vp0?9']"
+            case VideoContainer.BEST:
+                return "bestvideo*"
+            case _ as unreachable:
+                assert_never(unreachable)
 
 
 class VideoCodec(Enum):
