@@ -112,6 +112,9 @@ startup phase, they cannot be completely ruled out.
   apt install gnome-keyring
   ```
 
+- One user experiencing an [issue with the menu bar](https://github.com/bohning/usdb_syncer/issues/198)
+  solved it by forcing WaylandX instead of Wayland being used: `env WAYLAND_DISPLAY=`.
+
 ## Linux Distributions
 
 Linux Build are generated on `Ubuntu:latest`, should run on `Ubuntu >=22.04`
