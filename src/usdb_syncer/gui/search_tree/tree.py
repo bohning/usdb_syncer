@@ -65,7 +65,10 @@ class FilterTree:
                 self._model.emit_item_changed(changed)
 
     def _on_click(self, index: QModelIndex) -> None:
-        item = self._model.item_for_index(self._proxy_model.mapToSource(index))
+        if not (
+            item := self._model.item_for_index(self._proxy_model.mapToSource(index))
+        ):
+            return
         if isinstance(item.data, SavedSearch):
             events.SavedSearchRestored(item.data.search).post()
         else:
@@ -89,9 +92,9 @@ class FilterTree:
         item = self._model.item_for_index(
             self._proxy_model.mapToSource(self.view.currentIndex())
         )
-        if item.data == Filter.SAVED:
+        if item and item.data == Filter.SAVED:
             actions = [self.mw.action_add_saved_search]
-        elif isinstance(item.data, SavedSearch):
+        elif item and isinstance(item.data, SavedSearch):
             self.mw.action_set_saved_search_default.setChecked(item.data.is_default)
             self.mw.action_set_saved_search_subscribed.setChecked(item.data.subscribed)
             actions = [
@@ -115,7 +118,7 @@ class FilterTree:
         item = self._model.item_for_index(
             self._proxy_model.mapToSource(self.view.currentIndex())
         )
-        if isinstance(item.data, SavedSearch):
+        if item and isinstance(item.data, SavedSearch):
             return item.data
         return None
 
