@@ -21,6 +21,7 @@
 - Comments can now be posted on songs. Each comment includes a message and a rating. 
   Ratings can be negative, neutral, or positive, with neutral being the default.
 - The VP9 codec can be excluded for mp4 video containers (see _Settings_).
+- Tags (and artwork, if selected) are now also written to the video file (mp4 only).
 
 ## Developer notes
 

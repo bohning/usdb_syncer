@@ -83,6 +83,7 @@ class SettingKey(Enum):
     VIDEO_FORMAT_NEW = "downloads/video_format_new"
     VIDEO_RESOLUTION_MAX = "downloads/video_resolution_max"
     VIDEO_FPS_MAX = "downloads/video_fps_max"
+    VIDEO_EMBED_ARTWORK = "downloads/video_embed_artwork"
     COVER = "downloads/cover"
     COVER_MAX_SIZE = "downloads/cover_max_size"
     BACKGROUND = "downloads/background"
@@ -616,6 +617,14 @@ def get_video_fps() -> VideoFps:
 
 def set_video_fps(value: VideoFps) -> None:
     set_setting(SettingKey.VIDEO_FPS_MAX, value)
+
+
+def get_video_embed_artwork() -> bool:
+    return get_setting(SettingKey.VIDEO_EMBED_ARTWORK, False)
+
+
+def set_video_embed_artwork(value: bool) -> None:
+    set_setting(SettingKey.VIDEO_EMBED_ARTWORK, value)
 
 
 def get_background() -> bool:
