@@ -175,6 +175,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         def on_done(result: progress.Result[None]) -> None:
             UsdbSong.clear_cache()
             self.table.end_reset()
+            self.table.search_songs()
             result.result()
 
         self.table.begin_reset()
