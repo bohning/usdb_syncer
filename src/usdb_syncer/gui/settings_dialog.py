@@ -97,6 +97,7 @@ class SettingsDialog(Ui_Dialog, QDialog):
         self.comboBox_fps.setCurrentIndex(
             self.comboBox_fps.findData(settings.get_video_fps())
         )
+        self.checkBox_video_embed_artwork.setChecked(settings.get_video_embed_artwork())
         self.groupBox_background.setChecked(settings.get_background())
         self.checkBox_background_always.setChecked(settings.get_background_always())
 
@@ -150,6 +151,7 @@ class SettingsDialog(Ui_Dialog, QDialog):
         settings.set_video_reencode(self.groupBox_reencode_video.isChecked())
         settings.set_video_resolution(self.comboBox_videoresolution.currentData())
         settings.set_video_fps(self.comboBox_fps.currentData())
+        settings.set_video_embed_artwork(self.checkBox_video_embed_artwork.isChecked())
         settings.set_background(self.groupBox_background.isChecked())
         settings.set_background_always(self.checkBox_background_always.isChecked())
         if self._path_template:

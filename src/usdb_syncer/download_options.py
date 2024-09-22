@@ -35,6 +35,7 @@ class VideoOptions:
     reencode_format: settings.VideoCodec | None
     max_resolution: settings.VideoResolution
     max_fps: settings.VideoFps
+    embed_artwork: bool
 
     def ytdl_format(self) -> str:
         fmt = self.format.ytdl_format()
@@ -116,6 +117,7 @@ def _video_options() -> VideoOptions | None:
         ),
         max_resolution=settings.get_video_resolution(),
         max_fps=settings.get_video_fps(),
+        embed_artwork=settings.get_video_embed_artwork(),
     )
 
 

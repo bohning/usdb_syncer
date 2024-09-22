@@ -383,6 +383,7 @@ class _SongLoader(QtCore.QRunnable):
                 _maybe_download_cover,
                 _maybe_download_background,
                 _maybe_write_audio_tags,
+                _maybe_write_video_tags,
             ):
                 self._check_flags()
                 job(ctx)
@@ -536,7 +537,7 @@ def _maybe_write_audio_tags(ctx: _Context) -> None:
     try:
         match path.suffix:
             case ".m4a":
-                _write_m4a_tags(path, resource, ctx, options.embed_artwork)
+                _write_m4a_mp4_tags(path, resource, ctx, options.embed_artwork)
             case ".mp3":
                 _write_mp3_tags(path, resource, ctx, options.embed_artwork)
             case ".ogg":
@@ -560,7 +561,27 @@ def _maybe_write_audio_tags(ctx: _Context) -> None:
         ctx.logger.debug(f"Audio tags written to file '{path}'.")
 
 
-def _write_m4a_tags(
+def _maybe_write_video_tags(ctx: _Context) -> None:
+    if not (options := ctx.options.video_options):
+        return
+    if not (path_resource := ctx.out.video.path_and_resource(ctx.locations, temp=True)):
+        return
+    path, resource = path_resource
+    try:
+        match path.suffix:
+            case ".mp4":
+                _write_m4a_mp4_tags(path, resource, ctx, options.embed_artwork)
+            case other:
+                ctx.logger.debug(f"Video tags not supported for suffix '{other}'.")
+                return
+    except Exception:  # pylint: disable=broad-exception-caught
+        ctx.logger.debug(traceback.format_exc())
+        ctx.logger.error(f"Failed to write video tags to file '{path}'!")
+    else:
+        ctx.logger.debug(f"Video tags written to file '{path}'.")
+
+
+def _write_m4a_mp4_tags(
     path: Path, resource: str, ctx: _Context, embed_artwork: bool
 ) -> None:
     tags = mutagen.mp4.MP4Tags()
