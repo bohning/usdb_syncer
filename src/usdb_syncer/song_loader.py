@@ -301,7 +301,7 @@ def _get_usdb_data(song_id: SongId, logger: Log) -> tuple[SongDetails, SongTxt]:
     txt = SongTxt.parse(txt_str, logger)
     txt.sanitize()
     txt.headers.creator = txt.headers.creator or details.uploader or None
-    txt.headers.tags = ", ".join(details.comment_tags())
+    txt.headers.tags = ", ".join(details.comment_tags()) or None
     return details, txt
 
 
