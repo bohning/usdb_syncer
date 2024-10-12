@@ -39,6 +39,8 @@ class SettingsDialog(Ui_Dialog, QDialog):
         self._load_settings()
         self._setup_path_template()
         self._browser = self.comboBox_browser.currentData()
+        self.label_video_embed_artwork.setVisible(False)
+        self.checkBox_video_embed_artwork.setVisible(False)
         self.groupBox_reencode_video.setVisible(False)
 
     def _populate_comboboxes(self) -> None:

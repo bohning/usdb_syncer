@@ -108,9 +108,9 @@ class Encoding(Enum):
             case Encoding.UTF_8:
                 return "UTF-8"
             case Encoding.UTF_8_BOM:
-                return "UTF-8 BOM"
+                return "UTF-8 BOM (legacy support for older Vocaluxe versions)"
             case Encoding.CP1252:
-                return "CP1252"
+                return "CP1252 (legacy support for older USDX CMD)"
             case _ as unreachable:
                 assert_never(unreachable)
 
