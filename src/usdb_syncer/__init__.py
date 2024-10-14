@@ -54,7 +54,7 @@ class SyncMetaId(int):
     def decode(cls, value: str) -> SyncMetaId | None:
         try:
             number = base64.urlsafe_b64decode(f"{value}=")
-        except binascii.Error:
+        except (binascii.Error, ValueError):
             return None
         return cls.from_bytes(number, "big", signed=True)
 
