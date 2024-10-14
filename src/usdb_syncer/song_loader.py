@@ -115,7 +115,6 @@ class _Locations:
     def new(
         cls, song: UsdbSong, options: download_options.Options, tempdir: Path
     ) -> _Locations:
-        # BUG: suffix is probably wrong
         target = options.path_template.evaluate(song, options.song_dir)
         if (
             _current := song.sync_meta.path.parent if song.sync_meta else None
@@ -730,7 +729,6 @@ def _persist_tempfiles(ctx: _Context) -> None:
 
 
 def _write_sync_meta(ctx: _Context) -> None:
-    # BUG: resources are always redownloading
     old = ctx.song.sync_meta
     sync_meta_id = old.sync_meta_id if old else SyncMetaId.new()
     ctx.song.sync_meta = SyncMeta(
