@@ -85,6 +85,7 @@ class DownloadManager:
     @classmethod
     def quit(cls) -> None:
         if cls._pool:
+            get_logger(__file__).debug(f"Quitting {len(cls._jobs)} downloads.")
             for job in cls._jobs.values():
                 job.abort = True
             cls._pool.waitForDone()
