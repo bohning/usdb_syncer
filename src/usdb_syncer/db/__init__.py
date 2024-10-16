@@ -56,7 +56,7 @@ class _DbState:
         if cls._local.connection:
             raise errors.DatabaseError("Already connected to database!")
         cls._local.connection = sqlite3.connect(
-            db_path, check_same_thread=False, isolation_level=None
+            db_path, check_same_thread=False, isolation_level=None, timeout=20
         )
         _logger.debug(f"Connected to database at '{db_path}'.")
         if trace:
