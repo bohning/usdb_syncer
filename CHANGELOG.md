@@ -21,7 +21,11 @@
 - Comments can now be posted on songs. Each comment includes a message and a rating. 
   Ratings can be negative, neutral, or positive, with neutral being the default.
 - The VP9 codec can be excluded for mp4 video containers (see _Settings_).
-- Tags (and artwork, if selected) are now also written to the video file (mp4 only).
+- Tags such as artist, title and year are now also written to the video file (mp4 only).
+- Some text file fixes are now optional and can be configured in the settings:
+  - fix linebreaks (disabled | USDX style | YASS style)
+  - fix first words capitalization (disabled | enabled)
+  - fix spaces (after words | before words)
 
 ## Developer notes
 
