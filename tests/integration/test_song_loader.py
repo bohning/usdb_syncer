@@ -25,6 +25,7 @@ from usdb_syncer.sync_meta import ResourceFile
 # pylint: disable=unused-argument
 def _download_and_process_image(
     url: Any,
+    *,
     target_stem: Path,
     meta_tags: Any,
     details: Any,
@@ -55,6 +56,7 @@ def _download_video(
 def _options(
     song_dir: Path,
     path_template: str,
+    *,
     audio: bool = False,
     video: bool = False,
     cover: bool = False,

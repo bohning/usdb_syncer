@@ -203,6 +203,7 @@ class SongDetails:
 def get_usdb_page(
     rel_url: str,
     method: RequestMethod = RequestMethod.GET,
+    *,
     headers: dict[str, str] | None = None,
     payload: dict[str, str] | None = None,
     params: dict[str, str] | None = None,
@@ -248,6 +249,7 @@ def _get_usdb_page_inner(
     session: Session,
     rel_url: str,
     method: RequestMethod = RequestMethod.GET,
+    *,
     headers: dict[str, str] | None = None,
     payload: dict[str, str] | None = None,
     params: dict[str, str] | None = None,

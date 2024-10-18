@@ -56,7 +56,7 @@ class PathTemplate:
     """
 
     _components: list[PathTemplateComponent]
-    DEFAULT_STR = ":artist: - :title: / :artist: - :title:"
+    default_str = ":artist: - :title: / :artist: - :title:"
 
     @classmethod
     def parse(cls, template: str) -> PathTemplate:
@@ -81,7 +81,7 @@ class PathTemplate:
 
     @classmethod
     def default(cls) -> PathTemplate:
-        return cls.parse(cls.DEFAULT_STR)
+        return cls.parse(cls.default_str)
 
     def __str__(self) -> str:
         return " / ".join(map(str, self._components))

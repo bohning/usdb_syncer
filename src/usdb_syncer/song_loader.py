@@ -464,11 +464,11 @@ def _maybe_download_cover(ctx: _Context) -> None:
         ctx.logger.info("Cover resource is unchanged.")
         return
     if path := resource_dl.download_and_process_image(
-        url,
-        ctx.locations.temp_path(),
-        ctx.txt.meta_tags.cover,
-        ctx.details,
-        resource_dl.ImageKind.COVER,
+        url=url,
+        target_stem=ctx.locations.temp_path(),
+        meta_tags=ctx.txt.meta_tags.cover,
+        details=ctx.details,
+        kind=resource_dl.ImageKind.COVER,
         max_width=ctx.options.cover.max_size,
     ):
         ctx.out.cover.resource = url
@@ -491,11 +491,11 @@ def _maybe_download_background(ctx: _Context) -> None:
         ctx.logger.info("Background resource is unchanged.")
         return
     if path := resource_dl.download_and_process_image(
-        url,
-        ctx.locations.temp_path(),
-        ctx.txt.meta_tags.background,
-        ctx.details,
-        resource_dl.ImageKind.BACKGROUND,
+        url=url,
+        target_stem=ctx.locations.temp_path(),
+        meta_tags=ctx.txt.meta_tags.background,
+        details=ctx.details,
+        kind=resource_dl.ImageKind.BACKGROUND,
         max_width=None,
     ):
         ctx.out.background.resource = url
