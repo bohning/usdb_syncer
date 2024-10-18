@@ -253,7 +253,7 @@ class _Context:
         logger: Log,
     ) -> _Context:
         song = copy.deepcopy(song)
-        details, txt = _get_usdb_data(song.song_id, logger)
+        details, txt = _get_usdb_data(song.song_id, options.txt_options, logger)
         _update_song_with_usdb_data(song, details, txt)
         paths = _Locations.new(song, options, tempdir)
         if not song.sync_meta:
@@ -294,12 +294,14 @@ class _Context:
         return url
 
 
-def _get_usdb_data(song_id: SongId, logger: Log) -> tuple[SongDetails, SongTxt]:
+def _get_usdb_data(
+    song_id: SongId, txt_options: download_options.TxtOptions | None, logger: Log
+) -> tuple[SongDetails, SongTxt]:
     details = usdb_scraper.get_usdb_details(song_id)
     logger.info(f"Found '{details.artist} - {details.title}' on USDB.")
     txt_str = usdb_scraper.get_notes(details.song_id, logger)
     txt = SongTxt.parse(txt_str, logger)
-    txt.sanitize()
+    txt.sanitize(txt_options)
     txt.headers.creator = txt.headers.creator or details.uploader or None
     txt.headers.tags = ", ".join(details.comment_tags()) or None
     return details, txt

@@ -8,8 +8,9 @@ from typing import Iterator, Tuple
 
 import attrs
 
-from usdb_syncer import errors
+from usdb_syncer import errors, settings
 from usdb_syncer.logger import Log
+from usdb_syncer.song_txt import headers
 
 
 class NoteKind(Enum):
@@ -74,6 +75,14 @@ class Note:
     def left_trim_text(self) -> None:
         """Remove whitespace from the start of the note."""
         self.text = self.text.lstrip()
+
+    def left_trim_text_and_add_space(self) -> None:
+        """Ensure the note starts with a single space."""
+        self.text = " " + self.text.lstrip()
+
+    def right_trim_text(self) -> None:
+        """Remove whitespace from the end of the note."""
+        self.text = self.text.rstrip()
 
     def right_trim_text_and_add_space(self) -> None:
         """Ensure the note ends with a single space."""
@@ -267,9 +276,14 @@ class Tracks:
             char.islower() for note in self.all_notes() for char in note.text
         )
 
-    def fix_line_breaks(self, logger: Log) -> None:
+    def fix_linebreaks(
+        self,
+        fix_style: settings.FixLinebreaks,
+        bpm: headers.BeatsPerMinute,
+        logger: Log,
+    ) -> None:
         for track in self.all_tracks():
-            fix_line_breaks(track)
+            fix_linebreaks(track, fix_style, bpm)
         logger.debug("FIX: Linebreaks corrected.")
 
     def consecutive_notes(self) -> Iterator[Tuple[Note, Note]]:
@@ -317,27 +331,41 @@ class Tracks:
                 " corrected."
             )
 
-    def fix_spaces(self, logger: Log) -> None:
-        """Ensures
-        1. no syllables start with whitespace,
-        2. word-final syllables end with a single space,
-        3. the last syllable in a line ends with a single space.
-        """
+    def fix_spaces(self, fix_style: settings.FixSpaces, logger: Log) -> None:
+        """Ensures that inter-word spaces are either always after or before words"""
         for line in self.all_lines():
-            line.notes[0].left_trim_text()
+            match fix_style:
+                case settings.FixSpaces.AFTER:
+                    line.notes[0].left_trim_text()
 
-            # if current syllable starts with a space shift it to the end of the
-            # previous syllable
-            for idx in range(1, len(line.notes)):
-                if line.notes[idx].text.startswith(" "):
-                    line.notes[idx - 1].right_trim_text_and_add_space()
-                    line.notes[idx].left_trim_text()
-                if line.notes[idx].text.endswith(" "):
-                    line.notes[idx].right_trim_text_and_add_space()
+                    # if current syllable starts with a space shift it to the end of the
+                    # previous syllable
+                    for idx in range(1, len(line.notes)):
+                        if line.notes[idx].text.startswith(" "):
+                            line.notes[idx - 1].right_trim_text_and_add_space()
+                            line.notes[idx].left_trim_text()
+                        if line.notes[idx].text.endswith(" "):
+                            line.notes[idx].right_trim_text_and_add_space()
 
-            # last syllable should end with a space, otherwise syllable highlighting
-            # used to be incomplete in USDX, and it allows simple text concatenation
-            line.notes[-1].right_trim_text_and_add_space()
+                    # last syllable should end with a space, otherwise syllable highlighting
+                    # used to be incomplete in USDX, and it allows simple text concatenation
+                    line.notes[-1].right_trim_text_and_add_space()
+                case settings.FixSpaces.BEFORE:
+                    # first syllable should start with a space to allow simple text
+                    # concatenation
+                    line.notes[0].left_trim_text_and_add_space()
+
+                    # if current syllable ends with a space, shift it to the beginning
+                    #  of the next syllable
+                    for idx in range(0, len(line.notes) - 1):
+                        if line.notes[idx].text.endswith(" "):
+                            line.notes[idx + 1].left_trim_text_and_add_space()
+                            line.notes[idx].right_trim_text()
+                        if line.notes[idx].text.startswith(" "):
+                            line.notes[idx].left_trim_text_and_add_space()
+
+                    # last syllable should not end with a space
+                    line.notes[-1].right_trim_text()
         logger.debug("FIX: Inter-word spaces corrected.")
 
     def fix_all_caps(self, logger: Log) -> None:
@@ -401,21 +429,53 @@ def _split_duet_line(line: Line, cutoff: int) -> tuple[Line, Line] | None:
     return Line(line.notes[:idx], None), Line(line.notes[idx:], line.line_break)
 
 
-def fix_line_breaks(lines: list[Line]) -> None:
+def fix_linebreaks(
+    lines: list[Line], fix_style: settings.FixLinebreaks, bpm: headers.BeatsPerMinute
+) -> None:
     last_line = None
     for line in lines:
         if last_line and last_line.line_break:
             # remove end (not needed/used)
             last_line.line_break.next_line_in_time = None
 
-            # similar to USDX implementation (https://github.com/UltraStar-Deluxe/USDX/blob/0974aadaa747a5ce7f1f094908e669209641b5d4/src/screens/UScreenEditSub.pas#L2976) # pylint: disable=line-too-long
             gap = line.start() - last_line.end()
-            if gap < 2:
-                last_line.line_break.previous_line_out_time = line.start()
-            elif gap == 2:
-                last_line.line_break.previous_line_out_time = last_line.end() + 1
-            else:
-                last_line.line_break.previous_line_out_time = last_line.end() + 2
+
+            match fix_style:
+                case settings.FixLinebreaks.USDX_STYLE:
+                    # similar to USDX implementation (https://github.com/UltraStar-Deluxe/USDX/blob/0974aadaa747a5ce7f1f094908e669209641b5d4/src/screens/UScreenEditSub.pas#L2976) # pylint: disable=line-too-long
+                    if gap < 2:
+                        last_line.line_break.previous_line_out_time = line.start()
+                    elif gap == 2:
+                        last_line.line_break.previous_line_out_time = (
+                            last_line.end() + 1
+                        )
+                    else:
+                        last_line.line_break.previous_line_out_time = (
+                            last_line.end() + 2
+                        )
+                case settings.FixLinebreaks.YASS_STYLE:
+                    # match YASS implementation (https://github.com/DoubleDee73/Yass/blob/1a70340016fba9430fd8f0bf49797839fc44456d/src/yass/YassAutoCorrect.java#L168) # pylint: disable=line-too-long
+                    gap_secs = bpm.beats_to_secs(gap)
+                    if gap_secs >= 4.0:
+                        last_line.line_break.previous_line_out_time = (
+                            last_line.end() + bpm.secs_to_beats(2)
+                        )
+                    elif gap_secs >= 2.0:
+                        last_line.line_break.previous_line_out_time = (
+                            last_line.end() + bpm.secs_to_beats(1)
+                        )
+                    elif 0 <= gap <= 1:
+                        last_line.line_break.previous_line_out_time = last_line.end()
+                    elif 2 <= gap <= 8:
+                        last_line.line_break.previous_line_out_time = line.start() - 2
+                    elif 9 <= gap <= 12:
+                        last_line.line_break.previous_line_out_time = line.start() - 3
+                    elif 13 <= gap <= 16:
+                        last_line.line_break.previous_line_out_time = line.start() - 4
+                    elif gap > 16:
+                        last_line.line_break.previous_line_out_time = (
+                            last_line.end() + 10
+                        )
 
         # update last_line
         last_line = line

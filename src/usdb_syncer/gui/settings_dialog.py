@@ -47,6 +47,12 @@ class SettingsDialog(Ui_Dialog, QDialog):
         combobox_settings = (
             (self.comboBox_encoding, settings.Encoding),
             (self.comboBox_line_endings, settings.Newline),
+            (self.comboBox_fix_linebreaks, settings.FixLinebreaks),
+            (
+                self.comboBox_fix_first_words_capitalization,
+                settings.FixFirstWordsCapitalization,
+            ),
+            (self.comboBox_fix_spaces, settings.FixSpaces),
             (self.comboBox_cover_max_size, settings.CoverMaxSize),
             (self.comboBox_audio_format, settings.AudioFormat),
             (self.comboBox_audio_bitrate, settings.AudioBitrate),
@@ -75,6 +81,17 @@ class SettingsDialog(Ui_Dialog, QDialog):
         )
         self.comboBox_line_endings.setCurrentIndex(
             self.comboBox_line_endings.findData(settings.get_newline())
+        )
+        self.comboBox_fix_linebreaks.setCurrentIndex(
+            self.comboBox_fix_linebreaks.findData(settings.get_fix_linebreaks())
+        )
+        self.comboBox_fix_first_words_capitalization.setCurrentIndex(
+            self.comboBox_fix_first_words_capitalization.findData(
+                settings.get_fix_first_words_capitalization()
+            )
+        )
+        self.comboBox_fix_spaces.setCurrentIndex(
+            self.comboBox_fix_spaces.findData(settings.get_fix_spaces())
         )
         self.groupBox_audio.setChecked(settings.get_audio())
         self.comboBox_audio_format.setCurrentIndex(
@@ -142,6 +159,11 @@ class SettingsDialog(Ui_Dialog, QDialog):
         settings.set_txt(self.groupBox_songfile.isChecked())
         settings.set_encoding(self.comboBox_encoding.currentData())
         settings.set_newline(self.comboBox_line_endings.currentData())
+        settings.set_fix_linebreaks(self.comboBox_fix_linebreaks.currentData())
+        settings.set_fix_first_words_capitalization(
+            self.comboBox_fix_first_words_capitalization.currentData()
+        )
+        settings.set_fix_spaces(self.comboBox_fix_spaces.currentData())
         settings.set_audio(self.groupBox_audio.isChecked())
         settings.set_audio_format(self.comboBox_audio_format.currentData())
         settings.set_audio_bitrate(self.comboBox_audio_bitrate.currentData())
