@@ -30,6 +30,9 @@ class BeatsPerMinute:
     def beats_to_secs(self, beats: int) -> float:
         return beats / (self.value * 4) * 60
 
+    def secs_to_beats(self, secs: float) -> int:
+        return int(secs * 4 * self.value / 60)
+
     def beats_to_ms(self, beats: int) -> float:
         return self.beats_to_secs(beats) * 1000
 
