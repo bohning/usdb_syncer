@@ -10,7 +10,10 @@ import attrs
 
 from usdb_syncer import errors, settings
 from usdb_syncer.logger import Log
-from usdb_syncer.song_txt import headers
+from usdb_syncer.song_txt.auxiliaries import (
+    BeatsPerMinute,
+    replace_false_apostrophes_and_quotation_marks,
+)
 
 
 class NoteKind(Enum):
@@ -291,9 +294,7 @@ class Tracks:
         self._fix_linebreaks(fix)
         logger.debug("FIX: Linebreaks corrected (USDX style).")
 
-    def fix_linebreaks_yass_style(
-        self, bpm: headers.BeatsPerMinute, logger: Log
-    ) -> None:
+    def fix_linebreaks_yass_style(self, bpm: BeatsPerMinute, logger: Log) -> None:
         def fix(last_line: Line, line: Line, gap: int) -> None:
             # match YASS implementation (https://github.com/DoubleDee73/Yass/blob/1a70340016fba9430fd8f0bf49797839fc44456d/src/yass/YassAutoCorrect.java#L168) # pylint: disable=line-too-long
             if not last_line.line_break:
@@ -476,19 +477,6 @@ def _split_duet_line(line: Line, cutoff: int) -> tuple[Line, Line] | None:
         # first line would be empty
         return None
     return Line(line.notes[:idx], None), Line(line.notes[idx:], line.line_break)
-
-
-def replace_false_apostrophes_and_quotation_marks(value: str) -> str:
-    # two single upright quotation marks ('') by double upright quotation marks (")
-    # grave accent (`), acute accent (´), prime symbol (′) and upright apostrophe (')
-    # by typographer’s apostrophe (’)
-    return (
-        value.replace("''", '"')
-        .replace("`", "’")
-        .replace("´", "’")
-        .replace("′", "’")
-        .replace("'", "’")
-    )
 
 
 def _consecutive_notes(track: list[Line]) -> Iterator[Tuple[Note, Note]]:

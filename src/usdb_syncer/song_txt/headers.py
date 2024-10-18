@@ -2,51 +2,17 @@
 
 from __future__ import annotations
 
-import math
 from typing import Any, Callable
 
 import attrs
 
 from usdb_syncer import errors
-from usdb_syncer.constants import MINIMUM_BPM
 from usdb_syncer.logger import Log
+from usdb_syncer.song_txt.auxiliaries import (
+    BeatsPerMinute,
+    replace_false_apostrophes_and_quotation_marks,
+)
 from usdb_syncer.song_txt.language_translations import LANGUAGE_TRANSLATIONS
-from usdb_syncer.song_txt.tracks import replace_false_apostrophes_and_quotation_marks
-
-
-@attrs.define
-class BeatsPerMinute:
-    """New type for beats per minute float."""
-
-    value: float = NotImplemented
-
-    def __str__(self) -> str:
-        return f"{round(self.value, 2):g}"
-
-    @classmethod
-    def parse(cls, value: str) -> BeatsPerMinute:
-        return cls(float(value.replace(",", ".")))
-
-    def beats_to_secs(self, beats: int) -> float:
-        return beats / (self.value * 4) * 60
-
-    def secs_to_beats(self, secs: float) -> int:
-        return int(secs * 4 * self.value / 60)
-
-    def beats_to_ms(self, beats: int) -> float:
-        return self.beats_to_secs(beats) * 1000
-
-    def is_too_low(self) -> bool:
-        return self.value < MINIMUM_BPM
-
-    def make_large_enough(self) -> int:
-        """Double BPM (if necessary, multiple times) until it is above MINIMUM_BPM
-        and returns the required multiplication factor."""
-        # how often to double bpm until it is larger or equal to the threshold
-        exp = math.ceil(math.log2(MINIMUM_BPM / self.value))
-        factor = 2**exp
-        self.value = self.value * factor
-        return factor
 
 
 @attrs.define
