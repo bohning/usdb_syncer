@@ -162,12 +162,11 @@ class FixLinebreaks(Enum):
 class FixFirstWordsCapitalization(Enum):
     """Supported variants for fixing first words capitalization."""
 
-    ENABLE = "enable"
-    DISABLE = "disable"
+    DISABLE = 0
+    ENABLE = 1
 
     def __str__(self) -> str:
         match self:
-
             case FixFirstWordsCapitalization.ENABLE:
                 return "enable"
             case FixFirstWordsCapitalization.DISABLE:
@@ -179,18 +178,18 @@ class FixFirstWordsCapitalization(Enum):
 class FixSpaces(Enum):
     """Supported variants for fixing spaces."""
 
-    AFTER = 0
-    BEFORE = 1
-    DISABLE = 2
+    DISABLE = 0
+    AFTER = 1
+    BEFORE = 2
 
     def __str__(self) -> str:
         match self:
+            case FixSpaces.DISABLE:
+                return "disable"
             case FixSpaces.AFTER:
                 return "after words"
             case FixSpaces.BEFORE:
                 return "before words"
-            case FixSpaces.DISABLE:
-                return "disable"
             case _ as unreachable:
                 assert_never(unreachable)
 
