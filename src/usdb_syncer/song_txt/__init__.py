@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import assert_never
 
 import attrs
 
@@ -102,10 +103,15 @@ class SongTxt:
         self.headers.fix_language(self.logger)
         # optional fixes
         if txt_options:
-            if txt_options.fix_linebreaks != FixLinebreaks.DISABLE:
-                self.notes.fix_linebreaks(
-                    txt_options.fix_linebreaks, self.headers.bpm, self.logger
-                )
+            match txt_options.fix_linebreaks:
+                case FixLinebreaks.DISABLE:
+                    pass
+                case FixLinebreaks.USDX_STYLE:
+                    self.notes.fix_linebreaks_usdx_style(self.logger)
+                case FixLinebreaks.YASS_STYLE:
+                    self.notes.fix_linebreaks_yass_style(self.headers.bpm, self.logger)
+                case _ as unreachable:
+                    assert_never(unreachable)
             if (
                 txt_options.fix_first_words_capitalization
                 != FixFirstWordsCapitalization.DISABLE

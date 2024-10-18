@@ -143,18 +143,18 @@ class Newline(Enum):
 class FixLinebreaks(Enum):
     """Supported variants for fixing linebreak timings."""
 
-    USDX_STYLE = 0
-    YASS_STYLE = 1
-    DISABLE = 2
+    DISABLE = 0
+    USDX_STYLE = 1
+    YASS_STYLE = 2
 
     def __str__(self) -> str:
         match self:
+            case FixLinebreaks.DISABLE:
+                return "disable"
             case FixLinebreaks.USDX_STYLE:
                 return "USDX style"
             case FixLinebreaks.YASS_STYLE:
                 return "YASS style"
-            case FixLinebreaks.DISABLE:
-                return "disable"
             case _ as unreachable:
                 assert_never(unreachable)
 

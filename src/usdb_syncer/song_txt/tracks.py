@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import re
 from enum import Enum
-from typing import Iterator, Tuple
+from typing import Callable, Iterator, Tuple
 
 import attrs
 
@@ -276,15 +276,64 @@ class Tracks:
             char.islower() for note in self.all_notes() for char in note.text
         )
 
-    def fix_linebreaks(
-        self,
-        fix_style: settings.FixLinebreaks,
-        bpm: headers.BeatsPerMinute,
-        logger: Log,
+    def fix_linebreaks_usdx_style(self, logger: Log) -> None:
+        def fix(last_line: Line, line: Line, gap: int) -> None:
+            # similar to USDX implementation (https://github.com/UltraStar-Deluxe/USDX/blob/0974aadaa747a5ce7f1f094908e669209641b5d4/src/screens/UScreenEditSub.pas#L2976) # pylint: disable=line-too-long
+            if not last_line.line_break:
+                return
+            if gap < 2:
+                last_line.line_break.previous_line_out_time = line.start()
+            elif gap == 2:
+                last_line.line_break.previous_line_out_time = last_line.end() + 1
+            else:
+                last_line.line_break.previous_line_out_time = last_line.end() + 2
+
+        self._fix_linebreaks(fix)
+        logger.debug("FIX: Linebreaks corrected (USDX style).")
+
+    def fix_linebreaks_yass_style(
+        self, bpm: headers.BeatsPerMinute, logger: Log
     ) -> None:
+        def fix(last_line: Line, line: Line, gap: int) -> None:
+            # match YASS implementation (https://github.com/DoubleDee73/Yass/blob/1a70340016fba9430fd8f0bf49797839fc44456d/src/yass/YassAutoCorrect.java#L168) # pylint: disable=line-too-long
+            if not last_line.line_break:
+                return
+            gap_secs = bpm.beats_to_secs(gap)
+            if gap_secs >= 4.0:
+                last_line.line_break.previous_line_out_time = (
+                    last_line.end() + bpm.secs_to_beats(2)
+                )
+            elif gap_secs >= 2.0:
+                last_line.line_break.previous_line_out_time = (
+                    last_line.end() + bpm.secs_to_beats(1)
+                )
+            elif 0 <= gap <= 1:
+                last_line.line_break.previous_line_out_time = last_line.end()
+            elif 2 <= gap <= 8:
+                last_line.line_break.previous_line_out_time = line.start() - 2
+            elif 9 <= gap <= 12:
+                last_line.line_break.previous_line_out_time = line.start() - 3
+            elif 13 <= gap <= 16:
+                last_line.line_break.previous_line_out_time = line.start() - 4
+            elif gap > 16:
+                last_line.line_break.previous_line_out_time = last_line.end() + 10
+
+        self._fix_linebreaks(fix)
+        logger.debug("FIX: Linebreaks corrected (YASS style).")
+
+    def _fix_linebreaks(self, fix: Callable[[Line, Line, int], None]) -> None:
         for track in self.all_tracks():
-            fix_linebreaks(track, fix_style, bpm)
-        logger.debug("FIX: Linebreaks corrected.")
+            last_line = None
+            for line in track:
+                if last_line and last_line.line_break:
+                    # remove end (not needed/used)
+                    last_line.line_break.next_line_in_time = None
+
+                    gap = line.start() - last_line.end()
+                    fix(last_line, line, gap)
+
+                # update last_line
+                last_line = line
 
     def consecutive_notes(self) -> Iterator[Tuple[Note, Note]]:
         for track in self.all_tracks():
@@ -427,58 +476,6 @@ def _split_duet_line(line: Line, cutoff: int) -> tuple[Line, Line] | None:
         # first line would be empty
         return None
     return Line(line.notes[:idx], None), Line(line.notes[idx:], line.line_break)
-
-
-def fix_linebreaks(
-    lines: list[Line], fix_style: settings.FixLinebreaks, bpm: headers.BeatsPerMinute
-) -> None:
-    last_line = None
-    for line in lines:
-        if last_line and last_line.line_break:
-            # remove end (not needed/used)
-            last_line.line_break.next_line_in_time = None
-
-            gap = line.start() - last_line.end()
-
-            match fix_style:
-                case settings.FixLinebreaks.USDX_STYLE:
-                    # similar to USDX implementation (https://github.com/UltraStar-Deluxe/USDX/blob/0974aadaa747a5ce7f1f094908e669209641b5d4/src/screens/UScreenEditSub.pas#L2976) # pylint: disable=line-too-long
-                    if gap < 2:
-                        last_line.line_break.previous_line_out_time = line.start()
-                    elif gap == 2:
-                        last_line.line_break.previous_line_out_time = (
-                            last_line.end() + 1
-                        )
-                    else:
-                        last_line.line_break.previous_line_out_time = (
-                            last_line.end() + 2
-                        )
-                case settings.FixLinebreaks.YASS_STYLE:
-                    # match YASS implementation (https://github.com/DoubleDee73/Yass/blob/1a70340016fba9430fd8f0bf49797839fc44456d/src/yass/YassAutoCorrect.java#L168) # pylint: disable=line-too-long
-                    gap_secs = bpm.beats_to_secs(gap)
-                    if gap_secs >= 4.0:
-                        last_line.line_break.previous_line_out_time = (
-                            last_line.end() + bpm.secs_to_beats(2)
-                        )
-                    elif gap_secs >= 2.0:
-                        last_line.line_break.previous_line_out_time = (
-                            last_line.end() + bpm.secs_to_beats(1)
-                        )
-                    elif 0 <= gap <= 1:
-                        last_line.line_break.previous_line_out_time = last_line.end()
-                    elif 2 <= gap <= 8:
-                        last_line.line_break.previous_line_out_time = line.start() - 2
-                    elif 9 <= gap <= 12:
-                        last_line.line_break.previous_line_out_time = line.start() - 3
-                    elif 13 <= gap <= 16:
-                        last_line.line_break.previous_line_out_time = line.start() - 4
-                    elif gap > 16:
-                        last_line.line_break.previous_line_out_time = (
-                            last_line.end() + 10
-                        )
-
-        # update last_line
-        last_line = line
 
 
 def replace_false_apostrophes_and_quotation_marks(value: str) -> str:
