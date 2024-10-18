@@ -3,8 +3,15 @@
 import os
 from glob import glob
 
-from usdb_syncer.download_options import _txt_options
+from usdb_syncer.download_options import TxtOptions
 from usdb_syncer.logger import get_logger
+from usdb_syncer.settings import (
+    Encoding,
+    FixFirstWordsCapitalization,
+    FixLinebreaks,
+    FixSpaces,
+    Newline,
+)
 from usdb_syncer.song_txt import SongTxt
 
 _logger = get_logger(__file__)
@@ -38,8 +45,15 @@ def test_notes_parser_fixes(resource_dir: str) -> None:
         with open(path.replace("_in.txt", "_out.txt"), encoding="utf-8") as file:
             out = file.read()
         txt = SongTxt.parse(contents, _logger)
-        if txt_options := _txt_options():
-            txt.fix(txt_options)
+        txt.fix(
+            TxtOptions(
+                encoding=Encoding.UTF_8,
+                newline=Newline.CRLF,
+                fix_linebreaks=FixLinebreaks.USDX_STYLE,
+                fix_first_words_capitalization=FixFirstWordsCapitalization.ENABLE,
+                fix_spaces=FixSpaces.AFTER,
+            )
+        )
         assert str(txt) == out, f"failed test for '{path}'"
 
 
