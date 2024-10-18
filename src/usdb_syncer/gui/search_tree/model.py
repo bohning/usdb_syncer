@@ -94,7 +94,8 @@ class TreeModel(QAbstractItemModel):
         item = cast(TreeItem, parent.internalPointer())
         return len(item.children)
 
-    def columnCount(self, _parent: QIndex = QModelIndex()) -> int:
+    # pylint: disable=unused-argument
+    def columnCount(self, parent: QIndex = QModelIndex()) -> int:
         return 1
 
     def index(

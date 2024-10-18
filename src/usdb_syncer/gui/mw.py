@@ -287,11 +287,14 @@ class MainWindow(Ui_MainWindow, QMainWindow):
             self._save_state()
             db.close()
             self._cleaned_up = True
+            _logger.debug("Closing after cleanup.")
             self.close()
 
         if self._cleaned_up:
+            _logger.debug("Accepting close event.")
             event.accept()
         else:
+            _logger.debug("Close event deferred, cleaning up ...")
             run_with_progress("Shutting down ...", DownloadManager.quit, on_done)
             event.ignore()
 

@@ -176,6 +176,7 @@ def download_image(url: str, logger: Log) -> bytes | None:
 
 def download_and_process_image(
     url: str,
+    *,
     target_stem: Path,
     meta_tags: ImageMetaTags | None,
     details: SongDetails,

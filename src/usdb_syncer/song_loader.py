@@ -85,6 +85,7 @@ class DownloadManager:
     @classmethod
     def quit(cls) -> None:
         if cls._pool:
+            get_logger(__file__).debug(f"Quitting {len(cls._jobs)} downloads.")
             for job in cls._jobs.values():
                 job.abort = True
             cls._pool.waitForDone()
@@ -115,7 +116,6 @@ class _Locations:
     def new(
         cls, song: UsdbSong, options: download_options.Options, tempdir: Path
     ) -> _Locations:
-        # BUG: suffix is probably wrong
         target = options.path_template.evaluate(song, options.song_dir)
         if (
             _current := song.sync_meta.path.parent if song.sync_meta else None
@@ -464,11 +464,11 @@ def _maybe_download_cover(ctx: _Context) -> None:
         ctx.logger.info("Cover resource is unchanged.")
         return
     if path := resource_dl.download_and_process_image(
-        url,
-        ctx.locations.temp_path(),
-        ctx.txt.meta_tags.cover,
-        ctx.details,
-        resource_dl.ImageKind.COVER,
+        url=url,
+        target_stem=ctx.locations.temp_path(),
+        meta_tags=ctx.txt.meta_tags.cover,
+        details=ctx.details,
+        kind=resource_dl.ImageKind.COVER,
         max_width=ctx.options.cover.max_size,
     ):
         ctx.out.cover.resource = url
@@ -491,11 +491,11 @@ def _maybe_download_background(ctx: _Context) -> None:
         ctx.logger.info("Background resource is unchanged.")
         return
     if path := resource_dl.download_and_process_image(
-        url,
-        ctx.locations.temp_path(),
-        ctx.txt.meta_tags.background,
-        ctx.details,
-        resource_dl.ImageKind.BACKGROUND,
+        url=url,
+        target_stem=ctx.locations.temp_path(),
+        meta_tags=ctx.txt.meta_tags.background,
+        details=ctx.details,
+        kind=resource_dl.ImageKind.BACKGROUND,
         max_width=None,
     ):
         ctx.out.background.resource = url
@@ -730,7 +730,6 @@ def _persist_tempfiles(ctx: _Context) -> None:
 
 
 def _write_sync_meta(ctx: _Context) -> None:
-    # BUG: resources are always redownloading
     old = ctx.song.sync_meta
     sync_meta_id = old.sync_meta_id if old else SyncMetaId.new()
     ctx.song.sync_meta = SyncMeta(
