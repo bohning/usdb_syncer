@@ -29,6 +29,7 @@
   - fix linebreaks (disabled | USDX style | YASS style)
   - fix first words capitalization (disabled | enabled)
   - fix spaces (after words | before words)
+- We're trying out a hook system to make the syncer extensible. See addons/README.md.
 
 ## Developer notes
 
