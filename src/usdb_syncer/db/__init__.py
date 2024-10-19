@@ -16,6 +16,7 @@ from typing import Any, Generator, Iterable, Iterator, assert_never, cast
 
 import attrs
 from more_itertools import batched
+from PySide6 import QtCore
 
 from usdb_syncer import SongId, SyncMetaId, errors, logger
 from usdb_syncer.utils import AppPaths
@@ -59,7 +60,8 @@ class _DbState:
         cls._local.connection = sqlite3.connect(
             db_path, check_same_thread=False, isolation_level=None, timeout=20
         )
-        _logger.debug(f"Connected to database at '{db_path}'.")
+        thread = threading.current_thread().name
+        _logger.debug(f"Connected to database at '{db_path}' on thread {thread}.")
         if trace:
             cls._local.connection.set_trace_callback(_logger.debug)
         _validate_schema(cls._local.connection)
@@ -75,7 +77,8 @@ class _DbState:
         if _DbState._local.connection is not None:
             _DbState._local.connection.close()
             _DbState._local.connection = None
-            _logger.debug("Closed database connection.")
+            thread = threading.current_thread().name
+            _logger.debug(f"Closed database connection on thread {thread}.")
 
 
 @contextlib.contextmanager
