@@ -72,6 +72,9 @@ class SettingKey(Enum):
     TXT = "downloads/txt"
     ENCODING = "downloads/encoding"
     NEWLINE = "downloads/newline"
+    FIX_LINEBREAKS = "fixes/linebreaks"
+    FIX_FIRSTWORDSCAPITALIZATION = "fixes/firstwordscapitalization"
+    FIX_SPACES = "fixes/spaces"
     AUDIO = "downloads/audio"
     AUDIO_FORMAT = "downloads/audio_format"
     AUDIO_BITRATE = "downloads/audio_bitrate"
@@ -135,6 +138,44 @@ class Newline(Enum):
         if os.linesep == Newline.CRLF.value:
             return Newline.CRLF
         return Newline.LF
+
+
+class FixLinebreaks(Enum):
+    """Supported variants for fixing linebreak timings."""
+
+    DISABLE = 0
+    USDX_STYLE = 1
+    YASS_STYLE = 2
+
+    def __str__(self) -> str:
+        match self:
+            case FixLinebreaks.DISABLE:
+                return "disable"
+            case FixLinebreaks.USDX_STYLE:
+                return "USDX style"
+            case FixLinebreaks.YASS_STYLE:
+                return "YASS style"
+            case _ as unreachable:
+                assert_never(unreachable)
+
+
+class FixSpaces(Enum):
+    """Supported variants for fixing spaces."""
+
+    DISABLE = 0
+    AFTER = 1
+    BEFORE = 2
+
+    def __str__(self) -> str:
+        match self:
+            case FixSpaces.DISABLE:
+                return "disable"
+            case FixSpaces.AFTER:
+                return "after words"
+            case FixSpaces.BEFORE:
+                return "before words"
+            case _ as unreachable:
+                assert_never(unreachable)
 
 
 class CoverMaxSize(Enum):
@@ -532,6 +573,30 @@ def get_txt() -> bool:
 
 def set_txt(value: bool) -> None:
     set_setting(SettingKey.TXT, value)
+
+
+def get_fix_linebreaks() -> FixLinebreaks:
+    return get_setting(SettingKey.FIX_LINEBREAKS, FixLinebreaks.YASS_STYLE)
+
+
+def set_fix_linebreaks(value: FixLinebreaks) -> None:
+    set_setting(SettingKey.FIX_LINEBREAKS, value)
+
+
+def get_fix_first_words_capitalization() -> bool:
+    return get_setting(SettingKey.FIX_FIRSTWORDSCAPITALIZATION, True)
+
+
+def set_fix_first_words_capitalization(value: bool) -> None:
+    set_setting(SettingKey.FIX_FIRSTWORDSCAPITALIZATION, value)
+
+
+def get_fix_spaces() -> FixSpaces:
+    return get_setting(SettingKey.FIX_SPACES, FixSpaces.AFTER)
+
+
+def set_fix_spaces(value: FixSpaces) -> None:
+    set_setting(SettingKey.FIX_SPACES, value)
 
 
 def get_cover() -> bool:

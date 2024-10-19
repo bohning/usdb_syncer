@@ -6,47 +6,27 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>532</width>
-    <height>485</height>
+    <width>640</width>
+    <height>602</height>
    </rect>
   </property>
   <property name="windowTitle">
    <string>Settings</string>
   </property>
   <layout class="QGridLayout" name="gridLayout">
-   <item row="3" column="0" colspan="2">
-    <widget class="QDialogButtonBox" name="buttonBox">
-     <property name="orientation">
-      <enum>Qt::Orientation::Horizontal</enum>
-     </property>
-     <property name="standardButtons">
-      <set>QDialogButtonBox::StandardButton::Cancel|QDialogButtonBox::StandardButton::Ok</set>
-     </property>
-    </widget>
-   </item>
-   <item row="2" column="0">
-    <spacer name="verticalSpacer_2">
-     <property name="orientation">
-      <enum>Qt::Orientation::Vertical</enum>
-     </property>
-     <property name="sizeHint" stdset="0">
-      <size>
-       <width>20</width>
-       <height>40</height>
-      </size>
-     </property>
-    </spacer>
-   </item>
-   <item row="0" column="0" rowspan="2">
+   <item row="0" column="0" rowspan="2" colspan="2">
     <widget class="QTabWidget" name="tabWidget">
      <property name="currentIndex">
       <number>0</number>
      </property>
-     <widget class="QWidget" name="tab">
+     <widget class="QWidget" name="tabDownload">
       <attribute name="title">
        <string>Download</string>
       </attribute>
-      <layout class="QHBoxLayout" name="horizontalLayout">
+      <layout class="QHBoxLayout" name="horizontalLayout" stretch="1,1">
+       <property name="leftMargin">
+        <number>20</number>
+       </property>
        <item>
         <layout class="QVBoxLayout" name="verticalLayout" stretch="0,0,0,0">
          <item>
@@ -54,7 +34,7 @@
            <property name="title">
             <string>USDB and Youtube login</string>
            </property>
-           <layout class="QFormLayout" name="formLayout_6">
+           <layout class="QGridLayout" name="gridLayout_3">
             <item row="0" column="0">
              <widget class="QLabel" name="label_login_cookies">
               <property name="toolTip">
@@ -95,17 +75,7 @@
            <property name="checkable">
             <bool>true</bool>
            </property>
-           <layout class="QFormLayout" name="formLayout">
-            <item row="0" column="0">
-             <widget class="QLabel" name="label_song_file_encoding">
-              <property name="toolTip">
-               <string/>
-              </property>
-              <property name="text">
-               <string>Encoding:</string>
-              </property>
-             </widget>
-            </item>
+           <layout class="QGridLayout" name="gridLayout_2">
             <item row="0" column="1">
              <widget class="QComboBox" name="comboBox_encoding">
               <property name="sizePolicy">
@@ -116,6 +86,23 @@
               </property>
               <property name="toolTip">
                <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Choose UTF-8 for USDX, US Play, US Worldparty and Performous.&lt;/p&gt;&lt;p&gt;Choose UTF-8 BOM for Vocaluxe (Byte Order Mark may cause trouble in some text editors).&lt;/p&gt;&lt;p&gt;Choose CP1252 for USDX (pre 1.1) and USDX CMD. &lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+              </property>
+             </widget>
+            </item>
+            <item row="4" column="0">
+             <widget class="QLabel" name="label_song_file_fix_spaces">
+              <property name="text">
+               <string>Fix spaces:</string>
+              </property>
+             </widget>
+            </item>
+            <item row="0" column="0">
+             <widget class="QLabel" name="label_song_file_encoding">
+              <property name="toolTip">
+               <string/>
+              </property>
+              <property name="text">
+               <string>Encoding:</string>
               </property>
              </widget>
             </item>
@@ -135,7 +122,42 @@
                </sizepolicy>
               </property>
               <property name="toolTip">
-               <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;USDX and variants can handle both line ending types, but if you want to edit the song file manually, your editor of choice may required a certain line ending. UNIX users (MacOS, Linux) should generally use LF (line feed). On Windows, some text editors may require CRLF (carriage return, line feed).&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+               <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;USDX and variants can handle both line ending types, but if you want to edit the song file manually, your editor of choice may required a certain line ending. UNIX users (MacOS, Linux) should generally use LF (line feed). On Windows, some text editors may require CRLF (carriage return, line feed). USDB currently requires CRLF line endings.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+              </property>
+             </widget>
+            </item>
+            <item row="3" column="0">
+             <widget class="QLabel" name="label_song_file_fix_first_words_capitalization">
+              <property name="text">
+               <string>Fix capitalization:</string>
+              </property>
+             </widget>
+            </item>
+            <item row="2" column="1">
+             <widget class="QComboBox" name="comboBox_fix_linebreaks">
+              <property name="toolTip">
+               <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;If this setting is enabled, the linebreak timings will be recalculated, either according to USDX or to YASS rules.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+              </property>
+             </widget>
+            </item>
+            <item row="2" column="0">
+             <widget class="QLabel" name="label_song_file_fix_linebreaks">
+              <property name="text">
+               <string>Fix linebreaks:</string>
+              </property>
+             </widget>
+            </item>
+            <item row="4" column="1">
+             <widget class="QComboBox" name="comboBox_fix_spaces">
+              <property name="toolTip">
+               <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;If this setting is enabled, all inter-word spaces will be shifted to either after or before a word.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+              </property>
+             </widget>
+            </item>
+            <item row="3" column="1">
+             <widget class="QCheckBox" name="checkBox_fix_first_words_capitalization">
+              <property name="text">
+               <string/>
               </property>
              </widget>
             </item>
@@ -156,15 +178,15 @@
            <property name="checkable">
             <bool>true</bool>
            </property>
-           <layout class="QFormLayout" name="formLayout_5">
-            <item row="1" column="0">
+           <layout class="QGridLayout" name="gridLayout_4">
+            <item row="0" column="0">
              <widget class="QLabel" name="label_cover_max_size">
               <property name="text">
                <string>Max. size:</string>
               </property>
              </widget>
             </item>
-            <item row="1" column="1">
+            <item row="0" column="1">
              <widget class="QComboBox" name="comboBox_cover_max_size">
               <property name="toolTip">
                <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Images larger than this will be scaled to the set value.&lt;/p&gt;&lt;p&gt;Some karaoke software variants may have problems displaying covers larger than 1920x1920 pixels.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
@@ -188,8 +210,8 @@
            <property name="checkable">
             <bool>true</bool>
            </property>
-           <layout class="QFormLayout" name="formLayout_7">
-            <item row="0" column="0">
+           <layout class="QGridLayout" name="gridLayout_8">
+            <item row="0" column="1">
              <widget class="QCheckBox" name="checkBox_background_always">
               <property name="sizePolicy">
                <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
@@ -201,10 +223,17 @@
                <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;If checked, background images will be downloaded even if there is a video for the song as well.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
               </property>
               <property name="text">
-               <string>Even with video</string>
+               <string/>
               </property>
               <property name="checked">
                <bool>true</bool>
+              </property>
+             </widget>
+            </item>
+            <item row="0" column="0">
+             <widget class="QLabel" name="label_background_always">
+              <property name="text">
+               <string>Even with video:</string>
               </property>
              </widget>
             </item>
@@ -229,15 +258,22 @@
            <property name="checkable">
             <bool>true</bool>
            </property>
-           <layout class="QFormLayout" name="formLayout_2">
-            <item row="0" column="0">
-             <widget class="QLabel" name="label_audio_format">
+           <layout class="QGridLayout" name="gridLayout_5">
+            <item row="3" column="0">
+             <widget class="QLabel" name="label_audio_embed_artwork">
               <property name="text">
-               <string>Format:</string>
+               <string>Embed artwork:</string>
               </property>
              </widget>
             </item>
-            <item row="0" column="1">
+            <item row="1" column="3">
+             <widget class="QComboBox" name="comboBox_audio_bitrate">
+              <property name="toolTip">
+               <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;If the audio file is reencoded, the selected bitrate will be used.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+              </property>
+             </widget>
+            </item>
+            <item row="0" column="3">
              <widget class="QComboBox" name="comboBox_audio_format">
               <property name="sizePolicy">
                <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
@@ -257,10 +293,10 @@
               </property>
              </widget>
             </item>
-            <item row="1" column="1">
-             <widget class="QComboBox" name="comboBox_audio_bitrate">
-              <property name="toolTip">
-               <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;If the audio file is reencoded, the selected bitrate will be used.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+            <item row="0" column="0">
+             <widget class="QLabel" name="label_audio_format">
+              <property name="text">
+               <string>Format:</string>
               </property>
              </widget>
             </item>
@@ -271,24 +307,14 @@
               </property>
              </widget>
             </item>
-            <item row="2" column="1">
+            <item row="2" column="3">
              <widget class="QCheckBox" name="checkBox_audio_normalize">
-              <property name="layoutDirection">
-               <enum>Qt::LayoutDirection::LeftToRight</enum>
-              </property>
               <property name="text">
                <string/>
               </property>
              </widget>
             </item>
-            <item row="3" column="0">
-             <widget class="QLabel" name="label_audio_embed_artwork">
-              <property name="text">
-               <string>Embed artwork:</string>
-              </property>
-             </widget>
-            </item>
-            <item row="3" column="1">
+            <item row="3" column="3">
              <widget class="QCheckBox" name="checkBox_audio_embed_artwork">
               <property name="text">
                <string/>
@@ -312,7 +338,7 @@
            <property name="checkable">
             <bool>true</bool>
            </property>
-           <layout class="QFormLayout" name="formLayout_3">
+           <layout class="QGridLayout" name="gridLayout_6">
             <item row="0" column="0">
              <widget class="QLabel" name="label_video_container">
               <property name="text">
@@ -370,6 +396,26 @@
               </property>
              </widget>
             </item>
+            <item row="3" column="0">
+             <widget class="QLabel" name="label_video_embed_artwork">
+              <property name="enabled">
+               <bool>false</bool>
+              </property>
+              <property name="text">
+               <string>Embed artwork:</string>
+              </property>
+             </widget>
+            </item>
+            <item row="3" column="1">
+             <widget class="QCheckBox" name="checkBox_video_embed_artwork">
+              <property name="enabled">
+               <bool>false</bool>
+              </property>
+              <property name="text">
+               <string/>
+              </property>
+             </widget>
+            </item>
             <item row="4" column="0" colspan="2">
              <widget class="QGroupBox" name="groupBox_reencode_video">
               <property name="sizePolicy">
@@ -390,7 +436,7 @@
               <property name="checked">
                <bool>false</bool>
               </property>
-              <layout class="QFormLayout" name="formLayout_4">
+              <layout class="QGridLayout" name="gridLayout_7">
                <item row="0" column="0">
                 <widget class="QLabel" name="label_18">
                  <property name="text">
@@ -414,26 +460,6 @@
               </layout>
              </widget>
             </item>
-            <item row="3" column="0">
-             <widget class="QLabel" name="label_video_embed_artwork">
-              <property name="enabled">
-               <bool>false</bool>
-              </property>
-              <property name="text">
-               <string>Embed artwork:</string>
-              </property>
-             </widget>
-            </item>
-            <item row="3" column="1">
-             <widget class="QCheckBox" name="checkBox_video_embed_artwork">
-              <property name="enabled">
-               <bool>false</bool>
-              </property>
-              <property name="text">
-               <string/>
-              </property>
-             </widget>
-            </item>
            </layout>
           </widget>
          </item>
@@ -441,7 +467,7 @@
        </item>
       </layout>
      </widget>
-     <widget class="QWidget" name="tab_2">
+     <widget class="QWidget" name="tabFiles">
       <attribute name="title">
        <string>Files</string>
       </attribute>
@@ -537,6 +563,29 @@
       </layout>
      </widget>
     </widget>
+   </item>
+   <item row="3" column="0" colspan="2">
+    <widget class="QDialogButtonBox" name="buttonBox">
+     <property name="orientation">
+      <enum>Qt::Orientation::Horizontal</enum>
+     </property>
+     <property name="standardButtons">
+      <set>QDialogButtonBox::StandardButton::Cancel|QDialogButtonBox::StandardButton::Ok</set>
+     </property>
+    </widget>
+   </item>
+   <item row="2" column="0">
+    <spacer name="verticalSpacer_2">
+     <property name="orientation">
+      <enum>Qt::Orientation::Vertical</enum>
+     </property>
+     <property name="sizeHint" stdset="0">
+      <size>
+       <width>20</width>
+       <height>40</height>
+      </size>
+     </property>
+    </spacer>
    </item>
   </layout>
  </widget>

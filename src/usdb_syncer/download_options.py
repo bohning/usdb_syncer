@@ -12,6 +12,9 @@ class TxtOptions:
 
     encoding: settings.Encoding
     newline: settings.Newline
+    fix_linebreaks: settings.FixLinebreaks
+    fix_first_words_capitalization: bool
+    fix_spaces: settings.FixSpaces
 
 
 @dataclass(frozen=True)
@@ -93,7 +96,13 @@ def download_options() -> Options:
 def _txt_options() -> TxtOptions | None:
     if not settings.get_txt():
         return None
-    return TxtOptions(encoding=settings.get_encoding(), newline=settings.get_newline())
+    return TxtOptions(
+        encoding=settings.get_encoding(),
+        newline=settings.get_newline(),
+        fix_linebreaks=settings.get_fix_linebreaks(),
+        fix_first_words_capitalization=settings.get_fix_first_words_capitalization(),
+        fix_spaces=settings.get_fix_spaces(),
+    )
 
 
 def _audio_options() -> AudioOptions | None:
