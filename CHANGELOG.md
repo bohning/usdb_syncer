@@ -9,16 +9,19 @@
 
 ## Features
 
+- Custom data may be added to downloaded songs as key-value pairs.
 - The download path can now be customized using a dedicated template syntax (see
   _Settings_). The template must contain at least two components, which are separated
   using slashes. The last component specifies the filename, excluding its extension.
   Example: `:year: / :artist: / :title: / song` will store files like
   `1975/Queen/Bohemian Rhapsody/song.txt` and so on.
+  - You can even reference custom data with `:*my_key:`, which resolves to the value
+    associated with `my_key` for a given song.
 - Searches can be saved to the sidebar.
   - A single saved search may be made the default to automatically apply it on startup.
   - You can subscribe to saved searches to automatically download matches when new songs
     are found on USDB.
-- Comments can now be posted on songs. Each comment includes a message and a rating. 
+- Comments can now be posted on songs. Each comment includes a message and a rating.
   Ratings can be negative, neutral, or positive, with neutral being the default.
 - The VP9 codec can be excluded for mp4 video containers (see _Settings_).
 - Tags such as artist, title and year are now also written to the video file (mp4 only).
