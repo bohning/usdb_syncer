@@ -228,6 +228,15 @@
     <property name="toolTipsVisible">
      <bool>true</bool>
     </property>
+    <widget class="QMenu" name="menu_custom_data">
+     <property name="title">
+      <string>Custom Data</string>
+     </property>
+     <property name="icon">
+      <iconset resource="../resources/resources.qrc">
+       <normaloff>:/icons/drawer.png</normaloff>:/icons/drawer.png</iconset>
+     </property>
+    </widget>
     <addaction name="action_songs_download"/>
     <addaction name="action_songs_abort"/>
     <addaction name="action_show_in_usdb"/>
@@ -236,6 +245,7 @@
     <addaction name="action_open_song_folder"/>
     <addaction name="action_delete"/>
     <addaction name="action_pin"/>
+    <addaction name="menu_custom_data"/>
    </widget>
    <widget class="QMenu" name="menu_local">
     <property name="title">

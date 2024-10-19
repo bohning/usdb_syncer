@@ -126,6 +126,8 @@ class SettingsDialog(Ui_Dialog, QDialog):
         )
         for item in path_template.PathTemplatePlaceholder:
             self.comboBox_placeholder.addItem(str(item), item)
+        for key in path_template.PathTemplateCustomPlaceholder.options():
+            self.comboBox_placeholder.addItem(str(key))
 
     def _on_path_template_changed(self, text: str) -> None:
         try:

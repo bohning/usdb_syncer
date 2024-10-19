@@ -19,6 +19,10 @@ def test_pre_pin_v1_meta_file_roundtrip(resource_dir: Path) -> None:
     path = resource_dir.joinpath("meta_files", "r-Q6wyggsTg.usdb")
     meta = SyncMeta.try_from_file(path)
     assert meta
-    meta_json = json.dumps(meta, cls=SyncMetaEncoder).replace(', "pinned": false', "")
+    meta_json = (
+        json.dumps(meta, cls=SyncMetaEncoder)
+        .replace(', "pinned": false', "")
+        .replace(', "custom_data": {}', "")
+    )
     with path.open(encoding="utf-8") as file:
         assert file.read() == meta_json
