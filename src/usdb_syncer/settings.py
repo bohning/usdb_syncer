@@ -159,22 +159,6 @@ class FixLinebreaks(Enum):
                 assert_never(unreachable)
 
 
-class FixFirstWordsCapitalization(Enum):
-    """Supported variants for fixing first words capitalization."""
-
-    DISABLE = 0
-    ENABLE = 1
-
-    def __str__(self) -> str:
-        match self:
-            case FixFirstWordsCapitalization.ENABLE:
-                return "enable"
-            case FixFirstWordsCapitalization.DISABLE:
-                return "disable"
-            case _ as unreachable:
-                assert_never(unreachable)
-
-
 class FixSpaces(Enum):
     """Supported variants for fixing spaces."""
 
@@ -599,13 +583,11 @@ def set_fix_linebreaks(value: FixLinebreaks) -> None:
     set_setting(SettingKey.FIX_LINEBREAKS, value)
 
 
-def get_fix_first_words_capitalization() -> FixFirstWordsCapitalization:
-    return get_setting(
-        SettingKey.FIX_FIRSTWORDSCAPITALIZATION, FixFirstWordsCapitalization.ENABLE
-    )
+def get_fix_first_words_capitalization() -> bool:
+    return get_setting(SettingKey.FIX_FIRSTWORDSCAPITALIZATION, True)
 
 
-def set_fix_first_words_capitalization(value: FixFirstWordsCapitalization) -> None:
+def set_fix_first_words_capitalization(value: bool) -> None:
     set_setting(SettingKey.FIX_FIRSTWORDSCAPITALIZATION, value)
 
 

@@ -155,9 +155,9 @@
              </widget>
             </item>
             <item row="3" column="1">
-             <widget class="QComboBox" name="comboBox_fix_first_words_capitalization">
-              <property name="toolTip">
-               <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;If this setting is enabled, the first word of each line is capitalized.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+             <widget class="QCheckBox" name="checkBox_fix_first_words_capitalization">
+              <property name="text">
+               <string/>
               </property>
              </widget>
             </item>

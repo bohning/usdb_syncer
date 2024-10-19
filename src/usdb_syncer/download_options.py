@@ -13,7 +13,7 @@ class TxtOptions:
     encoding: settings.Encoding
     newline: settings.Newline
     fix_linebreaks: settings.FixLinebreaks
-    fix_first_words_capitalization: settings.FixFirstWordsCapitalization
+    fix_first_words_capitalization: bool
     fix_spaces: settings.FixSpaces
 
 

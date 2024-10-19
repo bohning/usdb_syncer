@@ -10,7 +10,7 @@ import attrs
 from usdb_syncer import download_options, errors
 from usdb_syncer.logger import Log
 from usdb_syncer.meta_tags import MetaTags
-from usdb_syncer.settings import FixFirstWordsCapitalization, FixLinebreaks, FixSpaces
+from usdb_syncer.settings import FixLinebreaks, FixSpaces
 from usdb_syncer.song_txt.headers import Headers
 from usdb_syncer.song_txt.tracks import Tracks
 
@@ -112,10 +112,7 @@ class SongTxt:
                     self.notes.fix_linebreaks_yass_style(self.headers.bpm, self.logger)
                 case _ as unreachable:
                     assert_never(unreachable)
-            if (
-                txt_options.fix_first_words_capitalization
-                != FixFirstWordsCapitalization.DISABLE
-            ):
+            if txt_options.fix_first_words_capitalization:
                 self.notes.fix_first_words_capitalization(self.logger)
             if txt_options.fix_spaces != FixSpaces.DISABLE:
                 self.notes.fix_spaces(txt_options.fix_spaces, self.logger)
