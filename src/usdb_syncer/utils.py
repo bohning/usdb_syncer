@@ -5,6 +5,7 @@ import functools
 import itertools
 import os
 import re
+import subprocess
 import sys
 import time
 import unicodedata
