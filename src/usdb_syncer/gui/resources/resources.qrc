@@ -1,5 +1,13 @@
 <RCC>
   <qresource prefix="icons">
+    <file>music--arrow.png</file>
+    <file>karedi.png</file>
+    <file>vocaluxe.png</file>
+    <file>performous.png</file>
+    <file>ultrastar-manager.png</file>
+    <file>yass-reloaded.png</file>
+    <file>usdx.png</file>
+    <file>yass.png</file>
     <file>artist.png</file>
     <file>audio.png</file>
     <file>background.png</file>
