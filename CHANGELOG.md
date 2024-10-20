@@ -4,6 +4,19 @@
 
 ## Fixes
 
+## Features
+
+- Third-party karaoke software can now be launched from within the Syncer, passing
+  the song directory as parameter.
+
+## Developer notes
+
+<!-- 0.8.0 -->
+
+# Changes
+
+## Fixes
+
 - Age-restricted content can now be successfully downloaded if you are logged in to
   YouTube in your browser.
 

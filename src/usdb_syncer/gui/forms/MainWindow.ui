@@ -186,7 +186,7 @@
      <x>0</x>
      <y>0</y>
      <width>1540</width>
-     <height>22</height>
+     <height>24</height>
     </rect>
    </property>
    <widget class="QMenu" name="menu_tools">
@@ -237,15 +237,33 @@
        <normaloff>:/icons/drawer.png</normaloff>:/icons/drawer.png</iconset>
      </property>
     </widget>
+    <widget class="QMenu" name="menu_open_song_in">
+     <property name="title">
+      <string>Open Song in</string>
+     </property>
+     <property name="icon">
+      <iconset resource="../resources/resources.qrc">
+       <normaloff>:/icons/music--arrow.png</normaloff>:/icons/music--arrow.png</iconset>
+     </property>
+     <addaction name="action_open_song_in_usdx"/>
+     <addaction name="action_open_song_in_vocaluxe"/>
+     <addaction name="action_open_song_in_performous"/>
+     <addaction name="separator"/>
+     <addaction name="action_open_song_in_yass_reloaded"/>
+     <addaction name="action_open_song_in_karedi"/>
+     <addaction name="action_open_song_in_ultrastar_manager"/>
+    </widget>
     <addaction name="action_songs_download"/>
     <addaction name="action_songs_abort"/>
     <addaction name="action_show_in_usdb"/>
     <addaction name="action_post_comment_in_usdb"/>
     <addaction name="separator"/>
     <addaction name="action_open_song_folder"/>
-    <addaction name="action_delete"/>
-    <addaction name="action_pin"/>
+    <addaction name="menu_open_song_in"/>
     <addaction name="menu_custom_data"/>
+    <addaction name="action_pin"/>
+    <addaction name="separator"/>
+    <addaction name="action_delete"/>
    </widget>
    <widget class="QMenu" name="menu_local">
     <property name="title">
@@ -667,6 +685,60 @@
    </property>
    <property name="menuRole">
     <enum>QAction::MenuRole::NoRole</enum>
+   </property>
+  </action>
+  <action name="action_open_song_in_karedi">
+   <property name="icon">
+    <iconset resource="../resources/resources.qrc">
+     <normaloff>:/icons/karedi.png</normaloff>:/icons/karedi.png</iconset>
+   </property>
+   <property name="text">
+    <string>Karedi</string>
+   </property>
+  </action>
+  <action name="action_open_song_in_performous">
+   <property name="icon">
+    <iconset resource="../resources/resources.qrc">
+     <normaloff>:/icons/performous.png</normaloff>:/icons/performous.png</iconset>
+   </property>
+   <property name="text">
+    <string>Performous</string>
+   </property>
+  </action>
+  <action name="action_open_song_in_usdx">
+   <property name="icon">
+    <iconset resource="../resources/resources.qrc">
+     <normaloff>:/icons/usdx.png</normaloff>:/icons/usdx.png</iconset>
+   </property>
+   <property name="text">
+    <string>UltraStar Deluxe</string>
+   </property>
+  </action>
+  <action name="action_open_song_in_ultrastar_manager">
+   <property name="icon">
+    <iconset resource="../resources/resources.qrc">
+     <normaloff>:/icons/ultrastar-manager.png</normaloff>:/icons/ultrastar-manager.png</iconset>
+   </property>
+   <property name="text">
+    <string>UltraStar Manager</string>
+   </property>
+  </action>
+  <action name="action_open_song_in_vocaluxe">
+   <property name="icon">
+    <iconset resource="../resources/resources.qrc">
+     <normaloff>:/icons/vocaluxe.png</normaloff>:/icons/vocaluxe.png</iconset>
+   </property>
+   <property name="text">
+    <string>Vocaluxe</string>
+   </property>
+  </action>
+  <action name="action_open_song_in_yass_reloaded">
+   <property name="icon">
+    <iconset resource="../resources/resources.qrc">
+     <normaloff>:/icons/yass-reloaded.png</normaloff>:/icons/yass-reloaded.png</iconset>
+   </property>
+   <property name="text">
+    <string>YASS Reloaded</string>
    </property>
   </action>
  </widget>
