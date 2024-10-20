@@ -1,8 +1,11 @@
 """Dialog with app settings."""
 
+import sys
+from typing import assert_never
+
 from PySide6 import QtWidgets
 from PySide6.QtGui import QIcon
-from PySide6.QtWidgets import QDialog, QWidget
+from PySide6.QtWidgets import QDialog, QFileDialog, QWidget
 
 from usdb_syncer import SongId, path_template, settings
 from usdb_syncer.gui.forms.SettingsDialog import Ui_Dialog
@@ -42,6 +45,62 @@ class SettingsDialog(Ui_Dialog, QDialog):
         self.label_video_embed_artwork.setVisible(False)
         self.checkBox_video_embed_artwork.setVisible(False)
         self.groupBox_reencode_video.setVisible(False)
+        if sys.platform != "win32":
+            self.groupBox_vocaluxe.setVisible(False)
+        self.pushButton_browse_karedi.clicked.connect(
+            lambda: self._set_location(settings.SupportedApps.KAREDI)
+        )
+        self.pushButton_browse_performous.clicked.connect(
+            lambda: self._set_location(settings.SupportedApps.PERFORMOUS)
+        )
+        self.pushButton_browse_ultrastar_manager.clicked.connect(
+            lambda: self._set_location(settings.SupportedApps.ULTRASTAR_MANAGER)
+        )
+        self.pushButton_browse_usdx.clicked.connect(
+            lambda: self._set_location(settings.SupportedApps.USDX)
+        )
+        self.pushButton_browse_vocaluxe.clicked.connect(
+            lambda: self._set_location(settings.SupportedApps.VOCALUXE)
+        )
+        self.pushButton_browse_yass_reloaded.clicked.connect(
+            lambda: self._set_location(settings.SupportedApps.YASS_RELOADED)
+        )
+
+    def _set_location(self, app: settings.SupportedApps) -> None:
+        if not (path := self._get_executable(app)):
+            return
+        settings.set_app_path(app, path)
+        match app:
+            case settings.SupportedApps.KAREDI:
+                self.lineEdit_path_karedi.setText(path)
+            case settings.SupportedApps.PERFORMOUS:
+                self.lineEdit_path_performous.setText(path)
+            case settings.SupportedApps.ULTRASTAR_MANAGER:
+                self.lineEdit_path_ultrastar_manager.setText(path)
+            case settings.SupportedApps.USDX:
+                self.lineEdit_path_usdx.setText(path)
+            case settings.SupportedApps.VOCALUXE:
+                self.lineEdit_path_vocaluxe.setText(path)
+            case settings.SupportedApps.YASS_RELOADED:
+                self.lineEdit_path_yass_reloaded.setText(path)
+            case _ as unreachable:
+                assert_never(unreachable)
+
+    def _get_executable(self, app: settings.SupportedApps) -> str:
+        filt = "*"
+        directory = ""
+        match sys.platform:
+            case "win32":
+                filt = "*.exe"
+            case "darwin":
+                directory = "/Applications"
+                filt = "*.app"
+        if app in (settings.SupportedApps.KAREDI, settings.SupportedApps.YASS_RELOADED):
+            filt += " *.jar"
+        path = QFileDialog.getOpenFileName(
+            None, f"Select {app} executable", directory, filt
+        )[0]
+        return path
 
     def _populate_comboboxes(self) -> None:
         combobox_settings = (
@@ -113,6 +172,24 @@ class SettingsDialog(Ui_Dialog, QDialog):
         self.checkBox_video_embed_artwork.setChecked(settings.get_video_embed_artwork())
         self.groupBox_background.setChecked(settings.get_background())
         self.checkBox_background_always.setChecked(settings.get_background_always())
+        self.lineEdit_path_karedi.setText(
+            settings.get_app_path(settings.SupportedApps.KAREDI)
+        )
+        self.lineEdit_path_performous.setText(
+            settings.get_app_path(settings.SupportedApps.PERFORMOUS)
+        )
+        self.lineEdit_path_ultrastar_manager.setText(
+            settings.get_app_path(settings.SupportedApps.ULTRASTAR_MANAGER)
+        )
+        self.lineEdit_path_usdx.setText(
+            settings.get_app_path(settings.SupportedApps.USDX)
+        )
+        self.lineEdit_path_vocaluxe.setText(
+            settings.get_app_path(settings.SupportedApps.VOCALUXE)
+        )
+        self.lineEdit_path_yass_reloaded.setText(
+            settings.get_app_path(settings.SupportedApps.YASS_RELOADED)
+        )
 
     def _setup_path_template(self) -> None:
         self.edit_path_template.textChanged.connect(self._on_path_template_changed)
@@ -181,4 +258,24 @@ class SettingsDialog(Ui_Dialog, QDialog):
                 self, "Invalid setting", "Please provide a valid path template!"
             )
             return False
+        settings.set_app_path(
+            settings.SupportedApps.KAREDI, self.lineEdit_path_karedi.text()
+        )
+        settings.set_app_path(
+            settings.SupportedApps.PERFORMOUS, self.lineEdit_path_performous.text()
+        )
+        settings.set_app_path(
+            settings.SupportedApps.ULTRASTAR_MANAGER,
+            self.lineEdit_path_ultrastar_manager.text(),
+        )
+        settings.set_app_path(
+            settings.SupportedApps.USDX, self.lineEdit_path_usdx.text()
+        )
+        settings.set_app_path(
+            settings.SupportedApps.VOCALUXE, self.lineEdit_path_vocaluxe.text()
+        )
+        settings.set_app_path(
+            settings.SupportedApps.YASS_RELOADED,
+            self.lineEdit_path_yass_reloaded.text(),
+        )
         return True

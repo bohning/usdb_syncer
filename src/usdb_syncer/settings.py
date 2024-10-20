@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import os
 import shutil
+import subprocess
 import traceback
 from enum import Enum
 from http.cookiejar import CookieJar
@@ -97,6 +98,12 @@ class SettingKey(Enum):
     TABLE_VIEW_HEADER_STATE = "list_view/header/state"
     USDB_USER_NAME = "usdb/username"
     PATH_TEMPLATE = "files/path_template"
+    APP_PATH_KAREDI = "app_paths/karedi"
+    APP_PATH_PERFORMOUS = "app_paths/performous"
+    APP_PATH_ULTRASTAR_MANAGER = "app_paths/ultrastar_manager"
+    APP_PATH_USDX = "app_paths/usdx"
+    APP_PATH_VOCALUXE = "app_paths/vocaluxe"
+    APP_PATH_YASS_RELOADED = "app_paths/yass_reloaded"
 
 
 class Encoding(Enum):
@@ -487,6 +494,96 @@ class VideoFps(Enum):
         return str(self.value)
 
 
+class SupportedApps(Enum):
+    """Supported third-party apps to be launched from the USDB Syncer."""
+
+    KAREDI = "karedi"
+    PERFORMOUS = "performous"
+    ULTRASTAR_MANAGER = "ultrastar_manager"
+    USDX = "usdx"
+    VOCALUXE = "vocaluxe"
+    YASS_RELOADED = "yass_reloaded"
+
+    def __str__(self) -> str:
+        match self:
+            case SupportedApps.KAREDI:
+                return "Karedi"
+            case SupportedApps.PERFORMOUS:
+                return "Performous"
+            case SupportedApps.ULTRASTAR_MANAGER:
+                return "UltraStar Manager"
+            case SupportedApps.USDX:
+                return "UltraStar Deluxe"
+            case SupportedApps.VOCALUXE:
+                return "Vocaluxe"
+            case SupportedApps.YASS_RELOADED:
+                return "YASS Reloaded"
+            case _ as unreachable:
+                assert_never(unreachable)
+
+    def executable_name(self) -> str:
+        match self:
+            case SupportedApps.KAREDI:
+                return "Karedi"
+            case SupportedApps.PERFORMOUS:
+                return "performous"
+            case SupportedApps.ULTRASTAR_MANAGER:
+                return "UltraStar-Manager"
+            case SupportedApps.USDX:
+                return "ultrastardx"
+            case SupportedApps.VOCALUXE:
+                return "Vocaluxe"
+            case SupportedApps.YASS_RELOADED:
+                return "yass"
+            case _ as unreachable:
+                assert_never(unreachable)
+
+    def songpath_parameter(self) -> str:
+        match self:
+            case SupportedApps.KAREDI:
+                return ""
+            case SupportedApps.PERFORMOUS:
+                return ""
+            case SupportedApps.ULTRASTAR_MANAGER:
+                return "-songpath"
+            case SupportedApps.USDX:
+                return "-songpath"
+            case SupportedApps.VOCALUXE:
+                return "-SongFolder"
+            case SupportedApps.YASS_RELOADED:
+                return ""
+            case _ as unreachable:
+                assert_never(unreachable)
+
+    def open_app(self, path: Path) -> None:
+        _logger.debug(f"Starting {self} with '{path}'.")
+        executable = get_app_path(self)
+        if executable.endswith(".jar"):
+            cmd = ["java", "-jar", executable, str(path)]
+        elif executable.endswith(".app"):
+            cmd = [
+                os.path.join(executable, "Contents", "MacOS", self.executable_name()),
+                self.songpath_parameter(),
+                str(path),
+            ]
+        else:
+            cmd = [executable, self.songpath_parameter(), str(path)]
+        try:
+            subprocess.Popen(cmd)  # pylint: disable=consider-using-with
+        except FileNotFoundError as fnf_error:
+            _logger.error(
+                f"File not found: {fnf_error}. "
+                "Please check the executable path in the settings."
+            )
+            traceback.print_exc()
+        except OSError as os_error:
+            _logger.error(f"OS error: {os_error}")
+            traceback.print_exc()
+        except subprocess.SubprocessError as sp_error:
+            _logger.error(f"Subprocess error: {sp_error}")
+            traceback.print_exc()
+
+
 T = TypeVar("T")
 
 
@@ -754,3 +851,39 @@ def get_path_template() -> path_template.PathTemplate:
 
 def set_path_template(template: path_template.PathTemplate) -> None:
     set_setting(SettingKey.PATH_TEMPLATE, template)
+
+
+def get_app_path(app: SupportedApps) -> str:
+    match app:
+        case SupportedApps.KAREDI:
+            return get_setting(SettingKey.APP_PATH_KAREDI, "")
+        case SupportedApps.PERFORMOUS:
+            return get_setting(SettingKey.APP_PATH_PERFORMOUS, "")
+        case SupportedApps.ULTRASTAR_MANAGER:
+            return get_setting(SettingKey.APP_PATH_ULTRASTAR_MANAGER, "")
+        case SupportedApps.USDX:
+            return get_setting(SettingKey.APP_PATH_USDX, "")
+        case SupportedApps.VOCALUXE:
+            return get_setting(SettingKey.APP_PATH_VOCALUXE, "")
+        case SupportedApps.YASS_RELOADED:
+            return get_setting(SettingKey.APP_PATH_YASS_RELOADED, "")
+        case _ as unreachable:
+            assert_never(unreachable)
+
+
+def set_app_path(app: SupportedApps, path: str) -> None:
+    match app:
+        case SupportedApps.KAREDI:
+            set_setting(SettingKey.APP_PATH_KAREDI, path)
+        case SupportedApps.PERFORMOUS:
+            set_setting(SettingKey.APP_PATH_PERFORMOUS, path)
+        case SupportedApps.ULTRASTAR_MANAGER:
+            set_setting(SettingKey.APP_PATH_ULTRASTAR_MANAGER, path)
+        case SupportedApps.USDX:
+            set_setting(SettingKey.APP_PATH_USDX, path)
+        case SupportedApps.VOCALUXE:
+            set_setting(SettingKey.APP_PATH_VOCALUXE, path)
+        case SupportedApps.YASS_RELOADED:
+            set_setting(SettingKey.APP_PATH_YASS_RELOADED, path)
+        case _ as unreachable:
+            assert_never(unreachable)
