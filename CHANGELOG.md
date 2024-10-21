@@ -1,4 +1,4 @@
-<!-- 0.8.0 -->
+<!-- 0.9.0 -->
 
 # Changes
 
@@ -8,8 +8,6 @@
 
 - Third-party karaoke software can now be launched from within the Syncer, passing
   the song directory as parameter.
-
-## Developer notes
 
 <!-- 0.8.0 -->
 
