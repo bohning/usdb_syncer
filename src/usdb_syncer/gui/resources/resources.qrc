@@ -29,17 +29,20 @@
     <file>edge.png</file>
     <file>edition.png</file>
     <file>error.png</file>
-    <file>firefox.png</file>
     <file>faviconUSDB.png</file>
+    <file>firefox.png</file>
     <file>folder_note.png</file>
     <file>golden_notes.png</file>
     <file>heart.png</file>
     <file>id.png</file>
     <file>info.png</file>
+    <file>karedi.png</file>
     <file>language.png</file>
     <file>log.png</file>
     <file>minus-circle.png</file>
+    <file>music--arrow.png</file>
     <file>opera.png</file>
+    <file>performous.png</file>
     <file>pin.png</file>
     <file>price-tag.png</file>
     <file>quill.png</file>
@@ -53,10 +56,15 @@
     <file>text.png</file>
     <file>tick.png</file>
     <file>title.png</file>
+    <file>ultrastar-manager.png</file>
+    <file>usdx.png</file>
     <file>video.png</file>
     <file>views.png</file>
     <file>vivaldi.png</file>
+    <file>vocaluxe.png</file>
     <file>warning.png</file>
+    <file>yass-reloaded.png</file>
+    <file>yass.png</file>
   </qresource>
   <qresource prefix="app">
     <file>appicon_128x128.png</file>
