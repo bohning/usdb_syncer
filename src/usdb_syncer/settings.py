@@ -569,6 +569,8 @@ class SupportedApps(Enum):
         else:
             cmd = [executable, self.songpath_parameter(), str(path)]
         try:
+            # We are not using a context manager here so that the app is launched
+            # without blocking the syncer.
             subprocess.Popen(cmd)  # pylint: disable=consider-using-with
         except FileNotFoundError as fnf_error:
             _logger.error(
