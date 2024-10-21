@@ -1,6 +1,7 @@
 """Dialog with app settings."""
 
 import sys
+from pathlib import Path
 from typing import assert_never
 
 from PySide6 import QtWidgets
@@ -67,26 +68,25 @@ class SettingsDialog(Ui_Dialog, QDialog):
         )
 
     def _set_location(self, app: settings.SupportedApps) -> None:
-        if not (path := self._get_executable(app)):
-            return
-        settings.set_app_path(app, path)
+        path = self._get_executable(app)
+        text = str(path) if path is not None else ""
         match app:
             case settings.SupportedApps.KAREDI:
-                self.lineEdit_path_karedi.setText(path)
+                self.lineEdit_path_karedi.setText(text)
             case settings.SupportedApps.PERFORMOUS:
-                self.lineEdit_path_performous.setText(path)
+                self.lineEdit_path_performous.setText(text)
             case settings.SupportedApps.ULTRASTAR_MANAGER:
-                self.lineEdit_path_ultrastar_manager.setText(path)
+                self.lineEdit_path_ultrastar_manager.setText(text)
             case settings.SupportedApps.USDX:
-                self.lineEdit_path_usdx.setText(path)
+                self.lineEdit_path_usdx.setText(text)
             case settings.SupportedApps.VOCALUXE:
-                self.lineEdit_path_vocaluxe.setText(path)
+                self.lineEdit_path_vocaluxe.setText(text)
             case settings.SupportedApps.YASS_RELOADED:
-                self.lineEdit_path_yass_reloaded.setText(path)
+                self.lineEdit_path_yass_reloaded.setText(text)
             case _ as unreachable:
                 assert_never(unreachable)
 
-    def _get_executable(self, app: settings.SupportedApps) -> str:
+    def _get_executable(self, app: settings.SupportedApps) -> Path | None:
         filt = "*"
         directory = ""
         match sys.platform:
@@ -97,10 +97,19 @@ class SettingsDialog(Ui_Dialog, QDialog):
                 filt = "*.app"
         if app in (settings.SupportedApps.KAREDI, settings.SupportedApps.YASS_RELOADED):
             filt += " *.jar"
-        path = QFileDialog.getOpenFileName(
+        filename = QFileDialog.getOpenFileName(
             None, f"Select {app} executable", directory, filt
         )[0]
-        return path
+        if filename == "":
+            return None
+        path = Path(filename)
+        if path.suffix != ".app":
+            return path
+        if (
+            full_path := path.joinpath("Contents", "MacOS", app.executable_name())
+        ).exists():
+            return full_path
+        return None
 
     def _populate_comboboxes(self) -> None:
         combobox_settings = (
@@ -172,24 +181,24 @@ class SettingsDialog(Ui_Dialog, QDialog):
         self.checkBox_video_embed_artwork.setChecked(settings.get_video_embed_artwork())
         self.groupBox_background.setChecked(settings.get_background())
         self.checkBox_background_always.setChecked(settings.get_background_always())
-        self.lineEdit_path_karedi.setText(
-            settings.get_app_path(settings.SupportedApps.KAREDI)
-        )
-        self.lineEdit_path_performous.setText(
-            settings.get_app_path(settings.SupportedApps.PERFORMOUS)
-        )
-        self.lineEdit_path_ultrastar_manager.setText(
-            settings.get_app_path(settings.SupportedApps.ULTRASTAR_MANAGER)
-        )
-        self.lineEdit_path_usdx.setText(
-            settings.get_app_path(settings.SupportedApps.USDX)
-        )
-        self.lineEdit_path_vocaluxe.setText(
-            settings.get_app_path(settings.SupportedApps.VOCALUXE)
-        )
-        self.lineEdit_path_yass_reloaded.setText(
-            settings.get_app_path(settings.SupportedApps.YASS_RELOADED)
-        )
+        if (path := settings.get_app_path(settings.SupportedApps.KAREDI)) is not None:
+            self.lineEdit_path_karedi.setText(str(path))
+        if (
+            path := settings.get_app_path(settings.SupportedApps.PERFORMOUS)
+        ) is not None:
+            self.lineEdit_path_performous.setText(str(path))
+        if (
+            path := settings.get_app_path(settings.SupportedApps.ULTRASTAR_MANAGER)
+        ) is not None:
+            self.lineEdit_path_ultrastar_manager.setText(str(path))
+        if (path := settings.get_app_path(settings.SupportedApps.USDX)) is not None:
+            self.lineEdit_path_usdx.setText(str(path))
+        if (path := settings.get_app_path(settings.SupportedApps.VOCALUXE)) is not None:
+            self.lineEdit_path_vocaluxe.setText(str(path))
+        if (
+            path := settings.get_app_path(settings.SupportedApps.YASS_RELOADED)
+        ) is not None:
+            self.lineEdit_path_yass_reloaded.setText(str(path))
 
     def _setup_path_template(self) -> None:
         self.edit_path_template.textChanged.connect(self._on_path_template_changed)
