@@ -617,7 +617,11 @@
            </widget>
           </item>
           <item>
-           <widget class="QLineEdit" name="lineEdit_path_usdx"/>
+           <widget class="QLineEdit" name="lineEdit_path_usdx">
+            <property name="readOnly">
+             <bool>true</bool>
+            </property>
+           </widget>
           </item>
           <item>
            <widget class="QPushButton" name="pushButton_browse_usdx">
@@ -679,7 +683,11 @@
            </widget>
           </item>
           <item>
-           <widget class="QLineEdit" name="lineEdit_path_vocaluxe"/>
+           <widget class="QLineEdit" name="lineEdit_path_vocaluxe">
+            <property name="readOnly">
+             <bool>true</bool>
+            </property>
+           </widget>
           </item>
           <item>
            <widget class="QPushButton" name="pushButton_browse_vocaluxe">
@@ -741,7 +749,11 @@
            </widget>
           </item>
           <item>
-           <widget class="QLineEdit" name="lineEdit_path_performous"/>
+           <widget class="QLineEdit" name="lineEdit_path_performous">
+            <property name="readOnly">
+             <bool>true</bool>
+            </property>
+           </widget>
           </item>
           <item>
            <widget class="QPushButton" name="pushButton_browse_performous">
@@ -803,7 +815,11 @@
            </widget>
           </item>
           <item>
-           <widget class="QLineEdit" name="lineEdit_path_ultrastar_manager"/>
+           <widget class="QLineEdit" name="lineEdit_path_ultrastar_manager">
+            <property name="readOnly">
+             <bool>true</bool>
+            </property>
+           </widget>
           </item>
           <item>
            <widget class="QPushButton" name="pushButton_browse_ultrastar_manager">
@@ -865,7 +881,11 @@
            </widget>
           </item>
           <item>
-           <widget class="QLineEdit" name="lineEdit_path_yass_reloaded"/>
+           <widget class="QLineEdit" name="lineEdit_path_yass_reloaded">
+            <property name="readOnly">
+             <bool>true</bool>
+            </property>
+           </widget>
           </item>
           <item>
            <widget class="QPushButton" name="pushButton_browse_yass_reloaded">
@@ -927,7 +947,11 @@
            </widget>
           </item>
           <item>
-           <widget class="QLineEdit" name="lineEdit_path_karedi"/>
+           <widget class="QLineEdit" name="lineEdit_path_karedi">
+            <property name="readOnly">
+             <bool>true</bool>
+            </property>
+           </widget>
           </item>
           <item>
            <widget class="QPushButton" name="pushButton_browse_karedi">
