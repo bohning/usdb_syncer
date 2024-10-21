@@ -4,6 +4,7 @@ import datetime
 import os
 import webbrowser
 from pathlib import Path
+from typing import Callable
 
 from PySide6 import QtGui
 from PySide6.QtWidgets import QFileDialog, QLabel, QMainWindow
@@ -296,11 +297,11 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         else:
             _logger.debug("Not opening comment dialog: no song selected.")
 
-    def _open_current_song_folder(self) -> None:
+    def _open_current_song(self, action: Callable[[Path], None]) -> None:
         if song := self.table.current_song():
             if song.sync_meta:
                 if song.sync_meta.path.exists():
-                    open_file_explorer(song.sync_meta.path.parent)
+                    action(song.sync_meta.path.parent)
                 else:
                     with db.transaction():
                         song.remove_sync_meta()
@@ -311,20 +312,11 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         else:
             _logger.info("No current song.")
 
+    def _open_current_song_folder(self) -> None:
+        self._open_current_song(open_file_explorer)
+
     def _open_current_song_in_app(self, app: settings.SupportedApps) -> None:
-        if song := self.table.current_song():
-            if song.sync_meta:
-                if song.sync_meta.path.exists():
-                    settings.SupportedApps.open_app(app, song.sync_meta.path.parent)
-                else:
-                    with db.transaction():
-                        song.remove_sync_meta()
-                    events.SongChanged(song.song_id)
-                    _logger.info("Song does not exist locally anymore.")
-            else:
-                _logger.info("Song does not exist locally.")
-        else:
-            _logger.info("No current song.")
+        self._open_current_song(lambda path: settings.SupportedApps.open_app(app, path))
 
     def closeEvent(self, event: QtGui.QCloseEvent) -> None:
         def on_done(result: progress.Result) -> None:
