@@ -558,32 +558,31 @@ class SupportedApps(Enum):
     def open_app(self, path: Path) -> None:
         _logger.debug(f"Starting {self} with '{path}'.")
         executable = get_app_path(self)
-        if executable.endswith(".jar"):
-            cmd = ["java", "-jar", executable, str(path)]
-        elif executable.endswith(".app"):
-            cmd = [
-                os.path.join(executable, "Contents", "MacOS", self.executable_name()),
-                self.songpath_parameter(),
-                str(path),
-            ]
+        if executable is None:
+            return
+        if executable.suffix == ".jar":
+            cmd = ["java", "-jar", str(executable), str(path)]
         else:
-            cmd = [executable, self.songpath_parameter(), str(path)]
+            cmd = [str(executable), self.songpath_parameter(), str(path)]
         try:
             # We are not using a context manager here so that the app is launched
             # without blocking the syncer.
             subprocess.Popen(cmd)  # pylint: disable=consider-using-with
-        except FileNotFoundError as fnf_error:
+        except FileNotFoundError:
             _logger.error(
-                f"File not found: {fnf_error}. "
+                f"Failed to launch {self} from '{str(executable)}', file not found. "
                 "Please check the executable path in the settings."
             )
-            traceback.print_exc()
-        except OSError as os_error:
-            _logger.error(f"OS error: {os_error}")
-            traceback.print_exc()
-        except subprocess.SubprocessError as sp_error:
-            _logger.error(f"Subprocess error: {sp_error}")
-            traceback.print_exc()
+        except OSError:
+            _logger.error(
+                f"Failed to launch {self} from '{str(executable)}', I/O error."
+            )
+            _logger.debug(traceback.format_exc())
+        except subprocess.SubprocessError:
+            _logger.error(
+                f"Failed to launch {self} from '{str(executable)}', subprocess error."
+            )
+            _logger.debug(traceback.format_exc())
 
 
 T = TypeVar("T")
@@ -855,22 +854,23 @@ def set_path_template(template: path_template.PathTemplate) -> None:
     set_setting(SettingKey.PATH_TEMPLATE, template)
 
 
-def get_app_path(app: SupportedApps) -> str:
+def get_app_path(app: SupportedApps) -> Path | None:
     match app:
         case SupportedApps.KAREDI:
-            return get_setting(SettingKey.APP_PATH_KAREDI, "")
+            path = get_setting(SettingKey.APP_PATH_KAREDI, "")
         case SupportedApps.PERFORMOUS:
-            return get_setting(SettingKey.APP_PATH_PERFORMOUS, "")
+            path = get_setting(SettingKey.APP_PATH_PERFORMOUS, "")
         case SupportedApps.ULTRASTAR_MANAGER:
-            return get_setting(SettingKey.APP_PATH_ULTRASTAR_MANAGER, "")
+            path = get_setting(SettingKey.APP_PATH_ULTRASTAR_MANAGER, "")
         case SupportedApps.USDX:
-            return get_setting(SettingKey.APP_PATH_USDX, "")
+            path = get_setting(SettingKey.APP_PATH_USDX, "")
         case SupportedApps.VOCALUXE:
-            return get_setting(SettingKey.APP_PATH_VOCALUXE, "")
+            path = get_setting(SettingKey.APP_PATH_VOCALUXE, "")
         case SupportedApps.YASS_RELOADED:
-            return get_setting(SettingKey.APP_PATH_YASS_RELOADED, "")
+            path = get_setting(SettingKey.APP_PATH_YASS_RELOADED, "")
         case _ as unreachable:
             assert_never(unreachable)
+    return Path(path) if path != "" else None
 
 
 def set_app_path(app: SupportedApps, path: str) -> None:
