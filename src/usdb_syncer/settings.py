@@ -11,7 +11,7 @@ import os
 import shutil
 import subprocess
 import traceback
-from enum import Enum
+from enum import Enum, StrEnum, auto
 from http.cookiejar import CookieJar
 from pathlib import Path
 from typing import Any, Tuple, TypeVar, assert_never, cast
@@ -494,15 +494,15 @@ class VideoFps(Enum):
         return str(self.value)
 
 
-class SupportedApps(Enum):
+class SupportedApps(StrEnum):
     """Supported third-party apps to be launched from the USDB Syncer."""
 
-    KAREDI = "karedi"
-    PERFORMOUS = "performous"
-    ULTRASTAR_MANAGER = "ultrastar_manager"
-    USDX = "usdx"
-    VOCALUXE = "vocaluxe"
-    YASS_RELOADED = "yass_reloaded"
+    KAREDI = auto()
+    PERFORMOUS = auto()
+    ULTRASTAR_MANAGER = auto()
+    USDX = auto()
+    VOCALUXE = auto()
+    YASS_RELOADED = auto()
 
     def __str__(self) -> str:
         match self:
