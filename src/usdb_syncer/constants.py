@@ -164,3 +164,43 @@ ISO_639_2B_LANGUAGE_CODES = {
     "Yoruba": "yor",
     "Zulu": "zul",
 }
+
+QUOTATION_MARKS = {
+    # See: https://en.wikipedia.org/wiki/Quotation_mark#Summary_table
+    ("Bosnian", "Finnish", "Swedish"): ("”", "”"),
+    ("Breton", "French"): ("« ", " »"),
+    ("Croatian", "Dutch", "Hebrew", "Hungarian", "Polish", "Romanian"): ("„", "”"),
+    (
+        "Catalan",
+        "Galician",
+        "Greek",
+        "Greek (romanized)",
+        "Italian",
+        "Norwegian",
+        "Portuguese",
+        "Russian",
+        "Russian (romanized)",
+        "Spanish",
+        "Ukrainian",
+    ): ("«", "»"),
+    (
+        "Chinese (romanized)",
+        "English",
+        "Hindi",
+        "Hindi (romanized)",
+        "Indonesian",
+        "Irish",
+        "Korean",
+        "Korean (romanized)",
+        "Portuguese (Brazil)",
+        "Scots",
+        "Turkish",
+        "Vietnamese",
+    ): ("“", "”"),
+    ("Czech", "Estonian", "Icelandic", "Serbian", "Slovak", "Slovenian"): ("„", "“"),
+    ("Danish", "German"): ("»", "«"),
+    ("Japanese", "Japanese (romanized)"): ("「", "」"),
+    ("Welsh",): ("‘", "’"),
+}
+
+QUOTATION_MARKS_TO_REPLACE = {'"', "„", "”", "«", "»", "“", "「", "」"}
