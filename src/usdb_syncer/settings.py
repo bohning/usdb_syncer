@@ -16,8 +16,8 @@ from http.cookiejar import CookieJar
 from pathlib import Path
 from typing import Any, Tuple, TypeVar, assert_never, cast
 
-import browser_cookie3
 import keyring
+import rookiepy
 from PySide6.QtCore import QByteArray, QSettings
 
 from usdb_syncer import path_template, utils
@@ -324,61 +324,29 @@ class Browser(Enum):
             case Browser.NONE:
                 return None
             case Browser.BRAVE:
-                function = browser_cookie3.brave
+                function = rookiepy.brave
             case Browser.CHROME:
-                function = browser_cookie3.chrome
+                function = rookiepy.chrome
             case Browser.CHROMIUM:
-                function = browser_cookie3.chromium
+                function = rookiepy.chromium
             case Browser.EDGE:
-                function = browser_cookie3.edge
+                function = rookiepy.edge
             case Browser.FIREFOX:
-                function = browser_cookie3.firefox
+                function = rookiepy.firefox
             case Browser.OPERA:
-                function = browser_cookie3.opera
+                function = rookiepy.opera
             case Browser.SAFARI:
-                function = browser_cookie3.safari
+                function = rookiepy.safari
             case Browser.VIVALDI:
-                function = browser_cookie3.vivaldi
+                function = rookiepy.vivaldi
             case _ as unreachable:
                 assert_never(unreachable)
         try:
-            return function(domain_name=Usdb.DOMAIN)
+            return rookiepy.to_cookiejar(function([Usdb.DOMAIN]))
         except Exception:  # pylint: disable=broad-exception-caught
             _logger.debug(traceback.format_exc())
         _logger.warning(f"Failed to retrieve {str(self).capitalize()} cookies.")
         return None
-
-    def cookie_path(self) -> str | None:
-        """Retrieve the path to the cookie as returned by browser_cookie3. This seems to
-        be more reliable than yt-dlp's cookie handling."""
-        try:
-            match self:
-                case Browser.NONE:
-                    path = None
-                case Browser.BRAVE:
-                    path = browser_cookie3.Brave().cookie_file
-                case Browser.CHROME:
-                    path = browser_cookie3.Chrome().cookie_file
-                case Browser.CHROMIUM:
-                    path = browser_cookie3.Chromium().cookie_file
-                case Browser.EDGE:
-                    path = browser_cookie3.Edge().cookie_file
-                case Browser.FIREFOX:
-                    path = browser_cookie3.Firefox().cookie_file
-                case Browser.OPERA:
-                    path = browser_cookie3.Opera().cookie_file
-                case Browser.SAFARI:
-                    safari = browser_cookie3.Safari()
-                    buf = safari.__buffer  # pylint: disable=protected-access
-                    path = buf.name if buf else None
-                case Browser.VIVALDI:
-                    path = browser_cookie3.Vivaldi().cookie_file
-                case _ as unreachable:
-                    assert_never(unreachable)
-        except Exception:  # pylint: disable=broad-exception-caught
-            _logger.debug(traceback.format_exc())
-            path = None
-        return path
 
 
 class VideoContainer(Enum):

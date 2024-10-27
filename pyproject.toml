@@ -38,6 +38,7 @@ pyinstaller-hooks-contrib = "*"
 altgraph = "*"
 macholib = {version = "*", markers="sys_platform == 'darwin'"}
 pywin32-ctypes = {version = "*", markers="sys_platform == 'win32'"}
+rookiepy = "^0.5.3"
 
 [tool.poetry.group.dev.dependencies]
 tox = "*"
