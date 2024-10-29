@@ -92,8 +92,8 @@ def extract_youtube_id(url: str) -> str | None:
 
     Partially taken from `https://regexr.com/531i0`.
     """
-
     pattern = r"""
+        ^(?!https?://web\.archive\.org) # negative lookahead to exclude archive.org
         (?:https?://)?
         (?:www\.)?
         (?:m\.)?
