@@ -48,7 +48,7 @@ class ImageKind(Enum):
 def download_audio(
     resource: str, options: AudioOptions, browser: Browser, path_stem: Path, logger: Log
 ) -> str | None:
-    """Download video from resource to path and process it according to options.
+    """Download audio from resource to path and process it according to options.
 
     Parameters:
         resource: URL or YouTube id
