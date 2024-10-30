@@ -56,6 +56,7 @@ def _run() -> None:
     from usdb_syncer.gui.mw import MainWindow  # pylint: disable=import-outside-toplevel
 
     app = _init_app()
+    app.setAttribute(Qt.ApplicationAttribute.AA_DontShowIconsInMenus, False)
     mw = MainWindow()
     _configure_logging(mw)
     try:
