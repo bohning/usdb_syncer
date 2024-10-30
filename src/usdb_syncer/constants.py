@@ -97,7 +97,7 @@ SUPPORTED_VIDEO_SOURCES_REGEX = re.compile(
     r"""\b
         (
             (?:https?://)?
-            (?:www|web\.)?
+            (?:www|web)\.?
             (?:
                 youtube\.com
                 | youtube-nocookie\.com
