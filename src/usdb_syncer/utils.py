@@ -94,7 +94,6 @@ def extract_youtube_id(url: str) -> str | None:
     """
 
     pattern = r"""
-        ^(?!https?://web\.archive\.org) # negative lookahead to exclude archive.org
         (?:https?://)?
         (?:www\.)?
         (?:m\.)?
@@ -111,7 +110,7 @@ def extract_youtube_id(url: str) -> str | None:
         (?:[%#?&]|$)                # URL may contain additional parameters
         .*
         """
-    if match := re.search(pattern, url, re.VERBOSE | re.IGNORECASE):
+    if match := re.fullmatch(pattern, url, re.VERBOSE | re.IGNORECASE):
         return match.group(1)
     return None
 
