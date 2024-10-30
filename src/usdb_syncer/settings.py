@@ -74,8 +74,9 @@ class SettingKey(Enum):
     ENCODING = "downloads/encoding"
     NEWLINE = "downloads/newline"
     FIX_LINEBREAKS = "fixes/linebreaks"
-    FIX_FIRSTWORDSCAPITALIZATION = "fixes/firstwordscapitalization"
+    FIX_FIRST_WORDS_CAPITALIZATION = "fixes/firstwordscapitalization"
     FIX_SPACES = "fixes/spaces"
+    FIX_QUOTATION_MARKS = "fixes/quotationmarks"
     AUDIO = "downloads/audio"
     AUDIO_FORMAT = "downloads/audio_format"
     AUDIO_BITRATE = "downloads/audio_bitrate"
@@ -650,11 +651,11 @@ def set_fix_linebreaks(value: FixLinebreaks) -> None:
 
 
 def get_fix_first_words_capitalization() -> bool:
-    return get_setting(SettingKey.FIX_FIRSTWORDSCAPITALIZATION, True)
+    return get_setting(SettingKey.FIX_FIRST_WORDS_CAPITALIZATION, True)
 
 
 def set_fix_first_words_capitalization(value: bool) -> None:
-    set_setting(SettingKey.FIX_FIRSTWORDSCAPITALIZATION, value)
+    set_setting(SettingKey.FIX_FIRST_WORDS_CAPITALIZATION, value)
 
 
 def get_fix_spaces() -> FixSpaces:
@@ -663,6 +664,14 @@ def get_fix_spaces() -> FixSpaces:
 
 def set_fix_spaces(value: FixSpaces) -> None:
     set_setting(SettingKey.FIX_SPACES, value)
+
+
+def get_fix_quotation_marks() -> bool:
+    return get_setting(SettingKey.FIX_QUOTATION_MARKS, True)
+
+
+def set_fix_quotation_marks(value: bool) -> None:
+    set_setting(SettingKey.FIX_QUOTATION_MARKS, value)
 
 
 def get_cover() -> bool:

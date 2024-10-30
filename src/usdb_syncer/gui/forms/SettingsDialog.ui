@@ -76,6 +76,20 @@
             <bool>true</bool>
            </property>
            <layout class="QGridLayout" name="gridLayout_2">
+            <item row="1" column="0">
+             <widget class="QLabel" name="label_song_file_line_endings">
+              <property name="text">
+               <string>Line endings:</string>
+              </property>
+             </widget>
+            </item>
+            <item row="3" column="0">
+             <widget class="QLabel" name="label_song_file_fix_first_words_capitalization">
+              <property name="text">
+               <string>Fix capitalization:</string>
+              </property>
+             </widget>
+            </item>
             <item row="0" column="1">
              <widget class="QComboBox" name="comboBox_encoding">
               <property name="sizePolicy">
@@ -89,47 +103,17 @@
               </property>
              </widget>
             </item>
+            <item row="3" column="1">
+             <widget class="QCheckBox" name="checkBox_fix_first_words_capitalization">
+              <property name="text">
+               <string/>
+              </property>
+             </widget>
+            </item>
             <item row="4" column="0">
              <widget class="QLabel" name="label_song_file_fix_spaces">
               <property name="text">
                <string>Fix spaces:</string>
-              </property>
-             </widget>
-            </item>
-            <item row="0" column="0">
-             <widget class="QLabel" name="label_song_file_encoding">
-              <property name="toolTip">
-               <string/>
-              </property>
-              <property name="text">
-               <string>Encoding:</string>
-              </property>
-             </widget>
-            </item>
-            <item row="1" column="0">
-             <widget class="QLabel" name="label_song_file_line_endings">
-              <property name="text">
-               <string>Line endings:</string>
-              </property>
-             </widget>
-            </item>
-            <item row="1" column="1">
-             <widget class="QComboBox" name="comboBox_line_endings">
-              <property name="sizePolicy">
-               <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
-                <horstretch>1</horstretch>
-                <verstretch>0</verstretch>
-               </sizepolicy>
-              </property>
-              <property name="toolTip">
-               <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;USDX and variants can handle both line ending types, but if you want to edit the song file manually, your editor of choice may required a certain line ending. UNIX users (MacOS, Linux) should generally use LF (line feed). On Windows, some text editors may require CRLF (carriage return, line feed). USDB currently requires CRLF line endings.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-              </property>
-             </widget>
-            </item>
-            <item row="3" column="0">
-             <widget class="QLabel" name="label_song_file_fix_first_words_capitalization">
-              <property name="text">
-               <string>Fix capitalization:</string>
               </property>
              </widget>
             </item>
@@ -154,8 +138,38 @@
               </property>
              </widget>
             </item>
-            <item row="3" column="1">
-             <widget class="QCheckBox" name="checkBox_fix_first_words_capitalization">
+            <item row="1" column="1">
+             <widget class="QComboBox" name="comboBox_line_endings">
+              <property name="sizePolicy">
+               <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+                <horstretch>1</horstretch>
+                <verstretch>0</verstretch>
+               </sizepolicy>
+              </property>
+              <property name="toolTip">
+               <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;USDX and variants can handle both line ending types, but if you want to edit the song file manually, your editor of choice may required a certain line ending. UNIX users (MacOS, Linux) should generally use LF (line feed). On Windows, some text editors may require CRLF (carriage return, line feed). USDB currently requires CRLF line endings.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+              </property>
+             </widget>
+            </item>
+            <item row="0" column="0">
+             <widget class="QLabel" name="label_song_file_encoding">
+              <property name="toolTip">
+               <string/>
+              </property>
+              <property name="text">
+               <string>Encoding:</string>
+              </property>
+             </widget>
+            </item>
+            <item row="5" column="0">
+             <widget class="QLabel" name="label_song_file_fix_quotation_marks">
+              <property name="text">
+               <string>Fix quotation marks:</string>
+              </property>
+             </widget>
+            </item>
+            <item row="5" column="1">
+             <widget class="QCheckBox" name="checkBox_fix_quotation_marks">
               <property name="text">
                <string/>
               </property>
