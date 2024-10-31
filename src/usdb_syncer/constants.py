@@ -103,7 +103,7 @@ SUPPORTED_VIDEO_SOURCES_REGEX = re.compile(
                 | youtube-nocookie\.com
                 | youtu\.be
                 | vimeo\.com
-                | archive\.org
+                | web\.archive\.org
                 | fb\.watch
                 | universal-music\.de
                 | dailymotion\.com

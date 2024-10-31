@@ -107,10 +107,10 @@ def extract_youtube_id(url: str) -> str | None:
         \S*
         (?:/|%3D|v=|vi=)
         ([0-9a-z_-]{11})            # the actual id
-        (?:[%#?&]|$)                # URL may contain additonal parameters
+        (?:[%#?&]|$)                # URL may contain additional parameters
         .*
         """
-    if match := re.search(pattern, url, re.VERBOSE | re.IGNORECASE):
+    if match := re.fullmatch(pattern, url, re.VERBOSE | re.IGNORECASE):
         return match.group(1)
     return None
 
