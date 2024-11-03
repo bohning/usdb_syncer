@@ -98,8 +98,10 @@ class SettingsDialog(Ui_Dialog, QDialog):
         if app in (settings.SupportedApps.KAREDI, settings.SupportedApps.YASS_RELOADED):
             filt += " *.jar"
         filename = QFileDialog.getOpenFileName(
-            None, f"Select {app} executable", directory, filt
+            self, f"Select {app} executable", directory, filt
         )[0]
+        # dialog is hidden by main window on macOS if file picker was cancelled
+        self.raise_()
         if filename == "":
             return None
         path = Path(filename)
