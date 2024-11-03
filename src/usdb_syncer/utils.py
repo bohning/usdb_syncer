@@ -159,9 +159,9 @@ def sanitize_filename(fname: str) -> str:
     for old, new in FILENAME_REPLACEMENTS:
         for char in old:
             fname = fname.replace(char, new)
-    if fname.endswith("."):
-        fname = fname.rstrip(" .")  # Windows does not like trailing periods
-    return fname
+    # trailing whitespace is handled inconsistently on OSes, and Windows does not like
+    # trailing periods
+    return fname.rstrip(" .")
 
 
 def next_unique_directory(path: Path) -> Path:
