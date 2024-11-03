@@ -4,6 +4,9 @@
 
 ## Fixes
 
+- Switch from browser_cookie3 to rookiepy in order to retrieve browser cookies on
+  different OSes more reliably.
+
 ## Features
 
 - Third-party karaoke software can now be launched from within the Syncer, passing
