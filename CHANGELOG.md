@@ -1,3 +1,14 @@
+<!-- 0.9.0 -->
+
+# Changes
+
+## Fixes
+
+## Features
+
+- Third-party karaoke software can now be launched from within the Syncer, passing
+  the song directory as parameter.
+
 <!-- 0.8.0 -->
 
 # Changes

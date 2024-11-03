@@ -4,6 +4,7 @@ import datetime
 import os
 import webbrowser
 from pathlib import Path
+from typing import Callable
 
 from PySide6 import QtGui
 from PySide6.QtWidgets import QFileDialog, QLabel, QMainWindow
@@ -105,6 +106,36 @@ class MainWindow(Ui_MainWindow, QMainWindow):
             (self.action_show_in_usdb, self._show_current_song_in_usdb),
             (self.action_post_comment_in_usdb, self._show_comment_dialog),
             (self.action_open_song_folder, self._open_current_song_folder),
+            (
+                self.action_open_song_in_karedi,
+                lambda: self._open_current_song_in_app(settings.SupportedApps.KAREDI),
+            ),
+            (
+                self.action_open_song_in_performous,
+                lambda: self._open_current_song_in_app(
+                    settings.SupportedApps.PERFORMOUS
+                ),
+            ),
+            (
+                self.action_open_song_in_ultrastar_manager,
+                lambda: self._open_current_song_in_app(
+                    settings.SupportedApps.ULTRASTAR_MANAGER
+                ),
+            ),
+            (
+                self.action_open_song_in_usdx,
+                lambda: self._open_current_song_in_app(settings.SupportedApps.USDX),
+            ),
+            (
+                self.action_open_song_in_vocaluxe,
+                lambda: self._open_current_song_in_app(settings.SupportedApps.VOCALUXE),
+            ),
+            (
+                self.action_open_song_in_yass_reloaded,
+                lambda: self._open_current_song_in_app(
+                    settings.SupportedApps.YASS_RELOADED
+                ),
+            ),
             (self.action_delete, self.table.delete_selected_songs),
             (self.action_pin, self.table.set_pin_selected_songs),
         ):
@@ -266,11 +297,11 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         else:
             _logger.debug("Not opening comment dialog: no song selected.")
 
-    def _open_current_song_folder(self) -> None:
+    def _open_current_song(self, action: Callable[[Path], None]) -> None:
         if song := self.table.current_song():
             if song.sync_meta:
                 if song.sync_meta.path.exists():
-                    open_file_explorer(song.sync_meta.path.parent)
+                    action(song.sync_meta.path.parent)
                 else:
                     with db.transaction():
                         song.remove_sync_meta()
@@ -280,6 +311,12 @@ class MainWindow(Ui_MainWindow, QMainWindow):
                 _logger.info("Song does not exist locally.")
         else:
             _logger.info("No current song.")
+
+    def _open_current_song_folder(self) -> None:
+        self._open_current_song(open_file_explorer)
+
+    def _open_current_song_in_app(self, app: settings.SupportedApps) -> None:
+        self._open_current_song(lambda path: settings.SupportedApps.open_app(app, path))
 
     def closeEvent(self, event: QtGui.QCloseEvent) -> None:
         def on_done(result: progress.Result) -> None:

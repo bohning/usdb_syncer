@@ -239,11 +239,36 @@ class SongTable:
             return
         for action in (
             self.mw.action_open_song_folder,
+            self.mw.menu_open_song_in,
+            self.mw.action_open_song_in_karedi,
+            self.mw.action_open_song_in_performous,
+            self.mw.action_open_song_in_ultrastar_manager,
+            self.mw.action_open_song_in_usdx,
+            self.mw.action_open_song_in_vocaluxe,
+            self.mw.action_open_song_in_yass_reloaded,
             self.mw.action_delete,
             self.mw.action_pin,
             self.mw.menu_custom_data,
         ):
             action.setEnabled(song.is_local())
+        self.mw.action_open_song_in_karedi.setVisible(
+            settings.get_app_path(settings.SupportedApps.KAREDI) is not None
+        )
+        self.mw.action_open_song_in_performous.setVisible(
+            settings.get_app_path(settings.SupportedApps.PERFORMOUS) is not None
+        )
+        self.mw.action_open_song_in_ultrastar_manager.setVisible(
+            settings.get_app_path(settings.SupportedApps.ULTRASTAR_MANAGER) is not None
+        )
+        self.mw.action_open_song_in_usdx.setVisible(
+            settings.get_app_path(settings.SupportedApps.USDX) is not None
+        )
+        self.mw.action_open_song_in_vocaluxe.setVisible(
+            settings.get_app_path(settings.SupportedApps.VOCALUXE) is not None
+        )
+        self.mw.action_open_song_in_yass_reloaded.setVisible(
+            settings.get_app_path(settings.SupportedApps.YASS_RELOADED) is not None
+        )
         self.mw.action_pin.setChecked(song.is_pinned())
         self.mw.action_songs_abort.setEnabled(song.status.can_be_aborted())
 

@@ -9,8 +9,9 @@ from __future__ import annotations
 
 import os
 import shutil
+import subprocess
 import traceback
-from enum import Enum
+from enum import Enum, StrEnum, auto
 from http.cookiejar import CookieJar
 from pathlib import Path
 from typing import Any, Tuple, TypeVar, assert_never, cast
@@ -97,6 +98,12 @@ class SettingKey(Enum):
     TABLE_VIEW_HEADER_STATE = "list_view/header/state"
     USDB_USER_NAME = "usdb/username"
     PATH_TEMPLATE = "files/path_template"
+    APP_PATH_KAREDI = "app_paths/karedi"
+    APP_PATH_PERFORMOUS = "app_paths/performous"
+    APP_PATH_ULTRASTAR_MANAGER = "app_paths/ultrastar_manager"
+    APP_PATH_USDX = "app_paths/usdx"
+    APP_PATH_VOCALUXE = "app_paths/vocaluxe"
+    APP_PATH_YASS_RELOADED = "app_paths/yass_reloaded"
 
 
 class Encoding(Enum):
@@ -487,6 +494,97 @@ class VideoFps(Enum):
         return str(self.value)
 
 
+class SupportedApps(StrEnum):
+    """Supported third-party apps to be launched from the USDB Syncer."""
+
+    KAREDI = auto()
+    PERFORMOUS = auto()
+    ULTRASTAR_MANAGER = auto()
+    USDX = auto()
+    VOCALUXE = auto()
+    YASS_RELOADED = auto()
+
+    def __str__(self) -> str:
+        match self:
+            case SupportedApps.KAREDI:
+                return "Karedi"
+            case SupportedApps.PERFORMOUS:
+                return "Performous"
+            case SupportedApps.ULTRASTAR_MANAGER:
+                return "UltraStar Manager"
+            case SupportedApps.USDX:
+                return "UltraStar Deluxe"
+            case SupportedApps.VOCALUXE:
+                return "Vocaluxe"
+            case SupportedApps.YASS_RELOADED:
+                return "YASS Reloaded"
+            case _ as unreachable:
+                assert_never(unreachable)
+
+    def executable_name(self) -> str:
+        match self:
+            case SupportedApps.KAREDI:
+                return "Karedi"
+            case SupportedApps.PERFORMOUS:
+                return "performous"
+            case SupportedApps.ULTRASTAR_MANAGER:
+                return "UltraStar-Manager"
+            case SupportedApps.USDX:
+                return "ultrastardx"
+            case SupportedApps.VOCALUXE:
+                return "Vocaluxe"
+            case SupportedApps.YASS_RELOADED:
+                return "yass"
+            case _ as unreachable:
+                assert_never(unreachable)
+
+    def songpath_parameter(self) -> str:
+        match self:
+            case SupportedApps.KAREDI:
+                return ""
+            case SupportedApps.PERFORMOUS:
+                return ""
+            case SupportedApps.ULTRASTAR_MANAGER:
+                return "-songpath"
+            case SupportedApps.USDX:
+                return "-songpath"
+            case SupportedApps.VOCALUXE:
+                return "-SongFolder"
+            case SupportedApps.YASS_RELOADED:
+                return ""
+            case _ as unreachable:
+                assert_never(unreachable)
+
+    def open_app(self, path: Path) -> None:
+        _logger.debug(f"Starting {self} with '{path}'.")
+        executable = get_app_path(self)
+        if executable is None:
+            return
+        if executable.suffix == ".jar":
+            cmd = ["java", "-jar", str(executable), str(path)]
+        else:
+            cmd = [str(executable), self.songpath_parameter(), str(path)]
+        try:
+            # We are not using a context manager here so that the app is launched
+            # without blocking the syncer.
+            subprocess.Popen(cmd)  # pylint: disable=consider-using-with
+        except FileNotFoundError:
+            _logger.error(
+                f"Failed to launch {self} from '{str(executable)}', file not found. "
+                "Please check the executable path in the settings."
+            )
+        except OSError:
+            _logger.error(
+                f"Failed to launch {self} from '{str(executable)}', I/O error."
+            )
+            _logger.debug(traceback.format_exc())
+        except subprocess.SubprocessError:
+            _logger.error(
+                f"Failed to launch {self} from '{str(executable)}', subprocess error."
+            )
+            _logger.debug(traceback.format_exc())
+
+
 T = TypeVar("T")
 
 
@@ -754,3 +852,40 @@ def get_path_template() -> path_template.PathTemplate:
 
 def set_path_template(template: path_template.PathTemplate) -> None:
     set_setting(SettingKey.PATH_TEMPLATE, template)
+
+
+def get_app_path(app: SupportedApps) -> Path | None:
+    match app:
+        case SupportedApps.KAREDI:
+            path = get_setting(SettingKey.APP_PATH_KAREDI, "")
+        case SupportedApps.PERFORMOUS:
+            path = get_setting(SettingKey.APP_PATH_PERFORMOUS, "")
+        case SupportedApps.ULTRASTAR_MANAGER:
+            path = get_setting(SettingKey.APP_PATH_ULTRASTAR_MANAGER, "")
+        case SupportedApps.USDX:
+            path = get_setting(SettingKey.APP_PATH_USDX, "")
+        case SupportedApps.VOCALUXE:
+            path = get_setting(SettingKey.APP_PATH_VOCALUXE, "")
+        case SupportedApps.YASS_RELOADED:
+            path = get_setting(SettingKey.APP_PATH_YASS_RELOADED, "")
+        case _ as unreachable:
+            assert_never(unreachable)
+    return Path(path) if path != "" else None
+
+
+def set_app_path(app: SupportedApps, path: str) -> None:
+    match app:
+        case SupportedApps.KAREDI:
+            set_setting(SettingKey.APP_PATH_KAREDI, path)
+        case SupportedApps.PERFORMOUS:
+            set_setting(SettingKey.APP_PATH_PERFORMOUS, path)
+        case SupportedApps.ULTRASTAR_MANAGER:
+            set_setting(SettingKey.APP_PATH_ULTRASTAR_MANAGER, path)
+        case SupportedApps.USDX:
+            set_setting(SettingKey.APP_PATH_USDX, path)
+        case SupportedApps.VOCALUXE:
+            set_setting(SettingKey.APP_PATH_VOCALUXE, path)
+        case SupportedApps.YASS_RELOADED:
+            set_setting(SettingKey.APP_PATH_YASS_RELOADED, path)
+        case _ as unreachable:
+            assert_never(unreachable)
