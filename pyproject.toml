@@ -27,18 +27,11 @@ pdfme = "*"
 pillow = ">=10"
 PySide6 = "6.7.3"
 requests = "*"
+rookiepy = "^0.5.3"
 send2trash = "*"
 unidecode = "*"
 yt-dlp = {version = "*", extras = ["default", "curl_cffi"]}
 wheel = "*"
-# build
-pyinstaller = "*"
-pyinstaller-hooks-contrib = "*"
-# specifically required for pyinstaller (Note: darwin -> macos)
-altgraph = "*"
-macholib = {version = "*", markers="sys_platform == 'darwin'"}
-pywin32-ctypes = {version = "*", markers="sys_platform == 'win32'"}
-rookiepy = "^0.5.3"
 
 [tool.poetry.group.dev.dependencies]
 tox = "*"
@@ -52,6 +45,13 @@ types-requests = "*"
 # test
 pytest = "*"
 snakeviz = "*"
+# build
+pyinstaller = "*"
+pyinstaller-hooks-contrib = "*"
+# specifically required for pyinstaller (Note: darwin -> macos)
+altgraph = "*"
+macholib = {version = "*", markers="sys_platform == 'darwin'"}
+pywin32-ctypes = {version = "*", markers="sys_platform == 'win32'"}
 
 [tool.poetry.scripts]
 usdb_syncer = "usdb_syncer.gui:main"
