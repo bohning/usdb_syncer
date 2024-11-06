@@ -13,6 +13,8 @@ from typing import Any
 
 from usdb_syncer import SongId
 
+_LOGGER_NAME = "usdb_syncer"
+
 
 class SongLogger(logging.LoggerAdapter):
     """Logger wrapper that takes care of logging the song id."""
@@ -29,7 +31,19 @@ Log = logging.Logger | SongLogger
 
 
 def get_logger(file: str, song_id: SongId | None = None) -> Log:
-    logger = logging.getLogger(f"usdb_syncer.{file}")
+    logger = logging.getLogger(f"{_LOGGER_NAME}.{file}")
     if song_id:
         return SongLogger(song_id, logger)
     return logger
+
+
+def configure_logging(*handlers: logging.Handler) -> None:
+    logging.basicConfig(
+        level=logging.INFO,
+        style="{",
+        format="{asctime} [{levelname}] {message}",
+        datefmt="%Y-%m-%d %H:%M:%S",
+        encoding="utf-8",
+        handlers=handlers,
+    )
+    logging.getLogger(_LOGGER_NAME).setLevel(logging.DEBUG)
