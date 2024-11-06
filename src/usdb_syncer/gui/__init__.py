@@ -149,7 +149,7 @@ def _init_app() -> QtWidgets.QApplication:
 
 def _configure_logging(mw: MainWindow) -> None:
     logging.basicConfig(
-        level=logging.DEBUG,
+        level=logging.INFO,
         style="{",
         format="{asctime} [{levelname}] {message}",
         datefmt="%Y-%m-%d %H:%M:%S",
@@ -160,6 +160,7 @@ def _configure_logging(mw: MainWindow) -> None:
             _TextEditLogger(mw),
         ),
     )
+    logging.getLogger("usdb_syncer").setLevel(logging.DEBUG)
 
 
 class _LogSignal(QtCore.QObject):

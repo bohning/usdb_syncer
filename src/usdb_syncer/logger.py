@@ -29,7 +29,7 @@ Log = logging.Logger | SongLogger
 
 
 def get_logger(file: str, song_id: SongId | None = None) -> Log:
-    logger = logging.getLogger(file)
+    logger = logging.getLogger(f"usdb_syncer.{file}")
     if song_id:
         return SongLogger(song_id, logger)
     return logger
