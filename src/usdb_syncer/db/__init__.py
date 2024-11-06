@@ -16,18 +16,15 @@ from typing import Any, Generator, Iterable, Iterator, assert_never, cast
 
 import attrs
 from more_itertools import batched
-from PySide6 import QtCore
 
-from usdb_syncer import SongId, SyncMetaId, errors, logger
+from usdb_syncer import SongId, SyncMetaId, errors
+from usdb_syncer.logger import logger
 from usdb_syncer.utils import AppPaths
 
 SCHEMA_VERSION = 5
 
 # https://www.sqlite.org/limits.html
 _SQL_VARIABLES_LIMIT = 32766
-
-
-_logger = logger.get_logger(__file__)
 
 
 class _SqlCache:
@@ -61,9 +58,9 @@ class _DbState:
             db_path, check_same_thread=False, isolation_level=None, timeout=20
         )
         thread = threading.current_thread().name
-        _logger.debug(f"Connected to database at '{db_path}' on thread {thread}.")
+        logger.debug(f"Connected to database at '{db_path}' on thread {thread}.")
         if trace:
-            cls._local.connection.set_trace_callback(_logger.debug)
+            cls._local.connection.set_trace_callback(logger.debug)
         _validate_schema(cls._local.connection)
 
     @classmethod
@@ -78,7 +75,7 @@ class _DbState:
             _DbState._local.connection.close()
             _DbState._local.connection = None
             thread = threading.current_thread().name
-            _logger.debug(f"Closed database connection on thread {thread}.")
+            logger.debug(f"Closed database connection on thread {thread}.")
 
 
 @contextlib.contextmanager
@@ -105,7 +102,7 @@ def _validate_schema(connection: sqlite3.Connection) -> None:
         version = row[0]
     for ver in range(version + 1, SCHEMA_VERSION + 1):
         connection.executescript(_SqlCache.get(f"{ver}_migration.sql", cache=False))
-        _logger.debug(f"Database migrated to version {ver}.")
+        logger.debug(f"Database migrated to version {ver}.")
     if version < SCHEMA_VERSION:
         connection.execute(
             "INSERT INTO meta (id, version, ctime) VALUES (1, :version, :ctime) "
@@ -352,7 +349,7 @@ class SearchBuilder:
             KeyError,
             ValueError,
         ):
-            _logger.debug(traceback.format_exc())
+            logger.debug(traceback.format_exc())
         return None
 
 
@@ -457,7 +454,7 @@ class SavedSearch:
         _DbState.connection().execute(
             "DELETE FROM saved_search WHERE name = ?", (name,)
         )
-        _logger.warning(f"Dropped invalid saved search '{name}'.")
+        logger.warning(f"Dropped invalid saved search '{name}'.")
         return None
 
     @classmethod

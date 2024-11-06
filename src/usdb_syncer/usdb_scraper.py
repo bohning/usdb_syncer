@@ -21,7 +21,7 @@ from usdb_syncer.constants import (
     UsdbStringsFrench,
     UsdbStringsGerman,
 )
-from usdb_syncer.logger import Log, get_logger
+from usdb_syncer.logger import Log, song_logger
 from usdb_syncer.usdb_song import UsdbSong
 from usdb_syncer.utils import extract_youtube_id, normalize
 
@@ -289,7 +289,7 @@ def get_usdb_details(song_id: SongId) -> SongDetails:
 
 
 def _parse_song_page(soup: BeautifulSoup, song_id: SongId) -> SongDetails:
-    logger = get_logger(__file__, song_id)
+    logger = song_logger(song_id)
     usdb_strings = _usdb_strings_from_soup(soup)
     details_table, comments_table, *_ = soup.find_all("table", border="0", width="500")
     details = _parse_details_table(details_table, song_id, usdb_strings, logger)

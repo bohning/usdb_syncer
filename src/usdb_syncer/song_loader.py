@@ -38,7 +38,7 @@ from usdb_syncer import (
 )
 from usdb_syncer.constants import ISO_639_2B_LANGUAGE_CODES
 from usdb_syncer.custom_data import CustomData
-from usdb_syncer.logger import Log, get_logger
+from usdb_syncer.logger import Log, logger, song_logger
 from usdb_syncer.song_txt import SongTxt
 from usdb_syncer.sync_meta import ResourceFile, SyncMeta
 from usdb_syncer.usdb_scraper import SongDetails
@@ -86,7 +86,7 @@ class DownloadManager:
     @classmethod
     def quit(cls) -> None:
         if cls._pool:
-            get_logger(__file__).debug(f"Quitting {len(cls._jobs)} downloads.")
+            logger.debug(f"Quitting {len(cls._jobs)} downloads.")
             for job in cls._jobs.values():
                 job.abort = True
             cls._pool.waitForDone()
@@ -247,21 +247,17 @@ class _Context:
 
     @classmethod
     def new(
-        cls,
-        song: UsdbSong,
-        options: download_options.Options,
-        tempdir: Path,
-        logger: Log,
+        cls, song: UsdbSong, options: download_options.Options, tempdir: Path, log: Log
     ) -> _Context:
         song = copy.deepcopy(song)
-        details, txt = _get_usdb_data(song.song_id, options.txt_options, logger)
+        details, txt = _get_usdb_data(song.song_id, options.txt_options, log)
         _update_song_with_usdb_data(song, details, txt)
         paths = _Locations.new(song, options, tempdir)
         if not song.sync_meta:
             song.sync_meta = SyncMeta.new(
                 song.song_id, paths.target_path().parent, txt.meta_tags
             )
-        return cls(song, details, options, txt, paths, logger)
+        return cls(song, details, options, txt, paths, log)
 
     def all_audio_resources(self) -> Iterator[str]:
         if self.txt.meta_tags.audio:
@@ -296,12 +292,12 @@ class _Context:
 
 
 def _get_usdb_data(
-    song_id: SongId, txt_options: download_options.TxtOptions | None, logger: Log
+    song_id: SongId, txt_options: download_options.TxtOptions | None, log: Log
 ) -> tuple[SongDetails, SongTxt]:
     details = usdb_scraper.get_usdb_details(song_id)
-    logger.info(f"Found '{details.artist} - {details.title}' on USDB.")
-    txt_str = usdb_scraper.get_notes(details.song_id, logger)
-    txt = SongTxt.parse(txt_str, logger)
+    log.info(f"Found '{details.artist} - {details.title}' on USDB.")
+    txt_str = usdb_scraper.get_notes(details.song_id, log)
+    txt = SongTxt.parse(txt_str, log)
     txt.sanitize(txt_options)
     txt.headers.creator = txt.headers.creator or details.uploader or None
     txt.headers.tags = ", ".join(details.comment_tags()) or None
@@ -338,7 +334,7 @@ class _SongLoader(QtCore.QRunnable):
         self.song = song
         self.song_id = song.song_id
         self.options = options
-        self.logger = get_logger(__file__, self.song_id)
+        self.logger = song_logger(self.song_id)
 
     def run(self) -> None:
         with db.managed_connection(utils.AppPaths.db):

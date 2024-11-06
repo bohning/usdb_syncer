@@ -13,7 +13,7 @@ from PIL import Image, ImageEnhance, ImageOps
 from PIL.Image import Resampling
 
 from usdb_syncer.download_options import AudioOptions, VideoOptions
-from usdb_syncer.logger import Log, get_logger
+from usdb_syncer.logger import Log, song_logger
 from usdb_syncer.meta_tags import ImageMetaTags
 from usdb_syncer.settings import Browser, CoverMaxSize
 from usdb_syncer.usdb_scraper import SongDetails
@@ -183,7 +183,7 @@ def download_and_process_image(
     kind: ImageKind,
     max_width: CoverMaxSize | None,
 ) -> Path | None:
-    logger = get_logger(__file__, details.song_id)
+    logger = song_logger(details.song_id)
     if not (img_bytes := download_image(url, logger)):
         logger.error(f"#{str(kind).upper()}: file does not exist at url: {url}")
         return None

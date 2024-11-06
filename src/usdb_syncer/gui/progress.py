@@ -7,9 +7,9 @@ from typing import Any, Callable, Generic, TypeVar
 import attrs
 from PySide6 import QtCore, QtGui, QtWidgets
 
-from usdb_syncer import db, logger, utils
+from usdb_syncer import db, utils
+from usdb_syncer.logger import logger
 
-_logger = logger.get_logger(__file__)
 T = TypeVar("T")
 _MINIMUM_DURATION_MS = 1000
 
@@ -38,7 +38,7 @@ class Result(Generic[T]):
     def log_error(self) -> None:
         """If there was an error, log it without raising."""
         if isinstance(self._result, _Error):
-            _logger.error(traceback.format_exception(self._result.error))
+            logger.error(traceback.format_exception(self._result.error))
 
 
 class _ResultSignal(QtCore.QObject):

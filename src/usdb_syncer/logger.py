@@ -13,14 +13,12 @@ from typing import Any
 
 from usdb_syncer import SongId
 
-_LOGGER_NAME = "usdb_syncer"
-
 
 class SongLogger(logging.LoggerAdapter):
     """Logger wrapper that takes care of logging the song id."""
 
-    def __init__(self, song_id: SongId, logger: Any, extra: Any = ...) -> None:
-        super().__init__(logger, extra)
+    def __init__(self, song_id: SongId, logger_: Any, extra: Any = ...) -> None:
+        super().__init__(logger_, extra)
         self.song_id = song_id
 
     def process(self, msg: str, kwargs: Any) -> Any:
@@ -28,13 +26,14 @@ class SongLogger(logging.LoggerAdapter):
 
 
 Log = logging.Logger | SongLogger
+_LOGGER_NAME = "usdb_syncer"
+logger = logging.getLogger(_LOGGER_NAME)
+error_logger = logger.getChild("errors")
+error_logger.setLevel(logging.ERROR)
 
 
-def get_logger(file: str, song_id: SongId | None = None) -> Log:
-    logger = logging.getLogger(f"{_LOGGER_NAME}.{file}")
-    if song_id:
-        return SongLogger(song_id, logger)
-    return logger
+def song_logger(song_id: SongId) -> Log:
+    return SongLogger(song_id, logger)
 
 
 def configure_logging(*handlers: logging.Handler) -> None:
@@ -46,4 +45,4 @@ def configure_logging(*handlers: logging.Handler) -> None:
         encoding="utf-8",
         handlers=handlers,
     )
-    logging.getLogger(_LOGGER_NAME).setLevel(logging.DEBUG)
+    logger.setLevel(logging.DEBUG)

@@ -10,11 +10,10 @@ import attrs
 
 from usdb_syncer import SongId, SyncMetaId, db, settings, utils
 from usdb_syncer.custom_data import CustomData
-from usdb_syncer.logger import get_logger
+from usdb_syncer.logger import logger
 from usdb_syncer.meta_tags import MetaTags
 
 SYNC_META_VERSION = 1
-_logger = get_logger(__file__)
 
 
 class SyncMetaTooNewError(Exception):
@@ -122,7 +121,7 @@ class SyncMeta:
                 song_id=SongId(dct["song_id"]),
                 path=path,
                 mtime=utils.get_mtime(path),
-                meta_tags=MetaTags.parse(dct["meta_tags"], _logger),
+                meta_tags=MetaTags.parse(dct["meta_tags"], logger),
                 pinned=bool(dct.get("pinned", False)),
                 txt=ResourceFile.from_nested_dict(dct["txt"]),
                 audio=ResourceFile.from_nested_dict(dct["audio"]),
@@ -136,7 +135,7 @@ class SyncMeta:
         if new_id:
             meta.path = path.with_name(sync_meta_id.to_filename())
             path.rename(meta.path)
-            _logger.info(f"Assigned new ID to meta file: '{path}' > '{meta.path}'.")
+            logger.info(f"Assigned new ID to meta file: '{path}' > '{meta.path}'.")
         return meta
 
     @classmethod
@@ -147,7 +146,7 @@ class SyncMeta:
             song_id=SongId(row[1]),
             path=Path(row[2]),
             mtime=row[3],
-            meta_tags=MetaTags.parse(row[4], _logger),
+            meta_tags=MetaTags.parse(row[4], logger),
             pinned=bool(row[5]),
         )
         meta.txt = ResourceFile.from_db_row(row[6:9])

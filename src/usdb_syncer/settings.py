@@ -22,9 +22,7 @@ from PySide6.QtCore import QByteArray, QSettings
 
 from usdb_syncer import path_template, utils
 from usdb_syncer.constants import Usdb
-from usdb_syncer.logger import get_logger
-
-_logger = get_logger(__file__)
+from usdb_syncer.logger import logger
 
 SYSTEM_USDB = "USDB Syncer/USDB"
 NO_KEYRING_BACKEND_WARNING = (
@@ -39,8 +37,8 @@ def get_usdb_auth() -> Tuple[str, str]:
     try:
         pwd = keyring.get_password(SYSTEM_USDB, username) or ""
     except keyring.core.backend.errors.NoKeyringError as error:
-        _logger.debug(error)
-        _logger.warning(NO_KEYRING_BACKEND_WARNING)
+        logger.debug(error)
+        logger.warning(NO_KEYRING_BACKEND_WARNING)
     return (username, pwd)
 
 
@@ -49,8 +47,8 @@ def set_usdb_auth(username: str, password: str) -> None:
     try:
         keyring.set_password(SYSTEM_USDB, username, password)
     except keyring.core.backend.errors.NoKeyringError as error:
-        _logger.debug(error)
-        _logger.warning(NO_KEYRING_BACKEND_WARNING)
+        logger.debug(error)
+        logger.warning(NO_KEYRING_BACKEND_WARNING)
 
 
 def ffmpeg_is_available() -> bool:
@@ -345,8 +343,8 @@ class Browser(Enum):
         try:
             return rookiepy.to_cookiejar(function([Usdb.DOMAIN]))
         except Exception:  # pylint: disable=broad-exception-caught
-            _logger.debug(traceback.format_exc())
-        _logger.warning(f"Failed to retrieve {str(self).capitalize()} cookies.")
+            logger.debug(traceback.format_exc())
+        logger.warning(f"Failed to retrieve {str(self).capitalize()} cookies.")
         return None
 
 
@@ -525,7 +523,7 @@ class SupportedApps(StrEnum):
                 assert_never(unreachable)
 
     def open_app(self, path: Path) -> None:
-        _logger.debug(f"Starting {self} with '{path}'.")
+        logger.debug(f"Starting {self} with '{path}'.")
         executable = get_app_path(self)
         if executable is None:
             return
@@ -538,20 +536,20 @@ class SupportedApps(StrEnum):
             # without blocking the syncer.
             subprocess.Popen(cmd)  # pylint: disable=consider-using-with
         except FileNotFoundError:
-            _logger.error(
+            logger.error(
                 f"Failed to launch {self} from '{str(executable)}', file not found. "
                 "Please check the executable path in the settings."
             )
         except OSError:
-            _logger.error(
+            logger.error(
                 f"Failed to launch {self} from '{str(executable)}', I/O error."
             )
-            _logger.debug(traceback.format_exc())
+            logger.debug(traceback.format_exc())
         except subprocess.SubprocessError:
-            _logger.error(
+            logger.error(
                 f"Failed to launch {self} from '{str(executable)}', subprocess error."
             )
-            _logger.debug(traceback.format_exc())
+            logger.debug(traceback.format_exc())
 
 
 T = TypeVar("T")
