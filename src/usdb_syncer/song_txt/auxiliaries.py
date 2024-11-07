@@ -65,19 +65,15 @@ def replace_false_quotation_marks(
     value: str, language: str | None, marks_total: int
 ) -> tuple[str, int, int]:
     # replaces quotation marks with the language-specific counterparts
-    quotation_marks = next(
-        (
-            quote_marks
-            for langs, quote_marks in QUOTATION_MARKS.items()
-            if language in langs
-        ),
-        ("“", "”"),
-    )
+    if language:
+        quotation_marks = QUOTATION_MARKS.get(language, ("“", "”"))
+    else:
+        quotation_marks = ("“", "”")
 
     quotation_mark_indices: list[int] = []
     for mark in QUOTATION_MARKS_TO_REPLACE:
         quotation_mark_indices.extend(
-            match.start() for match in re.finditer(re.escape(mark), value)
+            match.start() for match in re.finditer(mark, value)
         )
     quotation_mark_indices.sort()
 
