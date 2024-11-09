@@ -1,11 +1,11 @@
 """Helper classes and functions related to the song text file"""
 
 import math
-import re
 
 import attrs
 
 from usdb_syncer.constants import (
+    LANGUAGES_WITH_SPACED_QUOTES,
     MINIMUM_BPM,
     QUOTATION_MARKS,
     QUOTATION_MARKS_TO_REPLACE,
@@ -62,32 +62,41 @@ def replace_false_apostrophes(value: str) -> str:
 
 
 def replace_false_quotation_marks(
-    value: str, language: str | None, marks_total: int
-) -> tuple[str, int, int]:
-    # replaces quotation marks with the language-specific counterparts
+    text: str, language: str | None, opening: bool
+) -> tuple[str, int, bool]:
+    # replaces quotation marks with the correct, language-specific ones
+    # Note: nested quotation marks as in "Hello “world”" are not supported
     if language:
-        quotation_marks = QUOTATION_MARKS.get(language, ("“", "”"))
+        opening_quote, closing_quote = QUOTATION_MARKS.get(language, ("“", "”"))
     else:
-        quotation_marks = ("“", "”")
+        opening_quote, closing_quote = ("“", "”")
 
-    quotation_mark_indices: list[int] = []
-    for mark in QUOTATION_MARKS_TO_REPLACE:
-        quotation_mark_indices.extend(
-            match.start() for match in re.finditer(mark, value)
-        )
-    quotation_mark_indices.sort()
-
+    spaced_quotes = language in LANGUAGES_WITH_SPACED_QUOTES
+    new_text = []
     marks_fixed = 0
-    for str_index in quotation_mark_indices:
-        marks_index = marks_total % 2
-        if value[str_index] != quotation_marks[marks_index]:
-            value = (
-                value[:str_index]
-                + quotation_marks[marks_index]
-                + value[str_index + 1 :]
-            )
-            marks_fixed = marks_fixed + 1
 
-        marks_total = marks_total + 1
+    i = 0
+    while i < len(text):
+        char = text[i]
+        if char in QUOTATION_MARKS_TO_REPLACE:
+            if opening:
+                new_text.append(opening_quote)
+                if spaced_quotes:
+                    new_text.append(" ")
+                    if i < len(text) - 1 and text[i + 1].isspace():
+                        i += 1  # skip space
+            else:
+                if spaced_quotes:
+                    if i > 0 and text[i - 1].isspace():
+                        new_text.pop()  # remove already appended whitespace
+                    new_text.append(" ")
+                new_text.append(closing_quote)
+            opening = not opening
+            marks_fixed += 1
+        else:
+            new_text.append(char)
+        i += 1
 
-    return value, marks_total, marks_fixed
+    text = "".join(new_text)
+
+    return text, marks_fixed, opening

@@ -380,11 +380,11 @@ class Tracks:
             logger.debug(f"FIX: {note_text_fixed} apostrophes in lyrics" " corrected.")
 
     def fix_quotation_marks(self, language: str | None, logger: Log) -> None:
-        marks_total = 0
+        opening = True
         marks_fixed_total = 0
         for note in self.all_notes():
-            note.text, marks_total, marks_fixed = replace_false_quotation_marks(
-                note.text, language, marks_total
+            note.text, marks_fixed, opening = replace_false_quotation_marks(
+                note.text, language, opening
             )
             marks_fixed_total = marks_fixed_total + marks_fixed
         if marks_fixed_total >= 0:

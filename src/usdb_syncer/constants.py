@@ -167,7 +167,7 @@ ISO_639_2B_LANGUAGE_CODES = {
 
 QUOTATION_MARKS = {
     "Bosnian": ("”", "”"),
-    "Breton": ("« ", " »"),
+    "Breton": ("«", "»"),
     "Catalan": ("«", "»"),
     "Chinese (romanized)": ("“", "”"),
     "Croatian": ("„", "”"),
@@ -177,7 +177,7 @@ QUOTATION_MARKS = {
     "English": ("“", "”"),
     "Estonian": ("„", "“"),
     "Finnish": ("”", "”"),
-    "French": ("« ", " »"),
+    "French": ("«", "»"),
     "Galician": ("«", "»"),
     "German": ("»", "«"),
     "Greek": ("«", "»"),
@@ -213,5 +213,6 @@ QUOTATION_MARKS = {
     "Welsh": ("‘", "’"),
 }
 
-
 QUOTATION_MARKS_TO_REPLACE = {'"', "„", "”", "«", "»", "“", "「", "」"}
+
+LANGUAGES_WITH_SPACED_QUOTES = {"French", "Breton"}
