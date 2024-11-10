@@ -271,18 +271,6 @@ class _Context:
             yield self.txt.meta_tags.video
         yield from self.details.all_comment_videos()
 
-    def cover_url(self) -> str | None:
-        url = None
-        if self.txt.meta_tags.cover:
-            url = self.txt.meta_tags.cover.source_url(self.logger)
-            self.logger.debug(f"downloading cover from #VIDEO params: {url}")
-        elif self.details.cover_url:
-            url = self.details.cover_url
-            self.logger.warning(
-                "no cover resource in #VIDEO tag, so fallback to small usdb cover!"
-            )
-        return url
-
     def background_url(self) -> str | None:
         url = None
         if self.txt.meta_tags.background:
@@ -456,12 +444,26 @@ def _maybe_download_video(ctx: _Context) -> None:
 def _maybe_download_cover(ctx: _Context) -> None:
     if not ctx.options.cover:
         return
-    if not (url := ctx.cover_url()):
+    if ctx.txt.meta_tags.cover == ctx.details.cover_url == None:
         ctx.logger.warning("No cover resource found.")
         return
+    if ctx.txt.meta_tags.cover:
+        if _download_cover_url(ctx, ctx.txt.meta_tags.cover.source_url(ctx.logger)):
+            return
+    if ctx.details.cover_url:
+        ctx.logger.warning("Falling back to small USDB cover.")
+        if _download_cover_url(ctx, ctx.details.cover_url):
+            return
+    keep = " Keeping last resource." if ctx.out.cover.resource else ""
+    ctx.logger.error(f"Failed to download cover!{keep}")
+
+
+def _download_cover_url(ctx: _Context, url: str) -> bool:
+    """True if download was successful (or is unnecessary)."""
+    assert ctx.options.cover
     if ctx.out.cover.resource == url:
         ctx.logger.info("Cover resource is unchanged.")
-        return
+        return True
     if path := resource_dl.download_and_process_image(
         url=url,
         target_stem=ctx.locations.temp_path(),
@@ -473,9 +475,8 @@ def _maybe_download_cover(ctx: _Context) -> None:
         ctx.out.cover.resource = url
         ctx.out.cover.new_fname = path.name
         ctx.logger.info("Success! Downloaded cover.")
-    else:
-        keep = " Keeping last resource." if ctx.out.cover.resource else ""
-        ctx.logger.error(f"Failed to download cover!{keep}")
+        return True
+    return False
 
 
 def _maybe_download_background(ctx: _Context) -> None:
