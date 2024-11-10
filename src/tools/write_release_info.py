@@ -1,17 +1,19 @@
 """Replaces version and commit placeholders in constants.py."""
 
 import argparse
+import logging
+import sys
 from pathlib import Path
 
 
 def main(path: Path, version: str, commit_hash: str) -> None:
-    print(f"Rewriting file {path}")
+    logging.info(f"Rewriting file {path}")
     old = path.read_text(encoding="utf8")
     new = old.replace('VERSION = "dev"', f'VERSION = "{version}"').replace(
         'COMMIT_HASH = "dev"', f'COMMIT_HASH = "{commit_hash}"'
     )
     path.write_text(new, encoding="utf8", newline="\n")
-    print(f"New content:\n{path.read_text(encoding='utf8')}")
+    logging.info(f"New content:\n{path.read_text(encoding='utf8')}")
 
 
 def cli_entry() -> None:
@@ -26,4 +28,12 @@ def cli_entry() -> None:
 
 
 if __name__ == "__main__":
+    logging.basicConfig(
+        level=logging.DEBUG,
+        style="{",
+        format="{asctime} [{levelname}] {message}",
+        datefmt="%Y-%m-%d %H:%M:%S",
+        encoding="utf-8",
+        handlers=[logging.StreamHandler(sys.stdout)],
+    )
     cli_entry()
