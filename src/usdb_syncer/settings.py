@@ -561,11 +561,19 @@ def get_setting(key: SettingKey, default: T) -> T:
     except (AttributeError, ValueError):
         # setting contains a type incompatible with this version
         return default
-    if isinstance(value, type(default)):
+    if isinstance(value, ret_type := type(default)):
         return value
     if isinstance(default, bool) and isinstance(value, int):
         # we store bools as ints because Qt doesn't store raw bools
         return cast(T, bool(value))
+    if isinstance(value, str) and ret_type in (int, float, bool):
+        # in INI files (default on Linux) numeric values are stored as strings
+        try:
+            if ret_type == bool:
+                value = int(value)
+            return ret_type(value)  # type: ignore
+        except (ValueError, TypeError):
+            pass
     return default
 
 
