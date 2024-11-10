@@ -11,11 +11,9 @@ from typing import Any, Iterable
 import attrs
 
 from usdb_syncer import SongId
-from usdb_syncer.logger import get_logger
+from usdb_syncer.logger import logger
 from usdb_syncer.usdb_song import UsdbSong
 from usdb_syncer.utils import url_from_resource
-
-_logger = get_logger(__file__)
 
 JSON_EXPORT_VERSION = 1
 
@@ -56,7 +54,7 @@ class SongExportData:
             language=song.language,
             golden_notes=song.golden_notes,
             cover_url=(
-                meta.meta_tags.cover.source_url(_logger)
+                meta.meta_tags.cover.source_url(logger)
                 if meta.meta_tags.cover
                 else None
             ),

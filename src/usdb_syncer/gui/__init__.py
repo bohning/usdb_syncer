@@ -21,6 +21,7 @@ from usdb_syncer import (
     db,
     errors,
     events,
+    logger,
     settings,
     song_routines,
     sync_meta,
@@ -58,7 +59,11 @@ def _run() -> None:
     app = _init_app()
     app.setAttribute(Qt.ApplicationAttribute.AA_DontShowIconsInMenus, False)
     mw = MainWindow()
-    _configure_logging(mw)
+    logger.configure_logging(
+        logging.FileHandler(utils.AppPaths.log, encoding="utf-8"),
+        logging.StreamHandler(sys.stdout),
+        _TextEditLogger(mw),
+    )
     try:
         _load_main_window(mw)
     except errors.UnknownSchemaError:
@@ -145,21 +150,6 @@ def _init_app() -> QtWidgets.QApplication:
     app.setApplicationName("usdb_syncer")
     app.setWindowIcon(QtGui.QIcon(":/app/appicon_128x128.png"))
     return app
-
-
-def _configure_logging(mw: MainWindow) -> None:
-    logging.basicConfig(
-        level=logging.DEBUG,
-        style="{",
-        format="{asctime} [{levelname}] {message}",
-        datefmt="%Y-%m-%d %H:%M:%S",
-        encoding="utf-8",
-        handlers=(
-            logging.FileHandler(utils.AppPaths.log, encoding="utf-8"),
-            logging.StreamHandler(sys.stdout),
-            _TextEditLogger(mw),
-        ),
-    )
 
 
 class _LogSignal(QtCore.QObject):

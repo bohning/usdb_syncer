@@ -11,10 +11,9 @@ from urllib.parse import parse_qs, urlparse
 import attrs
 from bs4 import BeautifulSoup
 
-from usdb_syncer import SongId, errors, logger
+from usdb_syncer import SongId, errors
+from usdb_syncer.logger import logger
 from usdb_syncer.usdb_song import UsdbSong
-
-_logger = logger.get_logger(__file__)
 
 
 @attrs.define
@@ -279,12 +278,12 @@ def get_available_song_ids_from_files(file_list: list[str]) -> list[SongId]:
         try:
             song_ids += parse_usdb_id_file(path)
         except UsdbIdFileError as error:
-            _logger.error(f"Failed to import file '{path}': {str(error)}")
+            logger.error(f"Failed to import file '{path}': {str(error)}")
             return []
 
     unique_song_ids = list(set(song_ids))
     unique_song_ids.sort()
-    _logger.info(
+    logger.info(
         f"read {len(file_list)} file(s), "
         f"found {len(unique_song_ids)} "
         f"USDB IDs: {', '.join(str(id) for id in unique_song_ids)}"
@@ -292,7 +291,7 @@ def get_available_song_ids_from_files(file_list: list[str]) -> list[SongId]:
     if unavailable_song_ids := [
         song_id for song_id in unique_song_ids if not UsdbSong.get(song_id)
     ]:
-        _logger.warning(
+        logger.warning(
             f"{len(unavailable_song_ids)}/{len(unique_song_ids)} "
             "imported USDB IDs are not available: "
             f"{', '.join(str(song_id) for song_id in unavailable_song_ids)}"
@@ -301,7 +300,7 @@ def get_available_song_ids_from_files(file_list: list[str]) -> list[SongId]:
     if available_song_ids := [
         song_id for song_id in unique_song_ids if song_id not in unavailable_song_ids
     ]:
-        _logger.info(
+        logger.info(
             f"available {len(available_song_ids)}/{len(unique_song_ids)} "
             "imported USDB IDs will be selected: "
             f"{', '.join(str(song_id) for song_id in available_song_ids)}"

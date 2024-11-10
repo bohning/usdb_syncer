@@ -41,20 +41,30 @@ class SongId(int):
 class SyncMetaId(int):
     """8-byte signed integer with str encoding."""
 
+    _len_bytes = 8
+    # chars needed to base64-encode _len_bytes bytes without padding
+    _len_chars = 11
+
     @classmethod
     def new(cls) -> SyncMetaId:
         return cls(random.randint(-(2**63), 2**63 - 1))
 
     def encode(self) -> str:
-        value = base64.urlsafe_b64encode(self.to_bytes(8, "big", signed=True)).decode()
+        value = base64.urlsafe_b64encode(
+            self.to_bytes(self._len_bytes, "big", signed=True)
+        ).decode()
         # strip padding
         return value[:-1]
 
     @classmethod
     def decode(cls, value: str) -> SyncMetaId | None:
+        if len(value) != cls._len_chars:
+            return None
         try:
             number = base64.urlsafe_b64decode(f"{value}=")
         except (binascii.Error, ValueError):
+            return None
+        if len(number) != cls._len_bytes:
             return None
         return cls.from_bytes(number, "big", signed=True)
 

@@ -7,9 +7,9 @@ from typing import Any, Callable, Generic, TypeVar
 import attrs
 from PySide6 import QtCore, QtGui, QtWidgets
 
-from usdb_syncer import db, logger, utils
+from usdb_syncer import db, utils
+from usdb_syncer.logger import logger
 
-_logger = logger.get_logger(__file__)
 T = TypeVar("T")
 _MINIMUM_DURATION_MS = 1000
 
@@ -38,7 +38,7 @@ class Result(Generic[T]):
     def log_error(self) -> None:
         """If there was an error, log it without raising."""
         if isinstance(self._result, _Error):
-            _logger.error(traceback.format_exception(self._result.error))
+            logger.error(traceback.format_exception(self._result.error))
 
 
 class _ResultSignal(QtCore.QObject):
@@ -84,6 +84,9 @@ def run_with_progress(
         assert result
         dialog.deleteLater()
         on_done(result)
+        # prevent Qt from cleaning up the signal before it's done
+        # https://bugreports.qt.io/browse/PYSIDE-2921
+        _ = signal
 
     signal.result.connect(wrapped_on_done)
     QtCore.QThreadPool.globalInstance().start(wrapped_task)

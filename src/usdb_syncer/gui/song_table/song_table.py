@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import logging
 from functools import partial
 from typing import TYPE_CHECKING, Any, Callable, Iterable, Iterator
 
@@ -16,14 +15,13 @@ from usdb_syncer.gui.custom_data_dialog import CustomDataDialog
 from usdb_syncer.gui.progress import run_with_progress
 from usdb_syncer.gui.song_table.column import Column
 from usdb_syncer.gui.song_table.table_model import TableModel
-from usdb_syncer.logger import get_logger
+from usdb_syncer.logger import song_logger
 from usdb_syncer.song_loader import DownloadManager
 from usdb_syncer.usdb_song import DownloadStatus, UsdbSong
 
 if TYPE_CHECKING:
     from usdb_syncer.gui.mw import MainWindow
 
-_logger = logging.getLogger(__file__)
 
 DEFAULT_COLUMN_WIDTH = 300
 
@@ -74,7 +72,7 @@ class SongTable:
     def _on_playback_error_changed(self) -> None:
         if not self._media_player.error().value or self._next_playing_song is None:
             return
-        logger = get_logger(__file__, self._next_playing_song.song_id)
+        logger = song_logger(self._next_playing_song.song_id)
         source = self._media_player.source().url()
         logger.error(f"Failed to play back source: {source}")
         logger.debug(self._media_player.errorString())
@@ -112,9 +110,7 @@ class SongTable:
             song = UsdbSong.get(song_id)
             assert song
             if song.sync_meta and song.sync_meta.pinned:
-                get_logger(__file__, song.song_id).info(
-                    "Not downloading song as it is pinned."
-                )
+                song_logger(song.song_id).info("Not downloading song as it is pinned.")
                 continue
             if song.status.can_be_downloaded():
                 song.status = DownloadStatus.PENDING
@@ -277,7 +273,7 @@ class SongTable:
             for song in self.selected_songs():
                 if not song.sync_meta:
                     continue
-                logger = get_logger(__file__, song.song_id)
+                logger = song_logger(song.song_id)
                 if song.is_pinned():
                     logger.info("Not trashing song folder as it is pinned.")
                     continue
