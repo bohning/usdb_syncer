@@ -1,0 +1,38 @@
+#TITLE:Don’t Stop Believin’
+#ARTIST:Journey
+#LANGUAGE:English
+#GENRE:Classic Rock
+#YEAR:1981
+#CREATOR:MacSteve
+#MP3:Journey - Don’t Stop Believin’.m4a
+#COVER:Journey - Don’t Stop Believin’ [CO].jpg
+#BACKGROUND:Journey - Don’t Stop Believin’ [BG].jpg
+#BPM:242
+#GAP:18960
+: 0 3 8 Just 
+: 4 2 4 a 
+: 8 3 6 “small 
+: 13 6 6 town” 
+: 21 10 8 girl 
+- 33
+: 58 2 -1 “Li
+: 62 2 1 vin’ 
+: 66 3 4 in 
+: 70 2 4 a 
+: 74 6 11 lone
+: 82 3 11 ly 
+: 86 6 8 wo
+: 94 6 6 ~rld” 
+- 102
+: 128 2 -1 She 
+: 132 3 8 “took” 
+: 136 2 4 the 
+: 140 3 6 mid
+: 144 6 6 night 
+: 152 6 8 “train” 
+: 160 6 6 go
+: 167 5 4 in’ 
+: 173 9 6 a
+: 184 10 8 ny
+: 196 10 4 where 
+E
