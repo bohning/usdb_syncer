@@ -26,7 +26,7 @@ jobs:
           python -m pip install poetry
       - name: Install dependencies
         run: |
-          poetry install
+          poetry install --without dev --without build
       - name: Scrape USDB song list to ship with the bundle
         run: >
           poetry run generate_song_list_json

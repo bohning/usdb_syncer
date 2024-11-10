@@ -44,8 +44,10 @@ types-setuptools = "*"
 types-requests = "*"
 # test
 pytest = "*"
+# benchmark
 snakeviz = "*"
-# build
+
+[tool.poetry.group.build.dependencies]
 pyinstaller = "*"
 pyinstaller-hooks-contrib = "*"
 # specifically required for pyinstaller (Note: darwin -> macos)
