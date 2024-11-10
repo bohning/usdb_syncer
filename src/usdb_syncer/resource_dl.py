@@ -117,7 +117,7 @@ def download_video(
     return None
 
 
-def _ytdl_options(format_: str, browser: Browser, target_stem: Path) -> YtdlOptions:
+def _ytdl_options(format_: str, _browser: Browser, target_stem: Path) -> YtdlOptions:
     options: YtdlOptions = {
         "format": format_,
         "outtmpl": f"{target_stem}.%(ext)s",
@@ -126,7 +126,9 @@ def _ytdl_options(format_: str, browser: Browser, target_stem: Path) -> YtdlOpti
         # suppresses download of playlists, channels and search results
         "playlistend": 0,
         "overwrites": True,
-        "cookiesfrombrowser": (browser.value, None, None, None),
+        # disable cookies from browser to avoid accounts getting blocked
+        # downside: age-restricted content will not work
+        # "cookiesfrombrowser": (browser.value, None, None, None),
     }
     return options
 
