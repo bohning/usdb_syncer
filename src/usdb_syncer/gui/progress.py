@@ -84,6 +84,9 @@ def run_with_progress(
         assert result
         dialog.deleteLater()
         on_done(result)
+        # prevent Qt from cleaning up the signal before it's done
+        # https://bugreports.qt.io/browse/PYSIDE-2921
+        _ = signal
 
     signal.result.connect(wrapped_on_done)
     QtCore.QThreadPool.globalInstance().start(wrapped_task)
