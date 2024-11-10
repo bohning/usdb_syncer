@@ -1,6 +1,7 @@
 """Helper classes and functions related to the song text file"""
 
 import math
+from typing import NamedTuple
 
 import attrs
 
@@ -10,6 +11,14 @@ from usdb_syncer.constants import (
     QUOTATION_MARKS,
     QUOTATION_MARKS_TO_REPLACE,
 )
+
+
+class QuotationMarkReplacementResult(NamedTuple):
+    """Named tuple for the result of replace_false_quotation_marks."""
+
+    text: str
+    marks_fixed: int
+    opening: bool
 
 
 @attrs.define
@@ -63,7 +72,7 @@ def replace_false_apostrophes(value: str) -> str:
 
 def replace_false_quotation_marks(
     text: str, language: str | None, opening: bool
-) -> tuple[str, int, bool]:
+) -> QuotationMarkReplacementResult:
     # replaces quotation marks with the correct, language-specific ones
     # Note: nested quotation marks as in "Hello “world”" are not supported
     if language:
@@ -99,4 +108,4 @@ def replace_false_quotation_marks(
 
     text = "".join(new_text)
 
-    return text, marks_fixed, opening
+    return QuotationMarkReplacementResult(text, marks_fixed, opening)
