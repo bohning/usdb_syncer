@@ -97,7 +97,7 @@ class SongTxt:
         self.fix_low_bpm()
         self.notes.fix_overlapping_and_touching_notes(self.logger)
         self.notes.fix_pitch_values(self.logger)
-        self.notes.fix_apostrophes_and_quotation_marks(self.logger)
+        self.notes.fix_apostrophes(self.logger)
         self.headers.fix_apostrophes(self.logger)
         self.notes.fix_all_caps(self.logger)
         self.headers.fix_language(self.logger)
@@ -116,6 +116,10 @@ class SongTxt:
                 self.notes.fix_first_words_capitalization(self.logger)
             if txt_options.fix_spaces != FixSpaces.DISABLE:
                 self.notes.fix_spaces(txt_options.fix_spaces, self.logger)
+            if txt_options.fix_quotation_marks:
+                self.notes.fix_quotation_marks(
+                    self.headers.main_language(), self.logger
+                )
 
     def minimum_song_length(self) -> str:
         """Return the minimum song length based on last beat, BPM and GAP"""

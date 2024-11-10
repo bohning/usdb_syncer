@@ -11,6 +11,7 @@
 
 - Third-party karaoke software can now be launched from within the Syncer, passing
   the song directory as parameter.
+- Add optional fix for quotation marks (language-specific)
 
 <!-- 0.8.0 -->
 

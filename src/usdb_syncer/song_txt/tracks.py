@@ -12,7 +12,8 @@ from usdb_syncer import errors, settings
 from usdb_syncer.logger import Log
 from usdb_syncer.song_txt.auxiliaries import (
     BeatsPerMinute,
-    replace_false_apostrophes_and_quotation_marks,
+    replace_false_apostrophes,
+    replace_false_quotation_marks,
 )
 
 
@@ -368,17 +369,27 @@ class Tracks:
                 f"FIX: pitch values normalized (shifted by {octave_shift} octaves)."
             )
 
-    def fix_apostrophes_and_quotation_marks(self, logger: Log) -> None:
+    def fix_apostrophes(self, logger: Log) -> None:
         note_text_fixed = 0
         for note in self.all_notes():
             note_text_old = note.text
-            note.text = replace_false_apostrophes_and_quotation_marks(note_text_old)
+            note.text = replace_false_apostrophes(note_text_old)
             if note_text_old != note.text:
                 note_text_fixed += 1
         if note_text_fixed > 0:
+            logger.debug(f"FIX: {note_text_fixed} apostrophes in lyrics" " corrected.")
+
+    def fix_quotation_marks(self, language: str | None, logger: Log) -> None:
+        opening = True
+        marks_fixed_total = 0
+        for note in self.all_notes():
+            note.text, marks_fixed, opening = replace_false_quotation_marks(
+                note.text, language, opening
+            )
+            marks_fixed_total = marks_fixed_total + marks_fixed
+        if marks_fixed_total >= 0:
             logger.debug(
-                f"FIX: {note_text_fixed} apostrophes/quotation marks in lyrics"
-                " corrected."
+                f"FIX: {marks_fixed_total} quotation marks in lyrics corrected."
             )
 
     def fix_spaces(self, fix_style: settings.FixSpaces, logger: Log) -> None:

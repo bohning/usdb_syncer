@@ -46,6 +46,7 @@ def test_notes_parser_fixes(resource_dir: str) -> None:
                 fix_linebreaks=FixLinebreaks.USDX_STYLE,
                 fix_first_words_capitalization=True,
                 fix_spaces=FixSpaces.AFTER,
+                fix_quotation_marks=True,
             )
         )
         assert str(txt) == out, f"failed test for '{path}'"

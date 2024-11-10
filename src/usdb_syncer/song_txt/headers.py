@@ -8,10 +8,7 @@ import attrs
 
 from usdb_syncer import errors
 from usdb_syncer.logger import Log
-from usdb_syncer.song_txt.auxiliaries import (
-    BeatsPerMinute,
-    replace_false_apostrophes_and_quotation_marks,
-)
+from usdb_syncer.song_txt.auxiliaries import BeatsPerMinute, replace_false_apostrophes
 from usdb_syncer.song_txt.language_translations import LANGUAGE_TRANSLATIONS
 
 
@@ -124,7 +121,7 @@ class Headers:
         apostrophes_and_quotation_marks_fixed = False
         for key in ("artist", "title", "language", "genre", "p1", "p2", "album"):
             if value := getattr(self, key):
-                corrected_value = replace_false_apostrophes_and_quotation_marks(value)
+                corrected_value = replace_false_apostrophes(value)
                 if value != corrected_value:
                     setattr(self, key, corrected_value)
                     apostrophes_and_quotation_marks_fixed = True

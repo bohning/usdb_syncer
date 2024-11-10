@@ -1,10 +1,24 @@
 """Helper classes and functions related to the song text file"""
 
 import math
+from typing import NamedTuple
 
 import attrs
 
-from usdb_syncer.constants import MINIMUM_BPM
+from usdb_syncer.constants import (
+    LANGUAGES_WITH_SPACED_QUOTES,
+    MINIMUM_BPM,
+    QUOTATION_MARKS,
+    QUOTATION_MARKS_TO_REPLACE,
+)
+
+
+class QuotationMarkReplacementResult(NamedTuple):
+    """Named tuple for the result of replace_false_quotation_marks."""
+
+    text: str
+    marks_fixed: int
+    opening: bool
 
 
 @attrs.define
@@ -42,14 +56,56 @@ class BeatsPerMinute:
         return factor
 
 
-def replace_false_apostrophes_and_quotation_marks(value: str) -> str:
+def replace_false_apostrophes(value: str) -> str:
     # two single upright quotation marks ('') by double upright quotation marks (")
-    # grave accent (`), acute accent (´), prime symbol (′) and upright apostrophe (')
-    # by typographer’s apostrophe (’)
+    # grave (`) and acute accent (´), prime symbol (′), left single quotation mark (‘)
+    # and upright apostrophe (') by typographer’s apostrophe (’)
     return (
         value.replace("''", '"')
         .replace("`", "’")
         .replace("´", "’")
         .replace("′", "’")
+        .replace("‘", "’")
         .replace("'", "’")
     )
+
+
+def replace_false_quotation_marks(
+    text: str, language: str | None, opening: bool
+) -> QuotationMarkReplacementResult:
+    # replaces quotation marks with the correct, language-specific ones
+    # Note: nested quotation marks as in "Hello “world”" are not supported
+    if language:
+        opening_quote, closing_quote = QUOTATION_MARKS.get(language, ("“", "”"))
+    else:
+        opening_quote, closing_quote = ("“", "”")
+
+    spaced_quotes = language in LANGUAGES_WITH_SPACED_QUOTES
+    new_text = []
+    marks_fixed = 0
+
+    i = 0
+    while i < len(text):
+        char = text[i]
+        if char in QUOTATION_MARKS_TO_REPLACE:
+            if opening:
+                new_text.append(opening_quote)
+                if spaced_quotes:
+                    new_text.append(" ")
+                    if i < len(text) - 1 and text[i + 1].isspace():
+                        i += 1  # skip space
+            else:
+                if spaced_quotes:
+                    if i > 0 and text[i - 1].isspace():
+                        new_text.pop()  # remove already appended whitespace
+                    new_text.append(" ")
+                new_text.append(closing_quote)
+            opening = not opening
+            marks_fixed += 1
+        else:
+            new_text.append(char)
+        i += 1
+
+    text = "".join(new_text)
+
+    return QuotationMarkReplacementResult(text, marks_fixed, opening)

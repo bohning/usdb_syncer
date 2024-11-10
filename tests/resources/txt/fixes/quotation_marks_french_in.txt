@@ -1,0 +1,34 @@
+#TITLE:Voyage voyage
+#ARTIST:Desireless
+#LANGUAGE:French
+#YEAR:1986
+#CREATOR:karmidi
+#MP3:Desireless - Voyage voyage.m4a
+#COVER:Desireless - Voyage voyage [CO].jpg
+#BACKGROUND:Desireless - Voyage voyage [BG].jpg
+#VIDEO:Desireless - Voyage voyage.mp4
+#BPM:246.82
+#GAP:15960
+: 0 2 -2 Au 
+: 4 2 -1 des
+: 8 2 3 sus 
+: 12 2 -4 des 
+: 16 2 -2 vieux 
+: 20 6 -1 "vol
+: 28 8 -6 cans" 
+- 38
+: 62 3 -2 Glisse 
+: 67 2 -1 des 
+: 72 2 6 «ailes» 
+: 76 2 -2 sous 
+: 80 2 -1 le 
+: 84 2 4 ta
+: 88 2 -2 pis 
+: 92 2 -1 du 
+: 96 10 3 vent 
+- 108
+: 120 6 3 « Vo
+: 128 6 3 yage, 
+: 136 2 4 vo
+: 140 14 1 yage » 
+E

@@ -15,6 +15,7 @@ class TxtOptions:
     fix_linebreaks: settings.FixLinebreaks
     fix_first_words_capitalization: bool
     fix_spaces: settings.FixSpaces
+    fix_quotation_marks: bool
 
 
 @dataclass(frozen=True)
@@ -102,6 +103,7 @@ def _txt_options() -> TxtOptions | None:
         fix_linebreaks=settings.get_fix_linebreaks(),
         fix_first_words_capitalization=settings.get_fix_first_words_capitalization(),
         fix_spaces=settings.get_fix_spaces(),
+        fix_quotation_marks=settings.get_fix_quotation_marks(),
     )
 
 
