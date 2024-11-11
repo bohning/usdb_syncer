@@ -5,7 +5,13 @@ from glob import glob
 
 from usdb_syncer.download_options import TxtOptions
 from usdb_syncer.logger import logger
-from usdb_syncer.settings import Encoding, FixLinebreaks, FixSpaces, Newline
+from usdb_syncer.settings import (
+    Encoding,
+    FixLinebreaks,
+    FixSpaces,
+    FormatVersion,
+    Newline,
+)
 from usdb_syncer.song_txt import SongTxt
 
 
@@ -41,6 +47,7 @@ def test_notes_parser_fixes(resource_dir: str) -> None:
             TxtOptions(
                 encoding=Encoding.UTF_8,
                 newline=Newline.CRLF,
+                format_version=FormatVersion.V1_0_0,
                 fix_linebreaks=FixLinebreaks.USDX_STYLE,
                 fix_first_words_capitalization=True,
                 fix_spaces=FixSpaces.AFTER,

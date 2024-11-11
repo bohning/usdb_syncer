@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>640</width>
-    <height>649</height>
+    <height>677</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -28,7 +28,7 @@
         <number>20</number>
        </property>
        <item>
-        <layout class="QVBoxLayout" name="verticalLayout" stretch="0,0,0,0">
+        <layout class="QVBoxLayout" name="verticalLayout" stretch="0,0,0,0,0">
          <item>
           <widget class="QGroupBox" name="groupBox_login">
            <property name="title">
@@ -76,17 +76,20 @@
             <bool>true</bool>
            </property>
            <layout class="QGridLayout" name="gridLayout_2">
+            <item row="0" column="0">
+             <widget class="QLabel" name="label_song_file_encoding">
+              <property name="toolTip">
+               <string/>
+              </property>
+              <property name="text">
+               <string>Encoding:</string>
+              </property>
+             </widget>
+            </item>
             <item row="1" column="0">
              <widget class="QLabel" name="label_song_file_line_endings">
               <property name="text">
                <string>Line endings:</string>
-              </property>
-             </widget>
-            </item>
-            <item row="3" column="0">
-             <widget class="QLabel" name="label_song_file_fix_first_words_capitalization">
-              <property name="text">
-               <string>Fix capitalization:</string>
               </property>
              </widget>
             </item>
@@ -103,41 +106,6 @@
               </property>
              </widget>
             </item>
-            <item row="3" column="1">
-             <widget class="QCheckBox" name="checkBox_fix_first_words_capitalization">
-              <property name="text">
-               <string/>
-              </property>
-             </widget>
-            </item>
-            <item row="4" column="0">
-             <widget class="QLabel" name="label_song_file_fix_spaces">
-              <property name="text">
-               <string>Fix spaces:</string>
-              </property>
-             </widget>
-            </item>
-            <item row="2" column="1">
-             <widget class="QComboBox" name="comboBox_fix_linebreaks">
-              <property name="toolTip">
-               <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;If this setting is enabled, the linebreak timings will be recalculated, either according to USDX or to YASS rules.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-              </property>
-             </widget>
-            </item>
-            <item row="2" column="0">
-             <widget class="QLabel" name="label_song_file_fix_linebreaks">
-              <property name="text">
-               <string>Fix linebreaks:</string>
-              </property>
-             </widget>
-            </item>
-            <item row="4" column="1">
-             <widget class="QComboBox" name="comboBox_fix_spaces">
-              <property name="toolTip">
-               <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;If this setting is enabled, all inter-word spaces will be shifted to either after or before a word.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-              </property>
-             </widget>
-            </item>
             <item row="1" column="1">
              <widget class="QComboBox" name="comboBox_line_endings">
               <property name="sizePolicy">
@@ -151,24 +119,75 @@
               </property>
              </widget>
             </item>
-            <item row="0" column="0">
-             <widget class="QLabel" name="label_song_file_encoding">
-              <property name="toolTip">
-               <string/>
-              </property>
+            <item row="2" column="0">
+             <widget class="QLabel" name="label_song_file_format_version">
               <property name="text">
-               <string>Encoding:</string>
+               <string>Version:</string>
               </property>
              </widget>
             </item>
-            <item row="5" column="0">
+            <item row="2" column="1">
+             <widget class="QComboBox" name="comboBox_format_version"/>
+            </item>
+           </layout>
+          </widget>
+         </item>
+         <item>
+          <widget class="QGroupBox" name="groupBox_fixes">
+           <property name="title">
+            <string>Optional song file fixes</string>
+           </property>
+           <layout class="QGridLayout" name="gridLayout_9">
+            <item row="0" column="0">
+             <widget class="QLabel" name="label_song_file_fix_linebreaks">
+              <property name="text">
+               <string>Fix linebreaks:</string>
+              </property>
+             </widget>
+            </item>
+            <item row="0" column="1">
+             <widget class="QComboBox" name="comboBox_fix_linebreaks">
+              <property name="toolTip">
+               <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;If this setting is enabled, the linebreak timings will be recalculated, either according to USDX or to YASS rules.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+              </property>
+             </widget>
+            </item>
+            <item row="1" column="0">
+             <widget class="QLabel" name="label_song_file_fix_first_words_capitalization">
+              <property name="text">
+               <string>Fix capitalization:</string>
+              </property>
+             </widget>
+            </item>
+            <item row="1" column="1">
+             <widget class="QCheckBox" name="checkBox_fix_first_words_capitalization">
+              <property name="text">
+               <string/>
+              </property>
+             </widget>
+            </item>
+            <item row="2" column="0">
+             <widget class="QLabel" name="label_song_file_fix_spaces">
+              <property name="text">
+               <string>Fix spaces:</string>
+              </property>
+             </widget>
+            </item>
+            <item row="2" column="1">
+             <widget class="QComboBox" name="comboBox_fix_spaces">
+              <property name="toolTip">
+               <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;If this setting is enabled, all inter-word spaces will be shifted to either after or before a word.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+              </property>
+             </widget>
+            </item>
+            <item row="3" column="0">
              <widget class="QLabel" name="label_song_file_fix_quotation_marks">
               <property name="text">
                <string>Fix quotation marks:</string>
               </property>
              </widget>
             </item>
-            <item row="5" column="1">
+            <item row="3" column="1">
              <widget class="QCheckBox" name="checkBox_fix_quotation_marks">
               <property name="text">
                <string/>

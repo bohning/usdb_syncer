@@ -39,10 +39,12 @@ from usdb_syncer import (
 from usdb_syncer.constants import ISO_639_2B_LANGUAGE_CODES
 from usdb_syncer.custom_data import CustomData
 from usdb_syncer.logger import Log, logger, song_logger
+from usdb_syncer.settings import FormatVersion
 from usdb_syncer.song_txt import SongTxt
 from usdb_syncer.sync_meta import ResourceFile, SyncMeta
 from usdb_syncer.usdb_scraper import SongDetails
 from usdb_syncer.usdb_song import DownloadStatus, UsdbSong
+from usdb_syncer.utils import video_url_from_resource
 
 
 class DownloadManager:
@@ -518,14 +520,44 @@ def _maybe_write_txt(ctx: _Context) -> None:
 
 
 def _write_headers(ctx: _Context) -> None:
+    version = FormatVersion.V1_0_0
+    if ctx.options and ctx.options.txt_options:
+        version = ctx.options.txt_options.format_version
+
     if path := ctx.out.audio.path(ctx.locations, temp=True):
-        ctx.txt.headers.mp3 = path.name
+        match version:
+            case FormatVersion.V1_0_0:
+                ctx.txt.headers.mp3 = path.name
+            case FormatVersion.V1_1_0:
+                # write both #MP3 and #AUDIO for compatibility
+                ctx.txt.headers.mp3 = path.name
+                ctx.txt.headers.audio = path.name
+            case FormatVersion.V1_2_0:
+                ctx.txt.headers.audio = path.name
+                if resource := ctx.txt.meta_tags.audio:
+                    ctx.txt.headers.audiourl = video_url_from_resource(resource)
+                elif resource := ctx.txt.meta_tags.video:
+                    ctx.txt.headers.audiourl = video_url_from_resource(resource)
     if path := ctx.out.video.path(ctx.locations, temp=True):
         ctx.txt.headers.video = path.name
+        if version == FormatVersion.V1_2_0 and (resource := ctx.txt.meta_tags.video):
+            ctx.txt.headers.videourl = video_url_from_resource(resource)
     if path := ctx.out.cover.path(ctx.locations, temp=True):
         ctx.txt.headers.cover = path.name
+        if (
+            version == FormatVersion.V1_2_0
+            and ctx.txt.meta_tags.cover
+            and (url := ctx.txt.meta_tags.cover.source_url(ctx.logger))
+        ):
+            ctx.txt.headers.coverurl = url
     if path := ctx.out.background.path(ctx.locations, temp=True):
         ctx.txt.headers.background = path.name
+        if (
+            version == FormatVersion.V1_2_0
+            and ctx.txt.meta_tags.background
+            and (url := ctx.txt.meta_tags.background.source_url(ctx.logger))
+        ):
+            ctx.txt.headers.backgroundurl = url
 
 
 def _maybe_write_audio_tags(ctx: _Context) -> None:

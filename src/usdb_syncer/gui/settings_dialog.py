@@ -117,6 +117,7 @@ class SettingsDialog(Ui_Dialog, QDialog):
         combobox_settings = (
             (self.comboBox_encoding, settings.Encoding),
             (self.comboBox_line_endings, settings.Newline),
+            (self.comboBox_format_version, settings.FormatVersion),
             (self.comboBox_fix_linebreaks, settings.FixLinebreaks),
             (self.comboBox_fix_spaces, settings.FixSpaces),
             (self.comboBox_cover_max_size, settings.CoverMaxSize),
@@ -147,6 +148,9 @@ class SettingsDialog(Ui_Dialog, QDialog):
         )
         self.comboBox_line_endings.setCurrentIndex(
             self.comboBox_line_endings.findData(settings.get_newline())
+        )
+        self.comboBox_format_version.setCurrentIndex(
+            self.comboBox_format_version.findData(settings.get_version())
         )
         self.comboBox_fix_linebreaks.setCurrentIndex(
             self.comboBox_fix_linebreaks.findData(settings.get_fix_linebreaks())
@@ -244,6 +248,7 @@ class SettingsDialog(Ui_Dialog, QDialog):
         settings.set_txt(self.groupBox_songfile.isChecked())
         settings.set_encoding(self.comboBox_encoding.currentData())
         settings.set_newline(self.comboBox_line_endings.currentData())
+        settings.set_version(self.comboBox_format_version.currentData())
         settings.set_fix_linebreaks(self.comboBox_fix_linebreaks.currentData())
         settings.set_fix_first_words_capitalization(
             self.checkBox_fix_first_words_capitalization.isChecked()
