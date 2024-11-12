@@ -10,7 +10,7 @@ import time
 import traceback
 from itertools import islice
 from pathlib import Path
-from typing import Iterable, Iterator
+from typing import Iterable, Iterator, assert_never
 
 import attrs
 import mutagen.mp4
@@ -551,6 +551,8 @@ def _set_audio_headers(ctx: _Context, version: FormatVersion, path: Path) -> Non
             ctx.txt.headers.audio = path.name
             if resource := ctx.txt.meta_tags.audio or ctx.txt.meta_tags.video:
                 ctx.txt.headers.audiourl = video_url_from_resource(resource)
+        case _ as unreachable:
+            assert_never(unreachable)
 
 
 def _set_video_headers(ctx: _Context, version: FormatVersion, path: Path) -> None:
