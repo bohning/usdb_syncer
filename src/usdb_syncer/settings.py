@@ -73,7 +73,7 @@ class SettingKey(Enum):
     NEWLINE = "downloads/newline"
     FORMAT_VERSION = "downloads/format_version"
     FIX_LINEBREAKS = "fixes/linebreaks"
-    FIX_FIRST_WORDS_CAPITALIZATION = "fixes/first_words_capitalization"
+    FIX_FIRST_WORDS_CAPITALIZATION = "fixes/firstwordscapitalization"
     FIX_SPACES = "fixes/spaces"
     FIX_QUOTATION_MARKS = "fixes/quotation_marks"
     AUDIO = "downloads/audio"
