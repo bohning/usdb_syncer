@@ -520,44 +520,63 @@ def _maybe_write_txt(ctx: _Context) -> None:
 
 
 def _write_headers(ctx: _Context) -> None:
-    version = FormatVersion.V1_0_0
-    if ctx.options and ctx.options.txt_options:
-        version = ctx.options.txt_options.format_version
+    version = (
+        ctx.options.txt_options.format_version
+        if ctx.options and ctx.options.txt_options
+        else FormatVersion.V1_0_0
+    )
 
     if path := ctx.out.audio.path(ctx.locations, temp=True):
-        match version:
-            case FormatVersion.V1_0_0:
-                ctx.txt.headers.mp3 = path.name
-            case FormatVersion.V1_1_0:
-                # write both #MP3 and #AUDIO for compatibility
-                ctx.txt.headers.mp3 = path.name
-                ctx.txt.headers.audio = path.name
-            case FormatVersion.V1_2_0:
-                ctx.txt.headers.audio = path.name
-                if resource := ctx.txt.meta_tags.audio:
-                    ctx.txt.headers.audiourl = video_url_from_resource(resource)
-                elif resource := ctx.txt.meta_tags.video:
-                    ctx.txt.headers.audiourl = video_url_from_resource(resource)
+        _set_audio_headers(ctx, version, path)
+
     if path := ctx.out.video.path(ctx.locations, temp=True):
-        ctx.txt.headers.video = path.name
-        if version == FormatVersion.V1_2_0 and (resource := ctx.txt.meta_tags.video):
-            ctx.txt.headers.videourl = video_url_from_resource(resource)
+        _set_video_headers(ctx, version, path)
+
     if path := ctx.out.cover.path(ctx.locations, temp=True):
-        ctx.txt.headers.cover = path.name
-        if (
-            version == FormatVersion.V1_2_0
-            and ctx.txt.meta_tags.cover
-            and (url := ctx.txt.meta_tags.cover.source_url(ctx.logger))
-        ):
-            ctx.txt.headers.coverurl = url
+        _set_cover_headers(ctx, version, path)
+
     if path := ctx.out.background.path(ctx.locations, temp=True):
-        ctx.txt.headers.background = path.name
-        if (
-            version == FormatVersion.V1_2_0
-            and ctx.txt.meta_tags.background
-            and (url := ctx.txt.meta_tags.background.source_url(ctx.logger))
-        ):
-            ctx.txt.headers.backgroundurl = url
+        _set_background_headers(ctx, version, path)
+
+
+def _set_audio_headers(ctx: _Context, version: FormatVersion, path: Path) -> None:
+    match version:
+        case FormatVersion.V1_0_0:
+            ctx.txt.headers.mp3 = path.name
+        case FormatVersion.V1_1_0:
+            # write both #MP3 and #AUDIO to maximize compatibility
+            ctx.txt.headers.mp3 = path.name
+            ctx.txt.headers.audio = path.name
+        case FormatVersion.V1_2_0:
+            ctx.txt.headers.audio = path.name
+            if resource := ctx.txt.meta_tags.audio or ctx.txt.meta_tags.video:
+                ctx.txt.headers.audiourl = video_url_from_resource(resource)
+
+
+def _set_video_headers(ctx: _Context, version: FormatVersion, path: Path) -> None:
+    ctx.txt.headers.video = path.name
+    if version == FormatVersion.V1_2_0 and (resource := ctx.txt.meta_tags.video):
+        ctx.txt.headers.videourl = video_url_from_resource(resource)
+
+
+def _set_cover_headers(ctx: _Context, version: FormatVersion, path: Path) -> None:
+    ctx.txt.headers.cover = path.name
+    if (
+        version == FormatVersion.V1_2_0
+        and ctx.txt.meta_tags.cover
+        and (url := ctx.txt.meta_tags.cover.source_url(ctx.logger))
+    ):
+        ctx.txt.headers.coverurl = url
+
+
+def _set_background_headers(ctx: _Context, version: FormatVersion, path: Path) -> None:
+    ctx.txt.headers.background = path.name
+    if (
+        version == FormatVersion.V1_2_0
+        and ctx.txt.meta_tags.background
+        and (url := ctx.txt.meta_tags.background.source_url(ctx.logger))
+    ):
+        ctx.txt.headers.backgroundurl = url
 
 
 def _maybe_write_audio_tags(ctx: _Context) -> None:
