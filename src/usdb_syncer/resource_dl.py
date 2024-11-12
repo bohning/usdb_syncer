@@ -17,7 +17,7 @@ from usdb_syncer.logger import Log, song_logger
 from usdb_syncer.meta_tags import ImageMetaTags
 from usdb_syncer.settings import Browser, CoverMaxSize
 from usdb_syncer.usdb_scraper import SongDetails
-from usdb_syncer.utils import url_from_resource
+from usdb_syncer.utils import video_url_from_resource
 
 IMAGE_DOWNLOAD_HEADERS = {
     "User-Agent": (
@@ -134,7 +134,7 @@ def _ytdl_options(format_: str, _browser: Browser, target_stem: Path) -> YtdlOpt
 
 
 def _download_resource(options: YtdlOptions, resource: str, logger: Log) -> str | None:
-    if (url := url_from_resource(resource)) is None:
+    if (url := video_url_from_resource(resource)) is None:
         logger.debug(f"invalid audio/video resource: {resource}")
         return None
 

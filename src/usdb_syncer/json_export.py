@@ -13,7 +13,7 @@ import attrs
 from usdb_syncer import SongId
 from usdb_syncer.logger import logger
 from usdb_syncer.usdb_song import UsdbSong
-from usdb_syncer.utils import url_from_resource
+from usdb_syncer.utils import video_url_from_resource
 
 JSON_EXPORT_VERSION = 1
 
@@ -62,12 +62,12 @@ class SongExportData:
                 meta.meta_tags.cover.to_str("co") if meta.meta_tags.cover else None
             ),
             audio_url=(
-                url_from_resource(meta.meta_tags.audio)
+                video_url_from_resource(meta.meta_tags.audio)
                 if meta.meta_tags.audio
                 else None
             ),
             video_url=(
-                url_from_resource(meta.meta_tags.video)
+                video_url_from_resource(meta.meta_tags.video)
                 if meta.meta_tags.video
                 else None
             ),

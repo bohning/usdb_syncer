@@ -86,6 +86,7 @@ class SongTxt:
         """Sanitize USDB issues and prepare for local usage."""
         self.headers.reset_file_location_headers()
         if txt_options:
+            self.headers.set_version(txt_options.format_version)
             self.fix(txt_options)
 
     def fix(self, txt_options: download_options.TxtOptions) -> None:

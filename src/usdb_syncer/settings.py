@@ -71,10 +71,11 @@ class SettingKey(Enum):
     TXT = "downloads/txt"
     ENCODING = "downloads/encoding"
     NEWLINE = "downloads/newline"
+    FORMAT_VERSION = "downloads/format_version"
     FIX_LINEBREAKS = "fixes/linebreaks"
     FIX_FIRST_WORDS_CAPITALIZATION = "fixes/firstwordscapitalization"
     FIX_SPACES = "fixes/spaces"
-    FIX_QUOTATION_MARKS = "fixes/quotationmarks"
+    FIX_QUOTATION_MARKS = "fixes/quotation_marks"
     AUDIO = "downloads/audio"
     AUDIO_FORMAT = "downloads/audio_format"
     AUDIO_BITRATE = "downloads/audio_bitrate"
@@ -144,6 +145,17 @@ class Newline(Enum):
         if os.linesep == Newline.CRLF.value:
             return Newline.CRLF
         return Newline.LF
+
+
+class FormatVersion(Enum):
+    """Supported format versions for song txts."""
+
+    V1_0_0 = "1.0.0"
+    V1_1_0 = "1.1.0"
+    V1_2_0 = "1.2.0"
+
+    def __str__(self) -> str:
+        return str(self.value)
 
 
 class FixLinebreaks(Enum):
@@ -624,6 +636,14 @@ def set_audio_embed_artwork(value: bool) -> None:
     set_setting(SettingKey.AUDIO_EMBED_ARTWORK, value)
 
 
+def get_encoding() -> Encoding:
+    return get_setting(SettingKey.ENCODING, Encoding.UTF_8)
+
+
+def set_encoding(value: Encoding) -> None:
+    set_setting(SettingKey.ENCODING, value)
+
+
 def get_newline() -> Newline:
     return get_setting(SettingKey.NEWLINE, Newline.default())
 
@@ -632,12 +652,12 @@ def set_newline(value: Newline) -> None:
     set_setting(SettingKey.NEWLINE, value)
 
 
-def get_encoding() -> Encoding:
-    return get_setting(SettingKey.ENCODING, Encoding.UTF_8)
+def get_version() -> FormatVersion:
+    return get_setting(SettingKey.FORMAT_VERSION, FormatVersion.V1_0_0)
 
 
-def set_encoding(value: Encoding) -> None:
-    set_setting(SettingKey.ENCODING, value)
+def set_version(value: FormatVersion) -> None:
+    set_setting(SettingKey.FORMAT_VERSION, value)
 
 
 def get_txt() -> bool:

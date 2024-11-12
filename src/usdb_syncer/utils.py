@@ -34,7 +34,7 @@ def _root() -> Path:
     return Path(__file__).parent.parent.parent.absolute()
 
 
-def url_from_resource(resource: str) -> str | None:
+def video_url_from_resource(resource: str) -> str | None:
     if "://" in resource:
         return resource
     if "/" in resource:

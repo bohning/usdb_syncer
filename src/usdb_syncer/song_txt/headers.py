@@ -8,6 +8,7 @@ import attrs
 
 from usdb_syncer import errors
 from usdb_syncer.logger import Log
+from usdb_syncer.settings import FormatVersion
 from usdb_syncer.song_txt.auxiliaries import BeatsPerMinute, replace_false_apostrophes
 from usdb_syncer.song_txt.language_translations import LANGUAGE_TRANSLATIONS
 
@@ -21,6 +22,7 @@ class Headers:
     artist: str
     bpm: BeatsPerMinute
     gap: int = 0
+    version: str | None = None
     language: str | None = None
     edition: str | None = None
     genre: str | None = None
@@ -28,9 +30,16 @@ class Headers:
     year: str | None = None
     creator: str | None = None
     mp3: str | None = None
+    audio: str | None = None
+    audiourl: str | None = None
+    vocals: str | None = None
+    instrumental: str | None = None
     cover: str | None = None
+    coverurl: str | None = None
     background: str | None = None
+    backgroundurl: str | None = None
     video: str | None = None
+    videourl: str | None = None
     videogap: float | None = None
     start: float | None = None
     end: int | None = None
@@ -71,14 +80,20 @@ class Headers:
             )
         return cls(**kwargs)
 
+    def set_version(self, version: FormatVersion) -> None:
+        self.version = version.value
+
     def reset_file_location_headers(self) -> None:
         """Clear all tags with local file locations."""
-        self.mp3 = self.video = self.cover = self.background = None
+        self.mp3 = self.audio = self.vocals = self.instrumental = self.video = (
+            self.cover
+        ) = self.background = None
 
     def __str__(self) -> str:
         out = "\n".join(
             f"#{key.upper()}:{val}"
             for key in (
+                "version",
                 "title",
                 "artist",
                 "language",
@@ -87,9 +102,16 @@ class Headers:
                 "year",
                 "creator",
                 "mp3",
+                "audio",
+                "audiourl",
+                "vocals",
+                "instrumental",
                 "cover",
+                "coverurl",
                 "background",
+                "backgroundurl",
                 "video",
+                "videourl",
                 "videogap",
                 "resolution",
                 "start",
@@ -170,6 +192,9 @@ def _set_header_value(kwargs: dict[str, Any], header: str, value: str) -> None:
         "year",
         "creator",
         "mp3",
+        "audio",
+        "vocals",
+        "instrumental",
         "cover",
         "background",
         "relative",

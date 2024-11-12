@@ -12,6 +12,7 @@ class TxtOptions:
 
     encoding: settings.Encoding
     newline: settings.Newline
+    format_version: settings.FormatVersion
     fix_linebreaks: settings.FixLinebreaks
     fix_first_words_capitalization: bool
     fix_spaces: settings.FixSpaces
@@ -100,6 +101,7 @@ def _txt_options() -> TxtOptions | None:
     return TxtOptions(
         encoding=settings.get_encoding(),
         newline=settings.get_newline(),
+        format_version=settings.get_version(),
         fix_linebreaks=settings.get_fix_linebreaks(),
         fix_first_words_capitalization=settings.get_fix_first_words_capitalization(),
         fix_spaces=settings.get_fix_spaces(),

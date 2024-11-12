@@ -2,6 +2,14 @@
 
 # Changes
 
+## Features
+
+- The UltraStar format version can now be specified in the settings (see https://usdx.eu/format/).
+
+<!-- 0.9.0 -->
+
+# Changes
+
 ## Fixes
 
 - Switch from browser_cookie3 to rookiepy in order to retrieve browser cookies on
