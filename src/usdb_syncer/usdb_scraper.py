@@ -44,7 +44,6 @@ SONG_LIST_ROW_REGEX = re.compile(
 WELCOME_REGEX = re.compile(
     r"<td class='row3' colspan='2'>\s*<span class='gen'>([^<]+) <b>([^<]+)</b>"
 )
-TAGS_LINE_REGEX = re.compile("#TAGS:(.+)")
 
 
 def establish_usdb_login(session: Session) -> bool:
@@ -140,7 +139,6 @@ class CommentContents:
     text: str
     youtube_ids: list[str]
     urls: list[str]
-    tags: list[str]
 
 
 class SongComment:
@@ -191,13 +189,6 @@ class SongDetails:
         for comment in self.comments:
             yield from comment.contents.youtube_ids
             yield from comment.contents.urls
-
-    def comment_tags(self) -> list[str]:
-        """Return the first tags string sanitized, if any."""
-        for comment in self.comments:
-            if comment.contents.tags:
-                return comment.contents.tags
-        return []
 
 
 def get_usdb_page(
@@ -495,12 +486,7 @@ def _parse_comment_contents(contents: BeautifulSoup, logger: Log) -> CommentCont
         else:
             urls.append(url)
 
-    if match := TAGS_LINE_REGEX.search(text):
-        tags = [t for tag in match.group(1).split(",") if (t := tag.strip())]
-    else:
-        tags = []
-
-    return CommentContents(text=text, urls=urls, youtube_ids=youtube_ids, tags=tags)
+    return CommentContents(text=text, urls=urls, youtube_ids=youtube_ids)
 
 
 def _all_urls_in_comment(
