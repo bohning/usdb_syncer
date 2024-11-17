@@ -1,3 +1,14 @@
+<!-- 1.0.0 -->
+
+# Changes
+
+## Features
+
+- Song tags are no longer parsed from comments, but instead from meta tags
+  (Use `%2C` as separation, e.g. `tags=explicit%2C80s%2CSoundtrack).
+  See https://github.com/bohning/usdb_syncer/wiki/Meta-Tags for a full list of
+  supported tags.
+  
 <!-- 0.9.0 -->
 
 # Changes
