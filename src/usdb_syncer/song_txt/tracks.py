@@ -442,7 +442,7 @@ class Tracks:
             # capitalize first capitalizable character
             # e.g. '"what time is it?"' -> '"What time is it?"'
             for char in line.notes[0].text:
-                if char.isalpha() or char == "’":
+                if char.isalpha():
                     if char.islower():
                         line.notes[0].text = line.notes[0].text.replace(
                             char, char.upper(), 1
