@@ -55,6 +55,7 @@ class MetaTagsDialog(Ui_Dialog, QDialog):
             self.preview_start.valueChanged,
             self.medley_start.valueChanged,
             self.medley_end.valueChanged,
+            self.tags.textChanged,
         ):
             signal.connect(lambda: self.output.setText(f"#VIDEO:{self._meta_tags()}"))
 
@@ -143,14 +144,15 @@ class MetaTagsDialog(Ui_Dialog, QDialog):
 
     def _meta_tags(self) -> MetaTags:
         return MetaTags(
-            video=_sanitize_video_url(self.video_url.text()) or None,
             audio=self._audio_source(),
+            video=_sanitize_video_url(self.video_url.text()) or None,
             cover=self._cover_meta_tags(),
             background=self._background_meta_tags(),
             player1=self._p1_meta_tag(),
             player2=self._p2_meta_tag(),
             preview=round(self.preview_start.value(), 3) or None,
             medley=self._medley_tag(),
+            tags=self.tags.text() or None,
         )
 
     def _toggle_auto_contrast(self) -> None:

@@ -290,7 +290,6 @@ def _get_usdb_data(
     txt = SongTxt.parse(txt_str, log)
     txt.sanitize(txt_options)
     txt.headers.creator = txt.headers.creator or details.uploader or None
-    txt.headers.tags = ", ".join(details.comment_tags()) or None
     return details, txt
 
 
@@ -310,7 +309,6 @@ def _update_song_with_usdb_data(
         song.year = None
     song.genre = txt.headers.genre or ""
     song.creator = txt.headers.creator or ""
-    song.tags = txt.headers.tags or ""
 
 
 class _SongLoader(QtCore.QRunnable):

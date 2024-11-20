@@ -75,6 +75,8 @@ class SongTxt:
         if medley := self.meta_tags.medley:
             self.headers.medleystartbeat = medley.start
             self.headers.medleyendbeat = medley.end
+        if self.meta_tags.tags:
+            self.headers.tags = self.meta_tags.tags
 
     def write_to_file(self, path: Path, encoding: str, newline: str) -> None:
         with path.open(
