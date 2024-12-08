@@ -111,7 +111,7 @@ class TreeModel(QAbstractItemModel):
         return self.createIndex(row, column, item)
 
     @overload
-    def parent(self, child: QIndex) -> QModelIndex: ...
+    def parent(self, child: QIndex) -> QModelIndex: ...  # type: ignore
 
     @overload
     def parent(self) -> QObject: ...
