@@ -54,7 +54,14 @@ jobs:
               --add-data 'artifacts/song_list.json:data'
               --add-data 'src/usdb_syncer/db/sql:src/usdb_syncer/db/sql'
           - os: macos-latest
-            TARGET: macOS
+            TARGET: macOS-arm64
+            PYINSTALLER_ARGS: >-
+              --windowed
+              --icon src/usdb_syncer/gui/resources/appicon_128x128.png
+              --add-data 'artifacts/song_list.json:data'
+              --add-data 'src/usdb_syncer/db/sql:src/usdb_syncer/db/sql'
+          - os: macos-13
+            TARGET: macOS-x64
             PYINSTALLER_ARGS: >-
               --windowed
               --icon src/usdb_syncer/gui/resources/appicon_128x128.png
@@ -110,7 +117,7 @@ jobs:
           ${{matrix.PYINSTALLER_ARGS}}
           src/usdb_syncer/gui/__init__.py
       - name: Create DMG
-        if: matrix.TARGET == 'macOS'
+        if: matrix.TARGET contains 'macOS'
         run: |
           brew install create-dmg
           create-dmg \
