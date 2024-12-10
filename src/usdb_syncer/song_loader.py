@@ -17,7 +17,6 @@ import mutagen.mp4
 import mutagen.ogg
 import mutagen.oggopus
 import mutagen.oggvorbis
-import send2trash
 import shiboken6
 from mutagen import id3
 from mutagen.flac import Picture
@@ -44,7 +43,7 @@ from usdb_syncer.song_txt import SongTxt
 from usdb_syncer.sync_meta import ResourceFile, SyncMeta
 from usdb_syncer.usdb_scraper import SongDetails
 from usdb_syncer.usdb_song import DownloadStatus, UsdbSong
-from usdb_syncer.utils import video_url_from_resource
+from usdb_syncer.utils import trash_or_delete_file_paths, video_url_from_resource
 
 
 class DownloadManager:
@@ -754,11 +753,11 @@ def _cleanup_existing_resources(ctx: _Context) -> None:
         if not out.old_fname:
             # out of sync
             if old_path.exists():
-                send2trash.send2trash(old_path)
-                ctx.logger.debug(f"Trashed untracked file: '{old_path}'.")
+                trash_or_delete_file_paths(old_path)
+                ctx.logger.debug(f"Trashed/deleted untracked file: '{old_path}'.")
         elif out.new_fname:
-            send2trash.send2trash(old_path)
-            ctx.logger.debug(f"Trashed existing file: '{old_path}'.")
+            trash_or_delete_file_paths(old_path)
+            ctx.logger.debug(f"Trashed/deleted existing file: '{old_path}'.")
         else:
             target = ctx.locations.filename(ext=utils.resource_file_ending(old.fname))
             if out.old_fname != target:
@@ -775,8 +774,8 @@ def _persist_tempfiles(ctx: _Context) -> None:
         ):
             target = ctx.locations.target_path(temp_path.name)
             if target.exists():
-                send2trash.send2trash(target)
-                ctx.logger.debug(f"Trashed existing file: '{target}'.")
+                trash_or_delete_file_paths(target)
+                ctx.logger.debug(f"Trashed/deleted existing file: '{target}'.")
             shutil.move(temp_path, target)
 
 

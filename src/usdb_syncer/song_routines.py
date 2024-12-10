@@ -5,7 +5,6 @@ import os
 from pathlib import Path
 from typing import Generator
 
-import send2trash
 from requests import Session
 
 from usdb_syncer import (
@@ -23,7 +22,7 @@ from usdb_syncer.song_loader import DownloadManager
 from usdb_syncer.sync_meta import SyncMeta
 from usdb_syncer.usdb_scraper import get_usdb_available_songs
 from usdb_syncer.usdb_song import UsdbSong, UsdbSongEncoder
-from usdb_syncer.utils import AppPaths
+from usdb_syncer.utils import AppPaths, trash_or_delete_file_paths
 
 
 def load_available_songs(force_reload: bool, session: Session | None = None) -> None:
@@ -96,8 +95,8 @@ def synchronize_sync_meta_folder(folder: Path) -> None:
     for path in _iterate_usdb_files_in_folder_recursively(folder=folder):
         if meta_id := SyncMetaId.from_path(path):
             if meta_id in found_metas:
-                send2trash.send2trash(path)
-                logger.warning(f"Trashed duplicated meta file: '{path}'")
+                trash_or_delete_file_paths(path)
+                logger.warning(f"Trashed/deleted duplicated meta file: '{path}'")
                 continue
             found_metas.add(meta_id)
 

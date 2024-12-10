@@ -5,7 +5,6 @@ from __future__ import annotations
 from functools import partial
 from typing import TYPE_CHECKING, Any, Callable, Iterable, Iterator
 
-import send2trash
 from PySide6 import QtCore, QtGui, QtMultimedia, QtWidgets
 from PySide6.QtCore import QItemSelectionModel, Qt
 
@@ -18,6 +17,7 @@ from usdb_syncer.gui.song_table.table_model import TableModel
 from usdb_syncer.logger import song_logger
 from usdb_syncer.song_loader import DownloadManager
 from usdb_syncer.usdb_song import DownloadStatus, UsdbSong
+from usdb_syncer.utils import trash_or_delete_file_paths
 
 if TYPE_CHECKING:
     from usdb_syncer.gui.mw import MainWindow
@@ -278,10 +278,10 @@ class SongTable:
                     logger.info("Not trashing song folder as it is pinned.")
                     continue
                 if song.sync_meta.path.exists():
-                    send2trash.send2trash(song.sync_meta.path.parent)
+                    trash_or_delete_file_paths(song.sync_meta.path.parent)
                 song.remove_sync_meta()
                 events.SongChanged(song.song_id)
-                logger.debug("Trashed song folder.")
+                logger.debug("Trashed/deleted song folder.")
 
     def set_pin_selected_songs(self, pin: bool) -> None:
         for song in self.selected_songs():
