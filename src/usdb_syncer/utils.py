@@ -10,9 +10,14 @@ import sys
 import time
 import unicodedata
 from pathlib import Path
+from shutil import rmtree
+from typing import Any
 
 from appdirs import AppDirs
+from send2trash import send2trash
+from send2trash.util import preprocess_paths
 
+from usdb_syncer.constants import CLEANUP_DELETE_IMMEDIATELY_ENV_VAR
 from usdb_syncer.logger import logger
 
 CACHE_LIFETIME = 60 * 60
@@ -241,3 +246,19 @@ def format_timestamp(micros: int) -> str:
     return datetime.datetime.fromtimestamp(micros / 1_000_000).strftime(
         "%Y-%m-%d %H:%M:%S"
     )
+
+
+def trash_or_delete_file_paths(paths: str | bytes | os.PathLike | list[Any]) -> None:
+    """Either sends the paths to trash or deletes them immediately, depending on the environment variable.
+
+    Args:
+        paths (str | bytes | os.PathLike | list[Any]): The paths to trash/delete.
+    """
+    if os.environ.get(CLEANUP_DELETE_IMMEDIATELY_ENV_VAR) is not None:
+        for _path in preprocess_paths(paths):
+            if os.path.isfile(_path):
+                os.remove(_path)
+            elif os.path.isdir(_path):
+                rmtree(_path)
+    else:
+        send2trash(paths)
