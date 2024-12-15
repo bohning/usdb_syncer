@@ -383,6 +383,7 @@ class _SongLoader(QtCore.QRunnable):
             ctx.locations.move_to_target_folder()
             _persist_tempfiles(ctx)
         _write_sync_meta(ctx)
+        hooks.SongLoaderContextDidFinish.call(ctx)
         hooks.SongLoaderDidFinish.call(ctx.song)
         return ctx.song
 
