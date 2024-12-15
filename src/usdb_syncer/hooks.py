@@ -8,6 +8,7 @@ import attrs
 
 if TYPE_CHECKING:
     from usdb_syncer import usdb_song
+    from usdb_syncer.song_loader import _Context
 
 # pylint currently lacks support for ParamSpec
 # https://github.com/pylint-dev/pylint/issues/9424
@@ -45,3 +46,11 @@ class SongLoaderDidFinish(_Hook):
     @classmethod
     def call(cls, song: usdb_song.UsdbSong) -> None:
         super().call(song)
+
+
+class SongLoaderContextDidFinish(_Hook):
+    """Called after song download as part of the download context."""
+
+    @classmethod
+    def call(cls, ctx: _Context) -> None:
+        super().call(ctx)
