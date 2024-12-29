@@ -4,7 +4,7 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.poetry]
 name = "usdb_syncer"
-version = "0.7.0"
+version = "0.9.0"
 authors = ["Markus Böhning <markus.boehning@gmail.com>"]
 description = "A download manager for USDB songs."
 readme = ["README.md"]
