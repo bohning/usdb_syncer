@@ -18,7 +18,7 @@ jobs:
       - name: Install Linux specific dependencies for dbus-python
         run: |
           sudo apt-get update
-          sudo apt-get install -y gcc python3-dev libdbus-1-dev
+          sudo apt-get install -y gcc python3-dev libdbus-1-dev libglib2.0-dev
           pkg-config --cflags --libs dbus-1
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v4
