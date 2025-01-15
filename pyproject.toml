@@ -4,7 +4,7 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.poetry]
 name = "usdb_syncer"
-version = "0.7.0"
+version = "0.0.0"  # will be replaced by current git tag via poetry-dynamic-versioning 
 authors = ["Markus Böhning <markus.boehning@gmail.com>"]
 description = "A download manager for USDB songs."
 readme = ["README.md"]
@@ -15,7 +15,6 @@ python = "3.12.*"
 appdirs = "*"
 attrs = "*"
 beautifulsoup4 = "*"
-browser_cookie3 = "*"
 dbus-python = {version = "*", markers="sys_platform == 'linux'"}
 ffmpeg-normalize = ">=1.27"
 filetype = "*"
@@ -25,6 +24,7 @@ lxml = "*"
 mutagen = "*"
 pdfme = "*"
 pillow = ">=10"
+poetry-dynamic-versioning = "^1.6.0"
 PySide6 = "6.8.0.2"
 requests = "*"
 rookiepy = "^0.5.3"
@@ -32,6 +32,9 @@ send2trash = "*"
 unidecode = "*"
 yt-dlp = {version = "*", extras = ["default", "curl_cffi"]}
 wheel = "*"
+
+[tool.poetry-dynamic-versioning]
+enable = true
 
 [tool.poetry.group.dev.dependencies]
 tox = "*"
