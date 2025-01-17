@@ -117,7 +117,7 @@ def download_video(
     return None
 
 
-def _ytdl_options(format_: str, _browser: Browser, target_stem: Path) -> YtdlOptions:
+def _ytdl_options(format_: str, browser: Browser, target_stem: Path) -> YtdlOptions:
     options: YtdlOptions = {
         "format": format_,
         "outtmpl": f"{target_stem}.%(ext)s",
@@ -126,10 +126,9 @@ def _ytdl_options(format_: str, _browser: Browser, target_stem: Path) -> YtdlOpt
         # suppresses download of playlists, channels and search results
         "playlistend": 0,
         "overwrites": True,
-        # disable cookies from browser to avoid accounts getting blocked
-        # downside: age-restricted content will not work
-        # "cookiesfrombrowser": (browser.value, None, None, None),
     }
+    if browser:
+        options["cookiesfrombrowser"] = (browser.value, None, None, None)
     return options
 
 
@@ -138,12 +137,24 @@ def _download_resource(options: YtdlOptions, resource: str, logger: Log) -> str 
         logger.debug(f"invalid audio/video resource: {resource}")
         return None
 
-    with yt_dlp.YoutubeDL(options) as ydl:
+    options_without_cookies = options.copy()
+    options_without_cookies.pop("cookiesfrombrowser")
+    with yt_dlp.YoutubeDL(options_without_cookies) as ydl:
         try:
             return ydl.prepare_filename(ydl.extract_info(url))
-        except yt_dlp.utils.YoutubeDLError:
+        except yt_dlp.utils.YoutubeDLError as e:
             logger.debug(f"error downloading video url: {url}")
-            return None
+            # Check if the error is due to age restriction
+            if "confirm your age" in str(e).lower():
+                logger.debug("Age-restricted resource. Retrying with cookies...")
+                try:
+                    with yt_dlp.YoutubeDL(options) as ydl:
+                        return ydl.prepare_filename(ydl.extract_info(url))
+                except yt_dlp.utils.YoutubeDLError as retry_error:
+                    logger.error(f"Retry failed: {retry_error}")
+                    return None
+            else:
+                return None
 
 
 def download_image(url: str, logger: Log) -> bytes | None:
