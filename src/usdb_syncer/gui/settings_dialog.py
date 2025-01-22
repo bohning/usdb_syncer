@@ -119,6 +119,7 @@ class SettingsDialog(Ui_Dialog, QDialog):
             (self.comboBox_fix_linebreaks, settings.FixLinebreaks),
             (self.comboBox_fix_spaces, settings.FixSpaces),
             (self.comboBox_cover_max_size, settings.CoverMaxSize),
+            (self.comboBox_ytdlp_rate_limit, settings.YtdlpRateLimit),
             (self.comboBox_audio_format, settings.AudioFormat),
             (self.comboBox_audio_bitrate, settings.AudioBitrate),
             (self.comboBox_videocontainer, settings.VideoContainer),
@@ -160,6 +161,9 @@ class SettingsDialog(Ui_Dialog, QDialog):
             self.comboBox_fix_spaces.findData(settings.get_fix_spaces())
         )
         self.checkBox_fix_quotation_marks.setChecked(settings.get_fix_quotation_marks())
+        self.comboBox_ytdlp_rate_limit.setCurrentIndex(
+            self.comboBox_ytdlp_rate_limit.findData(settings.get_ytdlp_rate_limit())
+        )
         self.groupBox_audio.setChecked(settings.get_audio())
         self.comboBox_audio_format.setCurrentIndex(
             self.comboBox_audio_format.findData(settings.get_audio_format())
@@ -253,6 +257,7 @@ class SettingsDialog(Ui_Dialog, QDialog):
         )
         settings.set_fix_spaces(self.comboBox_fix_spaces.currentData())
         settings.set_fix_quotation_marks(self.checkBox_fix_quotation_marks.isChecked())
+        settings.set_ytdlp_rate_limit(self.comboBox_ytdlp_rate_limit.currentData())
         settings.set_audio(self.groupBox_audio.isChecked())
         settings.set_audio_format(self.comboBox_audio_format.currentData())
         settings.set_audio_bitrate(self.comboBox_audio_bitrate.currentData())

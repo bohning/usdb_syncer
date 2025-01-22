@@ -15,7 +15,7 @@ from PIL.Image import Resampling
 from usdb_syncer.download_options import AudioOptions, VideoOptions
 from usdb_syncer.logger import Log, song_logger
 from usdb_syncer.meta_tags import ImageMetaTags
-from usdb_syncer.settings import Browser, CoverMaxSize
+from usdb_syncer.settings import Browser, CoverMaxSize, YtdlpRateLimit
 from usdb_syncer.usdb_scraper import SongDetails
 from usdb_syncer.utils import video_url_from_resource
 
@@ -59,7 +59,9 @@ def download_audio(
     Returns:
         the extension of the successfully downloaded file or None
     """
-    ydl_opts = _ytdl_options(options.ytdl_format(), browser, path_stem)
+    ydl_opts = _ytdl_options(
+        options.ytdl_format(), browser, path_stem, options.rate_limit
+    )
     if not options.normalize:
         postprocessor = {
             "key": "FFmpegExtractAudio",
@@ -111,13 +113,17 @@ def download_video(
     Returns:
         the extension of the successfully downloaded file or None
     """
-    ydl_opts = _ytdl_options(options.ytdl_format(), browser, path_stem)
+    ydl_opts = _ytdl_options(
+        options.ytdl_format(), browser, path_stem, options.rate_limit
+    )
     if filename := _download_resource(ydl_opts, resource, logger):
         return os.path.splitext(filename)[1][1:]
     return None
 
 
-def _ytdl_options(format_: str, browser: Browser, target_stem: Path) -> YtdlOptions:
+def _ytdl_options(
+    format_: str, browser: Browser, target_stem: Path, ratelimit: YtdlpRateLimit
+) -> YtdlOptions:
     options: YtdlOptions = {
         "format": format_,
         "outtmpl": f"{target_stem}.%(ext)s",
@@ -127,6 +133,8 @@ def _ytdl_options(format_: str, browser: Browser, target_stem: Path) -> YtdlOpti
         "playlistend": 0,
         "overwrites": True,
     }
+    if ratelimit != YtdlpRateLimit.DISABLE:
+        options["ratelimit"] = ratelimit.ytdl_format()  # B/s
     if browser:
         options["cookiesfrombrowser"] = (browser.value, None, None, None)
     return options

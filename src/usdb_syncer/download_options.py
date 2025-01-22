@@ -27,6 +27,7 @@ class AudioOptions:
     bitrate: settings.AudioBitrate
     normalize: bool
     embed_artwork: bool
+    rate_limit: settings.YtdlpRateLimit
 
     def ytdl_format(self) -> str:
         return self.format.ytdl_format()
@@ -41,6 +42,7 @@ class VideoOptions:
     max_resolution: settings.VideoResolution
     max_fps: settings.VideoFps
     embed_artwork: bool
+    rate_limit: settings.YtdlpRateLimit
 
     def ytdl_format(self) -> str:
         fmt = self.format.ytdl_format()
@@ -117,6 +119,7 @@ def _audio_options() -> AudioOptions | None:
         bitrate=settings.get_audio_bitrate(),
         normalize=settings.get_audio_normalize(),
         embed_artwork=settings.get_audio_embed_artwork(),
+        rate_limit=settings.get_ytdlp_rate_limit(),
     )
 
 
@@ -131,6 +134,7 @@ def _video_options() -> VideoOptions | None:
         max_resolution=settings.get_video_resolution(),
         max_fps=settings.get_video_fps(),
         embed_artwork=settings.get_video_embed_artwork(),
+        rate_limit=settings.get_ytdlp_rate_limit(),
     )
 
 

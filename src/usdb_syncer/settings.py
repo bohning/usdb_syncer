@@ -76,6 +76,7 @@ class SettingKey(Enum):
     FIX_FIRST_WORDS_CAPITALIZATION = "fixes/firstwordscapitalization"
     FIX_SPACES = "fixes/spaces"
     FIX_QUOTATION_MARKS = "fixes/quotation_marks"
+    YTDLP_RATE_LIMIT = "downloads/ytdlp_rate_limit"
     AUDIO = "downloads/audio"
     AUDIO_FORMAT = "downloads/audio_format"
     AUDIO_BITRATE = "downloads/audio_bitrate"
@@ -216,6 +217,23 @@ class CoverMaxSize(Enum):
                 return "640x640 px"
             case _ as unreachable:
                 assert_never(unreachable)
+
+
+class YtdlpRateLimit(Enum):
+    """Rate limits for yt-dlp (MiB/s)."""
+
+    DISABLE = "disable"
+    KIBS_500 = "500 KiB/s"
+    KIBS_1000 = "1000 KiB/s"
+    KIBS_2000 = "2000 KiB/s"
+    KIBS_3000 = "3000 KiB/s"
+    KIBS_4000 = "4000 KiB/s"
+
+    def __str__(self) -> str:
+        return self.value
+
+    def ytdl_format(self) -> int:
+        return int(int(self.value.removesuffix(" KiB/s")) * 1024)  # in B/s
 
 
 class AudioFormat(Enum):
@@ -594,6 +612,14 @@ def set_setting(key: SettingKey, value: Any) -> None:
         # Qt stores bools as "true" and "false" otherwise
         value = int(value)
     QSettings().setValue(key.value, value)
+
+
+def get_ytdlp_rate_limit() -> YtdlpRateLimit:
+    return get_setting(SettingKey.YTDLP_RATE_LIMIT, YtdlpRateLimit.KIBS_2000)
+
+
+def set_ytdlp_rate_limit(value: YtdlpRateLimit) -> None:
+    set_setting(SettingKey.YTDLP_RATE_LIMIT, value)
 
 
 def get_audio() -> bool:
