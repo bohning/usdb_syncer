@@ -387,7 +387,7 @@ class Tracks:
                 note.text, language, opening
             )
             marks_fixed_total = marks_fixed_total + marks_fixed
-        if marks_fixed_total >= 0:
+        if marks_fixed_total > 0:
             logger.debug(
                 f"FIX: {marks_fixed_total} quotation marks in lyrics corrected."
             )
