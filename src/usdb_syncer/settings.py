@@ -220,7 +220,7 @@ class CoverMaxSize(Enum):
 
 
 class YtdlpRateLimit(Enum):
-    """Rate limits for yt-dlp (MiB/s)."""
+    """Rate limits for yt-dlp (KiB/s)."""
 
     DISABLE = "disable"
     KIBS_500 = "500 KiB/s"
