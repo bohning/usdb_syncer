@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import json
-import math
 from pathlib import Path
 from typing import Any, Iterator
 
@@ -63,7 +62,7 @@ class ResourceFile:
         path = folder.joinpath(self.fname)
         return (
             path.exists()
-            and math.abs(utils.get_mtime(path) - self.mtime) / 1_000_000
+            and abs(utils.get_mtime(path) - self.mtime) / 1_000_000
             < MTIME_TOLERANCE_SECS
         )
 
