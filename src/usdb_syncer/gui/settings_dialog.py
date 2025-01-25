@@ -44,6 +44,8 @@ class SettingsDialog(Ui_Dialog, QDialog):
         self._setup_path_template()
         self._browser = self.comboBox_browser.currentData()
         self.groupBox_reencode_video.setVisible(False)
+        self.label_ytdlp_rate_limit.setVisible(False)
+        self.comboBox_ytdlp_rate_limit.setVisible(False)
         if sys.platform != "win32":
             self.groupBox_vocaluxe.setVisible(False)
         self.pushButton_browse_karedi.clicked.connect(
