@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import math
 from pathlib import Path
 from typing import Any, Iterator
 
@@ -14,6 +15,9 @@ from usdb_syncer.logger import logger
 from usdb_syncer.meta_tags import MetaTags
 
 SYNC_META_VERSION = 1
+# mtimes may deviate up to 2 seconds on different file systems
+# See https://en.wikipedia.org/wiki/File_Allocation_Table
+MTIME_TOLERANCE_SECS = 2
 
 
 class SyncMetaTooNewError(Exception):
@@ -57,7 +61,11 @@ class ResourceFile:
     def is_in_sync(self, folder: Path) -> bool:
         """True if this file exists in the given folder and is in sync."""
         path = folder.joinpath(self.fname)
-        return path.exists() and utils.get_mtime(path) == self.mtime
+        return (
+            path.exists()
+            and math.abs(utils.get_mtime(path) - self.mtime) / 1_000_000
+            < MTIME_TOLERANCE_SECS
+        )
 
     def db_params(
         self, sync_meta_id: SyncMetaId, kind: db.ResourceFileKind
