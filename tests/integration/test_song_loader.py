@@ -19,7 +19,7 @@ from usdb_syncer.meta_tags import MetaTags
 from usdb_syncer.path_template import PathTemplate
 from usdb_syncer.resource_dl import ImageKind
 from usdb_syncer.song_loader import _SongLoader  # pylint: disable=protected-access
-from usdb_syncer.sync_meta import ResourceFile
+from usdb_syncer.sync_meta import MTIME_TOLERANCE_SECS, ResourceFile
 
 
 # pylint: disable=unused-argument
@@ -210,7 +210,7 @@ class SongLoaderTestCase(unittest.TestCase):
             mp3_path = song.sync_meta.path.parent / "song.mp3"
             song.sync_meta.audio = _mock_resource_file(mp3_path, "audio.com")
             # simulate changed file
-            song.sync_meta.audio.mtime -= 1
+            song.sync_meta.audio.mtime -= MTIME_TOLERANCE_SECS * 1_000_000 + 1
 
             loader = _SongLoader(copy.deepcopy(song), options)
             loader.run()
