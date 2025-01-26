@@ -210,7 +210,7 @@ class SongLoaderTestCase(unittest.TestCase):
             mp3_path = song.sync_meta.path.parent / "song.mp3"
             song.sync_meta.audio = _mock_resource_file(mp3_path, "audio.com")
             # simulate changed file
-            song.sync_meta.audio.mtime -= 1
+            song.sync_meta.audio.mtime -= 3_000_000  # 3 seconds
 
             loader = _SongLoader(copy.deepcopy(song), options)
             loader.run()
