@@ -16,6 +16,7 @@
   supported tags.
 - The UltraStar format version can now be specified in the settings (see https://usdx.eu/format/).
 - The number of download threads and the per-thread bandwidth limit for Youtube can be configured in the settings.
+- Option to embed artwork into video files (mp4).
 
 <!-- 0.9.0 -->
 
