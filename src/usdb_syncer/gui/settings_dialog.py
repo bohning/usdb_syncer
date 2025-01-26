@@ -1,5 +1,6 @@
 """Dialog with app settings."""
 
+import os
 import sys
 from pathlib import Path
 from typing import assert_never
@@ -44,8 +45,6 @@ class SettingsDialog(Ui_Dialog, QDialog):
         self._setup_path_template()
         self._browser = self.comboBox_browser.currentData()
         self.groupBox_reencode_video.setVisible(False)
-        self.label_ytdlp_rate_limit.setVisible(False)
-        self.comboBox_ytdlp_rate_limit.setVisible(False)
         if sys.platform != "win32":
             self.groupBox_vocaluxe.setVisible(False)
         self.pushButton_browse_karedi.clicked.connect(
@@ -163,6 +162,7 @@ class SettingsDialog(Ui_Dialog, QDialog):
             self.comboBox_fix_spaces.findData(settings.get_fix_spaces())
         )
         self.checkBox_fix_quotation_marks.setChecked(settings.get_fix_quotation_marks())
+        self.spinBox_throttling_threads.setValue(settings.get_throttling_threads())
         self.comboBox_ytdlp_rate_limit.setCurrentIndex(
             self.comboBox_ytdlp_rate_limit.findData(settings.get_ytdlp_rate_limit())
         )
@@ -259,6 +259,7 @@ class SettingsDialog(Ui_Dialog, QDialog):
         )
         settings.set_fix_spaces(self.comboBox_fix_spaces.currentData())
         settings.set_fix_quotation_marks(self.checkBox_fix_quotation_marks.isChecked())
+        settings.set_throttling_threads(self.spinBox_throttling_threads.value())
         settings.set_ytdlp_rate_limit(self.comboBox_ytdlp_rate_limit.currentData())
         settings.set_audio(self.groupBox_audio.isChecked())
         settings.set_audio_format(self.comboBox_audio_format.currentData())

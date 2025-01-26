@@ -133,8 +133,8 @@ def _ytdl_options(
         "playlistend": 0,
         "overwrites": True,
     }
-    if ratelimit != YtdlpRateLimit.DISABLE:
-        options["ratelimit"] = ratelimit.ytdl_format()  # B/s
+    if ratelimit.value is not None:
+        options["ratelimit"] = ratelimit.value
     if browser:
         options["cookiesfrombrowser"] = (browser.value, None, None, None)
     return options

@@ -33,6 +33,7 @@ from usdb_syncer import (
     events,
     hooks,
     resource_dl,
+    settings,
     usdb_scraper,
     utils,
 )
@@ -97,6 +98,8 @@ class DownloadManager:
     def _threadpool(cls) -> QtCore.QThreadPool:
         if cls._pool is None:
             cls._pool = QtCore.QThreadPool()
+            if threads := settings.get_throttling_threads():
+                cls._pool.setMaxThreadCount(threads)
             events.DownloadFinished.subscribe(cls._remove_job)
         return cls._pool
 
