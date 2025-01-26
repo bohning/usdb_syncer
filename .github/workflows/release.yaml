@@ -117,7 +117,7 @@ jobs:
           ${{matrix.PYINSTALLER_ARGS}}
           src/usdb_syncer/gui/__init__.py
       - name: Create DMG
-        if: matrix.TARGET contains 'macOS'
+        if: contains(matrix.TARGET, 'macOS')
         run: |
           brew install create-dmg
           create-dmg \
