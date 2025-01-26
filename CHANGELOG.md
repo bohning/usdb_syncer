@@ -1,6 +1,12 @@
-<!-- 1.0.0 -->
+<!-- 0.10.0 -->
 
 # Changes
+
+## Fixes
+
+- The check for existing / outdated local resources has been improved to account for different precisions of modified times for different file systems.
+- Provide binaries for Intel-based MacOS systems.
+- YouTube logged-in cookies are now used for age-restricted resources.
 
 ## Features
 
@@ -8,14 +14,9 @@
   (Use `%2C` as separation, e.g. `tags=explicit%2C80s%2CSoundtrack).
   See https://github.com/bohning/usdb_syncer/wiki/Meta-Tags for a full list of
   supported tags.
-  
-<!-- 0.9.0 -->
-
-# Changes
-
-## Features
-
 - The UltraStar format version can now be specified in the settings (see https://usdx.eu/format/).
+- The number of download threads and the per-thread bandwidth limit for Youtube can be configured in the settings.
+- Option to embed artwork into video files (mp4).
 
 <!-- 0.9.0 -->
 
