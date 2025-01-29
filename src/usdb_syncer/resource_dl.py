@@ -177,8 +177,8 @@ def download_image(url: str, logger: Log) -> bytes | None:
         return None
     except requests.RequestException:
         logger.error(
-            f"Failed to retrieve {url}. The server may be down or your internet "
-            "connection is currently unavailable."
+            f"Failed to retrieve {url}. The URL might be invalid, the server may be "
+            "down or your internet connection is currently unavailable."
         )
         return None
     if reply.status_code in range(100, 399):
@@ -203,6 +203,7 @@ def download_and_process_image(
     details: SongDetails,
     kind: ImageKind,
     max_width: CoverMaxSize | None,
+    process: bool = True,
 ) -> Path | None:
     logger = song_logger(details.song_id)
     if not (img_bytes := download_image(url, logger)):
@@ -217,7 +218,8 @@ def download_and_process_image(
     with path.open("wb") as file:
         file.write(img_bytes)
 
-    _process_image(meta_tags, max_width, path)
+    if process:
+        _process_image(meta_tags, max_width, path)
     return path
 
 
