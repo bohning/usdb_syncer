@@ -489,7 +489,7 @@
             <item row="0" column="0">
              <widget class="QLabel" name="label_video_container">
               <property name="text">
-               <string>Container:</string>
+               <string>Container/codec:</string>
               </property>
              </widget>
             </item>
@@ -500,6 +500,9 @@
                 <horstretch>1</horstretch>
                 <verstretch>0</verstretch>
                </sizepolicy>
+              </property>
+              <property name="toolTip">
+               <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Choose &amp;quot;Best available container/codec&amp;quot; if you use a recent, ffmpeg-based karaoke software (e.g. USDX).&lt;/p&gt;&lt;p&gt;Otherwise, select a container/codec option that your software supports.&lt;/p&gt;&lt;p&gt;If the selected container/format option is not available for a given song, the syncer will try to at least get the requested container, and if that is not available either, it will fallback to a different container and codec.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
               </property>
              </widget>
             </item>

@@ -382,20 +382,26 @@ class VideoContainer(Enum):
     """Video containers that can be requested when downloading with ytdl."""
 
     MP4 = "mp4"
-    MP4_NO_VP9 = "mp4_no_vp9"
+    MP4_AV1 = "mp4_av1"
+    MP4_AVC = "mp4_avc"
+    MP4_VP9 = "mp4_vp9"
     WEBM = "webm"
     BEST = "bestvideo"
 
     def __str__(self) -> str:
         match self:
             case VideoContainer.MP4:
-                return ".mp4 (any codec)"
-            case VideoContainer.MP4_NO_VP9:
-                return ".mp4 (no VP9)"
+                return ".mp4 (best available codec)"
+            case VideoContainer.MP4_AV1:
+                return ".mp4 (AV1 codec)"
+            case VideoContainer.MP4_AVC:
+                return ".mp4 (AVC/H.264 codec)"
+            case VideoContainer.MP4_VP9:
+                return ".mp4 (VP9 codec)"
             case VideoContainer.WEBM:
-                return ".webm (VP9)"
+                return ".webm (VP9 codec)"
             case VideoContainer.BEST:
-                return "Best available"
+                return "Best available container/codec"
             case _ as unreachable:
                 assert_never(unreachable)
 
@@ -403,10 +409,14 @@ class VideoContainer(Enum):
         match self:
             case VideoContainer.MP4 | VideoContainer.WEBM:
                 return f"bestvideo*[ext={self.value}]"
-            case VideoContainer.MP4_NO_VP9:
-                return "bestvideo*[ext=mp4][vcodec!~='vp0?9']"
+            case VideoContainer.MP4_AV1:
+                return "bestvideo*[ext=mp4][vcodec~='^av01']/best[ext=mp4][vcodec~='^av01']/bestvideo*[ext=mp4]/best[ext=mp4]/bestvideo*/best"
+            case VideoContainer.MP4_AVC:
+                return "bestvideo*[ext=mp4][vcodec~='^(avc|h264)']/best[ext=mp4][vcodec~='^(avc|h264)']/bestvideo*[ext=mp4]/best[ext=mp4]/bestvideo*/best"
+            case VideoContainer.MP4_VP9:
+                return "bestvideo*[ext=mp4][vcodec~='^vp0?9']/best[ext=mp4][vcodec~='^vp0?9']/bestvideo*[ext=mp4]/best[ext=mp4]/bestvideo*/best"
             case VideoContainer.BEST:
-                return "bestvideo*"
+                return "bestvideo*/best"
             case _ as unreachable:
                 assert_never(unreachable)
 
