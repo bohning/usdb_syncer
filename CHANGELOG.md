@@ -1,3 +1,12 @@
+<!-- 0.11.0 -->
+
+# Changes
+- Add more fine-grained options for video container/codec selection.
+
+## Fixes
+
+## Features
+
 <!-- 0.10.0 -->
 
 # Changes
