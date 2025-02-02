@@ -31,6 +31,7 @@ def _download_and_process_image(
     details: Any,
     kind: ImageKind,
     max_width: Any,
+    process: bool = True,
 ) -> Path | None:
     path = target_stem.with_name(f"{target_stem.name} [{kind.value}].jpg")
     path.touch()
