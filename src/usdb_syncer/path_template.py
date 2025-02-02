@@ -3,8 +3,9 @@
 from __future__ import annotations
 
 import enum
+from jinja2 import Environment, BaseLoader, TemplateError
 from pathlib import Path
-from typing import TYPE_CHECKING, Iterable, assert_never
+from typing import TYPE_CHECKING, Iterable, assert_never, Any
 
 import attrs
 
@@ -16,15 +17,13 @@ if TYPE_CHECKING:
 
 FORBIDDEN_CHARACTERS = '?"<>|*.'
 
-
 class PathTemplateError(errors.UsdbSyncerError, ValueError):
     """Raised when the path template is invalid."""
-
 
 @attrs.define
 class InvalidCharError(PathTemplateError):
     """Raised when the path template contains a forbidden character."""
-
+    
     char: str
 
     def __str__(self) -> str:
@@ -32,9 +31,17 @@ class InvalidCharError(PathTemplateError):
 
 
 @attrs.define
+class NotEnoughComponentsError(PathTemplateError):
+    """Raised when the path template contains less than two components."""
+    
+    def __str__(self) -> str:
+        return "Path template must contain at least two components separated by '/'!"
+
+
+@attrs.define
 class InvalidPlaceholderError(PathTemplateError):
     """Raised when the path template contains an unknown placeholder name."""
-
+    
     name: str
 
     def __str__(self) -> str:
@@ -42,100 +49,63 @@ class InvalidPlaceholderError(PathTemplateError):
 
 
 @attrs.define
-class NotEnoughComponentsError(PathTemplateError):
-    """Raised when the path template contains less than two components."""
-
-    def __str__(self) -> str:
-        return "Path template must contain at least two components separated by '/'!"
-
-
-@attrs.define
 class PathTemplate:
-    """A path with optional placeholder names, which can be resolved by passing a
-    UsdbSong object. The syntax for placeholders is `:name:`.
-    See `PathTemplatePlaceholder` for valid names.
-    """
-
-    _components: list[PathTemplateComponent]
-    default_str = ":artist: - :title: / :artist: - :title:"
+    """A path template that can be evaluated."""
+    
+    _template: str
+    default_str = "{{ artist }} - {{ title }}/{{ artist }} - {{ title }}"
 
     @classmethod
     def parse(cls, template: str) -> PathTemplate:
-        parts = [
-            p for part in template.replace("\\", "/").split("/") if (p := part.strip())
-        ]
+        # Validate forbidden characters
+        for char in FORBIDDEN_CHARACTERS:
+            if char in template:
+                raise InvalidCharError(char)
+        
+        # Split into components
+        parts = [p.strip() for p in template.split("/") if p.strip()]
         if len(parts) < 2:
             raise NotEnoughComponentsError
-        return cls([PathTemplateComponent.parse(part) for part in parts])
+        
+        return cls(template)
 
     def evaluate(self, song: UsdbSong, parent: Path = Path()) -> Path:
-        """Returns a valid path relative to `parent` with placeholders replaced with
-        the values from `song`. The final component is the filename stem.
-        """
-        return Path(
-            parent,
-            *(utils.sanitize_filename(c.evaluate(song)) for c in self._components),
-        )
+        """Returns a valid path with placeholders replaced with values from `song`."""
+        # Prepare the Jinja2 environment
+        env = Environment(loader=BaseLoader())
+        song_data = {
+            "artist": song.artist,
+            "title": song.title,
+            "year": song.year,
+            "genre": next(iter(song.genres()), ""),
+            "language": next(iter(song.languages()), ""),
+            "creator": next(iter(song.creators()), ""),
+            "edition": song.edition,
+            "rating": song.rating,
+            "song_id": song.song_id,
+        }
+
+        try:
+            template = env.from_string(self._template)
+            return parent.joinpath(template.render(song_data))
+        except TemplateError as e:
+            raise PathTemplateError("Template evaluation failed") from e
 
     @classmethod
     def default(cls) -> PathTemplate:
         return cls.parse(cls.default_str)
 
     def __str__(self) -> str:
-        return " / ".join(map(str, self._components))
+        return self._template
 
 
-@attrs.define
-class PathTemplateComponent:
-    """A component of a template path, i.e. a file or directory name supporting the
-    template syntax.
-    """
-
-    _tokens: list[PathTemplateComponentToken]
-
-    @classmethod
-    def parse(cls, component: str) -> PathTemplateComponent:
-        component = component.strip()
-        if component.count(":") % 2 == 1:
-            raise InvalidCharError(":")
-        tokens: list[PathTemplateComponentToken] = []
-        literal = True
-        for token in component.split(":"):
-            if literal:
-                if token:
-                    tokens.append(PathTemplateLiteral(token))
-            else:
-                if token[:1] == "*":
-                    tokens.append(PathTemplateCustomPlaceholder(token[1:]))
-                else:
-                    tokens.append(PathTemplatePlaceholder.from_name(token))
-            literal = not literal
-        return cls(tokens)
-
-    def evaluate(self, song: UsdbSong) -> str:
-        return "".join(t.evaluate(song) for t in self._tokens)
-
-    def __str__(self) -> str:
-        return "".join(map(str, self._tokens))
-
+# The following would be deprecated, but is neccessary right now
 
 class PathTemplateComponentToken:
     """Common base class for path template component tokens."""
 
     def evaluate(self, _song: UsdbSong) -> str:
         return NotImplemented
-
-
-class PathTemplateLiteral(PathTemplateComponentToken, str):
-    """A literal string that is part of a path template."""
-
-    def __init__(self, literal: str) -> None:
-        for char in FORBIDDEN_CHARACTERS:
-            if char in literal:
-                raise InvalidCharError(char)
-
-    def evaluate(self, _song: UsdbSong) -> str:
-        return str(self)
 
 
 class PathTemplatePlaceholder(PathTemplateComponentToken, enum.Enum):
@@ -183,7 +153,6 @@ class PathTemplatePlaceholder(PathTemplateComponentToken, enum.Enum):
 
     def __str__(self) -> str:
         return f":{self.value}:"
-
 
 class PathTemplateCustomPlaceholder(PathTemplateComponentToken):
     """A path template placeholder representing a custom data key."""
