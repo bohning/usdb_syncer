@@ -408,15 +408,15 @@ class VideoContainer(Enum):
     def ytdl_format(self) -> str:
         match self:
             case VideoContainer.BEST:
-                return "bestvideo*/best"
+                return "bestvideo*"
             case VideoContainer.MP4 | VideoContainer.WEBM:
-                return f"bestvideo*[ext={self.value}]/bestvideo*/best"
+                return f"bestvideo*[ext={self.value}]/bestvideo*"
             case VideoContainer.MP4_AV1:
-                return "bestvideo*[ext=mp4][vcodec~='^av01']/best[ext=mp4][vcodec~='^av01']/bestvideo*[ext=mp4]/best[ext=mp4]/bestvideo*/best"
+                return "bestvideo*[ext=mp4][vcodec~='^av01']/bestvideo*[ext=mp4]/bestvideo*"
             case VideoContainer.MP4_AVC:
-                return "bestvideo*[ext=mp4][vcodec~='^(avc|h264)']/best[ext=mp4][vcodec~='^(avc|h264)']/bestvideo*[ext=mp4]/best[ext=mp4]/bestvideo*/best"
+                return "bestvideo*[ext=mp4][vcodec~='^(avc|h264)']/bestvideo*[ext=mp4]/bestvideo*"
             case VideoContainer.MP4_VP9:
-                return "bestvideo*[ext=mp4][vcodec~='^vp0?9']/best[ext=mp4][vcodec~='^vp0?9']/bestvideo*[ext=mp4]/best[ext=mp4]/bestvideo*/best"
+                return "bestvideo*[ext=mp4][vcodec~='^vp0?9']/bestvideo*[ext=mp4]/bestvideo*"
             case _ as unreachable:
                 assert_never(unreachable)
 
