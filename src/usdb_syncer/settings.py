@@ -410,7 +410,7 @@ class VideoContainer(Enum):
             case VideoContainer.BEST:
                 return "bestvideo*/best"
             case VideoContainer.MP4 | VideoContainer.WEBM:
-                return f"bestvideo*[ext={self.value}]"
+                return f"bestvideo*[ext={self.value}]/bestvideo*/best"
             case VideoContainer.MP4_AV1:
                 return "bestvideo*[ext=mp4][vcodec~='^av01']/best[ext=mp4][vcodec~='^av01']/bestvideo*[ext=mp4]/best[ext=mp4]/bestvideo*/best"
             case VideoContainer.MP4_AVC:
