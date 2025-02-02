@@ -455,13 +455,13 @@ def _maybe_download_cover(ctx: _Context) -> None:
             return
     if ctx.details.cover_url:
         ctx.logger.warning("Falling back to small USDB cover.")
-        if _download_cover_url(ctx, ctx.details.cover_url):
+        if _download_cover_url(ctx, ctx.details.cover_url, process=False):
             return
     keep = " Keeping last resource." if ctx.out.cover.resource else ""
     ctx.logger.error(f"Failed to download cover!{keep}")
 
 
-def _download_cover_url(ctx: _Context, url: str) -> bool:
+def _download_cover_url(ctx: _Context, url: str, process: bool = True) -> bool:
     """True if download was successful (or is unnecessary)."""
     assert ctx.options.cover
     if ctx.out.cover.resource == url:
@@ -474,6 +474,7 @@ def _download_cover_url(ctx: _Context, url: str) -> bool:
         details=ctx.details,
         kind=resource_dl.ImageKind.COVER,
         max_width=ctx.options.cover.max_size,
+        process=process,
     ):
         ctx.out.cover.resource = url
         ctx.out.cover.new_fname = path.name

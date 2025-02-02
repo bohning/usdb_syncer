@@ -4,6 +4,7 @@
 - Add more fine-grained options for video container/codec selection.
 
 ## Fixes
+- Cover postprocessing parameters are ignored if USDB cover is downloaded as fallback.
 
 ## Features
 
