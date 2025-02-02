@@ -381,15 +381,17 @@ class Browser(Enum):
 class VideoContainer(Enum):
     """Video containers that can be requested when downloading with ytdl."""
 
+    BEST = "bestvideo"
     MP4 = "mp4"
     MP4_AV1 = "mp4_av1"
     MP4_AVC = "mp4_avc"
     MP4_VP9 = "mp4_vp9"
     WEBM = "webm"
-    BEST = "bestvideo"
 
     def __str__(self) -> str:
         match self:
+            case VideoContainer.BEST:
+                return "Best available container/codec"
             case VideoContainer.MP4:
                 return ".mp4 (best available codec)"
             case VideoContainer.MP4_AV1:
@@ -400,13 +402,13 @@ class VideoContainer(Enum):
                 return ".mp4 (VP9 codec)"
             case VideoContainer.WEBM:
                 return ".webm (VP9 codec)"
-            case VideoContainer.BEST:
-                return "Best available container/codec"
             case _ as unreachable:
                 assert_never(unreachable)
 
     def ytdl_format(self) -> str:
         match self:
+            case VideoContainer.BEST:
+                return "bestvideo*/best"
             case VideoContainer.MP4 | VideoContainer.WEBM:
                 return f"bestvideo*[ext={self.value}]"
             case VideoContainer.MP4_AV1:
@@ -415,8 +417,6 @@ class VideoContainer(Enum):
                 return "bestvideo*[ext=mp4][vcodec~='^(avc|h264)']/best[ext=mp4][vcodec~='^(avc|h264)']/bestvideo*[ext=mp4]/best[ext=mp4]/bestvideo*/best"
             case VideoContainer.MP4_VP9:
                 return "bestvideo*[ext=mp4][vcodec~='^vp0?9']/best[ext=mp4][vcodec~='^vp0?9']/bestvideo*[ext=mp4]/best[ext=mp4]/bestvideo*/best"
-            case VideoContainer.BEST:
-                return "bestvideo*/best"
             case _ as unreachable:
                 assert_never(unreachable)
 
