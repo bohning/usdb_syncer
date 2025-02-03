@@ -112,6 +112,8 @@ class PathTemplateComponent:
             rendered = template.render(song_data)
         except TemplateError as error:
             raise TemplateRenderingError("Invalid template.") from error
+        except TypeError as error:
+            raise TemplateRenderingError("Type error in template.") from error
 
         for char in FORBIDDEN_CHARACTERS:
             if char in rendered:
