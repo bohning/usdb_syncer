@@ -1,3 +1,13 @@
+<!-- 0.11.0 -->
+
+# Changes
+- Add more fine-grained options for video container/codec selection.
+
+## Fixes
+- Cover postprocessing parameters are ignored if USDB cover is downloaded as fallback.
+
+## Features
+
 <!-- 0.10.0 -->
 
 # Changes
