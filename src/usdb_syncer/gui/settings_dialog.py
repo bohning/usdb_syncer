@@ -230,11 +230,10 @@ class SettingsDialog(Ui_Dialog, QDialog):
             self._path_template = (
                 PathTemplate.parse(text) if text else PathTemplate.default()
             )
+            result = str(self._path_template.evaluate(self._song).with_suffix(".txt"))
         except path_template.PathTemplateError as error:
             result = str(error)
             self._path_template = None
-        else:
-            result = str(self._path_template.evaluate(self._song).with_suffix(".txt"))
         self.edit_path_template_result.setText(result)
 
     def accept(self) -> None:
