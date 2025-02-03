@@ -12,7 +12,7 @@ from PySide6.QtCore import (
 )
 from PySide6.QtGui import QIcon
 
-from usdb_syncer import SongId, events, utils
+from usdb_syncer import SongId, events, settings, utils
 from usdb_syncer.gui.song_table.column import Column
 from usdb_syncer.usdb_song import DownloadStatus, UsdbSong
 
@@ -190,30 +190,26 @@ def _decoration_data(song: UsdbSong, column: int) -> QIcon | None:
                 return None
             action = "pause" if song.is_playing else "play"
             return icon(f":/icons/control-{action}{suffix}.png")
-        case Column.TXT:
-            return icon(":/icons/tick.png", bool(song.sync_meta and song.sync_meta.txt))
+        case Column.TXT | Column.VIDEO | Column.COVER | Column.BACKGROUND:
+            resource = col.name.lower()
+            return file_icon(song, resource)
         case Column.AUDIO:
-            return icon(
-                ":/icons/tick.png", bool(song.sync_meta and song.sync_meta.audio)
-            )
-        case Column.VIDEO:
-            return icon(
-                ":/icons/tick.png", bool(song.sync_meta and song.sync_meta.video)
-            )
-        case Column.COVER:
-            return icon(
-                ":/icons/tick.png", bool(song.sync_meta and song.sync_meta.cover)
-            )
-        case Column.BACKGROUND:
-            return icon(
-                ":/icons/tick.png", bool(song.sync_meta and song.sync_meta.background)
-            )
+            resource = col.name.lower()
+            return file_icon(song, resource, Column.VIDEO.name.lower())
         case Column.PINNED:
             return icon(
                 ":/icons/pin.png", bool(song.sync_meta and song.sync_meta.pinned)
             )
         case _ as unreachable:
             assert_never(unreachable)
+
+
+def has_local_file(song: UsdbSong, resource: str) -> bool:
+    return bool(song.sync_meta and getattr(song.sync_meta, resource))
+
+
+def has_meta_tag(song: UsdbSong, resource: str) -> bool:
+    return bool(song.sync_meta and getattr(song.sync_meta.meta_tags, resource, None))
 
 
 @cache
@@ -231,3 +227,15 @@ def yes_no_str(yes: bool) -> str:
 @cache
 def icon(resource: str, yes: bool = True) -> QIcon | None:
     return QIcon(resource) if yes else None
+
+
+def file_icon(
+    song: UsdbSong, resource1: str, resource2: str | None = None
+) -> QIcon | None:
+    if has_local_file(song, resource1):
+        return icon(":/icons/tick.png")
+    if has_meta_tag(song, resource1) or (resource2 and has_meta_tag(song, resource2)):
+        if getattr(settings, f"get_{resource1}")():
+            return icon(":/icons/cross.png")
+        return icon(":/icons/download-cloud.png")
+    return None
