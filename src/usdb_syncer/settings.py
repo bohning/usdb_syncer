@@ -405,18 +405,34 @@ class VideoContainer(Enum):
             case _ as unreachable:
                 assert_never(unreachable)
 
-    def ytdl_format(self) -> str:
+    def ytdl_ext(self) -> str | None:
         match self:
             case VideoContainer.BEST:
-                return "bestvideo*"
+                return None
+            case (
+                VideoContainer.MP4
+                | VideoContainer.MP4_AV1
+                | VideoContainer.MP4_AVC
+                | VideoContainer.MP4_VP9
+            ):
+                return VideoContainer.MP4.value
+            case VideoContainer.WEBM:
+                return self.value
+            case _ as unreachable:
+                assert_never(unreachable)
+
+    def ytdl_vcodec(self) -> str | None:
+        match self:
+            case VideoContainer.BEST:
+                return None
             case VideoContainer.MP4 | VideoContainer.WEBM:
-                return f"bestvideo*[ext={self.value}]/bestvideo*"
+                return None
             case VideoContainer.MP4_AV1:
-                return "bestvideo*[ext=mp4][vcodec~='^av01']/bestvideo*[ext=mp4]/bestvideo*"
+                return "av01"
             case VideoContainer.MP4_AVC:
-                return "bestvideo*[ext=mp4][vcodec~='^(avc|h264)']/bestvideo*[ext=mp4]/bestvideo*"
+                return "^(avc|h264)"
             case VideoContainer.MP4_VP9:
-                return "bestvideo*[ext=mp4][vcodec~='^vp0?9']/bestvideo*[ext=mp4]/bestvideo*"
+                return "^vp0?9"
             case _ as unreachable:
                 assert_never(unreachable)
 

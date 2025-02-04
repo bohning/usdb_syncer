@@ -45,12 +45,22 @@ class VideoOptions:
     rate_limit: settings.YtdlpRateLimit
 
     def ytdl_format(self) -> str:
-        fmt = self.format.ytdl_format()
+        container = f"[ext={self.format.ytdl_ext()}]" if self.format.ytdl_ext() else ""
+        codec = (
+            f"[vcodec~='{self.format.ytdl_vcodec()}']"
+            if self.format.ytdl_vcodec()
+            else ""
+        )
+        fmt = ["bestvideo*"]
+        if container:
+            fmt.insert(0, f"bestvideo*{container}")
+        if codec:
+            fmt.insert(0, f"bestvideo*{container}{codec}")
         width = f"[width<={self.max_resolution.width()}]"
         height = f"[height<={self.max_resolution.height()}]"
         fps = f"[fps<={self.max_fps.value}]"
         # fps filter always fails for some platforms, so skip it as a fallback
-        return f"{fmt}{width}{height}{fps}/{fmt}{width}{height}"
+        return "/".join(f"{f}{width}{height}{fps}/{f}{width}{height}" for f in fmt)
 
 
 @dataclass(frozen=True)
