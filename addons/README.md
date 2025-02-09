@@ -1,7 +1,27 @@
 # Add-ons
 
 You can write your own Python add-ons to extend or modify the syncer's functionality at
-runtime. An add-on is just a Python package or module that is automatically imported at startup.
+runtime. An add-on is either a Python module, or a zip file containing one or more Python modules.
+Example:
+
+```txt
+.
+└── addons/
+    ├── addon1.zip/
+    │   ├── addon1/
+    │   │   ├── __init__.py
+    │   │   ├── file1.py
+    │   │   └── file2.py
+    │   └── addon2/
+    │       ├── __init__.py
+    │       ├── file1.py
+    │       └── file2.py
+    ├── addon3/
+    │   ├── __init__.py
+    │   ├── file1.py
+    │   └── file2.py
+    └── addon4.py
+```
 
 There are two main ways to add or change behaviour:
 
