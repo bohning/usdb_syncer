@@ -11,9 +11,6 @@ import traceback
 from types import TracebackType
 from typing import TYPE_CHECKING, Any, Callable
 
-import pkg_resources
-import requests
-from packaging import version
 from PySide6 import QtCore, QtGui, QtWidgets
 from PySide6.QtCore import Qt
 
@@ -67,8 +64,14 @@ def _run() -> None:
         logging.StreamHandler(sys.stdout),
         _TextEditLogger(mw),
     )
+    mw.label_update_hint.setVisible(False)
     if utils.is_bundle():
-        check_for_update()
+        if version := utils.newer_version_available():
+            mw.label_update_hint.setText(
+                mw.label_update_hint.text().replace("VERSION", version)
+            )
+            mw.label_update_hint.setVisible(True)
+            mw.label_update_hint.setOpenExternalLinks(True)
     else:
         logging.info("Running in dev mode, skipping update check.")
     try:
@@ -78,38 +81,6 @@ def _run() -> None:
         return
     addons.load_all()
     app.exec()
-
-
-def get_latest_version() -> str | None:
-    url = "https://api.github.com/repos/bohning/usdb_syncer/releases/latest"
-    response = requests.get(url, timeout=5)
-    if response.status_code == 200:
-        return response.json()["tag_name"]
-    return None
-
-
-def get_installed_version() -> str | None:
-    try:
-        return pkg_resources.get_distribution("usdb_syncer").version
-    except pkg_resources.DistributionNotFound:
-        return None
-
-
-def check_for_update() -> None:
-    latest_version = get_latest_version()
-    installed_version = get_installed_version()
-
-    if latest_version and installed_version:
-        if version.parse(installed_version) < version.parse(latest_version):
-            logging.warning(
-                f"USDB Syncer {latest_version} is available! "
-                f"(You have {installed_version}). Please download the latest release "
-                "from https://github.com/bohning/usdb_syncer/releases/latest."
-            )
-        else:
-            logging.info(f"You are running the latest Syncer version {latest_version}.")
-    else:
-        logging.info("Could not determine the latest version.")
 
 
 def _excepthook(
@@ -148,10 +119,7 @@ def _load_main_window(mw: MainWindow) -> None:
         logging.info(f"Applied default search '{default_search.name}'.")
     mw.table.search_songs()
     splash.showMessage("Song database successfully loaded.", color=Qt.GlobalColor.gray)
-    if utils.is_bundle():
-        mw.setWindowTitle(f"USDB Syncer ({get_installed_version()})")
-    else:
-        mw.setWindowTitle(f"USDB Syncer ({constants.VERSION})")
+    mw.setWindowTitle(f"USDB Syncer ({constants.VERSION})")
     mw.show()
     logging.info("Application successfully loaded.")
     splash.finish(mw)
