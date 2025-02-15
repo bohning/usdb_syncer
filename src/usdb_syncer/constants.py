@@ -8,6 +8,8 @@ COMMIT_HASH = "dev"
 SHORT_COMMIT_HASH = COMMIT_HASH[:7]
 
 MINIMUM_BPM = 200.0
+GITHUB_API_LATEST = "https://api.github.com/repos/bohning/usdb_syncer/releases/latest"
+GITHUB_DL_LATEST = "https://github.com/bohning/usdb_syncer/releases/latest"
 
 
 class UsdbStrings:

@@ -11,8 +11,11 @@ import time
 import unicodedata
 from pathlib import Path
 
+import requests
 from appdirs import AppDirs
+from packaging import version
 
+from usdb_syncer import constants
 from usdb_syncer.logger import logger
 
 CACHE_LIFETIME = 60 * 60
@@ -241,3 +244,26 @@ def format_timestamp(micros: int) -> str:
     return datetime.datetime.fromtimestamp(micros / 1_000_000).strftime(
         "%Y-%m-%d %H:%M:%S"
     )
+
+
+def get_latest_version() -> str | None:
+    response = requests.get(constants.GITHUB_API_LATEST, timeout=5)
+    if response.status_code == 200:
+        return response.json()["tag_name"]
+    return None
+
+
+def newer_version_available() -> str | None:
+    if latest_version := get_latest_version():
+        if version.parse(constants.VERSION) < version.parse(latest_version):
+            logger.warning(
+                f"USDB Syncer {latest_version} is available! "
+                f"(You have {constants.VERSION}). Please download the latest release "
+                f"from {constants.GITHUB_DL_LATEST}."
+            )
+            return latest_version
+        logger.info(f"You are running the latest Syncer version {latest_version}.")
+        return None
+
+    logger.info("Could not determine the latest version.")
+    return None

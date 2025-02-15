@@ -29,6 +29,7 @@ PySide6 = "6.8.0.2"
 requests = "*"
 rookiepy = "^0.5.3"
 send2trash = "*"
+setuptools = "^75.8.0"
 unidecode = "*"
 yt-dlp = {version = "*", extras = ["default", "curl_cffi"]}
 wheel = "*"
