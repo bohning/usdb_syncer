@@ -64,6 +64,16 @@ def _run() -> None:
         logging.StreamHandler(sys.stdout),
         _TextEditLogger(mw),
     )
+    mw.label_update_hint.setVisible(False)
+    if utils.is_bundle():
+        if version := utils.newer_version_available():
+            mw.label_update_hint.setText(
+                mw.label_update_hint.text().replace("VERSION", version)
+            )
+            mw.label_update_hint.setVisible(True)
+            mw.label_update_hint.setOpenExternalLinks(True)
+    else:
+        logging.info("Running in dev mode, skipping update check.")
     try:
         _load_main_window(mw)
     except errors.UnknownSchemaError:
@@ -109,6 +119,7 @@ def _load_main_window(mw: MainWindow) -> None:
         logging.info(f"Applied default search '{default_search.name}'.")
     mw.table.search_songs()
     splash.showMessage("Song database successfully loaded.", color=Qt.GlobalColor.gray)
+    mw.setWindowTitle(f"USDB Syncer ({constants.VERSION})")
     mw.show()
     logging.info("Application successfully loaded.")
     splash.finish(mw)
