@@ -1,6 +1,7 @@
 """Functions for downloading and processing media."""
 
 import os
+import tempfile
 from enum import Enum
 from pathlib import Path
 from typing import Union, assert_never
@@ -15,7 +16,7 @@ from PIL.Image import Resampling
 from usdb_syncer.download_options import AudioOptions, VideoOptions
 from usdb_syncer.logger import Log, song_logger
 from usdb_syncer.meta_tags import ImageMetaTags
-from usdb_syncer.settings import Browser, CoverMaxSize, YtdlpRateLimit
+from usdb_syncer.settings import Browser, CookieFormat, CoverMaxSize, YtdlpRateLimit
 from usdb_syncer.usdb_scraper import SongDetails
 from usdb_syncer.utils import video_url_from_resource
 
@@ -136,7 +137,10 @@ def _ytdl_options(
     if ratelimit.value is not None:
         options["ratelimit"] = ratelimit.value
     if browser:
-        options["cookiesfrombrowser"] = (browser.value, None, None, None)
+        if cookies := browser.cookies("youtube.com", CookieFormat.NETSCAPE):
+            with tempfile.NamedTemporaryFile(delete=False, mode="w") as cookie_file:
+                cookie_file.write(str(cookies))
+            options["cookies"] = cookie_file.name
     return options
 
 
@@ -146,7 +150,7 @@ def _download_resource(options: YtdlOptions, resource: str, logger: Log) -> str 
         return None
 
     options_without_cookies = options.copy()
-    options_without_cookies.pop("cookiesfrombrowser")
+    options_without_cookies.pop("cookies", None)
     with yt_dlp.YoutubeDL(options_without_cookies) as ydl:
         try:
             return ydl.prepare_filename(ydl.extract_info(url))

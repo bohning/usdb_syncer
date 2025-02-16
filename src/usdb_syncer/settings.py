@@ -21,7 +21,6 @@ import rookiepy
 from PySide6.QtCore import QByteArray, QSettings
 
 from usdb_syncer import path_template, utils
-from usdb_syncer.constants import Usdb
 from usdb_syncer.logger import logger
 
 SYSTEM_USDB = "USDB Syncer/USDB"
@@ -307,6 +306,14 @@ class AudioBitrate(Enum):
         return int(self.value.removesuffix(" kbps")) * 1000  # in bits/s
 
 
+class CookieFormat(Enum):
+    """Format options for retrieved cookies."""
+
+    COOKIELIST = auto()
+    COOKIEJAR = auto()
+    NETSCAPE = auto()
+
+
 class Browser(Enum):
     """Browsers to use cookies from."""
 
@@ -348,7 +355,9 @@ class Browser(Enum):
             case _ as unreachable:
                 assert_never(unreachable)
 
-    def cookies(self) -> CookieJar | None:
+    def cookies(
+        self, domain: str, fmt: CookieFormat
+    ) -> rookiepy.CookieList | CookieJar | str | None:
         match self:
             case Browser.NONE:
                 return None
@@ -371,10 +380,18 @@ class Browser(Enum):
             case _ as unreachable:
                 assert_never(unreachable)
         try:
-            return rookiepy.to_cookiejar(function([Usdb.DOMAIN]))
+            match fmt:
+                case CookieFormat.COOKIELIST:
+                    return function([domain])
+                case CookieFormat.COOKIEJAR:
+                    return rookiepy.to_cookiejar(function([domain]))
+                case CookieFormat.NETSCAPE:
+                    return rookiepy.to_netscape(function([domain]))
         except Exception:  # pylint: disable=broad-exception-caught
             logger.debug(traceback.format_exc())
-        logger.warning(f"Failed to retrieve {str(self).capitalize()} cookies.")
+        logger.warning(
+            f"Failed to retrieve {str(self).capitalize()} cookies for {domain}."
+        )
         return None
 
 
