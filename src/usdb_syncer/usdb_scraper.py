@@ -10,7 +10,7 @@ from typing import Iterator, Type, assert_never
 import attrs
 import requests
 from bs4 import BeautifulSoup, NavigableString, Tag
-from requests import Session
+from requests import Session, cookies
 
 from usdb_syncer import SongId, errors, settings
 from usdb_syncer.constants import (
@@ -66,9 +66,9 @@ def establish_usdb_login(session: Session) -> bool:
 
 def new_session_with_cookies(browser: settings.Browser) -> Session:
     session = Session()
-    if cookies := browser.cookies():
-        for cookie in cookies:
-            session.cookies.set_cookie(cookie)
+    if usdb_cookies := browser.cookies(Usdb.DOMAIN, settings.CookieFormat.COOKIEJAR):
+        if isinstance(usdb_cookies, cookies.RequestsCookieJar):
+            session.cookies = usdb_cookies
     return session
 
 
