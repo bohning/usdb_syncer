@@ -311,24 +311,30 @@ class Browser(Enum):
     """Browsers to use cookies from."""
 
     NONE = None
-    BRAVE = "brave"
-    CHROME = "chrome"
-    CHROMIUM = "chromium"
-    EDGE = "edge"
-    FIREFOX = "firefox"
-    OPERA = "opera"
-    SAFARI = "safari"
-    VIVALDI = "vivaldi"
+    ARC = "Arc"
+    BRAVE = "Brave"
+    CHROME = "Chrome"
+    CHROMIUM = "Chromium"
+    EDGE = "Edge"
+    FIREFOX = "Firefox"
+    LIBREWOLF = "Librewolf"
+    OCTO_BROWSER = "Octo Browser"
+    OPERA = "Opera"
+    OPERA_GX = "Opera GX"
+    SAFARI = "Safari"
+    VIVALDI = "Vivaldi"
 
     def __str__(self) -> str:
         if self is Browser.NONE:
             return "None"
-        return self.value.capitalize()
+        return self.value
 
     def icon(self) -> str:
         match self:
             case Browser.NONE:
                 return ""
+            case Browser.ARC:
+                return ":/icons/arc.png"
             case Browser.BRAVE:
                 return ":/icons/brave.png"
             case Browser.CHROME:
@@ -339,8 +345,14 @@ class Browser(Enum):
                 return ":/icons/edge.png"
             case Browser.FIREFOX:
                 return ":/icons/firefox.png"
+            case Browser.LIBREWOLF:
+                return ":/icons/librewolf.png"
+            case Browser.OCTO_BROWSER:
+                return ":/icons/octo_browser.png"
             case Browser.OPERA:
                 return ":/icons/opera.png"
+            case Browser.OPERA_GX:
+                return ":/icons/opera_gx.png"
             case Browser.SAFARI:
                 return ":/icons/safari.png"
             case Browser.VIVALDI:
@@ -352,6 +364,8 @@ class Browser(Enum):
         match self:
             case Browser.NONE:
                 return None
+            case Browser.ARC:
+                function = rookiepy.arc
             case Browser.BRAVE:
                 function = rookiepy.brave
             case Browser.CHROME:
@@ -362,8 +376,14 @@ class Browser(Enum):
                 function = rookiepy.edge
             case Browser.FIREFOX:
                 function = rookiepy.firefox
+            case Browser.LIBREWOLF:
+                function = rookiepy.librewolf
+            case Browser.OCTO_BROWSER:
+                function = rookiepy.octo_browser
             case Browser.OPERA:
                 function = rookiepy.opera
+            case Browser.OPERA_GX:
+                function = rookiepy.opera_gx
             case Browser.SAFARI:
                 function = rookiepy.safari
             case Browser.VIVALDI:
