@@ -140,7 +140,7 @@ def _ytdl_options(
         if cookies := browser.cookies("youtube.com", CookieFormat.NETSCAPE):
             with tempfile.NamedTemporaryFile(delete=False, mode="w") as cookie_file:
                 cookie_file.write(str(cookies))
-            options["cookies"] = cookie_file.name
+            options["cookiefile"] = cookie_file.name
     return options
 
 
@@ -150,7 +150,7 @@ def _download_resource(options: YtdlOptions, resource: str, logger: Log) -> str 
         return None
 
     options_without_cookies = options.copy()
-    options_without_cookies.pop("cookies", None)
+    options_without_cookies.pop("cookiefile", None)
     with yt_dlp.YoutubeDL(options_without_cookies) as ydl:
         try:
             return ydl.prepare_filename(ydl.extract_info(url))
@@ -158,7 +158,7 @@ def _download_resource(options: YtdlOptions, resource: str, logger: Log) -> str 
             logger.debug(f"error downloading video url: {url}")
             # Check if the error is due to age restriction
             if "confirm your age" in str(e).lower():
-                logger.debug("Age-restricted resource. Retrying with cookies...")
+                logger.debug("Age-restricted resource. Retrying with cookies ...")
                 try:
                     with yt_dlp.YoutubeDL(options) as ydl:
                         return ydl.prepare_filename(ydl.extract_info(url))
