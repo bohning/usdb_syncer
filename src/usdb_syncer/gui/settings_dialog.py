@@ -128,7 +128,7 @@ class SettingsDialog(Ui_Dialog, QDialog):
         path = self._get_cookies_file_location()
         if path:
             if _is_netscape_cookies_file(path):
-                if settings.store_cookies_in_keyring(path):
+                if settings.store_cookies(path):
                     self.set_cookies_label(True)
                     settings.set_cookies_in_keyring(True)
                     return
