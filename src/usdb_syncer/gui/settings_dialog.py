@@ -2,6 +2,7 @@
 
 import sys
 from http.cookiejar import MozillaCookieJar
+from http.cookies import CookieError
 from pathlib import Path
 from typing import assert_never
 
@@ -351,5 +352,5 @@ def _is_netscape_cookies_file(file_path: Path) -> bool:
         jar = MozillaCookieJar(str(file_path))
         jar.load(ignore_discard=True, ignore_expires=True)
         return True
-    except Exception:
+    except (IOError, CookieError):
         return False
