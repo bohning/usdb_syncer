@@ -81,7 +81,10 @@ def store_cookies(cookie_file: Path) -> bool:
             file.write(encrypted_cookies)
 
         keyring.set_password(SYSTEM_COOKIE_KEY, username, key.decode("utf-8"))
-        logger.info(f"Cookies successfully stored in keyring for user: {username}")
+        logger.info(
+            f"Cookies successfully transfered to an encrypted file. It is recommended "
+            f"to delete plain text '{cookie_file}' now."
+        )
         return True
     except FileNotFoundError:
         logger.error(f"Cookie file not found: {cookie_file}")
