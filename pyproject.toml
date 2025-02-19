@@ -33,6 +33,7 @@ setuptools = "^75.8.0"
 unidecode = "*"
 yt-dlp = {version = "*", extras = ["default", "curl_cffi"]}
 wheel = "*"
+cryptography = "^44.0.1"
 
 [tool.poetry-dynamic-versioning]
 enable = true
@@ -85,7 +86,6 @@ load-plugins = "pylint.extensions.mccabe"
 
 [tool.pylint.basic]
 good-names = ["mw", "p1", "p2", "closeEvent", "customEvent"]
-max-module-lines = 1200
 
 [tool.pylint.messages_control]
 extension-pkg-whitelist = ["PySide6", "shiboken6"]

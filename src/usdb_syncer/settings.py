@@ -18,13 +18,14 @@ from typing import Any, Tuple, TypeVar, assert_never, cast
 
 import keyring
 import rookiepy
+from cryptography.fernet import Fernet
 from PySide6.QtCore import QByteArray, QSettings
 
 from usdb_syncer import path_template, utils
 from usdb_syncer.logger import logger
 
 SYSTEM_USDB = "USDB Syncer/USDB"
-SYSTEM_COOKIES = "USDB Syncer/Cookies"
+SYSTEM_COOKIE_KEY = "USDB Syncer/Cookies"
 NO_KEYRING_BACKEND_WARNING = (
     "Your USDB password cannot be stored or retrieved because no keyring backend is "
     "available. See https://pypi.org/project/keyring for details."
@@ -51,22 +52,35 @@ def set_usdb_auth(username: str, password: str) -> None:
         logger.warning(NO_KEYRING_BACKEND_WARNING)
 
 
-def get_cookies_from_keyring() -> str | None:
+def get_cookies() -> str | None:
     username = get_setting(SettingKey.USDB_USER_NAME, "")
     try:
-        return keyring.get_password(SYSTEM_COOKIES, username)
+        key = keyring.get_password(SYSTEM_COOKIE_KEY, username)
+        if key is None:
+            return None
+        fernet = Fernet(key.encode("utf-8"))
+        with open(utils.AppPaths.cookie_file, "rb") as file:
+            encrypted_cookies = file.read()
+        return fernet.decrypt(encrypted_cookies).decode("utf-8")
     except keyring.core.backend.errors.NoKeyringError as error:
         logger.debug(error)
         logger.warning(NO_KEYRING_BACKEND_WARNING)
         return None
 
 
-def store_cookies_in_keyring(cookie_file: Path) -> bool:
+def store_cookies(cookie_file: Path) -> bool:
+    key = Fernet.generate_key()
+    fernet = Fernet(key)
     username = get_setting(SettingKey.USDB_USER_NAME, "")
     try:
         with open(cookie_file, "r", encoding="utf-8") as file:
             cookies = file.read().strip()
-        keyring.set_password(SYSTEM_COOKIES, username, cookies)
+        encrypted_cookies = fernet.encrypt(cookies.encode("utf-8"))
+
+        with open(utils.AppPaths.cookie_file, "wb") as file:
+            file.write(encrypted_cookies)
+
+        keyring.set_password(SYSTEM_COOKIE_KEY, username, key.decode("utf-8"))
         logger.info(f"Cookies successfully stored in keyring for user: {username}")
         return True
     except FileNotFoundError:
