@@ -13,10 +13,10 @@ from ffmpeg_normalize import FFmpegNormalize
 from PIL import Image, ImageEnhance, ImageOps
 from PIL.Image import Resampling
 
-from usdb_syncer.download_options import AudioOptions, VideoOptions
+from usdb_syncer.download_options import AudioOptions, CookieOptions, VideoOptions
 from usdb_syncer.logger import Log, song_logger
 from usdb_syncer.meta_tags import ImageMetaTags
-from usdb_syncer.settings import Browser, CookieFormat, CoverMaxSize, YtdlpRateLimit
+from usdb_syncer.settings import CookieFormat, CoverMaxSize, YtdlpRateLimit
 from usdb_syncer.usdb_scraper import SongDetails
 from usdb_syncer.utils import video_url_from_resource
 
@@ -47,21 +47,25 @@ class ImageKind(Enum):
 
 
 def download_audio(
-    resource: str, options: AudioOptions, browser: Browser, path_stem: Path, logger: Log
+    resource: str,
+    options: AudioOptions,
+    cookie_options: CookieOptions,
+    path_stem: Path,
+    logger: Log,
 ) -> str | None:
     """Download audio from resource to path and process it according to options.
 
     Parameters:
         resource: URL or YouTube id
         options: parameters for downloading and processing
-        browser: browser to use cookies from
+        cookie_options: parameters for cookie retrieval
         path_stem: the target on the file system *without* an extension
 
     Returns:
         the extension of the successfully downloaded file or None
     """
     ydl_opts = _ytdl_options(
-        options.ytdl_format(), browser, path_stem, options.rate_limit
+        options.ytdl_format(), cookie_options, path_stem, options.rate_limit
     )
     if not options.normalize:
         postprocessor = {
@@ -101,21 +105,25 @@ def _normalize(options: AudioOptions, path_stem: Path, filename: str) -> None:
 
 
 def download_video(
-    resource: str, options: VideoOptions, browser: Browser, path_stem: Path, logger: Log
+    resource: str,
+    options: VideoOptions,
+    cookie_options: CookieOptions,
+    path_stem: Path,
+    logger: Log,
 ) -> str | None:
     """Download video from resource to path and process it according to options.
 
     Parameters:
         resource: URL or YouTube id
         options: parameters for downloading and processing
-        browser: browser to use cookies from
+        cookie_options: parameters for cookie retrieval
         path_stem: the target on the file system *without* an extension
 
     Returns:
         the extension of the successfully downloaded file or None
     """
     ydl_opts = _ytdl_options(
-        options.ytdl_format(), browser, path_stem, options.rate_limit
+        options.ytdl_format(), cookie_options, path_stem, options.rate_limit
     )
     if filename := _download_resource(ydl_opts, resource, logger):
         return os.path.splitext(filename)[1][1:]
@@ -123,7 +131,10 @@ def download_video(
 
 
 def _ytdl_options(
-    format_: str, browser: Browser, target_stem: Path, ratelimit: YtdlpRateLimit
+    format_: str,
+    cookie_options: CookieOptions,
+    target_stem: Path,
+    ratelimit: YtdlpRateLimit,
 ) -> YtdlOptions:
     options: YtdlOptions = {
         "format": format_,
@@ -136,11 +147,15 @@ def _ytdl_options(
     }
     if ratelimit.value is not None:
         options["ratelimit"] = ratelimit.value
-    if browser:
-        if cookies := browser.cookies("youtube.com", CookieFormat.NETSCAPE):
+    if cookie_options.cookies_from_browser and cookie_options.browser:
+        if cookies := cookie_options.browser.cookies(
+            "youtube.com", CookieFormat.NETSCAPE
+        ):
             with tempfile.NamedTemporaryFile(delete=False, mode="w") as cookie_file:
                 cookie_file.write(str(cookies))
             options["cookiefile"] = cookie_file.name
+    if not cookie_options.cookies_from_browser and cookie_options.cookies_file:
+        options["cookiefile"] = str(cookie_options.cookies_file)
     return options
 
 

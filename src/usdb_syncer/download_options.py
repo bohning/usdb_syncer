@@ -7,6 +7,15 @@ from usdb_syncer import path_template, settings
 
 
 @dataclass(frozen=True)
+class CookieOptions:
+    """Settings regarding the cookies retrieval."""
+
+    cookies_from_browser: bool
+    browser: settings.Browser
+    cookies_file: Path | None
+
+
+@dataclass(frozen=True)
 class TxtOptions:
     """Settings regarding the song txt file to be downloaded."""
 
@@ -86,9 +95,9 @@ class Options:
 
     song_dir: Path
     path_template: path_template.PathTemplate
+    cookie_options: CookieOptions
     txt_options: TxtOptions | None
     audio_options: AudioOptions | None
-    browser: settings.Browser
     video_options: VideoOptions | None
     cover: CoverOptions | None
     background_options: BackgroundOptions | None
@@ -98,12 +107,20 @@ def download_options() -> Options:
     return Options(
         song_dir=settings.get_song_dir(),
         path_template=settings.get_path_template(),
+        cookie_options=_cookie_options(),
         txt_options=_txt_options(),
         audio_options=_audio_options(),
-        browser=settings.get_browser(),
         video_options=_video_options(),
         cover=_cover_options(),
         background_options=_background_options(),
+    )
+
+
+def _cookie_options() -> CookieOptions:
+    return CookieOptions(
+        cookies_from_browser=settings.get_cookies_from_browser(),
+        browser=settings.get_browser(),
+        cookies_file=settings.get_cookies_file_path(),
     )
 
 

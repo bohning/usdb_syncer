@@ -105,6 +105,8 @@ class SettingKey(Enum):
     APP_PATH_USDX = "app_paths/usdx"
     APP_PATH_VOCALUXE = "app_paths/vocaluxe"
     APP_PATH_YASS_RELOADED = "app_paths/yass_reloaded"
+    COOKIE_FILE_PATH = "cookie_file_path"
+    COOKIES_FROM_BROWSER = "cookies_from_browser"
 
 
 class Encoding(Enum):
@@ -989,3 +991,20 @@ def set_app_path(app: SupportedApps, path: str) -> None:
             set_setting(SettingKey.APP_PATH_YASS_RELOADED, path)
         case _ as unreachable:
             assert_never(unreachable)
+
+
+def get_cookies_from_browser() -> bool:
+    return get_setting(SettingKey.COOKIES_FROM_BROWSER, True)
+
+
+def set_cookies_from_browser(value: bool) -> None:
+    set_setting(SettingKey.COOKIES_FROM_BROWSER, value)
+
+
+def get_cookies_file_path() -> Path | None:
+    path = get_setting(SettingKey.COOKIE_FILE_PATH, "")
+    return Path(path) if path != "" else None
+
+
+def set_cookies_file_path(path: str) -> None:
+    set_setting(SettingKey.COOKIE_FILE_PATH, path)

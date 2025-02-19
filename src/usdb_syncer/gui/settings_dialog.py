@@ -1,6 +1,7 @@
 """Dialog with app settings."""
 
 import sys
+from http.cookiejar import MozillaCookieJar
 from pathlib import Path
 from typing import assert_never
 
@@ -46,27 +47,38 @@ class SettingsDialog(Ui_Dialog, QDialog):
         self.groupBox_reencode_video.setVisible(False)
         if sys.platform != "win32":
             self.groupBox_vocaluxe.setVisible(False)
+        if sys.platform != "darwin":
+            self.comboBox_browser.removeItem(
+                self.comboBox_browser.findText(settings.Browser.SAFARI.value)
+            )
+        if sys.platform == "linux":
+            self.comboBox_browser.removeItem(
+                self.comboBox_browser.findText(settings.Browser.OPERA_GX.value)
+            )
+        self.pushButton_browse_cookies_file.clicked.connect(
+            self._set_cookies_file_location
+        )
         self.pushButton_browse_karedi.clicked.connect(
-            lambda: self._set_location(settings.SupportedApps.KAREDI)
+            lambda: self._set_app_location(settings.SupportedApps.KAREDI)
         )
         self.pushButton_browse_performous.clicked.connect(
-            lambda: self._set_location(settings.SupportedApps.PERFORMOUS)
+            lambda: self._set_app_location(settings.SupportedApps.PERFORMOUS)
         )
         self.pushButton_browse_ultrastar_manager.clicked.connect(
-            lambda: self._set_location(settings.SupportedApps.ULTRASTAR_MANAGER)
+            lambda: self._set_app_location(settings.SupportedApps.ULTRASTAR_MANAGER)
         )
         self.pushButton_browse_usdx.clicked.connect(
-            lambda: self._set_location(settings.SupportedApps.USDX)
+            lambda: self._set_app_location(settings.SupportedApps.USDX)
         )
         self.pushButton_browse_vocaluxe.clicked.connect(
-            lambda: self._set_location(settings.SupportedApps.VOCALUXE)
+            lambda: self._set_app_location(settings.SupportedApps.VOCALUXE)
         )
         self.pushButton_browse_yass_reloaded.clicked.connect(
-            lambda: self._set_location(settings.SupportedApps.YASS_RELOADED)
+            lambda: self._set_app_location(settings.SupportedApps.YASS_RELOADED)
         )
 
-    def _set_location(self, app: settings.SupportedApps) -> None:
-        path = self._get_executable(app)
+    def _set_app_location(self, app: settings.SupportedApps) -> None:
+        path = self._get_app_executable(app)
         text = str(path) if path is not None else ""
         match app:
             case settings.SupportedApps.KAREDI:
@@ -84,7 +96,7 @@ class SettingsDialog(Ui_Dialog, QDialog):
             case _ as unreachable:
                 assert_never(unreachable)
 
-    def _get_executable(self, app: settings.SupportedApps) -> Path | None:
+    def _get_app_executable(self, app: settings.SupportedApps) -> Path | None:
         filt = "*"
         directory = ""
         match sys.platform:
@@ -111,6 +123,24 @@ class SettingsDialog(Ui_Dialog, QDialog):
             return full_path
         return None
 
+    def _set_cookies_file_location(self) -> None:
+        path = self._get_cookies_file_location()
+        if path and _is_netscape_cookies_file(path):
+            text = str(path)
+        else:
+            text = ""
+        self.lineEdit_cookies_file.setText(text)
+
+    def _get_cookies_file_location(self) -> Path | None:
+        filename = QFileDialog.getOpenFileName(
+            self, "Select cookies file", "", "*.txt"
+        )[0]
+        # dialog is hidden by main window on macOS if file picker was cancelled
+        self.raise_()
+        if filename == "":
+            return None
+        return Path(filename)
+
     def _populate_comboboxes(self) -> None:
         combobox_settings = (
             (self.comboBox_encoding, settings.Encoding),
@@ -134,9 +164,17 @@ class SettingsDialog(Ui_Dialog, QDialog):
             self.comboBox_browser.addItem(QIcon(browser.icon()), str(browser), browser)
 
     def _load_settings(self) -> None:
+        self.radioButton_cookies_from_browser.setChecked(
+            settings.get_cookies_from_browser()
+        )
+        self.radioButton_cookies_from_file.setChecked(
+            not settings.get_cookies_from_browser()
+        )
         self.comboBox_browser.setCurrentIndex(
             self.comboBox_browser.findData(settings.get_browser())
         )
+        if (path := settings.get_cookies_file_path()) is not None:
+            self.lineEdit_cookies_file.setText(str(path))
         self.groupBox_cover.setChecked(settings.get_cover())
         self.comboBox_cover_max_size.setCurrentIndex(
             self.comboBox_cover_max_size.findData(settings.get_cover_max_size())
@@ -245,7 +283,11 @@ class SettingsDialog(Ui_Dialog, QDialog):
         super().accept()
 
     def _save_settings(self) -> bool:
+        settings.set_cookies_from_browser(
+            self.radioButton_cookies_from_browser.isChecked()
+        )
         settings.set_browser(self.comboBox_browser.currentData())
+        settings.set_cookies_file_path(self.lineEdit_cookies_file.text())
         settings.set_cover(self.groupBox_cover.isChecked())
         settings.set_cover_max_size(self.comboBox_cover_max_size.currentData())
         settings.set_txt(self.groupBox_songfile.isChecked())
@@ -302,3 +344,12 @@ class SettingsDialog(Ui_Dialog, QDialog):
             self.lineEdit_path_yass_reloaded.text(),
         )
         return True
+
+
+def _is_netscape_cookies_file(file_path: Path) -> bool:
+    try:
+        jar = MozillaCookieJar(str(file_path))
+        jar.load(ignore_discard=True, ignore_expires=True)
+        return True
+    except Exception:
+        return False
