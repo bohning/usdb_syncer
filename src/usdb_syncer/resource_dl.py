@@ -13,6 +13,7 @@ from ffmpeg_normalize import FFmpegNormalize
 from PIL import Image, ImageEnhance, ImageOps
 from PIL.Image import Resampling
 
+from usdb_syncer import settings
 from usdb_syncer.download_options import AudioOptions, CookieOptions, VideoOptions
 from usdb_syncer.logger import Log, song_logger
 from usdb_syncer.meta_tags import ImageMetaTags
@@ -154,8 +155,11 @@ def _ytdl_options(
             with tempfile.NamedTemporaryFile(delete=False, mode="w") as cookie_file:
                 cookie_file.write(str(cookies))
             options["cookiefile"] = cookie_file.name
-    if not cookie_options.cookies_from_browser and cookie_options.cookies_file:
-        options["cookiefile"] = str(cookie_options.cookies_file)
+    if not cookie_options.cookies_from_browser:
+        if cookies := settings.get_cookies_from_keyring():
+            with tempfile.NamedTemporaryFile(delete=False, mode="w") as cookie_file:
+                cookie_file.write(cookies)
+            options["cookiefile"] = str(cookie_file.name)
     return options
 
 

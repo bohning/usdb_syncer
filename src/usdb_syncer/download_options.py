@@ -12,7 +12,6 @@ class CookieOptions:
 
     cookies_from_browser: bool
     browser: settings.Browser
-    cookies_file: Path | None
 
 
 @dataclass(frozen=True)
@@ -120,7 +119,6 @@ def _cookie_options() -> CookieOptions:
     return CookieOptions(
         cookies_from_browser=settings.get_cookies_from_browser(),
         browser=settings.get_browser(),
-        cookies_file=settings.get_cookies_file_path(),
     )
 
 

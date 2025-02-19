@@ -24,6 +24,7 @@ from usdb_syncer import path_template, utils
 from usdb_syncer.logger import logger
 
 SYSTEM_USDB = "USDB Syncer/USDB"
+SYSTEM_COOKIES = "USDB Syncer/Cookies"
 NO_KEYRING_BACKEND_WARNING = (
     "Your USDB password cannot be stored or retrieved because no keyring backend is "
     "available. See https://pypi.org/project/keyring for details."
@@ -50,6 +51,34 @@ def set_usdb_auth(username: str, password: str) -> None:
         logger.warning(NO_KEYRING_BACKEND_WARNING)
 
 
+def get_cookies_from_keyring() -> str | None:
+    username = get_setting(SettingKey.USDB_USER_NAME, "")
+    try:
+        return keyring.get_password(SYSTEM_COOKIES, username)
+    except keyring.core.backend.errors.NoKeyringError as error:
+        logger.debug(error)
+        logger.warning(NO_KEYRING_BACKEND_WARNING)
+        return None
+
+
+def store_cookies_in_keyring(cookie_file: Path) -> bool:
+    username = get_setting(SettingKey.USDB_USER_NAME, "")
+    try:
+        with open(cookie_file, "r", encoding="utf-8") as file:
+            cookies = file.read().strip()
+        keyring.set_password(SYSTEM_COOKIES, username, cookies)
+        logger.info(f"Cookies successfully stored in keyring for user: {username}")
+        return True
+    except FileNotFoundError:
+        logger.error(f"Cookie file not found: {cookie_file}")
+    except PermissionError:
+        logger.error(f"Permission denied when accessing: {cookie_file}")
+    except keyring.core.backend.errors.NoKeyringError as error:
+        logger.debug(error)
+        logger.warning(NO_KEYRING_BACKEND_WARNING)
+    return False
+
+
 def ffmpeg_is_available() -> bool:
     if shutil.which("ffmpeg"):
         return True
@@ -67,6 +96,7 @@ class SettingKey(Enum):
     SONG_DIR = "song_dir"
     FFMPEG_DIR = "ffmpeg_dir"
     BROWSER = "downloads/browser"
+    COOKIES_IN_KEYRING = "downloads/cookies_in_keyring"
     TXT = "downloads/txt"
     ENCODING = "downloads/encoding"
     NEWLINE = "downloads/newline"
@@ -105,7 +135,6 @@ class SettingKey(Enum):
     APP_PATH_USDX = "app_paths/usdx"
     APP_PATH_VOCALUXE = "app_paths/vocaluxe"
     APP_PATH_YASS_RELOADED = "app_paths/yass_reloaded"
-    COOKIE_FILE_PATH = "cookie_file_path"
     COOKIES_FROM_BROWSER = "cookies_from_browser"
 
 
@@ -815,6 +844,14 @@ def set_cover_max_size(value: CoverMaxSize) -> None:
     set_setting(SettingKey.COVER_MAX_SIZE, value)
 
 
+def get_cookies_in_keyring() -> bool:
+    return get_setting(SettingKey.COOKIES_IN_KEYRING, False)
+
+
+def set_cookies_in_keyring(value: bool) -> None:
+    set_setting(SettingKey.COOKIES_IN_KEYRING, value)
+
+
 def get_browser() -> Browser:
     return get_setting(SettingKey.BROWSER, Browser.CHROME)
 
@@ -999,12 +1036,3 @@ def get_cookies_from_browser() -> bool:
 
 def set_cookies_from_browser(value: bool) -> None:
     set_setting(SettingKey.COOKIES_FROM_BROWSER, value)
-
-
-def get_cookies_file_path() -> Path | None:
-    path = get_setting(SettingKey.COOKIE_FILE_PATH, "")
-    return Path(path) if path != "" else None
-
-
-def set_cookies_file_path(path: str) -> None:
-    set_setting(SettingKey.COOKIE_FILE_PATH, path)
