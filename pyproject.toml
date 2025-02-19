@@ -86,6 +86,7 @@ load-plugins = "pylint.extensions.mccabe"
 
 [tool.pylint.basic]
 good-names = ["mw", "p1", "p2", "closeEvent", "customEvent"]
+max-module-lines = 1200
 
 [tool.pylint.messages_control]
 extension-pkg-whitelist = ["PySide6", "shiboken6"]
