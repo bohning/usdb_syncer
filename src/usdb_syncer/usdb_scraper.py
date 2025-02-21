@@ -10,7 +10,7 @@ from typing import Iterator, Type, assert_never
 import attrs
 import requests
 from bs4 import BeautifulSoup, NavigableString, Tag
-from requests import Session
+from requests import Session, cookies
 
 from usdb_syncer import SongId, errors, settings
 from usdb_syncer.constants import (
@@ -66,10 +66,24 @@ def establish_usdb_login(session: Session) -> bool:
 
 def new_session_with_cookies(browser: settings.Browser) -> Session:
     session = Session()
-    if usdb_cookies := browser.cookies(Usdb.DOMAIN, settings.CookieFormat.COOKIEJAR):
-        # Since the CookieJar format is explicitly requested, there is no need for a
-        # type check and the CookieJar can directly be added to the session
-        session.cookies = usdb_cookies  # type: ignore
+    if settings.get_cookies_from_browser():
+        if usdb_cookies := browser.cookies(
+            Usdb.DOMAIN, settings.CookieFormat.COOKIEJAR
+        ):
+            # Since the CookieJar format is explicitly requested, there is no need for a
+            # type check and the CookieJar can directly be added to the session
+            session.cookies = usdb_cookies  # type: ignore
+    else:
+        if cookies_str := settings.get_decrypted_cookies():
+            cookiejar = cookies.RequestsCookieJar()
+            for line in cookies_str.splitlines():
+                parts = line.split("\t")
+                if len(parts) >= 7:  # Netscape format
+                    domain, _, path, secure, _, name, value = parts
+                    cookiejar.set(
+                        name, value, domain=domain, path=path, secure=secure == "TRUE"
+                    )
+            session.cookies = cookiejar
     return session
 
 

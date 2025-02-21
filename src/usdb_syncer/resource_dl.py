@@ -156,7 +156,7 @@ def _ytdl_options(
                 cookie_file.write(str(cookies))
             options["cookiefile"] = cookie_file.name
     if not cookie_options.cookies_from_browser:
-        if cookies := settings.get_cookies():
+        if cookies := settings.get_decrypted_cookies():
             with tempfile.NamedTemporaryFile(delete=False, mode="w") as cookie_file:
                 cookie_file.write(cookies)
             options["cookiefile"] = str(cookie_file.name)

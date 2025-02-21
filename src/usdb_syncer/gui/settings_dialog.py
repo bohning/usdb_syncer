@@ -128,9 +128,9 @@ class SettingsDialog(Ui_Dialog, QDialog):
         path = self._get_cookies_file_location()
         if path:
             if _is_netscape_cookies_file(path):
-                if settings.store_cookies(path):
+                if settings.store_encrypted_cookies(path):
                     self.set_cookies_label(True)
-                    settings.set_cookies_in_keyring(True)
+                    settings.set_cookies_stored_encrypted(True)
                     return
                 QMessageBox.critical(
                     self, "Error", "Failed to store cookies in keychain."
@@ -143,10 +143,10 @@ class SettingsDialog(Ui_Dialog, QDialog):
             )
             return
 
-    def set_cookies_label(self, in_keyring: bool) -> None:
-        if in_keyring:
+    def set_cookies_label(self, encrypted: bool) -> None:
+        if encrypted:
             self.label_cookies.setPixmap(QPixmap(":/icons/tick.png"))
-            self.label_cookies.setToolTip("Cookies stored in keychain.")
+            self.label_cookies.setToolTip("Cookies stored in encrypted file.")
         else:
             self.label_cookies.setText(
                 "<html><head/><body><p>"
@@ -197,7 +197,7 @@ class SettingsDialog(Ui_Dialog, QDialog):
         self.radioButton_cookies_from_file.setChecked(
             not settings.get_cookies_from_browser()
         )
-        self.set_cookies_label(settings.get_cookies_in_keyring())
+        self.set_cookies_label(settings.get_cookies_stored_encrypted())
         self.comboBox_browser.setCurrentIndex(
             self.comboBox_browser.findData(settings.get_browser())
         )
@@ -304,7 +304,7 @@ class SettingsDialog(Ui_Dialog, QDialog):
     def accept(self) -> None:
         if (
             self.radioButton_cookies_from_file.isChecked()
-            and not settings.get_cookies_in_keyring()
+            and not settings.get_cookies_stored_encrypted()
         ):
             QMessageBox.critical(
                 self,

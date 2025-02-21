@@ -52,7 +52,7 @@ def set_usdb_auth(username: str, password: str) -> None:
         logger.warning(NO_KEYRING_BACKEND_WARNING)
 
 
-def get_cookies() -> str | None:
+def get_decrypted_cookies() -> str | None:
     username = get_setting(SettingKey.USDB_USER_NAME, "")
     try:
         key = keyring.get_password(SYSTEM_COOKIE_KEY, username)
@@ -68,7 +68,7 @@ def get_cookies() -> str | None:
         return None
 
 
-def store_cookies(cookie_file: Path) -> bool:
+def store_encrypted_cookies(cookie_file: Path) -> bool:
     key = Fernet.generate_key()
     fernet = Fernet(key)
     username = get_setting(SettingKey.USDB_USER_NAME, "")
@@ -113,7 +113,8 @@ class SettingKey(Enum):
     SONG_DIR = "song_dir"
     FFMPEG_DIR = "ffmpeg_dir"
     BROWSER = "downloads/browser"
-    COOKIES_IN_KEYRING = "downloads/cookies_in_keyring"
+    COOKIES_FROM_BROWSER = "cookies_from_browser"
+    COOKIES_STORED_ENCRYPTED = "downloads/cookies_stored_encrypted"
     TXT = "downloads/txt"
     ENCODING = "downloads/encoding"
     NEWLINE = "downloads/newline"
@@ -152,7 +153,6 @@ class SettingKey(Enum):
     APP_PATH_USDX = "app_paths/usdx"
     APP_PATH_VOCALUXE = "app_paths/vocaluxe"
     APP_PATH_YASS_RELOADED = "app_paths/yass_reloaded"
-    COOKIES_FROM_BROWSER = "cookies_from_browser"
 
 
 class Encoding(Enum):
@@ -861,12 +861,12 @@ def set_cover_max_size(value: CoverMaxSize) -> None:
     set_setting(SettingKey.COVER_MAX_SIZE, value)
 
 
-def get_cookies_in_keyring() -> bool:
-    return get_setting(SettingKey.COOKIES_IN_KEYRING, False)
+def get_cookies_stored_encrypted() -> bool:
+    return get_setting(SettingKey.COOKIES_STORED_ENCRYPTED, False)
 
 
-def set_cookies_in_keyring(value: bool) -> None:
-    set_setting(SettingKey.COOKIES_IN_KEYRING, value)
+def set_cookies_stored_encrypted(value: bool) -> None:
+    set_setting(SettingKey.COOKIES_STORED_ENCRYPTED, value)
 
 
 def get_browser() -> Browser:
