@@ -13,7 +13,7 @@ from ffmpeg_normalize import FFmpegNormalize
 from PIL import Image, ImageEnhance, ImageOps
 from PIL.Image import Resampling
 
-from usdb_syncer import settings
+from usdb_syncer import settings, utils
 from usdb_syncer.download_options import AudioOptions, CookieOptions, VideoOptions
 from usdb_syncer.logger import Log, song_logger
 from usdb_syncer.meta_tags import ImageMetaTags
@@ -66,7 +66,7 @@ def download_audio(
         the extension of the successfully downloaded file or None
     """
     ydl_opts = _ytdl_options(
-        options.ytdl_format(), cookie_options, path_stem, options.rate_limit
+        options.ytdl_format(), cookie_options, path_stem, options.rate_limit, logger
     )
     if not options.normalize:
         postprocessor = {
@@ -124,7 +124,7 @@ def download_video(
         the extension of the successfully downloaded file or None
     """
     ydl_opts = _ytdl_options(
-        options.ytdl_format(), cookie_options, path_stem, options.rate_limit
+        options.ytdl_format(), cookie_options, path_stem, options.rate_limit, logger
     )
     if filename := _download_resource(ydl_opts, resource, logger):
         return os.path.splitext(filename)[1][1:]
@@ -136,6 +136,7 @@ def _ytdl_options(
     cookie_options: CookieOptions,
     target_stem: Path,
     ratelimit: YtdlpRateLimit,
+    logger: Log,
 ) -> YtdlOptions:
     options: YtdlOptions = {
         "format": format_,
@@ -154,14 +155,26 @@ def _ytdl_options(
         if cookies := cookie_options.browser.cookies(
             "youtube.com", CookieFormat.NETSCAPE
         ):
+            logger.debug(
+                f"Successfully retrieved cookies from {cookie_options.browser}."
+            )
             with tempfile.NamedTemporaryFile(delete=False, mode="w") as cookie_file:
                 cookie_file.write(str(cookies))
             options["cookiefile"] = cookie_file.name
+        else:
+            logger.debug(f"Failed to retrieve cookies from {cookie_options.browser}.")
     if not cookie_options.cookies_from_browser:
         if cookies := settings.get_decrypted_cookies():
+            logger.debug(
+                f"Successfully decrypted cookies from {utils.AppPaths.cookie_file}."
+            )
             with tempfile.NamedTemporaryFile(delete=False, mode="w") as cookie_file:
                 cookie_file.write(cookies)
             options["cookiefile"] = str(cookie_file.name)
+        else:
+            logger.debug(
+                f"Failed to decrypt cookies from {utils.AppPaths.cookie_file}."
+            )
     return options
 
 

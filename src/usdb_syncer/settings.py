@@ -456,10 +456,13 @@ class Browser(Enum):
                 case CookieFormat.NETSCAPE:
                     return rookiepy.to_netscape(function([domain]))
         except Exception:  # pylint: disable=broad-exception-caught
+            logger.warning(
+                f"Retrieving cookies from {str(self)} on {os.name} failed. "
+                "You can export your browser cookies manually and load them "
+                "in the settings."
+            )
             logger.debug(traceback.format_exc())
-        logger.warning(
-            f"Failed to retrieve {str(self).capitalize()} cookies for {domain}."
-        )
+        logger.warning(f"Failed to retrieve {str(self)} cookies for {domain}.")
         return None
 
 
