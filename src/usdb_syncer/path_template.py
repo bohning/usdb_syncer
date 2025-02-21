@@ -17,6 +17,8 @@ if TYPE_CHECKING:
 FORBIDDEN_CHARACTERS = '?"<>|*.'
 INITIALS_FORBIDDEN_CHARACTERS = " "
 
+UNKNOWN_PLACEHOLDER_STRING = "None"
+
 
 class PathTemplateError(errors.UsdbSyncerError, ValueError):
     """Raised when the path template is invalid."""
@@ -170,22 +172,27 @@ class PathTemplatePlaceholder(PathTemplateComponentToken, enum.Enum):
                 for char in song.artist:
                     if char not in INITIALS_FORBIDDEN_CHARACTERS:
                         return char
-                # This shouldn't be reached, but we also shouldn't error in case we do.
-                return "None"
+                return UNKNOWN_PLACEHOLDER_STRING
             case PathTemplatePlaceholder.TITLE:
                 return song.title
             case PathTemplatePlaceholder.GENRE:
-                return next(iter(song.genres()), "")
+                return next(iter(song.genres()), UNKNOWN_PLACEHOLDER_STRING)
             case PathTemplatePlaceholder.YEAR:
-                return str(song.year)
+                if song.year:
+                    return str(song.year)
+                return UNKNOWN_PLACEHOLDER_STRING
             case PathTemplatePlaceholder.LANGUAGE:
-                return next(iter(song.languages()), "")
+                return next(iter(song.languages()), UNKNOWN_PLACEHOLDER_STRING)
             case PathTemplatePlaceholder.CREATOR:
-                return next(iter(song.creators()), "")
+                return next(iter(song.creators()), UNKNOWN_PLACEHOLDER_STRING)
             case PathTemplatePlaceholder.EDITION:
-                return song.edition
+                if song.edition:
+                    return song.edition
+                return UNKNOWN_PLACEHOLDER_STRING
             case PathTemplatePlaceholder.RATING:
-                return str(song.rating)
+                if song.rating:
+                    return str(song.rating)
+                return UNKNOWN_PLACEHOLDER_STRING
             case _ as unreachable:
                 assert_never(unreachable)
 
