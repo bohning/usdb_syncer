@@ -2,15 +2,17 @@
 
 import logging
 import re
+import tempfile
 import time
 from datetime import datetime
 from enum import Enum
+from http.cookiejar import MozillaCookieJar
 from typing import Iterator, Type, assert_never
 
 import attrs
 import requests
 from bs4 import BeautifulSoup, NavigableString, Tag
-from requests import Session, cookies
+from requests import Session
 
 from usdb_syncer import SongId, errors, settings
 from usdb_syncer.constants import (
@@ -75,15 +77,12 @@ def new_session_with_cookies(browser: settings.Browser) -> Session:
             session.cookies = usdb_cookies  # type: ignore
     else:
         if cookies_str := settings.get_decrypted_cookies():
-            cookiejar = cookies.RequestsCookieJar()
-            for line in cookies_str.splitlines():
-                parts = line.split("\t")
-                if len(parts) >= 7:  # Netscape format
-                    domain, _, path, secure, _, name, value = parts
-                    cookiejar.set(
-                        name, value, domain=domain, path=path, secure=secure == "TRUE"
-                    )
-            session.cookies = cookiejar
+            with tempfile.NamedTemporaryFile("w+", delete=True) as temp_file:
+                temp_file.write(cookies_str)
+                temp_file.flush()
+                cookie_jar = MozillaCookieJar(temp_file.name)
+                cookie_jar.load(ignore_discard=True, ignore_expires=True)
+            session.cookies.update(cookie_jar)
     return session
 
 
