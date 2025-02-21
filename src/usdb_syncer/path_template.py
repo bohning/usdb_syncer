@@ -15,6 +15,7 @@ if TYPE_CHECKING:
     from usdb_syncer.usdb_song import UsdbSong
 
 FORBIDDEN_CHARACTERS = '?"<>|*.'
+INITIALS_FORBIDDEN_CHARACTERS = " "
 
 
 class PathTemplateError(errors.UsdbSyncerError, ValueError):
@@ -143,6 +144,7 @@ class PathTemplatePlaceholder(PathTemplateComponentToken, enum.Enum):
 
     SONG_ID = "id"
     ARTIST = "artist"
+    ARTIST_INITIAL = "artist initial"
     TITLE = "title"
     GENRE = "genre"
     YEAR = "year"
@@ -164,6 +166,12 @@ class PathTemplatePlaceholder(PathTemplateComponentToken, enum.Enum):
                 return str(song.song_id)
             case PathTemplatePlaceholder.ARTIST:
                 return song.artist
+            case PathTemplatePlaceholder.ARTIST_INITIAL:
+                for char in song.artist:
+                    if char not in INITIALS_FORBIDDEN_CHARACTERS:
+                        return char
+                # This shouldn't be reached, but we also shouldn't error in case we do.
+                return "None"
             case PathTemplatePlaceholder.TITLE:
                 return song.title
             case PathTemplatePlaceholder.GENRE:
