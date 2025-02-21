@@ -62,6 +62,7 @@ class AppPaths:
     db = Path(_app_dirs.user_data_dir, "usdb_syncer.db")
     sql = Path(root, "src", "usdb_syncer", "db", "sql")
     addons = Path(_app_dirs.user_data_dir, "addons")
+    cookie_file = Path(_app_dirs.user_data_dir, "cookies.crypt")
 
     @classmethod
     def make_dirs(cls) -> None:

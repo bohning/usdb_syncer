@@ -8,6 +8,7 @@ and getters should be added to this module.
 from __future__ import annotations
 
 import os
+import platform
 import shutil
 import subprocess
 import traceback
@@ -18,13 +19,14 @@ from typing import Any, Tuple, TypeVar, assert_never, cast
 
 import keyring
 import rookiepy
+from cryptography.fernet import Fernet
 from PySide6.QtCore import QByteArray, QSettings
 
 from usdb_syncer import path_template, utils
-from usdb_syncer.constants import Usdb
 from usdb_syncer.logger import logger
 
 SYSTEM_USDB = "USDB Syncer/USDB"
+SYSTEM_COOKIE_KEY = "USDB Syncer/Cookies"
 NO_KEYRING_BACKEND_WARNING = (
     "Your USDB password cannot be stored or retrieved because no keyring backend is "
     "available. See https://pypi.org/project/keyring for details."
@@ -51,6 +53,50 @@ def set_usdb_auth(username: str, password: str) -> None:
         logger.warning(NO_KEYRING_BACKEND_WARNING)
 
 
+def get_decrypted_cookies() -> str | None:
+    username = get_setting(SettingKey.USDB_USER_NAME, "")
+    try:
+        key = keyring.get_password(SYSTEM_COOKIE_KEY, username)
+        if key is None:
+            return None
+        fernet = Fernet(key.encode("utf-8"))
+        with open(utils.AppPaths.cookie_file, "rb") as file:
+            encrypted_cookies = file.read()
+        return fernet.decrypt(encrypted_cookies).decode("utf-8")
+    except keyring.core.backend.errors.NoKeyringError as error:
+        logger.debug(error)
+        logger.warning(NO_KEYRING_BACKEND_WARNING)
+        return None
+
+
+def store_encrypted_cookies(cookie_file: Path) -> bool:
+    key = Fernet.generate_key()
+    fernet = Fernet(key)
+    username = get_setting(SettingKey.USDB_USER_NAME, "")
+    try:
+        with open(cookie_file, "r", encoding="utf-8") as file:
+            cookies = file.read().strip()
+        encrypted_cookies = fernet.encrypt(cookies.encode("utf-8"))
+
+        with open(utils.AppPaths.cookie_file, "wb") as file:
+            file.write(encrypted_cookies)
+
+        keyring.set_password(SYSTEM_COOKIE_KEY, username, key.decode("utf-8"))
+        logger.info(
+            f"Cookies successfully transfered to an encrypted file. It is recommended "
+            f"to delete plain text '{cookie_file}' now."
+        )
+        return True
+    except FileNotFoundError:
+        logger.error(f"Cookie file not found: {cookie_file}")
+    except PermissionError:
+        logger.error(f"Permission denied when accessing: {cookie_file}")
+    except keyring.core.backend.errors.NoKeyringError as error:
+        logger.debug(error)
+        logger.warning(NO_KEYRING_BACKEND_WARNING)
+    return False
+
+
 def ffmpeg_is_available() -> bool:
     if shutil.which("ffmpeg"):
         return True
@@ -68,6 +114,8 @@ class SettingKey(Enum):
     SONG_DIR = "song_dir"
     FFMPEG_DIR = "ffmpeg_dir"
     BROWSER = "downloads/browser"
+    COOKIES_FROM_BROWSER = "cookies_from_browser"
+    COOKIES_STORED_ENCRYPTED = "downloads/cookies_stored_encrypted"
     TXT = "downloads/txt"
     ENCODING = "downloads/encoding"
     NEWLINE = "downloads/newline"
@@ -307,28 +355,42 @@ class AudioBitrate(Enum):
         return int(self.value.removesuffix(" kbps")) * 1000  # in bits/s
 
 
+class CookieFormat(Enum):
+    """Format options for retrieved cookies."""
+
+    COOKIELIST = auto()
+    COOKIEJAR = auto()
+    NETSCAPE = auto()
+
+
 class Browser(Enum):
     """Browsers to use cookies from."""
 
     NONE = None
-    BRAVE = "brave"
-    CHROME = "chrome"
-    CHROMIUM = "chromium"
-    EDGE = "edge"
-    FIREFOX = "firefox"
-    OPERA = "opera"
-    SAFARI = "safari"
-    VIVALDI = "vivaldi"
+    ARC = "Arc"
+    BRAVE = "Brave"
+    CHROME = "Chrome"
+    CHROMIUM = "Chromium"
+    EDGE = "Edge"
+    FIREFOX = "Firefox"
+    LIBREWOLF = "Librewolf"
+    OCTO_BROWSER = "Octo Browser"
+    OPERA = "Opera"
+    OPERA_GX = "Opera GX"
+    SAFARI = "Safari"
+    VIVALDI = "Vivaldi"
 
     def __str__(self) -> str:
         if self is Browser.NONE:
             return "None"
-        return self.value.capitalize()
+        return self.value
 
     def icon(self) -> str:
         match self:
             case Browser.NONE:
                 return ""
+            case Browser.ARC:
+                return ":/icons/arc.png"
             case Browser.BRAVE:
                 return ":/icons/brave.png"
             case Browser.CHROME:
@@ -339,8 +401,14 @@ class Browser(Enum):
                 return ":/icons/edge.png"
             case Browser.FIREFOX:
                 return ":/icons/firefox.png"
+            case Browser.LIBREWOLF:
+                return ":/icons/librewolf.png"
+            case Browser.OCTO_BROWSER:
+                return ":/icons/octo_browser.png"
             case Browser.OPERA:
                 return ":/icons/opera.png"
+            case Browser.OPERA_GX:
+                return ":/icons/opera_gx.png"
             case Browser.SAFARI:
                 return ":/icons/safari.png"
             case Browser.VIVALDI:
@@ -348,10 +416,14 @@ class Browser(Enum):
             case _ as unreachable:
                 assert_never(unreachable)
 
-    def cookies(self) -> CookieJar | None:
+    def cookies(
+        self, domain: str, fmt: CookieFormat
+    ) -> rookiepy.CookieList | CookieJar | str | None:
         match self:
             case Browser.NONE:
                 return None
+            case Browser.ARC:
+                function = rookiepy.arc
             case Browser.BRAVE:
                 function = rookiepy.brave
             case Browser.CHROME:
@@ -362,8 +434,14 @@ class Browser(Enum):
                 function = rookiepy.edge
             case Browser.FIREFOX:
                 function = rookiepy.firefox
+            case Browser.LIBREWOLF:
+                function = rookiepy.librewolf
+            case Browser.OCTO_BROWSER:
+                function = rookiepy.octo_browser
             case Browser.OPERA:
                 function = rookiepy.opera
+            case Browser.OPERA_GX:
+                function = rookiepy.opera_gx
             case Browser.SAFARI:
                 function = rookiepy.safari
             case Browser.VIVALDI:
@@ -371,10 +449,21 @@ class Browser(Enum):
             case _ as unreachable:
                 assert_never(unreachable)
         try:
-            return rookiepy.to_cookiejar(function([Usdb.DOMAIN]))
+            match fmt:
+                case CookieFormat.COOKIELIST:
+                    return function([domain])
+                case CookieFormat.COOKIEJAR:
+                    return rookiepy.to_cookiejar(function([domain]))
+                case CookieFormat.NETSCAPE:
+                    return rookiepy.to_netscape(function([domain]))
         except Exception:  # pylint: disable=broad-exception-caught
+            logger.warning(
+                f"Retrieving cookies from {str(self)} on {platform.system()} failed. "
+                "You can export your browser cookies manually and load them "
+                "in the settings."
+            )
             logger.debug(traceback.format_exc())
-        logger.warning(f"Failed to retrieve {str(self).capitalize()} cookies.")
+        logger.warning(f"Failed to retrieve {str(self)} cookies for {domain}.")
         return None
 
 
@@ -776,6 +865,14 @@ def set_cover_max_size(value: CoverMaxSize) -> None:
     set_setting(SettingKey.COVER_MAX_SIZE, value)
 
 
+def get_cookies_stored_encrypted() -> bool:
+    return get_setting(SettingKey.COOKIES_STORED_ENCRYPTED, False)
+
+
+def set_cookies_stored_encrypted(value: bool) -> None:
+    set_setting(SettingKey.COOKIES_STORED_ENCRYPTED, value)
+
+
 def get_browser() -> Browser:
     return get_setting(SettingKey.BROWSER, Browser.CHROME)
 
@@ -952,3 +1049,11 @@ def set_app_path(app: SupportedApps, path: str) -> None:
             set_setting(SettingKey.APP_PATH_YASS_RELOADED, path)
         case _ as unreachable:
             assert_never(unreachable)
+
+
+def get_cookies_from_browser() -> bool:
+    return get_setting(SettingKey.COOKIES_FROM_BROWSER, True)
+
+
+def set_cookies_from_browser(value: bool) -> None:
+    set_setting(SettingKey.COOKIES_FROM_BROWSER, value)

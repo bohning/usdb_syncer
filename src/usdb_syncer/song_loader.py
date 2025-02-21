@@ -409,7 +409,7 @@ def _maybe_download_audio(ctx: _Context) -> None:
         if ext := resource_dl.download_audio(
             resource,
             options,
-            ctx.options.browser,
+            ctx.options.cookie_options,
             ctx.locations.temp_path(),
             ctx.logger,
         ):
@@ -432,7 +432,7 @@ def _maybe_download_video(ctx: _Context) -> None:
         if ext := resource_dl.download_video(
             resource,
             options,
-            ctx.options.browser,
+            ctx.options.cookie_options,
             ctx.locations.temp_path(),
             ctx.logger,
         ):

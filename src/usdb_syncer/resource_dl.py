@@ -1,6 +1,7 @@
 """Functions for downloading and processing media."""
 
 import os
+import tempfile
 from enum import Enum
 from pathlib import Path
 from typing import Union, assert_never
@@ -12,10 +13,11 @@ from ffmpeg_normalize import FFmpegNormalize
 from PIL import Image, ImageEnhance, ImageOps
 from PIL.Image import Resampling
 
-from usdb_syncer.download_options import AudioOptions, VideoOptions
+from usdb_syncer import settings, utils
+from usdb_syncer.download_options import AudioOptions, CookieOptions, VideoOptions
 from usdb_syncer.logger import Log, song_logger
 from usdb_syncer.meta_tags import ImageMetaTags
-from usdb_syncer.settings import Browser, CoverMaxSize, YtdlpRateLimit
+from usdb_syncer.settings import CookieFormat, CoverMaxSize, YtdlpRateLimit
 from usdb_syncer.usdb_scraper import SongDetails
 from usdb_syncer.utils import video_url_from_resource
 
@@ -46,21 +48,25 @@ class ImageKind(Enum):
 
 
 def download_audio(
-    resource: str, options: AudioOptions, browser: Browser, path_stem: Path, logger: Log
+    resource: str,
+    options: AudioOptions,
+    cookie_options: CookieOptions,
+    path_stem: Path,
+    logger: Log,
 ) -> str | None:
     """Download audio from resource to path and process it according to options.
 
     Parameters:
         resource: URL or YouTube id
         options: parameters for downloading and processing
-        browser: browser to use cookies from
+        cookie_options: parameters for cookie retrieval
         path_stem: the target on the file system *without* an extension
 
     Returns:
         the extension of the successfully downloaded file or None
     """
     ydl_opts = _ytdl_options(
-        options.ytdl_format(), browser, path_stem, options.rate_limit
+        options.ytdl_format(), cookie_options, path_stem, options.rate_limit, logger
     )
     if not options.normalize:
         postprocessor = {
@@ -100,21 +106,25 @@ def _normalize(options: AudioOptions, path_stem: Path, filename: str) -> None:
 
 
 def download_video(
-    resource: str, options: VideoOptions, browser: Browser, path_stem: Path, logger: Log
+    resource: str,
+    options: VideoOptions,
+    cookie_options: CookieOptions,
+    path_stem: Path,
+    logger: Log,
 ) -> str | None:
     """Download video from resource to path and process it according to options.
 
     Parameters:
         resource: URL or YouTube id
         options: parameters for downloading and processing
-        browser: browser to use cookies from
+        cookie_options: parameters for cookie retrieval
         path_stem: the target on the file system *without* an extension
 
     Returns:
         the extension of the successfully downloaded file or None
     """
     ydl_opts = _ytdl_options(
-        options.ytdl_format(), browser, path_stem, options.rate_limit
+        options.ytdl_format(), cookie_options, path_stem, options.rate_limit, logger
     )
     if filename := _download_resource(ydl_opts, resource, logger):
         return os.path.splitext(filename)[1][1:]
@@ -122,7 +132,11 @@ def download_video(
 
 
 def _ytdl_options(
-    format_: str, browser: Browser, target_stem: Path, ratelimit: YtdlpRateLimit
+    format_: str,
+    cookie_options: CookieOptions,
+    target_stem: Path,
+    ratelimit: YtdlpRateLimit,
+    logger: Log,
 ) -> YtdlOptions:
     options: YtdlOptions = {
         "format": format_,
@@ -132,11 +146,35 @@ def _ytdl_options(
         # suppresses download of playlists, channels and search results
         "playlistend": 0,
         "overwrites": True,
+        "retries": 1,
+        "fragment_retries": 2,
     }
     if ratelimit.value is not None:
         options["ratelimit"] = ratelimit.value
-    if browser:
-        options["cookiesfrombrowser"] = (browser.value, None, None, None)
+    if cookie_options.cookies_from_browser and cookie_options.browser:
+        if cookies := cookie_options.browser.cookies(
+            "youtube.com", CookieFormat.NETSCAPE
+        ):
+            logger.debug(
+                f"Successfully retrieved cookies from {cookie_options.browser}."
+            )
+            with tempfile.NamedTemporaryFile(delete=False, mode="w") as cookie_file:
+                cookie_file.write(str(cookies))
+            options["cookiefile"] = cookie_file.name
+        else:
+            logger.debug(f"Failed to retrieve cookies from {cookie_options.browser}.")
+    if not cookie_options.cookies_from_browser:
+        if cookies := settings.get_decrypted_cookies():
+            logger.debug(
+                f"Successfully decrypted cookies from {utils.AppPaths.cookie_file}."
+            )
+            with tempfile.NamedTemporaryFile(delete=False, mode="w") as cookie_file:
+                cookie_file.write(cookies)
+            options["cookiefile"] = str(cookie_file.name)
+        else:
+            logger.debug(
+                f"Failed to decrypt cookies from {utils.AppPaths.cookie_file}."
+            )
     return options
 
 
@@ -146,7 +184,7 @@ def _download_resource(options: YtdlOptions, resource: str, logger: Log) -> str 
         return None
 
     options_without_cookies = options.copy()
-    options_without_cookies.pop("cookiesfrombrowser")
+    options_without_cookies.pop("cookiefile", None)
     with yt_dlp.YoutubeDL(options_without_cookies) as ydl:
         try:
             return ydl.prepare_filename(ydl.extract_info(url))
@@ -154,12 +192,15 @@ def _download_resource(options: YtdlOptions, resource: str, logger: Log) -> str 
             logger.debug(f"error downloading video url: {url}")
             # Check if the error is due to age restriction
             if "confirm your age" in str(e).lower():
-                logger.debug("Age-restricted resource. Retrying with cookies...")
+                logger.debug("Age-restricted resource. Retrying with cookies ...")
                 try:
                     with yt_dlp.YoutubeDL(options) as ydl:
                         return ydl.prepare_filename(ydl.extract_info(url))
-                except yt_dlp.utils.YoutubeDLError as retry_error:
-                    logger.error(f"Retry failed: {retry_error}")
+                except yt_dlp.utils.YoutubeDLError:
+                    logger.error(
+                        "Retry with cookies failed, maybe your logged in "
+                        "cookies are outdated."
+                    )
                     return None
             else:
                 return None

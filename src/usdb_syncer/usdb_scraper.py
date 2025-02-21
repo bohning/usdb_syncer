@@ -1,10 +1,13 @@
 """Functionality related to the usdb.animux.de web page."""
 
 import logging
+import os
 import re
+import tempfile
 import time
 from datetime import datetime
 from enum import Enum
+from http.cookiejar import MozillaCookieJar
 from typing import Iterator, Type, assert_never
 
 import attrs
@@ -66,9 +69,25 @@ def establish_usdb_login(session: Session) -> bool:
 
 def new_session_with_cookies(browser: settings.Browser) -> Session:
     session = Session()
-    if cookies := browser.cookies():
-        for cookie in cookies:
-            session.cookies.set_cookie(cookie)
+    if settings.get_cookies_from_browser():
+        if usdb_cookies := browser.cookies(
+            Usdb.DOMAIN, settings.CookieFormat.COOKIEJAR
+        ):
+            # Since the CookieJar format is explicitly requested, there is no need for a
+            # type check and the CookieJar can directly be added to the session
+            session.cookies = usdb_cookies  # type: ignore
+    else:
+        if cookies_str := settings.get_decrypted_cookies():
+            with tempfile.NamedTemporaryFile("w+", delete=False) as temp_file:
+                temp_file.write(cookies_str)
+                temp_file_name = temp_file.name
+            try:
+                cookie_jar = MozillaCookieJar(temp_file_name)
+                cookie_jar.load(ignore_discard=True, ignore_expires=True)
+                session.cookies.clear()
+                session.cookies.update(cookie_jar)
+            finally:
+                os.remove(temp_file_name)
     return session
 
 

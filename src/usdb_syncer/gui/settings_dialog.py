@@ -1,12 +1,14 @@
 """Dialog with app settings."""
 
 import sys
+from http.cookiejar import MozillaCookieJar
+from http.cookies import CookieError
 from pathlib import Path
 from typing import assert_never
 
 from PySide6 import QtWidgets
-from PySide6.QtGui import QIcon
-from PySide6.QtWidgets import QDialog, QFileDialog, QWidget
+from PySide6.QtGui import QIcon, QPixmap
+from PySide6.QtWidgets import QDialog, QFileDialog, QMessageBox, QWidget
 
 from usdb_syncer import SongId, path_template, settings
 from usdb_syncer.gui.forms.SettingsDialog import Ui_Dialog
@@ -46,27 +48,38 @@ class SettingsDialog(Ui_Dialog, QDialog):
         self.groupBox_reencode_video.setVisible(False)
         if sys.platform != "win32":
             self.groupBox_vocaluxe.setVisible(False)
+        if sys.platform != "darwin":
+            self.comboBox_browser.removeItem(
+                self.comboBox_browser.findText(settings.Browser.SAFARI.value)
+            )
+        if sys.platform == "linux":
+            self.comboBox_browser.removeItem(
+                self.comboBox_browser.findText(settings.Browser.OPERA_GX.value)
+            )
+        self.pushButton_browse_cookies_file.clicked.connect(
+            self._read_cookies_from_file_and_store_to_keyring
+        )
         self.pushButton_browse_karedi.clicked.connect(
-            lambda: self._set_location(settings.SupportedApps.KAREDI)
+            lambda: self._set_app_location(settings.SupportedApps.KAREDI)
         )
         self.pushButton_browse_performous.clicked.connect(
-            lambda: self._set_location(settings.SupportedApps.PERFORMOUS)
+            lambda: self._set_app_location(settings.SupportedApps.PERFORMOUS)
         )
         self.pushButton_browse_ultrastar_manager.clicked.connect(
-            lambda: self._set_location(settings.SupportedApps.ULTRASTAR_MANAGER)
+            lambda: self._set_app_location(settings.SupportedApps.ULTRASTAR_MANAGER)
         )
         self.pushButton_browse_usdx.clicked.connect(
-            lambda: self._set_location(settings.SupportedApps.USDX)
+            lambda: self._set_app_location(settings.SupportedApps.USDX)
         )
         self.pushButton_browse_vocaluxe.clicked.connect(
-            lambda: self._set_location(settings.SupportedApps.VOCALUXE)
+            lambda: self._set_app_location(settings.SupportedApps.VOCALUXE)
         )
         self.pushButton_browse_yass_reloaded.clicked.connect(
-            lambda: self._set_location(settings.SupportedApps.YASS_RELOADED)
+            lambda: self._set_app_location(settings.SupportedApps.YASS_RELOADED)
         )
 
-    def _set_location(self, app: settings.SupportedApps) -> None:
-        path = self._get_executable(app)
+    def _set_app_location(self, app: settings.SupportedApps) -> None:
+        path = self._get_app_executable(app)
         text = str(path) if path is not None else ""
         match app:
             case settings.SupportedApps.KAREDI:
@@ -84,7 +97,7 @@ class SettingsDialog(Ui_Dialog, QDialog):
             case _ as unreachable:
                 assert_never(unreachable)
 
-    def _get_executable(self, app: settings.SupportedApps) -> Path | None:
+    def _get_app_executable(self, app: settings.SupportedApps) -> Path | None:
         filt = "*"
         directory = ""
         match sys.platform:
@@ -111,6 +124,50 @@ class SettingsDialog(Ui_Dialog, QDialog):
             return full_path
         return None
 
+    def _read_cookies_from_file_and_store_to_keyring(self) -> None:
+        path = self._get_cookies_file_location()
+        if path:
+            if _is_netscape_cookies_file(path):
+                if settings.store_encrypted_cookies(path):
+                    self.set_cookies_label(True)
+                    settings.set_cookies_stored_encrypted(True)
+                    return
+                QMessageBox.critical(
+                    self, "Error", "Failed to store cookies in keychain."
+                )
+                return
+            QMessageBox.critical(
+                self,
+                "Error",
+                "The selected file does not conform to the Mozilla/Netscape format.",
+            )
+            return
+
+    def set_cookies_label(self, encrypted: bool) -> None:
+        if encrypted:
+            self.label_cookies.setPixmap(QPixmap(":/icons/tick.png"))
+            self.label_cookies.setToolTip("Cookies stored in encrypted file.")
+        else:
+            self.label_cookies.setText(
+                "<html><head/><body><p>"
+                '<a href="https://github.com/yt-dlp/yt-dlp/wiki/Extractors'
+                '#exporting-youtube-cookies"><img src=":/icons/info.png"/></a>'
+                "</p></body></html>"
+            )
+            self.label_cookies.setToolTip(
+                "Click here for more information on how to properly export cookies.."
+            )
+
+    def _get_cookies_file_location(self) -> Path | None:
+        filename = QFileDialog.getOpenFileName(
+            self, "Select cookies file", "", "*.txt"
+        )[0]
+        # dialog is hidden by main window on macOS if file picker was cancelled
+        self.raise_()
+        if filename == "":
+            return None
+        return Path(filename)
+
     def _populate_comboboxes(self) -> None:
         combobox_settings = (
             (self.comboBox_encoding, settings.Encoding),
@@ -134,6 +191,13 @@ class SettingsDialog(Ui_Dialog, QDialog):
             self.comboBox_browser.addItem(QIcon(browser.icon()), str(browser), browser)
 
     def _load_settings(self) -> None:
+        self.radioButton_cookies_from_browser.setChecked(
+            settings.get_cookies_from_browser()
+        )
+        self.radioButton_cookies_from_file.setChecked(
+            not settings.get_cookies_from_browser()
+        )
+        self.set_cookies_label(settings.get_cookies_stored_encrypted())
         self.comboBox_browser.setCurrentIndex(
             self.comboBox_browser.findData(settings.get_browser())
         )
@@ -238,6 +302,15 @@ class SettingsDialog(Ui_Dialog, QDialog):
         self.edit_path_template_result.setText(result)
 
     def accept(self) -> None:
+        if (
+            self.radioButton_cookies_from_file.isChecked()
+            and not settings.get_cookies_stored_encrypted()
+        ):
+            QMessageBox.critical(
+                self,
+                "Error",
+                "No cookies stored in keyring. Please select a proper cookie file.",
+            )
         if not self._save_settings():
             return
         if self._browser != self.comboBox_browser.currentData():
@@ -245,6 +318,9 @@ class SettingsDialog(Ui_Dialog, QDialog):
         super().accept()
 
     def _save_settings(self) -> bool:
+        settings.set_cookies_from_browser(
+            self.radioButton_cookies_from_browser.isChecked()
+        )
         settings.set_browser(self.comboBox_browser.currentData())
         settings.set_cover(self.groupBox_cover.isChecked())
         settings.set_cover_max_size(self.comboBox_cover_max_size.currentData())
@@ -302,3 +378,24 @@ class SettingsDialog(Ui_Dialog, QDialog):
             self.lineEdit_path_yass_reloaded.text(),
         )
         return True
+
+
+def _is_netscape_cookies_file(path: Path) -> bool:
+    """The cookie file must meet the following requirements according to
+    https://github.com/yt-dlp/yt-dlp/wiki/FAQ#how-do-i-pass-cookies-to-yt-dlp
+
+    - Mozilla/Netscape format
+    - First line is either "# HTTP Cookie File" or "# Netscape HTTP Cookie File"
+    - OS-specific newline characters (Windows: CRLF (\r\n), Unix-like: LF (\n))"""
+
+    try:
+        with open(path, "r", encoding="utf-8") as file:
+            first_line = file.readline().strip()
+            if first_line not in {"# HTTP Cookie File", "# Netscape HTTP Cookie File"}:
+                return False  # First line does not match required format
+
+        jar = MozillaCookieJar(str(path))
+        jar.load(ignore_discard=True, ignore_expires=True)
+        return True
+    except (IOError, CookieError):
+        return False
