@@ -8,6 +8,7 @@ and getters should be added to this module.
 from __future__ import annotations
 
 import os
+import platform
 import shutil
 import subprocess
 import traceback
@@ -457,7 +458,7 @@ class Browser(Enum):
                     return rookiepy.to_netscape(function([domain]))
         except Exception:  # pylint: disable=broad-exception-caught
             logger.warning(
-                f"Retrieving cookies from {str(self)} on {os.name} failed. "
+                f"Retrieving cookies from {str(self)} on {platform.system()} failed. "
                 "You can export your browser cookies manually and load them "
                 "in the settings."
             )
