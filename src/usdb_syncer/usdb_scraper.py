@@ -1,6 +1,7 @@
 """Functionality related to the usdb.animux.de web page."""
 
 import logging
+import os
 import re
 import tempfile
 import time
@@ -77,12 +78,16 @@ def new_session_with_cookies(browser: settings.Browser) -> Session:
             session.cookies = usdb_cookies  # type: ignore
     else:
         if cookies_str := settings.get_decrypted_cookies():
-            with tempfile.NamedTemporaryFile("w+", delete=True) as temp_file:
+            with tempfile.NamedTemporaryFile("w+", delete=False) as temp_file:
                 temp_file.write(cookies_str)
-                temp_file.flush()
-                cookie_jar = MozillaCookieJar(temp_file.name)
+                temp_file_name = temp_file.name
+            try:
+                cookie_jar = MozillaCookieJar(temp_file_name)
                 cookie_jar.load(ignore_discard=True, ignore_expires=True)
-            session.cookies.update(cookie_jar)
+                session.cookies.clear()
+                session.cookies.update(cookie_jar)
+            finally:
+                os.remove(temp_file_name)
     return session
 
 

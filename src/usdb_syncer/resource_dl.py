@@ -181,8 +181,11 @@ def _download_resource(options: YtdlOptions, resource: str, logger: Log) -> str 
                 try:
                     with yt_dlp.YoutubeDL(options) as ydl:
                         return ydl.prepare_filename(ydl.extract_info(url))
-                except yt_dlp.utils.YoutubeDLError as retry_error:
-                    logger.error(f"Retry failed: {retry_error}")
+                except yt_dlp.utils.YoutubeDLError:
+                    logger.error(
+                        "Retry with cookies failed, maybe your logged in "
+                        "cookies are outdated."
+                    )
                     return None
             else:
                 return None
