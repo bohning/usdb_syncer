@@ -145,6 +145,8 @@ def _ytdl_options(
         # suppresses download of playlists, channels and search results
         "playlistend": 0,
         "overwrites": True,
+        "retries": 1,
+        "fragment_retries": 2,
     }
     if ratelimit.value is not None:
         options["ratelimit"] = ratelimit.value
