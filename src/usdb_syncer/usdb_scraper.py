@@ -177,7 +177,7 @@ class SongDetails:
     uploader: str
     editors: list[str]
     views: int
-    rating: int
+    rating: float
     votes: int
     audio_sample: str | None
     comments: list[SongComment] = attrs.field(factory=list)
@@ -432,7 +432,8 @@ def _parse_details_table(
         uploader=_find_text_after(details_table, usdb_strings.UPLOADED_BY),
         editors=editors,
         views=int(_find_text_after(details_table, usdb_strings.VIEWS)),
-        rating=sum("star.png" in s.get("src") for s in stars),
+        rating=sum("/star.png" in s.get("src") for s in stars)
+        + 0.5 * sum("/half_star.png" in s.get("src") for s in stars),
         votes=int(votes_str.split("(")[1].split(")")[0]),
         audio_sample=audio_sample or None,
     )

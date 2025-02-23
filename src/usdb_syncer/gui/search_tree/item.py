@@ -424,16 +424,20 @@ class RatingVariant(SongMatch, enum.Enum):
     """Selectable variants for the song rating filter."""
 
     R_NONE = None
-    R_1 = 1
-    R_2 = 2
-    R_3 = 3
-    R_4 = 4
-    R_5 = 5
+    R_1_0 = 1
+    R_1_5 = 1.5
+    R_2_0 = 2
+    R_2_5 = 2.5
+    R_3_0 = 3
+    R_3_5 = 3.5
+    R_4_0 = 4
+    R_4_5 = 4.5
+    R_5_0 = 5
 
     def __str__(self) -> str:
         if self == RatingVariant.R_NONE:
             return "None"
-        return self.value * "★"
+        return int(self.value) * "★" + ("½" if self.value % 1 == 0.5 else "")
 
     def build_search(self, search: db.SearchBuilder) -> None:
         search.ratings.append(self.value or 0)

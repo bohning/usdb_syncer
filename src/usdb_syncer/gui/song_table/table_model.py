@@ -217,8 +217,9 @@ def _decoration_data(song: UsdbSong, column: int) -> QIcon | None:
 
 
 @cache
-def rating_str(rating: int) -> str:
-    return rating * "★"
+def rating_str(rating: float) -> str:
+    # Should be Unicode Character 'LEFT HALF BLACK STAR' ⯨ (U+2BE8), using ½ instead
+    return int(rating) * "★" + ("½" if rating % 1 == 0.5 else "")
 
 
 def yes_no_str(yes: bool) -> str:
