@@ -1,5 +1,6 @@
 """Functions for downloading and processing media."""
 
+import io
 import os
 from enum import Enum
 from pathlib import Path
@@ -215,8 +216,8 @@ def download_and_process_image(
         return None
 
     path = target_stem.with_name(f"{target_stem.name} [{kind.value}].jpg")
-    with path.open("wb") as file:
-        file.write(img_bytes)
+    with Image.open(io.BytesIO(img_bytes)).convert("RGB") as img:
+        img.save(path)
 
     if process:
         _process_image(meta_tags, max_width, path)
