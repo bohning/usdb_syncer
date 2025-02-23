@@ -394,7 +394,7 @@ class Browser(Enum):
             return rookiepy.to_cookiejar(function([Usdb.DOMAIN]))
         except Exception:  # pylint: disable=broad-exception-caught
             logger.debug(traceback.format_exc())
-        logger.warning(f"Failed to retrieve {str(self).capitalize()} cookies.")
+        logger.warning(f"Failed to retrieve {str(self)} cookies.")
         return None
 
 
