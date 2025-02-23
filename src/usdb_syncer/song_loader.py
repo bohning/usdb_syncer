@@ -341,6 +341,10 @@ class _SongLoader(QtCore.QRunnable):
                 self.logger.error("Song has been deleted from USDB.")
                 with db.transaction():
                     self.song.delete()
+                if meta := self.song.sync_meta:
+                    path = meta.path.parent
+                    self.logger.info(f"Trashing local song {path}")
+                    send2trash.send2trash(path)
                 events.SongDeleted(self.song_id).post()
                 events.DownloadFinished(self.song_id).post()
                 return
