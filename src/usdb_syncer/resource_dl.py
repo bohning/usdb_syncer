@@ -220,29 +220,50 @@ def download_and_process_image(
         img.save(path)
 
     if process:
-        _process_image(meta_tags, max_width, path)
+        _process_image(meta_tags, kind, max_width, path)
     return path
 
 
 def _process_image(
-    meta_tags: ImageMetaTags | None, max_width: CoverMaxSize | None, path: Path
+    meta_tags: ImageMetaTags | None,
+    kind: ImageKind,
+    max_width: CoverMaxSize | None,
+    path: Path,
 ) -> None:
     processed = False
     with Image.open(path).convert("RGB") as image:
         if meta_tags and meta_tags.image_processing():
             processed = True
-            if rotate := meta_tags.rotate:
-                image = image.rotate(rotate, resample=Resampling.BICUBIC, expand=True)
-            if crop := meta_tags.crop:
-                image = image.crop((crop.left, crop.upper, crop.right, crop.lower))
-            if resize := meta_tags.resize:
-                image = image.resize(
-                    (resize.width, resize.height), resample=Resampling.LANCZOS
-                )
-            if meta_tags.contrast == "auto":
-                image = ImageOps.autocontrast(image, cutoff=5)
-            elif meta_tags.contrast:
-                image = ImageEnhance.Contrast(image).enhance(meta_tags.contrast)
+            operations = {
+                ImageKind.COVER: ["rotate", "crop", "resize", "contrast"],
+                ImageKind.BACKGROUND: ["resize", "crop"],
+            }.get(kind, ["rotate", "crop", "resize", "contrast"])
+
+            for operation in operations:
+                match operation:
+                    case "rotate":
+                        if rotate := meta_tags.rotate:
+                            image = image.rotate(
+                                rotate, resample=Resampling.BICUBIC, expand=True
+                            )
+                    case "crop":
+                        if crop := meta_tags.crop:
+                            image = image.crop(
+                                (crop.left, crop.upper, crop.right, crop.lower)
+                            )
+                    case "resize":
+                        if resize := meta_tags.resize:
+                            image = image.resize(
+                                (resize.width, resize.height),
+                                resample=Resampling.LANCZOS,
+                            )
+                    case "contrast":
+                        if meta_tags.contrast == "auto":
+                            image = ImageOps.autocontrast(image, cutoff=5)
+                        elif meta_tags.contrast:
+                            image = ImageEnhance.Contrast(image).enhance(
+                                meta_tags.contrast
+                            )
         if (
             max_width
             and max_width != CoverMaxSize.DISABLE
