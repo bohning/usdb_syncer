@@ -167,30 +167,36 @@ class PathTemplatePlaceholder(PathTemplateComponentToken, enum.Enum):
             case PathTemplatePlaceholder.SONG_ID:
                 return str(song.song_id)
             case PathTemplatePlaceholder.ARTIST:
-                return song.artist
+                if song.artist and len(song.artist) > 0:
+                    return song.artist
+                return UNKNOWN_PLACEHOLDER_STRING
             case PathTemplatePlaceholder.ARTIST_INITIAL:
                 for char in song.artist:
                     if char not in INITIALS_FORBIDDEN_CHARACTERS:
                         return char
                 return UNKNOWN_PLACEHOLDER_STRING
             case PathTemplatePlaceholder.TITLE:
-                return song.title
-            case PathTemplatePlaceholder.GENRE:
-                return next(iter(song.genres()), UNKNOWN_PLACEHOLDER_STRING)
+                if song.title and len(song.title) > 0:
+                    return song.title
+                return UNKNOWN_PLACEHOLDER_STRING
             case PathTemplatePlaceholder.YEAR:
-                if song.year:
+                if song.year and song.year > 0:
                     return str(song.year)
                 return UNKNOWN_PLACEHOLDER_STRING
+            case PathTemplatePlaceholder.GENRE:
+                return next(iter(song.genres()), UNKNOWN_PLACEHOLDER_STRING)
             case PathTemplatePlaceholder.LANGUAGE:
                 return next(iter(song.languages()), UNKNOWN_PLACEHOLDER_STRING)
             case PathTemplatePlaceholder.CREATOR:
                 return next(iter(song.creators()), UNKNOWN_PLACEHOLDER_STRING)
             case PathTemplatePlaceholder.EDITION:
-                if song.edition:
+                if song.edition and len(song.edition) > 0:
                     return song.edition
                 return UNKNOWN_PLACEHOLDER_STRING
             case PathTemplatePlaceholder.RATING:
-                if song.rating:
+                if (
+                    song.rating
+                ):  # This is annoying because we can't differentiate between a rating of 0 and no rating. Would take a refactor of UsdbSong to fix.
                     return str(song.rating)
                 return UNKNOWN_PLACEHOLDER_STRING
             case _ as unreachable:
