@@ -4,7 +4,7 @@ import io
 import os
 from enum import Enum
 from pathlib import Path
-from typing import Union, assert_never
+from typing import Callable, Union, assert_never
 
 import filetype
 import requests
@@ -224,6 +224,40 @@ def download_and_process_image(
     return path
 
 
+def _rotate(image: Image.Image, meta_tags: ImageMetaTags) -> Image.Image:
+    if rotate := meta_tags.rotate:
+        return image.rotate(rotate, resample=Resampling.BICUBIC, expand=True)
+    return image
+
+
+def _crop(image: Image.Image, meta_tags: ImageMetaTags) -> Image.Image:
+    if crop := meta_tags.crop:
+        return image.crop((crop.left, crop.upper, crop.right, crop.lower))
+    return image
+
+
+def _resize(image: Image.Image, meta_tags: ImageMetaTags) -> Image.Image:
+    if resize := meta_tags.resize:
+        return image.resize((resize.width, resize.height), resample=Resampling.LANCZOS)
+    return image
+
+
+def _adjust_contrast(image: Image.Image, meta_tags: ImageMetaTags) -> Image.Image:
+    if meta_tags.contrast == "auto":
+        return ImageOps.autocontrast(image, cutoff=5)
+    if meta_tags.contrast:
+        return ImageEnhance.Contrast(image).enhance(meta_tags.contrast)
+    return image
+
+
+IMAGE_PROCESSING_STEPS: dict[
+    ImageKind, list[Callable[[Image.Image, ImageMetaTags], Image.Image]]
+] = {
+    ImageKind.COVER: [_rotate, _crop, _resize, _adjust_contrast],
+    ImageKind.BACKGROUND: [_resize, _crop],
+}
+
+
 def _process_image(
     meta_tags: ImageMetaTags | None,
     kind: ImageKind,
@@ -234,36 +268,11 @@ def _process_image(
     with Image.open(path).convert("RGB") as image:
         if meta_tags and meta_tags.image_processing():
             processed = True
-            operations = {
-                ImageKind.COVER: ["rotate", "crop", "resize", "contrast"],
-                ImageKind.BACKGROUND: ["resize", "crop"],
-            }.get(kind, ["rotate", "crop", "resize", "contrast"])
+            for process in IMAGE_PROCESSING_STEPS.get(
+                kind, [_rotate, _crop, _resize, _adjust_contrast]
+            ):
+                image = process(image, meta_tags)
 
-            for operation in operations:
-                match operation:
-                    case "rotate":
-                        if rotate := meta_tags.rotate:
-                            image = image.rotate(
-                                rotate, resample=Resampling.BICUBIC, expand=True
-                            )
-                    case "crop":
-                        if crop := meta_tags.crop:
-                            image = image.crop(
-                                (crop.left, crop.upper, crop.right, crop.lower)
-                            )
-                    case "resize":
-                        if resize := meta_tags.resize:
-                            image = image.resize(
-                                (resize.width, resize.height),
-                                resample=Resampling.LANCZOS,
-                            )
-                    case "contrast":
-                        if meta_tags.contrast == "auto":
-                            image = ImageOps.autocontrast(image, cutoff=5)
-                        elif meta_tags.contrast:
-                            image = ImageEnhance.Contrast(image).enhance(
-                                meta_tags.contrast
-                            )
         if (
             max_width
             and max_width != CoverMaxSize.DISABLE
