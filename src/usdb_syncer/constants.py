@@ -90,6 +90,8 @@ class Usdb:
     DOMAIN = "usdb.animux.de"
     BASE_URL = "https://" + DOMAIN + "/"
     REGISTER_URL = BASE_URL + "index.php?link=register"
+    DETAILS_URL = BASE_URL + "?link=detail&id="
+    COVER_URL = BASE_URL + "data/cover/"
     MAX_SONG_ID = 100_000
     MAX_SONGS_PER_PAGE = 100
     DATETIME_STRF = "%d.%m.%y - %H:%M"

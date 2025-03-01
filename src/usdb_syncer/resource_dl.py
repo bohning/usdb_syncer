@@ -3,7 +3,7 @@
 import os
 from enum import Enum
 from pathlib import Path
-from typing import Union, assert_never
+from typing import Union, assert_never, cast
 
 import filetype
 import requests
@@ -14,8 +14,9 @@ from PIL.Image import Resampling
 
 from usdb_syncer import utils
 from usdb_syncer.constants import YtErrorMsg
+from usdb_syncer.discord import notify_discord
 from usdb_syncer.download_options import AudioOptions, VideoOptions
-from usdb_syncer.logger import Log, song_logger
+from usdb_syncer.logger import Log, SongLogger, song_logger
 from usdb_syncer.meta_tags import ImageMetaTags
 from usdb_syncer.settings import Browser, CoverMaxSize, YtdlpRateLimit
 from usdb_syncer.usdb_scraper import SongDetails
@@ -182,6 +183,7 @@ def _download_resource(options: YtdlOptions, resource: str, logger: Log) -> str 
                     "Resource no longer available. Help the community, find a suitable "
                     "replacement and comment it on USDB."
                 )
+                notify_discord(cast(SongLogger, logger).song_id, url)
             return None
 
 
@@ -201,8 +203,15 @@ def download_image(url: str, logger: Log) -> bytes | None:
             "down or your internet connection is currently unavailable."
         )
         return None
-    if reply.status_code in range(100, 399):
-        # 1xx informational response, 2xx success, 3xx redirection
+    if reply.status_code in range(100, 299):
+        # 1xx informational response, 2xx success
+        return reply.content
+    if reply.status_code in range(300, 399):
+        # 3xx redirection
+        logger.debug(
+            f"'{url}' redirects to '{reply.headers["Location"]}'. "
+            "Please adapt metatags."
+        )
         return reply.content
     if reply.status_code in range(400, 499):
         logger.error(
@@ -228,6 +237,7 @@ def download_and_process_image(
     logger = song_logger(details.song_id)
     if not (img_bytes := download_image(url, logger)):
         logger.error(f"#{str(kind).upper()}: file does not exist at url: {url}")
+        notify_discord(details.song_id, url)
         return None
 
     if not filetype.is_image(img_bytes):
