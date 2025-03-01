@@ -95,6 +95,19 @@ class Usdb:
     DATETIME_STRF = "%d.%m.%y - %H:%M"
 
 
+class YtErrorMsg:
+    """Strings returned by yt-dlp when download fails"""
+
+    YT_AGE_RESTRICTED = (
+        "Sign in to confirm your age. This video may be inappropriate for some users."
+    )
+    YT_GEO_RESTRICTED = (
+        "Video unavailable. The uploader has not made this video available in your "
+        "country"
+    )
+    YT_NOT_AVAILABLE = "Video unavailable"
+
+
 SUPPORTED_VIDEO_SOURCES_REGEX = re.compile(
     r"""\b
         (

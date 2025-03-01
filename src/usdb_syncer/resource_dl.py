@@ -12,6 +12,8 @@ from ffmpeg_normalize import FFmpegNormalize
 from PIL import Image, ImageEnhance, ImageOps
 from PIL.Image import Resampling
 
+from usdb_syncer import utils
+from usdb_syncer.constants import YtErrorMsg
 from usdb_syncer.download_options import AudioOptions, VideoOptions
 from usdb_syncer.logger import Log, song_logger
 from usdb_syncer.meta_tags import ImageMetaTags
@@ -151,18 +153,36 @@ def _download_resource(options: YtdlOptions, resource: str, logger: Log) -> str 
         try:
             return ydl.prepare_filename(ydl.extract_info(url))
         except yt_dlp.utils.YoutubeDLError as e:
-            logger.debug(f"error downloading video url: {url}")
+            logger.debug(
+                f"Failed to download '{url}': {utils.remove_ansi_codes(str(e))}"
+            )
             # Check if the error is due to age restriction
-            if "confirm your age" in str(e).lower():
-                logger.debug("Age-restricted resource. Retrying with cookies...")
+            if YtErrorMsg.YT_AGE_RESTRICTED in str(e):
+                logger.warning("Age-restricted resource. Retrying with cookies...")
                 try:
                     with yt_dlp.YoutubeDL(options) as ydl:
                         return ydl.prepare_filename(ydl.extract_info(url))
                 except yt_dlp.utils.YoutubeDLError as retry_error:
-                    logger.error(f"Retry failed: {retry_error}")
+                    logger.error(
+                        f"Retry failed: {utils.remove_ansi_codes(str(retry_error))}"
+                    )
                     return None
-            else:
+            if YtErrorMsg.YT_GEO_RESTRICTED in str(e):
+                logger.warning(
+                    "Geo-restricted resource. You can retry after connecting to a VPN."
+                )
+                if "youtube" in url:
+                    logger.info(
+                        "Countries, where the resource is available: "
+                        + ", ".join(utils.get_allowed_countries(resource))
+                    )
                 return None
+            if YtErrorMsg.YT_NOT_AVAILABLE in str(e):
+                logger.warning(
+                    "Resource no longer available. Help the community, find a suitable "
+                    "replacement and comment it on USDB."
+                )
+            return None
 
 
 def download_image(url: str, logger: Log) -> bytes | None:

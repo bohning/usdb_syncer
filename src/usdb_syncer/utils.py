@@ -13,6 +13,7 @@ from pathlib import Path
 
 import requests
 from appdirs import AppDirs
+from bs4 import BeautifulSoup
 from packaging import version
 
 from usdb_syncer import constants
@@ -49,6 +50,45 @@ def video_url_from_resource(resource: str) -> str | None:
     if re.match(yt_id_pattern, resource):
         return f"https://www.youtube.com/watch?v={resource}"
     return None
+
+
+def get_allowed_countries(resource: str) -> list[str]:
+    """Fetches YouTube video availability information from polsy.org.uk."""
+
+    url = f"https://polsy.org.uk/stuff/ytrestrict.cgi?agreed=on&ytid={resource}"
+    response = requests.get(url, timeout=5)
+
+    if not response.ok:
+        raise RuntimeError(f"Request failed with status code {response.status_code}")
+
+    soup = BeautifulSoup(response.text, "html.parser")
+    allowed_countries = []
+
+    table = soup.find("table")
+    if not table:
+        raise ValueError("Could not find the availability table in the HTML response.")
+
+    rows = table.find_all("tr")[1:]  # Skip the header row
+
+    for row in rows:
+        columns = row.find_all("td")
+        if len(columns) < 2:
+            continue  # Skip invalid rows
+
+        allowed_text = columns[0].get_text(strip=True)
+
+        if allowed_text:
+            country_code = allowed_text.split(" - ")[0]
+            allowed_countries.append(country_code)
+
+    return allowed_countries
+
+
+def remove_ansi_codes(text: str) -> str:
+    """Removes ANSI escape codes from a string."""
+
+    ansi_escape = re.compile(r"\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])")
+    return ansi_escape.sub("", text)
 
 
 class AppPaths:
