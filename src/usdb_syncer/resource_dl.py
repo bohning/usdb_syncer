@@ -4,7 +4,7 @@ import io
 import os
 from enum import Enum
 from pathlib import Path
-from typing import Callable, Union, assert_never
+from typing import Union, assert_never
 
 import filetype
 import requests
@@ -250,14 +250,6 @@ def _adjust_contrast(image: Image.Image, meta_tags: ImageMetaTags) -> Image.Imag
     return image
 
 
-IMAGE_PROCESSING_STEPS: dict[
-    ImageKind, list[Callable[[Image.Image, ImageMetaTags], Image.Image]]
-] = {
-    ImageKind.COVER: [_rotate, _crop, _resize, _adjust_contrast],
-    ImageKind.BACKGROUND: [_resize, _crop],
-}
-
-
 def _process_image(
     meta_tags: ImageMetaTags | None,
     kind: ImageKind,
@@ -268,10 +260,16 @@ def _process_image(
     with Image.open(path).convert("RGB") as image:
         if meta_tags and meta_tags.image_processing():
             processed = True
-            for process in IMAGE_PROCESSING_STEPS.get(
-                kind, [_rotate, _crop, _resize, _adjust_contrast]
-            ):
-                image = process(image, meta_tags)
+            match kind:
+                case ImageKind.COVER:
+                    operations = [_rotate, _crop, _resize, _adjust_contrast]
+                case ImageKind.BACKGROUND:
+                    operations = [_resize, _crop]
+                case _ as unreachable:
+                    assert_never(unreachable)
+
+            for operation in operations:
+                image = operation(image, meta_tags)
 
         if (
             max_width
