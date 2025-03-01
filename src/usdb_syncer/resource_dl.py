@@ -241,7 +241,8 @@ def download_and_process_image(
         return None
 
     if not filetype.is_image(img_bytes):
-        logger.error(f"#{str(kind).upper()}: file at {url} is no image")
+        logger.error(f"#{str(kind).upper()}: file at {url} is not an image")
+        notify_discord(details.song_id, url)
         return None
 
     path = target_stem.with_name(f"{target_stem.name} [{kind.value}].jpg")
