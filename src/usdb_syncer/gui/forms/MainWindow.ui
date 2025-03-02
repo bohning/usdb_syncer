@@ -264,10 +264,25 @@
      <addaction name="action_open_song_in_karedi"/>
      <addaction name="action_open_song_in_ultrastar_manager"/>
     </widget>
+    <widget class="QMenu" name="menu_rate_song_on_usdb">
+     <property name="title">
+      <string>Rate Song on USDB</string>
+     </property>
+     <property name="icon">
+      <iconset resource="../resources/resources.qrc">
+       <normaloff>:/icons/rating.png</normaloff>:/icons/rating.png</iconset>
+     </property>
+     <addaction name="action_rate_1star"/>
+     <addaction name="action_rate_2stars"/>
+     <addaction name="action_rate_3stars"/>
+     <addaction name="action_rate_4stars"/>
+     <addaction name="action_rate_5stars"/>
+    </widget>
     <addaction name="action_songs_download"/>
     <addaction name="action_songs_abort"/>
     <addaction name="action_show_in_usdb"/>
     <addaction name="action_post_comment_in_usdb"/>
+    <addaction name="menu_rate_song_on_usdb"/>
     <addaction name="separator"/>
     <addaction name="action_open_song_folder"/>
     <addaction name="menu_open_song_in"/>
@@ -601,7 +616,7 @@
      <normaloff>:/icons/balloon.png</normaloff>:/icons/balloon.png</iconset>
    </property>
    <property name="text">
-    <string>Post Comment</string>
+    <string>Post Comment on USDB</string>
    </property>
   </action>
   <action name="action_open_song_folder">
@@ -750,6 +765,58 @@
    </property>
    <property name="text">
     <string>YASS Reloaded</string>
+   </property>
+  </action>
+  <action name="action_rate_in_usdb">
+   <property name="icon">
+    <iconset resource="../resources/resources.qrc">
+     <normaloff>:/icons/rating.png</normaloff>:/icons/rating.png</iconset>
+   </property>
+   <property name="text">
+    <string>action_rate_in_usdb</string>
+   </property>
+   <property name="menuRole">
+    <enum>QAction::MenuRole::NoRole</enum>
+   </property>
+  </action>
+  <action name="action_rate_1star">
+   <property name="text">
+    <string>★</string>
+   </property>
+   <property name="toolTip">
+    <string>unusable, needs a total rework</string>
+   </property>
+  </action>
+  <action name="action_rate_2stars">
+   <property name="text">
+    <string>★★</string>
+   </property>
+   <property name="toolTip">
+    <string>hardly usable, needs a lot of improvements</string>
+   </property>
+  </action>
+  <action name="action_rate_3stars">
+   <property name="text">
+    <string>★★★</string>
+   </property>
+   <property name="toolTip">
+    <string>usable, but room for improvement</string>
+   </property>
+  </action>
+  <action name="action_rate_4stars">
+   <property name="text">
+    <string>★★★★</string>
+   </property>
+   <property name="toolTip">
+    <string>room for some improvements</string>
+   </property>
+  </action>
+  <action name="action_rate_5stars">
+   <property name="text">
+    <string>★★★★★</string>
+   </property>
+   <property name="toolTip">
+    <string>simply perfect</string>
    </property>
   </action>
  </widget>
