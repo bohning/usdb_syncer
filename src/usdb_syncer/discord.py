@@ -1,7 +1,5 @@
 """Functions for Disord integration."""
 
-import datetime
-
 import discord
 
 from usdb_syncer import SongId
@@ -23,8 +21,7 @@ def notify_discord(song_id: SongId, url: str) -> None:
         description=f"Failed resource: {url}", color=discord.Color.red()
     )
 
-    song = UsdbSong.get(song_id)
-    if not song:
+    if not (song := UsdbSong.get(song_id)):
         return
 
     embed.set_author(
