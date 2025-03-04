@@ -1,6 +1,6 @@
 """Functions for Disord integration."""
 
-import discord
+import requests
 
 from usdb_syncer import SongId
 from usdb_syncer.constants import Usdb
@@ -15,19 +15,27 @@ sent_notifications: set[tuple[SongId, str]] = set()
 
 
 def notify_discord(song_id: SongId, url: str) -> None:
-    """Notify unavailable resources on Discord"""
+    """Notify unavailable resources on Discord (without using the discord package)."""
 
     if (song_id, url) in sent_notifications:
         return
-    webhook = discord.SyncWebhook.from_url(WEBHOOK_URL)
-    embed = discord.Embed(color=discord.Color.red())
+
     if not (song := UsdbSong.get(song_id)):
         return
-    embed.set_author(
-        name=f"{song_id:d}: {song.artist} - {song.title}",
-        url=f"{Usdb.DETAILS_URL}{song_id:d}",
-        icon_url=f"{Usdb.COVER_URL}{song_id:d}.jpg",
-    )
-    embed.add_field(name="Failed resource:", value=url, inline=False)
-    webhook.send(embed=embed)
+
+    embed = {
+        "color": 15548997,  # 0xED4245, equivalent to discord.Color.red()
+        "author": {
+            "name": f"{song_id}: {song.artist} - {song.title}",
+            "url": f"{Usdb.DETAILS_URL}{song_id}",
+            "icon_url": f"{Usdb.COVER_URL}{song_id}.jpg",
+        },
+        "fields": [{"name": "Failed resource:", "value": url, "inline": False}],
+    }
+
+    payload = {"embeds": [embed]}
+
+    response = requests.post(WEBHOOK_URL, json=payload, timeout=5)
+    response.raise_for_status()  # Raise an error if request fails
+
     sent_notifications.add((song_id, url))
