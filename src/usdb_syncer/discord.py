@@ -9,9 +9,7 @@ from usdb_syncer.constants import Usdb
 from usdb_syncer.usdb_song import UsdbSong
 
 BASE_URL = "https://discordapp.com/api/webhooks"
-WH_CONFIG_URL = (
-    "https://raw.githubusercontent.com/bohning/usdb_syncer/main/src/usdb_syncer/wh.json"
-)
+WH_CONFIG_URL = "https://github.com/bohning/usdb_syncer/tree/enhance_resource_error_handling/src/usdb_syncer/wh.json"
 
 sent_notifications: set[tuple[SongId, str]] = set()
 cached_dwh_url: str | None = None
