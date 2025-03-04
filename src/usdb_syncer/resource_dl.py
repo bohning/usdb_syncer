@@ -180,8 +180,8 @@ def _download_resource(options: YtdlOptions, resource: str, logger: Log) -> str 
                 return None
             if YtErrorMsg.YT_NOT_AVAILABLE in str(e):
                 logger.warning(
-                    "Resource no longer available. Help the community, find a suitable "
-                    "replacement and comment it on USDB."
+                    "Resource URL is either faulty or no longer available. Help the "
+                    "community, find a suitable replacement and comment it on USDB."
                 )
                 notify_discord(cast(SongLogger, logger).song_id, url)
             return None
