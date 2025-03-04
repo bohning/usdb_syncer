@@ -52,21 +52,21 @@ def video_url_from_resource(resource: str) -> str | None:
     return None
 
 
-def get_allowed_countries(resource: str) -> list[str]:
+def get_allowed_countries(resource: str) -> list[str] | None:
     """Fetches YouTube video availability information from polsy.org.uk."""
 
     url = f"https://polsy.org.uk/stuff/ytrestrict.cgi?agreed=on&ytid={resource}"
     response = requests.get(url, timeout=5)
 
     if not response.ok:
-        raise RuntimeError(f"Request failed with status code {response.status_code}")
+        return None
 
     soup = BeautifulSoup(response.text, "html.parser")
     allowed_countries = []
 
     table = soup.find("table")
     if not table:
-        raise ValueError("Could not find the availability table in the HTML response.")
+        return None
 
     rows = table.find_all("tr")[1:]  # Skip the header row
 

@@ -173,10 +173,11 @@ def _download_resource(options: YtdlOptions, resource: str, logger: Log) -> str 
                     "Geo-restricted resource. You can retry after connecting to a VPN."
                 )
                 if "youtube" in url:
-                    logger.info(
-                        "Countries, where the resource is available: "
-                        + ", ".join(utils.get_allowed_countries(resource))
-                    )
+                    if allowed_countries := utils.get_allowed_countries(resource):
+                        logger.info(
+                            "Countries, where the resource is available: "
+                            + ", ".join(allowed_countries)
+                        )
                 return None
             if YtErrorMsg.YT_NOT_AVAILABLE in str(e):
                 logger.warning(
