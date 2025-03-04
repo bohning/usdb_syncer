@@ -10,9 +10,7 @@ from usdb_syncer.logger import Log
 from usdb_syncer.usdb_song import UsdbSong
 
 BASE_URL = "https://discordapp.com/api/webhooks"
-WH_CONFIG_URL = (
-    f"{GITHUB_RAW}/refs/heads/enhance_resource_error_handling/src/usdb_syncer/wh.json"
-)
+WH_CONFIG_URL = f"{GITHUB_RAW}/refs/heads/main/src/usdb_syncer/wh.json"
 
 sent_notifications: set[tuple[SongId, str]] = set()
 cached_dwh_url: str | None = None
