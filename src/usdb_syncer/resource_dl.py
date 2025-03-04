@@ -183,7 +183,7 @@ def _download_resource(options: YtdlOptions, resource: str, logger: Log) -> str 
                     "Resource URL is either faulty or no longer available. Help the "
                     "community, find a suitable replacement and comment it on USDB."
                 )
-                notify_discord(cast(SongLogger, logger).song_id, url)
+                notify_discord(cast(SongLogger, logger).song_id, url, logger)
             return None
 
 
@@ -237,12 +237,12 @@ def download_and_process_image(
     logger = song_logger(details.song_id)
     if not (img_bytes := download_image(url, logger)):
         logger.error(f"#{str(kind).upper()}: file does not exist at url: {url}")
-        notify_discord(details.song_id, url)
+        notify_discord(details.song_id, url, logger)
         return None
 
     if not filetype.is_image(img_bytes):
         logger.error(f"#{str(kind).upper()}: file at {url} is not an image")
-        notify_discord(details.song_id, url)
+        notify_discord(details.song_id, url, logger)
         return None
 
     path = target_stem.with_name(f"{target_stem.name} [{kind.value}].jpg")
