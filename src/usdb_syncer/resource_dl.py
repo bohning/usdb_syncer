@@ -3,7 +3,7 @@
 import os
 from enum import Enum
 from pathlib import Path
-from typing import Union, assert_never, cast
+from typing import Union, assert_never
 
 import filetype
 import requests
@@ -18,7 +18,12 @@ from usdb_syncer.discord import notify_discord
 from usdb_syncer.download_options import AudioOptions, VideoOptions
 from usdb_syncer.logger import Log, SongLogger, song_logger
 from usdb_syncer.meta_tags import ImageMetaTags
-from usdb_syncer.settings import Browser, CoverMaxSize, YtdlpRateLimit
+from usdb_syncer.settings import (
+    Browser,
+    CoverMaxSize,
+    YtdlpRateLimit,
+    get_discord_allowed,
+)
 from usdb_syncer.usdb_scraper import SongDetails
 from usdb_syncer.utils import video_url_from_resource
 
@@ -184,7 +189,9 @@ def _download_resource(options: YtdlOptions, resource: str, logger: Log) -> str 
                     "Resource URL is either faulty or no longer available. Help the "
                     "community, find a suitable replacement and comment it on USDB."
                 )
-                notify_discord(cast(SongLogger, logger).song_id, url, logger)
+                if get_discord_allowed():
+                    assert isinstance(logger, SongLogger)
+                    notify_discord(logger.song_id, url, logger)
             return None
 
 
@@ -238,12 +245,14 @@ def download_and_process_image(
     logger = song_logger(details.song_id)
     if not (img_bytes := download_image(url, logger)):
         logger.error(f"#{str(kind).upper()}: file does not exist at url: {url}")
-        notify_discord(details.song_id, url, logger)
+        if get_discord_allowed():
+            notify_discord(details.song_id, url, logger)
         return None
 
     if not filetype.is_image(img_bytes):
         logger.error(f"#{str(kind).upper()}: file at {url} is not an image")
-        notify_discord(details.song_id, url, logger)
+        if get_discord_allowed():
+            notify_discord(details.song_id, url, logger)
         return None
 
     path = target_stem.with_name(f"{target_stem.name} [{kind.value}].jpg")

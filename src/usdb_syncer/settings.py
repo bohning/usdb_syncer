@@ -94,6 +94,7 @@ class SettingKey(Enum):
     COVER_MAX_SIZE = "downloads/cover_max_size"
     BACKGROUND = "downloads/background"
     BACKGROUND_ALWAYS = "downloads/background_always"
+    DISCORD_ALLOWED = "downloads/discord_allowed"
     MAIN_WINDOW_GEOMETRY = "geometry/main_window"
     DOCK_LOG_GEOMETRY = "geometry/dock_log"
     MAIN_WINDOW_STATE = "state/main_window"
@@ -887,6 +888,14 @@ def get_background_always() -> bool:
 
 def set_background_always(value: bool) -> None:
     set_setting(SettingKey.BACKGROUND_ALWAYS, value)
+
+
+def get_discord_allowed() -> bool:
+    return get_setting(SettingKey.DISCORD_ALLOWED, True)
+
+
+def set_discord_allowed(value: bool) -> None:
+    set_setting(SettingKey.DISCORD_ALLOWED, value)
 
 
 def get_ffmpeg_dir() -> str:
