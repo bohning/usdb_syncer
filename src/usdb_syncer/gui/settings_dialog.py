@@ -122,6 +122,7 @@ class SettingsDialog(Ui_Dialog, QDialog):
             (self.comboBox_ytdlp_rate_limit, settings.YtdlpRateLimit),
             (self.comboBox_audio_format, settings.AudioFormat),
             (self.comboBox_audio_bitrate, settings.AudioBitrate),
+            (self.comboBox_audio_normalization, settings.AudioNormalization),
             (self.comboBox_videocontainer, settings.VideoContainer),
             (self.comboBox_videoencoder, settings.VideoCodec),
             (self.comboBox_videoresolution, settings.VideoResolution),
@@ -172,7 +173,11 @@ class SettingsDialog(Ui_Dialog, QDialog):
         self.comboBox_audio_bitrate.setCurrentIndex(
             self.comboBox_audio_bitrate.findData(settings.get_audio_bitrate())
         )
-        self.checkBox_audio_normalize.setChecked(settings.get_audio_normalize())
+        self.comboBox_audio_normalization.setCurrentIndex(
+            self.comboBox_audio_normalization.findData(
+                settings.get_audio_normalization()
+            )
+        )
         self.checkBox_audio_embed_artwork.setChecked(settings.get_audio_embed_artwork())
         self.groupBox_video.setChecked(settings.get_video())
         self.comboBox_videocontainer.setCurrentIndex(
@@ -263,7 +268,9 @@ class SettingsDialog(Ui_Dialog, QDialog):
         settings.set_audio(self.groupBox_audio.isChecked())
         settings.set_audio_format(self.comboBox_audio_format.currentData())
         settings.set_audio_bitrate(self.comboBox_audio_bitrate.currentData())
-        settings.set_audio_normalize(self.checkBox_audio_normalize.isChecked())
+        settings.set_audio_normalization(
+            self.comboBox_audio_normalization.currentData()
+        )
         settings.set_audio_embed_artwork(self.checkBox_audio_embed_artwork.isChecked())
         settings.set_video(self.groupBox_video.isChecked())
         settings.set_video_format(self.comboBox_videocontainer.currentData())

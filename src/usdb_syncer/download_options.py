@@ -25,7 +25,7 @@ class AudioOptions:
 
     format: settings.AudioFormat
     bitrate: settings.AudioBitrate
-    normalize: bool
+    normalization: settings.AudioNormalization
     embed_artwork: bool
     rate_limit: settings.YtdlpRateLimit
 
@@ -127,7 +127,7 @@ def _audio_options() -> AudioOptions | None:
     return AudioOptions(
         format=settings.get_audio_format(),
         bitrate=settings.get_audio_bitrate(),
-        normalize=settings.get_audio_normalize(),
+        normalization=settings.get_audio_normalization(),
         embed_artwork=settings.get_audio_embed_artwork(),
         rate_limit=settings.get_ytdlp_rate_limit(),
     )

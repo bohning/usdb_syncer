@@ -81,7 +81,7 @@ class SettingKey(Enum):
     AUDIO = "downloads/audio"
     AUDIO_FORMAT = "downloads/audio_format"
     AUDIO_BITRATE = "downloads/audio_bitrate"
-    AUDIO_NORMALIZE = "downloads/audio_normalize"
+    AUDIO_NORMALIZATION = "downloads/audio_normalization"
     AUDIO_EMBED_ARTWORK = "downloads/audio_embed_artwork"
     VIDEO = "downloads/video"
     VIDEO_FORMAT = "downloads/video_format"
@@ -305,6 +305,19 @@ class AudioBitrate(Enum):
 
     def ffmpeg_format(self) -> int:
         return int(self.value.removesuffix(" kbps")) * 1000  # in bits/s
+
+
+class AudioNormalization(Enum):
+    """Audio normalization."""
+
+    DISABLE = None
+    REPLAYGAIN = "ReplayGain"
+    NORMALIZE = "Normalize (rewrites file)"
+
+    def __str__(self) -> str:
+        if self.value is not None:
+            return self.value
+        return "disabled"
 
 
 class Browser(Enum):
@@ -700,12 +713,12 @@ def set_audio_bitrate(value: AudioBitrate) -> None:
     set_setting(SettingKey.AUDIO_BITRATE, value)
 
 
-def get_audio_normalize() -> bool:
-    return get_setting(SettingKey.AUDIO_NORMALIZE, False)
+def get_audio_normalization() -> AudioNormalization:
+    return get_setting(SettingKey.AUDIO_NORMALIZATION, AudioNormalization.DISABLE)
 
 
-def set_audio_normalize(value: bool) -> None:
-    set_setting(SettingKey.AUDIO_NORMALIZE, value)
+def set_audio_normalization(value: AudioNormalization) -> None:
+    set_setting(SettingKey.AUDIO_NORMALIZATION, value)
 
 
 def get_audio_embed_artwork() -> bool:
