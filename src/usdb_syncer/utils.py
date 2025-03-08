@@ -267,3 +267,14 @@ def newer_version_available() -> str | None:
 
     logger.info("Could not determine the latest version.")
     return None
+
+
+def start_process_detached(command: list[str]) -> subprocess.Popen:
+    """Start a process in a fully detached mode, cross-platform."""
+    # We are not using a context manager here so that the app is launched
+    # without blocking the syncer.
+    flags = 0
+    if sys.platform == "win32":
+        flags = subprocess.DETACHED_PROCESS | subprocess.CREATE_NEW_PROCESS_GROUP
+    # pylint: disable=consider-using-with
+    return subprocess.Popen(command, creationflags=flags, close_fds=True)

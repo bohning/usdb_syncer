@@ -608,9 +608,7 @@ class SupportedApps(StrEnum):
         else:
             cmd = [str(executable), self.songpath_parameter(), str(path)]
         try:
-            # We are not using a context manager here so that the app is launched
-            # without blocking the syncer.
-            subprocess.Popen(cmd)  # pylint: disable=consider-using-with
+            utils.start_process_detached(cmd)
         except FileNotFoundError:
             logger.error(
                 f"Failed to launch {self} from '{str(executable)}', file not found. "

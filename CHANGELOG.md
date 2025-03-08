@@ -26,6 +26,7 @@
 - The check for existing / outdated local resources has been improved to account for different precisions of modified times for different file systems.
 - Provide binaries for Intel-based MacOS systems.
 - YouTube logged-in cookies are now used for age-restricted resources.
+- Games started from within the Syncer are properly cleaned up, fixing subsequent starts.
 
 ## Features
 
