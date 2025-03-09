@@ -13,7 +13,7 @@ from pathlib import Path
 
 import requests
 from appdirs import AppDirs
-from bs4 import BeautifulSoup
+from bs4 import BeautifulSoup, Tag
 from packaging import version
 
 from usdb_syncer import constants
@@ -65,7 +65,7 @@ def get_allowed_countries(resource: str) -> list[str] | None:
     allowed_countries = []
 
     table = soup.find("table")
-    if not table:
+    if not table or not isinstance(table, Tag):
         return None
 
     rows = table.find_all("tr")[1:]  # Skip the header row
