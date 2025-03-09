@@ -71,6 +71,7 @@ def get_allowed_countries(resource: str) -> list[str] | None:
     rows = table.find_all("tr")[1:]  # Skip the header row
 
     for row in rows:
+        assert isinstance(row, Tag)
         columns = row.find_all("td")
         if len(columns) < 2:
             continue  # Skip invalid rows
