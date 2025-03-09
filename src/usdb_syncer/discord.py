@@ -2,12 +2,10 @@
 
 import requests
 
-from usdb_syncer import SongId, remote_config
+from usdb_syncer import SongId, db, remote_config
 from usdb_syncer.constants import Usdb
 from usdb_syncer.logger import Log
 from usdb_syncer.usdb_song import UsdbSong
-
-sent_notifications: set[tuple[SongId, str]] = set()
 
 
 def notify_discord(song_id: SongId, url: str, logger: Log) -> None:
@@ -16,29 +14,28 @@ def notify_discord(song_id: SongId, url: str, logger: Log) -> None:
         logger.debug("Song id does not exist.")
         return
 
-    if (song_id, url) in sent_notifications:
-        logger.debug(
-            "Failed resource was already reported. Skipping Discord notification."
-        )
-        return
-
     if not (dwh_url := remote_config.discord_webhook_url()):
         logger.debug("No discord webhook configured. Skipping Discord notification.")
         return
 
-    embed = {
-        "color": 0xED4245,  # equivalent to discord.Color.red()
-        "author": {
-            "name": f"{song_id}: {song.artist} - {song.title}",
-            "url": f"{Usdb.DETAILS_URL}{song_id}",
-            "icon_url": f"{Usdb.COVER_URL}{song_id}.jpg",
-        },
-        "fields": [{"name": "Failed resource:", "value": url, "inline": False}],
-    }
+    with db.transaction():
+        if not db.maybe_insert_discord_notification(song_id, url):
+            logger.debug(
+                "Failed resource was already reported. Skipping Discord notification."
+            )
+            return
 
-    payload = {"embeds": [embed]}
+        embed = {
+            "color": 0xED4245,  # equivalent to discord.Color.red()
+            "author": {
+                "name": f"{song_id}: {song.artist} - {song.title}",
+                "url": f"{Usdb.DETAILS_URL}{song_id}",
+                "icon_url": f"{Usdb.COVER_URL}{song_id}.jpg",
+            },
+            "fields": [{"name": "Failed resource:", "value": url, "inline": False}],
+        }
 
-    response = requests.post(dwh_url, json=payload, timeout=5)
-    response.raise_for_status()
+        payload = {"embeds": [embed]}
 
-    sent_notifications.add((song_id, url))
+        response = requests.post(dwh_url, json=payload, timeout=5)
+        response.raise_for_status()
