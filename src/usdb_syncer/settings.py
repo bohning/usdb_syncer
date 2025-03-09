@@ -891,7 +891,7 @@ def set_background_always(value: bool) -> None:
 
 
 def get_discord_allowed() -> bool:
-    return get_setting(SettingKey.DISCORD_ALLOWED, True)
+    return get_setting(SettingKey.DISCORD_ALLOWED, False)
 
 
 def set_discord_allowed(value: bool) -> None:

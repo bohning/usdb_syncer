@@ -575,13 +575,10 @@
             <item row="0" column="1">
              <widget class="QCheckBox" name="checkBox_discord_allowed">
               <property name="toolTip">
-               <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;This will send a notification to our Karaoke Discord channel and report unavailable resources so that they can be fixed. This reporting is completely &lt;span style=&quot; font-weight:700; font-style:italic;&quot;&gt;anonymous&lt;/span&gt;. Please keep this enabled to support the community.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+               <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Enabling this will allow reporting unavailable resource – &lt;span style=&quot; font-weight:700;&quot;&gt;entirely anonymously&lt;/span&gt; – to our Karaoke Discord channel so that they can be fixed quickly. Please enable this to contribute to the community.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
               </property>
               <property name="text">
                <string/>
-              </property>
-              <property name="checked">
-               <bool>true</bool>
               </property>
              </widget>
             </item>
