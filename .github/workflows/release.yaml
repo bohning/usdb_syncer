@@ -8,7 +8,7 @@ on:
 jobs:
   scrape-song-list:
     name: Scrape USDB song list
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
       - name: Set up Python
