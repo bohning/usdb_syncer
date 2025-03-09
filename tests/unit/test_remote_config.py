@@ -1,3 +1,5 @@
+"""Tests to ensure remote config is valid."""
+
 from usdb_syncer import remote_config
 
 
