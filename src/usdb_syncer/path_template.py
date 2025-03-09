@@ -172,7 +172,7 @@ class PathTemplatePlaceholder(PathTemplateComponentToken, enum.Enum):
             case PathTemplatePlaceholder.ARTIST_INITIAL:
                 for char in song.artist:
                     if char.isalnum():
-                        return unidecode(char).upper()
+                        return unidecode(char)[0].upper()
                 return UNKNOWN_PLACEHOLDER_STRING
             case PathTemplatePlaceholder.TITLE:
                 if song.title and len(song.title) > 0:
