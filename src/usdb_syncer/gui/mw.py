@@ -27,6 +27,7 @@ from usdb_syncer.logger import logger
 from usdb_syncer.pdf import generate_song_pdf
 from usdb_syncer.song_loader import DownloadManager
 from usdb_syncer.sync_meta import SyncMeta
+from usdb_syncer.usdb_scraper import post_song_rating
 from usdb_syncer.usdb_song import UsdbSong
 from usdb_syncer.utils import AppPaths, open_file_explorer
 
@@ -103,6 +104,11 @@ class MainWindow(Ui_MainWindow, QMainWindow):
             (self.action_show_log, lambda: open_file_explorer(AppPaths.log.parent)),
             (self.action_show_in_usdb, self._show_current_song_in_usdb),
             (self.action_post_comment_in_usdb, self._show_comment_dialog),
+            (self.action_rate_1star, lambda: self._rate_in_usdb(1)),
+            (self.action_rate_2stars, lambda: self._rate_in_usdb(2)),
+            (self.action_rate_3stars, lambda: self._rate_in_usdb(3)),
+            (self.action_rate_4stars, lambda: self._rate_in_usdb(4)),
+            (self.action_rate_5stars, lambda: self._rate_in_usdb(5)),
             (self.action_open_song_folder, self._open_current_song_folder),
             (
                 self.action_open_song_in_karedi,
@@ -294,6 +300,13 @@ class MainWindow(Ui_MainWindow, QMainWindow):
             CommentDialog(self, song).show()
         else:
             logger.debug("Not opening comment dialog: no song selected.")
+
+    def _rate_in_usdb(self, stars: int) -> None:
+        song = self.table.current_song()
+        if song:
+            post_song_rating(song.song_id, stars)
+        else:
+            logger.debug("Not rating song: no song selected.")
 
     def _open_current_song(self, action: Callable[[Path], None]) -> None:
         if song := self.table.current_song():

@@ -525,3 +525,34 @@ def _parse_song_txt_from_txt_page(soup: BeautifulSoup) -> str:
     if isinstance(textarea := soup.find("textarea"), Tag):
         return textarea.string or ""
     raise errors.UsdbParseError("textarea for notes not found")
+
+
+def post_song_comment(song_id: SongId, text: str, rating: str) -> None:
+    """Post a song comment to USDB."""
+    payload = {"text": text, "stars": rating}
+
+    get_usdb_page(
+        "index.php",
+        RequestMethod.POST,
+        headers={"Content-Type": "application/x-www-form-urlencoded"},
+        params={"link": "detail", "id": str(int(song_id)), "comment": str(1)},
+        payload=payload,
+    )
+    logger = song_logger(song_id)
+    logger.debug("Comment posted on USDB.")
+
+
+def post_song_rating(song_id: SongId, stars: int) -> None:
+    """Post a song rating to USDB."""
+
+    payload = {"stars": str(stars), "text": "onlyvoting"}
+
+    get_usdb_page(
+        "index.php",
+        RequestMethod.POST,
+        headers={"Content-Type": "application/x-www-form-urlencoded"},
+        params={"link": "detail", "id": str(int(song_id)), "comment": str(1)},
+        payload=payload,
+    )
+    logger = song_logger(song_id)
+    logger.debug(f"{stars}-star rating posted on USDB.")
