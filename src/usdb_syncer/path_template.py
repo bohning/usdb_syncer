@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Iterable, assert_never
 
 import attrs
+from unidecode import unidecode
 
 from usdb_syncer import errors, utils
 from usdb_syncer.custom_data import CustomData
@@ -15,8 +16,6 @@ if TYPE_CHECKING:
     from usdb_syncer.usdb_song import UsdbSong
 
 FORBIDDEN_CHARACTERS = '?"<>|*.'
-INITIALS_FORBIDDEN_CHARACTERS = " "
-
 UNKNOWN_PLACEHOLDER_STRING = "None"
 
 
@@ -172,8 +171,8 @@ class PathTemplatePlaceholder(PathTemplateComponentToken, enum.Enum):
                 return UNKNOWN_PLACEHOLDER_STRING
             case PathTemplatePlaceholder.ARTIST_INITIAL:
                 for char in song.artist:
-                    if char not in INITIALS_FORBIDDEN_CHARACTERS:
-                        return char
+                    if char.isalnum():
+                        return unidecode(char).upper()
                 return UNKNOWN_PLACEHOLDER_STRING
             case PathTemplatePlaceholder.TITLE:
                 if song.title and len(song.title) > 0:
