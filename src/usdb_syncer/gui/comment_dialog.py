@@ -24,5 +24,5 @@ class CommentDialog(Ui_Dialog, QDialog):
         song_id = self._selected_song.song_id
         text = self.text_edit_comment.toPlainText()
         rating = self.combobox_rating.currentData()
-        post_song_comment(song_id, text, rating, logger)
+        post_song_comment(song_id, text, rating)
         super().accept()
