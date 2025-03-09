@@ -9,6 +9,7 @@ from typing import Iterable
 from urllib.parse import parse_qs, urlparse
 
 import attrs
+import bs4
 from bs4 import BeautifulSoup
 
 from usdb_syncer import SongId, errors
@@ -405,19 +406,20 @@ def _parse_webloc_file(filepath: str) -> SongId:
     soup = _get_soup(filepath)
     tag = "plist"
     xml_plist = soup.find_all(tag)
-    if not xml_plist:
+    if not xml_plist or not isinstance(plist_tag := xml_plist[0], bs4.Tag):
         raise UsdbIdFileMissingTagFormatError(tag)
     if len(xml_plist) > 1:
         raise UsdbIdFileMultipleTagsFormatError(tag)
     tag = "dict"
-    xml_dict = xml_plist[0].find_all(tag)
+    xml_dict = plist_tag.find_all(tag)
     if not xml_dict:
         raise UsdbIdFileMissingTagFormatError(tag)
     if len(xml_dict) > 1:
         raise UsdbIdFileMultipleTagsFormatError(tag)
     tag = "string"
-    xml_string = xml_dict[0].find_all(tag)
-    if not xml_string:
+    if not isinstance(dict_tag := xml_dict[0], bs4.Tag) or not (
+        xml_string := dict_tag.find_all(tag)
+    ):
         raise UsdbIdFileMissingUrlTagFormatError(tag)
     if len(xml_string) > 1:
         raise UsdbIdFileMultipleUrlsFormatError()

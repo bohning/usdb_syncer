@@ -5,7 +5,7 @@ import re
 import time
 from datetime import datetime
 from enum import Enum
-from typing import Iterator, Type, assert_never
+from typing import Any, Iterator, Type, assert_never
 
 import attrs
 import requests
@@ -283,15 +283,17 @@ def _parse_song_page(soup: BeautifulSoup, song_id: SongId) -> SongDetails:
     logger = song_logger(song_id)
     usdb_strings = _usdb_strings_from_soup(soup)
     details_table, comments_table, *_ = soup.find_all("table", border="0", width="500")
+    assert isinstance(details_table, Tag)
+    assert isinstance(comments_table, Tag)
     details = _parse_details_table(details_table, song_id, usdb_strings, logger)
     details.comments = _parse_comments_table(comments_table, logger)
     return details
 
 
 def _usdb_strings_from_soup(soup: BeautifulSoup) -> Type[UsdbStrings]:
-    return _usdb_strings_from_welcome(
-        soup.find("span", class_="gen").text.split(" ", 1)[0].removesuffix(",")
-    )
+    span = soup.find("span", class_="gen")
+    assert span
+    return _usdb_strings_from_welcome(span.text.split(" ", 1)[0].removesuffix(","))
 
 
 def _usdb_strings_from_html(html: str) -> Type[UsdbStrings]:
@@ -375,10 +377,7 @@ def _parse_songs_from_songlist(html: str) -> Iterator[UsdbSong]:
 
 
 def _parse_details_table(
-    details_table: BeautifulSoup,
-    song_id: SongId,
-    usdb_strings: Type[UsdbStrings],
-    logger: Log,
+    details_table: Tag, song_id: SongId, usdb_strings: Type[UsdbStrings], logger: Log
 ) -> SongDetails:
     """Parse song attributes from usdb page.
 
@@ -400,11 +399,14 @@ def _parse_details_table(
 
     audio_sample = ""
     if param := details_table.find("source"):
-        audio_sample = param.get("src")
+        assert isinstance(param, Tag)
+        assert isinstance(src := param.get("src"), str)
+        audio_sample = src
     else:
         logger.debug("No audio sample found. Consider adding one!")
 
     cover_url = details_table.img["src"]  # type: ignore
+    assert isinstance(cover_url, str)
     if "nocover" in cover_url:
         logger.debug("No USDB cover. Consider adding one!")
 
@@ -438,31 +440,28 @@ def _parse_details_table(
     )
 
 
-def _find_text_after(details_table: BeautifulSoup, label: str) -> str:
+def _find_text_after(details_table: Tag, label: str) -> str:
     if isinstance((tag := details_table.find(string=label)), NavigableString):
         if isinstance(tag.next, Tag):
             return tag.next.text.strip()
     raise errors.UsdbParseError(f"Text after {label} not found.")
 
 
-def _parse_comments_table(
-    comments_table: BeautifulSoup, logger: Log
-) -> list[SongComment]:
+def _parse_comments_table(comments_table: Tag, logger: Log) -> list[SongComment]:
     """Parse the table into individual comments, extracting potential video links,
     GAP and BPM values.
-
-    Parameters:
-        details: dict of song attributes
-        comments_table: BeautifulSoup object of song details table
     """
     comments = []
     # last entry is the field to enter a new comment, so this one is ignored
     for header in comments_table.find_all("tr", class_="list_tr2")[:-1]:
-        meta = header.find("td").text.strip()
+        assert isinstance(header, Tag)
+        assert isinstance(td := header.find("td"), Tag)
+        meta = td.text.strip()
         if " | " not in meta:
             # header is just the placeholder element
             break
         date_time, author = meta.removeprefix("[del] [edit] ").split(" | ")
+        assert isinstance(header.next_sibling, Tag)
         contents = _parse_comment_contents(header.next_sibling, logger)
         comments.append(
             SongComment(date_time=date_time, author=author, contents=contents)
@@ -471,10 +470,12 @@ def _parse_comments_table(
     return comments
 
 
-def _parse_comment_contents(contents: BeautifulSoup, logger: Log) -> CommentContents:
-    td_element = contents.find("td")
+def _parse_comment_contents(contents: Tag, logger: Log) -> CommentContents:
+    assert isinstance(td_element := contents.find("td"), Tag)
     for emoji in td_element.find_all("img"):
-        emoji.replaceWith(emoji.get("title"))
+        assert isinstance(emoji, Tag)
+        assert isinstance(title := emoji.get("title"), str)
+        emoji.replace_with(NavigableString(title))
 
     text = td_element.text.strip()  # type: ignore
     urls: list[str] = []
@@ -489,23 +490,31 @@ def _parse_comment_contents(contents: BeautifulSoup, logger: Log) -> CommentCont
     return CommentContents(text=text, urls=urls, youtube_ids=youtube_ids)
 
 
-def _all_urls_in_comment(
-    contents: BeautifulSoup, text: str, logger: Log
-) -> Iterator[str]:
+def _all_urls_in_comment(contents: Tag, text: str, logger: Log) -> Iterator[str]:
     for embed in contents.find_all("embed"):
-        if (src := embed.get("src")) and SUPPORTED_VIDEO_SOURCES_REGEX.fullmatch(src):
-            logger.debug("video embed found. Consider embedding as iframe")
+        if src := _extract_supported_video_source(embed, "src"):
+            logger.debug("Video embed found. Consider embedding as iframe.")
             yield src
     for iframe in contents.find_all("iframe"):
-        if (src := iframe.get("src")) and SUPPORTED_VIDEO_SOURCES_REGEX.fullmatch(src):
+        if src := _extract_supported_video_source(iframe, "src"):
             yield src
     for anchor in contents.find_all("a"):
-        if (url := anchor.get("href")) and SUPPORTED_VIDEO_SOURCES_REGEX.fullmatch(url):
-            logger.debug("video href found. Consider embedding as iframe")
+        if url := _extract_supported_video_source(anchor, "href"):
+            logger.debug("Video href found. Consider embedding as iframe.")
             yield url
     for match in SUPPORTED_VIDEO_SOURCES_REGEX.finditer(text):
-        logger.debug("video plain url found. Consider embedding as iframe.")
+        logger.debug("Video plain url found. Consider embedding as iframe.")
         yield match.group(1)
+
+
+def _extract_supported_video_source(tag: Any, attr_key: str) -> str | None:
+    if (
+        isinstance(tag, Tag)
+        and isinstance(src := tag.get(attr_key), str)
+        and SUPPORTED_VIDEO_SOURCES_REGEX.fullmatch(src)
+    ):
+        return src
+    return None
 
 
 def get_notes(song_id: SongId, logger: Log) -> str:
