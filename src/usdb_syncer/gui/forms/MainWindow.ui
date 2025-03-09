@@ -781,7 +781,7 @@
   </action>
   <action name="action_rate_1star">
    <property name="text">
-    <string>★</string>
+    <string>★ – Unusable, requires a complete overhaul</string>
    </property>
    <property name="toolTip">
     <string>unusable, needs a total rework</string>
@@ -789,7 +789,7 @@
   </action>
   <action name="action_rate_2stars">
    <property name="text">
-    <string>★★</string>
+    <string>★★ – Barely usable, needs significant revisions</string>
    </property>
    <property name="toolTip">
     <string>hardly usable, needs a lot of improvements</string>
@@ -797,7 +797,7 @@
   </action>
   <action name="action_rate_3stars">
    <property name="text">
-    <string>★★★</string>
+    <string>★★★ – Usable, but requires improvements</string>
    </property>
    <property name="toolTip">
     <string>usable, but room for improvement</string>
@@ -805,7 +805,7 @@
   </action>
   <action name="action_rate_4stars">
    <property name="text">
-    <string>★★★★</string>
+    <string>★★★★ – Very good, with minor areas for improvement</string>
    </property>
    <property name="toolTip">
     <string>room for some improvements</string>
@@ -813,7 +813,7 @@
   </action>
   <action name="action_rate_5stars">
    <property name="text">
-    <string>★★★★★</string>
+    <string>★★★★★ – Excellent, no improvements needed</string>
    </property>
    <property name="toolTip">
     <string>simply perfect</string>
