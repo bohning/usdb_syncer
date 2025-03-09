@@ -12,13 +12,13 @@ class CustomData:
 
     _data: dict[str, str]
     _options: defaultdict[str, builtins.set[str]] | None = None
-    FORBIDDEN_KEY_CHARS = '?"<>|*.:/\\'
+    FORBIDDEN_CHARACTERS = '?"<>|*.:/\\'
 
     @classmethod
     def value_options(cls, key: str) -> tuple[str, ...]:
         if cls._options is None:
             cls._options = db.get_custom_data_map()
-        # pylingt bug: https://github.com/pylint-dev/pylint/issues/9515
+        # pylint bug: https://github.com/pylint-dev/pylint/issues/9515
         return tuple(cls._options[key])  # pylint: disable=unsubscriptable-object
 
     @classmethod
@@ -32,7 +32,7 @@ class CustomData:
         return (
             bool(key)
             and key.strip() == key
-            and not any(c in key for c in cls.FORBIDDEN_KEY_CHARS)
+            and not any(c in key for c in cls.FORBIDDEN_CHARACTERS)
         )
 
     def __init__(self, data: dict[str, str] | None = None) -> None:
