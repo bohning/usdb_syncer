@@ -3,7 +3,6 @@
 from PySide6.QtWidgets import QDialog, QWidget
 
 from usdb_syncer.gui.forms.CommentDialog import Ui_Dialog
-from usdb_syncer.logger import logger
 from usdb_syncer.usdb_scraper import post_song_comment
 from usdb_syncer.usdb_song import UsdbSong
 
