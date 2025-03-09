@@ -304,7 +304,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
     def _rate_in_usdb(self, stars: int) -> None:
         song = self.table.current_song()
         if song:
-            post_song_rating(song.song_id, stars, logger)
+            post_song_rating(song.song_id, stars)
         else:
             logger.debug("Not rating song: no song selected.")
 

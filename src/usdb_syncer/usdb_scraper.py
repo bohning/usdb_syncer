@@ -542,7 +542,7 @@ def post_song_comment(song_id: SongId, text: str, rating: str) -> None:
     logger.debug("Comment posted on USDB.")
 
 
-def post_song_rating(song_id: SongId, stars: int, logger: Log) -> None:
+def post_song_rating(song_id: SongId, stars: int) -> None:
     """Post a song rating to USDB."""
 
     payload = {"stars": str(stars), "text": "onlyvoting"}
@@ -554,4 +554,5 @@ def post_song_rating(song_id: SongId, stars: int, logger: Log) -> None:
         params={"link": "detail", "id": str(int(song_id)), "comment": str(1)},
         payload=payload,
     )
-    logger.debug(f"#{song_id}: {stars}-star rating posted on USDB.")
+    logger = song_logger(song_id)
+    logger.debug(f"{stars}-star rating posted on USDB.")
