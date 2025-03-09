@@ -527,7 +527,7 @@ def _parse_song_txt_from_txt_page(soup: BeautifulSoup) -> str:
     raise errors.UsdbParseError("textarea for notes not found")
 
 
-def post_song_comment(song_id: SongId, text: str, rating: str, logger: Log) -> None:
+def post_song_comment(song_id: SongId, text: str, rating: str) -> None:
     """Post a song comment to USDB."""
     payload = {"text": text, "stars": rating}
 
@@ -538,7 +538,8 @@ def post_song_comment(song_id: SongId, text: str, rating: str, logger: Log) -> N
         params={"link": "detail", "id": str(int(song_id)), "comment": str(1)},
         payload=payload,
     )
-    logger.debug(f"#{song_id}: Comment posted on USDB.")
+    logger = song_logger(song_id)
+    logger.debug("Comment posted on USDB.")
 
 
 def post_song_rating(song_id: SongId, stars: int, logger: Log) -> None:
