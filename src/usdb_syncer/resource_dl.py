@@ -13,10 +13,18 @@ from ffmpeg_normalize import FFmpegNormalize
 from PIL import Image, ImageEnhance, ImageOps
 from PIL.Image import Resampling
 
+from usdb_syncer import utils
+from usdb_syncer.constants import YtErrorMsg
+from usdb_syncer.discord import notify_discord
 from usdb_syncer.download_options import AudioOptions, VideoOptions
-from usdb_syncer.logger import Log, song_logger
+from usdb_syncer.logger import Log, SongLogger, song_logger
 from usdb_syncer.meta_tags import ImageMetaTags
-from usdb_syncer.settings import Browser, CoverMaxSize, YtdlpRateLimit
+from usdb_syncer.settings import (
+    Browser,
+    CoverMaxSize,
+    YtdlpRateLimit,
+    get_discord_allowed,
+)
 from usdb_syncer.usdb_scraper import SongDetails
 from usdb_syncer.utils import video_url_from_resource
 
@@ -143,27 +151,69 @@ def _ytdl_options(
 
 def _download_resource(options: YtdlOptions, resource: str, logger: Log) -> str | None:
     if (url := video_url_from_resource(resource)) is None:
-        logger.debug(f"invalid audio/video resource: {resource}")
+        logger.debug(f"Invalid audio/video resource: {resource}")
         return None
 
     options_without_cookies = options.copy()
     options_without_cookies.pop("cookiesfrombrowser")
+
     with yt_dlp.YoutubeDL(options_without_cookies) as ydl:
         try:
             return ydl.prepare_filename(ydl.extract_info(url))
         except yt_dlp.utils.YoutubeDLError as e:
-            logger.debug(f"error downloading video url: {url}")
-            # Check if the error is due to age restriction
-            if "confirm your age" in str(e).lower():
-                logger.debug("Age-restricted resource. Retrying with cookies...")
-                try:
-                    with yt_dlp.YoutubeDL(options) as ydl:
-                        return ydl.prepare_filename(ydl.extract_info(url))
-                except yt_dlp.utils.YoutubeDLError as retry_error:
-                    logger.error(f"Retry failed: {retry_error}")
-                    return None
-            else:
-                return None
+            return _handle_download_error(e, url, resource, options, logger)
+
+
+def _handle_download_error(
+    error: yt_dlp.utils.YoutubeDLError,
+    url: str,
+    resource: str,
+    options: YtdlOptions,
+    logger: Log,
+) -> str | None:
+    error_message = utils.remove_ansi_codes(str(error))
+    logger.debug(f"Failed to download '{url}': {error_message}")
+
+    if YtErrorMsg.YT_AGE_RESTRICTED in error_message:
+        return _retry_with_cookies(url, options, logger)
+
+    if YtErrorMsg.YT_GEO_RESTRICTED in error_message:
+        _handle_geo_restriction(url, resource, logger)
+
+    if YtErrorMsg.YT_NOT_AVAILABLE in error_message:
+        _handle_not_available(url, logger)
+
+    return None
+
+
+def _retry_with_cookies(url: str, options: YtdlOptions, logger: Log) -> str | None:
+    logger.warning("Age-restricted resource. Retrying with cookies...")
+    try:
+        with yt_dlp.YoutubeDL(options) as ydl:
+            return ydl.prepare_filename(ydl.extract_info(url))
+    except yt_dlp.utils.YoutubeDLError as retry_error:
+        logger.error(f"Retry failed: {utils.remove_ansi_codes(str(retry_error))}")
+        return None
+
+
+def _handle_geo_restriction(url: str, resource: str, logger: Log) -> None:
+    logger.warning("Geo-restricted resource. You can retry after connecting to a VPN.")
+    if "youtube" in url and (
+        allowed_countries := utils.get_allowed_countries(resource)
+    ):
+        logger.info(
+            "Countries where the resource is available: " + ", ".join(allowed_countries)
+        )
+
+
+def _handle_not_available(url: str, logger: Log) -> None:
+    logger.warning(
+        "Resource URL is either faulty or no longer available. Help the community, "
+        "find a suitable replacement and comment it on USDB."
+    )
+    if get_discord_allowed():
+        assert isinstance(logger, SongLogger)
+        notify_discord(logger.song_id, url, logger)
 
 
 def download_image(url: str, logger: Log) -> bytes | None:
@@ -182,8 +232,15 @@ def download_image(url: str, logger: Log) -> bytes | None:
             "down or your internet connection is currently unavailable."
         )
         return None
-    if reply.status_code in range(100, 399):
-        # 1xx informational response, 2xx success, 3xx redirection
+    if reply.status_code in range(100, 299):
+        # 1xx informational response, 2xx success
+        return reply.content
+    if reply.status_code in range(300, 399):
+        # 3xx redirection
+        logger.debug(
+            f"'{url}' redirects to '{reply.headers["Location"]}'. "
+            "Please adapt metatags."
+        )
         return reply.content
     if reply.status_code in range(400, 499):
         logger.error(
@@ -209,10 +266,14 @@ def download_and_process_image(
     logger = song_logger(details.song_id)
     if not (img_bytes := download_image(url, logger)):
         logger.error(f"#{str(kind).upper()}: file does not exist at url: {url}")
+        if get_discord_allowed():
+            notify_discord(details.song_id, url, logger)
         return None
 
     if not filetype.is_image(img_bytes):
-        logger.error(f"#{str(kind).upper()}: file at {url} is no image")
+        logger.error(f"#{str(kind).upper()}: file at {url} is not an image")
+        if get_discord_allowed():
+            notify_discord(details.song_id, url, logger)
         return None
 
     path = target_stem.with_name(f"{target_stem.name} [{kind.value}].jpg")
