@@ -39,8 +39,9 @@ from usdb_syncer import (
 )
 from usdb_syncer.constants import ISO_639_2B_LANGUAGE_CODES
 from usdb_syncer.custom_data import CustomData
+from usdb_syncer.discord import notify_discord
 from usdb_syncer.logger import Log, logger, song_logger
-from usdb_syncer.settings import FormatVersion
+from usdb_syncer.settings import FormatVersion, get_discord_allowed
 from usdb_syncer.song_txt import SongTxt
 from usdb_syncer.sync_meta import ResourceFile, SyncMeta
 from usdb_syncer.usdb_scraper import SongDetails
@@ -410,17 +411,24 @@ def _maybe_download_audio(ctx: _Context) -> None:
         if ctx.out.audio.resource == resource:
             ctx.logger.info("Audio resource is unchanged.")
             return
-        if ext := resource_dl.download_audio(
+        dl_result = resource_dl.download_audio(
             resource,
             options,
             ctx.options.browser,
             ctx.locations.temp_path(),
             ctx.logger,
-        ):
+        )
+        if ext := dl_result.extension:
             ctx.out.audio.resource = resource
             ctx.out.audio.new_fname = ctx.locations.filename(ext=ext)
             ctx.logger.info("Success! Downloaded audio.")
             return
+        if dl_result.error in {
+            resource_dl.ResourceDLError.RESOURCE_INVALID,
+            resource_dl.ResourceDLError.RESOURCE_UNAVAILABLE,
+        }:
+            if get_discord_allowed() and (url := video_url_from_resource(resource)):
+                notify_discord(ctx.song.song_id, url, dl_result.error.value, logger)
     keep = " Keeping last resource." if ctx.out.audio.resource else ""
     song_len = ctx.txt.minimum_song_length()
     ctx.logger.error(f"Failed to download audio (song duration > {song_len})!{keep}")
@@ -433,17 +441,24 @@ def _maybe_download_video(ctx: _Context) -> None:
         if ctx.out.video.resource == resource:
             ctx.logger.info("Video resource is unchanged.")
             return
-        if ext := resource_dl.download_video(
+        dl_result = resource_dl.download_video(
             resource,
             options,
             ctx.options.browser,
             ctx.locations.temp_path(),
             ctx.logger,
-        ):
+        )
+        if ext := dl_result.extension:
             ctx.out.video.resource = resource
             ctx.out.video.new_fname = ctx.locations.filename(ext=ext)
             ctx.logger.info("Success! Downloaded video.")
             return
+        if dl_result.error in {
+            resource_dl.ResourceDLError.RESOURCE_INVALID,
+            resource_dl.ResourceDLError.RESOURCE_UNAVAILABLE,
+        }:
+            if get_discord_allowed() and (url := video_url_from_resource(resource)):
+                notify_discord(ctx.song.song_id, url, dl_result.error.value, logger)
     keep = " Keeping last resource." if ctx.out.video.resource else ""
     ctx.logger.error(f"Failed to download video!{keep}")
 
@@ -454,9 +469,17 @@ def _maybe_download_cover(ctx: _Context) -> None:
     if ctx.txt.meta_tags.cover == ctx.details.cover_url == None:
         ctx.logger.warning("No cover resource found.")
         return
-    if ctx.txt.meta_tags.cover:
-        if _download_cover_url(ctx, ctx.txt.meta_tags.cover.source_url(ctx.logger)):
+    if cover := ctx.txt.meta_tags.cover:
+        url = cover.source_url(ctx.logger)
+        if _download_cover_url(ctx, url):
             return
+        if get_discord_allowed():
+            notify_discord(
+                ctx.song.song_id,
+                url,
+                resource_dl.ResourceDLError.RESOURCE_UNAVAILABLE.value,
+                ctx.logger,
+            )
     if ctx.details.cover_url:
         ctx.logger.warning("Falling back to small USDB cover.")
         if _download_cover_url(ctx, ctx.details.cover_url, process=False):
@@ -510,6 +533,13 @@ def _maybe_download_background(ctx: _Context) -> None:
         ctx.out.background.new_fname = path.name
         ctx.logger.info("Success! Downloaded background.")
     else:
+        if get_discord_allowed():
+            notify_discord(
+                ctx.song.song_id,
+                url,
+                resource_dl.ResourceDLError.RESOURCE_UNAVAILABLE.value,
+                ctx.logger,
+            )
         keep = " Keeping last resource." if ctx.out.cover.resource else ""
         ctx.logger.error(f"Failed to download background!{keep}")
 

@@ -1,9 +1,10 @@
 """Functions for downloading and processing media."""
 
 import os
+from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
-from typing import Union, assert_never
+from typing import Optional, Union, assert_never
 
 import filetype
 import requests
@@ -14,16 +15,10 @@ from PIL.Image import Resampling
 
 from usdb_syncer import utils
 from usdb_syncer.constants import YtErrorMsg
-from usdb_syncer.discord import notify_discord
 from usdb_syncer.download_options import AudioOptions, VideoOptions
-from usdb_syncer.logger import Log, SongLogger, song_logger
+from usdb_syncer.logger import Log, song_logger
 from usdb_syncer.meta_tags import ImageMetaTags
-from usdb_syncer.settings import (
-    Browser,
-    CoverMaxSize,
-    YtdlpRateLimit,
-    get_discord_allowed,
-)
+from usdb_syncer.settings import Browser, CoverMaxSize, YtdlpRateLimit
 from usdb_syncer.usdb_scraper import SongDetails
 from usdb_syncer.utils import video_url_from_resource
 
@@ -35,6 +30,40 @@ IMAGE_DOWNLOAD_HEADERS = {
 }
 
 YtdlOptions = dict[str, Union[str, bool, tuple, list, int]]
+
+
+class ResourceInvalidError(Exception):
+    """Raised when a resource is invalid."""
+
+
+class ResourceUnsupportedError(Exception):
+    """Raised when a resource is unsupported."""
+
+
+class ResourceGeoRestrictedError(Exception):
+    """Raised when a resource is geo-restricted."""
+
+
+class ResourceUnavailableError(Exception):
+    """Raised when a resource is not available."""
+
+
+class ResourceDLError(Enum):
+    """Errors that can occur when downloading a resource."""
+
+    RESOURCE_INVALID = "Resource invalid"
+    RESOURCE_UNSUPPORTED = "Resource unsupported"
+    RESOURCE_GEO_RESTRICTED = "Resource geo-restricted"
+    RESOURCE_UNAVAILABLE = "Resource unavailable"
+    RESOURCE_DL_FAILED = "Resource download failed"
+
+
+@dataclass
+class ResourceDLResult:
+    """The result of a download operation."""
+
+    extension: Optional[str] = None
+    error: Optional[ResourceDLError] = None
 
 
 class ImageKind(Enum):
@@ -55,7 +84,7 @@ class ImageKind(Enum):
 
 def download_audio(
     resource: str, options: AudioOptions, browser: Browser, path_stem: Path, logger: Log
-) -> str | None:
+) -> ResourceDLResult:
     """Download audio from resource to path and process it according to options.
 
     Parameters:
@@ -65,26 +94,30 @@ def download_audio(
         path_stem: the target on the file system *without* an extension
 
     Returns:
-        the extension of the successfully downloaded file or None
+        DownloadResult with the extension of the downloaded file if successful
     """
     ydl_opts = _ytdl_options(
         options.ytdl_format(), browser, path_stem, options.rate_limit
     )
     if not options.normalize:
-        postprocessor = {
-            "key": "FFmpegExtractAudio",
-            "preferredquality": options.bitrate.ytdl_format(),
-            "preferredcodec": options.format.ytdl_codec(),
-        }
-        ydl_opts["postprocessors"] = [postprocessor]
+        # Add postprocessor if normalization is NOT needed (direct audio extract)
+        ydl_opts["postprocessors"] = [
+            {
+                "key": "FFmpegExtractAudio",
+                "preferredquality": options.bitrate.ytdl_format(),
+                "preferredcodec": options.format.ytdl_codec(),
+            }
+        ]
 
-    if not (filename := _download_resource(ydl_opts, resource, logger)):
-        return None
+    # Download the resource
+    download_result = _download(resource, ydl_opts, logger)
 
-    if options.normalize:
+    # If download was successful and normalization is requested
+    if download_result.extension and options.normalize:
+        filename = f"{path_stem}.{download_result.extension}"
         _normalize(options, path_stem, filename)
 
-    return options.format.value
+    return download_result
 
 
 def _normalize(options: AudioOptions, path_stem: Path, filename: str) -> None:
@@ -109,7 +142,7 @@ def _normalize(options: AudioOptions, path_stem: Path, filename: str) -> None:
 
 def download_video(
     resource: str, options: VideoOptions, browser: Browser, path_stem: Path, logger: Log
-) -> str | None:
+) -> ResourceDLResult:
     """Download video from resource to path and process it according to options.
 
     Parameters:
@@ -119,14 +152,34 @@ def download_video(
         path_stem: the target on the file system *without* an extension
 
     Returns:
-        the extension of the successfully downloaded file or None
+        DownloadResult with the extension of the downloaded file if successful
     """
     ydl_opts = _ytdl_options(
         options.ytdl_format(), browser, path_stem, options.rate_limit
     )
-    if filename := _download_resource(ydl_opts, resource, logger):
-        return os.path.splitext(filename)[1][1:]
-    return None
+    return _download(resource, ydl_opts, logger)
+
+
+def _download(resource: str, options: YtdlOptions, logger: Log) -> ResourceDLResult:
+    try:
+        filename = _download_resource(options, resource, logger)
+        ext = os.path.splitext(filename)[1][1:]
+        return ResourceDLResult(extension=ext)
+    except ResourceInvalidError as e:
+        logger.warning(str(e))
+        return ResourceDLResult(error=ResourceDLError.RESOURCE_INVALID)
+    except ResourceUnsupportedError as e:
+        logger.warning(str(e))
+        return ResourceDLResult(error=ResourceDLError.RESOURCE_UNSUPPORTED)
+    except ResourceGeoRestrictedError as e:
+        logger.warning(str(e))
+        return ResourceDLResult(error=ResourceDLError.RESOURCE_GEO_RESTRICTED)
+    except ResourceUnavailableError as e:
+        logger.warning(str(e))
+        return ResourceDLResult(error=ResourceDLError.RESOURCE_UNAVAILABLE)
+    except yt_dlp.utils.YoutubeDLError as e:
+        logger.warning(f"YoutubeDL error: {e}")
+        return ResourceDLResult(error=ResourceDLError.RESOURCE_DL_FAILED)
 
 
 def _ytdl_options(
@@ -148,51 +201,44 @@ def _ytdl_options(
     return options
 
 
-def _download_resource(options: YtdlOptions, resource: str, logger: Log) -> str | None:
+def _download_resource(options: YtdlOptions, resource: str, logger: Log) -> str:
     if (url := video_url_from_resource(resource)) is None:
-        logger.debug(f"Invalid audio/video resource: {resource}")
-        return None
+        raise ResourceInvalidError(f"Invalid resource {resource}")
 
     options_without_cookies = options.copy()
-    options_without_cookies.pop("cookiesfrombrowser")
+    options_without_cookies.pop("cookiesfrombrowser", None)
 
     with yt_dlp.YoutubeDL(options_without_cookies) as ydl:
         try:
             return ydl.prepare_filename(ydl.extract_info(url))
+        except yt_dlp.utils.UnsupportedError as e:
+            raise ResourceUnsupportedError(f"Resource {resource} not supported.") from e
         except yt_dlp.utils.YoutubeDLError as e:
-            return _handle_download_error(e, url, resource, options, logger)
+            error_message = utils.remove_ansi_codes(str(e))
+            logger.debug(f"Failed to download '{url}': {error_message}")
+            if YtErrorMsg.YT_AGE_RESTRICTED in error_message:
+                return _retry_with_cookies(url, options, logger)
+            if YtErrorMsg.YT_GEO_RESTRICTED in error_message:
+                _handle_geo_restriction(url, resource, logger)
+                raise ResourceGeoRestrictedError(
+                    f"Resource {resource} is geo-restricted."
+                ) from e
+            if YtErrorMsg.YT_NOT_AVAILABLE in error_message:
+                _handle_not_available(url, logger)
+                raise ResourceUnavailableError(
+                    f"Resource {resource} not available"
+                ) from e
+            raise
 
 
-def _handle_download_error(
-    error: yt_dlp.utils.YoutubeDLError,
-    url: str,
-    resource: str,
-    options: YtdlOptions,
-    logger: Log,
-) -> str | None:
-    error_message = utils.remove_ansi_codes(str(error))
-    logger.debug(f"Failed to download '{url}': {error_message}")
-
-    if YtErrorMsg.YT_AGE_RESTRICTED in error_message:
-        return _retry_with_cookies(url, options, logger)
-
-    if YtErrorMsg.YT_GEO_RESTRICTED in error_message:
-        _handle_geo_restriction(url, resource, logger)
-
-    if YtErrorMsg.YT_NOT_AVAILABLE in error_message:
-        _handle_not_available(url, logger)
-
-    return None
-
-
-def _retry_with_cookies(url: str, options: YtdlOptions, logger: Log) -> str | None:
+def _retry_with_cookies(url: str, options: YtdlOptions, logger: Log) -> str:
     logger.warning("Age-restricted resource. Retrying with cookies...")
-    try:
-        with yt_dlp.YoutubeDL(options) as ydl:
+    with yt_dlp.YoutubeDL(options) as ydl:
+        try:
             return ydl.prepare_filename(ydl.extract_info(url))
-    except yt_dlp.utils.YoutubeDLError as retry_error:
-        logger.error(f"Retry failed: {utils.remove_ansi_codes(str(retry_error))}")
-        return None
+        except yt_dlp.utils.YoutubeDLError as re:
+            logger.error(f"Retry failed: {utils.remove_ansi_codes(str(re))}")
+            raise
 
 
 def _handle_geo_restriction(url: str, resource: str, logger: Log) -> None:
@@ -207,12 +253,9 @@ def _handle_geo_restriction(url: str, resource: str, logger: Log) -> None:
 
 def _handle_not_available(url: str, logger: Log) -> None:
     logger.warning(
-        "Resource URL is either faulty or no longer available. Help the community, "
+        f"Resource '{url}' is either faulty or no longer available. Help the community, "
         "find a suitable replacement and comment it on USDB."
     )
-    if get_discord_allowed():
-        assert isinstance(logger, SongLogger)
-        notify_discord(logger.song_id, url, logger)
 
 
 def download_image(url: str, logger: Log) -> bytes | None:
@@ -265,14 +308,10 @@ def download_and_process_image(
     logger = song_logger(details.song_id)
     if not (img_bytes := download_image(url, logger)):
         logger.error(f"#{str(kind).upper()}: file does not exist at url: {url}")
-        if get_discord_allowed():
-            notify_discord(details.song_id, url, logger)
         return None
 
     if not filetype.is_image(img_bytes):
         logger.error(f"#{str(kind).upper()}: file at {url} is not an image")
-        if get_discord_allowed():
-            notify_discord(details.song_id, url, logger)
         return None
 
     path = target_stem.with_name(f"{target_stem.name} [{kind.value}].jpg")

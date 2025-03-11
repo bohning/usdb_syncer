@@ -7,8 +7,10 @@ from usdb_syncer.constants import Usdb
 from usdb_syncer.logger import Log
 from usdb_syncer.usdb_song import UsdbSong
 
+DISCORD_COLOR_RED = 0xED4245  # equivalent to discord.Color.red()
 
-def notify_discord(song_id: SongId, url: str, logger: Log) -> None:
+
+def notify_discord(song_id: SongId, url: str, error_str: str, logger: Log) -> None:
     """Notify unavailable resources on Discord (without using the discord package)."""
     if not (song := UsdbSong.get(song_id)):
         logger.debug("Song id does not exist.")
@@ -26,13 +28,13 @@ def notify_discord(song_id: SongId, url: str, logger: Log) -> None:
             return
 
         embed = {
-            "color": 0xED4245,  # equivalent to discord.Color.red()
+            "color": DISCORD_COLOR_RED,
             "author": {
                 "name": f"{song_id}: {song.artist} - {song.title}",
                 "url": f"{Usdb.DETAILS_URL}{song_id}",
                 "icon_url": f"{Usdb.COVER_URL}{song_id}.jpg",
             },
-            "fields": [{"name": "Failed resource:", "value": url, "inline": False}],
+            "fields": [{"name": f"{error_str}:", "value": url, "inline": False}],
         }
 
         payload = {"embeds": [embed]}

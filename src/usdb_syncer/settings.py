@@ -312,23 +312,23 @@ class Browser(Enum):
     """Browsers to use cookies from."""
 
     NONE = None
-    ARC = "Arc"
-    BRAVE = "Brave"
-    CHROME = "Chrome"
-    CHROMIUM = "Chromium"
-    EDGE = "Edge"
-    FIREFOX = "Firefox"
-    LIBREWOLF = "Librewolf"
-    OCTO_BROWSER = "Octo Browser"
-    OPERA = "Opera"
-    OPERA_GX = "Opera GX"
-    SAFARI = "Safari"
-    VIVALDI = "Vivaldi"
+    ARC = "arc"
+    BRAVE = "brave"
+    CHROME = "chrome"
+    CHROMIUM = "chromium"
+    EDGE = "edge"
+    FIREFOX = "firefox"
+    LIBREWOLF = "librewolf"
+    OCTO_BROWSER = "octo browser"
+    OPERA = "opera"
+    OPERA_GX = "opera gx"
+    SAFARI = "safari"
+    VIVALDI = "vivaldi"
 
     def __str__(self) -> str:
         if self is Browser.NONE:
             return "None"
-        return self.value
+        return self.value.capitalize()
 
     def icon(self) -> str:
         match self:
