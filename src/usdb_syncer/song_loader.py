@@ -41,6 +41,7 @@ from usdb_syncer.constants import ISO_639_2B_LANGUAGE_CODES
 from usdb_syncer.custom_data import CustomData
 from usdb_syncer.discord import notify_discord
 from usdb_syncer.logger import Log, logger, song_logger
+from usdb_syncer.resource_dl import ResourceDLError
 from usdb_syncer.settings import FormatVersion, get_discord_allowed
 from usdb_syncer.song_txt import SongTxt
 from usdb_syncer.sync_meta import ResourceFile, SyncMeta
@@ -477,7 +478,7 @@ def _maybe_download_cover(ctx: _Context) -> None:
             notify_discord(
                 ctx.song.song_id,
                 url,
-                resource_dl.ResourceDLError.RESOURCE_UNAVAILABLE.value,
+                ResourceDLError.RESOURCE_UNAVAILABLE.value,
                 ctx.logger,
             )
     if ctx.details.cover_url:
@@ -537,7 +538,7 @@ def _maybe_download_background(ctx: _Context) -> None:
             notify_discord(
                 ctx.song.song_id,
                 url,
-                resource_dl.ResourceDLError.RESOURCE_UNAVAILABLE.value,
+                ResourceDLError.RESOURCE_UNAVAILABLE.value,
                 ctx.logger,
             )
         keep = " Keeping last resource." if ctx.out.cover.resource else ""
