@@ -429,7 +429,9 @@ def _maybe_download_audio(ctx: _Context) -> None:
             resource_dl.ResourceDLError.RESOURCE_UNAVAILABLE,
         }:
             if get_discord_allowed() and (url := video_url_from_resource(resource)):
-                notify_discord(ctx.song.song_id, url, dl_result.error.value, logger)
+                notify_discord(
+                    ctx.song.song_id, url, "Audio", dl_result.error.value, logger
+                )
     keep = " Keeping last resource." if ctx.out.audio.resource else ""
     song_len = ctx.txt.minimum_song_length()
     ctx.logger.error(f"Failed to download audio (song duration > {song_len})!{keep}")
@@ -459,7 +461,9 @@ def _maybe_download_video(ctx: _Context) -> None:
             resource_dl.ResourceDLError.RESOURCE_UNAVAILABLE,
         }:
             if get_discord_allowed() and (url := video_url_from_resource(resource)):
-                notify_discord(ctx.song.song_id, url, dl_result.error.value, logger)
+                notify_discord(
+                    ctx.song.song_id, url, "Video", dl_result.error.value, logger
+                )
     keep = " Keeping last resource." if ctx.out.video.resource else ""
     ctx.logger.error(f"Failed to download video!{keep}")
 
@@ -478,6 +482,7 @@ def _maybe_download_cover(ctx: _Context) -> None:
             notify_discord(
                 ctx.song.song_id,
                 url,
+                "Cover",
                 ResourceDLError.RESOURCE_UNAVAILABLE.value,
                 ctx.logger,
             )
@@ -538,6 +543,7 @@ def _maybe_download_background(ctx: _Context) -> None:
             notify_discord(
                 ctx.song.song_id,
                 url,
+                "Background",
                 ResourceDLError.RESOURCE_UNAVAILABLE.value,
                 ctx.logger,
             )

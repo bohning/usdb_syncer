@@ -111,7 +111,7 @@ class YtErrorMsg:
         "Video unavailable. The uploader has not made this video available in your "
         "country"
     )
-    YT_NOT_AVAILABLE = "Video unavailable"
+    YT_UNAVAILABLE = "Video unavailable"
 
 
 SUPPORTED_VIDEO_SOURCES_REGEX = re.compile(

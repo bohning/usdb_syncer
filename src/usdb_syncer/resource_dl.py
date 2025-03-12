@@ -4,7 +4,7 @@ import os
 from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
-from typing import Optional, Union, assert_never
+from typing import assert_never
 
 import filetype
 import requests
@@ -16,6 +16,7 @@ from PIL.Image import Resampling
 from usdb_syncer import utils
 from usdb_syncer.constants import YtErrorMsg
 from usdb_syncer.download_options import AudioOptions, VideoOptions
+from usdb_syncer.errors import UsdbSyncerError
 from usdb_syncer.logger import Log, song_logger
 from usdb_syncer.meta_tags import ImageMetaTags
 from usdb_syncer.settings import Browser, CoverMaxSize, YtdlpRateLimit
@@ -29,41 +30,41 @@ IMAGE_DOWNLOAD_HEADERS = {
     )
 }
 
-YtdlOptions = dict[str, Union[str, bool, tuple, list, int]]
+YtdlOptions = dict[str, str | bool | tuple | list | int]
 
 
-class ResourceInvalidError(Exception):
+class ResourceInvalidError(UsdbSyncerError):
     """Raised when a resource is invalid."""
 
 
-class ResourceUnsupportedError(Exception):
+class ResourceUnsupportedError(UsdbSyncerError):
     """Raised when a resource is unsupported."""
 
 
-class ResourceGeoRestrictedError(Exception):
+class ResourceGeoRestrictedError(UsdbSyncerError):
     """Raised when a resource is geo-restricted."""
 
 
-class ResourceUnavailableError(Exception):
+class ResourceUnavailableError(UsdbSyncerError):
     """Raised when a resource is not available."""
 
 
 class ResourceDLError(Enum):
     """Errors that can occur when downloading a resource."""
 
-    RESOURCE_INVALID = "Resource invalid"
-    RESOURCE_UNSUPPORTED = "Resource unsupported"
-    RESOURCE_GEO_RESTRICTED = "Resource geo-restricted"
-    RESOURCE_UNAVAILABLE = "Resource unavailable"
-    RESOURCE_DL_FAILED = "Resource download failed"
+    RESOURCE_INVALID = "resource invalid"
+    RESOURCE_UNSUPPORTED = "resource unsupported"
+    RESOURCE_GEO_RESTRICTED = "resource geo-restricted"
+    RESOURCE_UNAVAILABLE = "resource unavailable"
+    RESOURCE_DL_FAILED = "resource download failed"
 
 
 @dataclass
 class ResourceDLResult:
     """The result of a download operation."""
 
-    extension: Optional[str] = None
-    error: Optional[ResourceDLError] = None
+    extension: str | None = None
+    error: ResourceDLError | None = None
 
 
 class ImageKind(Enum):
@@ -109,15 +110,13 @@ def download_audio(
             }
         ]
 
-    # Download the resource
-    download_result = _download(resource, ydl_opts, logger)
+    dl_result = _download_resource(resource, ydl_opts, logger)
 
-    # If download was successful and normalization is requested
-    if download_result.extension and options.normalize:
-        filename = f"{path_stem}.{download_result.extension}"
+    if dl_result.extension and options.normalize:
+        filename = f"{path_stem}.{dl_result.extension}"
         _normalize(options, path_stem, filename)
 
-    return download_result
+    return dl_result
 
 
 def _normalize(options: AudioOptions, path_stem: Path, filename: str) -> None:
@@ -157,29 +156,7 @@ def download_video(
     ydl_opts = _ytdl_options(
         options.ytdl_format(), browser, path_stem, options.rate_limit
     )
-    return _download(resource, ydl_opts, logger)
-
-
-def _download(resource: str, options: YtdlOptions, logger: Log) -> ResourceDLResult:
-    try:
-        filename = _download_resource(options, resource, logger)
-        ext = os.path.splitext(filename)[1][1:]
-        return ResourceDLResult(extension=ext)
-    except ResourceInvalidError as e:
-        logger.warning(str(e))
-        return ResourceDLResult(error=ResourceDLError.RESOURCE_INVALID)
-    except ResourceUnsupportedError as e:
-        logger.warning(str(e))
-        return ResourceDLResult(error=ResourceDLError.RESOURCE_UNSUPPORTED)
-    except ResourceGeoRestrictedError as e:
-        logger.warning(str(e))
-        return ResourceDLResult(error=ResourceDLError.RESOURCE_GEO_RESTRICTED)
-    except ResourceUnavailableError as e:
-        logger.warning(str(e))
-        return ResourceDLResult(error=ResourceDLError.RESOURCE_UNAVAILABLE)
-    except yt_dlp.utils.YoutubeDLError as e:
-        logger.warning(f"YoutubeDL error: {e}")
-        return ResourceDLResult(error=ResourceDLError.RESOURCE_DL_FAILED)
+    return _download_resource(resource, ydl_opts, logger)
 
 
 def _ytdl_options(
@@ -201,41 +178,46 @@ def _ytdl_options(
     return options
 
 
-def _download_resource(options: YtdlOptions, resource: str, logger: Log) -> str:
+def _download_resource(
+    resource: str, options: YtdlOptions, logger: Log
+) -> ResourceDLResult:
     if (url := video_url_from_resource(resource)) is None:
-        raise ResourceInvalidError(f"Invalid resource {resource}")
+        return ResourceDLResult(error=ResourceDLError.RESOURCE_INVALID)
 
     options_without_cookies = options.copy()
     options_without_cookies.pop("cookiesfrombrowser", None)
 
     with yt_dlp.YoutubeDL(options_without_cookies) as ydl:
         try:
-            return ydl.prepare_filename(ydl.extract_info(url))
-        except yt_dlp.utils.UnsupportedError as e:
-            raise ResourceUnsupportedError(f"Resource {resource} not supported.") from e
+            filename = ydl.prepare_filename(ydl.extract_info(url))
+            ext = os.path.splitext(filename)[1][1:]
+            return ResourceDLResult(extension=ext)
+        except yt_dlp.utils.UnsupportedError:
+            return ResourceDLResult(error=ResourceDLError.RESOURCE_UNSUPPORTED)
         except yt_dlp.utils.YoutubeDLError as e:
             error_message = utils.remove_ansi_codes(str(e))
             logger.debug(f"Failed to download '{url}': {error_message}")
             if YtErrorMsg.YT_AGE_RESTRICTED in error_message:
-                return _retry_with_cookies(url, options, logger)
+                dl_result = _retry_with_cookies(url, options, logger)
+                return ResourceDLResult(extension=dl_result.extension)
             if YtErrorMsg.YT_GEO_RESTRICTED in error_message:
                 _handle_geo_restriction(url, resource, logger)
-                raise ResourceGeoRestrictedError(
-                    f"Resource {resource} is geo-restricted."
-                ) from e
-            if YtErrorMsg.YT_NOT_AVAILABLE in error_message:
-                _handle_not_available(url, logger)
-                raise ResourceUnavailableError(
-                    f"Resource {resource} not available"
-                ) from e
+                return ResourceDLResult(error=ResourceDLError.RESOURCE_GEO_RESTRICTED)
+            if YtErrorMsg.YT_UNAVAILABLE in error_message:
+                _handle_unavailable(url, logger)
+                return ResourceDLResult(error=ResourceDLError.RESOURCE_UNAVAILABLE)
             raise
 
 
-def _retry_with_cookies(url: str, options: YtdlOptions, logger: Log) -> str:
+def _retry_with_cookies(
+    url: str, options: YtdlOptions, logger: Log
+) -> ResourceDLResult:
     logger.warning("Age-restricted resource. Retrying with cookies...")
     with yt_dlp.YoutubeDL(options) as ydl:
         try:
-            return ydl.prepare_filename(ydl.extract_info(url))
+            filename = ydl.prepare_filename(ydl.extract_info(url))
+            ext = os.path.splitext(filename)[1][1:]
+            return ResourceDLResult(extension=ext)
         except yt_dlp.utils.YoutubeDLError as re:
             logger.error(f"Retry failed: {utils.remove_ansi_codes(str(re))}")
             raise
@@ -251,10 +233,10 @@ def _handle_geo_restriction(url: str, resource: str, logger: Log) -> None:
         )
 
 
-def _handle_not_available(url: str, logger: Log) -> None:
+def _handle_unavailable(url: str, logger: Log) -> None:
     logger.warning(
-        f"Resource '{url}' is either faulty or no longer available. Help the community, "
-        "find a suitable replacement and comment it on USDB."
+        f"Resource '{url}' is no longer available. Please support the community, find a "
+        "suitable replacement resource and comment it on USDB."
     )
 
 
