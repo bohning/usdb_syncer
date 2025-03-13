@@ -21,6 +21,7 @@ import send2trash
 import shiboken6
 from mutagen import id3
 from mutagen.flac import Picture
+from mutagen.mp3 import MP3
 from PIL import Image
 from PySide6 import QtCore
 
@@ -639,19 +640,22 @@ def _maybe_write_video_tags(ctx: _Context) -> None:
 def _write_m4a_mp4_tags(
     path: Path, resource: str, ctx: _Context, embed_artwork: bool
 ) -> None:
-    tags = mutagen.mp4.MP4Tags()
-
-    tags["\xa9ART"] = ctx.txt.headers.artist
-    tags["\xa9nam"] = ctx.txt.headers.title
+    mp4 = mutagen.mp4.MP4(path)
+    if not mp4.tags:
+        mp4.add_tags()
+    if not mp4.tags:
+        return
+    mp4.tags["\xa9ART"] = ctx.txt.headers.artist
+    mp4.tags["\xa9nam"] = ctx.txt.headers.title
     if ctx.txt.headers.genre:
-        tags["\xa9gen"] = ctx.txt.headers.genre
+        mp4.tags["\xa9gen"] = ctx.txt.headers.genre
     if ctx.txt.headers.year:
-        tags["\xa9day"] = ctx.txt.headers.year
-    tags["\xa9lyr"] = ctx.txt.unsynchronized_lyrics()
-    tags["\xa9cmt"] = resource
+        mp4.tags["\xa9day"] = ctx.txt.headers.year
+    mp4.tags["\xa9lyr"] = ctx.txt.unsynchronized_lyrics()
+    mp4.tags["\xa9cmt"] = resource
 
     if embed_artwork:
-        tags["covr"] = [
+        mp4.tags["covr"] = [
             mutagen.mp4.MP4Cover(
                 image.read_bytes(), imageformat=mutagen.mp4.MP4Cover.FORMAT_JPEG
             )
@@ -662,43 +666,46 @@ def _write_m4a_mp4_tags(
             if image
         ]
 
-    tags.save(path)
+    mp4.save()
 
 
 def _write_mp3_tags(
     path: Path, resource: str, ctx: _Context, embed_artwork: bool
 ) -> None:
-    tags = id3.ID3()
-
+    mp3 = MP3(path, ID3=id3.ID3)
+    if not mp3.tags:
+        mp3.add_tags()
+    if not mp3.tags:
+        return
     lang = ISO_639_2B_LANGUAGE_CODES.get(ctx.txt.headers.main_language(), "und")
-    tags["TPE1"] = id3.TPE1(encoding=id3.Encoding.UTF8, text=ctx.txt.headers.artist)
-    tags["TIT2"] = id3.TIT2(encoding=id3.Encoding.UTF8, text=ctx.txt.headers.title)
-    tags["TLAN"] = id3.TLAN(encoding=id3.Encoding.UTF8, text=lang)
+    mp3.tags["TPE1"] = id3.TPE1(encoding=id3.Encoding.UTF8, text=ctx.txt.headers.artist)
+    mp3.tags["TIT2"] = id3.TIT2(encoding=id3.Encoding.UTF8, text=ctx.txt.headers.title)
+    mp3.tags["TLAN"] = id3.TLAN(encoding=id3.Encoding.UTF8, text=lang)
     if genre := ctx.txt.headers.genre:
-        tags["TCON"] = id3.TCON(encoding=id3.Encoding.UTF8, text=genre)
+        mp3.tags["TCON"] = id3.TCON(encoding=id3.Encoding.UTF8, text=genre)
     if year := ctx.txt.headers.year:
-        tags["TDRC"] = id3.TDRC(encoding=id3.Encoding.UTF8, text=year)
-    tags[f"USLT::'{lang}'"] = id3.USLT(
+        mp3.tags["TDRC"] = id3.TDRC(encoding=id3.Encoding.UTF8, text=year)
+    mp3.tags[f"USLT::'{lang}'"] = id3.USLT(
         encoding=id3.Encoding.UTF8,
         lang=lang,
         desc="Lyrics",
         text=ctx.txt.unsynchronized_lyrics(),
     )
-    tags["SYLT"] = id3.SYLT(
+    mp3.tags["SYLT"] = id3.SYLT(
         encoding=id3.Encoding.UTF8,
         lang=lang,
         format=2,  # milliseconds as units
         type=1,  # lyrics
         text=ctx.txt.synchronized_lyrics(),
     )
-    tags["COMM"] = id3.COMM(
+    mp3.tags["COMM"] = id3.COMM(
         encoding=id3.Encoding.UTF8, lang="eng", desc="Audio Source", text=resource
     )
 
     if embed_artwork and (
         path_resource := ctx.out.cover.path_and_resource(ctx.locations, temp=True)
     ):
-        tags.add(
+        mp3.tags.add(
             id3.APIC(
                 encoding=id3.Encoding.UTF8,
                 mime="image/jpeg",
@@ -708,7 +715,7 @@ def _write_mp3_tags(
             )
         )
 
-    tags.save(path)
+    mp3.save()
 
 
 def _write_ogg_tags(

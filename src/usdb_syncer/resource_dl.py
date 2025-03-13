@@ -1,6 +1,7 @@
 """Functions for downloading and processing media."""
 
 import os
+import traceback
 from enum import Enum
 from pathlib import Path
 from typing import Union, assert_never
@@ -9,7 +10,6 @@ import filetype
 import requests
 import yt_dlp
 from ffmpeg_normalize import FFmpegNormalize
-from mutagen.flac import FLAC
 from mutagen.id3 import ID3, TXXX
 from mutagen.mp3 import MP3
 from mutagen.mp4 import MP4
@@ -37,7 +37,8 @@ IMAGE_DOWNLOAD_HEADERS = {
     )
 }
 
-DEFAULT_TARGET_LEVEL = -23.0  # dB
+DEFAULT_TARGET_LEVEL_RG = -18.0  # dB
+DEFAULT_TARGET_LEVEL_R128 = -23.0  # dB
 DEFAULT_TARGET_LOUDNESS_RANGE = 7.0
 DEFAULT_TRUE_PEAK = -2.0
 
@@ -104,9 +105,13 @@ def download_audio(
 def _normalize(
     options: AudioOptions, path_stem: Path, filename: str, logger: Log
 ) -> None:
+    ext = options.format.value
+    target_level = (
+        DEFAULT_TARGET_LEVEL_R128 if ext == "opus" else DEFAULT_TARGET_LEVEL_RG
+    )
     normalizer = FFmpegNormalize(
         normalization_type="ebu",  # default: "ebu"
-        target_level=DEFAULT_TARGET_LEVEL,
+        target_level=target_level,
         print_stats=True,  # set to False?
         keep_lra_above_loudness_range_target=True,  # needed for linear normalization
         loudness_range_target=DEFAULT_TARGET_LOUDNESS_RANGE,
@@ -119,7 +124,6 @@ def _normalize(
         progress=True,  # set to False?
         dry_run=(options.normalization == AudioNormalization.REPLAYGAIN),
     )
-    ext = options.format.value
     normalizer.add_media_file(filename, f"{path_stem}.{ext}")
     normalizer.run_normalization()
 
@@ -140,7 +144,7 @@ def _normalize(
         if input_i is None or input_tp is None:
             logger.error("NORMALIZATION: no input_i or input_tp")
             return
-        track_gain = -(input_i - DEFAULT_TARGET_LEVEL)  # dB
+        track_gain = -(input_i - target_level)  # dB
         track_peak = 10 ** (input_tp / 20)  # Linear scale
         _write_replaygain_tags(filename, track_gain, track_peak, logger)
 
@@ -151,46 +155,67 @@ def _write_replaygain_tags(
     """Writes ReplayGain values to audio file metadata."""
 
     try:
-        if audio_file.endswith(".mp3"):
-            mp3 = MP3(audio_file, ID3=ID3)
-            if mp3.tags:
-                mp3.tags.add(
-                    TXXX(desc="REPLAYGAIN_TRACK_GAIN", text=[f"{track_gain:.2f} dB"])
-                )
-                mp3.tags.add(
-                    TXXX(desc="REPLAYGAIN_TRACK_PEAK", text=[f"{track_peak:.6f}"])
-                )
-            mp3.save()
-
-        elif audio_file.endswith(".m4a"):
-            mp4 = MP4(audio_file)
-            if not mp4.tags:
-                mp4.add_tags()
-            if mp4.tags:
-                mp4.tags["----:com.apple.iTunes:REPLAYGAIN_TRACK_GAIN"] = [
-                    f"{track_gain:.2f} dB".encode()
-                ]
-                mp4.tags["----:com.apple.iTunes:REPLAYGAIN_TRACK_PEAK"] = [
-                    f"{track_peak:.6f}".encode()
-                ]
-                mp4.save()
-
-        elif audio_file.endswith(".ogg"):
-            ogg = OggVorbis(audio_file)
-            ogg["REPLAYGAIN_TRACK_GAIN"] = [f"{track_gain:.2f} dB"]
-            ogg["REPLAYGAIN_TRACK_PEAK"] = [f"{track_peak:.6f}"]
-            ogg.save()
-
-        elif audio_file.endswith(".opus"):
-            opus = OggOpus(audio_file)
-            opus["R128_TRACK_GAIN"] = [f"{track_gain:.2f} dB"]
-            opus["R128_ALBUM_GAIN"] = [f"{track_gain:.2f} dB"]
-            opus.save()
+        match Path(audio_file).suffix:
+            case ".m4a":
+                _write_replaygain_tags_m4a(audio_file, track_gain, track_peak)
+            case ".mp3":
+                _write_replaygain_tags_mp3(audio_file, track_gain, track_peak)
+            case ".ogg":
+                _write_replaygain_tags_ogg(audio_file, track_gain, track_peak)
+            case ".opus":
+                _write_replaygain_tags_opus(audio_file, track_gain)
 
         logger.info(f"ReplayGain tags written to {audio_file}")
 
-    except Exception as e:
-        logger.error(f"Failed to write ReplayGain tags to {audio_file}: {e}")
+    except Exception:  # pylint: disable=broad-exception-caught
+        logger.debug(traceback.format_exc())
+        logger.error(f"Failed to write audio tags to file '{audio_file}'!")
+    else:
+        logger.debug(f"Audio tags written to file '{audio_file}'.")
+
+
+def _write_replaygain_tags_m4a(
+    audio_file: str, track_gain: float, track_peak: float
+) -> None:
+    mp4 = MP4(audio_file)
+    if not mp4.tags:
+        mp4.add_tags()
+    if not mp4.tags:
+        return
+    mp4.tags["----:com.apple.iTunes:REPLAYGAIN_TRACK_GAIN"] = [
+        f"{track_gain:.2f} dB".encode()
+    ]
+    mp4.tags["----:com.apple.iTunes:REPLAYGAIN_TRACK_PEAK"] = [
+        f"{track_peak:.6f}".encode()
+    ]
+    mp4.save()
+
+
+def _write_replaygain_tags_mp3(
+    audio_file: str, track_gain: float, track_peak: float
+) -> None:
+    mp3 = MP3(audio_file, ID3=ID3)
+    if not mp3.tags:
+        return
+    mp3.tags.add(TXXX(desc="REPLAYGAIN_TRACK_GAIN", text=[f"{track_gain:.2f} dB"]))
+    mp3.tags.add(TXXX(desc="REPLAYGAIN_TRACK_PEAK", text=[f"{track_peak:.6f}"]))
+    mp3.save()
+
+
+def _write_replaygain_tags_ogg(
+    audio_file: str, track_gain: float, track_peak: float
+) -> None:
+    ogg = OggVorbis(audio_file)
+    ogg["REPLAYGAIN_TRACK_GAIN"] = [f"{track_gain:.2f} dB"]
+    ogg["REPLAYGAIN_TRACK_PEAK"] = [f"{track_peak:.6f}"]
+    ogg.save()
+
+
+def _write_replaygain_tags_opus(audio_file: str, track_gain: float) -> None:
+    opus = OggOpus(audio_file)
+    # See https://datatracker.ietf.org/doc/html/rfc7845#section-5.2.1
+    opus["R128_TRACK_GAIN"] = [str(round(256 * track_gain))]
+    opus.save()
 
 
 def download_video(
