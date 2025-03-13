@@ -77,7 +77,10 @@ def download_audio(
     ydl_opts = _ytdl_options(
         options.ytdl_format(), browser, path_stem, options.rate_limit
     )
-    if not options.normalization:
+    if options.normalization in {
+        AudioNormalization.DISABLE,
+        AudioNormalization.REPLAYGAIN,
+    }:
         postprocessor = {
             "key": "FFmpegExtractAudio",
             "preferredquality": options.bitrate.ytdl_format(),
@@ -87,7 +90,11 @@ def download_audio(
 
     if not (filename := _download_resource(ydl_opts, resource, logger)):
         return None
-
+    if options.normalization in {
+        AudioNormalization.DISABLE,
+        AudioNormalization.REPLAYGAIN,
+    }:
+        filename = str(Path(filename).with_suffix(f".{options.format.value}"))
     if options.normalization is not AudioNormalization.DISABLE:
         _normalize(options, path_stem, filename, logger)
 
