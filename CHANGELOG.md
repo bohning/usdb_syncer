@@ -3,9 +3,13 @@
 # Changes
 
 ## Fixes
+- Audio/video format selection regression in 0.11.0 fixed
+- Download of non-jpg images are now correctly converted to jpg.
+- Image processing order is now correctly handled (crop before resize for covers, resize before crop for backgrounds)
 
 ## Features
 - The Syncer now checks if a new version is available.
+- Info about unavailable or invalid resources are now sent to Discord (iplease enable this in the settings to support the community)
 
 <!-- 0.11.0 -->
 
