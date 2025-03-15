@@ -16,7 +16,6 @@ from PIL.Image import Resampling
 from usdb_syncer import utils
 from usdb_syncer.constants import YtErrorMsg
 from usdb_syncer.download_options import AudioOptions, VideoOptions
-from usdb_syncer.errors import UsdbSyncerError
 from usdb_syncer.logger import Log, song_logger
 from usdb_syncer.meta_tags import ImageMetaTags
 from usdb_syncer.settings import Browser, CoverMaxSize, YtdlpRateLimit
@@ -31,22 +30,6 @@ IMAGE_DOWNLOAD_HEADERS = {
 }
 
 YtdlOptions = dict[str, str | bool | tuple | list | int]
-
-
-class ResourceInvalidError(UsdbSyncerError):
-    """Raised when a resource is invalid."""
-
-
-class ResourceUnsupportedError(UsdbSyncerError):
-    """Raised when a resource is unsupported."""
-
-
-class ResourceGeoRestrictedError(UsdbSyncerError):
-    """Raised when a resource is geo-restricted."""
-
-
-class ResourceUnavailableError(UsdbSyncerError):
-    """Raised when a resource is not available."""
 
 
 class ResourceDLError(Enum):
