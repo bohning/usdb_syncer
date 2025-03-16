@@ -17,7 +17,7 @@ from usdb_syncer import download_options, utils
 from usdb_syncer.db import DownloadStatus
 from usdb_syncer.meta_tags import MetaTags
 from usdb_syncer.path_template import PathTemplate
-from usdb_syncer.resource_dl import ImageKind
+from usdb_syncer.resource_dl import ImageKind, ResourceDLResult
 from usdb_syncer.song_loader import _SongLoader  # pylint: disable=protected-access
 from usdb_syncer.sync_meta import MTIME_TOLERANCE_SECS, ResourceFile
 
@@ -41,17 +41,17 @@ def _download_and_process_image(
 # pylint: disable=unused-argument
 def _download_audio(
     resource: Any, options: Any, browser: Any, path_stem: Path, logger: Any
-) -> str | None:
+) -> ResourceDLResult:
     path_stem.with_suffix(".mp3").touch()
-    return "mp3"
+    return ResourceDLResult(extension="mp3")
 
 
 # pylint: disable=unused-argument
 def _download_video(
     resource: Any, options: Any, browser: Any, path_stem: Path, logger: Any
-) -> str | None:
+) -> ResourceDLResult:
     path_stem.with_suffix(".mp4").touch()
-    return "mp4"
+    return ResourceDLResult(extension="mp4")
 
 
 def _options(

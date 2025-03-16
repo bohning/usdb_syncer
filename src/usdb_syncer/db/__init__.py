@@ -21,7 +21,7 @@ from usdb_syncer import SongId, SyncMetaId, errors
 from usdb_syncer.logger import logger
 from usdb_syncer.utils import AppPaths
 
-SCHEMA_VERSION = 5
+SCHEMA_VERSION = 6
 
 # https://www.sqlite.org/limits.html
 _SQL_VARIABLES_LIMIT = 32766
@@ -822,3 +822,14 @@ def delete_resource_files(ids: Iterable[tuple[SyncMetaId, ResourceFileKind]]) ->
 def upsert_resource_files(params: Iterable[ResourceFileParams]) -> None:
     stmt = _SqlCache.get("upsert_resource_file.sql")
     _DbState.connection().executemany(stmt, (p.__dict__ for p in params))
+
+
+### Discord webhook
+
+
+def maybe_insert_discord_notification(song_id: SongId, resource: str) -> bool:
+    """Does nothing if already present. Otherwise returns True."""
+    stmt = (
+        "INSERT OR IGNORE INTO discord_notification (song_id, resource) VALUES (?, ?)"
+    )
+    return _DbState.connection().execute(stmt, (song_id, resource)).rowcount > 0
