@@ -118,11 +118,9 @@ def download_audio(
         case AudioNormalization.DISABLE:
             pass
         case AudioNormalization.REPLAYGAIN:
-            filename = f"{path_stem}.{options.format.value}"
-            _normalize(options, path_stem, filename, logger)
+            _normalize(options, path_stem, options.format.value, logger)
         case AudioNormalization.NORMALIZE:
-            filename = f"{path_stem}.{dl_result.extension}"
-            _normalize(options, path_stem, filename, logger)
+            _normalize(options, path_stem, dl_result.extension, logger)
         case _ as unreachable:
             assert_never(unreachable)
 
@@ -131,11 +129,11 @@ def download_audio(
 
 
 def _normalize(
-    options: AudioOptions, path_stem: Path, filename: str, logger: Log
+    options: AudioOptions, path_stem: Path, input_ext: str, logger: Log
 ) -> None:
-    ext = options.format.value
+    output_ext = options.format.value
     target_level = (
-        DEFAULT_TARGET_LEVEL_R128 if ext == "opus" else DEFAULT_TARGET_LEVEL_RG
+        DEFAULT_TARGET_LEVEL_R128 if output_ext == "opus" else DEFAULT_TARGET_LEVEL_RG
     )
     normalizer = FFmpegNormalize(
         normalization_type="ebu",  # default: "ebu"
@@ -152,29 +150,31 @@ def _normalize(
         progress=True,  # set to False?
         dry_run=(options.normalization == AudioNormalization.REPLAYGAIN),
     )
-    normalizer.add_media_file(filename, f"{path_stem}.{ext}")
+    normalizer.add_media_file(f"{path_stem}.{input_ext}", f"{path_stem}.{output_ext}")
     normalizer.run_normalization()
 
     if options.normalization == AudioNormalization.REPLAYGAIN:
         # extract stats from dry run, then set replay gain values to audio files
         stats_iterable = normalizer.media_files[0].get_stats()
         stats = next(iter(stats_iterable), None)
-        if not stats or "ebu_pass1" not in stats:
-            logger.error("NORMALIZATION: no stats")
+        if not stats:
+            logger.error("Normalization failed: no stats")
             return
         ebu_pass1 = stats["ebu_pass1"]
         if not ebu_pass1:
-            logger.error("NORMALIZATION: no ebu_pass1")
+            logger.error("Normalization failed: no EBU Pass 1 normalization stats")
             return
         input_i = ebu_pass1.get("input_i")  # Integrated loudness
         input_tp = ebu_pass1.get("input_tp")  # True peak
 
         if input_i is None or input_tp is None:
-            logger.error("NORMALIZATION: no input_i or input_tp")
+            logger.error("Normalization failed: no loudness or true peak stats")
             return
-        track_gain = -(input_i - target_level)  # dB
+        track_gain = target_level - input_i  # dB
         track_peak = 10 ** (input_tp / 20)  # Linear scale
-        _write_replaygain_tags(filename, track_gain, track_peak, logger)
+        _write_replaygain_tags(
+            f"{path_stem}.{input_ext}", track_gain, track_peak, logger
+        )
 
 
 def _write_replaygain_tags(
