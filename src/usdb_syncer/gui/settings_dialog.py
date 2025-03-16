@@ -214,6 +214,7 @@ class SettingsDialog(Ui_Dialog, QDialog):
             path := settings.get_app_path(settings.SupportedApps.YASS_RELOADED)
         ) is not None:
             self.lineEdit_path_yass_reloaded.setText(str(path))
+        self.checkBox_discord_allowed.setChecked(settings.get_discord_allowed())
 
     def _setup_path_template(self) -> None:
         self.edit_path_template.textChanged.connect(self._on_path_template_changed)
@@ -281,6 +282,7 @@ class SettingsDialog(Ui_Dialog, QDialog):
         settings.set_video_embed_artwork(self.checkBox_video_embed_artwork.isChecked())
         settings.set_background(self.groupBox_background.isChecked())
         settings.set_background_always(self.checkBox_background_always.isChecked())
+        settings.set_discord_allowed(self.checkBox_discord_allowed.isChecked())
         if self._path_template:
             settings.set_path_template(self._path_template)
         else:

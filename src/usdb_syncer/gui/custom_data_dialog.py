@@ -7,8 +7,6 @@ from PySide6 import QtWidgets
 from usdb_syncer.custom_data import CustomData
 from usdb_syncer.gui.forms.CustomDataDialog import Ui_Dialog
 
-FORBIDDEN_CHARS = '?"<>|*.:/\\'
-
 
 class CustomDataDialog(Ui_Dialog, QtWidgets.QDialog):
     """Dialog with about info and credits."""
@@ -36,7 +34,7 @@ class CustomDataDialog(Ui_Dialog, QtWidgets.QDialog):
         elif not CustomData.is_valid_key(key):
             warning = (
                 "Key must not contain any of these characters: "
-                + CustomData.FORBIDDEN_KEY_CHARS
+                + CustomData.FORBIDDEN_CHARACTERS
             )
         else:
             self._on_accept(key, value)

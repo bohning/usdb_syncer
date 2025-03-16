@@ -13,6 +13,7 @@ from pathlib import Path
 
 import requests
 from appdirs import AppDirs
+from bs4 import BeautifulSoup, Tag
 from packaging import version
 
 from usdb_syncer import constants
@@ -51,6 +52,47 @@ def video_url_from_resource(resource: str) -> str | None:
     return None
 
 
+def get_allowed_countries(resource: str) -> list[str] | None:
+    """Fetches YouTube video availability information from polsy.org.uk."""
+
+    url = f"https://polsy.org.uk/stuff/ytrestrict.cgi?agreed=on&ytid={resource}"
+    response = requests.get(url, timeout=5)
+
+    if not response.ok:
+        return None
+
+    soup = BeautifulSoup(response.text, "html.parser")
+    allowed_countries = []
+
+    table = soup.find("table")
+    if not table or not isinstance(table, Tag):
+        return None
+
+    rows = table.find_all("tr")[1:]  # Skip the header row
+
+    for row in rows:
+        if not isinstance(row, Tag):
+            continue
+        columns = row.find_all("td")
+        if len(columns) < 2:
+            continue  # Skip invalid rows
+
+        allowed_text = columns[0].get_text(strip=True)
+
+        if allowed_text:
+            country_code = allowed_text.split(" - ")[0]
+            allowed_countries.append(country_code)
+
+    return allowed_countries
+
+
+def remove_ansi_codes(text: str) -> str:
+    """Removes ANSI escape codes from a string."""
+
+    ansi_escape = re.compile(r"\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])")
+    return ansi_escape.sub("", text)
+
+
 class AppPaths:
     """App data paths."""
 
@@ -62,6 +104,7 @@ class AppPaths:
     db = Path(_app_dirs.user_data_dir, "usdb_syncer.db")
     sql = Path(root, "src", "usdb_syncer", "db", "sql")
     addons = Path(_app_dirs.user_data_dir, "addons")
+    shared = Path(root, "shared")
 
     @classmethod
     def make_dirs(cls) -> None:
@@ -267,3 +310,14 @@ def newer_version_available() -> str | None:
 
     logger.info("Could not determine the latest version.")
     return None
+
+
+def start_process_detached(command: list[str]) -> subprocess.Popen:
+    """Start a process in a fully detached mode, cross-platform."""
+    # We are not using a context manager here so that the app is launched
+    # without blocking the syncer.
+    flags = 0
+    if sys.platform == "win32":
+        flags = subprocess.DETACHED_PROCESS | subprocess.CREATE_NEW_PROCESS_GROUP
+    # pylint: disable=consider-using-with
+    return subprocess.Popen(command, creationflags=flags, close_fds=True)

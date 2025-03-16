@@ -3,9 +3,13 @@
 # Changes
 
 ## Fixes
+- Audio/video format selection regression in 0.11.0 fixed.
+- Downloads of non-jpg images are now correctly converted to jpg.
+- Image processing order is now correctly handled (crop before resize for covers, resize before crop for backgrounds).
 
 ## Features
 - The Syncer now checks if a new version is available.
+- Infos about unavailable or invalid resources are now sent to Discord (please enable this in the settings to support the community).
 
 <!-- 0.11.0 -->
 
@@ -26,6 +30,7 @@
 - The check for existing / outdated local resources has been improved to account for different precisions of modified times for different file systems.
 - Provide binaries for Intel-based MacOS systems.
 - YouTube logged-in cookies are now used for age-restricted resources.
+- Games started from within the Syncer are properly cleaned up, fixing subsequent starts.
 
 ## Features
 

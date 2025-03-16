@@ -111,13 +111,16 @@ def synchronize_sync_meta_folder(folder: Path) -> None:
                 logger.info(f"Meta file was moved: '{path}'.")
             continue
 
-        if (meta := SyncMeta.try_from_file(path)) and meta.song_id in song_ids:
-            # file was changed and maybe moved
-            to_upsert.append(meta)
-            if meta.sync_meta_id in db_metas:
-                logger.info(f"Updated meta file from disk: '{path}'.")
+        if meta := SyncMeta.try_from_file(path):
+            if meta.song_id in song_ids:
+                # file was changed and maybe moved
+                to_upsert.append(meta)
+                if meta.sync_meta_id in db_metas:
+                    logger.info(f"Updated meta file from disk: '{path}'.")
+                else:
+                    logger.info(f"New meta file found on disk: '{path}'.")
             else:
-                logger.info(f"New meta file found on disk: '{path}'.")
+                logger.info(f"{meta.song_id.usdb_url()} no longer exists: '{path}'.")
 
     SyncMeta.delete_many(tuple(db_metas.keys() - found_metas))
     SyncMeta.upsert_many(to_upsert)

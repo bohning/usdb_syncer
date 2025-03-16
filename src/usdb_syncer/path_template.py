@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Iterable, assert_never
 
 import attrs
+from unidecode import unidecode
 
 from usdb_syncer import errors, utils
 from usdb_syncer.custom_data import CustomData
@@ -15,6 +16,7 @@ if TYPE_CHECKING:
     from usdb_syncer.usdb_song import UsdbSong
 
 FORBIDDEN_CHARACTERS = '?"<>|*.'
+UNKNOWN_PLACEHOLDER_STRING = "None"
 
 
 class PathTemplateError(errors.UsdbSyncerError, ValueError):
@@ -143,6 +145,7 @@ class PathTemplatePlaceholder(PathTemplateComponentToken, enum.Enum):
 
     SONG_ID = "id"
     ARTIST = "artist"
+    ARTIST_INITIAL = "artist initial"
     TITLE = "title"
     GENRE = "genre"
     YEAR = "year"
@@ -163,21 +166,38 @@ class PathTemplatePlaceholder(PathTemplateComponentToken, enum.Enum):
             case PathTemplatePlaceholder.SONG_ID:
                 return str(song.song_id)
             case PathTemplatePlaceholder.ARTIST:
-                return song.artist
+                if song.artist and len(song.artist) > 0:
+                    return song.artist
+                return UNKNOWN_PLACEHOLDER_STRING
+            case PathTemplatePlaceholder.ARTIST_INITIAL:
+                for char in song.artist:
+                    if char.isalnum():
+                        return unidecode(char)[0].upper()
+                return UNKNOWN_PLACEHOLDER_STRING
             case PathTemplatePlaceholder.TITLE:
-                return song.title
-            case PathTemplatePlaceholder.GENRE:
-                return next(iter(song.genres()), "")
+                if song.title and len(song.title) > 0:
+                    return song.title
+                return UNKNOWN_PLACEHOLDER_STRING
             case PathTemplatePlaceholder.YEAR:
-                return str(song.year)
+                if song.year and song.year > 0:
+                    return str(song.year)
+                return UNKNOWN_PLACEHOLDER_STRING
+            case PathTemplatePlaceholder.GENRE:
+                return next(iter(song.genres()), UNKNOWN_PLACEHOLDER_STRING)
             case PathTemplatePlaceholder.LANGUAGE:
-                return next(iter(song.languages()), "")
+                return next(iter(song.languages()), UNKNOWN_PLACEHOLDER_STRING)
             case PathTemplatePlaceholder.CREATOR:
-                return next(iter(song.creators()), "")
+                return next(iter(song.creators()), UNKNOWN_PLACEHOLDER_STRING)
             case PathTemplatePlaceholder.EDITION:
-                return song.edition
+                if song.edition and len(song.edition) > 0:
+                    return song.edition
+                return UNKNOWN_PLACEHOLDER_STRING
             case PathTemplatePlaceholder.RATING:
-                return str(song.rating)
+                if (
+                    song.rating
+                ):  # This is annoying because we can't differentiate between a rating of 0 and no rating. Would take a refactor of UsdbSong to fix.
+                    return str(song.rating)
+                return UNKNOWN_PLACEHOLDER_STRING
             case _ as unreachable:
                 assert_never(unreachable)
 

@@ -94,6 +94,7 @@ class SettingKey(Enum):
     COVER_MAX_SIZE = "downloads/cover_max_size"
     BACKGROUND = "downloads/background"
     BACKGROUND_ALWAYS = "downloads/background_always"
+    DISCORD_ALLOWED = "downloads/discord_allowed"
     MAIN_WINDOW_GEOMETRY = "geometry/main_window"
     DOCK_LOG_GEOMETRY = "geometry/dock_log"
     MAIN_WINDOW_STATE = "state/main_window"
@@ -324,23 +325,23 @@ class Browser(Enum):
     """Browsers to use cookies from."""
 
     NONE = None
-    ARC = "Arc"
-    BRAVE = "Brave"
-    CHROME = "Chrome"
-    CHROMIUM = "Chromium"
-    EDGE = "Edge"
-    FIREFOX = "Firefox"
-    LIBREWOLF = "Librewolf"
-    OCTO_BROWSER = "Octo Browser"
-    OPERA = "Opera"
-    OPERA_GX = "Opera GX"
-    SAFARI = "Safari"
-    VIVALDI = "Vivaldi"
+    ARC = "arc"
+    BRAVE = "brave"
+    CHROME = "chrome"
+    CHROMIUM = "chromium"
+    EDGE = "edge"
+    FIREFOX = "firefox"
+    LIBREWOLF = "librewolf"
+    OCTO_BROWSER = "octo browser"
+    OPERA = "opera"
+    OPERA_GX = "opera gx"
+    SAFARI = "safari"
+    VIVALDI = "vivaldi"
 
     def __str__(self) -> str:
         if self is Browser.NONE:
             return "None"
-        return self.value
+        return self.value.capitalize()
 
     def icon(self) -> str:
         match self:
@@ -407,7 +408,7 @@ class Browser(Enum):
             return rookiepy.to_cookiejar(function([Usdb.DOMAIN]))
         except Exception:  # pylint: disable=broad-exception-caught
             logger.debug(traceback.format_exc())
-        logger.warning(f"Failed to retrieve {str(self).capitalize()} cookies.")
+        logger.warning(f"Failed to retrieve {str(self)} cookies.")
         return None
 
 
@@ -621,9 +622,7 @@ class SupportedApps(StrEnum):
         else:
             cmd = [str(executable), self.songpath_parameter(), str(path)]
         try:
-            # We are not using a context manager here so that the app is launched
-            # without blocking the syncer.
-            subprocess.Popen(cmd)  # pylint: disable=consider-using-with
+            utils.start_process_detached(cmd)
         except FileNotFoundError:
             logger.error(
                 f"Failed to launch {self} from '{str(executable)}', file not found. "
@@ -900,6 +899,14 @@ def get_background_always() -> bool:
 
 def set_background_always(value: bool) -> None:
     set_setting(SettingKey.BACKGROUND_ALWAYS, value)
+
+
+def get_discord_allowed() -> bool:
+    return get_setting(SettingKey.DISCORD_ALLOWED, False)
+
+
+def set_discord_allowed(value: bool) -> None:
+    set_setting(SettingKey.DISCORD_ALLOWED, value)
 
 
 def get_ffmpeg_dir() -> str:
