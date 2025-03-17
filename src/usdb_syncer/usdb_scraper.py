@@ -3,9 +3,10 @@
 import logging
 import re
 import time
+from collections.abc import Iterator
 from datetime import datetime
 from enum import Enum
-from typing import Any, Iterator, Type, assert_never
+from typing import Any, assert_never
 
 import attrs
 import requests
@@ -290,19 +291,19 @@ def _parse_song_page(soup: BeautifulSoup, song_id: SongId) -> SongDetails:
     return details
 
 
-def _usdb_strings_from_soup(soup: BeautifulSoup) -> Type[UsdbStrings]:
+def _usdb_strings_from_soup(soup: BeautifulSoup) -> type[UsdbStrings]:
     span = soup.find("span", class_="gen")
     assert span
     return _usdb_strings_from_welcome(span.text.split(" ", 1)[0].removesuffix(","))
 
 
-def _usdb_strings_from_html(html: str) -> Type[UsdbStrings]:
+def _usdb_strings_from_html(html: str) -> type[UsdbStrings]:
     if match := WELCOME_REGEX.search(html):
         return _usdb_strings_from_welcome(match.group(1))
     raise errors.UsdbParseError("welcome string not found")
 
 
-def _usdb_strings_from_welcome(welcome_string: str) -> Type[UsdbStrings]:
+def _usdb_strings_from_welcome(welcome_string: str) -> type[UsdbStrings]:
     match welcome_string:
         case UsdbStringsEnglish.WELCOME:
             return UsdbStringsEnglish
@@ -377,7 +378,7 @@ def _parse_songs_from_songlist(html: str) -> Iterator[UsdbSong]:
 
 
 def _parse_details_table(
-    details_table: Tag, song_id: SongId, usdb_strings: Type[UsdbStrings], logger: Log
+    details_table: Tag, song_id: SongId, usdb_strings: type[UsdbStrings], logger: Log
 ) -> SongDetails:
     """Parse song attributes from usdb page.
 

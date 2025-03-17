@@ -1,7 +1,8 @@
 """Table model for song data."""
 
+from collections.abc import Iterable
 from functools import cache
-from typing import Any, Iterable, assert_never
+from typing import Any, assert_never
 
 from PySide6.QtCore import (
     QAbstractTableModel,

@@ -3,8 +3,8 @@
 import datetime
 import os
 import webbrowser
+from collections.abc import Callable
 from pathlib import Path
-from typing import Callable
 
 from PySide6 import QtGui
 from PySide6.QtWidgets import QFileDialog, QLabel, QMainWindow

@@ -5,7 +5,7 @@ from __future__ import annotations
 import configparser
 import json
 import os
-from typing import Iterable
+from collections.abc import Iterable
 from urllib.parse import parse_qs, urlparse
 
 import attrs

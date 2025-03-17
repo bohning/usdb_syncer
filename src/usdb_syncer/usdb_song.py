@@ -2,8 +2,9 @@
 
 from __future__ import annotations
 
+from collections.abc import Iterable
 from json import JSONEncoder
-from typing import Any, Iterable, Type
+from typing import Any
 
 import attrs
 
@@ -44,7 +45,7 @@ class UsdbSong:
     @classmethod
     def from_html(
         cls,
-        strings: Type[UsdbStrings],
+        strings: type[UsdbStrings],
         *,
         song_id: str,
         artist: str,

@@ -3,7 +3,8 @@
 from __future__ import annotations
 
 import copy
-from typing import TYPE_CHECKING, Callable
+from collections.abc import Callable
+from typing import TYPE_CHECKING
 
 from PySide6 import QtCore, QtGui, QtWidgets
 from PySide6.QtCore import QModelIndex, Qt

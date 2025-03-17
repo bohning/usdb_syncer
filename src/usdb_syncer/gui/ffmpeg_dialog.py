@@ -2,7 +2,7 @@
 
 import os
 import sys
-from typing import Callable
+from collections.abc import Callable
 
 from PySide6.QtWidgets import QDialog, QFileDialog, QWidget
 

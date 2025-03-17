@@ -3,8 +3,9 @@
 from __future__ import annotations
 
 import enum
+from collections.abc import Iterable
 from functools import cache
-from typing import Any, Generic, Iterable, TypeVar, assert_never
+from typing import Any, Generic, TypeVar, assert_never
 
 import attrs
 from PySide6.QtCore import Qt

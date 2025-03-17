@@ -1,7 +1,8 @@
 """Signals other components can notify and subscribe to."""
 
+from collections.abc import Callable
 from pathlib import Path
-from typing import Any, Callable, Self, cast
+from typing import Any, Self, cast
 
 import attrs
 from PySide6 import QtCore
