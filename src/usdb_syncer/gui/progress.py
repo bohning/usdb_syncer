@@ -2,7 +2,8 @@
 
 import time
 import traceback
-from typing import Any, Callable, Generic, TypeVar
+from collections.abc import Callable
+from typing import Any, Generic, TypeVar
 
 import attrs
 from PySide6 import QtCore, QtGui, QtWidgets

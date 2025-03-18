@@ -1,6 +1,7 @@
 """General-purpose utilities for the GUI."""
 
-from typing import Any, Callable
+from collections.abc import Callable
+from typing import Any
 
 import attrs
 from PySide6.QtCore import QObject, Qt

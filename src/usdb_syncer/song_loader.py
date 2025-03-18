@@ -8,9 +8,10 @@ import shutil
 import tempfile
 import time
 import traceback
+from collections.abc import Iterable, Iterator
 from itertools import islice
 from pathlib import Path
-from typing import Iterable, Iterator, assert_never
+from typing import assert_never
 
 import attrs
 import mutagen.mp4

@@ -4,9 +4,10 @@ from __future__ import annotations
 
 import datetime
 import json
+from collections.abc import Iterable
 from json import JSONEncoder
 from pathlib import Path
-from typing import Any, Iterable
+from typing import Any
 
 import attrs
 

@@ -1,6 +1,6 @@
 """Dialog for adding custom sync meta data."""
 
-from typing import Callable
+from collections.abc import Callable
 
 from PySide6 import QtWidgets
 
