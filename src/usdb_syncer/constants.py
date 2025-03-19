@@ -1,11 +1,13 @@
 """Constants"""
 
 import re
+import sys
 
 # set in the release workflow
 VERSION = "dev"
 COMMIT_HASH = "dev"
 SHORT_COMMIT_HASH = COMMIT_HASH[:7]
+NUL = "NUL" if sys.platform == "win32" else "/dev/null"
 
 MINIMUM_BPM = 200.0
 GITHUB_API_LATEST = "https://api.github.com/repos/bohning/usdb_syncer/releases/latest"

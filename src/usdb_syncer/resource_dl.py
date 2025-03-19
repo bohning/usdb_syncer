@@ -21,7 +21,7 @@ from PIL import Image, ImageEnhance, ImageOps
 from PIL.Image import Resampling
 
 from usdb_syncer import utils
-from usdb_syncer.constants import YtErrorMsg
+from usdb_syncer.constants import NUL, YtErrorMsg
 from usdb_syncer.download_options import AudioOptions, VideoOptions
 from usdb_syncer.logger import Log, song_logger
 from usdb_syncer.meta_tags import ImageMetaTags
@@ -135,6 +135,14 @@ def _normalize(
     target_level = (
         DEFAULT_TARGET_LEVEL_R128 if output_ext == "opus" else DEFAULT_TARGET_LEVEL_RG
     )
+    if options.normalization == AudioNormalization.REPLAYGAIN:
+        # we do not want to actually rewrite the file, so we use NUL
+        extra_output_options = ["-f", "null"]
+        output_file = NUL
+    else:
+        extra_output_options = []
+        output_file = f"{path_stem}.{output_ext}"
+
     normalizer = FFmpegNormalize(
         normalization_type="ebu",  # default: "ebu"
         target_level=target_level,
@@ -148,9 +156,9 @@ def _normalize(
         sample_rate=None,  # default
         debug=True,  # set to False?
         progress=True,  # set to False?
-        dry_run=(options.normalization == AudioNormalization.REPLAYGAIN),
+        extra_output_options=extra_output_options,
     )
-    normalizer.add_media_file(f"{path_stem}.{input_ext}", f"{path_stem}.{output_ext}")
+    normalizer.add_media_file(f"{path_stem}.{input_ext}", output_file)
     normalizer.run_normalization()
 
     if options.normalization == AudioNormalization.REPLAYGAIN:
@@ -160,12 +168,12 @@ def _normalize(
         if not stats:
             logger.error("Normalization failed: no stats")
             return
-        ebu_pass1 = stats["ebu_pass1"]
-        if not ebu_pass1:
-            logger.error("Normalization failed: no EBU Pass 1 normalization stats")
+        ebu_pass2 = stats["ebu_pass2"]
+        if not ebu_pass2:
+            logger.error("Normalization failed: no EBU Pass 2 normalization stats")
             return
-        input_i = ebu_pass1.get("input_i")  # Integrated loudness
-        input_tp = ebu_pass1.get("input_tp")  # True peak
+        input_i = ebu_pass2.get("input_i")  # Integrated loudness
+        input_tp = ebu_pass2.get("input_tp")  # True peak
 
         if input_i is None or input_tp is None:
             logger.error("Normalization failed: no loudness or true peak stats")
