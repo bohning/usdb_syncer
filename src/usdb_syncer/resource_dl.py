@@ -2,6 +2,7 @@
 
 import io
 import os
+import traceback
 from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
@@ -11,15 +12,25 @@ import filetype
 import requests
 import yt_dlp
 from ffmpeg_normalize import FFmpegNormalize
+from mutagen.id3 import ID3, TXXX
+from mutagen.mp3 import MP3
+from mutagen.mp4 import MP4
+from mutagen.oggopus import OggOpus
+from mutagen.oggvorbis import OggVorbis
 from PIL import Image, ImageEnhance, ImageOps
 from PIL.Image import Resampling
 
 from usdb_syncer import utils
-from usdb_syncer.constants import YtErrorMsg
+from usdb_syncer.constants import NUL, YtErrorMsg
 from usdb_syncer.download_options import AudioOptions, VideoOptions
 from usdb_syncer.logger import Log, song_logger
 from usdb_syncer.meta_tags import ImageMetaTags
-from usdb_syncer.settings import Browser, CoverMaxSize, YtdlpRateLimit
+from usdb_syncer.settings import (
+    AudioNormalization,
+    Browser,
+    CoverMaxSize,
+    YtdlpRateLimit,
+)
 from usdb_syncer.usdb_scraper import SongDetails
 from usdb_syncer.utils import video_url_from_resource
 
@@ -29,6 +40,11 @@ IMAGE_DOWNLOAD_HEADERS = {
         "(KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36"
     )
 }
+
+DEFAULT_TARGET_LEVEL_RG = -18.0  # dB
+DEFAULT_TARGET_LEVEL_R128 = -23.0  # dB
+DEFAULT_TARGET_LOUDNESS_RANGE = 7.0
+DEFAULT_TRUE_PEAK = -2.0
 
 YtdlOptions = dict[str, str | bool | tuple | list | int]
 
@@ -84,43 +100,166 @@ def download_audio(
     ydl_opts = _ytdl_options(
         options.ytdl_format(), browser, path_stem, options.rate_limit
     )
-    if not options.normalize:
-        # Add postprocessor if normalization is NOT needed (direct audio extract)
-        ydl_opts["postprocessors"] = [
-            {
-                "key": "FFmpegExtractAudio",
-                "preferredquality": options.bitrate.ytdl_format(),
-                "preferredcodec": options.format.ytdl_codec(),
-            }
-        ]
+    if options.normalization in {
+        AudioNormalization.DISABLE,
+        AudioNormalization.REPLAYGAIN,
+    }:
+        postprocessor = {
+            "key": "FFmpegExtractAudio",
+            "preferredquality": options.bitrate.ytdl_format(),
+            "preferredcodec": options.format.ytdl_codec(),
+        }
+        ydl_opts["postprocessors"] = [postprocessor]
 
     dl_result = _download_resource(resource, ydl_opts, logger)
+    if not dl_result.extension:
+        return dl_result
+    match options.normalization:
+        case AudioNormalization.DISABLE:
+            pass
+        case AudioNormalization.REPLAYGAIN:
+            _normalize(options, path_stem, options.format.value, logger)
+        case AudioNormalization.NORMALIZE:
+            _normalize(options, path_stem, dl_result.extension, logger)
+        case _ as unreachable:
+            assert_never(unreachable)
 
-    if dl_result.extension and options.normalize:
-        filename = f"{path_stem}.{dl_result.extension}"
-        _normalize(options, path_stem, filename)
-
+    dl_result.extension = options.format.value
     return dl_result
 
 
-def _normalize(options: AudioOptions, path_stem: Path, filename: str) -> None:
+def _normalize(
+    options: AudioOptions, path_stem: Path, input_ext: str, logger: Log
+) -> None:
+    input_file = f"{path_stem}.{input_ext}"
+    output_ext = options.format.value
+    target_level = (
+        DEFAULT_TARGET_LEVEL_R128 if output_ext == "opus" else DEFAULT_TARGET_LEVEL_RG
+    )
+    if options.normalization == AudioNormalization.REPLAYGAIN:
+        # we do not want to actually rewrite the file, so we use NUL
+        extra_output_options = ["-f", "null"]
+        output_file = NUL
+    else:
+        extra_output_options = []
+        output_file = f"{path_stem}.{output_ext}"
+
+    normalizer = _create_normalizer(options, target_level, extra_output_options)
+    normalizer.add_media_file(input_file, output_file)
+    normalizer.run_normalization()
+
+    if options.normalization == AudioNormalization.REPLAYGAIN:
+        _write_replaygain_tags(normalizer, input_file, target_level, logger)
+
+
+def _create_normalizer(
+    options: AudioOptions, target_level: float, extra_output_options: list[str]
+) -> FFmpegNormalize:
     normalizer = FFmpegNormalize(
         normalization_type="ebu",  # default: "ebu"
-        target_level=-23,  # default: -23
+        target_level=target_level,
         print_stats=True,  # set to False?
         keep_lra_above_loudness_range_target=True,  # needed for linear normalization
-        loudness_range_target=7,  # default: 7.0
-        true_peak=-2,  # default: -2
+        loudness_range_target=DEFAULT_TARGET_LOUDNESS_RANGE,
+        true_peak=DEFAULT_TRUE_PEAK,
         dynamic=False,  # default: False
         audio_codec=options.format.ffmpeg_encoder(),
         audio_bitrate=options.bitrate.ffmpeg_format(),
         sample_rate=None,  # default
-        debug=True,  # set to False
+        debug=True,  # set to False?
         progress=True,  # set to False?
+        extra_output_options=extra_output_options,
     )
-    ext = options.format.value
-    normalizer.add_media_file(filename, f"{path_stem}.{ext}")
-    normalizer.run_normalization()
+
+    return normalizer
+
+
+def _write_replaygain_tags(
+    normalizer: FFmpegNormalize, audio_file: str, target_level: float, logger: Log
+) -> None:
+    """Writes ReplayGain values to audio file metadata."""
+
+    # extract stats from 2-pass normalization, then set replay gain values to audio file
+    stats_iterable = normalizer.media_files[0].get_stats()
+    stats = next(iter(stats_iterable), None)
+    if not stats:
+        logger.error("Normalization failed: no stats")
+        return
+    ebu_pass2 = stats.get("ebu_pass2")
+    if not ebu_pass2:
+        logger.error("Normalization failed: no EBU Pass 2 normalization stats")
+        return
+    input_i = ebu_pass2.get("input_i")  # Integrated loudness
+    input_tp = ebu_pass2.get("input_tp")  # True peak
+
+    if input_i is None or input_tp is None:
+        logger.error("Normalization failed: no loudness or true peak stats")
+        return
+    track_gain = target_level - input_i  # dB
+    track_peak = 10 ** (input_tp / 20)  # Linear scale
+
+    try:
+        match Path(audio_file).suffix:
+            case ".m4a":
+                _write_replaygain_tags_m4a(audio_file, track_gain, track_peak)
+            case ".mp3":
+                _write_replaygain_tags_mp3(audio_file, track_gain, track_peak)
+            case ".ogg":
+                _write_replaygain_tags_ogg(audio_file, track_gain, track_peak)
+            case ".opus":
+                _write_replaygain_tags_opus(audio_file, track_gain)
+
+        logger.info(f"ReplayGain tags written to {audio_file}")
+
+    except Exception:  # pylint: disable=broad-exception-caught
+        logger.debug(traceback.format_exc())
+        logger.error(f"Failed to write audio tags to file '{audio_file}'!")
+    else:
+        logger.debug(f"Audio tags written to file '{audio_file}'.")
+
+
+def _write_replaygain_tags_m4a(
+    audio_file: str, track_gain: float, track_peak: float
+) -> None:
+    mp4 = MP4(audio_file)
+    if not mp4.tags:
+        mp4.add_tags()
+    if not mp4.tags:
+        return
+    mp4.tags["----:com.apple.iTunes:REPLAYGAIN_TRACK_GAIN"] = [
+        f"{track_gain:.2f} dB".encode()
+    ]
+    mp4.tags["----:com.apple.iTunes:REPLAYGAIN_TRACK_PEAK"] = [
+        f"{track_peak:.6f}".encode()
+    ]
+    mp4.save()
+
+
+def _write_replaygain_tags_mp3(
+    audio_file: str, track_gain: float, track_peak: float
+) -> None:
+    mp3 = MP3(audio_file, ID3=ID3)
+    if not mp3.tags:
+        return
+    mp3.tags.add(TXXX(desc="REPLAYGAIN_TRACK_GAIN", text=[f"{track_gain:.2f} dB"]))
+    mp3.tags.add(TXXX(desc="REPLAYGAIN_TRACK_PEAK", text=[f"{track_peak:.6f}"]))
+    mp3.save()
+
+
+def _write_replaygain_tags_ogg(
+    audio_file: str, track_gain: float, track_peak: float
+) -> None:
+    ogg = OggVorbis(audio_file)
+    ogg["REPLAYGAIN_TRACK_GAIN"] = [f"{track_gain:.2f} dB"]
+    ogg["REPLAYGAIN_TRACK_PEAK"] = [f"{track_peak:.6f}"]
+    ogg.save()
+
+
+def _write_replaygain_tags_opus(audio_file: str, track_gain: float) -> None:
+    opus = OggOpus(audio_file)
+    # See https://datatracker.ietf.org/doc/html/rfc7845#section-5.2.1
+    opus["R128_TRACK_GAIN"] = [str(round(256 * track_gain))]
+    opus.save()
 
 
 def download_video(
