@@ -38,6 +38,7 @@ class ResourceDLError(Enum):
 
     RESOURCE_INVALID = "resource invalid"
     RESOURCE_UNSUPPORTED = "resource unsupported"
+    RESOURCE_DOWNLOAD_ERROR = "resource download error"
     RESOURCE_GEO_RESTRICTED = "resource geo-restricted"
     RESOURCE_UNAVAILABLE = "resource unavailable"
     RESOURCE_DL_FAILED = "resource download failed"
@@ -178,6 +179,8 @@ def _download_resource(
             return ResourceDLResult(extension=ext)
         except yt_dlp.utils.UnsupportedError:
             return ResourceDLResult(error=ResourceDLError.RESOURCE_UNSUPPORTED)
+        except yt_dlp.utils.DownloadError:
+            return ResourceDLResult(error=ResourceDLError.RESOURCE_DOWNLOAD_ERROR)
         except yt_dlp.utils.YoutubeDLError as e:
             error_message = utils.remove_ansi_codes(str(e))
             logger.debug(f"Failed to download '{url}': {error_message}")
