@@ -38,9 +38,9 @@ class ResourceDLError(Enum):
 
     RESOURCE_INVALID = "resource invalid"
     RESOURCE_UNSUPPORTED = "resource unsupported"
-    RESOURCE_DOWNLOAD_ERROR = "resource download error"
     RESOURCE_GEO_RESTRICTED = "resource geo-restricted"
     RESOURCE_UNAVAILABLE = "resource unavailable"
+    RESOURCE_PARSE_ERROR = "resource parse error"
     RESOURCE_DL_FAILED = "resource download failed"
 
 
@@ -179,8 +179,6 @@ def _download_resource(
             return ResourceDLResult(extension=ext)
         except yt_dlp.utils.UnsupportedError:
             return ResourceDLResult(error=ResourceDLError.RESOURCE_UNSUPPORTED)
-        except yt_dlp.utils.DownloadError:
-            return ResourceDLResult(error=ResourceDLError.RESOURCE_DOWNLOAD_ERROR)
         except yt_dlp.utils.YoutubeDLError as e:
             error_message = utils.remove_ansi_codes(str(e))
             logger.debug(f"Failed to download '{url}': {error_message}")
@@ -193,6 +191,9 @@ def _download_resource(
             if YtErrorMsg.YT_UNAVAILABLE in error_message:
                 _handle_unavailable(url, logger)
                 return ResourceDLResult(error=ResourceDLError.RESOURCE_UNAVAILABLE)
+            if YtErrorMsg.YT_PARSE_ERROR in error_message:
+                _handle_parse_error(url, logger)
+                return ResourceDLResult(error=ResourceDLError.RESOURCE_PARSE_ERROR)
             raise
 
 
@@ -225,6 +226,10 @@ def _handle_unavailable(url: str, logger: Log) -> None:
         f"Resource '{url}' is no longer available. Please support the community, find a "
         "suitable replacement resource and comment it on USDB."
     )
+
+
+def _handle_parse_error(url: str, logger: Log) -> None:
+    logger.warning(f"Failed to parse XML for resource '{url}'.")
 
 
 def download_image(url: str, logger: Log) -> bytes | None:

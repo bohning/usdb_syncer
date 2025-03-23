@@ -113,6 +113,7 @@ class YtErrorMsg:
         "country"
     )
     YT_UNAVAILABLE = "Video unavailable"
+    YT_PARSE_ERROR = "Failed to parse XML"
 
 
 SUPPORTED_VIDEO_SOURCES_REGEX = re.compile(
