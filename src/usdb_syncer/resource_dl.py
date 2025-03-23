@@ -93,9 +93,11 @@ def download_audio(
         options: parameters for downloading and processing
         browser: browser to use cookies from
         path_stem: the target on the file system *without* an extension
+        logger: logger
 
     Returns:
-        DownloadResult with the extension of the downloaded file if successful
+        DownloadResult with the extension of the (postprocessed, possibly normalized)
+        audio file, if successful
     """
     ydl_opts = _ytdl_options(
         options.ytdl_format(), browser, path_stem, options.rate_limit
@@ -104,6 +106,8 @@ def download_audio(
         AudioNormalization.DISABLE,
         AudioNormalization.REPLAYGAIN,
     }:
+        # DISABLE or REPLAYGAIN normalization will not re-encode the audio file to
+        # target format, so we have to add a postprocessor to get it
         postprocessor = {
             "key": "FFmpegExtractAudio",
             "preferredquality": options.bitrate.ytdl_format(),
@@ -118,12 +122,16 @@ def download_audio(
         case AudioNormalization.DISABLE:
             pass
         case AudioNormalization.REPLAYGAIN:
+            # audio file already has the target format -> only write replay gain tags
             _normalize(options, path_stem, options.format.value, logger)
         case AudioNormalization.NORMALIZE:
+            # audio file is re-encoded to target format during normalization
             _normalize(options, path_stem, dl_result.extension, logger)
         case _ as unreachable:
             assert_never(unreachable)
 
+    # either way, the resulting file is in target format, so we have to correct the
+    # extension before returning dl_result
     dl_result.extension = options.format.value
     return dl_result
 
