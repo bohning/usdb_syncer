@@ -37,7 +37,7 @@ class SongId(int):
     def usdb_gettxt_url(self) -> str:
         return f"{Usdb.GETTXT_URL}{self:d}"
 
-    def usdb_details_url(self) -> str:
+    def usdb_detail_url(self) -> str:
         return f"{Usdb.DETAIL_URL}{self:d}"
 
 
