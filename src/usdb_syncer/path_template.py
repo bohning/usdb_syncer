@@ -3,8 +3,9 @@
 from __future__ import annotations
 
 import enum
+from collections.abc import Iterable
 from pathlib import Path
-from typing import TYPE_CHECKING, Iterable, assert_never
+from typing import TYPE_CHECKING, assert_never
 
 import attrs
 from unidecode import unidecode

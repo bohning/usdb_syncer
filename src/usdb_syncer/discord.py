@@ -33,8 +33,8 @@ def notify_discord(
             "color": DISCORD_COLOR_RED,
             "author": {
                 "name": f"{song_id}: {song.artist} - {song.title}",
-                "url": f"{Usdb.DETAILS_URL}{song_id}",
-                "icon_url": f"{Usdb.COVER_URL}{song_id}.jpg",
+                "url": song_id.usdb_detail_url(),
+                "icon_url": f"{Usdb.COVER_URL}{song_id:d}.jpg",
             },
             "fields": [{"name": f"{kind} {error_str}:", "value": url, "inline": False}],
         }

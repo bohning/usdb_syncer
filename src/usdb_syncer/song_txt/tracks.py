@@ -3,8 +3,8 @@
 from __future__ import annotations
 
 import re
+from collections.abc import Callable, Iterator
 from enum import Enum
-from typing import Callable, Iterator, Tuple
 
 import attrs
 
@@ -337,7 +337,7 @@ class Tracks:
                 # update last_line
                 last_line = line
 
-    def consecutive_notes(self) -> Iterator[Tuple[Note, Note]]:
+    def consecutive_notes(self) -> Iterator[tuple[Note, Note]]:
         for track in self.all_tracks():
             yield from _consecutive_notes(track)
 
@@ -490,7 +490,7 @@ def _split_duet_line(line: Line, cutoff: int) -> tuple[Line, Line] | None:
     return Line(line.notes[:idx], None), Line(line.notes[idx:], line.line_break)
 
 
-def _consecutive_notes(track: list[Line]) -> Iterator[Tuple[Note, Note]]:
+def _consecutive_notes(track: list[Line]) -> Iterator[tuple[Note, Note]]:
     for num_line, line in enumerate(track):
         for num_note, current_note in enumerate(line.notes):
             if num_note == len(line.notes) - 1:

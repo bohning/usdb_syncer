@@ -14,7 +14,7 @@ import traceback
 from enum import Enum, StrEnum, auto
 from http.cookiejar import CookieJar
 from pathlib import Path
-from typing import Any, Tuple, TypeVar, assert_never, cast
+from typing import Any, TypeVar, assert_never, cast
 
 import keyring
 import rookiepy
@@ -31,7 +31,7 @@ NO_KEYRING_BACKEND_WARNING = (
 )
 
 
-def get_usdb_auth() -> Tuple[str, str]:
+def get_usdb_auth() -> tuple[str, str]:
     username = get_setting(SettingKey.USDB_USER_NAME, "")
     pwd = ""
     try:

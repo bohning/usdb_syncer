@@ -8,8 +8,9 @@ import os
 import subprocess
 import sys
 import traceback
+from collections.abc import Callable
 from types import TracebackType
-from typing import TYPE_CHECKING, Any, Callable
+from typing import TYPE_CHECKING, Any
 
 from PySide6 import QtCore, QtGui, QtWidgets
 from PySide6.QtCore import Qt

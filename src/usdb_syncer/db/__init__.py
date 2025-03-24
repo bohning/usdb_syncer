@@ -11,8 +11,9 @@ import threading
 import time
 import traceback
 from collections import defaultdict
+from collections.abc import Generator, Iterable, Iterator
 from pathlib import Path
-from typing import Any, Generator, Iterable, Iterator, assert_never, cast
+from typing import Any, assert_never, cast
 
 import attrs
 from more_itertools import batched

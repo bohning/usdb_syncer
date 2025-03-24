@@ -2,8 +2,8 @@
 
 import json
 import os
+from collections.abc import Generator
 from pathlib import Path
-from typing import Generator
 
 import send2trash
 from requests import Session
@@ -120,7 +120,9 @@ def synchronize_sync_meta_folder(folder: Path) -> None:
                 else:
                     logger.info(f"New meta file found on disk: '{path}'.")
             else:
-                logger.info(f"{meta.song_id.usdb_url()} no longer exists: '{path}'.")
+                logger.info(
+                    f"{meta.song_id.usdb_detail_url()} no longer exists: '{path}'."
+                )
 
     SyncMeta.delete_many(tuple(db_metas.keys() - found_metas))
     SyncMeta.upsert_many(to_upsert)

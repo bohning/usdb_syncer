@@ -3,8 +3,8 @@
 import datetime
 import os
 import webbrowser
+from collections.abc import Callable
 from pathlib import Path
-from typing import Callable
 
 from PySide6 import QtGui
 from PySide6.QtWidgets import QFileDialog, QLabel, QMainWindow
@@ -290,7 +290,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
     def _show_current_song_in_usdb(self) -> None:
         if song := self.table.current_song():
             logger.debug(f"Opening song page #{song.song_id} in webbrowser.")
-            webbrowser.open(f"{Usdb.DETAILS_URL}{song.song_id:d}")
+            webbrowser.open(f"{Usdb.DETAIL_URL}{song.song_id:d}")
         else:
             logger.info("No current song.")
 

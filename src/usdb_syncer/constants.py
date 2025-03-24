@@ -94,7 +94,8 @@ class Usdb:
     DOMAIN = "usdb.animux.de"
     BASE_URL = "https://" + DOMAIN + "/"
     REGISTER_URL = BASE_URL + "index.php?link=register"
-    DETAILS_URL = BASE_URL + "?link=detail&id="
+    GETTXT_URL = BASE_URL + "?link=gettxt&id="
+    DETAIL_URL = BASE_URL + "?link=detail&id="
     COVER_URL = BASE_URL + "data/cover/"
     MAX_SONG_ID = 100_000
     MAX_SONGS_PER_PAGE = 100
@@ -112,6 +113,7 @@ class YtErrorMsg:
         "country"
     )
     YT_UNAVAILABLE = "Video unavailable"
+    YT_PARSE_ERROR = "Failed to parse XML"
 
 
 SUPPORTED_VIDEO_SOURCES_REGEX = re.compile(
