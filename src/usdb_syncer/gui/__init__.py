@@ -82,6 +82,7 @@ def _run() -> None:
         QtWidgets.QMessageBox.critical(mw, "Version conflict", SCHEMA_ERROR_MESSAGE)
         return
     addons.load_all()
+    hooks.MainWindowDidLoad.call(mw)
     app.exec()
 
 
@@ -124,7 +125,6 @@ def _load_main_window(mw: MainWindow) -> None:
     mw.setWindowTitle(f"USDB Syncer ({constants.VERSION})")
     mw.show()
     logging.info("Application successfully loaded.")
-    hooks.MainWindowDidLoad.call(mw)
     splash.finish(mw)
 
 
