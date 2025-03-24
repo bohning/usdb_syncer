@@ -5,6 +5,10 @@ import winsound
 from usdb_syncer import hooks, usdb_song
 
 
+def on_window_loaded(main_window) -> None:
+    """Add a button to the tools menu."""
+    main_window.tools_menu.addAction("Beep", lambda: winsound.Beep(1000, 500))
+
 def on_download_finished(song: usdb_song.UsdbSong) -> None:
     """Make a beep sound for the first finished download only."""
     winsound.Beep(1000, 500)
@@ -12,4 +16,5 @@ def on_download_finished(song: usdb_song.UsdbSong) -> None:
 
 
 # this will be executed when the app is started
+hooks.MainWindowDidLoad.subscribe(on_window_loaded)
 hooks.SongLoaderDidFinish.subscribe(on_download_finished)
