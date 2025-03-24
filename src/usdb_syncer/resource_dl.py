@@ -21,7 +21,7 @@ from PIL import Image, ImageEnhance, ImageOps
 from PIL.Image import Resampling
 
 from usdb_syncer import utils
-from usdb_syncer.constants import NUL, YtErrorMsg
+from usdb_syncer.constants import YtErrorMsg
 from usdb_syncer.download_options import AudioOptions, VideoOptions
 from usdb_syncer.logger import Log, song_logger
 from usdb_syncer.meta_tags import ImageMetaTags
@@ -41,8 +41,8 @@ IMAGE_DOWNLOAD_HEADERS = {
     )
 }
 
-DEFAULT_TARGET_LEVEL_RG = -18.0  # dB
-DEFAULT_TARGET_LEVEL_R128 = -23.0  # dB
+DEFAULT_TARGET_LEVEL_RG_DB = -18.0
+DEFAULT_TARGET_LEVEL_R128_DB = -23.0
 DEFAULT_TARGET_LOUDNESS_RANGE = 7.0
 DEFAULT_TRUE_PEAK = -2.0
 
@@ -142,12 +142,14 @@ def _normalize(
     input_file = f"{path_stem}.{input_ext}"
     output_ext = options.format.value
     target_level = (
-        DEFAULT_TARGET_LEVEL_R128 if output_ext == "opus" else DEFAULT_TARGET_LEVEL_RG
+        DEFAULT_TARGET_LEVEL_R128_DB
+        if output_ext == "opus"
+        else DEFAULT_TARGET_LEVEL_RG_DB
     )
     if options.normalization == AudioNormalization.REPLAYGAIN:
         # we do not want to actually rewrite the file, so we use NUL
         extra_output_options = ["-f", "null"]
-        output_file = NUL
+        output_file = os.devnull
     else:
         extra_output_options = []
         output_file = f"{path_stem}.{output_ext}"
