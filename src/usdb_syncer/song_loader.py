@@ -6,7 +6,7 @@ import shutil
 import tempfile
 import time
 import traceback
-from collections.abc import Iterable, Iterator
+from collections.abc import Iterable
 from itertools import islice
 from pathlib import Path
 from typing import assert_never
