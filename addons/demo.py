@@ -3,11 +3,12 @@
 import winsound
 
 from usdb_syncer import hooks, usdb_song
+from usdb_syncer.gui.mw import MainWindow
 
 
-def on_window_loaded(main_window) -> None:
+def on_window_loaded(main_window: MainWindow) -> None:
     """Add a button to the tools menu."""
-    main_window.tools_menu.addAction("Beep", lambda: winsound.Beep(1000, 500))
+    main_window.menu_tools.addAction("Beep", lambda: winsound.Beep(1000, 500))
 
 def on_download_finished(song: usdb_song.UsdbSong) -> None:
     """Make a beep sound for the first finished download only."""
