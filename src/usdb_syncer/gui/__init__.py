@@ -22,6 +22,7 @@ from usdb_syncer import (
     db,
     errors,
     events,
+    hooks,
     logger,
     settings,
     song_routines,
@@ -123,6 +124,7 @@ def _load_main_window(mw: MainWindow) -> None:
     mw.setWindowTitle(f"USDB Syncer ({constants.VERSION})")
     mw.show()
     logging.info("Application successfully loaded.")
+    hooks.MainWindowDidLoad.call(mw)
     splash.finish(mw)
 
 
