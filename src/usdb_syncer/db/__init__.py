@@ -812,11 +812,12 @@ class ResourceFileParams:
 
 def delete_resource_files(ids: Iterable[tuple[SyncMetaId, ResourceFileKind]]) -> None:
     for batch in batched(ids, _SQL_VARIABLES_LIMIT // 2):
+        if not batch:
+            continue
+        conditions = " OR ".join("(sync_meta_id = ? AND kind = ?)" for _ in batch)
         params = tuple(param for i, k in batch for param in (int(i), k.value))
-        tuples = ", ".join("(?, ?)" for _ in range(len(params) // 2))
         _DbState.connection().execute(
-            f"DELETE FROM resource_file WHERE (sync_meta_id, kind) IN ({tuples})",
-            params,
+            f"DELETE FROM resource_file WHERE {conditions}", params
         )
 
 

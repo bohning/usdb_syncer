@@ -15,12 +15,6 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - name: Install Linux specific dependencies for dbus-python
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y gcc python3-dev libdbus-1-dev libglib2.0-dev
-          pkg-config --cflags --libs dbus-1
-          export LDFLAGS="-lm"
       - name: Install poetry
         run: |
           python -m pip install poetry
@@ -43,11 +37,13 @@ jobs:
   build:
     name: Build packages
     runs-on: ${{ matrix.os }}
+    container: ${{ matrix.image }}
     needs: scrape-song-list
     strategy:
       matrix:
         include:
           - os: ubuntu-latest
+            image: quay.io/pypa/manylinux_2_34_x86_64
             TARGET: Linux
             PYINSTALLER_ARGS: >-
               --onefile
@@ -77,23 +73,33 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
-      - name: Install Linux specific dependencies for dbus-python
-        if: matrix.TARGET == 'Linux'
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y gcc python3-dev libdbus-1-dev
-          pkg-config --cflags --libs dbus-1
-          export LDFLAGS="-lm"
-      - name: Set up Python
+      - name: On macOS and windows, install python normally
+        if: contains(matrix.os, 'macos') || contains(matrix.os, 'windows')
         uses: actions/setup-python@v5
         with:
-          python-version: "3.12"
-      - name: Install Qt
-        uses: jurplel/install-qt-action@v4
-        with:
-          version: "6.7.*"
-          setup-python: false
-          no-qt-binaries: true
+          python-version: "3.12.9"
+      - name: Build Python 3.12.9 on linux
+        if: contains(matrix.os, 'ubuntu')
+        run: |
+          yum update -y
+          yum groupinstall 'Development Tools' -y
+          yum install libxcb libxkbcommon libxkbcommon-x11 xcb-util xcb-util-image xcb-util-keysyms xcb-util-renderutil xcb-util-wm xcb-util-cursor libva mesa-libGLU libX11 libXext libXrender mesa-libGL openssl-devel bzip2-devel libffi-devel sqlite-devel wget -y
+          wget https://www.python.org/ftp/python/3.12.9/Python-3.12.9.tgz
+          tar xvf Python-3.12.9.tgz
+          cd Python-3.12.9
+          ./configure --enable-optimizations --enable-shared
+          make
+          make install
+          ldconfig /usr/local/lib
+
+          ln -sf /usr/local/bin/python3.12 /usr/bin/python3.12
+          ln -sf /usr/local/bin/pip3.12 /usr/bin/pip3.12
+          ln -sf /usr/local/bin/python3.12 /usr/bin/python3
+          ln -sf /usr/local/bin/pip3.12 /usr/bin/pip3
+          ln -sf /usr/local/bin/python3.12 /usr/bin/python
+          ln -sf /usr/local/bin/pip3.12 /usr/bin/pip
+          python --version
+          python -m pip install --upgrade pip
       - name: Install poetry
         run: |
           python -m pip install poetry
