@@ -10,6 +10,7 @@ import sys
 import time
 import unicodedata
 from pathlib import Path
+from typing import Any, Optional, Type
 
 import requests
 from appdirs import AppDirs
@@ -242,7 +243,8 @@ def open_file_explorer(path: Path) -> None:
     if sys.platform == "win32":
         os.startfile(path)
     elif sys.platform == "linux":
-        subprocess.run(["xdg-open", str(path)], check=True)
+        with LinuxEnvCleaner() as env:
+            subprocess.run(["xdg-open", str(path)], check=True, env=env)
     else:
         subprocess.run(["open", str(path)], check=True)
 
@@ -320,4 +322,58 @@ def start_process_detached(command: list[str]) -> subprocess.Popen:
     if sys.platform == "win32":
         flags = subprocess.DETACHED_PROCESS | subprocess.CREATE_NEW_PROCESS_GROUP
     # pylint: disable=consider-using-with
-    return subprocess.Popen(command, creationflags=flags, close_fds=True)
+    with LinuxEnvCleaner() as env:
+        return subprocess.Popen(command, creationflags=flags, close_fds=True, env=env)
+
+
+class LinuxEnvCleaner:
+    """Context manager to clean an environment. Specifically, it removes paths starting with /tmp/_MEI
+    and some specific Qt-related paths from the environment.
+
+    This is needed when running applications bundled with PyInstaller, as it links some
+    libraries that may interfere with dynamically loaded libraries.
+    By removing these paths, this class ensures that the environment is clean and avoids potential
+    conflicts with system libraries during the execution of subprocesses or other operations.
+
+    This class is only useful on Linux systems, where it modifies the environment to avoid conflicts.
+    On non-Linux platforms, it is a no-op and does not alter the environment.
+    """
+
+    def __init__(self) -> None:
+        self.env = os.environ.copy()
+        self.modified_env = self.env.copy()
+        self.old_values: dict[str, str] = {}
+
+    def __enter__(self) -> dict[str, str]:
+        if sys.platform == "linux":
+            for key, value in self.env.items():
+                if key == "LD_LIBRARY_PATH":
+                    new_value = ":".join(
+                        path
+                        for path in (value.split(":") if value else [])
+                        if not path.startswith("/tmp/_MEI")
+                    )
+                    self.old_values[key] = value
+                    self.modified_env[key] = new_value
+                if key in (
+                    "QT_PLUGIN_PATH",
+                    "QT_QPA_PLATFORM_PLUGIN_PATH",
+                    "QT_DEBUG_PLUGINS",
+                ):
+                    self.old_values[key] = value
+                    self.modified_env.pop(key)
+            os.environ.clear()
+            os.environ.update(self.modified_env)
+        return self.modified_env.copy()
+
+    def __exit__(
+        self,
+        exc_type: Optional[Type[BaseException]],
+        exc_value: Optional[BaseException],
+        traceback: Optional[Any],
+    ) -> None:
+        if sys.platform == "linux":
+            for key, value in self.old_values.items():
+                self.modified_env[key] = value
+            os.environ.clear()
+            os.environ.update(self.modified_env)

@@ -15,7 +15,6 @@ python = "3.12.*"
 appdirs = "*"
 attrs = "*"
 beautifulsoup4 = "*"
-dbus-python = {version = "*", markers="sys_platform == 'linux'"}
 ffmpeg-normalize = ">=1.27"
 filetype = "*"
 importlib-metadata = "*"

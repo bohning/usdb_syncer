@@ -427,7 +427,9 @@ def _maybe_download_audio(ctx: _Context) -> None:
             return
         if dl_result.error in {
             resource_dl.ResourceDLError.RESOURCE_INVALID,
+            resource_dl.ResourceDLError.RESOURCE_UNSUPPORTED,
             resource_dl.ResourceDLError.RESOURCE_UNAVAILABLE,
+            resource_dl.ResourceDLError.RESOURCE_PARSE_ERROR,
         }:
             if get_discord_allowed() and (url := video_url_from_resource(resource)):
                 notify_discord(
@@ -459,7 +461,9 @@ def _maybe_download_video(ctx: _Context) -> None:
             return
         if dl_result.error in {
             resource_dl.ResourceDLError.RESOURCE_INVALID,
+            resource_dl.ResourceDLError.RESOURCE_UNSUPPORTED,
             resource_dl.ResourceDLError.RESOURCE_UNAVAILABLE,
+            resource_dl.ResourceDLError.RESOURCE_PARSE_ERROR,
         }:
             if get_discord_allowed() and (url := video_url_from_resource(resource)):
                 notify_discord(
@@ -559,7 +563,7 @@ def _maybe_write_txt(ctx: _Context) -> None:
     path = ctx.locations.temp_path(ext="txt")
     ctx.out.txt.new_fname = path.name
     ctx.txt.write_to_file(path, options.encoding.value, options.newline.value)
-    ctx.out.txt.resource = ctx.song.song_id.usdb_url()
+    ctx.out.txt.resource = ctx.song.song_id.usdb_gettxt_url()
     ctx.logger.info("Success! Created song txt.")
 
 

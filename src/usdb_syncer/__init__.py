@@ -34,8 +34,11 @@ class SongId(int):
         except ValueError:
             return None
 
-    def usdb_url(self) -> str:
-        return f"{Usdb.BASE_URL}?link=gettxt&id={self:d}"
+    def usdb_gettxt_url(self) -> str:
+        return f"{Usdb.GETTXT_URL}{self:d}"
+
+    def usdb_detail_url(self) -> str:
+        return f"{Usdb.DETAIL_URL}{self:d}"
 
 
 class SyncMetaId(int):
