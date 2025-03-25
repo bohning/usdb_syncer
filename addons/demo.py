@@ -1,18 +1,16 @@
-"""Demo add-on that makes a beep sound when the first song download has finished."""
+"""Demo add-on"""
 
-import winsound
-
-from usdb_syncer import hooks, usdb_song
+from usdb_syncer import hooks, logger, usdb_song
 from usdb_syncer.gui.mw import MainWindow
 
 
 def on_window_loaded(main_window: MainWindow) -> None:
     """Add a button to the tools menu."""
-    main_window.menu_tools.addAction("Beep", lambda: winsound.Beep(1000, 500))
+    main_window.menu_tools.addAction("Click Me!", lambda: logger.logger.info("Button clicked!"))
 
 def on_download_finished(song: usdb_song.UsdbSong) -> None:
-    """Make a beep sound for the first finished download only."""
-    winsound.Beep(1000, 500)
+    """Log a message for the first finished download only."""
+    logger.logger.info('Download finished: "%s"', song.title)
     hooks.SongLoaderDidFinish.unsubscribe(on_download_finished)
 
 
