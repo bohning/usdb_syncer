@@ -10,7 +10,7 @@ from PySide6 import QtWidgets
 from PySide6.QtGui import QIcon, QPixmap
 from PySide6.QtWidgets import QDialog, QFileDialog, QMessageBox, QWidget
 
-from usdb_syncer import SongId, path_template, settings
+from usdb_syncer import SongId, authentication, path_template, settings
 from usdb_syncer.gui.forms.SettingsDialog import Ui_Dialog
 from usdb_syncer.path_template import PathTemplate
 from usdb_syncer.usdb_scraper import SessionManager
@@ -128,7 +128,9 @@ class SettingsDialog(Ui_Dialog, QDialog):
         path = self._get_cookies_file_location()
         if path:
             if _is_netscape_cookies_file(path):
-                if settings.store_encrypted_cookies(path):
+                cookies = MozillaCookieJar(str(path))
+                cookies.load(ignore_discard=True, ignore_expires=True)
+                if authentication.store_manual_cookies(cookies):
                     self.set_cookies_label(True)
                     settings.set_cookies_stored_encrypted(True)
                     return

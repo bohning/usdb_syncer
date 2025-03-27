@@ -3,7 +3,7 @@
 from PySide6.QtGui import QDesktopServices, QIcon
 from PySide6.QtWidgets import QDialog, QMessageBox, QWidget
 
-from usdb_syncer import settings
+from usdb_syncer import authentication, download_options, settings
 from usdb_syncer.constants import Usdb
 from usdb_syncer.gui.forms.UsdbLoginDialog import Ui_Dialog
 from usdb_syncer.usdb_scraper import (
@@ -35,20 +35,22 @@ class UsdbLoginDialog(Ui_Dialog, QDialog):
         self.combobox_browser.setCurrentIndex(
             self.combobox_browser.findData(settings.get_browser())
         )
-        user, password = settings.get_usdb_auth()
+        user, password = authentication.get_usdb_auth()
         self.line_edit_username.setText(user)
         self.line_edit_password.setText(password)
 
     def accept(self) -> None:
         settings.set_browser(self.combobox_browser.currentData())
-        settings.set_usdb_auth(
+        authentication.set_usdb_auth(
             self.line_edit_username.text(), self.line_edit_password.text()
         )
         SessionManager.reset_session()
         super().accept()
 
     def _on_check_login(self) -> None:
-        session = new_session_with_cookies(self.combobox_browser.currentData())
+        session = new_session_with_cookies(
+            download_options.CookieOptions(True, self.combobox_browser.currentData())
+        )
         if user := get_logged_in_usdb_user(session):
             message = f"Success! Existing session found with user '{user}'."
         elif (user := self.line_edit_username.text()) and (

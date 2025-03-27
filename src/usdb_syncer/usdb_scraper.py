@@ -1,21 +1,19 @@
 """Functionality related to the usdb.animux.de web page."""
 
 import logging
-import os
 import re
-import tempfile
 import time
 from datetime import datetime
 from enum import Enum
-from http.cookiejar import MozillaCookieJar
 from typing import Iterator, Type, assert_never
 
 import attrs
 import requests
 from bs4 import BeautifulSoup, NavigableString, Tag
 from requests import Session
+from requests.cookies import RequestsCookieJar
 
-from usdb_syncer import SongId, errors, settings
+from usdb_syncer import SongId, authentication, constants, download_options, errors
 from usdb_syncer.constants import (
     SUPPORTED_VIDEO_SOURCES_REGEX,
     Usdb,
@@ -54,7 +52,7 @@ def establish_usdb_login(session: Session) -> bool:
     if user := get_logged_in_usdb_user(session):
         _logger.info(f"Using existing login of USDB user '{user}'.")
         return True
-    if (auth := settings.get_usdb_auth())[0] and auth[1]:
+    if (auth := authentication.get_usdb_auth())[0] and auth[1]:
         if login_to_usdb(session, *auth):
             _logger.info(f"Successfully logged in to USDB with user '{auth[0]}'.")
             return True
@@ -67,27 +65,15 @@ def establish_usdb_login(session: Session) -> bool:
     return False
 
 
-def new_session_with_cookies(browser: settings.Browser) -> Session:
+def new_session_with_cookies(
+    cookie_options: download_options.CookieOptions | None = None,
+) -> Session:
     session = Session()
-    if settings.get_cookies_from_browser():
-        if usdb_cookies := browser.cookies(
-            Usdb.DOMAIN, settings.CookieFormat.COOKIEJAR
-        ):
-            # Since the CookieJar format is explicitly requested, there is no need for a
-            # type check and the CookieJar can directly be added to the session
-            session.cookies = usdb_cookies  # type: ignore
-    else:
-        if cookies_str := settings.get_decrypted_cookies():
-            with tempfile.NamedTemporaryFile("w+", delete=False) as temp_file:
-                temp_file.write(cookies_str)
-                temp_file_name = temp_file.name
-            try:
-                cookie_jar = MozillaCookieJar(temp_file_name)
-                cookie_jar.load(ignore_discard=True, ignore_expires=True)
-                session.cookies.clear()
-                session.cookies.update(cookie_jar)
-            finally:
-                os.remove(temp_file_name)
+    session.cookies = RequestsCookieJar()
+    cookies = authentication.get_cookies(constants.Usdb.BASE_URL, cookie_options)
+    if cookies:
+        for cookie in cookies:
+            session.cookies.set_cookie(cookie)
     return session
 
 
@@ -104,7 +90,7 @@ class SessionManager:
         if cls._session is None:
             cls._connecting = True
             try:
-                cls._session = new_session_with_cookies(settings.get_browser())
+                cls._session = new_session_with_cookies()
                 establish_usdb_login(cls._session)
             finally:
                 cls._connecting = False
