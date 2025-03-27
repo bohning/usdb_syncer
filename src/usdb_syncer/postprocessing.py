@@ -18,10 +18,10 @@ from PIL import Image
 
 from usdb_syncer import settings
 from usdb_syncer.constants import ISO_639_2B_LANGUAGE_CODES
-from usdb_syncer.context import Context
 from usdb_syncer.download_options import AudioOptions, VideoOptions
 from usdb_syncer.logger import Log
 from usdb_syncer.settings import AudioFormat, AudioNormalization, VideoContainer
+from usdb_syncer.song_txt import SongTxt
 
 # Normalization parameters
 DEFAULT_TARGET_LEVEL_RG_DB = -18.0
@@ -161,120 +161,142 @@ def _write_replaygain_tags_opus(audio_file: str, track_gain: float) -> None:
 
 
 def write_audio_tags(
-    ctx: Context, options: AudioOptions, path_resource: tuple[Path, str]
+    *,
+    txt: SongTxt,
+    options: AudioOptions,
+    audio: tuple[Path, str],
+    cover: tuple[Path, str] | None,
+    background: tuple[Path, str] | None,
+    logger: Log,
 ) -> None:
-    path, resource = path_resource
+    audio_path = audio[0]
     try:
-        match path.suffix[1:]:
+        match audio_path.suffix[1:]:
             case AudioFormat.M4A.value:
-                _write_tags_m4a_mp4(path, resource, ctx, options.embed_artwork)
+                _write_tags_m4a_mp4(
+                    audio, cover, background, txt, options.embed_artwork
+                )
             case AudioFormat.MP3.value:
-                _write_tags_mp3(path, resource, ctx, options.embed_artwork)
+                _write_tags_mp3(audio, cover, txt, options.embed_artwork)
             case AudioFormat.OGG.value:
-                _write_tags_ogg(OggVorbis(path), resource, ctx, options.embed_artwork)
+                _write_tags_ogg(audio, cover, txt, options.embed_artwork)
             case AudioFormat.OPUS.value:
-                _write_tags_ogg(OggOpus(path), resource, ctx, options.embed_artwork)
+                _write_tags_ogg(audio, cover, txt, options.embed_artwork)
             case other:
-                ctx.logger.debug(f"Audio tags not supported for suffix '{other}'.")
+                logger.debug(f"Audio tags not supported for suffix '{other}'.")
                 return
     except Exception:  # pylint: disable=broad-exception-caught
-        ctx.logger.debug(traceback.format_exc())
-        ctx.logger.error(f"Failed to write audio tags to file '{path}'!")
+        logger.debug(traceback.format_exc())
+        logger.error(f"Failed to write audio tags to file '{audio_path}'!")
     else:
-        ctx.logger.debug(f"Audio tags written to file '{path}'.")
+        logger.debug(f"Audio tags written to file '{audio_path}'.")
 
 
 def write_video_tags(
-    ctx: Context, options: VideoOptions, path_resource: tuple[Path, str]
+    *,
+    txt: SongTxt,
+    options: VideoOptions,
+    video: tuple[Path, str],
+    cover: tuple[Path, str] | None,
+    background: tuple[Path, str] | None,
+    logger: Log,
 ) -> None:
-    path, resource = path_resource
+    video_path = video[0]
     try:
-        match path.suffix[1:]:
+        match video_path.suffix[1:]:
             case VideoContainer.MP4.value:
-                _write_tags_m4a_mp4(path, resource, ctx, options.embed_artwork)
+                _write_tags_m4a_mp4(
+                    video, cover, background, txt, options.embed_artwork
+                )
             case other:
-                ctx.logger.debug(f"Video tags not supported for suffix '{other}'.")
+                logger.debug(f"Video tags not supported for suffix '{other}'.")
                 return
     except Exception:  # pylint: disable=broad-exception-caught
-        ctx.logger.debug(traceback.format_exc())
-        ctx.logger.error(f"Failed to write video tags to file '{path}'!")
+        logger.debug(traceback.format_exc())
+        logger.error(f"Failed to write video tags to file '{video_path}'!")
     else:
-        ctx.logger.debug(f"Video tags written to file '{path}'.")
+        logger.debug(f"Video tags written to file '{video_path}'.")
 
 
 def _write_tags_m4a_mp4(
-    path: Path, resource: str, ctx: Context, embed_artwork: bool
+    audio_video: tuple[Path, str],
+    cover: tuple[Path, str] | None,
+    background: tuple[Path, str] | None,
+    txt: SongTxt,
+    embed_artwork: bool,
 ) -> None:
-    mp4 = MP4(path)
-    if not mp4.tags:
-        mp4.add_tags()
-    if not mp4.tags:
+    m4a_mp4 = MP4(audio_video[0])
+    if not m4a_mp4.tags:
+        m4a_mp4.add_tags()
+    if not m4a_mp4.tags:
         return
-    mp4.tags["\xa9ART"] = ctx.txt.headers.artist
-    mp4.tags["\xa9nam"] = ctx.txt.headers.title
-    if ctx.txt.headers.genre:
-        mp4.tags["\xa9gen"] = ctx.txt.headers.genre
-    if ctx.txt.headers.year:
-        mp4.tags["\xa9day"] = ctx.txt.headers.year
-    mp4.tags["\xa9lyr"] = ctx.txt.unsynchronized_lyrics()
-    mp4.tags["\xa9cmt"] = resource
+    m4a_mp4.tags["\xa9ART"] = txt.headers.artist
+    m4a_mp4.tags["\xa9nam"] = txt.headers.title
+    if txt.headers.genre:
+        m4a_mp4.tags["\xa9gen"] = txt.headers.genre
+    if txt.headers.year:
+        m4a_mp4.tags["\xa9day"] = txt.headers.year
+    m4a_mp4.tags["\xa9lyr"] = txt.unsynchronized_lyrics()
+    m4a_mp4.tags["\xa9cmt"] = audio_video[1]
 
     if embed_artwork:
-        mp4.tags["covr"] = [
+        cover_path = cover[0] if cover else None
+        background_path = background[0] if background else None
+        m4a_mp4.tags["covr"] = [
             MP4Cover(image.read_bytes(), imageformat=MP4Cover.FORMAT_JPEG)
-            for image in (
-                ctx.out.cover.path(ctx.locations, temp=True),
-                ctx.out.background.path(ctx.locations, temp=True),
-            )
+            for image in (cover_path, background_path)
             if image
         ]
 
-    mp4.save()
+    m4a_mp4.save()
 
 
 def _write_tags_mp3(
-    path: Path, resource: str, ctx: Context, embed_artwork: bool
+    audio: tuple[Path, str],
+    cover: tuple[Path, str] | None,
+    txt: SongTxt,
+    embed_artwork: bool,
 ) -> None:
-    mp3 = MP3(path, ID3=id3.ID3)
+    audio_path, audio_resource = audio
+    mp3 = MP3(audio_path, ID3=id3.ID3)
     if not mp3.tags:
         mp3.add_tags()
     if not mp3.tags:
         return
-    lang = ISO_639_2B_LANGUAGE_CODES.get(ctx.txt.headers.main_language(), "und")
-    mp3.tags["TPE1"] = id3.TPE1(encoding=id3.Encoding.UTF8, text=ctx.txt.headers.artist)
-    mp3.tags["TIT2"] = id3.TIT2(encoding=id3.Encoding.UTF8, text=ctx.txt.headers.title)
+    lang = ISO_639_2B_LANGUAGE_CODES.get(txt.headers.main_language(), "und")
+    mp3.tags["TPE1"] = id3.TPE1(encoding=id3.Encoding.UTF8, text=txt.headers.artist)
+    mp3.tags["TIT2"] = id3.TIT2(encoding=id3.Encoding.UTF8, text=txt.headers.title)
     mp3.tags["TLAN"] = id3.TLAN(encoding=id3.Encoding.UTF8, text=lang)
-    if genre := ctx.txt.headers.genre:
+    if genre := txt.headers.genre:
         mp3.tags["TCON"] = id3.TCON(encoding=id3.Encoding.UTF8, text=genre)
-    if year := ctx.txt.headers.year:
+    if year := txt.headers.year:
         mp3.tags["TDRC"] = id3.TDRC(encoding=id3.Encoding.UTF8, text=year)
     mp3.tags[f"USLT::'{lang}'"] = id3.USLT(
         encoding=id3.Encoding.UTF8,
         lang=lang,
         desc="Lyrics",
-        text=ctx.txt.unsynchronized_lyrics(),
+        text=txt.unsynchronized_lyrics(),
     )
     mp3.tags["SYLT"] = id3.SYLT(
         encoding=id3.Encoding.UTF8,
         lang=lang,
         format=2,  # milliseconds as units
         type=1,  # lyrics
-        text=ctx.txt.synchronized_lyrics(),
+        text=txt.synchronized_lyrics(),
     )
     mp3.tags["COMM"] = id3.COMM(
-        encoding=id3.Encoding.UTF8, lang="eng", desc="Audio Source", text=resource
+        encoding=id3.Encoding.UTF8, lang="eng", desc="Audio Source", text=audio_resource
     )
 
-    if embed_artwork and (
-        path_resource := ctx.out.cover.path_and_resource(ctx.locations, temp=True)
-    ):
+    if embed_artwork and cover:
+        cover_path, cover_resource = cover
         mp3.tags.add(
             id3.APIC(
                 encoding=id3.Encoding.UTF8,
-                mime="image/jpeg",
+                mime=Image.MIME["JPEG"],
                 type=id3.PictureType.COVER_FRONT,
-                desc=f"Source: {path_resource[1]}",
-                data=path_resource[0].read_bytes(),
+                desc=f"Source: {cover_resource}",
+                data=cover_path.read_bytes(),
             )
         )
 
@@ -282,21 +304,33 @@ def _write_tags_mp3(
 
 
 def _write_tags_ogg(
-    audio: OggFileType, resource: str, ctx: Context, embed_artwork: bool
+    audio: tuple[Path, str],
+    cover: tuple[Path, str] | None,
+    txt: SongTxt,
+    embed_artwork: bool,
 ) -> None:
+    audio_path, audio_resource = audio
+    ogg = OggFileType()
+    match audio_path.suffix[1:]:
+        case AudioFormat.OGG.value:
+            ogg = OggVorbis(audio_path)
+        case AudioFormat.OPUS.value:
+            ogg = OggOpus(audio_path)
+        case _:
+            return
     # Set basic tags
-    audio["artist"] = ctx.txt.headers.artist
-    audio["title"] = ctx.txt.headers.title
-    lang = ISO_639_2B_LANGUAGE_CODES.get(ctx.txt.headers.main_language(), "und")
-    audio["language"] = lang
-    if genre := ctx.txt.headers.genre:
-        audio["genre"] = genre
-    if year := ctx.txt.headers.year:
-        audio["date"] = year
-    audio["lyrics"] = ctx.txt.unsynchronized_lyrics()
-    audio["comment"] = resource
+    ogg["artist"] = txt.headers.artist
+    ogg["title"] = txt.headers.title
+    ogg["language"] = ISO_639_2B_LANGUAGE_CODES.get(txt.headers.main_language(), "und")
+    if genre := txt.headers.genre:
+        ogg["genre"] = genre
+    if year := txt.headers.year:
+        ogg["date"] = year
+    ogg["lyrics"] = txt.unsynchronized_lyrics()
+    ogg["comment"] = audio_resource
 
-    if embed_artwork and (cover_path := ctx.out.cover.path(ctx.locations, temp=True)):
+    if embed_artwork and cover:
+        cover_path = cover[0]
         picture = Picture()
         with cover_path.open("rb") as file:
             picture.data = file.read()
@@ -304,13 +338,12 @@ def _write_tags_ogg(
             picture.width, picture.height = image.size
         picture.type = 3  # "Cover (front)"
         picture.desc = "Cover art"
-        picture.mime = "image/jpeg"
+        picture.mime = Image.MIME["JPEG"]
         picture.depth = 24
 
-        picture_data = picture.write()
-        encoded_data = b64encode(picture_data)
+        encoded_data = b64encode(picture.write())
         vcomment_value = encoded_data.decode("ascii")
 
-        audio["metadata_block_picture"] = [vcomment_value]
+        ogg["metadata_block_picture"] = [vcomment_value]
 
-    audio.save()
+    ogg.save()
