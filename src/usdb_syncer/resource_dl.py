@@ -10,7 +10,6 @@ from typing import assert_never
 import filetype
 import requests
 import yt_dlp
-from ffmpeg_normalize import FFmpegNormalize
 from PIL import Image, ImageEnhance, ImageOps
 from PIL.Image import Resampling
 
@@ -19,7 +18,13 @@ from usdb_syncer.constants import YtErrorMsg
 from usdb_syncer.download_options import AudioOptions, VideoOptions
 from usdb_syncer.logger import Log, song_logger
 from usdb_syncer.meta_tags import ImageMetaTags
-from usdb_syncer.settings import Browser, CoverMaxSize, YtdlpRateLimit
+from usdb_syncer.postprocessing import normalize_audio
+from usdb_syncer.settings import (
+    AudioNormalization,
+    Browser,
+    CoverMaxSize,
+    YtdlpRateLimit,
+)
 from usdb_syncer.usdb_scraper import SongDetails
 from usdb_syncer.utils import video_url_from_resource
 
@@ -78,50 +83,38 @@ def download_audio(
         options: parameters for downloading and processing
         browser: browser to use cookies from
         path_stem: the target on the file system *without* an extension
+        logger: logger
 
     Returns:
-        DownloadResult with the extension of the downloaded file if successful
+        DownloadResult with the extension of the (postprocessed, possibly normalized)
+        audio file, if successful
     """
     ydl_opts = _ytdl_options(
         options.ytdl_format(), browser, path_stem, options.rate_limit
     )
-    if not options.normalize:
-        # Add postprocessor if normalization is NOT needed (direct audio extract)
-        ydl_opts["postprocessors"] = [
-            {
-                "key": "FFmpegExtractAudio",
-                "preferredquality": options.bitrate.ytdl_format(),
-                "preferredcodec": options.format.ytdl_codec(),
-            }
-        ]
+    if options.normalization in {
+        AudioNormalization.DISABLE,
+        AudioNormalization.REPLAYGAIN,
+    }:
+        # DISABLE or REPLAYGAIN normalization will not re-encode the audio file to
+        # target format, so we have to add a postprocessor to get it
+        postprocessor = {
+            "key": "FFmpegExtractAudio",
+            "preferredquality": options.bitrate.ytdl_format(),
+            "preferredcodec": options.format.ytdl_codec(),
+        }
+        ydl_opts["postprocessors"] = [postprocessor]
 
     dl_result = _download_resource(resource, ydl_opts, logger)
+    if not dl_result.extension:
+        return dl_result
+    if options.normalization is not AudioNormalization.DISABLE:
+        normalize_audio(options, path_stem, dl_result.extension, logger)
 
-    if dl_result.extension and options.normalize:
-        filename = f"{path_stem}.{dl_result.extension}"
-        _normalize(options, path_stem, filename)
-
+    # either way, the resulting file is in target format, so we have to correct the
+    # extension before returning dl_result
+    dl_result.extension = options.format.value
     return dl_result
-
-
-def _normalize(options: AudioOptions, path_stem: Path, filename: str) -> None:
-    normalizer = FFmpegNormalize(
-        normalization_type="ebu",  # default: "ebu"
-        target_level=-23,  # default: -23
-        print_stats=True,  # set to False?
-        keep_lra_above_loudness_range_target=True,  # needed for linear normalization
-        loudness_range_target=7,  # default: 7.0
-        true_peak=-2,  # default: -2
-        dynamic=False,  # default: False
-        audio_codec=options.format.ffmpeg_encoder(),
-        audio_bitrate=options.bitrate.ffmpeg_format(),
-        sample_rate=None,  # default
-        debug=True,  # set to False
-        progress=True,  # set to False?
-    )
-    ext = options.format.value
-    normalizer.add_media_file(filename, f"{path_stem}.{ext}")
-    normalizer.run_normalization()
 
 
 def download_video(
