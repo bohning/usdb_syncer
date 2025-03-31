@@ -692,14 +692,14 @@ tqdm = "*"
 
 [[package]]
 name = "ffmpeg-progress-yield"
-version = "0.11.3"
+version = "0.12.0"
 description = "Run an ffmpeg command with progress"
 optional = false
 python-versions = ">=3.9"
 groups = ["main"]
 files = [
-    {file = "ffmpeg_progress_yield-0.11.3-py2.py3-none-any.whl", hash = "sha256:a7277e386d30b27ce513ec50a4a97fee403e48172a5370e05584350ee85db205"},
-    {file = "ffmpeg_progress_yield-0.11.3.tar.gz", hash = "sha256:eb266419fee1df929780bc57cf9b52db086b48fd2e82b20703a64d4bf5a67592"},
+    {file = "ffmpeg_progress_yield-0.12.0-py2.py3-none-any.whl", hash = "sha256:24ba6b1c7a678baf423c4984ea9df498a142ed552ac5fed9ea62c8e7b2c02c7f"},
+    {file = "ffmpeg_progress_yield-0.12.0.tar.gz", hash = "sha256:8d531fcaf8b87f3ff00cb84a71e0dd4c6e67038f2678268b85b8d4175968bc27"},
 ]
 
 [[package]]
@@ -1436,14 +1436,14 @@ testing = ["pytest", "pytest-benchmark"]
 
 [[package]]
 name = "poetry-dynamic-versioning"
-version = "1.8.1"
+version = "1.8.2"
 description = "Plugin for Poetry to enable dynamic versioning based on VCS tags"
 optional = false
 python-versions = "<4.0,>=3.7"
 groups = ["main"]
 files = [
-    {file = "poetry_dynamic_versioning-1.8.1-py3-none-any.whl", hash = "sha256:831d940889d37ee50aeee167d07a03e1bd1401e6ff8bd6bd03ea7b0da6c53235"},
-    {file = "poetry_dynamic_versioning-1.8.1.tar.gz", hash = "sha256:35b2148e1d08ba30f38c3dd28518db1e2ff9152391265963af636ce29f987d59"},
+    {file = "poetry_dynamic_versioning-1.8.2-py3-none-any.whl", hash = "sha256:3758a0b12228230ce384fbb303948c5e405e1d33c3bbe1ba71144c15f5e7a8de"},
+    {file = "poetry_dynamic_versioning-1.8.2.tar.gz", hash = "sha256:d14de13d426ac28e98f4519aac7f4aa857e7b97ad9d7a4c72293377033065f44"},
 ]
 
 [package.dependencies]
@@ -1983,14 +1983,14 @@ urllib3 = ">=2"
 
 [[package]]
 name = "types-setuptools"
-version = "77.0.2.20250328"
+version = "78.1.0.20250329"
 description = "Typing stubs for setuptools"
 optional = false
 python-versions = ">=3.9"
 groups = ["dev"]
 files = [
-    {file = "types_setuptools-77.0.2.20250328-py3-none-any.whl", hash = "sha256:034fb89e346fc8b19be25b73c304b64bd8d7e6a4f7a20d21be38ee67f8ed081d"},
-    {file = "types_setuptools-77.0.2.20250328.tar.gz", hash = "sha256:0d4d03c89ef34a4a81e19ee797ed1ea4496ef787524e03b40dcf91ba0328e8f5"},
+    {file = "types_setuptools-78.1.0.20250329-py3-none-any.whl", hash = "sha256:ea47eab891afb506f470eee581dcde44d64dc99796665da794da6f83f50f6776"},
+    {file = "types_setuptools-78.1.0.20250329.tar.gz", hash = "sha256:31e62950c38b8cc1c5114b077504e36426860a064287cac11b9666ab3a483234"},
 ]
 
 [package.dependencies]
