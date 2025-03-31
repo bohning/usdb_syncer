@@ -47,6 +47,7 @@ class ResourceDLError(Enum):
     RESOURCE_UNAVAILABLE = "resource unavailable"
     RESOURCE_PARSE_ERROR = "resource parse error"
     RESOURCE_DL_FAILED = "resource download failed"
+    RESOURCE_FORBIDDEN = "resource forbidden"
 
 
 @dataclass
@@ -187,6 +188,9 @@ def _download_resource(
             if YtErrorMsg.YT_PARSE_ERROR in error_message:
                 _handle_parse_error(url, logger)
                 return ResourceDLResult(error=ResourceDLError.RESOURCE_PARSE_ERROR)
+            if YtErrorMsg.YT_FORBIDDEN in error_message:
+                _handle_forbidden(url, logger)
+                return ResourceDLResult(error=ResourceDLError.RESOURCE_FORBIDDEN)
             raise
 
 
@@ -225,6 +229,12 @@ def _handle_parse_error(url: str, logger: Log) -> None:
     logger.warning(f"Failed to parse XML for resource '{url}'.")
 
 
+def _handle_forbidden(url: str, logger: Log) -> None:
+    logger.warning(
+        f"Failed to download resource '{url}'. Your IP/account might have been blocked."
+    )
+
+
 def download_image(url: str, logger: Log) -> bytes | None:
     try:
         reply = requests.get(
@@ -247,7 +257,7 @@ def download_image(url: str, logger: Log) -> bytes | None:
     if reply.status_code in range(300, 399):
         # 3xx redirection
         logger.debug(
-            f"'{url}' redirects to '{reply.headers["Location"]}'. "
+            f"'{url}' redirects to '{reply.headers['Location']}'. "
             "Please adapt metatags."
         )
         return reply.content
