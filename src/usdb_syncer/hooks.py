@@ -24,7 +24,7 @@ P = ParamSpec("P")
 class _Hook(Generic[P]):
     """Base class for hooks."""
 
-    _subscribers: list[Callable[P, None]] = attrs.field(factory=list)
+    _subscribers: list[Callable[P, None]]
 
     def __init_subclass__(cls) -> None:
         cls._subscribers = []
@@ -43,7 +43,8 @@ class _Hook(Generic[P]):
             try:
                 func(*args, **kwargs)
             except Exception as e:  # pylint: disable=broad-except
-                logger.warning(f"Plugin error in {func.__name__}: {e}")
+                logger.debug(e, exc_info=True)
+                logger.warning(f"Plugin error in {func.__name__}: {e.__class__.__name__}")
 
 
 class SongLoaderDidFinish(_Hook):
