@@ -15,86 +15,13 @@ import traceback
 from enum import Enum, StrEnum, auto
 from http.cookiejar import CookieJar
 from pathlib import Path
-from typing import Any, Tuple, TypeVar, assert_never, cast
+from typing import Any, TypeVar, assert_never, cast
 
-import keyring
 import rookiepy
-from cryptography.fernet import Fernet
 from PySide6.QtCore import QByteArray, QSettings
 
 from usdb_syncer import path_template, utils
 from usdb_syncer.logger import logger
-
-SYSTEM_USDB = "USDB Syncer/USDB"
-SYSTEM_COOKIE_KEY = "USDB Syncer/Cookies"
-NO_KEYRING_BACKEND_WARNING = (
-    "Your USDB password cannot be stored or retrieved because no keyring backend is "
-    "available. See https://pypi.org/project/keyring for details."
-)
-
-
-def get_usdb_auth() -> Tuple[str, str]:
-    username = get_setting(SettingKey.USDB_USER_NAME, "")
-    pwd = ""
-    try:
-        pwd = keyring.get_password(SYSTEM_USDB, username) or ""
-    except keyring.core.backend.errors.NoKeyringError as error:
-        logger.debug(error)
-        logger.warning(NO_KEYRING_BACKEND_WARNING)
-    return (username, pwd)
-
-
-def set_usdb_auth(username: str, password: str) -> None:
-    set_setting(SettingKey.USDB_USER_NAME, username)
-    try:
-        keyring.set_password(SYSTEM_USDB, username, password)
-    except keyring.core.backend.errors.NoKeyringError as error:
-        logger.debug(error)
-        logger.warning(NO_KEYRING_BACKEND_WARNING)
-
-
-def get_decrypted_cookies() -> str | None:
-    username = get_setting(SettingKey.USDB_USER_NAME, "")
-    try:
-        key = keyring.get_password(SYSTEM_COOKIE_KEY, username)
-        if key is None:
-            return None
-        fernet = Fernet(key.encode("utf-8"))
-        with open(utils.AppPaths.cookie_file, "rb") as file:
-            encrypted_cookies = file.read()
-        return fernet.decrypt(encrypted_cookies).decode("utf-8")
-    except keyring.core.backend.errors.NoKeyringError as error:
-        logger.debug(error)
-        logger.warning(NO_KEYRING_BACKEND_WARNING)
-        return None
-
-
-def store_encrypted_cookies(cookie_file: Path) -> bool:
-    key = Fernet.generate_key()
-    fernet = Fernet(key)
-    username = get_setting(SettingKey.USDB_USER_NAME, "")
-    try:
-        with open(cookie_file, "r", encoding="utf-8") as file:
-            cookies = file.read().strip()
-        encrypted_cookies = fernet.encrypt(cookies.encode("utf-8"))
-
-        with open(utils.AppPaths.cookie_file, "wb") as file:
-            file.write(encrypted_cookies)
-
-        keyring.set_password(SYSTEM_COOKIE_KEY, username, key.decode("utf-8"))
-        logger.info(
-            f"Cookies successfully transfered to an encrypted file. It is recommended "
-            f"to delete plain text '{cookie_file}' now."
-        )
-        return True
-    except FileNotFoundError:
-        logger.error(f"Cookie file not found: {cookie_file}")
-    except PermissionError:
-        logger.error(f"Permission denied when accessing: {cookie_file}")
-    except keyring.core.backend.errors.NoKeyringError as error:
-        logger.debug(error)
-        logger.warning(NO_KEYRING_BACKEND_WARNING)
-    return False
 
 
 def ffmpeg_is_available() -> bool:
@@ -115,7 +42,6 @@ class SettingKey(Enum):
     FFMPEG_DIR = "ffmpeg_dir"
     BROWSER = "downloads/browser"
     COOKIES_FROM_BROWSER = "cookies_from_browser"
-    COOKIES_STORED_ENCRYPTED = "downloads/cookies_stored_encrypted"
     TXT = "downloads/txt"
     ENCODING = "downloads/encoding"
     NEWLINE = "downloads/newline"
@@ -417,7 +343,7 @@ class Browser(Enum):
                 assert_never(unreachable)
 
     def cookies(
-        self, domain: str, fmt: CookieFormat
+        self, fmt: CookieFormat
     ) -> rookiepy.CookieList | CookieJar | str | None:
         match self:
             case Browser.NONE:
@@ -451,11 +377,11 @@ class Browser(Enum):
         try:
             match fmt:
                 case CookieFormat.COOKIELIST:
-                    return function([domain])
+                    return function()
                 case CookieFormat.COOKIEJAR:
-                    return rookiepy.to_cookiejar(function([domain]))
+                    return rookiepy.to_cookiejar(function())
                 case CookieFormat.NETSCAPE:
-                    return rookiepy.to_netscape(function([domain]))
+                    return rookiepy.to_netscape(function())
         except Exception:  # pylint: disable=broad-exception-caught
             logger.warning(
                 f"Retrieving cookies from {str(self)} on {platform.system()} failed. "
@@ -463,7 +389,7 @@ class Browser(Enum):
                 "in the settings."
             )
             logger.debug(traceback.format_exc())
-        logger.warning(f"Failed to retrieve {str(self)} cookies for {domain}.")
+        logger.warning(f"Failed to retrieve {str(self)} cookies.")
         return None
 
 
@@ -863,14 +789,6 @@ def get_cover_max_size() -> CoverMaxSize:
 
 def set_cover_max_size(value: CoverMaxSize) -> None:
     set_setting(SettingKey.COVER_MAX_SIZE, value)
-
-
-def get_cookies_stored_encrypted() -> bool:
-    return get_setting(SettingKey.COOKIES_STORED_ENCRYPTED, False)
-
-
-def set_cookies_stored_encrypted(value: bool) -> None:
-    set_setting(SettingKey.COOKIES_STORED_ENCRYPTED, value)
 
 
 def get_browser() -> Browser:

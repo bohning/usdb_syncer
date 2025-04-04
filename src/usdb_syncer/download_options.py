@@ -1,17 +1,19 @@
 """Options for downloading songs."""
 
 from dataclasses import dataclass
+from http.cookiejar import CookieJar
 from pathlib import Path
 
-from usdb_syncer import path_template, settings
+from usdb_syncer import authentication, path_template, settings
 
 
 @dataclass(frozen=True)
 class CookieOptions:
     """Settings regarding the cookies retrieval."""
 
-    cookies_from_browser: bool
-    browser: settings.Browser
+    cookie_jar: CookieJar
+    # We could allow the cookie jar to be None, but I chose to
+    # keep it mandatory. If cookies are not needed, the cookie jar will be empty.
 
 
 @dataclass(frozen=True)
@@ -106,7 +108,7 @@ def download_options() -> Options:
     return Options(
         song_dir=settings.get_song_dir(),
         path_template=settings.get_path_template(),
-        cookie_options=_cookie_options(),
+        cookie_options=cookie_options(),
         txt_options=_txt_options(),
         audio_options=_audio_options(),
         video_options=_video_options(),
@@ -115,11 +117,16 @@ def download_options() -> Options:
     )
 
 
-def _cookie_options() -> CookieOptions:
-    return CookieOptions(
-        cookies_from_browser=settings.get_cookies_from_browser(),
-        browser=settings.get_browser(),
-    )
+def cookie_options() -> CookieOptions:
+    if settings.get_cookies_from_browser():
+        browser = settings.get_browser()
+        if not browser:
+            return CookieOptions(cookie_jar=CookieJar())
+        source = authentication.CookieSource.BROWSER
+    else:
+        browser = None
+        source = authentication.CookieSource.MANUAL
+    return CookieOptions(cookie_jar=authentication.get_cookies(source, browser))
 
 
 def _txt_options() -> TxtOptions | None:
