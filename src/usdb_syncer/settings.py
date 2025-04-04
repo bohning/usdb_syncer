@@ -42,7 +42,6 @@ class SettingKey(Enum):
     FFMPEG_DIR = "ffmpeg_dir"
     BROWSER = "downloads/browser"
     COOKIES_FROM_BROWSER = "cookies_from_browser"
-    COOKIES_STORED_ENCRYPTED = "downloads/cookies_stored_encrypted"
     TXT = "downloads/txt"
     ENCODING = "downloads/encoding"
     NEWLINE = "downloads/newline"
@@ -344,7 +343,7 @@ class Browser(Enum):
                 assert_never(unreachable)
 
     def cookies(
-        self, domain: str, fmt: CookieFormat
+        self, fmt: CookieFormat
     ) -> rookiepy.CookieList | CookieJar | str | None:
         match self:
             case Browser.NONE:
@@ -378,11 +377,11 @@ class Browser(Enum):
         try:
             match fmt:
                 case CookieFormat.COOKIELIST:
-                    return function([domain])
+                    return function()
                 case CookieFormat.COOKIEJAR:
-                    return rookiepy.to_cookiejar(function([domain]))
+                    return rookiepy.to_cookiejar(function())
                 case CookieFormat.NETSCAPE:
-                    return rookiepy.to_netscape(function([domain]))
+                    return rookiepy.to_netscape(function())
         except Exception:  # pylint: disable=broad-exception-caught
             logger.warning(
                 f"Retrieving cookies from {str(self)} on {platform.system()} failed. "
@@ -390,7 +389,7 @@ class Browser(Enum):
                 "in the settings."
             )
             logger.debug(traceback.format_exc())
-        logger.warning(f"Failed to retrieve {str(self)} cookies for {domain}.")
+        logger.warning(f"Failed to retrieve {str(self)} cookies.")
         return None
 
 
@@ -790,14 +789,6 @@ def get_cover_max_size() -> CoverMaxSize:
 
 def set_cover_max_size(value: CoverMaxSize) -> None:
     set_setting(SettingKey.COVER_MAX_SIZE, value)
-
-
-def get_cookies_stored_encrypted() -> bool:
-    return get_setting(SettingKey.COOKIES_STORED_ENCRYPTED, False)
-
-
-def set_cookies_stored_encrypted(value: bool) -> None:
-    set_setting(SettingKey.COOKIES_STORED_ENCRYPTED, value)
 
 
 def get_browser() -> Browser:

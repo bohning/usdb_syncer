@@ -14,7 +14,6 @@ from ffmpeg_normalize import FFmpegNormalize
 from PIL import Image, ImageEnhance, ImageOps
 from PIL.Image import Resampling
 
-from usdb_syncer import authentication
 from usdb_syncer.download_options import AudioOptions, CookieOptions, VideoOptions
 from usdb_syncer.logger import Log, song_logger
 from usdb_syncer.meta_tags import ImageMetaTags
@@ -73,7 +72,7 @@ def download_audio(
         the extension of the successfully downloaded file or None
     """
     ydl_opts = _ytdl_options(
-        options.ytdl_format(), cookie_options, path_stem, options.rate_limit, logger
+        options.ytdl_format(), cookie_options, path_stem, options.rate_limit
     )
     if not options.normalize:
         postprocessor = {
@@ -131,7 +130,7 @@ def download_video(
         the extension of the successfully downloaded file or None
     """
     ydl_opts = _ytdl_options(
-        options.ytdl_format(), cookie_options, path_stem, options.rate_limit, logger
+        options.ytdl_format(), cookie_options, path_stem, options.rate_limit
     )
     if filename := _download_resource(ydl_opts, resource, logger):
         return os.path.splitext(filename)[1][1:]
@@ -143,10 +142,7 @@ def _ytdl_options(
     cookie_options: CookieOptions,
     target_stem: Path,
     ratelimit: YtdlpRateLimit,
-    logger: Log,
 ) -> YtdlOptions:
-    cookiejar = authentication.get_cookies("", cookie_options)
-    logger.debug("Got cookies for yt-dlp")
     ytdl_options = YtdlOptions(
         {
             "format": format_,
@@ -159,7 +155,7 @@ def _ytdl_options(
             "retries": 1,
             "fragment_retries": 2,
         },
-        cookiejar,
+        cookie_options.cookie_jar,
     )
     if ratelimit.value is not None:
         ytdl_options.options["ratelimit"] = ratelimit.value
@@ -180,16 +176,21 @@ def _download_resource(
             logger.debug(f"error downloading video url: {url}")
             # Check if the error is due to age restriction
             if "confirm your age" in str(e).lower():
+                if len(ytdl_options.cookies) == 0:
+                    logger.error(
+                        f"Failed to download {url} because it is age-restricted. Set cookies to download."
+                    )
+                    return None
                 logger.debug("Age-restricted resource. Retrying with cookies ...")
                 try:
                     with yt_dlp.YoutubeDL(ytdl_options.options) as ydl:
+                        # Set cookies from the cookie jar.
                         for cookie in ytdl_options.cookies:
                             ydl.cookiejar.set_cookie(cookie)
                         return ydl.prepare_filename(ydl.extract_info(url))
                 except yt_dlp.utils.YoutubeDLError:
                     logger.error(
-                        "Retry with cookies failed, maybe your logged in "
-                        "cookies are outdated."
+                        "Retry with cookies failed. Your cookies might be invalid or outdated."
                     )
                     return None
             else:

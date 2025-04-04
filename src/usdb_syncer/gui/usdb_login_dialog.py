@@ -48,9 +48,7 @@ class UsdbLoginDialog(Ui_Dialog, QDialog):
         super().accept()
 
     def _on_check_login(self) -> None:
-        session = new_session_with_cookies(
-            download_options.CookieOptions(True, self.combobox_browser.currentData())
-        )
+        session = new_session_with_cookies(download_options.cookie_options())
         if user := get_logged_in_usdb_user(session):
             message = f"Success! Existing session found with user '{user}'."
         elif (user := self.line_edit_username.text()) and (

@@ -13,7 +13,7 @@ from bs4 import BeautifulSoup, NavigableString, Tag
 from requests import Session
 from requests.cookies import RequestsCookieJar
 
-from usdb_syncer import SongId, authentication, constants, download_options, errors
+from usdb_syncer import SongId, authentication, download_options, errors
 from usdb_syncer.constants import (
     SUPPORTED_VIDEO_SOURCES_REGEX,
     Usdb,
@@ -70,9 +70,8 @@ def new_session_with_cookies(
 ) -> Session:
     session = Session()
     session.cookies = RequestsCookieJar()
-    cookies = authentication.get_cookies(constants.Usdb.BASE_URL, cookie_options)
-    if cookies:
-        for cookie in cookies:
+    if cookie_options:
+        for cookie in cookie_options.cookie_jar:
             session.cookies.set_cookie(cookie)
     return session
 
