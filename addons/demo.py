@@ -6,7 +6,10 @@ from usdb_syncer.gui.mw import MainWindow
 
 def on_window_loaded(main_window: MainWindow) -> None:
     """Add a button to the tools menu."""
-    main_window.menu_tools.addAction("Click Me!", lambda: logger.logger.info("Button clicked!"))
+    main_window.menu_tools.addAction(
+        "Click Me!", lambda: logger.logger.info("Button clicked!")
+    )
+
 
 def on_download_finished(song: usdb_song.UsdbSong) -> None:
     """Log a message for the first finished download only."""

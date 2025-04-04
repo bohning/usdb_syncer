@@ -44,7 +44,9 @@ class _Hook(Generic[P]):
                 func(*args, **kwargs)
             except Exception as e:  # pylint: disable=broad-except
                 logger.debug(e, exc_info=True)
-                logger.warning(f"Plugin error in {func.__name__}: {e.__class__.__name__}")
+                logger.warning(
+                    f"Plugin error in {func.__name__}: {e.__class__.__name__}"
+                )
 
 
 class SongLoaderDidFinish(_Hook):
