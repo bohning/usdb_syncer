@@ -314,7 +314,7 @@
             <item row="0" column="0">
              <widget class="QLabel" name="label_throttling_threads">
               <property name="text">
-               <string>Threads:</string>
+               <string>Download threads:</string>
               </property>
              </widget>
             </item>
@@ -352,13 +352,6 @@
             <bool>true</bool>
            </property>
            <layout class="QGridLayout" name="gridLayout_5">
-            <item row="2" column="3">
-             <widget class="QCheckBox" name="checkBox_audio_normalize">
-              <property name="text">
-               <string/>
-              </property>
-             </widget>
-            </item>
             <item row="3" column="3">
              <widget class="QCheckBox" name="checkBox_audio_embed_artwork">
               <property name="text">
@@ -390,7 +383,7 @@
             <item row="2" column="0">
              <widget class="QLabel" name="label_audio_normalize">
               <property name="text">
-               <string>Normalize:</string>
+               <string>Normalization:</string>
               </property>
              </widget>
             </item>
@@ -411,6 +404,13 @@
               </property>
               <property name="toolTip">
                <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:700;&quot;&gt;M4A:&lt;/span&gt; Best quality and speed. Compatible with UltraStar Deluxe, Vocaluxe, Performous and UltraStar World Party.&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:700;&quot;&gt;MP3: &lt;/span&gt;Worst quality and speed. Full compatibility.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+              </property>
+             </widget>
+            </item>
+            <item row="2" column="3">
+             <widget class="QComboBox" name="comboBox_audio_normalization">
+              <property name="toolTip">
+               <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;It is recommended to adjust the volume of your audio files so that they all have the same level of perceived loudness.&lt;/p&gt;&lt;p&gt;If you use a recent version of USDX (2025.4.0 or newer), then choose &lt;span style=&quot; font-weight:700;&quot;&gt;ReplayGain&lt;/span&gt;, as this does not reencode the file but instead writes the normalization information into the audio header. You have to enable ReplayGain in USDX sound settings for this take effect.&lt;/p&gt;&lt;p&gt;For karaoke softwares that do not (yet) support replay gain, choose &lt;span style=&quot; font-weight:700;&quot;&gt;Normalize&lt;/span&gt;. This will adjust the loudness by re-encoding the file.&lt;/p&gt;&lt;p&gt;To skip normalization, choose &lt;span style=&quot; font-weight:700;&quot;&gt;disabled&lt;/span&gt;. This saves time, but resulting audio files will have different loudness levels.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
               </property>
              </widget>
             </item>
