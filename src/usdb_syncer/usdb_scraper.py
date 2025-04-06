@@ -89,7 +89,9 @@ class SessionManager:
         if cls._session is None:
             cls._connecting = True
             try:
-                cls._session = new_session_with_cookies()
+                cls._session = new_session_with_cookies(
+                    download_options.cookie_options()
+                )
                 establish_usdb_login(cls._session)
             finally:
                 cls._connecting = False

@@ -1,14 +1,14 @@
 """This module provides functions to store and retrieve credentials and cookies."""
 
+import http.cookiejar
 import pickle
-from enum import Enum
-from http.cookiejar import CookieJar
+from enum import Enum, auto
 from typing import Tuple, cast
 
 import keyring
 from cryptography.fernet import Fernet
 
-from usdb_syncer import settings, utils
+from usdb_syncer import constants, settings, utils
 from usdb_syncer.logger import logger
 
 SYSTEM_USDB = "USDB Syncer/USDB"
@@ -20,11 +20,30 @@ NO_KEYRING_BACKEND_WARNING = (
 )
 
 
+class CookieJar(http.cookiejar.CookieJar):
+    """A subclass of CookieJar that provides some extra functions."""
+
+    _cookies: dict[str, list[http.cookiejar.Cookie]]
+
+    @classmethod
+    def from_cookie_jar(cls, cookie_jar: http.cookiejar.CookieJar) -> "CookieJar":
+        """Create a CookieJar from a CookieJar."""
+        new_cookie_jar = cls()
+        for cookie in cookie_jar:
+            new_cookie_jar.set_cookie(cookie)
+        return new_cookie_jar
+
+    def clear_except_domains(self, domains: list[str]) -> None:
+        for cookie in self:
+            if not any(cookie.domain.endswith(domain) for domain in domains):
+                self.clear(domain=cookie.domain, path=cookie.path, name=cookie.name)
+
+
 class CookieSource(Enum):
     """Where to get the cookies from."""
 
-    MANUAL = "manual"
-    BROWSER = "browser"
+    MANUAL = auto()
+    BROWSER = auto()
 
 
 def _set_auth(service_name: str, username: str, password: str) -> bool:
@@ -78,8 +97,8 @@ def _get_manual_cookies() -> CookieJar:
     return cookies
 
 
-def store_manual_cookies(cookies: CookieJar) -> bool:
-    """Store the cookiejar in the system keyring."""
+def store_manual_cookies(cookie_jar: CookieJar) -> bool:
+    """Store the cookiejar in the system keyring to be retrieved later."""
 
     # Because of keyring length limitations on some platforms (Windows), we can't
     # store the cookiejar directly. Instead, we encrypt it with a symmetric key and store the
@@ -89,10 +108,10 @@ def store_manual_cookies(cookies: CookieJar) -> bool:
     fernet = Fernet(key)
     username = settings.get_setting(settings.SettingKey.USDB_USER_NAME, "")
 
-    cookie_list = list(cookie for cookie in cookies)
+    cookie_jar.clear_except_domains(constants.COOKIE_DOMAINS)
 
     try:
-        pickled_cookies = pickle.dumps(cookie_list)
+        pickled_cookies = pickle.dumps(list(cookie_jar))
         encrypted_cookies = fernet.encrypt(pickled_cookies)
 
         with open(utils.AppPaths.cookie_file, "wb") as file:
@@ -139,10 +158,10 @@ def get_cookies(
         case CookieSource.BROWSER:
             if browser is None:
                 raise ValueError("Browser parameter required for CookieSource.BROWSER")
-            cookiejar = browser.cookies(settings.CookieFormat.COOKIEJAR)
-            if not cookiejar:
+            cookie_jar = browser.cookies(settings.CookieFormat.COOKIEJAR)
+            if not cookie_jar:
                 return CookieJar()
             # cast is safe because we know the type of the return value
-            return cast(CookieJar, cookiejar)
+            return cast(CookieJar, cookie_jar)
         case _:
             assert False, "Invalid cookie source"

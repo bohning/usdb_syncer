@@ -8,7 +8,6 @@ and getters should be added to this module.
 from __future__ import annotations
 
 import os
-import platform
 import shutil
 import subprocess
 import traceback
@@ -20,7 +19,7 @@ from typing import Any, TypeVar, assert_never, cast
 import rookiepy
 from PySide6.QtCore import QByteArray, QSettings
 
-from usdb_syncer import path_template, utils
+from usdb_syncer import constants, path_template, utils
 from usdb_syncer.logger import logger
 
 
@@ -206,7 +205,7 @@ class YtdlpRateLimit(Enum):
 
     def __str__(self) -> str:
         if self.value is not None:
-            return f"{self.value//1024} KiB/s"
+            return f"{self.value // 1024} KiB/s"
         return "disabled"
 
 
@@ -377,14 +376,14 @@ class Browser(Enum):
         try:
             match fmt:
                 case CookieFormat.COOKIELIST:
-                    return function()
+                    return function(constants.COOKIE_DOMAINS)
                 case CookieFormat.COOKIEJAR:
-                    return rookiepy.to_cookiejar(function())
+                    return rookiepy.to_cookiejar(function(constants.COOKIE_DOMAINS))
                 case CookieFormat.NETSCAPE:
-                    return rookiepy.to_netscape(function())
+                    return rookiepy.to_netscape(function(constants.COOKIE_DOMAINS))
         except Exception:  # pylint: disable=broad-exception-caught
             logger.warning(
-                f"Retrieving cookies from {str(self)} on {platform.system()} failed. "
+                f"Retrieving cookies from {str(self)} failed. "
                 "You can export your browser cookies manually and load them "
                 "in the settings."
             )

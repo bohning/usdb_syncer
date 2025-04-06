@@ -134,7 +134,9 @@ class SettingsDialog(Ui_Dialog, QDialog):
             if _is_netscape_cookies_file(path):
                 cookies = MozillaCookieJar(str(path))
                 cookies.load(ignore_discard=True, ignore_expires=True)
-                if authentication.store_manual_cookies(cookies):
+                if authentication.store_manual_cookies(
+                    authentication.CookieJar.from_cookie_jar(cookies)
+                ):
                     self.set_cookies_label(True)
                     self._cookies_stored_encrypted = True
                     self.radioButton_cookies_from_file.setChecked(True)
