@@ -371,7 +371,13 @@ class LinuxEnvCleaner:
         traceback: TracebackType | None,
     ) -> None:
         if sys.platform == "linux":
+            current_env = os.environ.copy()
+
+            for key, value in current_env.items():
+                if key not in self.env:
+                    self.modified_env[key] = value
             for key, value in self.old_values.items():
                 self.modified_env[key] = value
+
             os.environ.clear()
             os.environ.update(self.modified_env)
