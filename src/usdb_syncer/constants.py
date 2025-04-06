@@ -95,6 +95,9 @@ class Usdb:
     DATETIME_STRF = "%d.%m.%y - %H:%M"
 
 
+COOKIE_DOMAINS = [Usdb.DOMAIN, "youtube.com"]
+
+
 SUPPORTED_VIDEO_SOURCES_REGEX = re.compile(
     r"""\b
         (

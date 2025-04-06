@@ -10,7 +10,7 @@ from PySide6 import QtWidgets
 from PySide6.QtGui import QIcon, QPixmap
 from PySide6.QtWidgets import QDialog, QFileDialog, QMessageBox, QWidget
 
-from usdb_syncer import SongId, path_template, settings
+from usdb_syncer import SongId, authentication, path_template, settings
 from usdb_syncer.gui.forms.SettingsDialog import Ui_Dialog
 from usdb_syncer.path_template import PathTemplate
 from usdb_syncer.usdb_scraper import SessionManager
@@ -36,6 +36,7 @@ class SettingsDialog(Ui_Dialog, QDialog):
     """Dialog with app settings."""
 
     _path_template: PathTemplate | None = None
+    _cookies_stored_encrypted: bool = False
 
     def __init__(self, parent: QWidget, song: UsdbSong | None) -> None:
         super().__init__(parent=parent)
@@ -56,6 +57,9 @@ class SettingsDialog(Ui_Dialog, QDialog):
             self.comboBox_browser.removeItem(
                 self.comboBox_browser.findText(settings.Browser.OPERA_GX.value)
             )
+        self.comboBox_browser.currentIndexChanged.connect(
+            lambda: self.radioButton_cookies_from_browser.setChecked(True)
+        )
         self.pushButton_browse_cookies_file.clicked.connect(
             self._read_cookies_from_file_and_store_to_keyring
         )
@@ -128,9 +132,14 @@ class SettingsDialog(Ui_Dialog, QDialog):
         path = self._get_cookies_file_location()
         if path:
             if _is_netscape_cookies_file(path):
-                if settings.store_encrypted_cookies(path):
+                cookies = MozillaCookieJar(str(path))
+                cookies.load(ignore_discard=True, ignore_expires=True)
+                if authentication.store_manual_cookies(
+                    authentication.CookieJar.from_cookie_jar(cookies)
+                ):
                     self.set_cookies_label(True)
-                    settings.set_cookies_stored_encrypted(True)
+                    self._cookies_stored_encrypted = True
+                    self.radioButton_cookies_from_file.setChecked(True)
                     return
                 QMessageBox.critical(
                     self, "Error", "Failed to store cookies in keychain."
@@ -197,7 +206,8 @@ class SettingsDialog(Ui_Dialog, QDialog):
         self.radioButton_cookies_from_file.setChecked(
             not settings.get_cookies_from_browser()
         )
-        self.set_cookies_label(settings.get_cookies_stored_encrypted())
+        self._cookies_stored_encrypted = authentication.manual_cookies_stored()
+        self.set_cookies_label(self._cookies_stored_encrypted)
         self.comboBox_browser.setCurrentIndex(
             self.comboBox_browser.findData(settings.get_browser())
         )
@@ -304,7 +314,7 @@ class SettingsDialog(Ui_Dialog, QDialog):
     def accept(self) -> None:
         if (
             self.radioButton_cookies_from_file.isChecked()
-            and not settings.get_cookies_stored_encrypted()
+            and not self._cookies_stored_encrypted
         ):
             QMessageBox.critical(
                 self,
