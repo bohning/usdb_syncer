@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import traceback
 from collections.abc import Callable
 from typing import TYPE_CHECKING, Generic, ParamSpec
 
@@ -43,9 +44,9 @@ class _Hook(Generic[P]):
             try:
                 func(*args, **kwargs)
             except Exception as e:  # pylint: disable=broad-except
-                logger.debug(e, exc_info=True)
+                logger.debug(traceback.format_exc())
                 logger.warning(
-                    f"Plugin error in {func.__name__}: {e.__class__.__name__}"
+                    f"Plugin error in {func.__name__}: {type(e).__name__}: {e}"
                 )
 
 
