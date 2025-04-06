@@ -2,13 +2,17 @@
 
 from __future__ import annotations
 
+import traceback
 from collections.abc import Callable
 from typing import TYPE_CHECKING, Generic, ParamSpec
 
 import attrs
 
+from usdb_syncer.logger import logger
+
 if TYPE_CHECKING:
     from usdb_syncer import usdb_song
+    from usdb_syncer.gui.mw import MainWindow
 
 # pylint currently lacks support for ParamSpec
 # https://github.com/pylint-dev/pylint/issues/9424
@@ -37,7 +41,13 @@ class _Hook(Generic[P]):
     @classmethod
     def call(cls, *args: P.args, **kwargs: P.kwargs) -> None:
         for func in cls._subscribers:
-            func(*args, **kwargs)
+            try:
+                func(*args, **kwargs)
+            except Exception as e:  # pylint: disable=broad-except
+                logger.debug(traceback.format_exc())
+                logger.warning(
+                    f"Plugin error in {func.__name__}: {type(e).__name__}: {e}"
+                )
 
 
 class SongLoaderDidFinish(_Hook):
@@ -46,3 +56,11 @@ class SongLoaderDidFinish(_Hook):
     @classmethod
     def call(cls, song: usdb_song.UsdbSong) -> None:
         super().call(song)
+
+
+class MainWindowDidLoad(_Hook):
+    """Called after the main window has loaded."""
+
+    @classmethod
+    def call(cls, main_window: MainWindow) -> None:
+        super().call(main_window)

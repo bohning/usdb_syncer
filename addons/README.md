@@ -25,12 +25,13 @@ Example:
 
 There are two main ways to add or change behaviour:
 
-1. Overwrite existing functions, classes, etc. (also known as monkey patching). This
+1. Using the hook system. This method is less versatile, because you can only react to
+   a number of predefined events. However, this approach is much more robust, as
+   development on the syncer can take care not to break this API. Examples for how to use
+   the hook system can be found in `demo.py`.
+2. Overwrite existing functions, classes, etc. (also known as monkey patching). This
    lets you make any thinkable change, but is discouraged, because your add-on will regularly
    break when there is a change in the syncer itself.
-2. Using the hook system. This method is less versatile, because you can only react to
-   a number of predefined events. However, this approach is much more robust, as
-   development on the syncer can take care not to break this API.
 
 Once you have written the code, place it in the user data directory under `addons`.
 This is the same folder that also contains the log file, so you can use the menu in
