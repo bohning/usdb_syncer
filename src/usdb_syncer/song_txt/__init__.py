@@ -49,19 +49,6 @@ class SongTxt:
         lines = [line for line in value.splitlines() if line]
         headers = Headers.parse(lines, logger)
         meta_tags = MetaTags.parse(headers.video or "", logger)
-        if headers.videogap is not None:
-            if (
-                meta_tags.audio is None
-                or meta_tags.video is None
-                or meta_tags.audio == meta_tags.video
-            ):
-                logger.warning(
-                    "This song contains a non-zero #VIDEOGAP, which only makes sense "
-                    "if different resources for audio and video are specified, which is "
-                    "not the case here. This should be fixed in USDB. Removing "
-                    "#VIDEOGAP in local text file."
-                )
-            headers.videogap = None
         notes = Tracks.parse(lines, logger)
         if lines:
             logger.warning(f"trailing text in song txt: '{lines}'")
@@ -117,6 +104,7 @@ class SongTxt:
         self.headers.fix_apostrophes(self.logger)
         self.notes.fix_all_caps(self.logger)
         self.headers.fix_language(self.logger)
+        self.headers.fix_videogap(self.meta_tags, self.logger)
         # optional fixes
         if txt_options:
             match txt_options.fix_linebreaks:
