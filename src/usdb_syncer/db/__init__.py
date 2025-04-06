@@ -92,7 +92,7 @@ def transaction() -> Generator[None, None, None]:
 
 def _validate_schema(connection: sqlite3.Connection) -> None:
     meta_table = connection.execute(
-        "SELECT 1 FROM sqlite_schema WHERE type = 'table' AND name = 'meta'"
+        "SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'meta'"
     ).fetchone()
     if meta_table is None:
         version = 0

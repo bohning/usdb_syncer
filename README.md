@@ -31,6 +31,16 @@ git clone https://github.com/bohning/usdb_syncer.git
 cd usdb_syncer
 ```
 
+<details>
+
+<summary>If you're on <b>Linux</b>, make sure required packages for Qt are installed.</summary>
+
+```bash
+apt install -y build-essential libgl1-mesa-dev libgstreamer-gl1.0-0 libpulse-dev libxcb-glx0 libxcb-icccm4 libxcb-image0 libxcb-keysyms1 libxcb-randr0 libxcb-render-util0 libxcb-render0 libxcb-shape0 libxcb-shm0 libxcb-sync1 libxcb-util1 libxcb-xfixes0 libxcb-xinerama0 libxcb1 libxkbcommon-dev libxkbcommon-x11-0 libxcb-xkb-dev libxcb-cursor0 libva-dev libva-drm2 libva-x11-2
+```
+
+</details>
+
 Now make sure the Python 3.12 environment you installed Poetry to is activated and run:
 
 ```bash
@@ -105,33 +115,11 @@ startup phase, they cannot be completely ruled out.
 
 Linux builds are generated on AlmaLinux 9. They should be compatible with any modern distribution. If not, please open an issue.
 
-The only known requirement is `glibc >= 2.34`. The following table (based on <https://pkgs.org/search/?q=glibc>, 8.7.2023) summarizes different Linux distributions for having greater or equal version of `glibc`. For (likely) supported distributions the minimum OS Version is given that has a required glibc version. For (likely) unsupported distributions the recent highest Versions (if known) of Linux Distributions with its highest glibc version is given:
+The only known requirement is `glibc >= 2.34`. The current `glibc` version can be checked with:
 
-|                    |         OS          |    OS Version    | glibc |
-| :----------------: | :-----------------: | :--------------: | :---: |
-| :white_check_mark: |      AlmaLinux      |        9         | 2.34  |
-|        :x:         |      ALT Linux      |       P10        | 2.32  |
-|        :x:         |    Amazon Linux     |        2         | 2.26  |
-| :white_check_mark: |     Arch Linux      |                  | 2.37  |
-| :white_check_mark: |       CentOS        |        9         | 2.34  |
-| :white_check_mark: |  Enterprise Linux   |        7         | 2.24  |
-| :white_check_mark: |       Debian        |  12 "Bookworm"   | 2.36  |
-| :white_check_mark: |       Fedora        |        38        | 2.37  |
-| :white_check_mark: |        KaOS         |                  | 2.36  |
-| :white_check_mark: |       Mageia        |     Cauldron     | 2.36  |
-| :white_check_mark: |    OpenMandriva     | Rolling & Cooker | 2.37  |
-| :white_check_mark: | openSUSE Tumbleweed |                  | 2.37  |
-| :white_check_mark: |    Oracle Linux     |        9         | 2.34  |
-| :white_check_mark: |      PCLinuxOS      |                  | 2.36  |
-| :white_check_mark: |     Rocky Linux     |        9         | 2.34  |
-| :white_check_mark: |      Slackware      |                  | 2.37  |
-| :white_check_mark: |        Solus        |                  | 2.36  |
-| :white_check_mark: |       Ubuntu        |      23.04       | 2.35  |
-| :white_check_mark: |     Void Linux      |                  | 2.36  |
-
-:x: pretty sure not working
-
-:white_check_mark: should work
+```bash
+ldd --version
+```
 
 Support for the following distributions has been manually confirmed as of March 2025:
 

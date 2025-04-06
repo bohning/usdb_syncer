@@ -10,7 +10,7 @@ import sys
 import time
 import unicodedata
 from pathlib import Path
-from typing import Any, Optional, Type
+from types import TracebackType
 
 import requests
 from appdirs import AppDirs
@@ -332,8 +332,6 @@ class LinuxEnvCleaner:
 
     This is needed when running applications bundled with PyInstaller, as it links some
     libraries that may interfere with dynamically loaded libraries.
-    By removing these paths, this class ensures that the environment is clean and avoids potential
-    conflicts with system libraries during the execution of subprocesses or other operations.
 
     This class is only useful on Linux systems, where it modifies the environment to avoid conflicts.
     On non-Linux platforms, it is a no-op and does not alter the environment.
@@ -368,9 +366,9 @@ class LinuxEnvCleaner:
 
     def __exit__(
         self,
-        exc_type: Optional[Type[BaseException]],
-        exc_value: Optional[BaseException],
-        traceback: Optional[Any],
+        exc_type: type[BaseException] | None,
+        exc_value: BaseException | None,
+        traceback: TracebackType | None,
     ) -> None:
         if sys.platform == "linux":
             for key, value in self.old_values.items():
