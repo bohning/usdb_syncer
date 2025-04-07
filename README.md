@@ -36,7 +36,7 @@ cd usdb_syncer
 <summary>If you're on <b>Linux</b>, make sure required packages for Qt are installed.</summary>
 
 ```bash
-apt install -y build-essential libgl1-mesa-dev libgstreamer-gl1.0-0 libpulse-dev libxcb-glx0 libxcb-icccm4 libxcb-image0 libxcb-keysyms1 libxcb-randr0 libxcb-render-util0 libxcb-render0 libxcb-shape0 libxcb-shm0 libxcb-sync1 libxcb-util1 libxcb-xfixes0 libxcb-xinerama0 libxcb1 libxkbcommon-dev libxkbcommon-x11-0 libxcb-xkb-dev libxcb-cursor0 libva-dev libva-drm2 libva-x11-2
+apt install -y libgstreamer-gl1.0-0 libxcb-glx0 libxcb-icccm4 libxcb-image0 libxcb-keysyms1 libxcb-randr0 libxcb-render-util0 libxcb-render0 libxcb-shape0 libxcb-shm0 libxcb-sync1 libxcb-util1 libxcb-xfixes0 libxcb1 libxkbcommon-dev libxkbcommon-x11-0 libxcb-cursor0 libva-dev libva-drm2 libva-x11-2
 ```
 
 </details>
@@ -115,7 +115,7 @@ startup phase, they cannot be completely ruled out.
 
 Linux builds are generated on AlmaLinux 9. They should be compatible with any modern distribution. If not, please open an issue.
 
-The only known requirement is `glibc >= 2.34`. The current `glibc` version can be checked with:
+The only known requirement for the binary is `glibc >= 2.34`. The current `glibc` version can be checked with:
 
 ```bash
 ldd --version
