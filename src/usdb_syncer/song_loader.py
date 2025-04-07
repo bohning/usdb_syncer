@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import base64
 import copy
 import shutil
 import tempfile
@@ -14,15 +13,8 @@ from pathlib import Path
 from typing import assert_never
 
 import attrs
-import mutagen.mp4
-import mutagen.ogg
-import mutagen.oggopus
-import mutagen.oggvorbis
 import send2trash
 import shiboken6
-from mutagen import id3
-from mutagen.flac import Picture
-from PIL import Image
 from PySide6 import QtCore
 
 from usdb_syncer import (
@@ -38,10 +30,10 @@ from usdb_syncer import (
     usdb_scraper,
     utils,
 )
-from usdb_syncer.constants import ISO_639_2B_LANGUAGE_CODES
 from usdb_syncer.custom_data import CustomData
 from usdb_syncer.discord import notify_discord
 from usdb_syncer.logger import Log, logger, song_logger
+from usdb_syncer.postprocessing import write_audio_tags, write_video_tags
 from usdb_syncer.resource_dl import ResourceDLError
 from usdb_syncer.settings import FormatVersion, get_discord_allowed
 from usdb_syncer.song_txt import SongTxt
@@ -632,164 +624,43 @@ def _set_background_headers(ctx: _Context, version: FormatVersion, path: Path) -
 def _maybe_write_audio_tags(ctx: _Context) -> None:
     if not (options := ctx.options.audio_options):
         return
-    if not (path_resource := ctx.out.audio.path_and_resource(ctx.locations, temp=True)):
+    if not (
+        audio_path_resource := ctx.out.audio.path_and_resource(ctx.locations, temp=True)
+    ):
         return
-    path, resource = path_resource
-    try:
-        match path.suffix:
-            case ".m4a":
-                _write_m4a_mp4_tags(path, resource, ctx, options.embed_artwork)
-            case ".mp3":
-                _write_mp3_tags(path, resource, ctx, options.embed_artwork)
-            case ".ogg":
-                _write_ogg_tags(
-                    mutagen.oggvorbis.OggVorbis(path),
-                    resource,
-                    ctx,
-                    options.embed_artwork,
-                )
-            case ".opus":
-                _write_ogg_tags(
-                    mutagen.oggopus.OggOpus(path), resource, ctx, options.embed_artwork
-                )
-            case other:
-                ctx.logger.debug(f"Audio tags not supported for suffix '{other}'.")
-                return
-    except Exception:  # pylint: disable=broad-exception-caught
-        ctx.logger.debug(traceback.format_exc())
-        ctx.logger.error(f"Failed to write audio tags to file '{path}'!")
-    else:
-        ctx.logger.debug(f"Audio tags written to file '{path}'.")
+    cover_path_resource = ctx.out.cover.path_and_resource(ctx.locations, temp=True)
+    background_path_resource = ctx.out.background.path_and_resource(
+        ctx.locations, temp=True
+    )
+    write_audio_tags(
+        txt=ctx.txt,
+        options=options,
+        audio=audio_path_resource,
+        cover=cover_path_resource,
+        background=background_path_resource,
+        logger=ctx.logger,
+    )
 
 
 def _maybe_write_video_tags(ctx: _Context) -> None:
     if not (options := ctx.options.video_options):
         return
-    if not (path_resource := ctx.out.video.path_and_resource(ctx.locations, temp=True)):
-        return
-    path, resource = path_resource
-    try:
-        match path.suffix:
-            case ".mp4":
-                _write_m4a_mp4_tags(path, resource, ctx, options.embed_artwork)
-            case other:
-                ctx.logger.debug(f"Video tags not supported for suffix '{other}'.")
-                return
-    except Exception:  # pylint: disable=broad-exception-caught
-        ctx.logger.debug(traceback.format_exc())
-        ctx.logger.error(f"Failed to write video tags to file '{path}'!")
-    else:
-        ctx.logger.debug(f"Video tags written to file '{path}'.")
-
-
-def _write_m4a_mp4_tags(
-    path: Path, resource: str, ctx: _Context, embed_artwork: bool
-) -> None:
-    tags = mutagen.mp4.MP4Tags()
-
-    tags["\xa9ART"] = ctx.txt.headers.artist
-    tags["\xa9nam"] = ctx.txt.headers.title
-    if ctx.txt.headers.genre:
-        tags["\xa9gen"] = ctx.txt.headers.genre
-    if ctx.txt.headers.year:
-        tags["\xa9day"] = ctx.txt.headers.year
-    tags["\xa9lyr"] = ctx.txt.unsynchronized_lyrics()
-    tags["\xa9cmt"] = resource
-
-    if embed_artwork:
-        tags["covr"] = [
-            mutagen.mp4.MP4Cover(
-                image.read_bytes(), imageformat=mutagen.mp4.MP4Cover.FORMAT_JPEG
-            )
-            for image in (
-                ctx.out.cover.path(ctx.locations, temp=True),
-                ctx.out.background.path(ctx.locations, temp=True),
-            )
-            if image
-        ]
-
-    tags.save(path)
-
-
-def _write_mp3_tags(
-    path: Path, resource: str, ctx: _Context, embed_artwork: bool
-) -> None:
-    tags = id3.ID3()
-
-    lang = ISO_639_2B_LANGUAGE_CODES.get(ctx.txt.headers.main_language(), "und")
-    tags["TPE1"] = id3.TPE1(encoding=id3.Encoding.UTF8, text=ctx.txt.headers.artist)
-    tags["TIT2"] = id3.TIT2(encoding=id3.Encoding.UTF8, text=ctx.txt.headers.title)
-    tags["TLAN"] = id3.TLAN(encoding=id3.Encoding.UTF8, text=lang)
-    if genre := ctx.txt.headers.genre:
-        tags["TCON"] = id3.TCON(encoding=id3.Encoding.UTF8, text=genre)
-    if year := ctx.txt.headers.year:
-        tags["TDRC"] = id3.TDRC(encoding=id3.Encoding.UTF8, text=year)
-    tags[f"USLT::'{lang}'"] = id3.USLT(
-        encoding=id3.Encoding.UTF8,
-        lang=lang,
-        desc="Lyrics",
-        text=ctx.txt.unsynchronized_lyrics(),
-    )
-    tags["SYLT"] = id3.SYLT(
-        encoding=id3.Encoding.UTF8,
-        lang=lang,
-        format=2,  # milliseconds as units
-        type=1,  # lyrics
-        text=ctx.txt.synchronized_lyrics(),
-    )
-    tags["COMM"] = id3.COMM(
-        encoding=id3.Encoding.UTF8, lang="eng", desc="Audio Source", text=resource
-    )
-
-    if embed_artwork and (
-        path_resource := ctx.out.cover.path_and_resource(ctx.locations, temp=True)
+    if not (
+        video_path_resource := ctx.out.video.path_and_resource(ctx.locations, temp=True)
     ):
-        tags.add(
-            id3.APIC(
-                encoding=id3.Encoding.UTF8,
-                mime="image/jpeg",
-                type=id3.PictureType.COVER_FRONT,
-                desc=f"Source: {path_resource[1]}",
-                data=path_resource[0].read_bytes(),
-            )
-        )
-
-    tags.save(path)
-
-
-def _write_ogg_tags(
-    audio: mutagen.ogg.OggFileType, resource: str, ctx: _Context, embed_artwork: bool
-) -> None:
-    # Set basic tags
-    audio["artist"] = ctx.txt.headers.artist
-    audio["title"] = ctx.txt.headers.title
-    lang = ISO_639_2B_LANGUAGE_CODES.get(ctx.txt.headers.main_language(), "und")
-    audio["language"] = lang
-    if genre := ctx.txt.headers.genre:
-        audio["genre"] = genre
-    if year := ctx.txt.headers.year:
-        audio["date"] = year
-    audio["lyrics"] = ctx.txt.unsynchronized_lyrics()
-    audio["comment"] = resource
-
-    if embed_artwork and (cover_path := ctx.out.cover.path(ctx.locations, temp=True)):
-        picture = Picture()
-        with cover_path.open("rb") as file:
-            picture.data = file.read()
-        with Image.open(cover_path) as image:
-            picture.width, picture.height = image.size
-        picture.type = 3  # "Cover (front)"
-        picture.desc = "Cover art"
-        picture.mime = "image/jpeg"
-        picture.depth = 24
-
-        picture_data = picture.write()
-        encoded_data = base64.b64encode(picture_data)
-        vcomment_value = encoded_data.decode("ascii")
-
-        audio["metadata_block_picture"] = [vcomment_value]
-
-    audio.save()
+        return
+    cover_path_resource = ctx.out.cover.path_and_resource(ctx.locations, temp=True)
+    background_path_resource = ctx.out.background.path_and_resource(
+        ctx.locations, temp=True
+    )
+    write_video_tags(
+        txt=ctx.txt,
+        options=options,
+        video=video_path_resource,
+        cover=cover_path_resource,
+        background=background_path_resource,
+        logger=ctx.logger,
+    )
 
 
 def _cleanup_existing_resources(ctx: _Context) -> None:
@@ -816,6 +687,8 @@ def _cleanup_existing_resources(ctx: _Context) -> None:
                 path = old_path.with_name(target)
                 old_path.rename(path)
                 out.old_fname = target
+
+    return
 
 
 def _persist_tempfiles(ctx: _Context) -> None:

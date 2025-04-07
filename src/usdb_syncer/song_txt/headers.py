@@ -9,6 +9,7 @@ import attrs
 
 from usdb_syncer import errors
 from usdb_syncer.logger import Log
+from usdb_syncer.meta_tags import MetaTags
 from usdb_syncer.settings import FormatVersion
 from usdb_syncer.song_txt.auxiliaries import BeatsPerMinute, replace_false_apostrophes
 from usdb_syncer.song_txt.language_translations import LANGUAGE_TRANSLATIONS
@@ -180,6 +181,21 @@ class Headers:
         if self.language:
             return self.language.split(",", maxsplit=1)[0].removesuffix(" (romanized)")
         return ""
+
+    def fix_videogap(self, meta_tags: MetaTags, logger: Log) -> None:
+        if self.videogap is not None:
+            if (
+                meta_tags.audio is None
+                or meta_tags.video is None
+                or meta_tags.audio == meta_tags.video
+            ):
+                logger.warning(
+                    "This song contains a non-zero #VIDEOGAP, which only makes sense "
+                    "if different resources for audio and video are specified, which "
+                    "is not the case here. This should be fixed in USDB. Removing "
+                    "#VIDEOGAP in local text file."
+                )
+            self.videogap = None
 
 
 def _set_header_value(kwargs: dict[str, Any], header: str, value: str) -> None:

@@ -104,6 +104,7 @@ class SongTxt:
         self.headers.fix_apostrophes(self.logger)
         self.notes.fix_all_caps(self.logger)
         self.headers.fix_language(self.logger)
+        self.headers.fix_videogap(self.meta_tags, self.logger)
         # optional fixes
         if txt_options:
             match txt_options.fix_linebreaks:

@@ -22,6 +22,7 @@ from usdb_syncer import (
     db,
     errors,
     events,
+    hooks,
     logger,
     settings,
     song_routines,
@@ -81,6 +82,7 @@ def _run() -> None:
         QtWidgets.QMessageBox.critical(mw, "Version conflict", SCHEMA_ERROR_MESSAGE)
         return
     addons.load_all()
+    hooks.MainWindowDidLoad.call(mw)
     app.exec()
 
 
