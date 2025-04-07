@@ -1,11 +1,11 @@
 """Tests for utils."""
 
-from pathlib import Path
 import os
+from pathlib import Path
 
 import pytest
 
-from usdb_syncer.utils import extract_youtube_id, resource_file_ending, LinuxEnvCleaner
+from usdb_syncer.utils import LinuxEnvCleaner, extract_youtube_id, resource_file_ending
 
 FAKE_YOUTUBE_ID = "fake_YT-id0"
 
