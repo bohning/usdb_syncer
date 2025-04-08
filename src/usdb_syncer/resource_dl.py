@@ -174,30 +174,43 @@ def _download_resource(
         except yt_dlp.utils.UnsupportedError:
             return ResourceDLResult(error=ResourceDLError.RESOURCE_UNSUPPORTED)
         except yt_dlp.utils.YoutubeDLError as e:
-            error_message = utils.remove_ansi_codes(str(e))
-            logger.debug(f"Failed to download '{url}': {error_message}")
-            if YtErrorMsg.YT_AGE_RESTRICTED in error_message:
-                dl_result = _retry_with_cookies(url, options, logger)
-                return ResourceDLResult(extension=dl_result.extension)
-            if YtErrorMsg.YT_GEO_RESTRICTED in error_message:
-                _handle_geo_restriction(url, resource, logger)
-                return ResourceDLResult(error=ResourceDLError.RESOURCE_GEO_RESTRICTED)
-            if YtErrorMsg.YT_UNAVAILABLE in error_message:
-                _handle_unavailable(url, logger)
-                return ResourceDLResult(error=ResourceDLError.RESOURCE_UNAVAILABLE)
-            if YtErrorMsg.YT_PARSE_ERROR in error_message:
-                _handle_parse_error(url, logger)
-                return ResourceDLResult(error=ResourceDLError.RESOURCE_PARSE_ERROR)
-            if YtErrorMsg.YT_FORBIDDEN in error_message:
-                _handle_forbidden(url, logger)
-                return ResourceDLResult(error=ResourceDLError.RESOURCE_FORBIDDEN)
-            raise
+            return _handle_youtube_dl_error(e, url, resource, options, logger)
 
 
-def _retry_with_cookies(
+def _handle_youtube_dl_error(
+    error: yt_dlp.utils.YoutubeDLError,
+    url: str,
+    resource: str,
+    options: YtdlOptions,
+    logger: Log,
+) -> ResourceDLResult:
+    error_message = utils.remove_ansi_codes(str(error))
+    logger.debug(f"Failed to download '{url}': {error_message}")
+    if YtErrorMsg.YT_AGE_RESTRICTED in error_message:
+        dl_result = _handle_age_restricted(url, options, logger)
+        return ResourceDLResult(extension=dl_result.extension)
+    if YtErrorMsg.YT_GEO_RESTRICTED in error_message:
+        _handle_geo_restriction(url, resource, logger)
+        return ResourceDLResult(error=ResourceDLError.RESOURCE_GEO_RESTRICTED)
+    if YtErrorMsg.YT_UNAVAILABLE in error_message:
+        _handle_unavailable(url, logger)
+        return ResourceDLResult(error=ResourceDLError.RESOURCE_UNAVAILABLE)
+    if YtErrorMsg.YT_PARSE_ERROR in error_message:
+        _handle_parse_error(url, logger)
+        return ResourceDLResult(error=ResourceDLError.RESOURCE_PARSE_ERROR)
+    if YtErrorMsg.YT_FORBIDDEN in error_message:
+        _handle_forbidden(url, logger)
+        return ResourceDLResult(error=ResourceDLError.RESOURCE_FORBIDDEN)
+    if YtErrorMsg.YT_FORMAT_NOT_AVAILABLE in error_message:
+        dl_result = _handle_format_not_available(url, options, logger)
+        return ResourceDLResult(extension=dl_result.extension)
+    raise error
+
+
+def _handle_age_restricted(
     url: str, options: YtdlOptions, logger: Log
 ) -> ResourceDLResult:
-    logger.warning("Age-restricted resource. Retrying with cookies...")
+    logger.warning("Age-restricted resource. Retrying with cookies ...")
     with yt_dlp.YoutubeDL(options) as ydl:
         try:
             filename = ydl.prepare_filename(ydl.extract_info(url))
@@ -220,8 +233,8 @@ def _handle_geo_restriction(url: str, resource: str, logger: Log) -> None:
 
 def _handle_unavailable(url: str, logger: Log) -> None:
     logger.warning(
-        f"Resource '{url}' is no longer available. Please support the community, find a "
-        "suitable replacement resource and comment it on USDB."
+        f"Resource '{url}' is no longer available. Please support the community, find "
+        "a suitable replacement resource and comment it on USDB."
     )
 
 
@@ -233,6 +246,25 @@ def _handle_forbidden(url: str, logger: Log) -> None:
     logger.warning(
         f"Failed to download resource '{url}'. Your IP/account might have been blocked."
     )
+
+
+def _handle_format_not_available(
+    url: str, options: YtdlOptions, logger: Log
+) -> ResourceDLResult:
+    logger.warning(
+        "Requested format is not available. Retrying with a fallback format. "
+        "The resulting file may not work with your karaoke software."
+    )
+    options_with_fallback_format = options.copy()
+    options_with_fallback_format["format"] = "best"
+    with yt_dlp.YoutubeDL(options_with_fallback_format) as ydl:
+        try:
+            filename = ydl.prepare_filename(ydl.extract_info(url))
+            ext = os.path.splitext(filename)[1][1:]
+            return ResourceDLResult(extension=ext)
+        except yt_dlp.utils.YoutubeDLError as re:
+            logger.error(f"Retry failed: {utils.remove_ansi_codes(str(re))}")
+            raise
 
 
 def download_image(url: str, logger: Log) -> bytes | None:

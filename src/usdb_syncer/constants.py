@@ -115,6 +115,7 @@ class YtErrorMsg:
     YT_UNAVAILABLE = "Video unavailable"
     YT_PARSE_ERROR = "Failed to parse XML"
     YT_FORBIDDEN = "HTTP Error 403: Forbidden"
+    YT_FORMAT_NOT_AVAILABLE = "Requested format is not available."
 
 
 SUPPORTED_VIDEO_SOURCES_REGEX = re.compile(
