@@ -195,7 +195,7 @@ class Headers:
                     "is not the case here. This should be fixed in USDB. Removing "
                     "#VIDEOGAP in local text file."
                 )
-            self.videogap = None
+                self.videogap = None
 
 
 def _set_header_value(kwargs: dict[str, Any], header: str, value: str) -> None:
