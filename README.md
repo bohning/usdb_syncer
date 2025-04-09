@@ -33,15 +33,10 @@ cd usdb_syncer
 
 <details>
 
-<summary>If you're on <b>Linux</b>, make sure required packages are installed.</summary>
+<summary>If you're on <b>Linux</b>, make sure required packages for Qt are installed.</summary>
 
 ```bash
-apt install -y gcc python3-dev libdbus-1-dev
-pkg-config --cflags --libs dbus-1
-# required by Qt
-apt install -y build-essential libgl1-mesa-dev libgstreamer-gl1.0-0 libpulse-dev libxcb-glx0 libxcb-icccm4 libxcb-image0 libxcb-keysyms1 libxcb-randr0 libxcb-render-util0 libxcb-render0 libxcb-shape0 libxcb-shm0 libxcb-sync1 libxcb-util1 libxcb-xfixes0 libxcb-xinerama0 libxcb1 libxkbcommon-dev libxkbcommon-x11-0 libxcb-xkb-dev
-# fix for installing dbus-python
-export LDFLAGS="-lm"
+apt install -y libgstreamer-gl1.0-0 libxcb-glx0 libxcb-icccm4 libxcb-image0 libxcb-keysyms1 libxcb-randr0 libxcb-render-util0 libxcb-render0 libxcb-shape0 libxcb-shm0 libxcb-sync1 libxcb-util1 libxcb-xfixes0 libxcb1 libxkbcommon-dev libxkbcommon-x11-0 libxcb-cursor0 libva-dev libva-drm2 libva-x11-2
 ```
 
 </details>
@@ -105,58 +100,30 @@ startup phase, they cannot be completely ruled out.
 
 ## Troubleshooting
 
-- may require extra packages on Linux
-
-  ```bash
-  apt update
-  apt install libdbus-1-3
-  ```
-
 - The `keyring` package auto-detects an appropriate installed keyring backend (see [PyPI - keyring](https://pypi.org/project/keyring/)). Thus may require following additional package if no backend can be detected, see #136
 
   ```bash
   apt install gnome-keyring
   ```
 
+  If using KDE, a Wallet will have to be activated in the system settings.
+
 - One user using KDE Plasma experiencing an [issue with the menu bar](https://github.com/bohning/usdb_syncer/issues/198)
   solved it by forcing XWayland instead of Wayland being used: `env WAYLAND_DISPLAY=`.
 
 ## Linux Distributions
 
-Linux Build are generated on `Ubuntu:latest`, should run on `Ubuntu >=22.04`
+Linux builds are generated on AlmaLinux 9. They should be compatible with any modern distribution. If not, please open an issue.
 
-known requirements:
+The only known requirement for the binary is `glibc >= 2.34`. The current `glibc` version can be checked with:
 
-- package `glibc >= 2.35`
+```bash
+ldd --version
+```
 
-  Therefore the following table (based on <https://pkgs.org/search/?q=glibc>, 8.7.2023) summarizes different Linux Distributions for having greater or equal version of `glibc`. For (likely) supported distributions the minimum OS Version is given that has a required glibc version. For (likely) unsupported distributions the recent highest Versions (if known) of Linux Distributions with its highest glibc version is given:
+Support for the following distributions has been manually confirmed as of March 2025:
 
-  |                    |         OS          |    OS Version    | glibc |
-  | :----------------: | :-----------------: | :--------------: | :---: |
-  |        :x:         |      AlmaLinux      |        9         | 2.34  |
-  |        :x:         |      ALT Linux      |       P10        | 2.32  |
-  |        :x:         |    Amazon Linux     |        2         | 2.26  |
-  | :white_check_mark: |     Arch Linux      |                  | 2.37  |
-  |        :x:         |       CentOS        |        9         | 2.34  |
-  |        :x:         |  Enterprise Linux   |        7         | 2.24  |
-  | :white_check_mark: |       Debian        |  12 "Bookworm"   | 2.36  |
-  | :white_check_mark: |       Fedora        |        38        | 2.37  |
-  | :white_check_mark: |        KaOS         |                  | 2.36  |
-  | :white_check_mark: |       Mageia        |     Cauldron     | 2.36  |
-  | :white_check_mark: |    OpenMandriva     | Rolling & Cooker | 2.37  |
-  | :white_check_mark: | openSUSE Tumbleweed |                  | 2.37  |
-  |        :x:         |    Oracle Linux     |        9         | 2.34  |
-  | :white_check_mark: |      PCLinuxOS      |                  | 2.36  |
-  |        :x:         |     Rocky Linux     |        9         | 2.34  |
-  | :white_check_mark: |      Slackware      |                  | 2.37  |
-  | :white_check_mark: |        Solus        |                  | 2.36  |
-  | :white_check_mark: |       Ubuntu        |      23.04       | 2.35  |
-  | :white_check_mark: |     Void Linux      |                  | 2.36  |
-
-  :x: pretty sure not working
-
-  :white_check_mark: should work
-
-confirmed support:
-
-- Ubuntu 23.04
+- Ubuntu 22.04 and 24.04
+- Debian 12
+- Manjaro 24.2
+- Fedora 41

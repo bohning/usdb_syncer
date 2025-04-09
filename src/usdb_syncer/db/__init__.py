@@ -92,7 +92,7 @@ def transaction() -> Generator[None, None, None]:
 
 def _validate_schema(connection: sqlite3.Connection) -> None:
     meta_table = connection.execute(
-        "SELECT 1 FROM sqlite_schema WHERE type = 'table' AND name = 'meta'"
+        "SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'meta'"
     ).fetchone()
     if meta_table is None:
         version = 0
@@ -812,11 +812,12 @@ class ResourceFileParams:
 
 def delete_resource_files(ids: Iterable[tuple[SyncMetaId, ResourceFileKind]]) -> None:
     for batch in batched(ids, _SQL_VARIABLES_LIMIT // 2):
+        if not batch:
+            continue
+        conditions = " OR ".join("(sync_meta_id = ? AND kind = ?)" for _ in batch)
         params = tuple(param for i, k in batch for param in (int(i), k.value))
-        tuples = ", ".join("(?, ?)" for _ in range(len(params) // 2))
         _DbState.connection().execute(
-            f"DELETE FROM resource_file WHERE (sync_meta_id, kind) IN ({tuples})",
-            params,
+            f"DELETE FROM resource_file WHERE {conditions}", params
         )
 
 
