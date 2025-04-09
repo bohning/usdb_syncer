@@ -1,3 +1,5 @@
+# pylint: disable=too-many-lines
+
 """Persistent app settings.
 
 To ensure consistent default values and avoid key collisions, QSettings should never be
@@ -107,6 +109,11 @@ class SettingKey(Enum):
     APP_PATH_USDX = "app_paths/usdx"
     APP_PATH_VOCALUXE = "app_paths/vocaluxe"
     APP_PATH_YASS_RELOADED = "app_paths/yass_reloaded"
+    REPORT_PAGESIZE = "report/pagesize"
+    REPORT_ORIENTATION = "report/orientation"
+    REPORT_MARGIN = "report/margin"
+    REPORT_COLUMNS = "report/columns"
+    REPORT_FONTSIZE = "report/fontsize"
 
 
 class Encoding(Enum):
@@ -640,6 +647,29 @@ class SupportedApps(StrEnum):
             logger.debug(traceback.format_exc())
 
 
+class ReportPagesize(Enum):
+    """Supported PDF page sizes."""
+
+    A3 = "A3"
+    A4 = "A4"
+    A5 = "A5"
+    LETTER = "Letter"
+    LEGAL = "Legal"
+
+    def __str__(self) -> str:
+        return str(self.value)
+
+
+class ReportOrientation(Enum):
+    """Supported PDF page orientations."""
+
+    PORTRAIT = "Portrait"
+    LANDSCAPE = "Landscape"
+
+    def __str__(self) -> str:
+        return str(self.value)
+
+
 T = TypeVar("T")
 
 
@@ -992,3 +1022,43 @@ def set_app_path(app: SupportedApps, path: str) -> None:
             set_setting(SettingKey.APP_PATH_YASS_RELOADED, path)
         case _ as unreachable:
             assert_never(unreachable)
+
+
+def get_report_pagesize() -> ReportPagesize:
+    return get_setting(SettingKey.REPORT_PAGESIZE, ReportPagesize.A4)
+
+
+def set_report_pagesize(pagesize: ReportPagesize) -> None:
+    set_setting(SettingKey.REPORT_PAGESIZE, pagesize)
+
+
+def get_report_orientation() -> ReportOrientation:
+    return get_setting(SettingKey.REPORT_ORIENTATION, ReportOrientation.PORTRAIT)
+
+
+def set_report_orientation(orientation: ReportOrientation) -> None:
+    set_setting(SettingKey.REPORT_ORIENTATION, orientation)
+
+
+def get_report_margin() -> int:
+    return get_setting(SettingKey.REPORT_MARGIN, 20)
+
+
+def set_report_margin(margin: int) -> None:
+    set_setting(SettingKey.REPORT_MARGIN, margin)
+
+
+def get_report_columns() -> int:
+    return get_setting(SettingKey.REPORT_COLUMNS, 2)
+
+
+def set_report_columns(columns: int) -> None:
+    set_setting(SettingKey.REPORT_COLUMNS, columns)
+
+
+def get_report_fontsize() -> int:
+    return get_setting(SettingKey.REPORT_FONTSIZE, 10)
+
+
+def set_report_fontsize(fontsize: int) -> None:
+    set_setting(SettingKey.REPORT_FONTSIZE, fontsize)

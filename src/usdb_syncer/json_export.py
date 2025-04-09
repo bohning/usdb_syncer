@@ -110,8 +110,8 @@ class JsonSongListEncoder(JSONEncoder):
         return super().default(o)
 
 
-def generate_song_json(songs: Iterable[SongId], path: Path) -> int:
+def generate_report_json(songs: Iterable[SongId], path: Path) -> int:
     content = JsonSongList.from_songs(songs=songs, date=datetime.datetime.now())
     with path.open("w", encoding="utf8") as file:
-        json.dump(content, file, cls=JsonSongListEncoder, ensure_ascii=False)
+        json.dump(content, file, cls=JsonSongListEncoder, indent=4, ensure_ascii=False)
     return len(content.songs)

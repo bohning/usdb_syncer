@@ -1,6 +1,5 @@
 """usdb_syncer's GUI"""
 
-import datetime
 import os
 import webbrowser
 from collections.abc import Callable
@@ -18,13 +17,12 @@ from usdb_syncer.gui.debug_console import DebugConsole
 from usdb_syncer.gui.forms.MainWindow import Ui_MainWindow
 from usdb_syncer.gui.meta_tags_dialog import MetaTagsDialog
 from usdb_syncer.gui.progress import run_with_progress
+from usdb_syncer.gui.report_dialog import ReportDialog
 from usdb_syncer.gui.search_tree.tree import FilterTree
 from usdb_syncer.gui.settings_dialog import SettingsDialog
 from usdb_syncer.gui.song_table.song_table import SongTable
 from usdb_syncer.gui.usdb_login_dialog import UsdbLoginDialog
-from usdb_syncer.json_export import generate_song_json
 from usdb_syncer.logger import logger
-from usdb_syncer.pdf import generate_song_pdf
 from usdb_syncer.song_loader import DownloadManager
 from usdb_syncer.sync_meta import SyncMeta
 from usdb_syncer.usdb_scraper import post_song_rating
@@ -97,8 +95,10 @@ class MainWindow(Ui_MainWindow, QMainWindow):
                 lambda: SettingsDialog(self, self.table.current_song()).show(),
             ),
             (self.action_about, lambda: AboutDialog(self).show()),
-            (self.action_generate_song_pdf, self._generate_song_pdf),
-            (self.action_generate_song_json, self._generate_song_json),
+            (
+                self.action_generate_song_list,
+                lambda: ReportDialog(self, self.table).show(),
+            ),
             (self.action_import_usdb_ids, self._import_usdb_ids_from_files),
             (self.action_export_usdb_ids, self._export_usdb_ids_to_file),
             (self.action_show_log, lambda: open_file_explorer(AppPaths.log.parent)),
@@ -236,21 +236,6 @@ class MainWindow(Ui_MainWindow, QMainWindow):
             events.SongDirChanged(path).post()
 
         run_with_progress("Reading meta files ...", task=task, on_done=on_done)
-
-    def _generate_song_pdf(self) -> None:
-        fname = f"{datetime.datetime.now():%Y-%m-%d}_songlist.pdf"
-        path = os.path.join(settings.get_song_dir(), fname)
-        path = QFileDialog.getSaveFileName(self, dir=path, filter="PDF (*.pdf)")[0]
-        if path:
-            generate_song_pdf(db.all_local_usdb_songs(), path)
-
-    def _generate_song_json(self) -> None:
-        fname = f"{datetime.datetime.now():%Y-%m-%d}_songlist.json"
-        path = os.path.join(settings.get_song_dir(), fname)
-        path = QFileDialog.getSaveFileName(self, dir=path, filter="JSON (*.json)")[0]
-        if path:
-            num_of_songs = generate_song_json(db.all_local_usdb_songs(), Path(path))
-            logger.info(f"exported {num_of_songs} songs to {path}")
 
     def _import_usdb_ids_from_files(self) -> None:
         file_list = QFileDialog.getOpenFileNames(
