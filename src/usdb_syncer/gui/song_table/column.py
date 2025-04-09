@@ -38,6 +38,8 @@ class Column(IntEnum):
 
     def display_data(self) -> str | None:
         match self:
+            case Column.SONG_ID:
+                return "ID"
             case Column.ARTIST:
                 return "Artist"
             case Column.TITLE:
@@ -58,7 +60,6 @@ class Column(IntEnum):
                 return "Status"
             case (
                 Column.SAMPLE_URL
-                | Column.SONG_ID
                 | Column.GOLDEN_NOTES
                 | Column.RATING
                 | Column.VIEWS
