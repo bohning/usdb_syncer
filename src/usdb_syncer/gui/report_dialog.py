@@ -105,7 +105,8 @@ class ReportDialog(Ui_Dialog, QDialog):
         settings.set_report_fontsize(self.spinBox_font_size.value())
 
     def _generate_report_pdf(self) -> None:
-        def on_done(_: progress.Result) -> None:
+        def on_done(result: progress.Result) -> None:
+            result.result()
             logger.info("PDF report created.")
 
         fname = f"{datetime.datetime.now():%Y-%m-%d}_songlist.pdf"
