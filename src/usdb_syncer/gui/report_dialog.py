@@ -94,10 +94,11 @@ class ReportDialog(Ui_Dialog, QDialog):
     def accept(self) -> None:
         self._save_settings()
         if self.tabWidget_report_type.currentIndex() == 0:
-            self._generate_report_pdf()
+            if self._generate_report_pdf():
+                super().accept()
         elif self.tabWidget_report_type.currentIndex() == 1:
-            self._generate_report_json()
-        super().accept()
+            if self._generate_report_json():
+                super().accept()
 
     def reject(self) -> None:
         self._save_settings()
@@ -111,7 +112,7 @@ class ReportDialog(Ui_Dialog, QDialog):
         settings.set_report_pdf_fontsize(self.spinBox_pdf_font_size.value())
         settings.set_report_json_indent(self.spinBox_json_indent.value())
 
-    def _generate_report_pdf(self) -> None:
+    def _generate_report_pdf(self) -> bool:
         def on_done(result: progress.Result) -> None:
             path = result.result()
             logger.info(f"PDF report created at {path}.")
@@ -127,7 +128,7 @@ class ReportDialog(Ui_Dialog, QDialog):
             songs = db.all_song_ids()
         if not songs:
             logger.info("Skipping PDF report: no songs match the selection.")
-            return
+            return False
         fname = f"{datetime.datetime.now():%Y-%m-%d}_songlist.pdf"
         path = os.path.join(settings.get_song_dir(), fname)
         path = QFileDialog.getSaveFileName(self, dir=path, filter="PDF (*.pdf)")[0]
@@ -156,8 +157,12 @@ class ReportDialog(Ui_Dialog, QDialog):
                 ),
                 on_done=on_done,
             )
+            return True
+        # dialog is hidden by main window on macOS if file picker was cancelled
+        self.raise_()
+        return False
 
-    def _generate_report_json(self) -> None:
+    def _generate_report_json(self) -> bool:
         def on_done(result: progress.Result) -> None:
             path, num_of_songs = result.result()
             logger.info(f"JSON report created at {path} ({num_of_songs} songs).")
@@ -174,7 +179,7 @@ class ReportDialog(Ui_Dialog, QDialog):
         songs = db.all_local_usdb_songs()
         if not songs:
             logger.info("Skipping JSON report: no songs match the selection.")
-            return
+            return False
         fname = f"{datetime.datetime.now():%Y-%m-%d}_songlist.json"
         path = os.path.join(settings.get_song_dir(), fname)
         path = QFileDialog.getSaveFileName(self, dir=path, filter="JSON (*.json)")[0]
@@ -187,3 +192,7 @@ class ReportDialog(Ui_Dialog, QDialog):
                 ),
                 on_done=on_done,
             )
+            return True
+        # dialog is hidden by main window on macOS if file picker was cancelled
+        self.raise_()
+        return False
