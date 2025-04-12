@@ -2,6 +2,7 @@
 
 from collections import defaultdict
 from collections.abc import Iterable
+from dataclasses import dataclass
 from typing import assert_never
 
 from reportlab.lib import colors
@@ -107,9 +108,18 @@ def _get_pagesize(
     )
 
 
-def _create_paragraph_styles(base_font_size: int) -> dict[str, ParagraphStyle]:
-    return {
-        "Initial": ParagraphStyle(
+@dataclass(frozen=True)
+class ParagraphStyles:
+    """Paragraph styles for the report."""
+
+    initial: ParagraphStyle
+    artist: ParagraphStyle
+    entry: ParagraphStyle
+
+
+def _create_paragraph_styles(base_font_size: int) -> ParagraphStyles:
+    return ParagraphStyles(
+        initial=ParagraphStyle(
             "Initial",
             fontName=NOTOSANS_BLACK,
             fontSize=base_font_size * 3,
@@ -117,7 +127,7 @@ def _create_paragraph_styles(base_font_size: int) -> dict[str, ParagraphStyle]:
             spaceBefore=base_font_size * 2.4,
             spaceAfter=base_font_size * 2.4,
         ),
-        "Artist": ParagraphStyle(
+        artist=ParagraphStyle(
             "Artist",
             fontName=NOTOSANS_BOLD,
             fontSize=base_font_size * 1.2,
@@ -126,20 +136,20 @@ def _create_paragraph_styles(base_font_size: int) -> dict[str, ParagraphStyle]:
             textColor=colors.black,
             leftIndent=0,
         ),
-        "Entry": ParagraphStyle(
+        entry=ParagraphStyle(
             "Entry",
             fontName=NOTOSANS_REGULAR,
             fontSize=base_font_size,
             leftIndent=base_font_size,
             leading=base_font_size * 1.4,
         ),
-    }
+    )
 
 
 def _build_pdf_content(
     songs: Iterable[SongId],
     base_font_size: int,
-    styles: dict[str, ParagraphStyle],
+    styles: ParagraphStyles,
     optional_info: list[Column],
 ) -> list:
     content: list = []
@@ -159,12 +169,12 @@ def _build_pdf_content(
     for initial in sorted(initial_map.keys()):
         bookmark_key = f"initial_{initial}"
         content.append(Bookmark(bookmark_key, initial))
-        content.append(Paragraph(initial, styles["Initial"]))
+        content.append(Paragraph(initial, styles.initial))
         for artist in sorted(initial_map[initial].keys(), key=str.lower):
-            content.append(Paragraph(f"<b>{artist}</b>", styles["Artist"]))
+            content.append(Paragraph(f"<b>{artist}</b>", styles.artist))
             for song in initial_map[initial][artist]:
                 entry = _format_song_entry(song, base_font_size, optional_info)
-                content.append(Paragraph(entry, style=styles["Entry"]))
+                content.append(Paragraph(entry, style=styles.entry))
 
     return content
 
