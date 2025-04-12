@@ -27,7 +27,7 @@ from usdb_syncer.song_loader import DownloadManager
 from usdb_syncer.sync_meta import SyncMeta
 from usdb_syncer.usdb_scraper import post_song_rating
 from usdb_syncer.usdb_song import UsdbSong
-from usdb_syncer.utils import AppPaths, LinuxEnvCleaner, open_file_explorer
+from usdb_syncer.utils import AppPaths, LinuxEnvCleaner, open_path_or_file
 
 
 class MainWindow(Ui_MainWindow, QMainWindow):
@@ -101,7 +101,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
             ),
             (self.action_import_usdb_ids, self._import_usdb_ids_from_files),
             (self.action_export_usdb_ids, self._export_usdb_ids_to_file),
-            (self.action_show_log, lambda: open_file_explorer(AppPaths.log.parent)),
+            (self.action_show_log, lambda: open_path_or_file(AppPaths.log.parent)),
             (self.action_show_in_usdb, self._show_current_song_in_usdb),
             (self.action_post_comment_in_usdb, self._show_comment_dialog),
             (self.action_rate_1star, lambda: self._rate_in_usdb(1)),
@@ -310,7 +310,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
             logger.info("No current song.")
 
     def _open_current_song_folder(self) -> None:
-        self._open_current_song(open_file_explorer)
+        self._open_current_song(open_path_or_file)
 
     def _open_current_song_in_app(self, app: settings.SupportedApps) -> None:
         self._open_current_song(lambda path: settings.SupportedApps.open_app(app, path))

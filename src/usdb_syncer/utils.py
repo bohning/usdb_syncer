@@ -16,6 +16,7 @@ import requests
 from appdirs import AppDirs
 from bs4 import BeautifulSoup, Tag
 from packaging import version
+from unidecode import unidecode
 
 from usdb_syncer import constants
 from usdb_syncer.logger import logger
@@ -92,6 +93,14 @@ def remove_ansi_codes(text: str) -> str:
 
     ansi_escape = re.compile(r"\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])")
     return ansi_escape.sub("", text)
+
+
+def get_first_alphanum_upper(text: str) -> str | None:
+    """Returns the first uppercase alphanumeric character in a string."""
+    for char in text:
+        if char.isalnum():
+            return unidecode(char)[0].upper()
+    return None
 
 
 class AppPaths:
@@ -239,7 +248,7 @@ def path_matches_maybe_with_suffix(path: Path, search: Path) -> bool:
     return is_name_maybe_with_suffix(path.name, search.name)
 
 
-def open_file_explorer(path: Path) -> None:
+def open_path_or_file(path: Path) -> None:
     logger.debug(f"Opening '{path}' with file explorer.")
     if sys.platform == "win32":
         os.startfile(path)

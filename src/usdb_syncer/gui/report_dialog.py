@@ -11,10 +11,11 @@ from PySide6.QtWidgets import (
     QDialog,
     QFileDialog,
     QListWidgetItem,
+    QMessageBox,
     QWidget,
 )
 
-from usdb_syncer import SongId, db, settings
+from usdb_syncer import SongId, db, settings, utils
 from usdb_syncer.gui import progress
 from usdb_syncer.gui.forms.ReportDialog import Ui_Dialog
 from usdb_syncer.gui.progress import run_with_progress
@@ -116,6 +117,7 @@ class ReportDialog(Ui_Dialog, QDialog):
         def on_done(result: progress.Result) -> None:
             path = result.result()
             logger.info(f"PDF report created at {path}.")
+            utils.open_path_or_file(path)
 
         songs: Iterable[SongId] = []
         if self.radioButton_locally_available_songs.isChecked():
@@ -127,7 +129,9 @@ class ReportDialog(Ui_Dialog, QDialog):
         elif self.radioButton_all_songs.isChecked():
             songs = db.all_song_ids()
         if not songs:
-            logger.info("Skipping PDF report: no songs match the selection.")
+            msg = "Skipping PDF report creation: no songs match the selection."
+            QMessageBox.information(self, "Empty song list", msg)
+            logger.info(msg)
             return False
         fname = f"{datetime.datetime.now():%Y-%m-%d}_songlist.pdf"
         path = os.path.join(settings.get_song_dir(), fname)
@@ -178,7 +182,9 @@ class ReportDialog(Ui_Dialog, QDialog):
             songs = db.all_song_ids()
         songs = db.all_local_usdb_songs()
         if not songs:
-            logger.info("Skipping JSON report: no songs match the selection.")
+            msg = "Skipping JSON report creation: no songs match the selection."
+            QMessageBox.information(self, "Empty song list", msg)
+            logger.info(msg)
             return False
         fname = f"{datetime.datetime.now():%Y-%m-%d}_songlist.json"
         path = os.path.join(settings.get_song_dir(), fname)

@@ -165,7 +165,7 @@ def _build_pdf_content(
 
     initial_map: dict[str, dict[str, list[UsdbSong]]] = defaultdict(dict)
     for artist, artist_songs in artist_map.items():
-        initial = artist[0].upper()
+        initial = utils.get_first_alphanum_upper(artist) or artist[0].upper()
         initial_map[initial][artist] = sorted(
             artist_songs, key=lambda s: s.title.lower()
         )
