@@ -109,11 +109,12 @@ class SettingKey(Enum):
     APP_PATH_USDX = "app_paths/usdx"
     APP_PATH_VOCALUXE = "app_paths/vocaluxe"
     APP_PATH_YASS_RELOADED = "app_paths/yass_reloaded"
-    REPORT_PAGESIZE = "report/pagesize"
-    REPORT_ORIENTATION = "report/orientation"
-    REPORT_MARGIN = "report/margin"
-    REPORT_COLUMNS = "report/columns"
-    REPORT_FONTSIZE = "report/fontsize"
+    REPORT_PDF_PAGESIZE = "report/pdf_pagesize"
+    REPORT_PDF_ORIENTATION = "report/pdf_orientation"
+    REPORT_PDF_MARGIN = "report/pdf_margin"
+    REPORT_PDF_COLUMNS = "report/pdf_columns"
+    REPORT_PDF_FONTSIZE = "report/pdf_fontsize"
+    REPORT_JSON_INDENT = "report/json_indent"
 
 
 class Encoding(Enum):
@@ -647,7 +648,7 @@ class SupportedApps(StrEnum):
             logger.debug(traceback.format_exc())
 
 
-class ReportPagesize(Enum):
+class ReportPDFPagesize(Enum):
     """Supported PDF page sizes."""
 
     A3 = "A3"
@@ -660,7 +661,7 @@ class ReportPagesize(Enum):
         return str(self.value)
 
 
-class ReportOrientation(Enum):
+class ReportPDFOrientation(Enum):
     """Supported PDF page orientations."""
 
     PORTRAIT = "Portrait"
@@ -1024,41 +1025,49 @@ def set_app_path(app: SupportedApps, path: str) -> None:
             assert_never(unreachable)
 
 
-def get_report_pagesize() -> ReportPagesize:
-    return get_setting(SettingKey.REPORT_PAGESIZE, ReportPagesize.A4)
+def get_report_pdf_pagesize() -> ReportPDFPagesize:
+    return get_setting(SettingKey.REPORT_PDF_PAGESIZE, ReportPDFPagesize.A4)
 
 
-def set_report_pagesize(pagesize: ReportPagesize) -> None:
-    set_setting(SettingKey.REPORT_PAGESIZE, pagesize)
+def set_report_pdf_pagesize(pagesize: ReportPDFPagesize) -> None:
+    set_setting(SettingKey.REPORT_PDF_PAGESIZE, pagesize)
 
 
-def get_report_orientation() -> ReportOrientation:
-    return get_setting(SettingKey.REPORT_ORIENTATION, ReportOrientation.PORTRAIT)
+def get_report_pdf_orientation() -> ReportPDFOrientation:
+    return get_setting(SettingKey.REPORT_PDF_ORIENTATION, ReportPDFOrientation.PORTRAIT)
 
 
-def set_report_orientation(orientation: ReportOrientation) -> None:
-    set_setting(SettingKey.REPORT_ORIENTATION, orientation)
+def set_report_pdf_orientation(orientation: ReportPDFOrientation) -> None:
+    set_setting(SettingKey.REPORT_PDF_ORIENTATION, orientation)
 
 
-def get_report_margin() -> int:
-    return get_setting(SettingKey.REPORT_MARGIN, 20)
+def get_report_pdf_margin() -> int:
+    return get_setting(SettingKey.REPORT_PDF_MARGIN, 20)
 
 
-def set_report_margin(margin: int) -> None:
-    set_setting(SettingKey.REPORT_MARGIN, margin)
+def set_report_pdf_margin(margin: int) -> None:
+    set_setting(SettingKey.REPORT_PDF_MARGIN, margin)
 
 
-def get_report_columns() -> int:
-    return get_setting(SettingKey.REPORT_COLUMNS, 2)
+def get_report_pdf_columns() -> int:
+    return get_setting(SettingKey.REPORT_PDF_COLUMNS, 2)
 
 
-def set_report_columns(columns: int) -> None:
-    set_setting(SettingKey.REPORT_COLUMNS, columns)
+def set_report_pdf_columns(columns: int) -> None:
+    set_setting(SettingKey.REPORT_PDF_COLUMNS, columns)
 
 
-def get_report_fontsize() -> int:
-    return get_setting(SettingKey.REPORT_FONTSIZE, 10)
+def get_report_pdf_fontsize() -> int:
+    return get_setting(SettingKey.REPORT_PDF_FONTSIZE, 10)
 
 
-def set_report_fontsize(fontsize: int) -> None:
-    set_setting(SettingKey.REPORT_FONTSIZE, fontsize)
+def set_report_pdf_fontsize(fontsize: int) -> None:
+    set_setting(SettingKey.REPORT_PDF_FONTSIZE, fontsize)
+
+
+def get_report_json_indent() -> int:
+    return get_setting(SettingKey.REPORT_JSON_INDENT, 4)
+
+
+def set_report_json_indent(indent: int) -> None:
+    set_setting(SettingKey.REPORT_JSON_INDENT, indent)

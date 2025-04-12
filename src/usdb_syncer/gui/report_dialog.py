@@ -44,7 +44,6 @@ class ReportDialog(Ui_Dialog, QDialog):
         self._populate_comboboxes()
         self._populate_optional_columns()
         self._load_settings()
-        self._connect_signals()
 
     def _populate_optional_columns(self) -> None:
         for column in optional_columns:
@@ -71,64 +70,73 @@ class ReportDialog(Ui_Dialog, QDialog):
 
     def _populate_comboboxes(self) -> None:
         combobox_settings = (
-            (self.comboBox_pagesize, settings.ReportPagesize),
-            (self.comboBox_orientation, settings.ReportOrientation),
+            (self.comboBox_pdf_pagesize, settings.ReportPDFPagesize),
+            (self.comboBox_pdf_orientation, settings.ReportPDFOrientation),
         )
         for combobox, setting in combobox_settings:
             for item in setting:
                 combobox.addItem(str(item), item)
 
     def _load_settings(self) -> None:
-        self.comboBox_pagesize.setCurrentIndex(
-            self.comboBox_pagesize.findData(settings.get_report_pagesize())
+        self.comboBox_pdf_pagesize.setCurrentIndex(
+            self.comboBox_pdf_pagesize.findData(settings.get_report_pdf_pagesize())
         )
-        self.comboBox_orientation.setCurrentIndex(
-            self.comboBox_orientation.findData(settings.get_report_orientation())
+        self.comboBox_pdf_orientation.setCurrentIndex(
+            self.comboBox_pdf_orientation.findData(
+                settings.get_report_pdf_orientation()
+            )
         )
-        self.spinBox_margin.setValue(settings.get_report_margin())
-        self.spinBox_columns.setValue(settings.get_report_columns())
-        self.spinBox_font_size.setValue(settings.get_report_fontsize())
-
-    def _connect_signals(self) -> None:
-        self.pushButton_generate_report_pdf.pressed.connect(self._generate_report_pdf)
-        self.pushButton_generate_report_json.pressed.connect(self._generate_report_json)
+        self.spinBox_pdf_margin.setValue(settings.get_report_pdf_margin())
+        self.spinBox_pdf_columns.setValue(settings.get_report_pdf_columns())
+        self.spinBox_pdf_font_size.setValue(settings.get_report_pdf_fontsize())
+        self.spinBox_json_indent.setValue(settings.get_report_json_indent())
 
     def accept(self) -> None:
         self._save_settings()
+        if self.tabWidget_report_type.currentIndex() == 0:
+            self._generate_report_pdf()
+        elif self.tabWidget_report_type.currentIndex() == 1:
+            self._generate_report_json()
         super().accept()
 
+    def reject(self) -> None:
+        self._save_settings()
+        super().reject()
+
     def _save_settings(self) -> None:
-        settings.set_report_pagesize(self.comboBox_pagesize.currentData())
-        settings.set_report_orientation(self.comboBox_orientation.currentData())
-        settings.set_report_margin(self.spinBox_margin.value())
-        settings.set_report_columns(self.spinBox_columns.value())
-        settings.set_report_fontsize(self.spinBox_font_size.value())
+        settings.set_report_pdf_pagesize(self.comboBox_pdf_pagesize.currentData())
+        settings.set_report_pdf_orientation(self.comboBox_pdf_orientation.currentData())
+        settings.set_report_pdf_margin(self.spinBox_pdf_margin.value())
+        settings.set_report_pdf_columns(self.spinBox_pdf_columns.value())
+        settings.set_report_pdf_fontsize(self.spinBox_pdf_font_size.value())
+        settings.set_report_json_indent(self.spinBox_json_indent.value())
 
     def _generate_report_pdf(self) -> None:
         def on_done(result: progress.Result) -> None:
-            result.result()
-            logger.info("PDF report created.")
+            path = result.result()
+            logger.info(f"PDF report created at {path}.")
 
+        songs: Iterable[SongId] = []
+        if self.radioButton_locally_available_songs.isChecked():
+            songs = db.all_local_usdb_songs()
+        if self.radioButton_selected_songs.isChecked():
+            songs = []
+            for song in self.song_table.selected_songs():
+                songs.append(song.song_id)
+        elif self.radioButton_all_songs.isChecked():
+            songs = db.all_song_ids()
+        if not songs:
+            logger.info("Skipping PDF report: no songs match the selection.")
+            return
         fname = f"{datetime.datetime.now():%Y-%m-%d}_songlist.pdf"
         path = os.path.join(settings.get_song_dir(), fname)
         path = QFileDialog.getSaveFileName(self, dir=path, filter="PDF (*.pdf)")[0]
-        # dialog is hidden by main window on macOS if file picker was cancelled
-        # self.raise_()
         if path:
-            songs: Iterable[SongId] = []
-            if self.radioButton_locally_available_songs.isChecked():
-                songs = db.all_local_usdb_songs()
-            if self.radioButton_selected_songs.isChecked():
-                songs = []
-                for song in self.song_table.selected_songs():
-                    songs.append(song.song_id)
-            elif self.radioButton_all_songs.isChecked():
-                songs = db.all_song_ids()
-            pagesize = self.comboBox_pagesize.currentData()
-            orientation = self.comboBox_orientation.currentData()
-            margin = self.spinBox_margin.value()
-            column_count = self.spinBox_columns.value()
-            base_font_size = self.spinBox_font_size.value()
+            pagesize = self.comboBox_pdf_pagesize.currentData()
+            orientation = self.comboBox_pdf_orientation.currentData()
+            margin = self.spinBox_pdf_margin.value()
+            column_count = self.spinBox_pdf_columns.value()
+            base_font_size = self.spinBox_pdf_font_size.value()
             optional_info = []
             for index in range(self.optional_columns.count()):
                 item: QListWidgetItem = self.optional_columns.item(index)
@@ -150,10 +158,32 @@ class ReportDialog(Ui_Dialog, QDialog):
             )
 
     def _generate_report_json(self) -> None:
+        def on_done(result: progress.Result) -> None:
+            path, num_of_songs = result.result()
+            logger.info(f"JSON report created at {path} ({num_of_songs} songs).")
+
+        songs: Iterable[SongId] = []
+        if self.radioButton_locally_available_songs.isChecked():
+            songs = db.all_local_usdb_songs()
+        if self.radioButton_selected_songs.isChecked():
+            songs = []
+            for song in self.song_table.selected_songs():
+                songs.append(song.song_id)
+        elif self.radioButton_all_songs.isChecked():
+            songs = db.all_song_ids()
+        songs = db.all_local_usdb_songs()
+        if not songs:
+            logger.info("Skipping JSON report: no songs match the selection.")
+            return
         fname = f"{datetime.datetime.now():%Y-%m-%d}_songlist.json"
         path = os.path.join(settings.get_song_dir(), fname)
         path = QFileDialog.getSaveFileName(self, dir=path, filter="JSON (*.json)")[0]
+        indent = self.spinBox_json_indent.value()
         if path:
-            songs = db.all_local_usdb_songs()
-            num_of_songs = generate_report_json(songs=songs, path=Path(path))
-            logger.info(f"exported {num_of_songs} songs to {path}")
+            run_with_progress(
+                "Creating JSON report ...",
+                lambda: generate_report_json(
+                    songs=songs, path=Path(path), indent=indent
+                ),
+                on_done=on_done,
+            )

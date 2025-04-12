@@ -16,7 +16,7 @@ from reportlab.platypus import BaseDocTemplate, Flowable, Frame, PageTemplate, P
 
 from usdb_syncer import SongId, utils
 from usdb_syncer.gui.song_table.column import Column
-from usdb_syncer.settings import ReportOrientation, ReportPagesize
+from usdb_syncer.settings import ReportPDFOrientation, ReportPDFPagesize
 from usdb_syncer.usdb_song import UsdbSong
 
 NOTOSANS_BLACK = "NotoSans-Black"
@@ -54,13 +54,13 @@ def generate_report_pdf(
     *,
     songs: Iterable[SongId],
     path: str,
-    size: ReportPagesize = ReportPagesize.A4,
-    orientation: ReportOrientation = ReportOrientation.PORTRAIT,
+    size: ReportPDFPagesize = ReportPDFPagesize.A4,
+    orientation: ReportPDFOrientation = ReportPDFOrientation.PORTRAIT,
     margin: int = 20,
     column_count: int = 1,
     base_font_size: int = 10,
     optional_info: list[Column] | None = None,
-) -> None:
+) -> str:
     optional_info = optional_info or []
     pagesize = _get_pagesize(size, orientation)
 
@@ -86,25 +86,29 @@ def generate_report_pdf(
     doc.addPageTemplates([template])
     doc.build(content)
 
+    return path
+
 
 def _get_pagesize(
-    size: ReportPagesize, orientation: ReportOrientation
+    size: ReportPDFPagesize, orientation: ReportPDFOrientation
 ) -> tuple[float, float]:
     match size:
-        case ReportPagesize.A3:
+        case ReportPDFPagesize.A3:
             pagesize = A3
-        case ReportPagesize.A4:
+        case ReportPDFPagesize.A4:
             pagesize = A4
-        case ReportPagesize.A5:
+        case ReportPDFPagesize.A5:
             pagesize = A5
-        case ReportPagesize.LEGAL:
+        case ReportPDFPagesize.LEGAL:
             pagesize = LEGAL
-        case ReportPagesize.LETTER:
+        case ReportPDFPagesize.LETTER:
             pagesize = LETTER
         case _ as unreachable:
             assert_never(unreachable)
     return (
-        landscape(pagesize) if orientation == ReportOrientation.LANDSCAPE else pagesize
+        landscape(pagesize)
+        if orientation == ReportPDFOrientation.LANDSCAPE
+        else pagesize
     )
 
 
