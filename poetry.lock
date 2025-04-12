@@ -1267,18 +1267,6 @@ files = [
 ]
 
 [[package]]
-name = "pdfme"
-version = "0.4.12"
-description = "Create PDFs easily"
-optional = false
-python-versions = ">=3.6"
-groups = ["main"]
-files = [
-    {file = "pdfme-0.4.12-py3-none-any.whl", hash = "sha256:a0cefae43f10ea58c39088ac73768847e242081e13c9006ed0865309bd8e1a6f"},
-    {file = "pdfme-0.4.12.tar.gz", hash = "sha256:c9305a47e7b586339536a3b910fe9d65827d1b8060dd76efd3251c5b42bc1364"},
-]
-
-[[package]]
 name = "pefile"
 version = "2023.2.7"
 description = "Python PE parsing module"
@@ -2209,4 +2197,4 @@ type = ["pytest-mypy"]
 [metadata]
 lock-version = "2.1"
 python-versions = "3.12.*"
-content-hash = "d4262d33633eedd4c4f02674e02e8774df4aad0b7f76d26a4284043de223f08a"
+content-hash = "295472659f9dbbb62425ebecadafb1991269240239b26c8ce5571d9659415d16"
