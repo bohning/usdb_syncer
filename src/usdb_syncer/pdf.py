@@ -13,19 +13,25 @@ from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.pdfgen.canvas import Canvas
 from reportlab.platypus import BaseDocTemplate, Flowable, Frame, PageTemplate, Paragraph
 
-from usdb_syncer import SongId
+from usdb_syncer import SongId, utils
 from usdb_syncer.gui.song_table.column import Column
 from usdb_syncer.settings import ReportOrientation, ReportPagesize
 from usdb_syncer.usdb_song import UsdbSong
 
+NOTOSANS_BLACK = "NotoSans-Black"
+NOTOSANS_BOLD = "NotoSans-Bold"
+NOTOSANS_REGULAR = "NotoSans-Regular"
+
 pdfmetrics.registerFont(
-    TTFont("NotoSans-Black", "./src/usdb_syncer/gui/resources/NotoSans-Black.ttf")
+    TTFont(NOTOSANS_BLACK, utils.AppPaths.resources.joinpath(f"{NOTOSANS_BLACK}.ttf"))
 )
 pdfmetrics.registerFont(
-    TTFont("NotoSans-Bold", "./src/usdb_syncer/gui/resources/NotoSans-Bold.ttf")
+    TTFont(NOTOSANS_BOLD, utils.AppPaths.resources.joinpath(f"{NOTOSANS_BOLD}.ttf"))
 )
 pdfmetrics.registerFont(
-    TTFont("NotoSans-Regular", "./src/usdb_syncer/gui/resources/NotoSans-Regular.ttf")
+    TTFont(
+        NOTOSANS_REGULAR, utils.AppPaths.resources.joinpath(f"{NOTOSANS_REGULAR}.ttf")
+    )
 )
 
 
@@ -105,7 +111,7 @@ def _create_paragraph_styles(base_font_size: int) -> dict[str, ParagraphStyle]:
     return {
         "Initial": ParagraphStyle(
             "Initial",
-            fontName="NotoSans-Black",
+            fontName=NOTOSANS_BLACK,
             fontSize=base_font_size * 3,
             textColor=colors.green,
             spaceBefore=base_font_size * 2.4,
@@ -113,7 +119,7 @@ def _create_paragraph_styles(base_font_size: int) -> dict[str, ParagraphStyle]:
         ),
         "Artist": ParagraphStyle(
             "Artist",
-            fontName="NotoSans-Bold",
+            fontName=NOTOSANS_BOLD,
             fontSize=base_font_size * 1.2,
             spaceBefore=base_font_size * 1.2,
             leading=base_font_size * 1.6,
@@ -122,7 +128,7 @@ def _create_paragraph_styles(base_font_size: int) -> dict[str, ParagraphStyle]:
         ),
         "Entry": ParagraphStyle(
             "Entry",
-            fontName="NotoSans-Regular",
+            fontName=NOTOSANS_REGULAR,
             fontSize=base_font_size,
             leftIndent=base_font_size,
             leading=base_font_size * 1.4,
@@ -196,7 +202,7 @@ def _format_song_entry(
 def _add_page_number(canvas: Canvas, doc: BaseDocTemplate) -> None:
     canvas.saveState()
     page_num: str = str(doc.page)
-    canvas.setFont("NotoSans-Regular", 8)
+    canvas.setFont(NOTOSANS_REGULAR, 8)
     canvas.setFillColor(colors.grey)
     canvas.drawCentredString(doc.pagesize[0] / 2, doc.bottomMargin * 0.5, page_num)
     canvas.restoreState()
