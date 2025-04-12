@@ -12,7 +12,8 @@
 - Infos about unavailable or invalid resources are now sent to Discord (**please enable this in the settings to support the community**).
 - Songs can now be rated on USDB via the Syncer (1-5 star rating).
 - Artist initial is now available for templates.
-- Audio normalization has a new option ReplayGain. If your karaoke software supports ReplayGain, this is the preferred option as it does not reencode the audio file but instead only writes normalization information into the header of the audio file. 
+- Audio normalization has a new option ReplayGain. If your karaoke software supports ReplayGain (e.g. UltraStar deluxe >= 2025.4.0), this is the preferred option as it does not reencode the audio file but instead only writes normalization information into the header of the audio file.
+- PDF report (song list) creation has been fixed and extended.
 
 <!-- 0.11.0 -->
 
