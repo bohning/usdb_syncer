@@ -60,7 +60,8 @@ class VideoOptions:
         height = f"[height<={self.max_resolution.height()}]"
         fps = f"[fps<={self.max_fps.value}]"
         # fps filter always fails for some platforms, so skip it as a fallback
-        return "/".join(f"{f}{width}{height}{fps}/{f}{width}{height}" for f in fmt)
+        # also some formats don't offer resolution information
+        return "/".join(f"{f}{width}{height}{fps}/{f}{width}{height}/{f}" for f in fmt)
 
 
 @dataclass(frozen=True)

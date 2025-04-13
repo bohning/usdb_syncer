@@ -6,6 +6,7 @@
 - Audio/video format selection regression in 0.11.0 fixed.
 - Downloads of non-jpg images are now correctly converted to jpg.
 - Image processing order is now correctly handled (crop before resize for covers, resize before crop for backgrounds).
+- Improve compatibility of Linux bundle with older distributions (glibc >= 2.34).
 
 ## Features
 - The Syncer now checks if a new version is available.
@@ -14,6 +15,9 @@
 - Artist initial is now available for templates.
 - Audio normalization has a new option ReplayGain. If your karaoke software supports ReplayGain (e.g. UltraStar deluxe >= 2025.4.0), this is the preferred option as it does not reencode the audio file but instead only writes normalization information into the header of the audio file.
 - PDF report (song list) creation has been fixed and extended.
+
+## Developer notes
+- Added hook when MainWindow was loaded.
 
 <!-- 0.11.0 -->
 
