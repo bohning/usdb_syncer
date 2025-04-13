@@ -9,7 +9,7 @@ def main() -> None:
     for path in glob.glob("src/usdb_syncer/gui/forms/*.ui"):
         out_path = path.removesuffix("ui") + "py"
         subprocess.run(["pyside6-uic", path, "-o", out_path], check=True)
-    for path in glob.glob("src/usdb_syncer/gui/resources/*.qrc"):
+    for path in glob.glob("src/usdb_syncer/gui/resources/qt/*.qrc"):
         out_path = path.removesuffix("qrc") + "py"
         subprocess.run(["pyside6-rcc", path, "-o", out_path], check=True)
 

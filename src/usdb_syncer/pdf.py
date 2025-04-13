@@ -24,15 +24,13 @@ NOTOSANS_BOLD = "NotoSans-Bold"
 NOTOSANS_REGULAR = "NotoSans-Regular"
 
 pdfmetrics.registerFont(
-    TTFont(NOTOSANS_BLACK, utils.AppPaths.resources.joinpath(f"{NOTOSANS_BLACK}.ttf"))
+    TTFont(NOTOSANS_BLACK, utils.AppPaths.fonts.joinpath(f"{NOTOSANS_BLACK}.ttf"))
 )
 pdfmetrics.registerFont(
-    TTFont(NOTOSANS_BOLD, utils.AppPaths.resources.joinpath(f"{NOTOSANS_BOLD}.ttf"))
+    TTFont(NOTOSANS_BOLD, utils.AppPaths.fonts.joinpath(f"{NOTOSANS_BOLD}.ttf"))
 )
 pdfmetrics.registerFont(
-    TTFont(
-        NOTOSANS_REGULAR, utils.AppPaths.resources.joinpath(f"{NOTOSANS_REGULAR}.ttf")
-    )
+    TTFont(NOTOSANS_REGULAR, utils.AppPaths.fonts.joinpath(f"{NOTOSANS_REGULAR}.ttf"))
 )
 
 
