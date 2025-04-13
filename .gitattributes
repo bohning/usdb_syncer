@@ -2,3 +2,4 @@
 *.jpg -text
 *.png -text
 *.afphoto -text
+*.ttf -text

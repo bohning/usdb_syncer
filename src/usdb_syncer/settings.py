@@ -1,3 +1,5 @@
+# pylint: disable=too-many-lines
+
 """Persistent app settings.
 
 To ensure consistent default values and avoid key collisions, QSettings should never be
@@ -107,6 +109,12 @@ class SettingKey(Enum):
     APP_PATH_USDX = "app_paths/usdx"
     APP_PATH_VOCALUXE = "app_paths/vocaluxe"
     APP_PATH_YASS_RELOADED = "app_paths/yass_reloaded"
+    REPORT_PDF_PAGESIZE = "report/pdf_pagesize"
+    REPORT_PDF_ORIENTATION = "report/pdf_orientation"
+    REPORT_PDF_MARGIN = "report/pdf_margin"
+    REPORT_PDF_COLUMNS = "report/pdf_columns"
+    REPORT_PDF_FONTSIZE = "report/pdf_fontsize"
+    REPORT_JSON_INDENT = "report/json_indent"
 
 
 class Encoding(Enum):
@@ -640,6 +648,29 @@ class SupportedApps(StrEnum):
             logger.debug(traceback.format_exc())
 
 
+class ReportPDFPagesize(Enum):
+    """Supported PDF page sizes."""
+
+    A3 = "A3"
+    A4 = "A4"
+    A5 = "A5"
+    LETTER = "Letter"
+    LEGAL = "Legal"
+
+    def __str__(self) -> str:
+        return str(self.value)
+
+
+class ReportPDFOrientation(Enum):
+    """Supported PDF page orientations."""
+
+    PORTRAIT = "Portrait"
+    LANDSCAPE = "Landscape"
+
+    def __str__(self) -> str:
+        return str(self.value)
+
+
 T = TypeVar("T")
 
 
@@ -992,3 +1023,51 @@ def set_app_path(app: SupportedApps, path: str) -> None:
             set_setting(SettingKey.APP_PATH_YASS_RELOADED, path)
         case _ as unreachable:
             assert_never(unreachable)
+
+
+def get_report_pdf_pagesize() -> ReportPDFPagesize:
+    return get_setting(SettingKey.REPORT_PDF_PAGESIZE, ReportPDFPagesize.A4)
+
+
+def set_report_pdf_pagesize(pagesize: ReportPDFPagesize) -> None:
+    set_setting(SettingKey.REPORT_PDF_PAGESIZE, pagesize)
+
+
+def get_report_pdf_orientation() -> ReportPDFOrientation:
+    return get_setting(SettingKey.REPORT_PDF_ORIENTATION, ReportPDFOrientation.PORTRAIT)
+
+
+def set_report_pdf_orientation(orientation: ReportPDFOrientation) -> None:
+    set_setting(SettingKey.REPORT_PDF_ORIENTATION, orientation)
+
+
+def get_report_pdf_margin() -> int:
+    return get_setting(SettingKey.REPORT_PDF_MARGIN, 20)
+
+
+def set_report_pdf_margin(margin: int) -> None:
+    set_setting(SettingKey.REPORT_PDF_MARGIN, margin)
+
+
+def get_report_pdf_columns() -> int:
+    return get_setting(SettingKey.REPORT_PDF_COLUMNS, 2)
+
+
+def set_report_pdf_columns(columns: int) -> None:
+    set_setting(SettingKey.REPORT_PDF_COLUMNS, columns)
+
+
+def get_report_pdf_fontsize() -> int:
+    return get_setting(SettingKey.REPORT_PDF_FONTSIZE, 10)
+
+
+def set_report_pdf_fontsize(fontsize: int) -> None:
+    set_setting(SettingKey.REPORT_PDF_FONTSIZE, fontsize)
+
+
+def get_report_json_indent() -> int:
+    return get_setting(SettingKey.REPORT_JSON_INDENT, 4)
+
+
+def set_report_json_indent(indent: int) -> None:
+    set_setting(SettingKey.REPORT_JSON_INDENT, indent)

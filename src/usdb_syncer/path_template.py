@@ -8,7 +8,6 @@ from pathlib import Path
 from typing import TYPE_CHECKING, assert_never
 
 import attrs
-from unidecode import unidecode
 
 from usdb_syncer import errors, utils
 from usdb_syncer.custom_data import CustomData
@@ -171,10 +170,10 @@ class PathTemplatePlaceholder(PathTemplateComponentToken, enum.Enum):
                     return song.artist
                 return UNKNOWN_PLACEHOLDER_STRING
             case PathTemplatePlaceholder.ARTIST_INITIAL:
-                for char in song.artist:
-                    if char.isalnum():
-                        return unidecode(char)[0].upper()
-                return UNKNOWN_PLACEHOLDER_STRING
+                return (
+                    utils.get_first_alphanum_upper(song.artist)
+                    or UNKNOWN_PLACEHOLDER_STRING
+                )
             case PathTemplatePlaceholder.TITLE:
                 if song.title and len(song.title) > 0:
                     return song.title
