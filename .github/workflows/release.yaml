@@ -49,27 +49,31 @@ jobs:
               --onefile
               --add-data 'artifacts/song_list.json:data'
               --add-data 'src/usdb_syncer/db/sql:src/usdb_syncer/db/sql'
+              --add-data 'src/usdb_syncer/gui/resources/fonts:src/usdb_syncer/gui/resources/fonts'
           - os: macos-latest
             TARGET: macOS-arm64
             PYINSTALLER_ARGS: >-
               --windowed
-              --icon src/usdb_syncer/gui/resources/appicon_128x128.png
+              --icon src/usdb_syncer/gui/resources/qt/appicon_128x128.png
               --add-data 'artifacts/song_list.json:data'
               --add-data 'src/usdb_syncer/db/sql:src/usdb_syncer/db/sql'
+              --add-data 'src/usdb_syncer/gui/resources/fonts:src/usdb_syncer/gui/resources/fonts'
           - os: macos-13
             TARGET: macOS-x64
             PYINSTALLER_ARGS: >-
               --windowed
-              --icon src/usdb_syncer/gui/resources/appicon_128x128.png
+              --icon src/usdb_syncer/gui/resources/qt/appicon_128x128.png
               --add-data 'artifacts/song_list.json:data'
               --add-data 'src/usdb_syncer/db/sql:src/usdb_syncer/db/sql'
+              --add-data 'src/usdb_syncer/gui/resources/fonts:src/usdb_syncer/gui/resources/fonts'
           - os: windows-latest
             TARGET: Windows
             PYINSTALLER_ARGS: >-
               --onefile
-              --icon src/usdb_syncer/gui/resources/appicon_128x128.png
+              --icon src/usdb_syncer/gui/resources/qt/appicon_128x128.png
               --add-data 'artifacts/song_list.json;data'
               --add-data 'src/usdb_syncer/db/sql;src/usdb_syncer/db/sql'
+              --add-data 'src/usdb_syncer/gui/resources/fonts;src/usdb_syncer/gui/resources/fonts'
     steps:
       - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
@@ -128,7 +132,7 @@ jobs:
           brew install create-dmg
           create-dmg \
             --volname "USDB Syncer" \
-            --volicon "src/usdb_syncer/gui/resources/appicon_128x128.png" \
+            --volicon "src/usdb_syncer/gui/resources/qt/appicon_128x128.png" \
             --window-pos 200 120 \
             --window-size 600 300 \
             --icon-size 128 \
