@@ -27,6 +27,9 @@ from usdb_syncer.song_txt import SongTxt
 DEFAULT_TARGET_LEVEL_RG_DB = -18.0
 DEFAULT_TARGET_LEVEL_R128_DB = -23.0
 
+# Explicitly initialize the Python Image Library
+Image.init()
+
 
 def normalize_audio(
     options: AudioOptions, path_stem: Path, input_ext: str, logger: Log
