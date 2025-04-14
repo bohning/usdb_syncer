@@ -1,3 +1,10 @@
+<!-- 0.12.1 -->
+
+# Changes
+
+## Fixes
+- Fix ReplayGain for Windows (by updating ffmpeg-normalize).
+
 <!-- 0.12.0 -->
 
 # Changes
