@@ -8,7 +8,9 @@ import os
 import subprocess
 import sys
 import traceback
+from argparse import ArgumentParser, Namespace
 from collections.abc import Callable
+from pathlib import Path
 from types import TracebackType
 from typing import TYPE_CHECKING, Any
 
@@ -44,18 +46,21 @@ SCHEMA_ERROR_MESSAGE = (
 
 
 def main() -> None:
+    parser = ArgumentParser(description="USDB Syncer")
+    parser.add_argument("--songpath", type=str, help="Path to the song directory")
+    args = parser.parse_args()
     sys.excepthook = _excepthook
     utils.AppPaths.make_dirs()
     if not utils.is_bundle():
         tools.generate_pyside_files()
 
     if os.environ.get("PROFILE"):
-        _with_profile(_run)
+        _with_profile(lambda: _run(args))
     else:
-        _run()
+        _run(args)
 
 
-def _run() -> None:
+def _run(args: Namespace) -> None:
     from usdb_syncer.gui.mw import MainWindow  # pylint: disable=import-outside-toplevel
 
     app = _init_app()
@@ -77,7 +82,7 @@ def _run() -> None:
     else:
         logging.info("Running in dev mode, skipping update check.")
     try:
-        _load_main_window(mw)
+        _load_main_window(mw, args)
     except errors.UnknownSchemaError:
         QtWidgets.QMessageBox.critical(mw, "Version conflict", SCHEMA_ERROR_MESSAGE)
         return
@@ -103,17 +108,26 @@ def _with_profile(func: Callable[[], None]) -> None:
     subprocess.call(["snakeviz", utils.AppPaths.profile])
 
 
-def _load_main_window(mw: MainWindow) -> None:
+def _load_main_window(mw: MainWindow, args: Namespace) -> None:
     splash = _generate_splashscreen()
     splash.show()
     QtWidgets.QApplication.processEvents()
     splash.showMessage("Loading song database ...", color=Qt.GlobalColor.gray)
-    folder = settings.get_song_dir()
+    song_dir = settings.get_song_dir()
+    if songpath := args.songpath:
+        if Path(songpath).exists():
+            song_dir = Path(songpath).resolve()
+        else:
+            logging.warning(
+                f"Song directory '{songpath}' does not exist, using "
+                f"{song_dir} instead."
+            )
+    mw.lineEdit_song_dir.setText(str(song_dir))
     db.connect(utils.AppPaths.db)
     with db.transaction():
         song_routines.load_available_songs(force_reload=False)
-        song_routines.synchronize_sync_meta_folder(folder)
-        sync_meta.SyncMeta.reset_active(folder)
+        song_routines.synchronize_sync_meta_folder(song_dir)
+        sync_meta.SyncMeta.reset_active(song_dir)
         usdb_song.UsdbSong.clear_cache()
         default_search = db.SavedSearch.get_default()
     mw.tree.populate()
