@@ -30,6 +30,7 @@ from usdb_syncer import (
     usdb_song,
     utils,
 )
+from usdb_syncer.gui import theme
 
 if TYPE_CHECKING:
     # only import from gui after pyside file generation
@@ -124,6 +125,7 @@ def _load_main_window(mw: MainWindow) -> None:
     splash.showMessage("Song database successfully loaded.", color=Qt.GlobalColor.gray)
     mw.setWindowTitle(f"USDB Syncer ({constants.VERSION})")
     mw.show()
+    theme.apply_theme(settings.get_theme())
     logging.info("Application successfully loaded.")
     splash.finish(mw)
 
