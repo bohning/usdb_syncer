@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>623</width>
-    <height>784</height>
+    <width>861</width>
+    <height>868</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -43,19 +43,16 @@
      <property name="lineWidth">
       <number>0</number>
      </property>
-     <property name="horizontalScrollBarPolicy">
-      <enum>Qt::ScrollBarPolicy::ScrollBarAlwaysOff</enum>
-     </property>
      <property name="widgetResizable">
-      <bool>false</bool>
+      <bool>true</bool>
      </property>
      <widget class="QWidget" name="scrollAreaWidgetContents">
       <property name="geometry">
        <rect>
         <x>0</x>
         <y>0</y>
-        <width>600</width>
-        <height>750</height>
+        <width>843</width>
+        <height>850</height>
        </rect>
       </property>
       <property name="sizePolicy">

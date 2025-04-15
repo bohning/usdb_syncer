@@ -6,9 +6,10 @@ from typing import assert_never
 
 from PySide6 import QtWidgets
 from PySide6.QtGui import QIcon
-from PySide6.QtWidgets import QDialog, QFileDialog, QWidget
+from PySide6.QtWidgets import QDialog, QDialogButtonBox, QFileDialog, QWidget
 
 from usdb_syncer import SongId, path_template, settings
+from usdb_syncer.gui import theme
 from usdb_syncer.gui.forms.SettingsDialog import Ui_Dialog
 from usdb_syncer.path_template import PathTemplate
 from usdb_syncer.usdb_scraper import SessionManager
@@ -42,6 +43,8 @@ class SettingsDialog(Ui_Dialog, QDialog):
         self._populate_comboboxes()
         self._load_settings()
         self._setup_path_template()
+        apply_btn = self.buttonBox.button(QDialogButtonBox.StandardButton.Apply)
+        apply_btn.clicked.connect(self.apply)
         self._browser = self.comboBox_browser.currentData()
         self.groupBox_reencode_video.setVisible(False)
         if sys.platform != "win32":
@@ -113,6 +116,7 @@ class SettingsDialog(Ui_Dialog, QDialog):
 
     def _populate_comboboxes(self) -> None:
         combobox_settings = (
+            (self.comboBox_theme, settings.Theme),
             (self.comboBox_encoding, settings.Encoding),
             (self.comboBox_line_endings, settings.Newline),
             (self.comboBox_format_version, settings.FormatVersion),
@@ -135,6 +139,9 @@ class SettingsDialog(Ui_Dialog, QDialog):
             self.comboBox_browser.addItem(QIcon(browser.icon()), str(browser), browser)
 
     def _load_settings(self) -> None:
+        self.comboBox_theme.setCurrentIndex(
+            self.comboBox_theme.findData(settings.get_theme())
+        )
         self.comboBox_browser.setCurrentIndex(
             self.comboBox_browser.findData(settings.get_browser())
         )
@@ -243,6 +250,11 @@ class SettingsDialog(Ui_Dialog, QDialog):
             result = str(self._path_template.evaluate(self._song).with_suffix(".txt"))
         self.edit_path_template_result.setText(result)
 
+    def apply(self) -> None:
+        self._save_settings()
+        if self._browser != self.comboBox_browser.currentData():
+            SessionManager.reset_session()
+
     def accept(self) -> None:
         if not self._save_settings():
             return
@@ -251,6 +263,9 @@ class SettingsDialog(Ui_Dialog, QDialog):
         super().accept()
 
     def _save_settings(self) -> bool:
+        new_theme = self.comboBox_theme.currentData()
+        settings.set_theme(new_theme)
+        theme.apply_theme(new_theme)
         settings.set_browser(self.comboBox_browser.currentData())
         settings.set_cover(self.groupBox_cover.isChecked())
         settings.set_cover_max_size(self.comboBox_cover_max_size.currentData())

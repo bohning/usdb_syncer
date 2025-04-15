@@ -204,6 +204,7 @@ class SettingKey(Enum):
     REPORT_PDF_COLUMNS = "report/pdf_columns"
     REPORT_PDF_FONTSIZE = "report/pdf_fontsize"
     REPORT_JSON_INDENT = "report/json_indent"
+    VIEW_THEME = "view/theme"
 
 
 class Encoding(Enum):
@@ -648,6 +649,16 @@ class VideoFps(Enum):
         return str(self.value)
 
 
+class Theme(Enum):
+    """Application theme."""
+
+    SYSTEM = "System"
+    DARK = "Dark"
+
+    def __str__(self) -> str:
+        return self.value
+
+
 class SupportedApps(StrEnum):
     """Supported third-party apps to be launched from the USDB Syncer."""
 
@@ -1040,6 +1051,14 @@ def get_path_template() -> path_template.PathTemplate:
 
 def set_path_template(template: path_template.PathTemplate, temp: bool = False) -> None:
     _Settings.set(SettingKey.PATH_TEMPLATE, template, temp)
+
+
+def get_theme() -> Theme:
+    return get_setting(SettingKey.VIEW_THEME, Theme.SYSTEM)
+
+
+def set_theme(theme: Theme) -> None:
+    set_setting(SettingKey.VIEW_THEME, theme)
 
 
 def get_app_path(app: SupportedApps) -> Path | None:

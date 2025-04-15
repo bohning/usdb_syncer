@@ -11,6 +11,11 @@
     <file>bug.png</file>
     <file>calendar.png</file>
     <file>check_for_update.png</file>
+    <file>check-white.svg</file>
+    <file>chevron-down-white.svg</file>
+    <file>chevron-left-white.svg</file>
+    <file>chevron-right-white.svg</file>
+    <file>chevron-up-white.svg</file>
     <file>chrome.png</file>
     <file>chromium.png</file>
     <file>clipboard--minus.png</file>
@@ -43,15 +48,21 @@
     <file>language.png</file>
     <file>librewolf.png</file>
     <file>log.png</file>
+    <file>menu-down-white.svg</file>
+    <file>menu-left-white.svg</file>
+    <file>menu-right-white.svg</file>
+    <file>menu-up-white.svg</file>
     <file>minus-circle.png</file>
     <file>music--arrow.png</file>
     <file>octo_browser.png</file>
-    <file>opera.png</file>
     <file>opera_gx.png</file>
+    <file>opera.png</file>
     <file>performous.png</file>
     <file>pin.png</file>
     <file>price-tag.png</file>
     <file>quill.png</file>
+    <file>radiobox-blank-white.svg</file>
+    <file>radiobox-marked-white.svg</file>
     <file>rating.png</file>
     <file>report.png</file>
     <file>safari.png</file>
