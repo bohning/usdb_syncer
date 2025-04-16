@@ -146,6 +146,7 @@ class SettingsDialog(Ui_Dialog, QDialog):
         self.comboBox_primary_color.setCurrentIndex(
             self.comboBox_primary_color.findData(settings.get_primary_color())
         )
+        self.checkBox_colored_background.setChecked(settings.get_colored_background())
         self.comboBox_browser.setCurrentIndex(
             self.comboBox_browser.findData(settings.get_browser())
         )
@@ -269,9 +270,11 @@ class SettingsDialog(Ui_Dialog, QDialog):
     def _save_settings(self) -> bool:
         new_theme = self.comboBox_theme.currentData()
         new_primary_color = self.comboBox_primary_color.currentData()
+        colored_background = self.checkBox_colored_background.isChecked()
         settings.set_theme(new_theme)
         settings.set_primary_color(new_primary_color)
-        theme.apply_theme(new_theme, new_primary_color)
+        settings.set_colored_background(colored_background)
+        theme.apply_theme(new_theme, new_primary_color, colored_background)
         settings.set_browser(self.comboBox_browser.currentData())
         settings.set_cover(self.groupBox_cover.isChecked())
         settings.set_cover_max_size(self.comboBox_cover_max_size.currentData())
