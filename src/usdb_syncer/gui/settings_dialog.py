@@ -117,6 +117,7 @@ class SettingsDialog(Ui_Dialog, QDialog):
     def _populate_comboboxes(self) -> None:
         combobox_settings = (
             (self.comboBox_theme, settings.Theme),
+            (self.comboBox_primary_color, settings.Color),
             (self.comboBox_encoding, settings.Encoding),
             (self.comboBox_line_endings, settings.Newline),
             (self.comboBox_format_version, settings.FormatVersion),
@@ -141,6 +142,9 @@ class SettingsDialog(Ui_Dialog, QDialog):
     def _load_settings(self) -> None:
         self.comboBox_theme.setCurrentIndex(
             self.comboBox_theme.findData(settings.get_theme())
+        )
+        self.comboBox_primary_color.setCurrentIndex(
+            self.comboBox_primary_color.findData(settings.get_primary_color())
         )
         self.comboBox_browser.setCurrentIndex(
             self.comboBox_browser.findData(settings.get_browser())
@@ -264,8 +268,10 @@ class SettingsDialog(Ui_Dialog, QDialog):
 
     def _save_settings(self) -> bool:
         new_theme = self.comboBox_theme.currentData()
+        new_primary_color = self.comboBox_primary_color.currentData()
         settings.set_theme(new_theme)
-        theme.apply_theme(new_theme)
+        settings.set_primary_color(new_primary_color)
+        theme.apply_theme(new_theme, new_primary_color)
         settings.set_browser(self.comboBox_browser.currentData())
         settings.set_cover(self.groupBox_cover.isChecked())
         settings.set_cover_max_size(self.comboBox_cover_max_size.currentData())

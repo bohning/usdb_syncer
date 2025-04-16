@@ -205,6 +205,7 @@ class SettingKey(Enum):
     REPORT_PDF_FONTSIZE = "report/pdf_fontsize"
     REPORT_JSON_INDENT = "report/json_indent"
     VIEW_THEME = "view/theme"
+    VIEW_PRIMARY_COLOR = "view/primary_color"
 
 
 class Encoding(Enum):
@@ -659,6 +660,33 @@ class Theme(Enum):
         return self.value
 
 
+class Color(Enum):
+    """Colors for GUI customization."""
+
+    RED = "Red"
+    PINK = "Pink"
+    PURPLE = "Purple"
+    DEEPPURPLE = "Deep purple"
+    INDIGO = "Indigo"
+    BLUE = "Blue"
+    LIGHTBLUE = "Light blue"
+    CYAN = "Cyan"
+    TEAL = "Teal"
+    GREEN = "Green"
+    LIGHTGREEN = "Light green"
+    LIME = "Lime"
+    YELLOW = "Yellow"
+    AMBER = "Amber"
+    ORANGE = "Orange"
+    DEEPORANGE = "Deep orange"
+    BROWN = "Brown"
+    GRAY = "Gray"
+    BLUEGRAY = "Blue gray"
+
+    def __str__(self) -> str:
+        return self.value
+
+
 class SupportedApps(StrEnum):
     """Supported third-party apps to be launched from the USDB Syncer."""
 
@@ -1059,6 +1087,14 @@ def get_theme() -> Theme:
 
 def set_theme(theme: Theme) -> None:
     set_setting(SettingKey.VIEW_THEME, theme)
+
+
+def get_primary_color() -> Color:
+    return get_setting(SettingKey.VIEW_PRIMARY_COLOR, Color.RED)
+
+
+def set_primary_color(primary_color: Color) -> None:
+    set_setting(SettingKey.VIEW_PRIMARY_COLOR, primary_color)
 
 
 def get_app_path(app: SupportedApps) -> Path | None:

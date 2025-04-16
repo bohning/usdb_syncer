@@ -185,7 +185,7 @@ def _load_main_window(mw: MainWindow) -> None:
     mw.setWindowTitle(f"USDB Syncer ({constants.VERSION})")
     mw.show()
     logger.logger.info("Application successfully loaded.")
-    theme.apply_theme(settings.get_theme())
+    theme.apply_theme(settings.get_theme(), settings.get_primary_color())
     splash.finish(mw)
 
 
