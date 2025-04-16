@@ -12,7 +12,9 @@ from PySide6.QtGui import QColor, QColorConstants, QPalette
 from usdb_syncer import settings, utils
 
 
-def apply_theme(theme: settings.Theme, primary_color: settings.Color) -> None:
+def apply_theme(
+    theme: settings.Theme, primary_color: settings.Color, colored_background: bool
+) -> None:
     app = QtWidgets.QApplication.instance()
     assert isinstance(app, QtWidgets.QApplication), "Theming requires a GUI application"
     match theme:
@@ -20,7 +22,7 @@ def apply_theme(theme: settings.Theme, primary_color: settings.Color) -> None:
             q_palette = QPalette()
             style = ""
         case settings.Theme.DARK:
-            dark_theme = DarkTheme(primary_color)
+            dark_theme = DarkTheme(primary_color, colored_background)
             q_palette = dark_theme.q_palette()
             style = dark_theme.style()
         case unreachable:
@@ -82,16 +84,27 @@ def _rgb_str(color: QColor) -> str:
 
 @attrs.define
 class DarkTheme:
-    primary: settings.Color
-    base_surface: QColor = QColor(18, 18, 18)
+    primary_color: settings.Color
+    colored_background: bool
     on_primary: QColor = QColorConstants.Svg.black
     on_secondary: QColor = QColorConstants.Svg.black
     on_background: QColor = QColorConstants.Svg.white
     on_surface: QColor = QColorConstants.Svg.white
     _style_template = utils.AppPaths.stylesheets.joinpath("dark.qss")
+    primary_swatch: Swatch = attrs.field(init=False)
+    primary: QColor = attrs.field(init=False)
+    base_surface: QColor = attrs.field(init=False)
+    default_surface: QColor = attrs.field(init=False, default=QColor(18, 18, 18))
 
     def __attrs_post_init__(self) -> None:
-        self.primary_swatch = Swatch.get(self.primary)
+        self.primary_swatch = Swatch.get(self.primary_color)
+        self.primary = self.primary_swatch.S_200
+        if self.colored_background:
+            self.base_surface = _overlay_colors(
+                self.default_surface, self.primary_swatch.S_900, 0.08
+            )
+        else:
+            self.base_surface = self.default_surface
 
     def surface(self, variant: _Surface) -> QColor:
         return _overlay_colors(

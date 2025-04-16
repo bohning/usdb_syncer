@@ -206,6 +206,7 @@ class SettingKey(Enum):
     REPORT_JSON_INDENT = "report/json_indent"
     VIEW_THEME = "view/theme"
     VIEW_PRIMARY_COLOR = "view/primary_color"
+    VIEW_COLORED_BACKGROUND = "view/colored_background"
 
 
 class Encoding(Enum):
@@ -1095,6 +1096,14 @@ def get_primary_color() -> Color:
 
 def set_primary_color(primary_color: Color) -> None:
     set_setting(SettingKey.VIEW_PRIMARY_COLOR, primary_color)
+
+
+def get_colored_background() -> bool:
+    return get_setting(SettingKey.VIEW_COLORED_BACKGROUND, False)
+
+
+def set_colored_background(colored_background: bool) -> None:
+    set_setting(SettingKey.VIEW_COLORED_BACKGROUND, colored_background)
 
 
 def get_app_path(app: SupportedApps) -> Path | None:
