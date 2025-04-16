@@ -2,6 +2,7 @@
 
 import os
 import webbrowser
+from argparse import Namespace
 from collections.abc import Callable
 from pathlib import Path
 
@@ -35,7 +36,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
 
     _cleaned_up = False
 
-    def __init__(self) -> None:
+    def __init__(self, args: Namespace) -> None:
         super().__init__()
         self.setupUi(self)
         self.tree = FilterTree(self)
@@ -47,7 +48,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         self._setup_log()
         self._setup_toolbar()
         self._setup_shortcuts()
-        self._setup_song_dir()
+        self._setup_song_dir(args.songpath)
         self.lineEdit_search.textChanged.connect(
             lambda txt: events.TextFilterChanged(txt).post()
         )
@@ -149,8 +150,18 @@ class MainWindow(Ui_MainWindow, QMainWindow):
     def _setup_shortcuts(self) -> None:
         gui_utils.set_shortcut("Ctrl+.", self, lambda: DebugConsole(self).show())
 
-    def _setup_song_dir(self) -> None:
-        self.lineEdit_song_dir.setText(str(settings.get_song_dir()))
+    def _setup_song_dir(self, songpath: str | None) -> None:
+        self.song_dir = settings.get_song_dir()
+        if songpath:
+            if Path(songpath).exists():
+                logger.info(f"Using '{songpath}' from command line arguments.")
+                self.song_dir = Path(songpath).resolve()
+            else:
+                logger.warning(
+                    f"Song directory '{songpath}' does not exist, using "
+                    f"{self.song_dir} instead."
+                )
+        self.lineEdit_song_dir.setText(str(self.song_dir))
         self.pushButton_select_song_dir.clicked.connect(self._select_song_dir)
 
     def _setup_buttons(self) -> None:

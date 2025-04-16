@@ -65,7 +65,7 @@ def _run(args: Namespace) -> None:
 
     app = _init_app()
     app.setAttribute(Qt.ApplicationAttribute.AA_DontShowIconsInMenus, False)
-    mw = MainWindow()
+    mw = MainWindow(args)
     logger.configure_logging(
         logging.FileHandler(utils.AppPaths.log, encoding="utf-8"),
         logging.StreamHandler(sys.stdout),
@@ -82,7 +82,7 @@ def _run(args: Namespace) -> None:
     else:
         logging.info("Running in dev mode, skipping update check.")
     try:
-        _load_main_window(mw, args)
+        _load_main_window(mw)
     except errors.UnknownSchemaError:
         QtWidgets.QMessageBox.critical(mw, "Version conflict", SCHEMA_ERROR_MESSAGE)
         return
@@ -108,26 +108,16 @@ def _with_profile(func: Callable[[], None]) -> None:
     subprocess.call(["snakeviz", utils.AppPaths.profile])
 
 
-def _load_main_window(mw: MainWindow, args: Namespace) -> None:
+def _load_main_window(mw: MainWindow) -> None:
     splash = _generate_splashscreen()
     splash.show()
     QtWidgets.QApplication.processEvents()
     splash.showMessage("Loading song database ...", color=Qt.GlobalColor.gray)
-    song_dir = settings.get_song_dir()
-    if songpath := args.songpath:
-        if Path(songpath).exists():
-            song_dir = Path(songpath).resolve()
-        else:
-            logging.warning(
-                f"Song directory '{songpath}' does not exist, using "
-                f"{song_dir} instead."
-            )
-    mw.lineEdit_song_dir.setText(str(song_dir))
     db.connect(utils.AppPaths.db)
     with db.transaction():
         song_routines.load_available_songs(force_reload=False)
-        song_routines.synchronize_sync_meta_folder(song_dir)
-        sync_meta.SyncMeta.reset_active(song_dir)
+        song_routines.synchronize_sync_meta_folder(mw.song_dir)
+        sync_meta.SyncMeta.reset_active(mw.song_dir)
         usdb_song.UsdbSong.clear_cache()
         default_search = db.SavedSearch.get_default()
     mw.tree.populate()
