@@ -3,6 +3,7 @@ QWidget {{
   color: {text_high};
   selection-background-color: {primary};
   selection-color: {on_primary};
+  placeholder-text-color: {text_disabled};
 }}
 
 QListView,
@@ -13,6 +14,11 @@ QTableView {{
   border: none;
 }}
 
+QTreeView::item,
+QListView::item {{
+  margin: 1px 0;
+  border: none;
+}}
 
 QTreeView::branch:closed:has-children {{
     image: url(":/icons/chevron-right-white.svg");
@@ -36,7 +42,10 @@ QCheckBox::indicator {{
     border-radius: 4px;
     width: 16px;
     height: 16px;
-    margin-top: 1px;
+}}
+QTreeView::indicator {{
+    width: 14px;
+    height: 14px;
 }}
 QTreeView::indicator:indeterminate,
 QListView::indicator:checked,
@@ -44,7 +53,9 @@ QGroupBox::indicator:checked,
 QCheckBox::indicator:checked {{
     image: url(":/icons/check-white.svg");
 }}
-
+QGroupBox::indicator {{
+    margin-top: 1px;
+}}
 QGroupBox::indicator:hover,
 QCheckBox::indicator:hover {{
     background: {surface_01dp};
@@ -66,19 +77,18 @@ QListView::item:selected {{
 
 QDockWidget {{
   background-color: {surface_02dp};
-  selection-background-color: {surface_02dp};
 }}
-QDockWidget::close-button, QDockWidget::float-button {{
+QDockWidget::title {{
+  background-color: {surface_02dp};
+  text-align: center;
+  padding: 4px;
 }}
 QDockWidget::close-button:hover, QDockWidget::float-button:hover {{
   border: none;
   background: {primary};
 }}
 
-QHeaderView {{
-text-align: left;
 
-}}
 QHeaderView::section {{
   background-color: {surface_06dp};
   color: {on_surface};
@@ -104,7 +114,7 @@ QTextEdit {{
   background-color: {surface_00dp};
   border-radius: 4px;
   border: 1px solid {surface_24dp};
-  padding: 4px 8px;
+  padding: 4px 6px;
 }}
 
 QSpinBox:read-only,
@@ -128,7 +138,7 @@ QSpinBox::up-button,
 QSpinBox::down-button,
 QDoubleSpinBox::up-button,
 QDoubleSpinBox::down-button {{
-    background: {surface_02dp};
+    background: {surface_06dp};
 }}
 
 QSpinBox::up-arrow,
