@@ -1,3 +1,12 @@
+<!-- 0.13.0 -->
+
+# Changes
+
+## Fixes
+
+## Features
+- Image resources are now redownloaded if metatag postprocessing parameters have changed.
+
 <!-- 0.12.1 -->
 
 # Changes

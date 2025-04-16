@@ -495,8 +495,16 @@ def _download_cover_url(ctx: _Context, url: str, process: bool = True) -> bool:
     """True if download was successful (or is unnecessary)."""
     assert ctx.options.cover
     if ctx.out.cover.resource == url:
-        ctx.logger.info("Cover resource is unchanged.")
-        return True
+        if sync_meta := ctx.song.sync_meta:
+            if sync_meta.meta_tags.cover == ctx.txt.meta_tags.cover:
+                ctx.logger.info(
+                    "Cover resource and postprocessing parameters are unchanged, "
+                    "skipping."
+                )
+                return True
+            ctx.logger.info(
+                "Cover postprocessing parameters have changed, redownloading."
+            )
     if path := resource_dl.download_and_process_image(
         url=url,
         target_stem=ctx.locations.temp_path(),
@@ -522,8 +530,16 @@ def _maybe_download_background(ctx: _Context) -> None:
         ctx.logger.warning("No background resource found.")
         return
     if ctx.out.background.resource == url:
-        ctx.logger.info("Background resource is unchanged.")
-        return
+        if sync_meta := ctx.song.sync_meta:
+            if sync_meta.meta_tags.background == ctx.txt.meta_tags.background:
+                ctx.logger.info(
+                    "Background resource and postprocessing parameters are unchanged, "
+                    "skipping."
+                )
+                return
+            ctx.logger.info(
+                "Background postprocessing parameters have changed, redownloading."
+            )
     if path := resource_dl.download_and_process_image(
         url=url,
         target_stem=ctx.locations.temp_path(),
