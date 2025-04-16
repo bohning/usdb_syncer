@@ -7,6 +7,12 @@
 ## Features
 - Image resources are now redownloaded if metatag postprocessing parameters have changed.
 
+<!-- 0.12.1 -->
+
+# Changes
+
+## Fixes
+- Fix ReplayGain for Windows (by updating ffmpeg-normalize).
 
 <!-- 0.12.0 -->
 
