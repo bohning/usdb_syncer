@@ -67,6 +67,16 @@ class SettingsDialog(Ui_Dialog, QDialog):
         self.pushButton_browse_yass_reloaded.clicked.connect(
             lambda: self._set_location(settings.SupportedApps.YASS_RELOADED)
         )
+        self.comboBox_theme.currentIndexChanged.connect(
+            self._set_theme_settings_enabled
+        )
+        self._set_theme_settings_enabled()
+
+    def _set_theme_settings_enabled(self) -> None:
+        hidden = self.comboBox_theme.currentData() == settings.Theme.SYSTEM
+        self.label_primary_color.setHidden(hidden)
+        self.comboBox_primary_color.setHidden(hidden)
+        self.checkBox_colored_background.setHidden(hidden)
 
     def _set_location(self, app: settings.SupportedApps) -> None:
         path = self._get_executable(app)
