@@ -125,7 +125,7 @@ def _load_main_window(mw: MainWindow) -> None:
     splash.showMessage("Song database successfully loaded.", color=Qt.GlobalColor.gray)
     mw.setWindowTitle(f"USDB Syncer ({constants.VERSION})")
     mw.show()
-    theme.apply_theme(settings.get_theme())
+    theme.apply_theme(settings.get_theme(), settings.get_primary_color())
     logging.info("Application successfully loaded.")
     splash.finish(mw)
 
