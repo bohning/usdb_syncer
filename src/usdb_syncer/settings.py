@@ -1107,7 +1107,9 @@ def set_report_pdf_pagesize(pagesize: ReportPDFPagesize, temp: bool = False) -> 
 
 
 def get_report_pdf_orientation() -> ReportPDFOrientation:
-    return Settings.get(SettingKey.REPORT_PDF_ORIENTATION, ReportPDFOrientation.PORTRAIT)
+    return Settings.get(
+        SettingKey.REPORT_PDF_ORIENTATION, ReportPDFOrientation.PORTRAIT
+    )
 
 
 def set_report_pdf_orientation(
