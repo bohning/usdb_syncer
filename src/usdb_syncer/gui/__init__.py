@@ -71,10 +71,10 @@ def _handle_args(args: Namespace) -> None:
         match arg:
             case "songpath":
                 try:
-                    resolved_path = Path(value).resolve(strict=True)
-                    if not resolved_path.is_dir() or not resolved_path.exists():
+                    songpath = Path(value).resolve(strict=True)
+                    if not songpath.is_dir() or not songpath.exists():
                         raise ValueError(f"Path is invalid: {value}")
-                    settings.set_song_dir(resolved_path, temp=True)
+                    settings.set_song_dir(songpath, temp=True)
                 except (OSError, RuntimeError) as e:
                     raise ValueError(
                         f"Invalid songpath provided: {value}. Error: {e}"
@@ -136,11 +136,12 @@ def _load_main_window(mw: MainWindow) -> None:
     splash.show()
     QtWidgets.QApplication.processEvents()
     splash.showMessage("Loading song database ...", color=Qt.GlobalColor.gray)
+    folder = settings.get_song_dir()
     db.connect(utils.AppPaths.db)
     with db.transaction():
         song_routines.load_available_songs(force_reload=False)
-        song_routines.synchronize_sync_meta_folder(mw.song_dir)
-        sync_meta.SyncMeta.reset_active(mw.song_dir)
+        song_routines.synchronize_sync_meta_folder(folder)
+        sync_meta.SyncMeta.reset_active(folder)
         usdb_song.UsdbSong.clear_cache()
         default_search = db.SavedSearch.get_default()
     mw.tree.populate()
