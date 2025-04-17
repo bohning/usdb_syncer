@@ -16,7 +16,7 @@ import traceback
 from enum import Enum, StrEnum, auto
 from http.cookiejar import CookieJar
 from pathlib import Path
-from typing import Any, TypeVar, assert_never, cast
+from typing import Any, Iterable, TypeVar, assert_never, cast
 
 import keyring
 import rookiepy
@@ -62,6 +62,102 @@ def ffmpeg_is_available() -> bool:
         if shutil.which("ffmpeg"):
             return True
     return False
+
+
+class _TemporarySettings:
+    """Temporary settings for the USDB Syncer.
+
+    This class is used to store temporary settings that are not persisted in the QSettings.
+    It is used to store settings that are only needed during the current session.
+    """
+
+    _temporarySettings: dict[SettingKey, Any] = {}
+
+    @classmethod
+    def clear(cls) -> None:
+        """Clear all temporary settings."""
+        cls._temporarySettings.clear()
+
+    @classmethod
+    def remove(cls, key: SettingKey) -> None:
+        """Remove a temporary setting."""
+        cls._temporarySettings.pop(key, None)
+
+    @classmethod
+    def set(cls, key: SettingKey, value: Any) -> None:
+        """Set a temporary setting."""
+        cls._temporarySettings[key] = value
+
+    @classmethod
+    def get(cls, key: SettingKey) -> Any:
+        """Get a temporary setting."""
+        return cls._temporarySettings.get(key, None)
+
+    @classmethod
+    def __contains__(cls, key: SettingKey) -> bool:
+        """Check if a temporary setting exists."""
+        return key in cls._temporarySettings
+
+    @classmethod
+    def __getitem__(cls, key: SettingKey) -> Any:
+        """Get a temporary setting."""
+        return cls._temporarySettings[key]
+
+    @classmethod
+    def __iter__(cls) -> Iterable[tuple[SettingKey, Any]]:
+        """Iterate over all temporary settings."""
+        return iter(cls._temporarySettings.items())
+
+
+class Settings:
+    """Settings for the USDB Syncer.
+
+    This class is a singleton that provides access to the settings of the USDB Syncer.
+    It uses QSettings to store and retrieve settings in a platform-independent way.
+    """
+
+    _temporary: set[SettingKey] = set()
+
+    @classmethod
+    def set(cls, key: SettingKey, value: Any) -> None:
+        if key in cls._temporary:
+            _TemporarySettings.remove(key)
+        if isinstance(value, bool):
+            # Qt stores bools as "true" and "false" otherwise
+            value = int(value)
+        QSettings().setValue(key.value, value)
+
+    @classmethod
+    def set_temporary(cls, key: SettingKey, value: Any) -> None:
+        cls._temporary.add(key)
+        _TemporarySettings.set(key, value)
+
+    @classmethod
+    def get(cls, key: SettingKey, default: T) -> T:  # pylint: disable=too-complex
+        if key in cls._temporary:
+            value = _TemporarySettings.get(key)
+            if value is not None:
+                return value
+        try:
+            value = QSettings().value(key.value)
+        except (AttributeError, ValueError):
+            # setting contains a type incompatible with this version
+            return default
+        if isinstance(value, ret_type := type(default)):
+            return value
+        if isinstance(default, bool) and isinstance(value, int):
+            # we store bools as ints because Qt doesn't store raw bools
+            return cast(T, bool(value))
+        if isinstance(value, str) and ret_type in (int, float, bool):
+            # in INI files (default on Linux) numeric values are stored as strings
+            try:
+                if ret_type is bool:
+                    value = int(value)
+                # MyPy doesn't understand any of this, but it should be safe
+                return cast(T, ret_type(value))  # type: ignore[call-arg]
+            except (ValueError, TypeError):
+                pass
+        return default
 
 
 class SettingKey(Enum):
@@ -675,32 +771,15 @@ T = TypeVar("T")
 
 
 def get_setting(key: SettingKey, default: T) -> T:
-    try:
-        value = QSettings().value(key.value)
-    except (AttributeError, ValueError):
-        # setting contains a type incompatible with this version
-        return default
-    if isinstance(value, ret_type := type(default)):
-        return value
-    if isinstance(default, bool) and isinstance(value, int):
-        # we store bools as ints because Qt doesn't store raw bools
-        return cast(T, bool(value))
-    if isinstance(value, str) and ret_type in (int, float, bool):
-        # in INI files (default on Linux) numeric values are stored as strings
-        try:
-            if ret_type == bool:
-                value = int(value)
-            return ret_type(value)  # type: ignore
-        except (ValueError, TypeError):
-            pass
-    return default
+    return Settings.get(key, default)
 
 
 def set_setting(key: SettingKey, value: Any) -> None:
-    if isinstance(value, bool):
-        # Qt stores bools as "true" and "false" otherwise
-        value = int(value)
-    QSettings().setValue(key.value, value)
+    Settings.set(key, value)
+
+
+def set_temporary_setting(key: SettingKey, value: Any) -> None:
+    Settings.set_temporary(key, value)
 
 
 def get_throttling_threads() -> int:

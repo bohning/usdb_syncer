@@ -49,23 +49,44 @@ def main() -> None:
     parser = ArgumentParser(description="USDB Syncer")
     parser.add_argument("--songpath", type=str, help="Path to the song directory")
     args = parser.parse_args()
+    _handle_args(args)
+
     sys.excepthook = _excepthook
     utils.AppPaths.make_dirs()
     if not utils.is_bundle():
         tools.generate_pyside_files()
 
     if os.environ.get("PROFILE"):
-        _with_profile(lambda: _run(args))
+        _with_profile(_run)
     else:
-        _run(args)
+        _run()
 
 
-def _run(args: Namespace) -> None:
+def _handle_args(args: Namespace) -> None:
+    # Convert the Namespace object into a dictionary-like structure for iteration
+    for arg in vars(args):
+        value = getattr(args, arg)
+        if value is None:
+            continue
+        match arg:
+            case "songpath":
+                try:
+                    resolved_path = Path(value).resolve()
+                    settings.set_temporary_setting(
+                        settings.SettingKey.SONG_DIR, resolved_path
+                    )
+                except (OSError, RuntimeError) as e:
+                    raise ValueError(f"Invalid songpath provided: {value}. Error: {e}")
+            case _:
+                assert False, f"Unhandled argument: {arg}"
+
+
+def _run() -> None:
     from usdb_syncer.gui.mw import MainWindow  # pylint: disable=import-outside-toplevel
 
     app = _init_app()
     app.setAttribute(Qt.ApplicationAttribute.AA_DontShowIconsInMenus, False)
-    mw = MainWindow(args)
+    mw = MainWindow()
     logger.configure_logging(
         logging.FileHandler(utils.AppPaths.log, encoding="utf-8"),
         logging.StreamHandler(sys.stdout),
