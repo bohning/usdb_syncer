@@ -47,7 +47,7 @@ SCHEMA_ERROR_MESSAGE = (
 
 def main() -> None:
     parser = ArgumentParser(description="USDB Syncer")
-    parser.add_argument("--songpath", type=str, help="Path to the song directory")
+    parser.add_argument("--songpath", type=str, help="Path to the song directory.")
     args = parser.parse_args()
     _handle_args(args)
 
@@ -71,12 +71,14 @@ def _handle_args(args: Namespace) -> None:
         match arg:
             case "songpath":
                 try:
-                    resolved_path = Path(value).resolve()
-                    settings.set_temporary_setting(
-                        settings.SettingKey.SONG_DIR, resolved_path
-                    )
+                    resolved_path = Path(value).resolve(strict=True)
+                    if not resolved_path.is_dir() or not resolved_path.exists():
+                        raise ValueError(f"Path is invalid: {value}")
+                    settings.set_song_dir(resolved_path, temp=True)
                 except (OSError, RuntimeError) as e:
-                    raise ValueError(f"Invalid songpath provided: {value}. Error: {e}")
+                    raise ValueError(
+                        f"Invalid songpath provided: {value}. Error: {e}"
+                    ) from e
             case _:
                 assert False, f"Unhandled argument: {arg}"
 
