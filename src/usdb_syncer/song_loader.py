@@ -35,7 +35,7 @@ from usdb_syncer.discord import notify_discord
 from usdb_syncer.logger import Log, logger, song_logger
 from usdb_syncer.postprocessing import write_audio_tags, write_video_tags
 from usdb_syncer.resource_dl import ResourceDLError
-from usdb_syncer.settings import FormatVersion, get_discord_allowed
+from usdb_syncer.settings import FormatVersion
 from usdb_syncer.song_txt import SongTxt
 from usdb_syncer.sync_meta import ResourceFile, SyncMeta
 from usdb_syncer.usdb_scraper import SongDetails
@@ -423,7 +423,9 @@ def _maybe_download_audio(ctx: _Context) -> None:
             resource_dl.ResourceDLError.RESOURCE_UNAVAILABLE,
             resource_dl.ResourceDLError.RESOURCE_PARSE_ERROR,
         }:
-            if get_discord_allowed() and (url := video_url_from_resource(resource)):
+            if ctx.options.notify_discord and (
+                url := video_url_from_resource(resource)
+            ):
                 notify_discord(
                     ctx.song.song_id, url, "Audio", dl_result.error.value, logger
                 )
@@ -457,7 +459,9 @@ def _maybe_download_video(ctx: _Context) -> None:
             resource_dl.ResourceDLError.RESOURCE_UNAVAILABLE,
             resource_dl.ResourceDLError.RESOURCE_PARSE_ERROR,
         }:
-            if get_discord_allowed() and (url := video_url_from_resource(resource)):
+            if ctx.options.notify_discord and (
+                url := video_url_from_resource(resource)
+            ):
                 notify_discord(
                     ctx.song.song_id, url, "Video", dl_result.error.value, logger
                 )
@@ -475,7 +479,7 @@ def _maybe_download_cover(ctx: _Context) -> None:
         url = cover.source_url(ctx.logger)
         if _download_cover_url(ctx, url):
             return
-        if get_discord_allowed():
+        if ctx.options.notify_discord:
             notify_discord(
                 ctx.song.song_id,
                 url,
@@ -552,7 +556,7 @@ def _maybe_download_background(ctx: _Context) -> None:
         ctx.out.background.new_fname = path.name
         ctx.logger.info("Success! Downloaded background.")
     else:
-        if get_discord_allowed():
+        if ctx.options.notify_discord:
             notify_discord(
                 ctx.song.song_id,
                 url,
