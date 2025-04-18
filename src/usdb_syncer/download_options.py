@@ -87,6 +87,7 @@ class Options:
 
     song_dir: Path
     path_template: path_template.PathTemplate
+    notify_discord: bool
     txt_options: TxtOptions | None
     audio_options: AudioOptions | None
     browser: settings.Browser
@@ -99,6 +100,7 @@ def download_options() -> Options:
     return Options(
         song_dir=settings.get_song_dir(),
         path_template=settings.get_path_template(),
+        notify_discord=settings.get_discord_allowed(),
         txt_options=_txt_options(),
         audio_options=_audio_options(),
         browser=settings.get_browser(),
