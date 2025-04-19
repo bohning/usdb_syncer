@@ -150,7 +150,8 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         gui_utils.set_shortcut("Ctrl+.", self, lambda: DebugConsole(self).show())
 
     def _setup_song_dir(self) -> None:
-        self.lineEdit_song_dir.setText(str(settings.get_song_dir()))
+        self.song_dir = settings.get_song_dir()
+        self.lineEdit_song_dir.setText(str(self.song_dir))
         self.pushButton_select_song_dir.clicked.connect(self._select_song_dir)
 
     def _setup_buttons(self) -> None:
