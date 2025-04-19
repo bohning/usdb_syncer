@@ -25,9 +25,6 @@
     <file>chevron-up-white.svg</file>
     <file>chrome.png</file>
     <file>chromium.png</file>
-    <file>clipboard--minus.png</file>
-    <file>clipboard--plus.png</file>
-    <file>clipboard-empty.png</file>
     <file>close-octagon-white.svg</file>
     <file>cog-white.svg</file>
     <file>cog.png</file>
@@ -41,10 +38,8 @@
     <file>database-white.svg</file>
     <file>database.png</file>
     <file>delete-white.svg</file>
-    <file>document-code.png</file>
     <file>document-export.png</file>
     <file>document-import.png</file>
-    <file>document-pdf-text.png</file>
     <file>download-white.svg</file>
     <file>drawer.png</file>
     <file>dresser-white.svg</file>

@@ -19,7 +19,6 @@ class Icon(enum.Enum):
     AUDIO_SAMPLE = "sample.png", "music-note-white.svg"
     BACKGROUND = "background.png", "image-area-white.svg"
     BRAVE = "brave.png", None
-    BROOM = "broom.png", None
     BUG = "bug.png", "bug-white.svg"
     CALENDAR = "calendar.png", "calendar-white.svg"
     CHECK = "tick.png", "check-white.svg"
@@ -30,17 +29,12 @@ class Icon(enum.Enum):
     CHEVRON_UP = None, "chevron-up-white.svg"
     CHROME = "chrome.png", None
     CHROMIUM = "chromium.png", None
-    CLIPBOARD_EMPTY = "clipboard-empty.png", None
-    CLIPBOARD_MINUS = "clipboard--minus.png", None
-    CLIPBOARD_PLUS = "clipboard--plus.png", None
     COMMENT = "balloon.png", "comment-white.svg"
     COVER = "cover.png", "image-white.svg"
     CREATOR = "quill.png", "feather-white.svg"
     CUSTOM_DATA = "drawer.png", "dresser-white.svg"
     DATABASE = "database.png", "database-white.svg"
     DELETE = "bin.png", "delete-white.svg"
-    DOCUMENT_CODE = "document-code.png", None
-    DOCUMENT_PDF_TEXT = "document-pdf-text.png", None
     DOWNLOAD = "status.png", "download-white.svg"
     EDGE = "edge.png", None
     EDITION = "edition.png", "edition-white.svg"
