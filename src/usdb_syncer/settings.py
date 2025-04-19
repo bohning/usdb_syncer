@@ -89,10 +89,8 @@ class _TemporarySettings:
         """Get a temporary setting."""
         return cls._temporarySettings.get(key, None)
 
-    @classmethod
-    def contains(cls, key: SettingKey) -> bool:
-        """Check if a temporary setting exists."""
-        return key in cls._temporarySettings
+
+T = TypeVar("T")
 
 
 class _Settings:
@@ -118,8 +116,8 @@ class _Settings:
     @classmethod
     def _set_permanent(cls, key: SettingKey, value: Any) -> None:
         with cls._lock:
-            if _TemporarySettings.contains(key):
-                _TemporarySettings.remove(key)
+            _TemporarySettings.remove(key)
+
             if isinstance(value, bool):
                 # Qt stores bools as "true" and "false" otherwise
                 value = int(value)
@@ -128,8 +126,9 @@ class _Settings:
     @classmethod
     def get(cls, key: SettingKey, default: T) -> T:  # pylint: disable=too-complex
         with cls._lock:
-            if _TemporarySettings.contains(key):
-                return _TemporarySettings.get(key)
+            if temp := _TemporarySettings.get(key):
+                return temp
+
             try:
                 value = QSettings().value(key.value)
             except (AttributeError, ValueError):
@@ -150,6 +149,11 @@ class _Settings:
                 except (ValueError, TypeError):
                     pass
             return default
+    
+    @classmethod
+    def reset(cls) -> None:
+        """Reset QSettings to default."""
+        QSettings().clear()
 
 
 class SettingKey(Enum):
@@ -759,7 +763,8 @@ class ReportPDFOrientation(Enum):
         return str(self.value)
 
 
-T = TypeVar("T")
+def reset() -> None:
+    _Settings.reset()
 
 
 def get_throttling_threads() -> int:
