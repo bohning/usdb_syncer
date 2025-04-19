@@ -149,7 +149,7 @@ class _Settings:
                 except (ValueError, TypeError):
                     pass
             return default
-    
+
     @classmethod
     def reset(cls) -> None:
         """Reset QSettings to default."""

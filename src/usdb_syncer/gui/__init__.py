@@ -8,12 +8,13 @@ import os
 import subprocess
 import sys
 import traceback
-from argparse import ArgumentParser, Namespace
+from argparse import ArgumentParser
 from collections.abc import Callable
 from pathlib import Path
 from types import TracebackType
 from typing import TYPE_CHECKING, Any
 
+import attrs
 from PySide6 import QtCore, QtGui, QtWidgets
 from PySide6.QtCore import Qt
 
@@ -45,42 +46,58 @@ SCHEMA_ERROR_MESSAGE = (
 )
 
 
+@attrs.define
+class CliArgs:
+    """Command line arguments."""
+
+    reset_settings: bool = False
+
+    # Settings
+    songpath: Path | None = None
+
+    # Development
+    skip_pyside: bool = False
+
+
 def main() -> None:
-    parser = ArgumentParser(description="USDB Syncer")
-    parser.add_argument("--songpath", type=str, help="Path to the song directory.")
-    args = parser.parse_args()
-    _handle_args(args)
-
     sys.excepthook = _excepthook
-    utils.AppPaths.make_dirs()
-    if not utils.is_bundle():
-        tools.generate_pyside_files()
 
+    parser = ArgumentParser(description="USDB Syncer")
+    parser.add_argument("--version", action="version", version=constants.VERSION)
+    parser.add_argument(
+        "--reset-settings", action="store_true", help="Reset all settings to default."
+    )
+
+    setting_overrides = parser.add_argument_group(
+        "settings", "Provide temporary overrides for settings."
+    )
+    setting_overrides.add_argument(
+        "--songpath", type=Path, help="path to the song folder"
+    )
+
+    if not utils.is_bundle():
+        dev_options = parser.add_argument_group("development", "Development options.")
+        dev_options.add_argument(
+            "--skip-pyside", action="store_true", help="Skip PySide file generation."
+        )
+
+    args = parser.parse_args(namespace=CliArgs())
+    _handle_args(args)
+    utils.AppPaths.make_dirs()
     if os.environ.get("PROFILE"):
         _with_profile(_run)
     else:
         _run()
 
 
-def _handle_args(args: Namespace) -> None:
-    # Convert the Namespace object into a dictionary-like structure for iteration
-    for arg in vars(args):
-        value = getattr(args, arg)
-        if value is None:
-            continue
-        match arg:
-            case "songpath":
-                try:
-                    songpath = Path(value).resolve(strict=True)
-                    if not songpath.is_dir() or not songpath.exists():
-                        raise ValueError(f"Path is invalid: {value}")
-                    settings.set_song_dir(songpath, temp=True)
-                except (OSError, RuntimeError) as e:
-                    raise ValueError(
-                        f"Invalid songpath provided: {value}. Error: {e}"
-                    ) from e
-            case _:
-                assert False, f"Unhandled argument: {arg}"
+def _handle_args(args: CliArgs) -> None:
+    if args.reset_settings:
+        settings.reset()
+        print("Settings reset to default.")
+    if args.songpath:
+        settings.set_song_dir(args.songpath.resolve(), temp=True)
+    if not args.skip_pyside:
+        tools.generate_pyside_files()
 
 
 def _run() -> None:
