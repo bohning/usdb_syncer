@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import enum
 from collections.abc import Iterable
-from functools import cache
 from typing import Any, Generic, TypeVar, assert_never
 
 import attrs
@@ -12,6 +11,7 @@ from PySide6.QtCore import Qt
 from PySide6.QtGui import QIcon
 
 from usdb_syncer import db
+from usdb_syncer.gui.icons import Icon
 
 
 class SongMatch:
@@ -335,35 +335,35 @@ class Filter(enum.Enum):
             case _ as unreachable:
                 assert_never(unreachable)
 
-    @cache
     def decoration(self) -> QIcon:  # noqa: C901
         match self:
             case Filter.SAVED:
-                return QIcon(":/icons/heart.png")
+                icon = Icon.SAVED_SEARCH
             case Filter.STATUS:
-                return QIcon(":/icons/status.png")
+                icon = Icon.DOWNLOAD
             case Filter.ARTIST:
-                return QIcon(":/icons/artist.png")
+                icon = Icon.ARTIST
             case Filter.TITLE:
-                return QIcon(":/icons/title.png")
+                icon = Icon.TITLE
             case Filter.EDITION:
-                return QIcon(":/icons/edition.png")
+                icon = Icon.EDITION
             case Filter.LANGUAGE:
-                return QIcon(":/icons/language.png")
+                icon = Icon.LANGUAGE
             case Filter.GOLDEN_NOTES:
-                return QIcon(":/icons/golden_notes.png")
+                icon = Icon.GOLDEN_NOTES
             case Filter.RATING:
-                return QIcon(":/icons/rating.png")
+                icon = Icon.RATING
             case Filter.VIEWS:
-                return QIcon(":/icons/views.png")
+                icon = Icon.VIEWS
             case Filter.YEAR:
-                return QIcon(":/icons/calendar.png")
+                icon = Icon.CALENDAR
             case Filter.GENRE:
-                return QIcon(":/icons/spectrum-absorption.png")
+                icon = Icon.GENRE
             case Filter.CREATOR:
-                return QIcon(":/icons/quill.png")
+                icon = Icon.CREATOR
             case _ as unreachable:
                 assert_never(unreachable)
+        return icon.icon()
 
 
 class StatusVariant(SongMatch, enum.Enum):

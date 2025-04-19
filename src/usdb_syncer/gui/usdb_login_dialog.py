@@ -1,10 +1,11 @@
 """Dialog to manage USDB login."""
 
-from PySide6.QtGui import QDesktopServices, QIcon
+from PySide6.QtGui import QDesktopServices
 from PySide6.QtWidgets import QDialog, QMessageBox, QWidget
 
 from usdb_syncer import settings
 from usdb_syncer.constants import Usdb
+from usdb_syncer.gui import icons
 from usdb_syncer.gui.forms.UsdbLoginDialog import Ui_Dialog
 from usdb_syncer.usdb_scraper import (
     SessionManager,
@@ -31,7 +32,10 @@ class UsdbLoginDialog(Ui_Dialog, QDialog):
 
     def _load_settings(self) -> None:
         for browser in settings.Browser:
-            self.combobox_browser.addItem(QIcon(browser.icon()), str(browser), browser)
+            if icon := icons.browser_icon(browser):
+                self.combobox_browser.addItem(icon, str(browser), browser)
+            else:
+                self.combobox_browser.addItem(str(browser), browser)
         self.combobox_browser.setCurrentIndex(
             self.combobox_browser.findData(settings.get_browser())
         )

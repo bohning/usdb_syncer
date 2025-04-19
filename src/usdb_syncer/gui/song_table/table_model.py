@@ -14,6 +14,7 @@ from PySide6.QtCore import (
 from PySide6.QtGui import QIcon
 
 from usdb_syncer import SongId, events, utils
+from usdb_syncer.gui import icons
 from usdb_syncer.gui.song_table.column import Column
 from usdb_syncer.usdb_song import DownloadStatus, UsdbSong
 
@@ -187,38 +188,42 @@ def _decoration_data(song: UsdbSong, column: int) -> QIcon | None:  # noqa: C901
         ):
             return None
         case Column.SAMPLE_URL:
-            if song.sync_meta and song.sync_meta.audio:
-                suffix = "-local"
-            elif song.sample_url:
-                suffix = ""
+            local = bool(song.sync_meta and song.sync_meta.audio)
+            if song.is_playing and local:
+                icon = icons.Icon.PAUSE_LOCAL
+            elif song.is_playing:
+                icon = icons.Icon.PAUSE_REMOTE
+            elif local:
+                icon = icons.Icon.PLAY_LOCAL
             else:
-                return None
-            action = "pause" if song.is_playing else "play"
-            return icon(f":/icons/control-{action}{suffix}.png")
+                icon = icons.Icon.PLAY_REMOTE
         case Column.TXT:
-            return icon(":/icons/tick.png", bool(song.sync_meta and song.sync_meta.txt))
+            if not (song.sync_meta and song.sync_meta.txt):
+                return None
+            icon = icons.Icon.CHECK
         case Column.AUDIO:
-            return icon(
-                ":/icons/tick.png", bool(song.sync_meta and song.sync_meta.audio)
-            )
+            if not (song.sync_meta and song.sync_meta.audio):
+                return None
+            icon = icons.Icon.CHECK
         case Column.VIDEO:
-            return icon(
-                ":/icons/tick.png", bool(song.sync_meta and song.sync_meta.video)
-            )
+            if not (song.sync_meta and song.sync_meta.video):
+                return None
+            icon = icons.Icon.CHECK
         case Column.COVER:
-            return icon(
-                ":/icons/tick.png", bool(song.sync_meta and song.sync_meta.cover)
-            )
+            if not (song.sync_meta and song.sync_meta.cover):
+                return None
+            icon = icons.Icon.CHECK
         case Column.BACKGROUND:
-            return icon(
-                ":/icons/tick.png", bool(song.sync_meta and song.sync_meta.background)
-            )
+            if not (song.sync_meta and song.sync_meta.background):
+                return None
+            icon = icons.Icon.CHECK
         case Column.PINNED:
-            return icon(
-                ":/icons/pin.png", bool(song.sync_meta and song.sync_meta.pinned)
-            )
+            if not (song.sync_meta and song.sync_meta.pinned):
+                return None
+            icon = icons.Icon.PIN
         case _ as unreachable:
             assert_never(unreachable)
+    return icon.icon()
 
 
 @cache
@@ -228,11 +233,3 @@ def rating_str(rating: int) -> str:
 
 def yes_no_str(yes: bool) -> str:
     return "Yes" if yes else "No"
-
-
-# Creating a QIcon without a QApplication gives a runtime error, so we can't put it
-# in a global, but we also don't want to keep recreating it.
-# So we store them in these convenience functions.
-@cache
-def icon(resource: str, yes: bool = True) -> QIcon | None:
-    return QIcon(resource) if yes else None

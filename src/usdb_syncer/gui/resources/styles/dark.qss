@@ -288,7 +288,7 @@ QComboBox:on {{
 QComboBox::drop-down {{
     image: url(":/icons/menu-down-white.svg");
 }}
-QComboBox QAbstractItemView::item {{
+QComboBox QAbstractItemView::item, QComboBox QAbstractItemView {{
     background-color: {surface_12dp};
 }}
 QComboBox QAbstractItemView::item:selected {{

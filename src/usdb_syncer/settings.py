@@ -443,37 +443,6 @@ class Browser(Enum):
             return "None"
         return self.value.capitalize()
 
-    def icon(self) -> str:  # noqa: C901
-        match self:
-            case Browser.NONE:
-                return ""
-            case Browser.ARC:
-                return ":/icons/arc.png"
-            case Browser.BRAVE:
-                return ":/icons/brave.png"
-            case Browser.CHROME:
-                return ":/icons/chrome.png"
-            case Browser.CHROMIUM:
-                return ":/icons/chromium.png"
-            case Browser.EDGE:
-                return ":/icons/edge.png"
-            case Browser.FIREFOX:
-                return ":/icons/firefox.png"
-            case Browser.LIBREWOLF:
-                return ":/icons/librewolf.png"
-            case Browser.OCTO_BROWSER:
-                return ":/icons/octo_browser.png"
-            case Browser.OPERA:
-                return ":/icons/opera.png"
-            case Browser.OPERA_GX:
-                return ":/icons/opera_gx.png"
-            case Browser.SAFARI:
-                return ":/icons/safari.png"
-            case Browser.VIVALDI:
-                return ":/icons/vivaldi.png"
-            case _ as unreachable:
-                assert_never(unreachable)
-
     def cookies(self) -> CookieJar | None:  # noqa: C901
         match self:
             case Browser.NONE:

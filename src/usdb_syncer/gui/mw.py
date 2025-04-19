@@ -9,7 +9,7 @@ from PySide6.QtWidgets import QFileDialog, QLabel, QMainWindow
 
 from usdb_syncer import SongId, db, events, settings, song_routines, usdb_id_file
 from usdb_syncer.constants import Usdb
-from usdb_syncer.gui import gui_utils, progress, progress_bar
+from usdb_syncer.gui import gui_utils, icons, progress, progress_bar
 from usdb_syncer.gui.about_dialog import AboutDialog
 from usdb_syncer.gui.comment_dialog import CommentDialog
 from usdb_syncer.gui.debug_console import DebugConsole
@@ -53,6 +53,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         events.SavedSearchRestored.subscribe(
             lambda event: self.lineEdit_search.setText(event.search.text)
         )
+        events.ThemeChanged.subscribe(self._on_theme_changed)
         self._setup_buttons()
         self._restore_state()
 
@@ -343,3 +344,42 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         settings.set_geometry_main_window(self.saveGeometry())
         settings.set_state_main_window(self.saveState())
         settings.set_geometry_log_dock(self.dock_log.saveGeometry())
+
+    def _on_theme_changed(self, event: events.ThemeChanged) -> None:
+        theme = event.theme
+        self.toolButton_debugs.setIcon(icons.Icon.BUG.icon(theme))
+        self.toolButton_infos.setIcon(icons.Icon.INFO.icon(theme))
+        self.toolButton_warnings.setIcon(icons.Icon.WARNING.icon(theme))
+        self.toolButton_errors.setIcon(icons.Icon.ERROR.icon(theme))
+        self.button_download.setIcon(icons.Icon.DOWNLOAD.icon(theme))
+        self.button_pause.setIcon(icons.Icon.PAUSE_REMOTE.icon(theme))
+        self.pushButton_select_song_dir.setIcon(icons.Icon.SONG_FOLDER.icon(theme))
+        self.action_settings.setIcon(icons.Icon.SETTINGS.icon(theme))
+        self.action_meta_tags.setIcon(icons.Icon.META_TAGS.icon(theme))
+        self.action_generate_song_list.setIcon(icons.Icon.REPORT.icon(theme))
+        self.action_usdb_login.setIcon(icons.Icon.USDB.icon(theme))
+        self.action_refetch_song_list.setIcon(icons.Icon.CHECK_FOR_UPDATE.icon(theme))
+        self.action_show_log.setIcon(icons.Icon.LOG.icon(theme))
+        self.action_songs_download.setIcon(icons.Icon.DOWNLOAD.icon(theme))
+        self.action_songs_abort.setIcon(icons.Icon.ABORT.icon(theme))
+        self.action_show_in_usdb.setIcon(icons.Icon.USDB.icon(theme))
+        self.action_post_comment_in_usdb.setIcon(icons.Icon.COMMENT.icon(theme))
+        self.menu_rate_song_on_usdb.setIcon(icons.Icon.RATING.icon(theme))
+        self.action_open_song_folder.setIcon(icons.Icon.SONG_FOLDER.icon(theme))
+        self.menu_open_song_in.setIcon(icons.Icon.OPEN_SONG_WITH.icon(theme))
+        self.menu_custom_data.setIcon(icons.Icon.CUSTOM_DATA.icon(theme))
+        self.action_pin.setIcon(icons.Icon.PIN.icon(theme))
+        self.action_delete.setIcon(icons.Icon.DELETE.icon(theme))
+        self.action_open_song_in_usdx.setIcon(icons.Icon.USDX.icon(theme))
+        self.action_open_song_in_vocaluxe.setIcon(icons.Icon.VOCALUXE.icon(theme))
+        self.action_open_song_in_performous.setIcon(icons.Icon.PERFORMOUS.icon(theme))
+        self.action_open_song_in_yass_reloaded.setIcon(
+            icons.Icon.YASS_RELOADED.icon(theme)
+        )
+        self.action_open_song_in_karedi.setIcon(icons.Icon.KAREDI.icon(theme))
+        self.action_open_song_in_ultrastar_manager.setIcon(
+            icons.Icon.ULTRASTAR_MANAGER.icon(theme)
+        )
+        self.action_find_local_songs.setIcon(icons.Icon.DATABASE.icon(theme))
+        self.action_import_usdb_ids.setIcon(icons.Icon.FILE_IMPORT.icon(theme))
+        self.action_export_usdb_ids.setIcon(icons.Icon.FILE_EXPORT.icon(theme))

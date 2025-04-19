@@ -5,11 +5,10 @@ from pathlib import Path
 from typing import assert_never
 
 from PySide6 import QtWidgets
-from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import QDialog, QDialogButtonBox, QFileDialog, QWidget
 
 from usdb_syncer import SongId, path_template, settings
-from usdb_syncer.gui import theme
+from usdb_syncer.gui import icons, theme
 from usdb_syncer.gui.forms.SettingsDialog import Ui_Dialog
 from usdb_syncer.path_template import PathTemplate
 from usdb_syncer.usdb_scraper import SessionManager
@@ -147,7 +146,10 @@ class SettingsDialog(Ui_Dialog, QDialog):
             for item in setting:
                 combobox.addItem(str(item), item)
         for browser in settings.Browser:
-            self.comboBox_browser.addItem(QIcon(browser.icon()), str(browser), browser)
+            if icon := icons.browser_icon(browser):
+                self.comboBox_browser.addItem(icon, str(browser), browser)
+            else:
+                self.comboBox_browser.addItem(str(browser), browser)
 
     def _load_settings(self) -> None:
         self.comboBox_theme.setCurrentIndex(
