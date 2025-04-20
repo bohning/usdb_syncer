@@ -1052,27 +1052,27 @@ def set_path_template(template: path_template.PathTemplate, temp: bool = False) 
 
 
 def get_theme() -> Theme:
-    return get_setting(SettingKey.VIEW_THEME, Theme.SYSTEM)
+    return _Settings.get(SettingKey.VIEW_THEME, Theme.SYSTEM)
 
 
 def set_theme(theme: Theme) -> None:
-    set_setting(SettingKey.VIEW_THEME, theme)
+    _Settings.set(SettingKey.VIEW_THEME, theme)
 
 
 def get_primary_color() -> Color:
-    return get_setting(SettingKey.VIEW_PRIMARY_COLOR, Color.RED)
+    return _Settings.get(SettingKey.VIEW_PRIMARY_COLOR, Color.RED)
 
 
 def set_primary_color(primary_color: Color) -> None:
-    set_setting(SettingKey.VIEW_PRIMARY_COLOR, primary_color)
+    _Settings.set(SettingKey.VIEW_PRIMARY_COLOR, primary_color)
 
 
 def get_colored_background() -> bool:
-    return get_setting(SettingKey.VIEW_COLORED_BACKGROUND, False)
+    return _Settings.get(SettingKey.VIEW_COLORED_BACKGROUND, False)
 
 
 def set_colored_background(colored_background: bool) -> None:
-    set_setting(SettingKey.VIEW_COLORED_BACKGROUND, colored_background)
+    _Settings.set(SettingKey.VIEW_COLORED_BACKGROUND, colored_background)
 
 
 def get_app_path(app: SupportedApps) -> Path | None:
