@@ -50,9 +50,10 @@ class _DbState:
     """Singleton for managing the global database connection."""
 
     _local: _LocalConnection = _LocalConnection()
+    trace_sql: bool = False
 
     @classmethod
-    def connect(cls, db_path: Path | str, trace: bool = False) -> None:
+    def connect(cls, db_path: Path | str) -> None:
         if cls._local.connection:
             raise errors.DatabaseError("Already connected to database!")
         cls._local.connection = sqlite3.connect(
@@ -60,7 +61,7 @@ class _DbState:
         )
         thread = threading.current_thread().name
         logger.debug(f"Connected to database at '{db_path}' on thread {thread}.")
-        if trace:
+        if cls.trace_sql:
             cls._local.connection.set_trace_callback(logger.debug)
         _validate_schema(cls._local.connection)
 
@@ -114,7 +115,7 @@ def _validate_schema(connection: sqlite3.Connection) -> None:
 
 
 def connect(db_path: Path | str) -> None:
-    _DbState.connect(db_path, trace=bool(os.environ.get("TRACESQL")))
+    _DbState.connect(db_path)
 
 
 def close() -> None:
@@ -128,6 +129,11 @@ def managed_connection(db_path: Path | str) -> Generator[None, None, None]:
         yield None
     finally:
         _DbState.close()
+
+
+def set_trace_sql(trace_sql: bool) -> None:
+    """Set SQL logging for future connections."""
+    _DbState.trace_sql = trace_sql
 
 
 class DownloadStatus(enum.IntEnum):
