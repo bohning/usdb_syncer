@@ -5,6 +5,7 @@ import os
 from collections.abc import Generator
 from pathlib import Path
 
+import requests
 import send2trash
 from requests import Session
 
@@ -37,6 +38,10 @@ def load_available_songs(force_reload: bool, session: Session | None = None) -> 
         songs = get_usdb_available_songs(max_skip_id, session=session)
     except errors.UsdbLoginError:
         logger.debug("Skipping fetching new songs as there is no login.")
+        return
+    except requests.exceptions.ConnectionError:
+        logger.debug("", exc_info=True)
+        logger.error("Failed to fetch new songs; check network connection.")
         return
     if songs:
         UsdbSong.upsert_many(songs)
