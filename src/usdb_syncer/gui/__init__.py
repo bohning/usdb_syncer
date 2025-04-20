@@ -93,9 +93,9 @@ def main() -> None:
     _handle_args(args)
     utils.AppPaths.make_dirs()
     if args.profile:
-        _with_profile(lambda: _run(args))
+        _with_profile(_run)
     else:
-        _run(args)
+        _run()
 
 
 def _handle_args(args: CliArgs) -> None:
@@ -106,9 +106,10 @@ def _handle_args(args: CliArgs) -> None:
         settings.set_song_dir(args.songpath.resolve(), temp=True)
     if not args.skip_pyside:
         tools.generate_pyside_files()
+    db.set_trace_sql(args.trace_sql)
 
 
-def _run(args: CliArgs) -> None:
+def _run() -> None:
     from usdb_syncer.gui.mw import MainWindow  # pylint: disable=import-outside-toplevel
 
     app = _init_app()
@@ -130,7 +131,7 @@ def _run(args: CliArgs) -> None:
     else:
         logging.info("Running in dev mode, skipping update check.")
     try:
-        _load_main_window(mw, args)
+        _load_main_window(mw)
     except errors.UnknownSchemaError:
         QtWidgets.QMessageBox.critical(mw, "Version conflict", SCHEMA_ERROR_MESSAGE)
         return
@@ -156,13 +157,13 @@ def _with_profile(func: Callable[[], None]) -> None:
     subprocess.call(["snakeviz", utils.AppPaths.profile])
 
 
-def _load_main_window(mw: MainWindow, args: CliArgs) -> None:
+def _load_main_window(mw: MainWindow) -> None:
     splash = _generate_splashscreen()
     splash.show()
     QtWidgets.QApplication.processEvents()
     splash.showMessage("Loading song database ...", color=Qt.GlobalColor.gray)
     folder = settings.get_song_dir()
-    db.connect(utils.AppPaths.db, trace=args.trace_sql)
+    db.connect(utils.AppPaths.db)
     with db.transaction():
         song_routines.load_available_songs(force_reload=False)
         song_routines.synchronize_sync_meta_folder(folder)
