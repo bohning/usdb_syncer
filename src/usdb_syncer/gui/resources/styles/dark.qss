@@ -121,6 +121,10 @@ QTextEdit {{
   border: 1px solid {surface_24dp};
   padding: 4px 6px;
 }}
+QSpinBox,
+QDoubleSpinBox {{
+  padding: 4px 0;
+}}
 
 QSpinBox:read-only,
 QDoubleSpinBox:read-only,
@@ -144,6 +148,7 @@ QSpinBox::down-button,
 QDoubleSpinBox::up-button,
 QDoubleSpinBox::down-button {{
     background: {surface_06dp};
+    height: 16px;
 }}
 
 QSpinBox::up-arrow,
@@ -159,14 +164,21 @@ QDoubleSpinBox::down-arrow {{
 }}
 
 
-QPushButton, QToolButton {{
+QPushButton,
+QToolButton {{
   background-color: {surface_06dp};
   border-radius: 8px;
 }}
-QPushButton:hover, QToolButton:hover {{
+QPushButton:hover,
+QToolButton:hover,
+QSpinBox::up-button:hover,
+QSpinBox::down-button:hover,
+QDoubleSpinBox::up-button:hover,
+QDoubleSpinBox::down-button:hover {{
   background-color: {surface_12dp};
 }}
-QPushButton:pressed, QToolButton:pressed {{
+QPushButton:pressed,
+QToolButton:pressed {{
   background-color: {surface_24dp};
 }}
 QPushButton, QCommandLinkButton {{
