@@ -56,7 +56,9 @@ class CliArgs:
     songpath: Path | None = None
 
     # Development
+    profile: bool = False
     skip_pyside: bool = False
+    trace_sql: bool = False
 
 
 def main() -> None:
@@ -78,16 +80,22 @@ def main() -> None:
     if not utils.is_bundle():
         dev_options = parser.add_argument_group("development", "Development options.")
         dev_options.add_argument(
+            "--profile", action="store_true", help="Run with profiling."
+        )
+        dev_options.add_argument(
             "--skip-pyside", action="store_true", help="Skip PySide file generation."
+        )
+        dev_options.add_argument(
+            "--trace-sql", action="store_true", help="Trace SQL statements."
         )
 
     args = parser.parse_args(namespace=CliArgs())
     _handle_args(args)
     utils.AppPaths.make_dirs()
-    if os.environ.get("PROFILE"):
-        _with_profile(_run)
+    if args.profile:
+        _with_profile(lambda: _run(args))
     else:
-        _run()
+        _run(args)
 
 
 def _handle_args(args: CliArgs) -> None:
@@ -100,7 +108,7 @@ def _handle_args(args: CliArgs) -> None:
         tools.generate_pyside_files()
 
 
-def _run() -> None:
+def _run(args: CliArgs) -> None:
     from usdb_syncer.gui.mw import MainWindow  # pylint: disable=import-outside-toplevel
 
     app = _init_app()
@@ -122,7 +130,7 @@ def _run() -> None:
     else:
         logging.info("Running in dev mode, skipping update check.")
     try:
-        _load_main_window(mw)
+        _load_main_window(mw, args)
     except errors.UnknownSchemaError:
         QtWidgets.QMessageBox.critical(mw, "Version conflict", SCHEMA_ERROR_MESSAGE)
         return
@@ -148,13 +156,13 @@ def _with_profile(func: Callable[[], None]) -> None:
     subprocess.call(["snakeviz", utils.AppPaths.profile])
 
 
-def _load_main_window(mw: MainWindow) -> None:
+def _load_main_window(mw: MainWindow, args: CliArgs) -> None:
     splash = _generate_splashscreen()
     splash.show()
     QtWidgets.QApplication.processEvents()
     splash.showMessage("Loading song database ...", color=Qt.GlobalColor.gray)
     folder = settings.get_song_dir()
-    db.connect(utils.AppPaths.db)
+    db.connect(utils.AppPaths.db, trace=args.trace_sql)
     with db.transaction():
         song_routines.load_available_songs(force_reload=False)
         song_routines.synchronize_sync_meta_folder(folder)

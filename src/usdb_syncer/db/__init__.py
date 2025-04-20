@@ -113,8 +113,8 @@ def _validate_schema(connection: sqlite3.Connection) -> None:
     connection.executescript(_SqlCache.get("setup_session_script.sql", cache=False))
 
 
-def connect(db_path: Path | str) -> None:
-    _DbState.connect(db_path, trace=bool(os.environ.get("TRACESQL")))
+def connect(db_path: Path | str, trace: bool) -> None:
+    _DbState.connect(db_path, trace=trace)
 
 
 def close() -> None:
