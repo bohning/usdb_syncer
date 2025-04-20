@@ -77,7 +77,7 @@ class Icon(enum.Enum):
     TEXT = "text.png", "file-document-white.svg"
     TITLE = "title.png", "format-title-white.svg"
     ULTRASTAR_MANAGER = "ultrastar-manager.png", None
-    USDB = "faviconUSDB.png", None
+    USDB = "faviconUSDB.png", "usdb-white.svg"
     USDX = "usdx.png", None
     VIDEO = "video.png", "filmstrip-white.svg"
     VIEWS = "views.png", "views-white.svg"
