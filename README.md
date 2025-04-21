@@ -19,7 +19,7 @@ The following explains how to set up a development environment.
 ### Prerequisites
 
 - [git](https://www.git-scm.com/downloads)
-- [Python 3.12](https://www.python.org/downloads/)
+- [Python 3.12](https://www.python.org/downloads/) (3.11 should work as well)
 - [Poetry](https://python-poetry.org/docs/#installation)
 
 ### Project Setup
@@ -46,7 +46,7 @@ Now make sure the Python 3.12 environment you installed Poetry to is activated a
 ```bash
 poetry install
 # optionally activate the venv
-poetry shell
+poetry shell # `poetry env activate` since Poetry 2
 ```
 
 ### Run usdb_syncer
