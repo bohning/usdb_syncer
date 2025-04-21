@@ -7,8 +7,9 @@ from functools import partial
 from typing import TYPE_CHECKING, Any
 
 import send2trash
-from PySide6 import QtCore, QtGui, QtMultimedia, QtWidgets
+from PySide6 import QtCore, QtMultimedia, QtWidgets
 from PySide6.QtCore import QItemSelectionModel, Qt
+from PySide6.QtGui import QAction, QCursor, QKeySequence, QShortcut
 
 from usdb_syncer import SongId, db, events, media_player, settings, sync_meta
 from usdb_syncer.gui import ffmpeg_dialog
@@ -51,7 +52,9 @@ class SongTable:
         events.TreeFilterChanged.subscribe(self._on_tree_filter_changed)
         events.TextFilterChanged.subscribe(self._on_text_filter_changed)
         events.SavedSearchRestored.subscribe(self._on_saved_search_restored)
-        QtGui.QShortcut(Qt.Key.Key_Space, self._view).activated.connect(self._on_space)
+        QShortcut(QKeySequence(Qt.Key.Key_Space), self._view).activated.connect(
+            self._on_space
+        )
 
     def _on_playback_state_changed(
         self, state: QtMultimedia.QMediaPlayer.PlaybackState
@@ -132,7 +135,7 @@ class SongTable:
         self._view.setModel(self._model)
         self._view.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
         self._view.customContextMenuRequested.connect(
-            lambda: self.mw.menu_songs.exec(QtGui.QCursor.pos())
+            lambda: self.mw.menu_songs.exec(QCursor.pos())
         )
         self._view.doubleClicked.connect(lambda idx: self._download([idx.row()]))
         self._view.clicked.connect(self._on_click)
@@ -397,7 +400,7 @@ def _add_action(
     slot: Callable[[], None],
     checked: bool | None = None,
 ) -> None:
-    action = QtGui.QAction(name, menu)
+    action = QAction(name, menu)
     if checked is not None:
         action.setCheckable(True)
         action.setChecked(checked)

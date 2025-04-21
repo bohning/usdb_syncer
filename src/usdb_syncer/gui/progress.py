@@ -61,9 +61,7 @@ def run_with_progress(
     on_done: Callable[[Result[T]], Any] = lambda res: res.result(),
 ) -> None:
     """Runs a task on a background thread while a modal progress dialog is shown."""
-    dialog = ProgressDialog(
-        labelText=label, cancelButtonText="Abort", maximum=0, minimum=0
-    )
+    dialog = ProgressDialog(parent=None, labelText=label, minimum=0, maximum=0)
     dialog.setCancelButton(None)  # type: ignore
     dialog.setWindowModality(QtCore.Qt.WindowModality.ApplicationModal)
     dialog.setWindowTitle("USDB Syncer")
