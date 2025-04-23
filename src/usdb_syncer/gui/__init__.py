@@ -57,7 +57,7 @@ class CliArgs:
 
     # Development
     profile: bool = False
-    skip_pyside: bool = False
+    skip_pyside: bool = utils.is_bundle()
     trace_sql: bool = False
 
     @classmethod
