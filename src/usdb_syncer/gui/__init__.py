@@ -101,9 +101,9 @@ class CliArgs:
         if self.songpath:
             settings.set_song_dir(self.songpath.resolve(), temp=True)
         if not (utils.is_release() or self.skip_pyside):
-            import tools  # pylint: disable=import-outside-toplevel
+            import tools.generate_pyside_files  # pylint: disable=import-outside-toplevel
 
-            tools.generate_pyside_files()
+            tools.generate_pyside_files.main()
         db.set_trace_sql(self.trace_sql)
 
 

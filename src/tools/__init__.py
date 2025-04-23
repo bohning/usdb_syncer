@@ -1,6 +1,1 @@
 """Tools for running and building."""
-
-# ruff: noqa: F401
-
-from tools.generate_pyside_files import main as generate_pyside_files
-from tools.generate_song_list_json import main as generate_song_list_json

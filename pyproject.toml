@@ -4,7 +4,7 @@ build-backend = "poetry_dynamic_versioning.backend"
 
 [tool.poetry]
 name = "usdb_syncer"
-version = "0.0.0"  # will be replaced by current git tag via poetry-dynamic-versioning 
+version = "0.0.0"  # will be replaced by current git tag via poetry-dynamic-versioning
 authors = ["Markus Böhning <markus.boehning@gmail.com>"]
 description = "A download manager for USDB songs."
 readme = ["README.md"]
