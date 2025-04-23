@@ -26,7 +26,7 @@ def discord_webhook_url() -> str | None:
 
 @functools.lru_cache(maxsize=1)
 def _fetch_config() -> dict:
-    if utils.is_bundle():
+    if utils.is_release():
         return _fetch_remote_config()
     with _CONFIG_PATH.open(encoding="utf-8") as file:
         return json.load(file)

@@ -35,6 +35,11 @@ def is_bundle() -> bool:
     return bool(getattr(sys, "frozen", False) and getattr(sys, "_MEIPASS", False))
 
 
+def is_release() -> bool:
+    """True if the app is running from a bundle or build, i.e. not from source."""
+    return usdb_syncer.__version__ != "dev"
+
+
 def _root() -> Path:
     """Returns source root folder or temprory bundle folder if running as such."""
     if getattr(sys, "frozen", False) and (bundle := getattr(sys, "_MEIPASS", None)):

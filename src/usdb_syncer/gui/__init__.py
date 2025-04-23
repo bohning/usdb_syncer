@@ -17,7 +17,6 @@ import attrs
 from PySide6 import QtCore, QtGui, QtWidgets
 from PySide6.QtCore import Qt
 
-import tools
 import usdb_syncer
 from usdb_syncer import (
     addons,
@@ -57,7 +56,7 @@ class CliArgs:
 
     # Development
     profile: bool = False
-    skip_pyside: bool = utils.is_bundle()
+    skip_pyside: bool = utils.is_release()
     trace_sql: bool = False
 
     @classmethod
@@ -86,7 +85,7 @@ class CliArgs:
         dev_options.add_argument(
             "--profile", action="store_true", help="Run with profiling."
         )
-        if not utils.is_bundle():
+        if not utils.is_release():
             dev_options.add_argument(
                 "--skip-pyside",
                 action="store_true",
@@ -101,7 +100,9 @@ class CliArgs:
             print("Settings reset to default.")
         if self.songpath:
             settings.set_song_dir(self.songpath.resolve(), temp=True)
-        if not self.skip_pyside:
+        if not (utils.is_release() or self.skip_pyside):
+            import tools  # pylint: disable=import-outside-toplevel
+
             tools.generate_pyside_files()
         db.set_trace_sql(self.trace_sql)
 
@@ -129,7 +130,7 @@ def _run() -> None:
         _TextEditLogger(mw),
     )
     mw.label_update_hint.setVisible(False)
-    if utils.is_bundle():
+    if utils.is_release():
         if version := utils.newer_version_available():
             mw.label_update_hint.setText(
                 mw.label_update_hint.text().replace("VERSION", version)

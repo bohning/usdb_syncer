@@ -23,7 +23,7 @@ jobs:
           poetry install --without dev --without build
       - name: Scrape USDB song list to ship with the bundle
         run: >
-          poetry run generate_song_list_json
+          poetry run python -m tools.generate_song_list_json
           -t 'song_list.json'
           -u '${{ secrets.USDB_USER }}'
           -p '${{ secrets.USDB_PASSWORD }}'
@@ -115,7 +115,7 @@ jobs:
         run: |
           poetry install --without dev
       - name: Generate GUI elements
-        run: poetry run generate_pyside_files
+        run: poetry run python -m tools.generate_pyside_files
       - name: Build with pyinstaller for ${{matrix.os}}
         # _tkinter hook is run erroneously?
         run: >
