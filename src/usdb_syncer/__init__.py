@@ -10,6 +10,8 @@ from pathlib import Path
 from usdb_syncer import errors
 from usdb_syncer.constants import Usdb
 
+__version__ = "dev"
+
 
 class SongId(int):
     """Bounded int representing an id on USDB.

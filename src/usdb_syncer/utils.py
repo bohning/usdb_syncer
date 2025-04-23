@@ -19,6 +19,7 @@ from bs4 import BeautifulSoup, Tag
 from packaging import version
 from unidecode import unidecode
 
+import usdb_syncer
 from usdb_syncer import constants
 from usdb_syncer.logger import logger
 
@@ -313,11 +314,11 @@ def get_latest_version() -> str | None:
 
 def newer_version_available() -> str | None:
     if latest_version := get_latest_version():
-        if version.parse(constants.VERSION) < version.parse(latest_version):
+        if version.parse(usdb_syncer.__version__) < version.parse(latest_version):
             logger.warning(
                 f"USDB Syncer {latest_version} is available! "
-                f"(You have {constants.VERSION}). Please download the latest release "
-                f"from {constants.GITHUB_DL_LATEST}."
+                f"(You have {usdb_syncer.__version__}). Please download the latest "
+                f"release from {constants.GITHUB_DL_LATEST}."
             )
             return latest_version
         logger.info(f"You are running the latest Syncer version {latest_version}.")
