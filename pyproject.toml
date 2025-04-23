@@ -32,6 +32,7 @@ setuptools = "^75.8.0"
 unidecode = "*"
 yt-dlp = {version = "*", extras = ["default", "curl_cffi"]}
 wheel = "*"
+pylint = "^3.3.6"
 
 [tool.poetry-dynamic-versioning]
 enable = true
@@ -39,16 +40,14 @@ enable = true
 [tool.poetry.group.dev.dependencies]
 tox = "*"
 # lint
-black = "*"
-isort = "*"
 mypy = "*"
-pylint = "*"
 types-setuptools = "*"
 types-requests = "*"
 # test
 pytest = "*"
 # benchmark
 snakeviz = "*"
+ruff = "^0.11.6"
 
 [tool.poetry.group.build.dependencies]
 pyinstaller = "*"
@@ -64,10 +63,6 @@ generate_pyside_files = "tools.generate_pyside_files:cli_entry"
 generate_song_list_json = "tools.generate_song_list_json:cli_entry"
 write_release_info = "tools.write_release_info:cli_entry"
 
-[tool.isort]
-profile = "black"
-skip_glob = ["src/usdb_syncer/gui/forms", "src/usdb_syncer/gui/resources"]
-
 [tool.black]
 skip-magic-trailing-comma = true
 preview = true
@@ -79,8 +74,6 @@ ignore-paths = [
     "venv",
     ".tox",
 ]
-# Add McCabe code complexity checker
-load-plugins = "pylint.extensions.mccabe"
 
 [tool.pylint.basic]
 good-names = ["mw", "p1", "p2", "closeEvent", "customEvent"]
@@ -99,18 +92,34 @@ disable = [
     "line-too-long",
 ]
 
+[tool.ruff]
+# Exclude a variety of commonly ignored directories.
+exclude = [
+    ".git",
+    ".mypy_cache",
+    ".pytest_cache",
+    ".ruff_cache",
+    ".tox",
+    ".venv",
+    "build",
+    "dist",
+    "venv",
+    "forms",
+    "resources",
+]
+target-version = "py312"
+preview = true
+
+[tool.ruff.lint]
+select = ["E", "W", "A", "B", "C4", "C90", "S", "PTH", "I", "N", "TRY", "RUF"]
+ignore = []
+
+# Allow fix for all enabled rules (when `--fix`) is provided.
+fixable = ["ALL"]
+unfixable = []
+
 [tool.mypy]
 ignore_missing_imports = true
 disallow_untyped_defs = true
 follow_imports = "silent"
 exclude = ["src/usdb_syncer/gui/forms", "src/usdb_syncer/gui/resources"]
-
-[tool.pyright]
-# generates a lot of false positives for mutagen
-reportPrivateImportUsage = false
-exclude = [
-    "src/usdb_syncer/gui/forms",
-    "src/usdb_syncer/gui/resources",
-    "venv",
-    ".tox",
-]
