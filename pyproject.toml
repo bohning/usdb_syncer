@@ -39,7 +39,7 @@ enable = true
 [tool.poetry.group.dev.dependencies]
 tox = "*"
 # lint
-ruff = "^0.11.6"
+ruff = "0.11.6"
 mypy = "*"
 types-setuptools = "*"
 types-requests = "*"
@@ -74,9 +74,10 @@ preview = true
 skip-magic-trailing-comma = true
 
 [tool.ruff.lint]
-select = ["A", "B", "C4", "C90", "COM", "E", "G", "I", "LOG", "N", "PTH", "Q", "S", "TRY", "RUF", "W"]
+select = ["A", "B", "BLE", "C4", "C90", "COM", "E", "F", "I", "LOG", "N", "PTH", "Q", "RUF", "S", "TRY", "W"]
 # Since we're using the ruff formatter, we follow ruff's official guide on what rules to skip: https://docs.astral.sh/ruff/formatter/#conflicting-lint-rules
-ignore = ["E501", "W191", "E111", "E114", "E117", "D206", "D300", "Q000", "Q001", "Q002", "Q003", "COM812", "COM819"]
+# We're also ignoring `S404` and `S603` 
+ignore = ["E501", "W191", "E111", "E114", "E117", "D206", "D300", "Q000", "Q001", "Q002", "Q003", "COM812", "COM819", "S404", "S603"]
 
 # Allow fix for all enabled rules (when `--fix`) is provided.
 fixable = ["ALL"]

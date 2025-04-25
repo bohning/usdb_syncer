@@ -1,6 +1,5 @@
 """usdb_syncer's GUI"""
 
-import os
 import webbrowser
 from collections.abc import Callable
 from pathlib import Path
@@ -242,7 +241,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         file_list = QFileDialog.getOpenFileNames(
             self,
             caption="Select one or more files to import USDB IDs from",
-            dir=os.getcwd(),
+            dir=str(Path.cwd()),
             filter=(
                 "JSON, USDB IDs, Weblinks (*.json *.usdb_ids *.url *.webloc *.desktop)"
             ),
@@ -263,7 +262,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         path = QFileDialog.getSaveFileName(
             self,
             caption="Select export file for USDB IDs",
-            dir=os.getcwd(),
+            dir=str(Path.cwd()),
             filter="USDB ID File (*.usdb_ids)",
         )[0]
         if not path:
@@ -316,7 +315,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
     def _open_current_song_in_app(self, app: settings.SupportedApps) -> None:
         self._open_current_song(lambda path: settings.SupportedApps.open_app(app, path))
 
-    def closeEvent(self, event: QtGui.QCloseEvent) -> None:
+    def closeEvent(self, event: QtGui.QCloseEvent) -> None:  # noqa: N802
         def on_done(result: progress.Result) -> None:
             result.log_error()
             self.table.save_state()

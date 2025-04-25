@@ -169,7 +169,7 @@ def _download_resource(
     with yt_dlp.YoutubeDL(options_without_cookies) as ydl:
         try:
             filename = ydl.prepare_filename(ydl.extract_info(url))
-            ext = os.path.splitext(filename)[1][1:]
+            ext = Path(filename).suffix[1:]
             return ResourceDLResult(extension=ext)
         except yt_dlp.utils.UnsupportedError:
             return ResourceDLResult(error=ResourceDLError.RESOURCE_UNSUPPORTED)
@@ -201,7 +201,7 @@ def _retry_with_cookies(
     with yt_dlp.YoutubeDL(options) as ydl:
         try:
             filename = ydl.prepare_filename(ydl.extract_info(url))
-            ext = os.path.splitext(filename)[1][1:]
+            ext = Path(filename).suffix[1:]
             return ResourceDLResult(extension=ext)
         except yt_dlp.utils.YoutubeDLError as re:
             logger.error(f"Retry failed: {utils.remove_ansi_codes(str(re))}")

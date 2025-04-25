@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import cProfile
 import logging
-import os
 import subprocess
 import sys
 import traceback
@@ -135,7 +134,7 @@ def _run() -> None:
             mw.label_update_hint.setVisible(True)
             mw.label_update_hint.setOpenExternalLinks(True)
     else:
-        logging.info("Running in dev mode, skipping update check.")
+        logger.logger.info("Running in dev mode, skipping update check.")
     try:
         _load_main_window(mw)
     except errors.UnknownSchemaError:
@@ -150,7 +149,7 @@ def _excepthook(
     error_type: type[BaseException], error: BaseException, tb_type: TracebackType | None
 ) -> Any:
     text = "    ".join(traceback.format_exception(error_type, error, tb_type)).strip()
-    logging.error(f"Uncaught exception:\n    {text}")
+    logger.logger.error(f"Uncaught exception:\n    {text}")
 
 
 def _with_profile(func: Callable[[], None]) -> None:
@@ -160,7 +159,7 @@ def _with_profile(func: Callable[[], None]) -> None:
     func()
     profiler.disable()
     profiler.dump_stats(utils.AppPaths.profile)
-    subprocess.call(["snakeviz", utils.AppPaths.profile])
+    subprocess.call(["snakeviz", utils.AppPaths.profile])  # noqa: S607
 
 
 def _load_main_window(mw: MainWindow) -> None:
@@ -179,12 +178,12 @@ def _load_main_window(mw: MainWindow) -> None:
     mw.tree.populate()
     if default_search:
         events.SavedSearchRestored(default_search.search).post()
-        logging.info(f"Applied default search '{default_search.name}'.")
+        logger.logger.info(f"Applied default search '{default_search.name}'.")
     mw.table.search_songs()
     splash.showMessage("Song database successfully loaded.", color=Qt.GlobalColor.gray)
     mw.setWindowTitle(f"USDB Syncer ({constants.VERSION})")
     mw.show()
-    logging.info("Application successfully loaded.")
+    logger.logger.info("Application successfully loaded.")
     splash.finish(mw)
 
 

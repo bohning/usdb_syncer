@@ -44,7 +44,7 @@ class TreeModel(QAbstractItemModel):
         idx = self.index_for_item(item)
         self.dataChanged.emit(idx, idx, [Qt.ItemDataRole.CheckStateRole])
 
-    ### change data
+    # change data
 
     def populate(self) -> None:
         self.beginResetModel()
@@ -86,21 +86,25 @@ class TreeModel(QAbstractItemModel):
         item.parent.children = (*children[: index.row()], *children[index.row() + 1 :])
         self.endRemoveRows()
 
-    ### QAbstractItemModel implementation
+    # QAbstractItemModel implementation
 
-    def rowCount(self, parent: QIndex = QModelIndex()) -> int:
+    def rowCount(self, parent: QIndex | None = None) -> int:  # noqa: N802
+        if parent is None:
+            parent = QModelIndex()
         if not parent.isValid():
             return len(self.root.children)
         item = cast(TreeItem, parent.internalPointer())
         return len(item.children)
 
     # pylint: disable=unused-argument
-    def columnCount(self, parent: QIndex = QModelIndex()) -> int:
+    def columnCount(self, parent: QIndex | None = None) -> int:  # noqa: N802
         return 1
 
     def index(
-        self, row: int, column: int, parent: QIndex = QModelIndex()
+        self, row: int, column: int, parent: QIndex | None = None
     ) -> QModelIndex:
+        if parent is None:
+            parent = QModelIndex()
         if not self.hasIndex(row, column, parent):
             return QModelIndex()
         if parent.isValid():
@@ -144,7 +148,7 @@ class TreeModel(QAbstractItemModel):
             return item.flags()
         return Qt.ItemFlag.NoItemFlags
 
-    def setData(self, index: QIndex, value: Any, role: int = 0) -> bool:
+    def setData(self, index: QIndex, value: Any, role: int = 0) -> bool:  # noqa: N802
         if not (
             role == Qt.ItemDataRole.EditRole
             and value
@@ -172,7 +176,7 @@ class TreeProxyModel(QSortFilterProxyModel):
         self._filter_invalidation_timer.setInterval(400)
         self._filter_invalidation_timer.timeout.connect(self._on_filter_changed)
 
-    def filterAcceptsRow(self, source_row: int, source_parent: QIndex) -> bool:
+    def filterAcceptsRow(self, source_row: int, source_parent: QIndex) -> bool:  # noqa: N802
         if not self._filter or not (
             parent := self._source.item_for_index(source_parent)
         ):

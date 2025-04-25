@@ -1,4 +1,6 @@
 """Database utilities."""
+# Ignore SQL injection warnings for this file.
+# ruff: noqa: S608
 
 from __future__ import annotations
 
@@ -13,7 +15,7 @@ import traceback
 from collections import defaultdict
 from collections.abc import Generator, Iterable, Iterator
 from pathlib import Path
-from typing import Any, assert_never, cast
+from typing import Any, ClassVar, assert_never, cast
 
 import attrs
 from more_itertools import batched
@@ -29,7 +31,7 @@ _SQL_VARIABLES_LIMIT = 32766
 
 
 class _SqlCache:
-    _cache: dict[str, str] = {}
+    _cache: ClassVar[dict[str, str]] = {}
 
     @classmethod
     def get(cls, name: str, cache: bool = True) -> str:
@@ -55,7 +57,7 @@ class _DbState:
     @classmethod
     def connect(cls, db_path: Path | str) -> None:
         if cls._local.connection:
-            raise errors.DatabaseError("Already connected to database!")
+            raise errors.AlreadyConnectedError()
         cls._local.connection = sqlite3.connect(
             db_path, check_same_thread=False, isolation_level=None, timeout=20
         )
@@ -68,7 +70,7 @@ class _DbState:
     @classmethod
     def connection(cls) -> sqlite3.Connection:
         if cls._local.connection is None:
-            raise errors.DatabaseError("Not connected to database!")
+            raise errors.NotConnectedError()
         return cls._local.connection
 
     @classmethod
@@ -189,7 +191,7 @@ class SongOrder(enum.Enum):
     BACKGROUND = enum.auto()
     STATUS = enum.auto()
 
-    def sql(self) -> str | None:
+    def sql(self) -> str | None:  # noqa: C901
         match self:
             case SongOrder.NONE:
                 return None
@@ -347,7 +349,7 @@ class SearchBuilder:
             dct[fields.statuses.name] = [
                 DownloadStatus(s) for s in dct[fields.statuses.name]
             ]
-            dct[fields.views.name] = [tuple(l) for l in dct[fields.views.name]]
+            dct[fields.views.name] = [tuple(item) for item in dct[fields.views.name]]
             return cls(**dct)
         except (
             json.decoder.JSONDecodeError,
@@ -496,7 +498,7 @@ def _fts5_start_phrase(text: str) -> str:
     return f'''^ "{text.replace('"', "")}"'''
 
 
-### UsdbSong
+# UsdbSong
 
 
 def get_usdb_song(song_id: SongId) -> tuple | None:
@@ -575,7 +577,7 @@ def find_similar_usdb_songs(artist: str, title: str) -> Iterable[SongId]:
     return (SongId(r[0]) for r in _DbState.connection().execute(stmt, params))
 
 
-### song filters
+# song filters
 
 
 def upsert_usdb_songs_languages(params: list[tuple[SongId, Iterable[str]]]) -> None:
@@ -655,46 +657,46 @@ def usdb_song_creators() -> list[tuple[str, int]]:
 def search_usdb_song_artists(search: str) -> set[str]:
     stmt = "SELECT artist FROM fts_usdb_song WHERE artist MATCH ?"
     rows = _DbState.connection().execute(stmt, (_fts5_phrases(search),)).fetchall()
-    return set(row[0] for row in rows)
+    return {row[0] for row in rows}
 
 
 def search_usdb_song_titles(search: str) -> set[str]:
     stmt = "SELECT title FROM fts_usdb_song WHERE title MATCH ?"
     rows = _DbState.connection().execute(stmt, (_fts5_phrases(search),)).fetchall()
-    return set(row[0] for row in rows)
+    return {row[0] for row in rows}
 
 
 def search_usdb_song_editions(search: str) -> set[str]:
     stmt = "SELECT edition FROM fts_usdb_song WHERE edition MATCH ?"
     rows = _DbState.connection().execute(stmt, (_fts5_phrases(search),)).fetchall()
-    return set(row[0] for row in rows)
+    return {row[0] for row in rows}
 
 
 def search_usdb_song_languages(search: str) -> set[str]:
     stmt = "SELECT language FROM fts_usdb_song WHERE language MATCH ?"
     rows = _DbState.connection().execute(stmt, (_fts5_phrases(search),)).fetchall()
-    return set(row[0] for row in rows)
+    return {row[0] for row in rows}
 
 
 def search_usdb_song_years(search: str) -> set[int]:
     stmt = "SELECT year FROM fts_usdb_song WHERE year MATCH ?"
     rows = _DbState.connection().execute(stmt, (_fts5_phrases(search),)).fetchall()
-    return set(row[0] for row in rows)
+    return {row[0] for row in rows}
 
 
 def search_usdb_song_genres(search: str) -> set[str]:
     stmt = "SELECT genre FROM fts_usdb_song WHERE genre MATCH ?"
     rows = _DbState.connection().execute(stmt, (_fts5_phrases(search),)).fetchall()
-    return set(row[0] for row in rows)
+    return {row[0] for row in rows}
 
 
 def search_usdb_song_creators(search: str) -> set[str]:
     stmt = "SELECT creator FROM fts_usdb_song WHERE creator MATCH ?"
     rows = _DbState.connection().execute(stmt, (_fts5_phrases(search),)).fetchall()
-    return set(row[0] for row in rows)
+    return {row[0] for row in rows}
 
 
-### SyncMeta
+# SyncMeta
 
 
 def get_in_folder(folder: Path) -> list[tuple]:
@@ -792,7 +794,7 @@ def get_custom_data_map() -> defaultdict[str, set[str]]:
     return data
 
 
-### ResourceFile
+# ResourceFile
 
 
 class ResourceFileKind(str, enum.Enum):
@@ -832,7 +834,7 @@ def upsert_resource_files(params: Iterable[ResourceFileParams]) -> None:
     _DbState.connection().executemany(stmt, (p.__dict__ for p in params))
 
 
-### Discord webhook
+# Discord webhook
 
 
 def maybe_insert_discord_notification(song_id: SongId, resource: str) -> bool:

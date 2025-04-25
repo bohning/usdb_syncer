@@ -5,15 +5,17 @@ import logging
 import sys
 from pathlib import Path
 
+logger = logging.getLogger(__name__)
+
 
 def main(path: Path, version: str, commit_hash: str) -> None:
-    logging.info(f"Rewriting file {path}")
+    logger.info(f"Rewriting file {path}")
     old = path.read_text(encoding="utf8")
     new = old.replace('VERSION = "dev"', f'VERSION = "{version}"').replace(
         'COMMIT_HASH = "dev"', f'COMMIT_HASH = "{commit_hash}"'
     )
     path.write_text(new, encoding="utf8", newline="\n")
-    logging.info(f"New content:\n{path.read_text(encoding='utf8')}")
+    logger.info(f"New content:\n{path.read_text(encoding='utf8')}")
 
 
 def cli_entry() -> None:

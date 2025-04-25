@@ -115,7 +115,7 @@ class TreeItem:
 
     def toggle_checked(self, _keep_siblings: bool) -> tuple[TreeItem, ...]:
         """Returns toggled items."""
-        return tuple()
+        return ()
 
     def decoration(self) -> QIcon | None:
         return None
@@ -171,7 +171,7 @@ class FilterItem(TreeItem):
         return Qt.ItemFlag.ItemIsEnabled
 
     def toggle_checked(self, _keep_siblings: bool) -> tuple[TreeItem, ...]:
-        return self.uncheck_children() if self.checked else tuple()
+        return self.uncheck_children() if self.checked else ()
 
     def uncheck_children(self) -> tuple[TreeItem, ...]:
         changed = tuple(self.checked_child_items())
@@ -179,7 +179,7 @@ class FilterItem(TreeItem):
             child.checked = False
         self.checked_children.clear()
         self.checked = False
-        return changed + (self,)
+        return (*changed, self)
 
     def set_child_checked(
         self, child: int, checked: bool, keep_siblings: bool
@@ -277,7 +277,7 @@ class Filter(enum.Enum):
     GENRE = enum.auto()
     CREATOR = enum.auto()
 
-    def __str__(self) -> str:
+    def __str__(self) -> str:  # noqa: C901
         match self:
             case Filter.SAVED:
                 return "Saved Searches"
@@ -306,7 +306,7 @@ class Filter(enum.Enum):
             case _ as unreachable:
                 assert_never(unreachable)
 
-    def variants(self) -> Iterable[SongMatch]:
+    def variants(self) -> Iterable[SongMatch]:  # noqa: C901
         match self:
             case Filter.SAVED:
                 return SavedSearch.load_all()
@@ -335,9 +335,8 @@ class Filter(enum.Enum):
             case _ as unreachable:
                 assert_never(unreachable)
 
-    # https://github.com/PyCQA/pylint/issues/7857
-    @cache  # pylint: disable=method-cache-max-size-none
-    def decoration(self) -> QIcon:
+    @cache
+    def decoration(self) -> QIcon:  # noqa: C901
         match self:
             case Filter.SAVED:
                 return QIcon(":/icons/heart.png")

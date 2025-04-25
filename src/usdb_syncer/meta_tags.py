@@ -159,7 +159,7 @@ class MetaTags:
     @classmethod
     def parse(cls, video_tag: str, logger: Log) -> MetaTags:
         meta_tags = cls()
-        if not "=" in video_tag:
+        if "=" not in video_tag:
             # probably a regular video file name and not a meta tag
             return meta_tags
         for pair in video_tag.split(","):
@@ -170,7 +170,7 @@ class MetaTags:
             meta_tags._parse_key_value_pair(key, value, logger)
         return meta_tags
 
-    def _parse_key_value_pair(self, key: str, value: str, logger: Log) -> None:
+    def _parse_key_value_pair(self, key: str, value: str, logger: Log) -> None:  # noqa: C901
         value = decode_meta_tag_value(value)
         match key:
             case "v":

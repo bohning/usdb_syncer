@@ -1,8 +1,8 @@
 """Dialog to report missing ffmpeg."""
 
-import os
 import sys
 from collections.abc import Callable
+from pathlib import Path
 
 from PySide6.QtWidgets import QDialog, QFileDialog, QWidget
 
@@ -59,4 +59,4 @@ class FfmpegDialog(Ui_Dialog, QDialog):
     def _get_ffmpeg_dir(self) -> str:
         filt = "ffmpeg.exe" if sys.platform == "win32" else "ffmpeg"
         path = QFileDialog.getOpenFileName(self, "Select ffmpeg", "", filt)[0]
-        return os.path.dirname(path)
+        return str(Path(path).parent)

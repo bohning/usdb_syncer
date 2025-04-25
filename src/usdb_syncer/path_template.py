@@ -161,7 +161,7 @@ class PathTemplatePlaceholder(PathTemplateComponentToken, enum.Enum):
         except ValueError as error:
             raise InvalidPlaceholderError(name) from error
 
-    def evaluate(self, song: UsdbSong) -> str:
+    def evaluate(self, song: UsdbSong) -> str:  # noqa: C901
         match self:
             case PathTemplatePlaceholder.SONG_ID:
                 return str(song.song_id)
@@ -193,9 +193,7 @@ class PathTemplatePlaceholder(PathTemplateComponentToken, enum.Enum):
                     return song.edition
                 return UNKNOWN_PLACEHOLDER_STRING
             case PathTemplatePlaceholder.RATING:
-                if (
-                    song.rating
-                ):  # This is annoying because we can't differentiate between a rating of 0 and no rating. Would take a refactor of UsdbSong to fix.
+                if song.rating:  # This is annoying because we can't differentiate between a rating of 0 and no rating. Would take a refactor of UsdbSong to fix.
                     return str(song.rating)
                 return UNKNOWN_PLACEHOLDER_STRING
             case _ as unreachable:

@@ -65,7 +65,7 @@ class Headers:
             if not lines[0].startswith("#"):
                 break
             line = lines.pop(0).removeprefix("#")
-            if not ":" in line:
+            if ":" not in line:
                 logger.warning(f"header without value: '{line}'")
                 continue
             header, value = line.split(":", maxsplit=1)
@@ -77,9 +77,7 @@ class Headers:
             except ValueError:
                 logger.warning(f"invalid header value: '{line}'")
         if "title" not in kwargs or "artist" not in kwargs or "bpm" not in kwargs:
-            raise errors.NotesParseError(
-                "cannot parse song without artist, title or bpm"
-            )
+            raise errors.HeadersRequiredMissingError()
         return cls(**kwargs)
 
     def set_version(self, version: FormatVersion) -> None:
@@ -133,9 +131,10 @@ class Headers:
             if (val := getattr(self, key)) is not None
         )
         if self.unknown:
-            out = "\n".join(
-                (out, *(f"#{key.upper()}:{val}" for key, val in self.unknown.items()))
-            )
+            out = "\n".join((
+                out,
+                *(f"#{key.upper()}:{val}" for key, val in self.unknown.items()),
+            ))
         return out
 
     def artist_title_str(self) -> str:

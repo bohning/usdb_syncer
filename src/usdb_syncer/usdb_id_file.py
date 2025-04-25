@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import configparser
 import json
-import os
 from collections.abc import Iterable
+from pathlib import Path
 from urllib.parse import parse_qs, urlparse
 
 import attrs
@@ -279,7 +279,7 @@ def get_available_song_ids_from_files(file_list: list[str]) -> list[SongId]:
         try:
             song_ids += parse_usdb_id_file(path)
         except UsdbIdFileError as error:
-            logger.error(f"Failed to import file '{path}': {str(error)}")
+            logger.error(f"Failed to import file '{path}': {error!s}")
             return []
 
     unique_song_ids = list(set(song_ids))
@@ -287,7 +287,7 @@ def get_available_song_ids_from_files(file_list: list[str]) -> list[SongId]:
     logger.info(
         f"read {len(file_list)} file(s), "
         f"found {len(unique_song_ids)} "
-        f"USDB IDs: {', '.join(str(id) for id in unique_song_ids)}"
+        f"USDB IDs: {', '.join(str(id_) for id_ in unique_song_ids)}"
     )
     if unavailable_song_ids := [
         song_id for song_id in unique_song_ids if not UsdbSong.get(song_id)
@@ -313,7 +313,7 @@ def get_available_song_ids_from_files(file_list: list[str]) -> list[SongId]:
 def _get_json_file_content(filepath: str) -> str:
     filecontent: str
     try:
-        with open(filepath, "r", encoding="utf-8") as file:
+        with Path(filepath).open("r", encoding="utf-8") as file:
             filecontent = file.read()
     except OSError as exception:
         raise UsdbIdFileReadError() from exception
@@ -390,7 +390,7 @@ def _parse_desktop_file(filepath: str) -> SongId:
 
 def _get_soup(filepath: str) -> BeautifulSoup:
     try:
-        with open(filepath, "r", encoding="utf-8") as file:
+        with Path(filepath).open("r", encoding="utf-8") as file:
             soup = BeautifulSoup(file, features="lxml-xml")
     except OSError as exception:
         raise UsdbIdFileReadError() from exception
@@ -431,7 +431,7 @@ def _parse_webloc_file(filepath: str) -> SongId:
 def _parse_usdb_ids_file(filepath: str) -> list[SongId]:
     lines: list[str] = []
     try:
-        with open(filepath, "r", encoding="utf-8") as file:
+        with Path(filepath).open("r", encoding="utf-8") as file:
             lines = file.readlines()
     except OSError as exception:
         raise UsdbIdFileReadError() from exception
@@ -480,7 +480,7 @@ def _parse_url(url: str | None) -> SongId:
 
 def parse_usdb_id_file(filepath: str) -> list[SongId]:
     """parses files for USDB IDs"""
-    file_extension = os.path.splitext(filepath)[1]
+    file_extension = Path(filepath).suffix
     song_ids: list[SongId] = []
     if file_extension == ".json":
         song_ids = _parse_json_file(filepath)
@@ -498,5 +498,5 @@ def parse_usdb_id_file(filepath: str) -> list[SongId]:
 
 
 def write_usdb_id_file(filepath: str, song_ids: Iterable[SongId]) -> None:
-    with open(filepath, encoding="utf-8", mode="w") as file:
-        file.write("\n".join(str(id) for id in song_ids))
+    with Path(filepath).open(encoding="utf-8", mode="w") as file:
+        file.write("\n".join(str(id_) for id_ in song_ids))

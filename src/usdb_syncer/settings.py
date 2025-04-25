@@ -333,7 +333,7 @@ class YtdlpRateLimit(Enum):
 
     def __str__(self) -> str:
         if self.value is not None:
-            return f"{self.value//1024} KiB/s"
+            return f"{self.value // 1024} KiB/s"
         return "disabled"
 
 
@@ -508,7 +508,7 @@ class Browser(Enum):
             return rookiepy.to_cookiejar(function([Usdb.DOMAIN]))
         except Exception:  # pylint: disable=broad-exception-caught
             logger.debug(traceback.format_exc())
-        logger.warning(f"Failed to retrieve {str(self)} cookies.")
+        logger.warning(f"Failed to retrieve {self!s} cookies.")
         return None
 
 
@@ -725,17 +725,17 @@ class SupportedApps(StrEnum):
             utils.start_process_detached(cmd)
         except FileNotFoundError:
             logger.error(
-                f"Failed to launch {self} from '{str(executable)}', file not found. "
+                f"Failed to launch {self} from '{executable!s}', file not found. "
                 "Please check the executable path in the settings."
             )
         except OSError:
             logger.error(
-                f"Failed to launch {self} from '{str(executable)}', I/O error."
+                f"Failed to launch {self} from '{executable!s}', I/O error."
             )
             logger.debug(traceback.format_exc())
         except subprocess.SubprocessError:
             logger.error(
-                f"Failed to launch {self} from '{str(executable)}', subprocess error."
+                f"Failed to launch {self} from '{executable!s}', subprocess error."
             )
             logger.debug(traceback.format_exc())
 

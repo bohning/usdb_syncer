@@ -36,7 +36,7 @@ class Column(IntEnum):
     BACKGROUND = enum.auto()
     DOWNLOAD_STATUS = enum.auto()
 
-    def display_data(self) -> str | None:
+    def display_data(self) -> str | None:  # noqa: C901
         match self:
             case Column.SONG_ID:
                 return "ID"
@@ -76,7 +76,7 @@ class Column(IntEnum):
 
     # https://github.com/PyCQA/pylint/issues/7857
     @cache  # pylint: disable=method-cache-max-size-none
-    def decoration_data(self) -> QIcon | None:
+    def decoration_data(self) -> QIcon | None:  # noqa: C901
         match self:
             case Column.SAMPLE_URL:
                 return QIcon(":/icons/sample.png")
@@ -152,7 +152,7 @@ class Column(IntEnum):
             case _ as unreachable:
                 assert_never(unreachable)
 
-    def song_order(self) -> db.SongOrder:
+    def song_order(self) -> db.SongOrder:  # noqa: C901
         match self:
             case Column.SAMPLE_URL:
                 return db.SongOrder.SAMPLE_URL
@@ -198,7 +198,7 @@ class Column(IntEnum):
                 assert_never(unreachable)
 
     @classmethod
-    def from_song_order(cls, song_order: db.SongOrder) -> Column:
+    def from_song_order(cls, song_order: db.SongOrder) -> Column:  # noqa: C901
         match song_order:
             case db.SongOrder.SAMPLE_URL:
                 return Column.SAMPLE_URL

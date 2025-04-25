@@ -23,7 +23,7 @@ QIndex = QModelIndex | QPersistentModelIndex
 class TableModel(QAbstractTableModel):
     """Table model for song data."""
 
-    _ids: tuple[SongId, ...] = tuple()
+    _ids: tuple[SongId, ...] = ()
     _rows: dict[SongId, int]
 
     def __init__(self, parent: QObject) -> None:
@@ -76,12 +76,16 @@ class TableModel(QAbstractTableModel):
         self._ids = self._ids[:row] + self._ids[row + 1 :]
         self.endRemoveRows()
 
-    ### QAbstractTableModel implementation
+    # QAbstractTableModel implementation
 
-    def columnCount(self, parent: QIndex = QModelIndex()) -> int:
+    def columnCount(self, parent: QIndex | None = None) -> int:  # noqa: N802
+        if parent is None:
+            parent = QModelIndex()
         return 0 if parent.isValid() else len(Column)
 
-    def rowCount(self, parent: QIndex = QModelIndex()) -> int:
+    def rowCount(self, parent: QIndex | None = None) -> int:  # noqa: N802
+        if parent is None:
+            parent = QModelIndex()
         return 0 if parent.isValid() else len(self._ids)
 
     def data(self, index: QIndex, role: int = Qt.ItemDataRole.DisplayRole) -> Any:
@@ -101,7 +105,7 @@ class TableModel(QAbstractTableModel):
             return song
         return None
 
-    def headerData(
+    def headerData(  # noqa: N802
         self,
         section: int,
         orientation: Qt.Orientation,
@@ -116,7 +120,7 @@ class TableModel(QAbstractTableModel):
         return None
 
 
-def _display_data(song: UsdbSong, column: int) -> str | None:
+def _display_data(song: UsdbSong, column: int) -> str | None:  # noqa: C901
     col = Column(column)
     match col:
         case Column.SONG_ID:
@@ -163,7 +167,7 @@ def _display_data(song: UsdbSong, column: int) -> str | None:
             assert_never(unreachable)
 
 
-def _decoration_data(song: UsdbSong, column: int) -> QIcon | None:
+def _decoration_data(song: UsdbSong, column: int) -> QIcon | None:  # noqa: C901
     col = Column(column)
     match col:
         case (

@@ -67,7 +67,7 @@ def example_notes_str(meta_tags: MetaTags = MetaTags()) -> str:
 #ARTIST:artist
 #BPM:250
 #GAP:12345
-#VIDEO:{str(meta_tags)}
+#VIDEO:{meta_tags!s}
 : 0 1 0 first note 
 * 2 1 0 golden 
 F 4 1 0 freestyle 
@@ -102,6 +102,6 @@ def details_from_song(song: UsdbSong) -> SongDetails:
         date_time=datetime.datetime(2024, 7, 20),
         uploader="unknown",
         editors=[],
-        votes=int(100),
+        votes=(100),
         audio_sample=None,
     )

@@ -41,7 +41,7 @@ class Note:
     def parse(cls, value: str, logger: Log) -> Note:
         regex = re.compile(r"(:|\*|F|R|G):? +(-?\d+) +(\d+) +(-?\d+)(?: (.*))?")
         if not (match := regex.fullmatch(value)):
-            raise errors.NotesParseError(f"invalid note: '{value}'")
+            raise errors.InvalidNoteError(value)
         text = match.group(5) or ""
         try:
             kind = NoteKind(match.group(1))
@@ -49,7 +49,7 @@ class Note:
             duration = int(match.group(3))
             pitch = int(match.group(4))
         except ValueError as err:
-            raise errors.NotesParseError(f"invalid note: '{value}'") from err
+            raise errors.InvalidNoteError(value) from err
         if kind != NoteKind.FREESTYLE:
             if not text.strip():
                 text = "~" + text
@@ -118,7 +118,7 @@ class LineBreak:
         """
         regex = re.compile(r"- *(-?\d+) *(-?\d+)? *(.+)?")
         if not (match := regex.fullmatch(value)):
-            raise errors.NotesParseError(f"invalid line break: '{value}'")
+            raise errors.InvalidLineBreakError(value)
         end = int(match.group(2)) if match.group(2) else None
         return cls(int(match.group(1)), end), match.group(3)
 
@@ -158,7 +158,7 @@ class Line:
             if txt_line.startswith("-"):
                 try:
                     line_break, next_line = LineBreak.parse(txt_line)
-                except errors.NotesParseError as err:
+                except errors.TxtParseError as err:
                     logger.warning(str(err))
                     continue
                 else:
@@ -167,7 +167,7 @@ class Line:
                     break
             try:
                 notes.append(Note.parse(txt_line, logger))
-            except errors.NotesParseError as err:
+            except errors.TxtParseError as err:
                 logger.warning(str(err))
         else:
             logger.warning("unterminated line")
@@ -220,7 +220,7 @@ class Tracks:
     def parse(cls, lines: list[str], logger: Log) -> Tracks:
         track_1 = _player_lines(lines, logger)
         if not track_1:
-            raise errors.NotesParseError("no notes in file")
+            raise errors.InvalidTrackError()
         track_2 = _player_lines(lines, logger) or None
         return cls(track_1, track_2)
 
@@ -246,8 +246,8 @@ class Tracks:
                 if parts := _split_duet_line(line, line_break.previous_line_out_time):
                     # line has notes starting earlier than previous notes
                     # -> probably a border between two tracks
-                    self.track_2 = [parts[1]] + self.track_1[idx + 1 :]
-                    self.track_1 = self.track_1[:idx] + [parts[0]]
+                    self.track_2 = [parts[1], *self.track_1[idx + 1:]]
+                    self.track_1 = [*self.track_1[:idx], parts[0]]
                     return
             last_out_time = line_break.previous_line_out_time
 
@@ -377,7 +377,7 @@ class Tracks:
             if note_text_old != note.text:
                 note_text_fixed += 1
         if note_text_fixed > 0:
-            logger.debug(f"FIX: {note_text_fixed} apostrophes in lyrics" " corrected.")
+            logger.debug(f"FIX: {note_text_fixed} apostrophes in lyrics corrected.")
 
     def fix_quotation_marks(self, language: str | None, logger: Log) -> None:
         opening = True
@@ -478,7 +478,7 @@ def _split_duet_line(line: Line, cutoff: int) -> tuple[Line, Line] | None:
     None if either part would be empty.
     """
     idx = 0
-    for idx, note in enumerate(line.notes):
+    for _, note in enumerate(line.notes):
         if note.start < cutoff:
             break
     else:

@@ -689,7 +689,7 @@ def _cleanup_existing_resources(ctx: _Context) -> None:
     """
     if not ctx.song.sync_meta:
         return
-    for (old, _), out in zip(ctx.song.sync_meta.all_resource_files(), ctx.out):
+    for (old, _), out in zip(ctx.song.sync_meta.all_resource_files(), ctx.out, strict=False):
         if not (old and (old_path := ctx.locations.current_path(file=old.fname))):
             continue
         if not out.old_fname:

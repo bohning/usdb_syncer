@@ -112,7 +112,7 @@ def _write_replaygain_tags(
 
         logger.info(f"ReplayGain tags written to {audio_file}")
 
-    except Exception:  # pylint: disable=broad-exception-caught
+    except Exception:  # noqa: BLE001
         logger.debug(traceback.format_exc())
         logger.error(f"Failed to write audio tags to file '{audio_file}'!")
     else:
@@ -188,7 +188,7 @@ def write_audio_tags(
             case other:
                 logger.debug(f"Audio tags not supported for suffix '{other}'.")
                 return
-    except Exception:  # pylint: disable=broad-exception-caught
+    except Exception:  # noqa: BLE001
         logger.debug(traceback.format_exc())
         logger.error(f"Failed to write audio tags to file '{audio_path}'!")
     else:
@@ -214,7 +214,7 @@ def write_video_tags(
             case other:
                 logger.debug(f"Video tags not supported for suffix '{other}'.")
                 return
-    except Exception:  # pylint: disable=broad-exception-caught
+    except Exception:  # noqa: BLE001
         logger.debug(traceback.format_exc())
         logger.error(f"Failed to write video tags to file '{video_path}'!")
     else:

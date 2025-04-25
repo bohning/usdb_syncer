@@ -43,7 +43,7 @@ class _Hook(Generic[P]):
         for func in cls._subscribers:
             try:
                 func(*args, **kwargs)
-            except Exception as e:  # pylint: disable=broad-except
+            except Exception as e:  # noqa: BLE001
                 logger.debug(traceback.format_exc())
                 logger.warning(
                     f"Plugin error in {func.__name__}: {type(e).__name__}: {e}"

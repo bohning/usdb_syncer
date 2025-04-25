@@ -7,6 +7,7 @@ import binascii
 import random
 from pathlib import Path
 
+from usdb_syncer import errors
 from usdb_syncer.constants import Usdb
 
 
@@ -18,7 +19,7 @@ class SongId(int):
 
     def __init__(self, value: int) -> None:
         if value not in range(100_000):
-            raise ValueError("SongId out of range")
+            raise errors.SongIdError(value)
 
     def __str__(self) -> str:
         return f"{self:05}"
@@ -50,7 +51,7 @@ class SyncMetaId(int):
 
     @classmethod
     def new(cls) -> SyncMetaId:
-        return cls(random.randint(-(2**63), 2**63 - 1))
+        return cls(random.randint(-(2**63), 2**63 - 1))  # noqa: S311
 
     def encode(self) -> str:
         value = base64.urlsafe_b64encode(

@@ -60,12 +60,12 @@ class SongTable:
         self, state: QtMultimedia.QMediaPlayer.PlaybackState
     ) -> None:
         if state == QtMultimedia.QMediaPlayer.PlaybackState.PlayingState:
-            assert self._next_playing_song
+            assert self._next_playing_song  # noqa: S101
             self._playing_song = song = self._next_playing_song
             self._next_playing_song = None
             song.is_playing = True
         else:
-            assert self._playing_song
+            assert self._playing_song  # noqa: S101
             song = self._playing_song
             self._playing_song = None
             song.is_playing = False
@@ -112,7 +112,7 @@ class SongTable:
         to_download: list[UsdbSong] = []
         for song_id in self._model.ids_for_rows(rows):
             song = UsdbSong.get(song_id)
-            assert song
+            assert song  # noqa: S101
             if song.sync_meta and song.sync_meta.pinned:
                 song_logger(song.song_id).info("Not downloading song as it is pinned.")
                 continue
@@ -225,7 +225,7 @@ class SongTable:
             self.mw.table_view.horizontalHeader().saveState()
         )
 
-    ### actions
+    # actions
 
     def _on_song_changed(self, event: events.SongChanged) -> None:
         if event.song_id == self.current_song_id():
@@ -297,7 +297,7 @@ class SongTable:
                 song.sync_meta.upsert()
             events.SongChanged(song.song_id)
 
-    ### selection model
+    # selection model
 
     def current_song_id(self) -> SongId | None:
         if (idx := self._view.selectionModel().currentIndex()).isValid():
@@ -333,7 +333,7 @@ class SongTable:
             | QItemSelectionModel.SelectionFlag.ClearAndSelect,
         )
 
-    ### sorting and filtering
+    # sorting and filtering
 
     def connect_row_count_changed(self, func: Callable[[int, int], None]) -> None:
         """Calls `func` with the new table row and selection counts."""
