@@ -47,37 +47,37 @@ jobs:
             TARGET: Linux
             PYINSTALLER_ARGS: >-
               --onefile
-              --add-data 'artifacts/song_list.json:data'
-              --add-data 'src/usdb_syncer/db/sql:src/usdb_syncer/db/sql'
-              --add-data 'src/usdb_syncer/gui/resources/fonts:src/usdb_syncer/gui/resources/fonts'
-              --add-data 'src/usdb_syncer/gui/resources/styles:src/usdb_syncer/gui/resources/styles'
+              --add-data 'artifacts/song_list.json:usdb_syncer/data'
+              --add-data 'src/usdb_syncer/db/sql:usdb_syncer/db/sql'
+              --add-data 'src/usdb_syncer/gui/resources/fonts:usdb_syncer/gui/resources/fonts'
+              --add-data 'src/usdb_syncer/gui/resources/styles:usdb_syncer/gui/resources/styles'
           - os: macos-latest
             TARGET: macOS-arm64
             PYINSTALLER_ARGS: >-
               --windowed
               --icon src/usdb_syncer/gui/resources/qt/appicon_128x128.png
-              --add-data 'artifacts/song_list.json:data'
-              --add-data 'src/usdb_syncer/db/sql:src/usdb_syncer/db/sql'
-              --add-data 'src/usdb_syncer/gui/resources/fonts:src/usdb_syncer/gui/resources/fonts'
-              --add-data 'src/usdb_syncer/gui/resources/styles:src/usdb_syncer/gui/resources/styles'
+              --add-data 'artifacts/song_list.json:usdb_syncer/data'
+              --add-data 'src/usdb_syncer/db/sql:usdb_syncer/db/sql'
+              --add-data 'src/usdb_syncer/gui/resources/fonts:usdb_syncer/gui/resources/fonts'
+              --add-data 'src/usdb_syncer/gui/resources/styles:usdb_syncer/gui/resources/styles'
           - os: macos-13
             TARGET: macOS-x64
             PYINSTALLER_ARGS: >-
               --windowed
               --icon src/usdb_syncer/gui/resources/qt/appicon_128x128.png
-              --add-data 'artifacts/song_list.json:data'
-              --add-data 'src/usdb_syncer/db/sql:src/usdb_syncer/db/sql'
-              --add-data 'src/usdb_syncer/gui/resources/fonts:src/usdb_syncer/gui/resources/fonts'
-              --add-data 'src/usdb_syncer/gui/resources/styles:src/usdb_syncer/gui/resources/styles'
+              --add-data 'artifacts/song_list.json:usdb_syncer/data'
+              --add-data 'src/usdb_syncer/db/sql:usdb_syncer/db/sql'
+              --add-data 'src/usdb_syncer/gui/resources/fonts:usdb_syncer/gui/resources/fonts'
+              --add-data 'src/usdb_syncer/gui/resources/styles:usdb_syncer/gui/resources/styles'
           - os: windows-latest
             TARGET: Windows
             PYINSTALLER_ARGS: >-
               --onefile
               --icon src/usdb_syncer/gui/resources/qt/appicon_128x128.png
-              --add-data 'artifacts/song_list.json;data'
-              --add-data 'src/usdb_syncer/db/sql;src/usdb_syncer/db/sql'
-              --add-data 'src/usdb_syncer/gui/resources/fonts;src/usdb_syncer/gui/resources/fonts'
-              --add-data 'src/usdb_syncer/gui/resources/styles;src/usdb_syncer/gui/resources/styles'
+              --add-data 'artifacts/song_list.json;usdb_syncer/data'
+              --add-data 'src/usdb_syncer/db/sql;usdb_syncer/db/sql'
+              --add-data 'src/usdb_syncer/gui/resources/fonts;usdb_syncer/gui/resources/fonts'
+              --add-data 'src/usdb_syncer/gui/resources/styles;usdb_syncer/gui/resources/styles'
     steps:
       - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4

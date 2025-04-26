@@ -27,17 +27,10 @@ CACHE_LIFETIME = 60 * 60
 _app_dirs = AppDirs("usdb_syncer", "bohning")
 
 
-def is_bundle() -> bool:
-    """True if the app is running from a bundle.
-
-    https://pyinstaller.org/en/stable/runtime-information.html#run-time-information
-    """
-    return bool(getattr(sys, "frozen", False) and getattr(sys, "_MEIPASS", False))
-
-
-def is_release() -> bool:
-    """True if the app is running from a bundle or build, i.e. not from source."""
-    return usdb_syncer.__version__ != "dev"
+# https://pyinstaller.org/en/stable/runtime-information.html#run-time-information
+IS_BUNDLE = bool(getattr(sys, "frozen", False) and getattr(sys, "_MEIPASS", False))
+IS_INSTALLED = "site-packages" in __file__
+IS_SOURCE = not IS_BUNDLE and not IS_INSTALLED
 
 
 def _root() -> Path:
@@ -114,17 +107,11 @@ class AppPaths:
     """App data paths."""
 
     log = Path(_app_dirs.user_data_dir, "usdb_syncer.log")
-    song_list = Path(_app_dirs.user_cache_dir, "available_songs.json")
-    root = _root()
-    fallback_song_list = Path(root, "data", "song_list.json")
-    profile = Path(root, "usdb_syncer.prof")
     db = Path(_app_dirs.user_data_dir, "usdb_syncer.db")
-    sql = Path(root, "src", "usdb_syncer", "db", "sql")
     addons = Path(_app_dirs.user_data_dir, "addons")
-    shared = Path(root, "shared")
-    resources = Path(root, "src", "usdb_syncer", "gui", "resources")
-    fonts = resources.joinpath("fonts")
-    stylesheets = resources.joinpath("styles")
+    song_list = Path(_app_dirs.user_cache_dir, "available_songs.json")
+    profile = Path(_app_dirs.user_cache_dir, "usdb_syncer.prof")
+    shared = (_root() / "shared") if IS_SOURCE else None
 
     @classmethod
     def make_dirs(cls) -> None:

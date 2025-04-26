@@ -56,7 +56,7 @@ class CliArgs:
 
     # Development
     profile: bool = False
-    skip_pyside: bool = utils.is_release()
+    skip_pyside: bool = not utils.IS_SOURCE
     trace_sql: bool = False
 
     @classmethod
@@ -85,7 +85,7 @@ class CliArgs:
         dev_options.add_argument(
             "--profile", action="store_true", help="Run with profiling."
         )
-        if not utils.is_release():
+        if utils.IS_SOURCE:
             dev_options.add_argument(
                 "--skip-pyside",
                 action="store_true",
@@ -100,7 +100,7 @@ class CliArgs:
             print("Settings reset to default.")
         if self.songpath:
             settings.set_song_dir(self.songpath.resolve(), temp=True)
-        if not (utils.is_release() or self.skip_pyside):
+        if utils.IS_SOURCE and not self.skip_pyside:
             import tools.generate_pyside_files  # pylint: disable=import-outside-toplevel
 
             tools.generate_pyside_files.main()
@@ -130,7 +130,7 @@ def _run() -> None:
         _TextEditLogger(mw),
     )
     mw.label_update_hint.setVisible(False)
-    if utils.is_release():
+    if not utils.IS_SOURCE:
         if version := utils.newer_version_available():
             mw.label_update_hint.setText(
                 mw.label_update_hint.text().replace("VERSION", version)

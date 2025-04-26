@@ -10,6 +10,7 @@ import threading
 import time
 from collections import defaultdict
 from collections.abc import Generator, Iterable, Iterator
+from importlib import resources
 from pathlib import Path
 from typing import Any, ClassVar, assert_never, cast
 
@@ -18,7 +19,8 @@ from more_itertools import batched
 
 from usdb_syncer import SongId, SyncMetaId, errors
 from usdb_syncer.logger import logger
-from usdb_syncer.utils import AppPaths
+
+from . import sql
 
 SCHEMA_VERSION = 6
 
@@ -32,7 +34,7 @@ class _SqlCache:
     @classmethod
     def get(cls, name: str, cache: bool = True) -> str:
         if (stmt := cls._cache.get(name)) is None:
-            stmt = AppPaths.sql.joinpath(name).read_text("utf8")
+            stmt = resources.files(sql).joinpath(name).read_text("utf8")
             if cache:
                 cls._cache[name] = stmt
         return stmt

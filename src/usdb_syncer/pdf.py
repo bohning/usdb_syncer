@@ -3,6 +3,7 @@
 from collections import defaultdict
 from collections.abc import Iterable
 from dataclasses import dataclass
+from importlib import resources
 from typing import assert_never
 
 from reportlab.lib import colors
@@ -15,6 +16,7 @@ from reportlab.pdfgen.canvas import Canvas
 from reportlab.platypus import BaseDocTemplate, Flowable, Frame, PageTemplate, Paragraph
 
 from usdb_syncer import SongId, utils
+from usdb_syncer.gui.resources import fonts
 from usdb_syncer.gui.song_table.column import Column
 from usdb_syncer.settings import ReportPDFOrientation, ReportPDFPagesize
 from usdb_syncer.usdb_song import UsdbSong
@@ -23,15 +25,10 @@ NOTOSANS_BLACK = "NotoSans-Black"
 NOTOSANS_BOLD = "NotoSans-Bold"
 NOTOSANS_REGULAR = "NotoSans-Regular"
 
-pdfmetrics.registerFont(
-    TTFont(NOTOSANS_BLACK, utils.AppPaths.fonts.joinpath(f"{NOTOSANS_BLACK}.ttf"))
-)
-pdfmetrics.registerFont(
-    TTFont(NOTOSANS_BOLD, utils.AppPaths.fonts.joinpath(f"{NOTOSANS_BOLD}.ttf"))
-)
-pdfmetrics.registerFont(
-    TTFont(NOTOSANS_REGULAR, utils.AppPaths.fonts.joinpath(f"{NOTOSANS_REGULAR}.ttf"))
-)
+
+_font_files = resources.files(fonts)
+for name in (NOTOSANS_BLACK, NOTOSANS_BOLD, NOTOSANS_REGULAR):
+    pdfmetrics.registerFont(TTFont(name, _font_files.joinpath(f"{name}.ttf")))
 
 
 class Bookmark(Flowable):
