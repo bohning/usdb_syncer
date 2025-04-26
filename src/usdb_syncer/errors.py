@@ -7,8 +7,10 @@ class UsdbSyncerError(Exception):
 
 # common
 
+
 class SongIdError(UsdbSyncerError):
     """Raised when a song id is invalid."""
+
     def __init__(self, value: int) -> None:
         super().__init__(f"Song id out of range: {value}")
         self.value = value
@@ -62,7 +64,12 @@ class UsdbNotFoundError(UsdbError):
     """Raised when a requested USDB record is missing."""
 
 
+class UsdbUnknownLanguageError(UsdbError):
+    """Raised when the language of the USDB website cannot be determined."""
+
+
 # txt parsing
+
 
 class TxtParseError(UsdbSyncerError):
     """Raised when parsing a txt file fails."""
@@ -82,6 +89,7 @@ class TrackParseError(TxtParseError):
 
 class InvalidCharError(TrackParseError):
     """Raised when a track contains invalid characters."""
+
     def __init__(self, type_: str, value: str) -> None:
         super().__init__(f"Invalid {type_}: {value}")
         self.type_ = type_
@@ -90,6 +98,7 @@ class InvalidCharError(TrackParseError):
 
 class InvalidNoteError(InvalidCharError):
     """Raised when a note is invalid."""
+
     def __init__(self, note: str) -> None:
         super().__init__("note", note)
         self.note = note
@@ -97,6 +106,7 @@ class InvalidNoteError(InvalidCharError):
 
 class InvalidLineBreakError(InvalidCharError):
     """Raised when a line break is invalid."""
+
     def __init__(self, line_break: str) -> None:
         super().__init__("line break", line_break)
         self.line_break = line_break
@@ -104,6 +114,7 @@ class InvalidLineBreakError(InvalidCharError):
 
 class InvalidTrackError(TrackParseError):
     """Raised when a track is invalid."""
+
     def __init__(self) -> None:
         super().__init__("Invalid track.")
 

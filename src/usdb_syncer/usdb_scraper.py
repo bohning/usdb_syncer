@@ -298,7 +298,7 @@ def _usdb_strings_from_soup(soup: BeautifulSoup) -> type[UsdbStrings]:
 def _usdb_strings_from_html(html: str) -> type[UsdbStrings]:
     if match := WELCOME_REGEX.search(html):
         return _usdb_strings_from_welcome(match.group(1))
-    raise errors.UsdbParseError("welcome string not found")
+    raise errors.UsdbUnknownLanguageError
 
 
 def _usdb_strings_from_welcome(welcome_string: str) -> type[UsdbStrings]:
@@ -309,7 +309,7 @@ def _usdb_strings_from_welcome(welcome_string: str) -> type[UsdbStrings]:
             return UsdbStringsGerman
         case UsdbStringsFrench.WELCOME:
             return UsdbStringsFrench
-    raise errors.UsdbParseError("Unknown USDB language.")
+    raise errors.UsdbUnknownLanguageError
 
 
 def get_usdb_available_songs(
@@ -444,7 +444,7 @@ def _find_text_after(details_table: Tag, label: str) -> str:
     if isinstance((tag := details_table.find(string=label)), NavigableString):
         if isinstance(tag.next, Tag):
             return tag.next.text.strip()
-    raise errors.UsdbParseError(f"Text after {label} not found.")
+    raise errors.UsdbParseError(f"Text after {label} not found.")  # noqa: TRY003
 
 
 def _parse_comments_table(comments_table: Tag, logger: Logger) -> list[SongComment]:
@@ -536,7 +536,7 @@ def get_notes(song_id: SongId, logger: Logger) -> str:
 def _parse_song_txt_from_txt_page(soup: BeautifulSoup) -> str:
     if isinstance(textarea := soup.find("textarea"), Tag):
         return textarea.string or ""
-    raise errors.UsdbParseError("textarea for notes not found")
+    raise errors.UsdbParseError("textarea for notes not found")  # noqa: TRY003
 
 
 def post_song_comment(song_id: SongId, text: str, rating: str) -> None:
