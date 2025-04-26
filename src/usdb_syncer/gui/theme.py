@@ -178,7 +178,7 @@ class Swatch:
     s_a700: QColor | None = None
 
     @classmethod
-    def get(cls, color: settings.Color) -> Swatch:
+    def get(cls, color: settings.Color) -> Swatch:  # noqa: C901
         match color:
             case settings.Color.RED:
                 return Swatch(

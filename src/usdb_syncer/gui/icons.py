@@ -90,9 +90,10 @@ class Icon(enum.Enum):
     def __init__(self, colored_name: str | None, white_name: str | None):
         colored = colored_name or white_name
         white = white_name or colored_name
-        if colored is None or white is None:
-            member = f"{self.__class__.__name__}.{self.name}"
-            raise ValueError(f"{member}: At least one value must be supplied")
+        assert colored is not None and white is not None, (
+            f"{self.__class__.__name__}.{self.name}: At least one value must be "
+            "supplied"
+        )
         self.colored_name = colored
         self.white_name = white
 
@@ -101,7 +102,7 @@ class Icon(enum.Enum):
         return _icon(self.colored_name if colored else self.white_name)
 
 
-def browser_icon(browser: settings.Browser) -> QIcon | None:
+def browser_icon(browser: settings.Browser) -> QIcon | None:  # noqa: C901
     match browser:
         case settings.Browser.NONE:
             return None
