@@ -58,7 +58,7 @@ class SongTxt:
     def try_parse(cls, value: str, logger: Logger) -> SongTxt | None:
         try:
             return cls.parse(value, logger)
-        except errors.NotesParseError:
+        except errors.TxtParseError:
             return None
 
     def maybe_split_duet_notes(self) -> None:

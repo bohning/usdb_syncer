@@ -1,6 +1,6 @@
 """Tests for importing and exporting USDB IDs"""
 
-import os
+from pathlib import Path
 
 import pytest
 
@@ -72,7 +72,7 @@ from usdb_syncer.usdb_id_file import (
 def test_valid_song_id_imports_from_files(
     resource_dir: str, file: str, expected_ids: list[SongId]
 ) -> None:
-    path = os.path.join(resource_dir, "import", file)
+    path = Path(resource_dir, "import", file)
     song_ids = parse_usdb_id_file(path)
     assert song_ids == expected_ids, f"wrong songids from {file}"
 
@@ -154,7 +154,7 @@ def test_valid_song_id_imports_from_files(
 def test_invalid_song_id_imports_from_files(
     resource_dir: str, file: str, expected_error: UsdbIdFileError
 ) -> None:
-    path = os.path.join(resource_dir, "import", file)
+    path = Path(resource_dir, "import", file)
     with pytest.raises(type(expected_error)) as exc_info:
         song_ids = parse_usdb_id_file(path)
         assert exc_info.getrepr() == repr(expected_error), f"wrong error from {file}"

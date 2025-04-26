@@ -113,7 +113,7 @@ def test_parse_song_list(resource_dir: Path) -> None:
     assert songs[1].sample_url == ""
     assert songs[1].song_id == SongId(29198)
     assert songs[1].artist == "Les enfantastiques"
-    assert songs[1].title == "Si j’allais en Chine"
+    assert songs[1].title == "Si j’allais en Chine"  # noqa: RUF001
     assert songs[1].genre == ""
     assert songs[1].year is None
     assert songs[1].edition == ""

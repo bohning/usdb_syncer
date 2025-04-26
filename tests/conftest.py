@@ -62,12 +62,12 @@ def example_meta_tags() -> MetaTags:
     )
 
 
-def example_notes_str(meta_tags: MetaTags = MetaTags()) -> str:
+def example_notes_str(meta_tags: MetaTags | None = None) -> str:
     return f"""#TITLE:title
 #ARTIST:artist
 #BPM:250
 #GAP:12345
-#VIDEO:{meta_tags!s}
+#VIDEO:{meta_tags or MetaTags()!s}
 : 0 1 0 first note 
 * 2 1 0 golden 
 F 4 1 0 freestyle 
@@ -80,7 +80,7 @@ G 8 1 0 golden freestyle
 : 18 1 0 and 
 : 20 1 0 another
 E
-"""
+"""  # noqa: W291
 
 
 def details_from_song(song: UsdbSong) -> SongDetails:

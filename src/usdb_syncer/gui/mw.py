@@ -249,7 +249,8 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         if not file_list:
             logger.info("no files selected to import USDB IDs from")
             return
-        if available := usdb_id_file.get_available_song_ids_from_files(file_list):
+        paths = [Path(f) for f in file_list]
+        if available := usdb_id_file.get_available_song_ids_from_files(paths):
             self.table.set_selection_to_song_ids(available)
 
     def _export_usdb_ids_to_file(self) -> None:
@@ -269,7 +270,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
             logger.info("export aborted")
             return
 
-        usdb_id_file.write_usdb_id_file(path, selected_ids)
+        usdb_id_file.write_usdb_id_file(Path(path), selected_ids)
         logger.info(f"exported {len(selected_ids)} USDB IDs to {path}")
 
     def _show_current_song_in_usdb(self) -> None:

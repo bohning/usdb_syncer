@@ -8,6 +8,7 @@ import pytest
 from usdb_syncer.utils import LinuxEnvCleaner, extract_youtube_id, resource_file_ending
 
 FAKE_YOUTUBE_ID = "fake_YT-id0"
+FAKE_LD_LIBRARY_PATH = "/tmp/_MEI12345:/usr/lib:/usr/local/lib"  # noqa: S108
 
 
 def test_extract_youtube_id(resource_dir: Path) -> None:
@@ -38,7 +39,7 @@ def test_linux_env_cleaner(monkeypatch: pytest.MonkeyPatch) -> None:
     # Mock environment variables
     mock_env = {
         "FIRST_ENV_VAR": "value1",
-        "LD_LIBRARY_PATH": "/tmp/_MEI12345:/usr/lib:/usr/local/lib",
+        "LD_LIBRARY_PATH": FAKE_LD_LIBRARY_PATH,
         "QT_PLUGIN_PATH": "/some/qt/path",
         "QT_QPA_PLATFORM_PLUGIN_PATH": "/another/qt/path",
         "QT_DEBUG_PLUGINS": "1",
@@ -71,7 +72,7 @@ def test_linux_env_cleaner_with_add(monkeypatch: pytest.MonkeyPatch) -> None:
 
     # Mock environment variables
     monkeypatch.setenv("FIRST_ENV_VAR", "value1")
-    monkeypatch.setenv("LD_LIBRARY_PATH", "/tmp/_MEI12345:/usr/lib:/usr/local/lib")
+    monkeypatch.setenv("LD_LIBRARY_PATH", FAKE_LD_LIBRARY_PATH)
     monkeypatch.setenv("QT_PLUGIN_PATH", "/some/qt/path")
     monkeypatch.setenv("QT_QPA_PLATFORM_PLUGIN_PATH", "/another/qt/path")
     monkeypatch.setenv("QT_DEBUG_PLUGINS", "1")
