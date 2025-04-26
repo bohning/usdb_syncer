@@ -15,7 +15,7 @@ from PIL.Image import Resampling
 from usdb_syncer import utils
 from usdb_syncer.constants import YtErrorMsg
 from usdb_syncer.download_options import AudioOptions, VideoOptions
-from usdb_syncer.logger import Log, song_logger
+from usdb_syncer.logger import Logger, song_logger
 from usdb_syncer.meta_tags import ImageMetaTags
 from usdb_syncer.postprocessing import normalize_audio
 from usdb_syncer.settings import (
@@ -74,7 +74,11 @@ class ImageKind(Enum):
 
 
 def download_audio(
-    resource: str, options: AudioOptions, browser: Browser, path_stem: Path, logger: Log
+    resource: str,
+    options: AudioOptions,
+    browser: Browser,
+    path_stem: Path,
+    logger: Logger,
 ) -> ResourceDLResult:
     """Download audio from resource to path and process it according to options.
 
@@ -118,7 +122,11 @@ def download_audio(
 
 
 def download_video(
-    resource: str, options: VideoOptions, browser: Browser, path_stem: Path, logger: Log
+    resource: str,
+    options: VideoOptions,
+    browser: Browser,
+    path_stem: Path,
+    logger: Logger,
 ) -> ResourceDLResult:
     """Download video from resource to path and process it according to options.
 
@@ -157,7 +165,7 @@ def _ytdl_options(
 
 
 def _download_resource(
-    resource: str, options: YtdlOptions, logger: Log
+    resource: str, options: YtdlOptions, logger: Logger
 ) -> ResourceDLResult:
     if (url := video_url_from_resource(resource)) is None:
         return ResourceDLResult(error=ResourceDLError.RESOURCE_INVALID)
@@ -194,20 +202,21 @@ def _download_resource(
 
 
 def _retry_with_cookies(
-    url: str, options: YtdlOptions, logger: Log
+    url: str, options: YtdlOptions, logger: Logger
 ) -> ResourceDLResult:
-    logger.warning("Age-restricted resource. Retrying with cookies...")
+    logger.warning("Age-restricted resource. Retrying with cookies ...")
     with yt_dlp.YoutubeDL(options) as ydl:
         try:
             filename = ydl.prepare_filename(ydl.extract_info(url))
             ext = Path(filename).suffix[1:]
             return ResourceDLResult(extension=ext)
         except yt_dlp.utils.YoutubeDLError as re:
-            logger.error(f"Retry failed: {utils.remove_ansi_codes(str(re))}")
+            msg = f"Retry failed: {utils.remove_ansi_codes(str(re))}"
+            logger.error(msg)  # noqa: TRY400
             raise
 
 
-def _handle_geo_restriction(url: str, resource: str, logger: Log) -> None:
+def _handle_geo_restriction(url: str, resource: str, logger: Logger) -> None:
     logger.warning("Geo-restricted resource. You can retry after connecting to a VPN.")
     if "youtube" in url and (
         allowed_countries := utils.get_allowed_countries(resource)
@@ -217,35 +226,35 @@ def _handle_geo_restriction(url: str, resource: str, logger: Log) -> None:
         )
 
 
-def _handle_unavailable(url: str, logger: Log) -> None:
+def _handle_unavailable(url: str, logger: Logger) -> None:
     logger.warning(
         f"Resource '{url}' is no longer available. Please support the community, "
         "find a suitable replacement resource and comment it on USDB."
     )
 
 
-def _handle_parse_error(url: str, logger: Log) -> None:
+def _handle_parse_error(url: str, logger: Logger) -> None:
     logger.warning(f"Failed to parse XML for resource '{url}'.")
 
 
-def _handle_forbidden(url: str, logger: Log) -> None:
+def _handle_forbidden(url: str, logger: Logger) -> None:
     logger.warning(
         f"Failed to download resource '{url}'. Your IP/account might have been blocked."
     )
 
 
-def download_image(url: str, logger: Log) -> bytes | None:
+def download_image(url: str, logger: Logger) -> bytes | None:
     try:
         reply = requests.get(
             url, allow_redirects=True, headers=IMAGE_DOWNLOAD_HEADERS, timeout=60
         )
     except requests.exceptions.SSLError:
-        logger.error(
+        logger.exception(
             f"Failed to retrieve {url}. The SSL certificate could not be verified."
         )
         return None
     except requests.RequestException:
-        logger.error(
+        logger.exception(
             f"Failed to retrieve {url}. The URL might be invalid, the server may be "
             "down or your internet connection is currently unavailable."
         )

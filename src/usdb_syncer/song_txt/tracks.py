@@ -9,7 +9,7 @@ from enum import Enum
 import attrs
 
 from usdb_syncer import errors, settings
-from usdb_syncer.logger import Log
+from usdb_syncer.logger import Logger
 from usdb_syncer.song_txt.auxiliaries import (
     BeatsPerMinute,
     replace_false_apostrophes,
@@ -38,7 +38,7 @@ class Note:
     text: str = NotImplemented
 
     @classmethod
-    def parse(cls, value: str, logger: Log) -> Note:
+    def parse(cls, value: str, logger: Logger) -> Note:
         regex = re.compile(r"(:|\*|F|R|G):? +(-?\d+) +(\d+) +(-?\d+)(?: (.*))?")
         if not (match := regex.fullmatch(value)):
             raise errors.InvalidNoteError(value)
@@ -147,7 +147,7 @@ class Line:
     line_break: LineBreak | None
 
     @classmethod
-    def parse(cls, lines: list[str], logger: Log) -> Line:
+    def parse(cls, lines: list[str], logger: Logger) -> Line:
         """Consumes a stream of notes until a line or document terminator is yielded."""
         notes = []
         line_break = None
@@ -217,7 +217,7 @@ class Tracks:
     track_2: list[Line] | None
 
     @classmethod
-    def parse(cls, lines: list[str], logger: Log) -> Tracks:
+    def parse(cls, lines: list[str], logger: Logger) -> Tracks:
         track_1 = _player_lines(lines, logger)
         if not track_1:
             raise errors.InvalidTrackError()
@@ -280,7 +280,7 @@ class Tracks:
             char.islower() for note in self.all_notes() for char in note.text
         )
 
-    def fix_linebreaks_usdx_style(self, logger: Log) -> None:
+    def fix_linebreaks_usdx_style(self, logger: Logger) -> None:
         def fix(last_line: Line, line: Line, gap: int) -> None:
             # similar to USDX implementation
             # https://github.com/UltraStar-Deluxe/USDX/blob/0974aadaa747a5ce7f1f094908e669209641b5d4/src/screens/UScreenEditSub.pas#L2976)
@@ -296,7 +296,7 @@ class Tracks:
         self._fix_linebreaks(fix)
         logger.debug("FIX: Linebreaks corrected (USDX style).")
 
-    def fix_linebreaks_yass_style(self, bpm: BeatsPerMinute, logger: Log) -> None:
+    def fix_linebreaks_yass_style(self, bpm: BeatsPerMinute, logger: Logger) -> None:
         def fix(last_line: Line, line: Line, gap: int) -> None:
             # match YASS implementation
             # https://github.com/DoubleDee73/Yass/blob/1a70340016fba9430fd8f0bf49797839fc44456d/src/yass/YassAutoCorrect.java#L168
@@ -343,7 +343,7 @@ class Tracks:
         for track in self.all_tracks():
             yield from _consecutive_notes(track)
 
-    def fix_overlapping_and_touching_notes(self, logger: Log) -> None:
+    def fix_overlapping_and_touching_notes(self, logger: Logger) -> None:
         for current_note, next_note in self.consecutive_notes():
             fixed = False
             if current_note.start > next_note.start:
@@ -359,7 +359,7 @@ class Tracks:
             if fixed:
                 logger.debug(f"FIX: Gap after note {current_note.start} fixed.")
 
-    def fix_pitch_values(self, logger: Log) -> None:
+    def fix_pitch_values(self, logger: Logger) -> None:
         min_pitch = min(note.pitch for note in self.all_notes())
         octave_shift = min_pitch // 12
 
@@ -371,7 +371,7 @@ class Tracks:
                 f"FIX: pitch values normalized (shifted by {octave_shift} octaves)."
             )
 
-    def fix_apostrophes(self, logger: Log) -> None:
+    def fix_apostrophes(self, logger: Logger) -> None:
         note_text_fixed = 0
         for note in self.all_notes():
             note_text_old = note.text
@@ -381,7 +381,7 @@ class Tracks:
         if note_text_fixed > 0:
             logger.debug(f"FIX: {note_text_fixed} apostrophes in lyrics corrected.")
 
-    def fix_quotation_marks(self, language: str | None, logger: Log) -> None:
+    def fix_quotation_marks(self, language: str | None, logger: Logger) -> None:
         opening = True
         marks_fixed_total = 0
         for note in self.all_notes():
@@ -394,7 +394,7 @@ class Tracks:
                 f"FIX: {marks_fixed_total} quotation marks in lyrics corrected."
             )
 
-    def fix_spaces(self, fix_style: settings.FixSpaces, logger: Log) -> None:
+    def fix_spaces(self, fix_style: settings.FixSpaces, logger: Logger) -> None:
         """Ensures that inter-word spaces are either always after or before words"""
         for line in self.all_lines():
             match fix_style:
@@ -432,14 +432,14 @@ class Tracks:
                     line.notes[-1].right_trim_text()
         logger.debug("FIX: Inter-word spaces corrected.")
 
-    def fix_all_caps(self, logger: Log) -> None:
+    def fix_all_caps(self, logger: Logger) -> None:
         if self.is_all_caps():
             for note in self.all_notes():
                 note.text = note.text.lower()
             self.fix_first_words_capitalization(logger)
             logger.debug("FIX: ALL CAPS lyrics corrected.")
 
-    def fix_first_words_capitalization(self, logger: Log) -> None:
+    def fix_first_words_capitalization(self, logger: Logger) -> None:
         lines_capitalized = 0
         for line in self.all_lines():
             # capitalize first capitalizable character
@@ -458,7 +458,7 @@ class Tracks:
             )
 
 
-def _player_lines(lines: list[str], logger: Log) -> list[Line]:
+def _player_lines(lines: list[str], logger: Logger) -> list[Line]:
     notes: list[Line] = []
     if lines and lines[0].startswith("P"):
         lines.pop(0)

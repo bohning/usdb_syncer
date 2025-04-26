@@ -4,14 +4,14 @@ import requests
 
 from usdb_syncer import SongId, db, remote_config
 from usdb_syncer.constants import Usdb
-from usdb_syncer.logger import Log
+from usdb_syncer.logger import Logger
 from usdb_syncer.usdb_song import UsdbSong
 
 DISCORD_COLOR_RED = 0xED4245  # equivalent to discord.Color.red()
 
 
 def notify_discord(
-    song_id: SongId, url: str, kind: str, error_str: str, logger: Log
+    song_id: SongId, url: str, kind: str, error_str: str, logger: Logger
 ) -> None:
     """Notify unavailable resources on Discord (without using the discord package)."""
     if not (song := UsdbSong.get(song_id)):

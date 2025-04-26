@@ -1,6 +1,5 @@
 """Functions for postprocessing audio/video files."""
 
-import traceback
 from base64 import b64encode
 from os import devnull
 from pathlib import Path
@@ -19,7 +18,7 @@ from PIL import Image
 from usdb_syncer import settings
 from usdb_syncer.constants import ISO_639_2B_LANGUAGE_CODES
 from usdb_syncer.download_options import AudioOptions, VideoOptions
-from usdb_syncer.logger import Log
+from usdb_syncer.logger import Logger
 from usdb_syncer.settings import AudioFormat, AudioNormalization, VideoContainer
 from usdb_syncer.song_txt import SongTxt
 
@@ -32,7 +31,7 @@ Image.init()
 
 
 def normalize_audio(
-    options: AudioOptions, path_stem: Path, input_ext: str, logger: Log
+    options: AudioOptions, path_stem: Path, input_ext: str, logger: Logger
 ) -> None:
     normalizer = _create_normalizer(options)
     input_file = f"{path_stem}.{input_ext}"
@@ -75,7 +74,7 @@ def _create_normalizer(options: AudioOptions) -> FFmpegNormalize:
 
 
 def _write_replaygain_tags(
-    normalizer: FFmpegNormalize, audio_file: str, logger: Log
+    normalizer: FFmpegNormalize, audio_file: str, logger: Logger
 ) -> None:
     """Writes ReplayGain values to audio file metadata."""
 
@@ -112,9 +111,8 @@ def _write_replaygain_tags(
 
         logger.info(f"ReplayGain tags written to {audio_file}")
 
-    except Exception:  # noqa: BLE001
-        logger.debug(traceback.format_exc())
-        logger.error(f"Failed to write audio tags to file '{audio_file}'!")
+    except Exception:
+        logger.exception(f"Failed to write audio tags to file '{audio_file}'!")
     else:
         logger.debug(f"Audio tags written to file '{audio_file}'.")
 
@@ -170,7 +168,7 @@ def write_audio_tags(
     audio: tuple[Path, str],
     cover: tuple[Path, str] | None,
     background: tuple[Path, str] | None,
-    logger: Log,
+    logger: Logger,
 ) -> None:
     audio_path = audio[0]
     try:
@@ -188,9 +186,8 @@ def write_audio_tags(
             case other:
                 logger.debug(f"Audio tags not supported for suffix '{other}'.")
                 return
-    except Exception:  # noqa: BLE001
-        logger.debug(traceback.format_exc())
-        logger.error(f"Failed to write audio tags to file '{audio_path}'!")
+    except Exception:
+        logger.exception(f"Failed to write audio tags to file '{audio_path}'!")
     else:
         logger.debug(f"Audio tags written to file '{audio_path}'.")
 
@@ -202,7 +199,7 @@ def write_video_tags(
     video: tuple[Path, str],
     cover: tuple[Path, str] | None,
     background: tuple[Path, str] | None,
-    logger: Log,
+    logger: Logger,
 ) -> None:
     video_path = video[0]
     try:
@@ -214,9 +211,8 @@ def write_video_tags(
             case other:
                 logger.debug(f"Video tags not supported for suffix '{other}'.")
                 return
-    except Exception:  # noqa: BLE001
-        logger.debug(traceback.format_exc())
-        logger.error(f"Failed to write video tags to file '{video_path}'!")
+    except Exception:
+        logger.exception(f"Failed to write video tags to file '{video_path}'!")
     else:
         logger.debug(f"Video tags written to file '{video_path}'.")
 

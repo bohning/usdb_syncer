@@ -8,7 +8,7 @@ from typing import Any
 import attrs
 
 from usdb_syncer import errors
-from usdb_syncer.logger import Log
+from usdb_syncer.logger import Logger
 from usdb_syncer.meta_tags import MetaTags
 from usdb_syncer.settings import FormatVersion
 from usdb_syncer.song_txt.auxiliaries import BeatsPerMinute, replace_false_apostrophes
@@ -58,7 +58,7 @@ class Headers:
     tags: str | None = None
 
     @classmethod
-    def parse(cls, lines: list[str], logger: Log) -> Headers:
+    def parse(cls, lines: list[str], logger: Logger) -> Headers:
         """Consumes a stream of lines while they are headers."""
         kwargs: dict[str, Any] = {"unknown": {}}
         while lines:
@@ -131,16 +131,15 @@ class Headers:
             if (val := getattr(self, key)) is not None
         )
         if self.unknown:
-            out = "\n".join((
-                out,
-                *(f"#{key.upper()}:{val}" for key, val in self.unknown.items()),
-            ))
+            out = "\n".join(
+                (out, *(f"#{key.upper()}:{val}" for key, val in self.unknown.items()))
+            )
         return out
 
     def artist_title_str(self) -> str:
         return f"{self.artist} - {self.title}"
 
-    def fix_apostrophes(self, logger: Log) -> None:
+    def fix_apostrophes(self, logger: Logger) -> None:
         apostrophes_and_quotation_marks_fixed = False
         for key in ("artist", "title", "language", "genre", "p1", "p2", "album"):
             if value := getattr(self, key):
@@ -157,7 +156,7 @@ class Headers:
         if self.medleyendbeat:
             self.medleyendbeat = func(self.medleyendbeat)
 
-    def fix_language(self, logger: Log) -> None:
+    def fix_language(self, logger: Logger) -> None:
         if not self.language:
             logger.debug("No #LANGUAGE tag found. Consider adding it.")
         if old_language := self.language:
@@ -181,7 +180,7 @@ class Headers:
             return self.language.split(",", maxsplit=1)[0].removesuffix(" (romanized)")
         return ""
 
-    def fix_videogap(self, meta_tags: MetaTags, logger: Log) -> None:
+    def fix_videogap(self, meta_tags: MetaTags, logger: Logger) -> None:
         if self.videogap is not None:
             if (
                 meta_tags.audio is None

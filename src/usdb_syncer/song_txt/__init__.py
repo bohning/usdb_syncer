@@ -8,7 +8,7 @@ from typing import assert_never
 import attrs
 
 from usdb_syncer import download_options, errors
-from usdb_syncer.logger import Log
+from usdb_syncer.logger import Logger
 from usdb_syncer.meta_tags import MetaTags
 from usdb_syncer.settings import FixLinebreaks, FixSpaces
 from usdb_syncer.song_txt.headers import Headers
@@ -22,7 +22,7 @@ class SongTxt:
     headers: Headers
     notes: Tracks
     meta_tags: MetaTags
-    logger: Log
+    logger: Logger
 
     def __str__(self) -> str:
         return f"{self.headers}\n{self.notes}"
@@ -45,7 +45,7 @@ class SongTxt:
         ]
 
     @classmethod
-    def parse(cls, value: str, logger: Log) -> SongTxt:
+    def parse(cls, value: str, logger: Logger) -> SongTxt:
         lines = [line for line in value.splitlines() if line]
         headers = Headers.parse(lines, logger)
         meta_tags = MetaTags.parse(headers.video or "", logger)
@@ -55,7 +55,7 @@ class SongTxt:
         return cls(headers=headers, meta_tags=meta_tags, notes=notes, logger=logger)
 
     @classmethod
-    def try_parse(cls, value: str, logger: Log) -> SongTxt | None:
+    def try_parse(cls, value: str, logger: Logger) -> SongTxt | None:
         try:
             return cls.parse(value, logger)
         except errors.NotesParseError:

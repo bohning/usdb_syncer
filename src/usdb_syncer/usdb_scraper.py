@@ -21,7 +21,7 @@ from usdb_syncer.constants import (
     UsdbStringsFrench,
     UsdbStringsGerman,
 )
-from usdb_syncer.logger import Log, logger, song_logger
+from usdb_syncer.logger import Logger, logger, song_logger
 from usdb_syncer.usdb_song import UsdbSong
 from usdb_syncer.utils import extract_youtube_id, normalize
 
@@ -376,7 +376,7 @@ def _parse_songs_from_songlist(html: str) -> Iterator[UsdbSong]:
 
 
 def _parse_details_table(
-    details_table: Tag, song_id: SongId, usdb_strings: type[UsdbStrings], logger: Log
+    details_table: Tag, song_id: SongId, usdb_strings: type[UsdbStrings], logger: Logger
 ) -> SongDetails:
     """Parse song attributes from usdb page.
 
@@ -447,7 +447,7 @@ def _find_text_after(details_table: Tag, label: str) -> str:
     raise errors.UsdbParseError(f"Text after {label} not found.")
 
 
-def _parse_comments_table(comments_table: Tag, logger: Log) -> list[SongComment]:
+def _parse_comments_table(comments_table: Tag, logger: Logger) -> list[SongComment]:
     """Parse the table into individual comments, extracting potential video links,
     GAP and BPM values.
     """
@@ -471,7 +471,7 @@ def _parse_comments_table(comments_table: Tag, logger: Log) -> list[SongComment]
     return comments
 
 
-def _parse_comment_contents(contents: Tag, logger: Log) -> CommentContents:
+def _parse_comment_contents(contents: Tag, logger: Logger) -> CommentContents:
     td_element = contents.find("td")
     assert isinstance(td_element, Tag)
     for emoji in td_element.find_all("img"):
@@ -493,7 +493,7 @@ def _parse_comment_contents(contents: Tag, logger: Log) -> CommentContents:
     return CommentContents(text=text, urls=urls, youtube_ids=youtube_ids)
 
 
-def _all_urls_in_comment(contents: Tag, text: str, logger: Log) -> Iterator[str]:
+def _all_urls_in_comment(contents: Tag, text: str, logger: Logger) -> Iterator[str]:
     for embed in contents.find_all("embed"):
         if src := _extract_supported_video_source(embed, "src"):
             logger.debug("Video embed found. Consider embedding as iframe.")
@@ -520,7 +520,7 @@ def _extract_supported_video_source(tag: Any, attr_key: str) -> str | None:
     return None
 
 
-def get_notes(song_id: SongId, logger: Log) -> str:
+def get_notes(song_id: SongId, logger: Logger) -> str:
     """Retrieve notes for a song."""
     logger.debug("fetching notes")
     html = get_usdb_page(

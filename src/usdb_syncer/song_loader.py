@@ -6,7 +6,6 @@ import copy
 import shutil
 import tempfile
 import time
-import traceback
 from collections.abc import Iterable, Iterator
 from itertools import islice
 from pathlib import Path
@@ -32,7 +31,7 @@ from usdb_syncer import (
 )
 from usdb_syncer.custom_data import CustomData
 from usdb_syncer.discord import notify_discord
-from usdb_syncer.logger import Log, logger, song_logger
+from usdb_syncer.logger import Logger, logger, song_logger
 from usdb_syncer.postprocessing import write_audio_tags, write_video_tags
 from usdb_syncer.resource_dl import ResourceDLError
 from usdb_syncer.settings import FormatVersion
@@ -228,7 +227,7 @@ class _Context:
     options: download_options.Options
     txt: SongTxt
     locations: _Locations
-    logger: Log
+    logger: Logger
     out: _TempResourceFiles = attrs.field(factory=_TempResourceFiles)
 
     def __attrs_post_init__(self) -> None:
@@ -247,7 +246,11 @@ class _Context:
 
     @classmethod
     def new(
-        cls, song: UsdbSong, options: download_options.Options, tempdir: Path, log: Log
+        cls,
+        song: UsdbSong,
+        options: download_options.Options,
+        tempdir: Path,
+        log: Logger,
     ) -> _Context:
         song = copy.deepcopy(song)
         details, txt = _get_usdb_data(song.song_id, options.txt_options, log)
@@ -280,7 +283,7 @@ class _Context:
 
 
 def _get_usdb_data(
-    song_id: SongId, txt_options: download_options.TxtOptions | None, log: Log
+    song_id: SongId, txt_options: download_options.TxtOptions | None, log: Logger
 ) -> tuple[SongDetails, SongTxt]:
     details = usdb_scraper.get_usdb_details(song_id)
     log.info(f"Found '{details.artist} - {details.title}' on USDB.")
@@ -330,10 +333,10 @@ class _SongLoader(QtCore.QRunnable):
                 self.logger.info("Download aborted by user request.")
                 self.song.status = DownloadStatus.NONE
             except errors.UsdbLoginError:
-                self.logger.error("Aborted; download requires login.")
+                self.logger.error("Aborted; download requires login.")  # noqa: TRY400
                 self.song.status = DownloadStatus.FAILED
             except errors.UsdbNotFoundError:
-                self.logger.error("Song has been deleted from USDB.")
+                self.logger.error("Song has been deleted from USDB.")  # noqa: TRY400
                 with db.transaction():
                     self.song.delete()
                 if meta := self.song.sync_meta:
@@ -343,9 +346,8 @@ class _SongLoader(QtCore.QRunnable):
                 events.SongDeleted(self.song_id).post()
                 events.DownloadFinished(self.song_id).post()
                 return
-            except Exception:  # noqa: BLE001
-                self.logger.debug(traceback.format_exc())
-                self.logger.error(
+            except Exception:
+                self.logger.exception(
                     "Failed to finish download due to an unexpected error. "
                     "See debug log for more information."
                 )
