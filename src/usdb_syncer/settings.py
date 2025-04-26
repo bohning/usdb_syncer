@@ -17,7 +17,7 @@ import traceback
 from enum import Enum, StrEnum, auto
 from http.cookiejar import CookieJar
 from pathlib import Path
-from typing import Any, TypeVar, assert_never, cast
+from typing import Any, ClassVar, TypeVar, assert_never, cast
 
 import keyring
 import rookiepy
@@ -72,22 +72,22 @@ class _TemporarySettings:
     It should not be used directly, as it is not thread-safe.
     """
 
-    _temporarySettings: dict[SettingKey, Any] = {}
+    _temporary_settings: ClassVar[dict[SettingKey, Any]] = {}
 
     @classmethod
     def remove(cls, key: SettingKey) -> None:
         """Remove a temporary setting."""
-        cls._temporarySettings.pop(key, None)
+        cls._temporary_settings.pop(key, None)
 
     @classmethod
     def set(cls, key: SettingKey, value: Any) -> None:
         """Set a temporary setting."""
-        cls._temporarySettings[key] = value
+        cls._temporary_settings[key] = value
 
     @classmethod
     def get(cls, key: SettingKey) -> Any:
         """Get a temporary setting."""
-        return cls._temporarySettings.get(key, None)
+        return cls._temporary_settings.get(key, None)
 
 
 T = TypeVar("T")
@@ -443,7 +443,7 @@ class Browser(Enum):
             return "None"
         return self.value.capitalize()
 
-    def icon(self) -> str:
+    def icon(self) -> str:  # noqa: C901
         match self:
             case Browser.NONE:
                 return ""
@@ -474,7 +474,7 @@ class Browser(Enum):
             case _ as unreachable:
                 assert_never(unreachable)
 
-    def cookies(self) -> CookieJar | None:
+    def cookies(self) -> CookieJar | None:  # noqa: C901
         match self:
             case Browser.NONE:
                 return None
@@ -506,7 +506,7 @@ class Browser(Enum):
                 assert_never(unreachable)
         try:
             return rookiepy.to_cookiejar(function([Usdb.DOMAIN]))
-        except Exception:  # pylint: disable=broad-exception-caught
+        except Exception:  # noqa: BLE001
             logger.debug(traceback.format_exc())
         logger.warning(f"Failed to retrieve {self!s} cookies.")
         return None
@@ -729,9 +729,7 @@ class SupportedApps(StrEnum):
                 "Please check the executable path in the settings."
             )
         except OSError:
-            logger.error(
-                f"Failed to launch {self} from '{executable!s}', I/O error."
-            )
+            logger.error(f"Failed to launch {self} from '{executable!s}', I/O error.")
             logger.debug(traceback.format_exc())
         except subprocess.SubprocessError:
             logger.error(

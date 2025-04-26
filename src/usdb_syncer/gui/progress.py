@@ -80,7 +80,7 @@ def run_with_progress(
         signal.result.emit()
 
     def wrapped_on_done() -> None:
-        assert result  # noqa: S101
+        assert result
         dialog.deleteLater()
         on_done(result)
         # prevent Qt from cleaning up the signal before it's done

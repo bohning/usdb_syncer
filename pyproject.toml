@@ -74,10 +74,51 @@ preview = true
 skip-magic-trailing-comma = true
 
 [tool.ruff.lint]
-select = ["A", "B", "BLE", "C4", "C90", "COM", "E", "F", "I", "LOG", "N", "PTH", "Q", "RUF", "S", "TRY", "W"]
-# Since we're using the ruff formatter, we follow ruff's official guide on what rules to skip: https://docs.astral.sh/ruff/formatter/#conflicting-lint-rules
-# We're also ignoring `S404` and `S603` 
-ignore = ["E501", "W191", "E111", "E114", "E117", "D206", "D300", "Q000", "Q001", "Q002", "Q003", "COM812", "COM819", "S404", "S603"]
+select = [
+    "A",
+    "B",
+    "BLE",
+    "C4",
+    "C90",
+    "COM",
+    "E",
+    "F",
+    "I",
+    "LOG",
+    "N",
+    "PTH",
+    "Q",
+    "RUF",
+    "S",
+    "TRY",
+    "W",
+]
+ignore = [
+    # Since we're using the ruff formatter, we follow ruff's official guide on what
+    # rules to skip: https://docs.astral.sh/ruff/formatter/#conflicting-lint-rules
+    "W191",
+    "E111",
+    "E114",
+    "E117",
+    "D206",
+    "D300",
+    "Q000",
+    "Q001",
+    "Q002",
+    "Q003",
+    "COM812",
+    "COM819",
+    # We're fine with `assert`s if they're not used for validation, but state facts
+    "S101",
+    # Allow `subprocess` and starting without shell.
+    "S404",
+    "S603",
+    "S606",
+    # Maybe investigate in the future, if it is possible to do this more safely.
+    "S607",
+    # This flags _all_ dynamic SQL constructions, so it's pointless.
+    "S608",
+]
 
 # Allow fix for all enabled rules (when `--fix`) is provided.
 fixable = ["ALL"]
@@ -86,10 +127,6 @@ unfixable = []
 [tool.ruff.lint.isort]
 # For consistency with the formatter, see https://docs.astral.sh/ruff/settings/#lint_isort_split-on-trailing-comma 
 split-on-trailing-comma = false
-
-[tool.ruff.lint.per-file-ignores]
-# Ignore `S101` (usage of assert) in test files.
-"tests/**.py" = ["S101"]
 
 [tool.mypy]
 ignore_missing_imports = true

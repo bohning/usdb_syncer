@@ -246,7 +246,7 @@ class Tracks:
                 if parts := _split_duet_line(line, line_break.previous_line_out_time):
                     # line has notes starting earlier than previous notes
                     # -> probably a border between two tracks
-                    self.track_2 = [parts[1], *self.track_1[idx + 1:]]
+                    self.track_2 = [parts[1], *self.track_1[idx + 1 :]]
                     self.track_1 = [*self.track_1[:idx], parts[0]]
                     return
             last_out_time = line_break.previous_line_out_time
@@ -282,7 +282,8 @@ class Tracks:
 
     def fix_linebreaks_usdx_style(self, logger: Log) -> None:
         def fix(last_line: Line, line: Line, gap: int) -> None:
-            # similar to USDX implementation (https://github.com/UltraStar-Deluxe/USDX/blob/0974aadaa747a5ce7f1f094908e669209641b5d4/src/screens/UScreenEditSub.pas#L2976) # pylint: disable=line-too-long
+            # similar to USDX implementation
+            # https://github.com/UltraStar-Deluxe/USDX/blob/0974aadaa747a5ce7f1f094908e669209641b5d4/src/screens/UScreenEditSub.pas#L2976)
             if not last_line.line_break:
                 return
             if gap < 2:
@@ -297,7 +298,8 @@ class Tracks:
 
     def fix_linebreaks_yass_style(self, bpm: BeatsPerMinute, logger: Log) -> None:
         def fix(last_line: Line, line: Line, gap: int) -> None:
-            # match YASS implementation (https://github.com/DoubleDee73/Yass/blob/1a70340016fba9430fd8f0bf49797839fc44456d/src/yass/YassAutoCorrect.java#L168) # pylint: disable=line-too-long
+            # match YASS implementation
+            # https://github.com/DoubleDee73/Yass/blob/1a70340016fba9430fd8f0bf49797839fc44456d/src/yass/YassAutoCorrect.java#L168
             if not last_line.line_break:
                 return
             gap_secs = bpm.beats_to_secs(gap)
@@ -408,8 +410,9 @@ class Tracks:
                         if line.notes[idx].text.endswith(" "):
                             line.notes[idx].right_trim_text_and_add_space()
 
-                    # last syllable should end with a space, otherwise syllable highlighting
-                    # used to be incomplete in USDX, and it allows simple text concatenation
+                    # last syllable should end with a space, otherwise syllable
+                    # highlighting used to be incomplete in USDX, and it allows simple
+                    # text concatenation
                     line.notes[-1].right_trim_text_and_add_space()
                 case settings.FixSpaces.BEFORE:
                     # first syllable should start with a space to allow simple text

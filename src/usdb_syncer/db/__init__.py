@@ -1,13 +1,10 @@
 """Database utilities."""
-# Ignore SQL injection warnings for this file.
-# ruff: noqa: S608
 
 from __future__ import annotations
 
 import contextlib
 import enum
 import json
-import os
 import sqlite3
 import threading
 import time
@@ -87,7 +84,7 @@ def transaction() -> Generator[None, None, None]:
     try:
         _DbState.connection().execute("BEGIN IMMEDIATE")
         yield None
-    except Exception:  # pylint: disable=broad-except
+    except Exception:
         _DbState.connection().rollback()
         raise
     _DbState.connection().commit()
@@ -650,7 +647,10 @@ def usdb_song_genres() -> list[tuple[str, int]]:
 
 
 def usdb_song_creators() -> list[tuple[str, int]]:
-    stmt = "SELECT creator, COUNT(*) FROM usdb_song_creator GROUP BY creator ORDER BY creator"
+    stmt = (
+        "SELECT creator, COUNT(*) FROM usdb_song_creator GROUP BY creator ORDER BY "
+        "creator"
+    )
     return _DbState.connection().execute(stmt).fetchall()
 
 

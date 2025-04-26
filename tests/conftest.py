@@ -102,6 +102,6 @@ def details_from_song(song: UsdbSong) -> SongDetails:
         date_time=datetime.datetime(2024, 7, 20),
         uploader="unknown",
         editors=[],
-        votes=(100),
+        votes=100,
         audio_sample=None,
     )

@@ -10,7 +10,7 @@ import traceback
 from collections.abc import Iterable, Iterator
 from itertools import islice
 from pathlib import Path
-from typing import assert_never
+from typing import ClassVar, assert_never
 
 import attrs
 import send2trash
@@ -46,7 +46,7 @@ from usdb_syncer.utils import video_url_from_resource
 class DownloadManager:
     """Manager for concurrent song downloads."""
 
-    _jobs: dict[SongId, _SongLoader] = {}
+    _jobs: ClassVar[dict[SongId, _SongLoader]] = {}
     _pause = False
     _pool: QtCore.QThreadPool | None = None
 
@@ -343,7 +343,7 @@ class _SongLoader(QtCore.QRunnable):
                 events.SongDeleted(self.song_id).post()
                 events.DownloadFinished(self.song_id).post()
                 return
-            except Exception:  # pylint: disable=broad-except
+            except Exception:  # noqa: BLE001
                 self.logger.debug(traceback.format_exc())
                 self.logger.error(
                     "Failed to finish download due to an unexpected error. "
@@ -472,7 +472,7 @@ def _maybe_download_video(ctx: _Context) -> None:
 def _maybe_download_cover(ctx: _Context) -> None:
     if not ctx.options.cover:
         return
-    if ctx.txt.meta_tags.cover == ctx.details.cover_url == None:
+    if ctx.txt.meta_tags.cover is None and ctx.details.cover_url is None:
         ctx.logger.warning("No cover resource found.")
         return
     if cover := ctx.txt.meta_tags.cover:
@@ -689,7 +689,9 @@ def _cleanup_existing_resources(ctx: _Context) -> None:
     """
     if not ctx.song.sync_meta:
         return
-    for (old, _), out in zip(ctx.song.sync_meta.all_resource_files(), ctx.out, strict=False):
+    for (old, _), out in zip(
+        ctx.song.sync_meta.all_resource_files(), ctx.out, strict=False
+    ):
         if not (old and (old_path := ctx.locations.current_path(file=old.fname))):
             continue
         if not out.old_fname:

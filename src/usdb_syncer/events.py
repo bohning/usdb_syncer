@@ -27,7 +27,8 @@ class _EventProcessorManager(QtCore.QObject):
     def processor(cls) -> _EventProcessor:
         if cls._processor is None:
             cls._processor = _EventProcessor()
-            assert (app := QtCore.QCoreApplication.instance())  # noqa: S101, RUF018
+            app = QtCore.QCoreApplication.instance()
+            assert app
             cls._processor.moveToThread(app.thread())
         return cls._processor
 

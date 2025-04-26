@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Iterable
 from json import JSONEncoder
-from typing import Any
+from typing import Any, ClassVar
 
 import attrs
 
@@ -167,13 +167,13 @@ class UsdbSong:
         return self.sync_meta is not None and self.sync_meta.pinned
 
     def languages(self) -> Iterable[str]:
-        return (l for lang in self.language.split(",") if (l := lang.strip()))
+        return (s for lang in self.language.split(",") if (s := lang.strip()))
 
     def genres(self) -> Iterable[str]:
-        return (l for lang in self.genre.split(",") if (l := lang.strip()))
+        return (s for genre in self.genre.split(",") if (s := genre.strip()))
 
     def creators(self) -> Iterable[str]:
-        return (l for lang in self.creator.split(",") if (l := lang.strip()))
+        return (s for creator in self.creator.split(",") if (s := creator.strip()))
 
     @classmethod
     def clear_cache(cls) -> None:
@@ -197,7 +197,7 @@ class UsdbSongEncoder(JSONEncoder):
 class _UsdbSongCache:
     """Cache for songs loaded from the DB."""
 
-    _songs: dict[SongId, UsdbSong] = {}
+    _songs: ClassVar[dict[SongId, UsdbSong]] = {}
 
     @classmethod
     def get(cls, song_id: SongId) -> UsdbSong | None:

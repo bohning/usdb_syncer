@@ -159,7 +159,7 @@ def _with_profile(func: Callable[[], None]) -> None:
     func()
     profiler.disable()
     profiler.dump_stats(utils.AppPaths.profile)
-    subprocess.call(["snakeviz", utils.AppPaths.profile])  # noqa: S607
+    subprocess.call(["snakeviz", utils.AppPaths.profile])
 
 
 def _load_main_window(mw: MainWindow) -> None:

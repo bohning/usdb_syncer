@@ -60,12 +60,12 @@ class SongTable:
         self, state: QtMultimedia.QMediaPlayer.PlaybackState
     ) -> None:
         if state == QtMultimedia.QMediaPlayer.PlaybackState.PlayingState:
-            assert self._next_playing_song  # noqa: S101
+            assert self._next_playing_song
             self._playing_song = song = self._next_playing_song
             self._next_playing_song = None
             song.is_playing = True
         else:
-            assert self._playing_song  # noqa: S101
+            assert self._playing_song
             song = self._playing_song
             self._playing_song = None
             song.is_playing = False
@@ -112,7 +112,7 @@ class SongTable:
         to_download: list[UsdbSong] = []
         for song_id in self._model.ids_for_rows(rows):
             song = UsdbSong.get(song_id)
-            assert song  # noqa: S101
+            assert song
             if song.sync_meta and song.sync_meta.pinned:
                 song_logger(song.song_id).info("Not downloading song as it is pinned.")
                 continue

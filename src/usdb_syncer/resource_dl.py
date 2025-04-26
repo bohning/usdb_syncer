@@ -1,7 +1,6 @@
 """Functions for downloading and processing media."""
 
 import io
-import os
 from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
@@ -220,8 +219,8 @@ def _handle_geo_restriction(url: str, resource: str, logger: Log) -> None:
 
 def _handle_unavailable(url: str, logger: Log) -> None:
     logger.warning(
-        f"Resource '{url}' is no longer available. Please support the community, find a "
-        "suitable replacement resource and comment it on USDB."
+        f"Resource '{url}' is no longer available. Please support the community, "
+        "find a suitable replacement resource and comment it on USDB."
     )
 
 
