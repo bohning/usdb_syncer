@@ -65,13 +65,9 @@ If you changed the test requirements or want to perform a clean run for some rea
 
 The following tools are part of the test pipeline:
 
-- [isort](https://github.com/PyCQA/isort): Automatically sorts your imports.
-
-- [black](https://github.com/psf/black): Automatically and deterministically formats your code.
-
 - [mypy](https://github.com/python/mypy): Statically checks your type hints.
 
-- [pylint](https://github.com/PyCQA/pylint): Statically checks your code for errors and code smells.
+- [ruff](https://docs.astral.sh/ruff/): A linter and code formatter.
 
 - [pytest](https://github.com/pytest-dev/pytest): Provides a framework for functional unit tests.
 
