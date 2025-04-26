@@ -10,7 +10,7 @@
       "request": "launch",
       "program": "${workspaceFolder}/src/usdb_syncer/gui/__init__.py",
       "console": "internalConsole",
-      "justMyCode": true,
+      "justMyCode": true
     }
   ]
 }
