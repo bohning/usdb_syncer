@@ -283,7 +283,7 @@ class Tracks:
     def fix_linebreaks_usdx_style(self, logger: Logger) -> None:
         def fix(last_line: Line, line: Line, gap: int) -> None:
             # similar to USDX implementation
-            # https://github.com/UltraStar-Deluxe/USDX/blob/0974aadaa747a5ce7f1f094908e669209641b5d4/src/screens/UScreenEditSub.pas#L2976)
+            # https://github.com/UltraStar-Deluxe/USDX/blob/0974aadaa747a5ce7f1f094908e669209641b5d4/src/screens/UScreenEditSub.pas#L2976
             if not last_line.line_break:
                 return
             if gap < 2:
@@ -480,17 +480,11 @@ def _split_duet_line(line: Line, cutoff: int) -> tuple[Line, Line] | None:
     _after_ cutoff and the second part contains the rest.
     None if either part would be empty.
     """
-    idx = 0
-    for _, note in enumerate(line.notes):
-        if note.start < cutoff:
-            break
-    else:
-        # second line would be empty
+    mid = next((i for i, note in enumerate(line.notes) if note.start < cutoff), 0)
+    if not mid:
+        # mid would be at start or end
         return None
-    if not idx:
-        # first line would be empty
-        return None
-    return Line(line.notes[:idx], None), Line(line.notes[idx:], line.line_break)
+    return Line(line.notes[:mid], None), Line(line.notes[mid:], line.line_break)
 
 
 def _consecutive_notes(track: list[Line]) -> Iterator[tuple[Note, Note]]:
