@@ -14,9 +14,6 @@ if TYPE_CHECKING:
     from usdb_syncer import usdb_song
     from usdb_syncer.gui.mw import MainWindow
 
-# pylint currently lacks support for ParamSpec
-# https://github.com/pylint-dev/pylint/issues/9424
-# pylint: disable=arguments-differ
 
 P = ParamSpec("P")
 

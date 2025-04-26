@@ -332,7 +332,6 @@ def start_process_detached(command: list[str]) -> subprocess.Popen:
     flags = 0
     if sys.platform == "win32":
         flags = subprocess.DETACHED_PROCESS | subprocess.CREATE_NEW_PROCESS_GROUP
-    # pylint: disable=consider-using-with
     with LinuxEnvCleaner() as env:
         return subprocess.Popen(command, creationflags=flags, close_fds=True, env=env)
 

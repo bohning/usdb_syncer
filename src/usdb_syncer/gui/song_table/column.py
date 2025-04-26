@@ -74,8 +74,7 @@ class Column(IntEnum):
             case _ as unreachable:
                 assert_never(unreachable)
 
-    # https://github.com/PyCQA/pylint/issues/7857
-    @cache  # pylint: disable=method-cache-max-size-none
+    @cache
     def decoration_data(self) -> QIcon | None:  # noqa: C901
         match self:
             case Column.SAMPLE_URL:

@@ -1,5 +1,3 @@
-# pylint: disable=too-many-lines
-
 """Persistent app settings.
 
 To ensure consistent default values and avoid key collisions, QSettings should never be
@@ -124,7 +122,7 @@ class _Settings:
             QSettings().setValue(key.value, value)
 
     @classmethod
-    def get(cls, key: SettingKey, default: T) -> T:  # pylint: disable=too-complex
+    def get(cls, key: SettingKey, default: T) -> T:
         with cls._lock:
             if temp := _TemporarySettings.get(key):
                 return temp
