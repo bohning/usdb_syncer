@@ -109,7 +109,7 @@ startup phase, they cannot be completely ruled out.
 
 ## Linux Distributions
 
-Linux builds are generated on AlmaLinux 9. They should be compatible with any modern distribution. If not, please open an issue.
+Linux bundles are generated on AlmaLinux 9. They should be compatible with any modern distribution. If not, please open an issue.
 
 The only known requirement for the binary is `glibc >= 2.34`. The current `glibc` version can be checked with:
 

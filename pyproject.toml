@@ -46,7 +46,10 @@ pytest = "*"
 snakeviz = "*"
 
 [tool.poetry.group.build.dependencies]
+dunamai = "*"
 poetry-dynamic-versioning = {version = "^1.6.0", extras = ["plugin"]}
+
+[tool.poetry.group.bundle.dependencies]
 pyinstaller = "*"
 pyinstaller-hooks-contrib = "*"
 # specifically required for pyinstaller (Note: darwin -> macos)
@@ -59,8 +62,7 @@ usdb_syncer = "usdb_syncer.gui:main"
 
 [tool.poetry-dynamic-versioning]
 enable = true
-pattern = '(?P<base>\d+\.\d+\.\d+)'
-substitution.folders = [{ path = "src" }]
+substitution.files = []
 
 [tool.ruff]
 extend-exclude = [

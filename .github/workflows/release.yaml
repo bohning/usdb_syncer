@@ -3,7 +3,7 @@ name: Release
 on:
   push:
     tags:
-      - "[0-9]+.[0-9]+.[0-9]+" # Only create releases on matching tags following semver X.Y.Z
+      - "v[0-9]+.[0-9]+.[0-9]+" # Only create releases on matching tags following semver X.Y.Z
 
 jobs:
   scrape-song-list:
@@ -20,7 +20,7 @@ jobs:
           python -m pip install poetry
       - name: Install dependencies
         run: |
-          poetry install --without dev --without build
+          poetry install --without dev --without bundle
       - name: Scrape USDB song list to ship with the bundle
         run: >
           poetry run python -m tools.generate_song_list_json
@@ -34,8 +34,8 @@ jobs:
             song_list.json
             CHANGELOG.md
 
-  build:
-    name: Build packages
+  bundle:
+    name: Build bundles
     runs-on: ${{ matrix.os }}
     container: ${{ matrix.image }}
     needs: scrape-song-list
@@ -109,14 +109,14 @@ jobs:
           python --version
           python -m pip install --upgrade pip
       - name: Install poetry
-        run: |
-          python -m pip install poetry
+        run: python -m pip install poetry
       - name: Install dependencies
-        run: |
-          poetry install --without dev
+        run: poetry install --without dev
+      - name: Write release version
+        run: echo "__version__ = '$(poetry run dunamai from git)'" > src/usdb_syncer/_version.py
       - name: Generate GUI elements
         run: poetry run python -m tools.generate_pyside_files
-      - name: Build with pyinstaller for ${{matrix.os}}
+      - name: Bundle with pyinstaller for ${{matrix.os}}
         # _tkinter hook is run erroneously?
         run: >
           poetry run pyinstaller
@@ -154,7 +154,7 @@ jobs:
     name: Create release
     permissions:
       contents: write
-    needs: build
+    needs: bundle
     runs-on: ubuntu-latest
     steps:
       - uses: actions/download-artifact@v4
@@ -172,3 +172,25 @@ jobs:
         with:
           artifacts: "artifacts/USDB_Syncer*"
           bodyFile: "CHANGELOG.md"
+
+  publish:
+    name: Publish release to PyPi
+    needs: release
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install poetry
+        run: python -m pip install poetry
+      - name: Install dependencies
+        run: poetry install --without dev --without bundle
+      - name: Write release version
+        run: echo "__version__ = '$(poetry run dunamai from git)'" > src/usdb_syncer/_version.py
+      - name: Generate GUI elements
+        run: poetry run python -m tools.generate_pyside_files
+      - name: Publish release to PyPi
+        run: poetry publish --build
