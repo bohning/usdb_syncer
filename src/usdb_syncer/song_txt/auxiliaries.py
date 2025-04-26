@@ -1,8 +1,8 @@
 """Helper classes and functions related to the song text file"""
+
 # Since this file deals with a bunch of ambiguous unicode characters,
 # we disable the rule file-wide.
 # ruff: noqa: RUF001, RUF003
-
 
 import math
 from typing import NamedTuple

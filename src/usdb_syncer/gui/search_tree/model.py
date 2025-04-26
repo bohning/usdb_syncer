@@ -100,9 +100,7 @@ class TreeModel(QAbstractItemModel):
     def columnCount(self, parent: QIndex | None = None) -> int:  # noqa: N802
         return 1
 
-    def index(
-        self, row: int, column: int, parent: QIndex | None = None
-    ) -> QModelIndex:
+    def index(self, row: int, column: int, parent: QIndex | None = None) -> QModelIndex:
         if parent is None:
             parent = QModelIndex()
         if not self.hasIndex(row, column, parent):
@@ -176,7 +174,9 @@ class TreeProxyModel(QSortFilterProxyModel):
         self._filter_invalidation_timer.setInterval(400)
         self._filter_invalidation_timer.timeout.connect(self._on_filter_changed)
 
-    def filterAcceptsRow(self, source_row: int, source_parent: QIndex) -> bool:  # noqa: N802
+    def filterAcceptsRow(  # noqa: N802
+        self, source_row: int, source_parent: QIndex
+    ) -> bool:
         if not self._filter or not (
             parent := self._source.item_for_index(source_parent)
         ):
