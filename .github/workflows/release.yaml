@@ -53,6 +53,8 @@ jobs:
               --add-data 'src/usdb_syncer/gui/resources/styles;usdb_syncer/gui/resources/styles'
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: actions/download-artifact@v4
       - name: On macOS and windows, install python normally
         if: contains(matrix.os, 'macos') || contains(matrix.os, 'windows')
