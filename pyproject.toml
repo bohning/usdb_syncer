@@ -51,6 +51,7 @@ pytest = "*"
 snakeviz = "*"
 
 [tool.poetry.group.build.dependencies]
+PySide6 = "*"
 dunamai = "*"
 poetry-dynamic-versioning = {version = "^1.6.0", extras = ["plugin"]}
 
