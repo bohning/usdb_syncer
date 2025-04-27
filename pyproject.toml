@@ -9,7 +9,11 @@ authors = ["Markus Böhning <markus.boehning@gmail.com>"]
 description = "A download manager for USDB songs."
 readme = ["README.md"]
 repository = "https://github.com/bohning/usdb_syncer"
-include = ["src/usdb_syncer/gui/forms/*.py", "src/usdb_syncer/gui/resources/qt/*.py"]
+include = [
+    { path = "src/usdb_syncer/gui/forms/*.py", format = ["sdist", "wheel"] },
+    { path = "src/usdb_syncer/gui/resources/qt/*.py", format = ["sdist", "wheel"] },
+    { path = "src/usdb_syncer/data/*.json", format = ["sdist", "wheel"] },
+]
 
 [tool.poetry.dependencies]
 python = ">3.10,<3.13"
