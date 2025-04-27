@@ -1516,7 +1516,7 @@ version = "24.2"
 description = "Core utilities for Python packages"
 optional = false
 python-versions = ">=3.8"
-groups = ["build", "bundle", "dev"]
+groups = ["main", "build", "bundle", "dev"]
 files = [
     {file = "packaging-24.2-py3-none-any.whl", hash = "sha256:09abb1bccd265c01f4a3aa3f7a7db064b36514d2cba19a2f694fe6150451a759"},
     {file = "packaging-24.2.tar.gz", hash = "sha256:c228a6dc5e932d346bc5739379109d49e8853dd8223571c7c5b55260edc0b97f"},
@@ -2975,4 +2975,4 @@ cffi = ["cffi (>=1.11)"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">3.10,<3.13"
-content-hash = "5b8f5dc03a4a879c641a0fecfef1f4e60bf8d1895fb9aadd34791c20a7f2c2bf"
+content-hash = "99148ee8ec7129a98ace10a4cedf097ef30057fc786ec1ac8e76ce19ab11790a"
