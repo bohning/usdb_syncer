@@ -192,5 +192,7 @@ jobs:
         run: echo "__version__ = '$(poetry run dunamai from git)'" > src/usdb_syncer/_version.py
       - name: Generate GUI elements
         run: poetry run python -m tools.generate_pyside_files
+      - name: configure TestPyPI
+        run: poetry config repositories.testpypi https://test.pypi.org/legacy/
       - name: Publish release to PyPi
-        run: poetry publish --build
+        run: poetry publish --build -r testpypi
