@@ -15,6 +15,9 @@ include = [
     { path = "src/usdb_syncer/data/*.json", format = ["sdist", "wheel"] },
 ]
 
+[tool.poetry.requires-plugins]
+poetry-dynamic-versioning = { version = ">=1.0.0,<2.0.0", extras = ["plugin"] }
+
 [tool.poetry.dependencies]
 python = ">3.10,<3.13"
 appdirs = "*"
@@ -36,7 +39,6 @@ send2trash = "*"
 setuptools = "^75.8.0"
 unidecode = "*"
 yt-dlp = {version = "*", extras = ["default", "curl_cffi"]}
-wheel = "*"
 
 [tool.poetry.group.dev.dependencies]
 tox = "*"
@@ -51,9 +53,8 @@ pytest = "*"
 snakeviz = "*"
 
 [tool.poetry.group.build.dependencies]
-PySide6 = "*"
+PySide6 = "*"  # for file generation
 dunamai = "*"
-poetry-dynamic-versioning = {version = "^1.6.0", extras = ["plugin"]}
 
 [tool.poetry.group.bundle.dependencies]
 pyinstaller = "*"
