@@ -42,6 +42,33 @@ jobs:
     strategy:
       matrix:
         include:
+          - os: ubuntu-latest
+            image: quay.io/pypa/manylinux_2_34_x86_64
+            TARGET: Linux
+            PYINSTALLER_ARGS: >-
+              --onefile
+              --add-data 'artifacts/song_list.json:usdb_syncer/data'
+              --add-data 'src/usdb_syncer/db/sql:usdb_syncer/db/sql'
+              --add-data 'src/usdb_syncer/gui/resources/fonts:usdb_syncer/gui/resources/fonts'
+              --add-data 'src/usdb_syncer/gui/resources/styles:usdb_syncer/gui/resources/styles'
+          - os: macos-latest
+            TARGET: macOS-arm64
+            PYINSTALLER_ARGS: >-
+              --windowed
+              --icon src/usdb_syncer/gui/resources/qt/appicon_128x128.png
+              --add-data 'artifacts/song_list.json:usdb_syncer/data'
+              --add-data 'src/usdb_syncer/db/sql:usdb_syncer/db/sql'
+              --add-data 'src/usdb_syncer/gui/resources/fonts:usdb_syncer/gui/resources/fonts'
+              --add-data 'src/usdb_syncer/gui/resources/styles:usdb_syncer/gui/resources/styles'
+          - os: macos-13
+            TARGET: macOS-x64
+            PYINSTALLER_ARGS: >-
+              --windowed
+              --icon src/usdb_syncer/gui/resources/qt/appicon_128x128.png
+              --add-data 'artifacts/song_list.json:usdb_syncer/data'
+              --add-data 'src/usdb_syncer/db/sql:usdb_syncer/db/sql'
+              --add-data 'src/usdb_syncer/gui/resources/fonts:usdb_syncer/gui/resources/fonts'
+              --add-data 'src/usdb_syncer/gui/resources/styles:usdb_syncer/gui/resources/styles'
           - os: windows-latest
             TARGET: Windows
             PYINSTALLER_ARGS: >-
@@ -152,9 +179,14 @@ jobs:
           bodyFile: "CHANGELOG.md"
 
   publish:
-    name: Publish release to PyPi
+    name: Build and publish release to PyPI
     needs: release
     runs-on: ubuntu-latest
+    environment:
+      name: pypi
+      url: https://pypi.org/p/usdb_syncer
+    permissions:
+      id-token: write # IMPORTANT: this permission is mandatory for trusted publishing
     steps:
       - uses: actions/checkout@v4
         with:
@@ -172,7 +204,9 @@ jobs:
         run: echo "__version__ = '$(poetry run dunamai from git)'" > src/usdb_syncer/_version.py
       - name: Generate GUI elements
         run: poetry run python -m tools.generate_pyside_files
-      - name: configure TestPyPI
-        run: poetry config repositories.testpypi https://test.pypi.org/legacy/
-      - name: Publish release to PyPi
-        run: poetry publish --build -r testpypi
+      - name: Build package
+        run: poetry build
+      - name: Publish package distributions to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          verbose: true
