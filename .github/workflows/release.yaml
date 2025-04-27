@@ -83,6 +83,9 @@ jobs:
           python -m pip install --upgrade pip
       - name: Install poetry
         run: python -m pip install poetry
+      - name: Workaround Poetry issue https://github.com/python-poetry/poetry/issues/10028
+        if: contains(matrix.TARGET, 'windows')
+        run: python -m pip install "poetry-dynamic-versioning[plugin]"
       - name: Install dependencies
         run: poetry install --without dev
       - name: Write release version
