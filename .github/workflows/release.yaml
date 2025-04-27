@@ -42,33 +42,6 @@ jobs:
     strategy:
       matrix:
         include:
-          - os: ubuntu-latest
-            image: quay.io/pypa/manylinux_2_34_x86_64
-            TARGET: Linux
-            PYINSTALLER_ARGS: >-
-              --onefile
-              --add-data 'artifacts/song_list.json:usdb_syncer/data'
-              --add-data 'src/usdb_syncer/db/sql:usdb_syncer/db/sql'
-              --add-data 'src/usdb_syncer/gui/resources/fonts:usdb_syncer/gui/resources/fonts'
-              --add-data 'src/usdb_syncer/gui/resources/styles:usdb_syncer/gui/resources/styles'
-          - os: macos-latest
-            TARGET: macOS-arm64
-            PYINSTALLER_ARGS: >-
-              --windowed
-              --icon src/usdb_syncer/gui/resources/qt/appicon_128x128.png
-              --add-data 'artifacts/song_list.json:usdb_syncer/data'
-              --add-data 'src/usdb_syncer/db/sql:usdb_syncer/db/sql'
-              --add-data 'src/usdb_syncer/gui/resources/fonts:usdb_syncer/gui/resources/fonts'
-              --add-data 'src/usdb_syncer/gui/resources/styles:usdb_syncer/gui/resources/styles'
-          - os: macos-13
-            TARGET: macOS-x64
-            PYINSTALLER_ARGS: >-
-              --windowed
-              --icon src/usdb_syncer/gui/resources/qt/appicon_128x128.png
-              --add-data 'artifacts/song_list.json:usdb_syncer/data'
-              --add-data 'src/usdb_syncer/db/sql:usdb_syncer/db/sql'
-              --add-data 'src/usdb_syncer/gui/resources/fonts:usdb_syncer/gui/resources/fonts'
-              --add-data 'src/usdb_syncer/gui/resources/styles:usdb_syncer/gui/resources/styles'
           - os: windows-latest
             TARGET: Windows
             PYINSTALLER_ARGS: >-
