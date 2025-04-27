@@ -202,13 +202,13 @@ def _generate_splashscreen() -> QtWidgets.QSplashScreen:
     painter.setPen(QtGui.QColor(0, 174, 239))  # light blue
     font = QtGui.QFont()
     font.setFamily("Kozuka Gothic Pro")
-    font.setPointSize(24)
+    font.setPointSize(20)
     painter.setFont(font)
     painter.drawText(
         0,
         0,
         428,
-        140,
+        150,
         Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignBottom,
         usdb_syncer.__version__,
     )
