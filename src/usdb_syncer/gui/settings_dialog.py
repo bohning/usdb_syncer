@@ -5,10 +5,10 @@ from pathlib import Path
 from typing import assert_never
 
 from PySide6 import QtWidgets
-from PySide6.QtGui import QIcon
-from PySide6.QtWidgets import QDialog, QFileDialog, QWidget
+from PySide6.QtWidgets import QDialog, QDialogButtonBox, QFileDialog, QWidget
 
 from usdb_syncer import SongId, path_template, settings
+from usdb_syncer.gui import icons, theme
 from usdb_syncer.gui.forms.SettingsDialog import Ui_Dialog
 from usdb_syncer.path_template import PathTemplate
 from usdb_syncer.usdb_scraper import SessionManager
@@ -42,6 +42,8 @@ class SettingsDialog(Ui_Dialog, QDialog):
         self._populate_comboboxes()
         self._load_settings()
         self._setup_path_template()
+        apply_btn = self.buttonBox.button(QDialogButtonBox.StandardButton.Apply)
+        apply_btn.clicked.connect(self.apply)
         self._browser = self.comboBox_browser.currentData()
         self.groupBox_reencode_video.setVisible(False)
         if sys.platform != "win32":
@@ -64,6 +66,16 @@ class SettingsDialog(Ui_Dialog, QDialog):
         self.pushButton_browse_yass_reloaded.clicked.connect(
             lambda: self._set_location(settings.SupportedApps.YASS_RELOADED)
         )
+        self.comboBox_theme.currentIndexChanged.connect(
+            self._set_theme_settings_enabled
+        )
+        self._set_theme_settings_enabled()
+
+    def _set_theme_settings_enabled(self) -> None:
+        hidden = self.comboBox_theme.currentData() == settings.Theme.SYSTEM
+        self.label_primary_color.setHidden(hidden)
+        self.comboBox_primary_color.setHidden(hidden)
+        self.checkBox_colored_background.setHidden(hidden)
 
     def _set_location(self, app: settings.SupportedApps) -> None:
         path = self._get_executable(app)
@@ -113,6 +125,8 @@ class SettingsDialog(Ui_Dialog, QDialog):
 
     def _populate_comboboxes(self) -> None:
         combobox_settings = (
+            (self.comboBox_theme, settings.Theme),
+            (self.comboBox_primary_color, settings.Color),
             (self.comboBox_encoding, settings.Encoding),
             (self.comboBox_line_endings, settings.Newline),
             (self.comboBox_format_version, settings.FormatVersion),
@@ -132,9 +146,19 @@ class SettingsDialog(Ui_Dialog, QDialog):
             for item in setting:
                 combobox.addItem(str(item), item)
         for browser in settings.Browser:
-            self.comboBox_browser.addItem(QIcon(browser.icon()), str(browser), browser)
+            if icon := icons.browser_icon(browser):
+                self.comboBox_browser.addItem(icon, str(browser), browser)
+            else:
+                self.comboBox_browser.addItem(str(browser), browser)
 
     def _load_settings(self) -> None:
+        self.comboBox_theme.setCurrentIndex(
+            self.comboBox_theme.findData(settings.get_theme())
+        )
+        self.comboBox_primary_color.setCurrentIndex(
+            self.comboBox_primary_color.findData(settings.get_primary_color())
+        )
+        self.checkBox_colored_background.setChecked(settings.get_colored_background())
         self.comboBox_browser.setCurrentIndex(
             self.comboBox_browser.findData(settings.get_browser())
         )
@@ -243,6 +267,11 @@ class SettingsDialog(Ui_Dialog, QDialog):
             result = str(self._path_template.evaluate(self._song).with_suffix(".txt"))
         self.edit_path_template_result.setText(result)
 
+    def apply(self) -> None:
+        self._save_settings()
+        if self._browser != self.comboBox_browser.currentData():
+            SessionManager.reset_session()
+
     def accept(self) -> None:
         if not self._save_settings():
             return
@@ -251,6 +280,13 @@ class SettingsDialog(Ui_Dialog, QDialog):
         super().accept()
 
     def _save_settings(self) -> bool:
+        new_theme = self.comboBox_theme.currentData()
+        new_primary_color = self.comboBox_primary_color.currentData()
+        colored_background = self.checkBox_colored_background.isChecked()
+        settings.set_theme(new_theme)
+        settings.set_primary_color(new_primary_color)
+        settings.set_colored_background(colored_background)
+        theme.apply_theme(new_theme, new_primary_color, colored_background)
         settings.set_browser(self.comboBox_browser.currentData())
         settings.set_cover(self.groupBox_cover.isChecked())
         settings.set_cover_max_size(self.comboBox_cover_max_size.currentData())

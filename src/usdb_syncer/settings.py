@@ -204,6 +204,9 @@ class SettingKey(Enum):
     REPORT_PDF_COLUMNS = "report/pdf_columns"
     REPORT_PDF_FONTSIZE = "report/pdf_fontsize"
     REPORT_JSON_INDENT = "report/json_indent"
+    VIEW_THEME = "view/theme"
+    VIEW_PRIMARY_COLOR = "view/primary_color"
+    VIEW_COLORED_BACKGROUND = "view/colored_background"
 
 
 class Encoding(Enum):
@@ -440,37 +443,6 @@ class Browser(Enum):
             return "None"
         return self.value.capitalize()
 
-    def icon(self) -> str:  # noqa: C901
-        match self:
-            case Browser.NONE:
-                return ""
-            case Browser.ARC:
-                return ":/icons/arc.png"
-            case Browser.BRAVE:
-                return ":/icons/brave.png"
-            case Browser.CHROME:
-                return ":/icons/chrome.png"
-            case Browser.CHROMIUM:
-                return ":/icons/chromium.png"
-            case Browser.EDGE:
-                return ":/icons/edge.png"
-            case Browser.FIREFOX:
-                return ":/icons/firefox.png"
-            case Browser.LIBREWOLF:
-                return ":/icons/librewolf.png"
-            case Browser.OCTO_BROWSER:
-                return ":/icons/octo_browser.png"
-            case Browser.OPERA:
-                return ":/icons/opera.png"
-            case Browser.OPERA_GX:
-                return ":/icons/opera_gx.png"
-            case Browser.SAFARI:
-                return ":/icons/safari.png"
-            case Browser.VIVALDI:
-                return ":/icons/vivaldi.png"
-            case _ as unreachable:
-                assert_never(unreachable)
-
     def cookies(self) -> CookieJar | None:  # noqa: C901
         match self:
             case Browser.NONE:
@@ -646,6 +618,43 @@ class VideoFps(Enum):
 
     def __str__(self) -> str:
         return str(self.value)
+
+
+class Theme(Enum):
+    """Application theme."""
+
+    SYSTEM = "System"
+    DARK = "Dark"
+
+    def __str__(self) -> str:
+        return self.value
+
+
+class Color(Enum):
+    """Colors for GUI customization."""
+
+    RED = "Red"
+    PINK = "Pink"
+    PURPLE = "Purple"
+    DEEPPURPLE = "Deep purple"
+    INDIGO = "Indigo"
+    BLUE = "Blue"
+    LIGHTBLUE = "Light blue"
+    CYAN = "Cyan"
+    TEAL = "Teal"
+    GREEN = "Green"
+    LIGHTGREEN = "Light green"
+    LIME = "Lime"
+    YELLOW = "Yellow"
+    AMBER = "Amber"
+    ORANGE = "Orange"
+    DEEPORANGE = "Deep orange"
+    BROWN = "Brown"
+    GRAY = "Gray"
+    BLUEGRAY = "Blue gray"
+
+    def __str__(self) -> str:
+        return self.value
 
 
 class SupportedApps(StrEnum):
@@ -1040,6 +1049,30 @@ def get_path_template() -> path_template.PathTemplate:
 
 def set_path_template(template: path_template.PathTemplate, temp: bool = False) -> None:
     _Settings.set(SettingKey.PATH_TEMPLATE, template, temp)
+
+
+def get_theme() -> Theme:
+    return _Settings.get(SettingKey.VIEW_THEME, Theme.SYSTEM)
+
+
+def set_theme(theme: Theme) -> None:
+    _Settings.set(SettingKey.VIEW_THEME, theme)
+
+
+def get_primary_color() -> Color:
+    return _Settings.get(SettingKey.VIEW_PRIMARY_COLOR, Color.RED)
+
+
+def set_primary_color(primary_color: Color) -> None:
+    _Settings.set(SettingKey.VIEW_PRIMARY_COLOR, primary_color)
+
+
+def get_colored_background() -> bool:
+    return _Settings.get(SettingKey.VIEW_COLORED_BACKGROUND, False)
+
+
+def set_colored_background(colored_background: bool) -> None:
+    _Settings.set(SettingKey.VIEW_COLORED_BACKGROUND, colored_background)
 
 
 def get_app_path(app: SupportedApps) -> Path | None:

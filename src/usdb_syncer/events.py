@@ -7,7 +7,7 @@ from typing import Any, Self, cast
 import attrs
 from PySide6 import QtCore
 
-from usdb_syncer import SongId, db
+from usdb_syncer import SongId, db, settings
 
 
 class _EventProcessor(QtCore.QObject):
@@ -136,3 +136,13 @@ class SongDirChanged(SubscriptableEvent):
     """Sent when the selected song directory has changed."""
 
     new_dir: Path
+
+
+# UI
+
+
+@attrs.define(slots=False)
+class ThemeChanged(SubscriptableEvent):
+    """Sent when a new theme has been applied."""
+
+    theme: settings.Theme

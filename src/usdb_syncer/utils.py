@@ -116,7 +116,9 @@ class AppPaths:
     sql = Path(root, "src", "usdb_syncer", "db", "sql")
     addons = Path(_app_dirs.user_data_dir, "addons")
     shared = Path(root, "shared")
-    fonts = Path(root, "src", "usdb_syncer", "gui", "resources", "fonts")
+    resources = Path(root, "src", "usdb_syncer", "gui", "resources")
+    fonts = resources.joinpath("fonts")
+    stylesheets = resources.joinpath("styles")
 
     @classmethod
     def make_dirs(cls) -> None:

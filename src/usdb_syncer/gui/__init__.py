@@ -32,6 +32,7 @@ from usdb_syncer import (
     usdb_song,
     utils,
 )
+from usdb_syncer.gui import theme
 
 if TYPE_CHECKING:
     # only import from gui after pyside file generation
@@ -184,6 +185,11 @@ def _load_main_window(mw: MainWindow) -> None:
     mw.setWindowTitle(f"USDB Syncer ({constants.VERSION})")
     mw.show()
     logger.logger.info("Application successfully loaded.")
+    theme.apply_theme(
+        settings.get_theme(),
+        settings.get_primary_color(),
+        settings.get_colored_background(),
+    )
     splash.finish(mw)
 
 
