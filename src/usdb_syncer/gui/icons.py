@@ -135,7 +135,6 @@ def browser_icon(browser: settings.Browser) -> QIcon | None:  # noqa: C901
     return icon.icon()
 
 
-# https://github.com/PyCQA/pylint/issues/7857
-@functools.cache  # pylint: disable=method-cache-max-size-none
+@functools.cache
 def _icon(name: str) -> QIcon:
     return QIcon(f":/icons/{name}")
