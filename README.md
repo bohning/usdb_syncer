@@ -11,6 +11,14 @@
 The project [extensively uses the `#VIDEO` tag](https://github.com/bohning/usdb_syncer/wiki/Meta-Tags#format) to automaticly retrieve the resources (audio, video, images, etc...) to make the UltraStar song complete.
 Once a song is downloaded it can be synchronized (new notes, audio, video, images...) by redownloading the song. If a resource didn't change it's skipped.
 
+## Installation
+
+There are three ways to run USDB Syncer:
+
+1. To run from source, see [Development](#Development).
+2. Use your favourite package manager to install the Python package, e.g. [pipx](https://pipx.pypa.io/stable/): `pipx install usdb_syncer`
+3. We provide [ready-to-run executables](https://github.com/bohning/usdb_syncer/releases) for all major operating systems.
+
 ## Development
 
 **USDB Syncer** is written in Python, and uses Poetry to manage its dependencies.
