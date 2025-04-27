@@ -11,7 +11,6 @@ import os
 import shutil
 import subprocess
 import threading
-import traceback
 from enum import Enum, StrEnum, auto
 from http.cookiejar import CookieJar
 from pathlib import Path
@@ -505,7 +504,7 @@ class Browser(Enum):
         try:
             return rookiepy.to_cookiejar(function([Usdb.DOMAIN]))
         except Exception:  # noqa: BLE001
-            logger.debug(traceback.format_exc())
+            logger.exception(None)
         logger.warning(f"Failed to retrieve {self!s} cookies.")
         return None
 
@@ -727,13 +726,13 @@ class SupportedApps(StrEnum):
                 "Please check the executable path in the settings."
             )
         except OSError:
-            logger.error(f"Failed to launch {self} from '{executable!s}', I/O error.")
-            logger.debug(traceback.format_exc())
+            logger.exception(
+                f"Failed to launch {self} from '{executable!s}', I/O error."
+            )
         except subprocess.SubprocessError:
-            logger.error(
+            logger.exception(
                 f"Failed to launch {self} from '{executable!s}', subprocess error."
             )
-            logger.debug(traceback.format_exc())
 
 
 class ReportPDFPagesize(Enum):

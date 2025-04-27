@@ -31,9 +31,9 @@ class Logger(logging.LoggerAdapter):
         ) = True,
         **kwargs: Any,
     ) -> None:
-        """Log exception info with debug and error with error level."""
+        """Log exception info with debug and message with error level."""
         if exc_info:
-            self.debug("", exc_info=exc_info, **kwargs)
+            self.debug(None, exc_info=exc_info, **kwargs)
         self.error(msg, *args, exc_info=False, **kwargs)
 
 

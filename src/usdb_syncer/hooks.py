@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import traceback
 from collections.abc import Callable
 from typing import TYPE_CHECKING, Generic, ParamSpec
 
@@ -41,8 +40,7 @@ class _Hook(Generic[P]):
             try:
                 func(*args, **kwargs)
             except Exception as e:  # noqa: BLE001
-                logger.debug(traceback.format_exc())
-                logger.warning(
+                logger.exception(
                     f"Plugin error in {func.__name__}: {type(e).__name__}: {e}"
                 )
 

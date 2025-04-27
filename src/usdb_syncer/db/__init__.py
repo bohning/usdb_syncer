@@ -8,7 +8,6 @@ import json
 import sqlite3
 import threading
 import time
-import traceback
 from collections import defaultdict
 from collections.abc import Generator, Iterable, Iterator
 from pathlib import Path
@@ -355,7 +354,7 @@ class SearchBuilder:
             KeyError,
             ValueError,
         ):
-            logger.debug(traceback.format_exc())
+            logger.exception(None)
         return None
 
 
