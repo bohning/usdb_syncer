@@ -53,23 +53,20 @@ Now make sure the Python 3.12 environment you installed Poetry to is activated a
 
 ```bash
 poetry install
-# optionally activate the venv
-poetry shell # `poetry env activate` since Poetry 2
 ```
 
 ### Run usdb_syncer
 
-The package has a defined entry point for the GUI. Simply type in `usdb_syncer` in your
-terminal (`poetry run usdb_syncer` if you did not activate the venv).
+The package has a defined entry point for the GUI. Simply type in `poetry run usdb_syncer` in your terminal.
 
 ### Run tests
 
 [tox](https://github.com/tox-dev/tox) makes it easy to run the full CI pipeline on your local machine, i.e., if the pipeline passes on your machine there is a good chance it will also pass on the build server.
 
-Run `tox` (or `poetry run tox`) to execute the test pipeline. The tox pipelines are configured in the tox.ini file.
+Run `poetry run tox` to execute the test pipeline. The tox pipelines are configured in the tox.ini file.
 Configurations for specific tools in the pipeline are maintained in the `pyproject.toml` file.
 Tox is configured to create its own virtual environments, install test dependencies and the package you are developing, and run all tests.
-If you changed the test requirements or want to perform a clean run for some reason, you can run `tox -r` to recreate tox's virtual environment.
+If you changed the test requirements or want to perform a clean run for some reason, you can run `poetry run tox -r` to recreate tox's virtual environment.
 
 The following tools are part of the test pipeline:
 
@@ -82,7 +79,7 @@ The following tools are part of the test pipeline:
 - [unittest](https://docs.python.org/3/library/unittest.html): A built-in objective unittest framework
   with extensive support for mocking.
 
-If you don’t want to run the whole test pipeline, you can also use single commands from the pipeline, e.g., `pytest`. The tools will automatically pick up the correct configuration from the `pyproject.toml` file.
+If you don’t want to run the whole test pipeline, you can also use single commands from the pipeline, e.g., `poetry run pytest`. The tools will automatically pick up the correct configuration from the `pyproject.toml` file.
 
 ## Versioning
 
