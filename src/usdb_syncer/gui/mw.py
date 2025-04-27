@@ -1,6 +1,5 @@
 """usdb_syncer's GUI"""
 
-import os
 import webbrowser
 from collections.abc import Callable
 from pathlib import Path
@@ -242,7 +241,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         file_list = QFileDialog.getOpenFileNames(
             self,
             caption="Select one or more files to import USDB IDs from",
-            dir=os.getcwd(),
+            dir=str(Path.cwd()),
             filter=(
                 "JSON, USDB IDs, Weblinks (*.json *.usdb_ids *.url *.webloc *.desktop)"
             ),
@@ -250,7 +249,8 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         if not file_list:
             logger.info("no files selected to import USDB IDs from")
             return
-        if available := usdb_id_file.get_available_song_ids_from_files(file_list):
+        paths = [Path(f) for f in file_list]
+        if available := usdb_id_file.get_available_song_ids_from_files(paths):
             self.table.set_selection_to_song_ids(available)
 
     def _export_usdb_ids_to_file(self) -> None:
@@ -263,14 +263,14 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         path = QFileDialog.getSaveFileName(
             self,
             caption="Select export file for USDB IDs",
-            dir=os.getcwd(),
+            dir=str(Path.cwd()),
             filter="USDB ID File (*.usdb_ids)",
         )[0]
         if not path:
             logger.info("export aborted")
             return
 
-        usdb_id_file.write_usdb_id_file(path, selected_ids)
+        usdb_id_file.write_usdb_id_file(Path(path), selected_ids)
         logger.info(f"exported {len(selected_ids)} USDB IDs to {path}")
 
     def _show_current_song_in_usdb(self) -> None:
@@ -316,7 +316,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
     def _open_current_song_in_app(self, app: settings.SupportedApps) -> None:
         self._open_current_song(lambda path: settings.SupportedApps.open_app(app, path))
 
-    def closeEvent(self, event: QtGui.QCloseEvent) -> None:
+    def closeEvent(self, event: QtGui.QCloseEvent) -> None:  # noqa: N802
         def on_done(result: progress.Result) -> None:
             result.log_error()
             self.table.save_state()

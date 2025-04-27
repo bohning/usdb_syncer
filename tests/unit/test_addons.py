@@ -18,7 +18,6 @@ hooks.SongLoaderDidFinish.subscribe(func)
 """
 
 
-# pylint: disable=protected-access
 @pytest.mark.parametrize(
     "file", [Path("test_addon", "__init__.py"), Path("test_addon.py")]
 )

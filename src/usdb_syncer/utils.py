@@ -11,6 +11,7 @@ import time
 import unicodedata
 from pathlib import Path
 from types import TracebackType
+from typing import ClassVar
 
 import requests
 from appdirs import AppDirs
@@ -130,7 +131,7 @@ class DirectoryCache:
     are downloaded concurrently.
     """
 
-    _cache: dict[Path, float] = {}
+    _cache: ClassVar[dict[Path, float]] = {}
 
     @classmethod
     def insert(cls, path: Path) -> bool:
@@ -199,9 +200,9 @@ def read_file_head(
     """
     for enc in [encoding] if encoding else ["utf-8-sig", "cp1252"]:
         try:
-            with open(path, encoding=enc) as file:
+            with path.open(encoding=enc) as file:
                 # strip line break
-                return list(r[:-1] for r in itertools.islice(file, length))
+                return [r[:-1] for r in itertools.islice(file, length)]
         except UnicodeDecodeError:
             pass
     return None
@@ -230,7 +231,7 @@ def next_unique_directory(path: Path) -> Path:
 
 
 def is_name_maybe_with_suffix(text: str, name: str) -> bool:
-    """True if `text` is 'name' or 'name (n)' for the provided `name` and some number n."""
+    "True if `text` is 'name' or 'name (n)' for the provided `name` and some number n."
     if not text.startswith(name):
         return False
     tail = text.removeprefix(name)
@@ -291,7 +292,7 @@ def resource_file_ending(name: str) -> str:
 
 def get_mtime(path: Path) -> int:
     """Helper for mtime in microseconds so it can be stored in db losslessly."""
-    return int(os.path.getmtime(path) * 1_000_000)
+    return int(path.stat().st_mtime * 1_000_000)
 
 
 @functools.cache
@@ -331,19 +332,19 @@ def start_process_detached(command: list[str]) -> subprocess.Popen:
     flags = 0
     if sys.platform == "win32":
         flags = subprocess.DETACHED_PROCESS | subprocess.CREATE_NEW_PROCESS_GROUP
-    # pylint: disable=consider-using-with
     with LinuxEnvCleaner() as env:
         return subprocess.Popen(command, creationflags=flags, close_fds=True, env=env)
 
 
 class LinuxEnvCleaner:
-    """Context manager to clean an environment. Specifically, it removes paths starting with /tmp/_MEI
-    and some specific Qt-related paths from the environment.
+    """Context manager to clean an environment. Specifically, it removes paths starting
+    with /tmp/_MEI and some specific Qt-related paths from the environment.
 
     This is needed when running applications bundled with PyInstaller, as it links some
     libraries that may interfere with dynamically loaded libraries.
 
-    This class is only useful on Linux systems, where it modifies the environment to avoid conflicts.
+    This class is only useful on Linux systems, where it modifies the environment to
+    avoid conflicts.
     On non-Linux platforms, it is a no-op and does not alter the environment.
     """
 
@@ -359,7 +360,7 @@ class LinuxEnvCleaner:
                     new_value = ":".join(
                         path
                         for path in (value.split(":") if value else [])
-                        if not path.startswith("/tmp/_MEI")
+                        if not path.startswith("/tmp/_MEI")  # noqa: S108
                     )
                     self.old_values[key] = value
                     self.modified_env[key] = new_value

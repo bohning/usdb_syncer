@@ -1,7 +1,6 @@
 """Dialog to create a report."""
 
 import datetime
-import os
 from collections.abc import Iterable
 from pathlib import Path
 
@@ -134,7 +133,7 @@ class ReportDialog(Ui_Dialog, QDialog):
             logger.info(msg)
             return False
         fname = f"{datetime.datetime.now():%Y-%m-%d}_songlist.pdf"
-        path = os.path.join(settings.get_song_dir(), fname)
+        path = str(Path(settings.get_song_dir()) / fname)
         path = QFileDialog.getSaveFileName(self, dir=path, filter="PDF (*.pdf)")[0]
         if path:
             pagesize = self.comboBox_pdf_pagesize.currentData()
@@ -187,7 +186,7 @@ class ReportDialog(Ui_Dialog, QDialog):
             logger.info(msg)
             return False
         fname = f"{datetime.datetime.now():%Y-%m-%d}_songlist.json"
-        path = os.path.join(settings.get_song_dir(), fname)
+        path = str(Path(settings.get_song_dir()) / fname)
         path = QFileDialog.getSaveFileName(self, dir=path, filter="JSON (*.json)")[0]
         indent = self.spinBox_json_indent.value()
         if path:

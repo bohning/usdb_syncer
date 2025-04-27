@@ -39,10 +39,8 @@ enable = true
 [tool.poetry.group.dev.dependencies]
 tox = "*"
 # lint
-black = "*"
-isort = "*"
+ruff = "0.11.6"
 mypy = "*"
-pylint = "*"
 types-setuptools = "*"
 types-requests = "*"
 # test
@@ -64,40 +62,71 @@ generate_pyside_files = "tools.generate_pyside_files:cli_entry"
 generate_song_list_json = "tools.generate_song_list_json:cli_entry"
 write_release_info = "tools.write_release_info:cli_entry"
 
-[tool.isort]
-profile = "black"
-skip_glob = ["src/usdb_syncer/gui/forms", "src/usdb_syncer/gui/resources"]
-
-[tool.black]
-skip-magic-trailing-comma = true
+[tool.ruff]
+extend-exclude = [
+    "forms",
+    "resources",
+]
+target-version = "py312"
 preview = true
 
-[tool.pylint.master]
-ignore-paths = [
-    "src/usdb_syncer/gui/forms",
-    "src/usdb_syncer/gui/resources",
-    "venv",
-    ".tox",
-]
-# Add McCabe code complexity checker
-load-plugins = "pylint.extensions.mccabe"
+[tool.ruff.format]
+skip-magic-trailing-comma = true
 
-[tool.pylint.basic]
-good-names = ["mw", "p1", "p2", "closeEvent", "customEvent"]
-
-[tool.pylint.messages_control]
-extension-pkg-whitelist = ["PySide6", "shiboken6"]
-disable = [
-    "too-few-public-methods",
-    "logging-fstring-interpolation",
-    "too-many-instance-attributes",
-    "too-many-arguments",
-    "missing-function-docstring",
-    "too-many-return-statements",
-    "duplicate-code",
-    "too-many-public-methods",
-    "line-too-long",
+[tool.ruff.lint]
+select = [
+    "A",
+    "B",
+    "BLE",
+    "C4",
+    "C90",
+    "COM",
+    "E",
+    "F",
+    "I",
+    "LOG",
+    "N",
+    "PTH",
+    "Q",
+    "RUF",
+    "S",
+    "TRY",
+    "W",
 ]
+ignore = [
+    # Since we're using the ruff formatter, we follow ruff's official guide on what
+    # rules to skip: https://docs.astral.sh/ruff/formatter/#conflicting-lint-rules
+    "W191",
+    "E111",
+    "E114",
+    "E117",
+    "D206",
+    "D300",
+    "Q000",
+    "Q001",
+    "Q002",
+    "Q003",
+    "COM812",
+    "COM819",
+    # We're fine with `assert`s if they're not used for validation, but state facts
+    "S101",
+    # Allow `subprocess` and starting without shell.
+    "S404",
+    "S603",
+    "S606",
+    # Maybe investigate in the future, if it is possible to do this more safely.
+    "S607",
+    # This flags _all_ dynamic SQL constructions, so it's pointless.
+    "S608",
+]
+
+# Allow fix for all enabled rules (when `--fix`) is provided.
+fixable = ["ALL"]
+unfixable = []
+
+[tool.ruff.lint.isort]
+# For consistency with the formatter, see https://docs.astral.sh/ruff/settings/#lint_isort_split-on-trailing-comma 
+split-on-trailing-comma = false
 
 [tool.mypy]
 ignore_missing_imports = true

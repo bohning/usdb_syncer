@@ -13,7 +13,7 @@ from usdb_syncer import SongId, db
 class _EventProcessor(QtCore.QObject):
     """Processes events."""
 
-    def customEvent(self, event: QtCore.QEvent) -> None:
+    def customEvent(self, event: QtCore.QEvent) -> None:  # noqa: N802
         if isinstance(event, SubscriptableEvent):
             event.process()
 
@@ -27,7 +27,8 @@ class _EventProcessorManager(QtCore.QObject):
     def processor(cls) -> _EventProcessor:
         if cls._processor is None:
             cls._processor = _EventProcessor()
-            assert (app := QtCore.QCoreApplication.instance())
+            app = QtCore.QCoreApplication.instance()
+            assert app
             cls._processor.moveToThread(app.thread())
         return cls._processor
 

@@ -18,14 +18,13 @@ class CustomData:
     def value_options(cls, key: str) -> tuple[str, ...]:
         if cls._options is None:
             cls._options = db.get_custom_data_map()
-        # pylint bug: https://github.com/pylint-dev/pylint/issues/9515
-        return tuple(cls._options[key])  # pylint: disable=unsubscriptable-object
+        return tuple(cls._options[key])
 
     @classmethod
     def key_options(cls) -> tuple[str, ...]:
         if cls._options is None:
             cls._options = db.get_custom_data_map()
-        return tuple(cls._options)  # pylint: disable=unsubscriptable-object
+        return tuple(cls._options)
 
     @classmethod
     def is_valid_key(cls, key: str) -> bool:
@@ -48,7 +47,7 @@ class CustomData:
         else:
             self._data[key] = value
             if self._options is not None:
-                self._options[key].add(value)  # pylint: disable=unsubscriptable-object
+                self._options[key].add(value)
 
     def items(self) -> collections.abc.ItemsView[str, str]:
         return self._data.items()

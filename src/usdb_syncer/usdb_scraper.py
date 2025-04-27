@@ -1,6 +1,5 @@
 """Functionality related to the usdb.animux.de web page."""
 
-import logging
 import re
 import time
 from collections.abc import Iterator
@@ -22,15 +21,14 @@ from usdb_syncer.constants import (
     UsdbStringsFrench,
     UsdbStringsGerman,
 )
-from usdb_syncer.logger import Log, song_logger
+from usdb_syncer.logger import Logger, logger, song_logger
 from usdb_syncer.usdb_song import UsdbSong
 from usdb_syncer.utils import extract_youtube_id, normalize
 
-_logger: logging.Logger = logging.getLogger(__file__)
-
 SONG_LIST_ROW_REGEX = re.compile(
     r'<td(?:.*?<source src="(?P<sample_url>.*?)".*?)?></td>'
-    r'<td onclick="show_detail\((?P<song_id>\d+)\)".*?><img src="(?P<cover_url>.*?)".*?></td>'
+    r'<td onclick="show_detail\((?P<song_id>\d+)\)".*?>'
+    r'<img src="(?P<cover_url>.*?)".*?></td>'
     r'<td onclick="show_detail\(\d+\)">(?P<artist>.*?)</td>\n'
     r'<td onclick="show_detail\(\d+\)"><a href=.*?>(?P<title>.*?)</td>\n'
     r'<td onclick="show_detail\(\d+\)">(?P<genre>.*?)</td>\n'
@@ -50,15 +48,15 @@ WELCOME_REGEX = re.compile(
 def establish_usdb_login(session: Session) -> bool:
     """Tries to log in to USDB if necessary. Returns final login status."""
     if user := get_logged_in_usdb_user(session):
-        _logger.info(f"Using existing login of USDB user '{user}'.")
+        logger.info(f"Using existing login of USDB user '{user}'.")
         return True
     if (auth := settings.get_usdb_auth())[0] and auth[1]:
         if login_to_usdb(session, *auth):
-            _logger.info(f"Successfully logged in to USDB with user '{auth[0]}'.")
+            logger.info(f"Successfully logged in to USDB with user '{auth[0]}'.")
             return True
-        _logger.error(f"Login to USDB with user '{auth[0]}' failed!")
+        logger.error(f"Login to USDB with user '{auth[0]}' failed!")
     else:
-        _logger.warning(
+        logger.warning(
             "Not logged in to USDB. Please go to 'Synchronize > USDB Login', then "
             "select the browser you are logged in with and/or enter your credentials."
         )
@@ -226,12 +224,12 @@ def get_usdb_page(
     try:
         return page()
     except requests.ConnectionError:
-        _logger.debug("Connection failed; session may have expired; retrying ...")
+        logger.debug("Connection failed; session may have expired; retrying ...")
     except errors.UsdbLoginError:
         # skip login retry if custom or just created session
         if session or not existing_session:
             raise
-        _logger.debug(f"Page '{rel_url}' is private; trying to log in ...")
+        logger.debug(f"Page '{rel_url}' is private; trying to log in ...")
     if not session:
         SessionManager.reset_session()
     return page()
@@ -250,10 +248,10 @@ def _get_usdb_page_inner(
     url = Usdb.BASE_URL + rel_url
     match method:
         case RequestMethod.GET:
-            _logger.debug(f"Get request for {url}")
+            logger.debug(f"Get request for {url}")
             response = session.get(url, headers=headers, params=params, timeout=10)
         case RequestMethod.POST:
-            _logger.debug(f"Post request for {url}")
+            logger.debug(f"Post request for {url}")
             response = session.post(
                 url, headers=headers, data=payload, params=params, timeout=10
             )
@@ -300,7 +298,7 @@ def _usdb_strings_from_soup(soup: BeautifulSoup) -> type[UsdbStrings]:
 def _usdb_strings_from_html(html: str) -> type[UsdbStrings]:
     if match := WELCOME_REGEX.search(html):
         return _usdb_strings_from_welcome(match.group(1))
-    raise errors.UsdbParseError("welcome string not found")
+    raise errors.UsdbUnknownLanguageError
 
 
 def _usdb_strings_from_welcome(welcome_string: str) -> type[UsdbStrings]:
@@ -311,7 +309,7 @@ def _usdb_strings_from_welcome(welcome_string: str) -> type[UsdbStrings]:
             return UsdbStringsGerman
         case UsdbStringsFrench.WELCOME:
             return UsdbStringsFrench
-    raise errors.UsdbParseError("Unknown USDB language.")
+    raise errors.UsdbUnknownLanguageError
 
 
 def get_usdb_available_songs(
@@ -342,17 +340,17 @@ def get_usdb_available_songs(
             payload=payload,
             session=session,
         )
-        songs = list(
+        songs = [
             song
             for song in _parse_songs_from_songlist(html)
             if song.song_id > max_skip_id
-        )
+        ]
         available_songs.extend(songs)
 
         if len(songs) < Usdb.MAX_SONGS_PER_PAGE:
             break
 
-    _logger.info(f"Fetched {len(available_songs)} new song(s) from USDB.")
+    logger.info(f"Fetched {len(available_songs)} new song(s) from USDB.")
     return available_songs
 
 
@@ -378,7 +376,7 @@ def _parse_songs_from_songlist(html: str) -> Iterator[UsdbSong]:
 
 
 def _parse_details_table(
-    details_table: Tag, song_id: SongId, usdb_strings: type[UsdbStrings], logger: Log
+    details_table: Tag, song_id: SongId, usdb_strings: type[UsdbStrings], logger: Logger
 ) -> SongDetails:
     """Parse song attributes from usdb page.
 
@@ -401,7 +399,8 @@ def _parse_details_table(
     audio_sample = ""
     if param := details_table.find("source"):
         assert isinstance(param, Tag)
-        assert isinstance(src := param.get("src"), str)
+        src = param.get("src")
+        assert isinstance(src, str)
         audio_sample = src
     else:
         logger.debug("No audio sample found. Consider adding one!")
@@ -445,10 +444,10 @@ def _find_text_after(details_table: Tag, label: str) -> str:
     if isinstance((tag := details_table.find(string=label)), NavigableString):
         if isinstance(tag.next, Tag):
             return tag.next.text.strip()
-    raise errors.UsdbParseError(f"Text after {label} not found.")
+    raise errors.UsdbParseError(f"Text after {label} not found.")  # noqa: TRY003
 
 
-def _parse_comments_table(comments_table: Tag, logger: Log) -> list[SongComment]:
+def _parse_comments_table(comments_table: Tag, logger: Logger) -> list[SongComment]:
     """Parse the table into individual comments, extracting potential video links,
     GAP and BPM values.
     """
@@ -456,7 +455,8 @@ def _parse_comments_table(comments_table: Tag, logger: Log) -> list[SongComment]
     # last entry is the field to enter a new comment, so this one is ignored
     for header in comments_table.find_all("tr", class_="list_tr2")[:-1]:
         assert isinstance(header, Tag)
-        assert isinstance(td := header.find("td"), Tag)
+        td = header.find("td")
+        assert isinstance(td, Tag)
         meta = td.text.strip()
         if " | " not in meta:
             # header is just the placeholder element
@@ -471,11 +471,13 @@ def _parse_comments_table(comments_table: Tag, logger: Log) -> list[SongComment]
     return comments
 
 
-def _parse_comment_contents(contents: Tag, logger: Log) -> CommentContents:
-    assert isinstance(td_element := contents.find("td"), Tag)
+def _parse_comment_contents(contents: Tag, logger: Logger) -> CommentContents:
+    td_element = contents.find("td")
+    assert isinstance(td_element, Tag)
     for emoji in td_element.find_all("img"):
         assert isinstance(emoji, Tag)
-        assert isinstance(title := emoji.get("title"), str)
+        title = emoji.get("title")
+        assert isinstance(title, str)
         emoji.replace_with(NavigableString(title))
 
     text = td_element.text.strip()  # type: ignore
@@ -491,7 +493,7 @@ def _parse_comment_contents(contents: Tag, logger: Log) -> CommentContents:
     return CommentContents(text=text, urls=urls, youtube_ids=youtube_ids)
 
 
-def _all_urls_in_comment(contents: Tag, text: str, logger: Log) -> Iterator[str]:
+def _all_urls_in_comment(contents: Tag, text: str, logger: Logger) -> Iterator[str]:
     for embed in contents.find_all("embed"):
         if src := _extract_supported_video_source(embed, "src"):
             logger.debug("Video embed found. Consider embedding as iframe.")
@@ -518,7 +520,7 @@ def _extract_supported_video_source(tag: Any, attr_key: str) -> str | None:
     return None
 
 
-def get_notes(song_id: SongId, logger: Log) -> str:
+def get_notes(song_id: SongId, logger: Logger) -> str:
     """Retrieve notes for a song."""
     logger.debug("fetching notes")
     html = get_usdb_page(
@@ -534,7 +536,7 @@ def get_notes(song_id: SongId, logger: Log) -> str:
 def _parse_song_txt_from_txt_page(soup: BeautifulSoup) -> str:
     if isinstance(textarea := soup.find("textarea"), Tag):
         return textarea.string or ""
-    raise errors.UsdbParseError("textarea for notes not found")
+    raise errors.UsdbParseError("textarea for notes not found")  # noqa: TRY003
 
 
 def post_song_comment(song_id: SongId, text: str, rating: str) -> None:

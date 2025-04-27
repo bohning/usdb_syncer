@@ -51,7 +51,7 @@ class _ResultSignal(QtCore.QObject):
 class ProgressDialog(QtWidgets.QProgressDialog):
     """Progress dialog that cannot be closed by the user."""
 
-    def closeEvent(self, event: QtGui.QCloseEvent) -> None:
+    def closeEvent(self, event: QtGui.QCloseEvent) -> None:  # noqa: N802
         event.ignore()
 
 
@@ -75,7 +75,7 @@ def run_with_progress(
         try:
             with db.managed_connection(utils.AppPaths.db):
                 result = Result(task())
-        except Exception as exc:  # pylint: disable=broad-exception-caught
+        except Exception as exc:  # noqa: BLE001
             result = Result(_Error(exc))
         signal.result.emit()
 

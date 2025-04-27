@@ -181,11 +181,11 @@ def _build_pdf_content(
     return content
 
 
-def _format_song_entry(
+def _format_song_entry(  # noqa: C901
     song: UsdbSong, base_font_size: int, optional_info: list[Column]
 ) -> str:
     entry = f"{song.title} "
-    entry += f'<font size="{base_font_size*0.8}" color="{colors.grey.hexval()}">'
+    entry += f'<font size="{base_font_size * 0.8}" color="{colors.grey.hexval()}">'
     for column in optional_info:
         match column:
             case Column.LANGUAGE:
@@ -229,7 +229,9 @@ def _create_column_frames(
 
     for i in range(column_count):
         x = margin + i * (column_width + gutter)
-        frame = Frame(x, margin, column_width, pagesize[1] - 2 * margin, id=f"col{i+1}")
+        frame = Frame(
+            x, margin, column_width, pagesize[1] - 2 * margin, id=f"col{i + 1}"
+        )
         frames.append(frame)
 
     return frames

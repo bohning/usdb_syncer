@@ -225,7 +225,7 @@ class SongTable:
             self.mw.table_view.horizontalHeader().saveState()
         )
 
-    ### actions
+    # actions
 
     def _on_song_changed(self, event: events.SongChanged) -> None:
         if event.song_id == self.current_song_id():
@@ -297,7 +297,7 @@ class SongTable:
                 song.sync_meta.upsert()
             events.SongChanged(song.song_id)
 
-    ### selection model
+    # selection model
 
     def current_song_id(self) -> SongId | None:
         if (idx := self._view.selectionModel().currentIndex()).isValid():
@@ -333,7 +333,7 @@ class SongTable:
             | QItemSelectionModel.SelectionFlag.ClearAndSelect,
         )
 
-    ### sorting and filtering
+    # sorting and filtering
 
     def connect_row_count_changed(self, func: Callable[[int, int], None]) -> None:
         """Calls `func` with the new table row and selection counts."""

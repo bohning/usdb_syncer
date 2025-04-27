@@ -155,6 +155,6 @@ def try_parse_txt_headers(path: Path) -> song_txt.Headers | None:
     if lines := utils.read_file_head(path, 20):
         try:
             return song_txt.Headers.parse(lines, error_logger)
-        except errors.NotesParseError:
+        except errors.HeadersParseError:
             return None
     return None

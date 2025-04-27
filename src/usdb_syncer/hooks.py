@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import traceback
 from collections.abc import Callable
 from typing import TYPE_CHECKING, Generic, ParamSpec
 
@@ -14,9 +13,6 @@ if TYPE_CHECKING:
     from usdb_syncer import usdb_song
     from usdb_syncer.gui.mw import MainWindow
 
-# pylint currently lacks support for ParamSpec
-# https://github.com/pylint-dev/pylint/issues/9424
-# pylint: disable=arguments-differ
 
 P = ParamSpec("P")
 
@@ -43,9 +39,8 @@ class _Hook(Generic[P]):
         for func in cls._subscribers:
             try:
                 func(*args, **kwargs)
-            except Exception as e:  # pylint: disable=broad-except
-                logger.debug(traceback.format_exc())
-                logger.warning(
+            except Exception as e:  # noqa: BLE001
+                logger.exception(
                     f"Plugin error in {func.__name__}: {type(e).__name__}: {e}"
                 )
 

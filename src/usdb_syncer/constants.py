@@ -234,7 +234,7 @@ QUOTATION_MARKS = {
     "Turkish": ("“", "”"),
     "Ukrainian": ("«", "»"),
     "Vietnamese": ("“", "”"),
-    "Welsh": ("‘", "’"),
+    "Welsh": ("‘", "’"),  # noqa: RUF001
 }
 
 QUOTATION_MARKS_TO_REPLACE = {'"', "„", "”", "«", "»", "“", "「", "」"}
