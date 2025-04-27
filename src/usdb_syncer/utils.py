@@ -19,6 +19,7 @@ from bs4 import BeautifulSoup, Tag
 from packaging import version
 from unidecode import unidecode
 
+import usdb_syncer
 from usdb_syncer import constants
 from usdb_syncer.logger import logger
 
@@ -26,12 +27,10 @@ CACHE_LIFETIME = 60 * 60
 _app_dirs = AppDirs("usdb_syncer", "bohning")
 
 
-def is_bundle() -> bool:
-    """True if the app is running from a bundle.
-
-    https://pyinstaller.org/en/stable/runtime-information.html#run-time-information
-    """
-    return bool(getattr(sys, "frozen", False) and getattr(sys, "_MEIPASS", False))
+# https://pyinstaller.org/en/stable/runtime-information.html#run-time-information
+IS_BUNDLE = bool(getattr(sys, "frozen", False) and getattr(sys, "_MEIPASS", False))
+IS_INSTALLED = "site-packages" in __file__
+IS_SOURCE = not IS_BUNDLE and not IS_INSTALLED
 
 
 def _root() -> Path:
@@ -108,17 +107,11 @@ class AppPaths:
     """App data paths."""
 
     log = Path(_app_dirs.user_data_dir, "usdb_syncer.log")
-    song_list = Path(_app_dirs.user_cache_dir, "available_songs.json")
-    root = _root()
-    fallback_song_list = Path(root, "data", "song_list.json")
-    profile = Path(root, "usdb_syncer.prof")
     db = Path(_app_dirs.user_data_dir, "usdb_syncer.db")
-    sql = Path(root, "src", "usdb_syncer", "db", "sql")
     addons = Path(_app_dirs.user_data_dir, "addons")
-    shared = Path(root, "shared")
-    resources = Path(root, "src", "usdb_syncer", "gui", "resources")
-    fonts = resources.joinpath("fonts")
-    stylesheets = resources.joinpath("styles")
+    song_list = Path(_app_dirs.user_cache_dir, "available_songs.json")
+    profile = Path(_app_dirs.user_cache_dir, "usdb_syncer.prof")
+    shared = (_root() / "shared") if IS_SOURCE else None
 
     @classmethod
     def make_dirs(cls) -> None:
@@ -313,11 +306,11 @@ def get_latest_version() -> str | None:
 
 def newer_version_available() -> str | None:
     if latest_version := get_latest_version():
-        if version.parse(constants.VERSION) < version.parse(latest_version):
+        if version.parse(usdb_syncer.__version__) < version.parse(latest_version):
             logger.warning(
                 f"USDB Syncer {latest_version} is available! "
-                f"(You have {constants.VERSION}). Please download the latest release "
-                f"from {constants.GITHUB_DL_LATEST}."
+                f"(You have {usdb_syncer.__version__}). Please download the latest "
+                f"release from {constants.GITHUB_DL_LATEST}."
             )
             return latest_version
         logger.info(f"You are running the latest Syncer version {latest_version}.")

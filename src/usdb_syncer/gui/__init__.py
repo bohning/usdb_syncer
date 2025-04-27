@@ -17,10 +17,9 @@ import attrs
 from PySide6 import QtCore, QtGui, QtWidgets
 from PySide6.QtCore import Qt
 
-import tools
+import usdb_syncer
 from usdb_syncer import (
     addons,
-    constants,
     db,
     errors,
     events,
@@ -57,13 +56,15 @@ class CliArgs:
 
     # Development
     profile: bool = False
-    skip_pyside: bool = False
+    skip_pyside: bool = not utils.IS_SOURCE
     trace_sql: bool = False
 
     @classmethod
     def parse(cls) -> CliArgs:
         parser = ArgumentParser(description="USDB Syncer")
-        parser.add_argument("--version", action="version", version=constants.VERSION)
+        parser.add_argument(
+            "--version", action="version", version=usdb_syncer.__version__
+        )
         parser.add_argument(
             "--reset-settings",
             action="store_true",
@@ -84,7 +85,7 @@ class CliArgs:
         dev_options.add_argument(
             "--profile", action="store_true", help="Run with profiling."
         )
-        if not utils.is_bundle():
+        if utils.IS_SOURCE:
             dev_options.add_argument(
                 "--skip-pyside",
                 action="store_true",
@@ -99,8 +100,10 @@ class CliArgs:
             print("Settings reset to default.")
         if self.songpath:
             settings.set_song_dir(self.songpath.resolve(), temp=True)
-        if not self.skip_pyside:
-            tools.generate_pyside_files()
+        if utils.IS_SOURCE and not self.skip_pyside:
+            import tools.generate_pyside_files  # pylint: disable=import-outside-toplevel
+
+            tools.generate_pyside_files.main()
         db.set_trace_sql(self.trace_sql)
 
 
@@ -127,7 +130,7 @@ def _run() -> None:
         _TextEditLogger(mw),
     )
     mw.label_update_hint.setVisible(False)
-    if utils.is_bundle():
+    if not utils.IS_SOURCE:
         if version := utils.newer_version_available():
             mw.label_update_hint.setText(
                 mw.label_update_hint.text().replace("VERSION", version)
@@ -182,7 +185,7 @@ def _load_main_window(mw: MainWindow) -> None:
         logger.logger.info(f"Applied default search '{default_search.name}'.")
     mw.table.search_songs()
     splash.showMessage("Song database successfully loaded.", color=Qt.GlobalColor.gray)
-    mw.setWindowTitle(f"USDB Syncer ({constants.VERSION})")
+    mw.setWindowTitle(f"USDB Syncer ({usdb_syncer.__version__})")
     mw.show()
     logger.logger.info("Application successfully loaded.")
     theme.apply_theme(
@@ -199,25 +202,15 @@ def _generate_splashscreen() -> QtWidgets.QSplashScreen:
     painter.setPen(QtGui.QColor(0, 174, 239))  # light blue
     font = QtGui.QFont()
     font.setFamily("Kozuka Gothic Pro")
-    font.setPointSize(24)
+    font.setPointSize(20)
     painter.setFont(font)
     painter.drawText(
         0,
         0,
         428,
-        140,
+        150,
         Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignBottom,
-        constants.VERSION,
-    )
-    font.setPointSize(12)
-    painter.setFont(font)
-    painter.drawText(
-        0,
-        0,
-        428,
-        155,
-        Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignBottom,
-        constants.SHORT_COMMIT_HASH,
+        usdb_syncer.__version__,
     )
     painter.end()
     return QtWidgets.QSplashScreen(canvas)

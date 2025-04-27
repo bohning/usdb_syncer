@@ -3,7 +3,7 @@ name: Release
 on:
   push:
     tags:
-      - "[0-9]+.[0-9]+.[0-9]+" # Only create releases on matching tags following semver X.Y.Z
+      - "v[0-9]+.[0-9]+.[0-9]+" # Only create releases on matching tags following semver X.Y.Z
 
 jobs:
   scrape-song-list:
@@ -20,10 +20,10 @@ jobs:
           python -m pip install poetry
       - name: Install dependencies
         run: |
-          poetry install --without dev --without build
+          poetry install --without dev --without bundle
       - name: Scrape USDB song list to ship with the bundle
         run: >
-          poetry run generate_song_list_json
+          poetry run python -m tools.generate_song_list_json
           -t 'song_list.json'
           -u '${{ secrets.USDB_USER }}'
           -p '${{ secrets.USDB_PASSWORD }}'
@@ -34,8 +34,8 @@ jobs:
             song_list.json
             CHANGELOG.md
 
-  build:
-    name: Build packages
+  bundle:
+    name: Build bundles
     runs-on: ${{ matrix.os }}
     container: ${{ matrix.image }}
     needs: scrape-song-list
@@ -47,39 +47,41 @@ jobs:
             TARGET: Linux
             PYINSTALLER_ARGS: >-
               --onefile
-              --add-data 'artifacts/song_list.json:data'
-              --add-data 'src/usdb_syncer/db/sql:src/usdb_syncer/db/sql'
-              --add-data 'src/usdb_syncer/gui/resources/fonts:src/usdb_syncer/gui/resources/fonts'
-              --add-data 'src/usdb_syncer/gui/resources/styles:src/usdb_syncer/gui/resources/styles'
+              --add-data 'artifacts/song_list.json:usdb_syncer/data'
+              --add-data 'src/usdb_syncer/db/sql:usdb_syncer/db/sql'
+              --add-data 'src/usdb_syncer/gui/resources/fonts:usdb_syncer/gui/resources/fonts'
+              --add-data 'src/usdb_syncer/gui/resources/styles:usdb_syncer/gui/resources/styles'
           - os: macos-latest
             TARGET: macOS-arm64
             PYINSTALLER_ARGS: >-
               --windowed
               --icon src/usdb_syncer/gui/resources/qt/appicon_128x128.png
-              --add-data 'artifacts/song_list.json:data'
-              --add-data 'src/usdb_syncer/db/sql:src/usdb_syncer/db/sql'
-              --add-data 'src/usdb_syncer/gui/resources/fonts:src/usdb_syncer/gui/resources/fonts'
-              --add-data 'src/usdb_syncer/gui/resources/styles:src/usdb_syncer/gui/resources/styles'
+              --add-data 'artifacts/song_list.json:usdb_syncer/data'
+              --add-data 'src/usdb_syncer/db/sql:usdb_syncer/db/sql'
+              --add-data 'src/usdb_syncer/gui/resources/fonts:usdb_syncer/gui/resources/fonts'
+              --add-data 'src/usdb_syncer/gui/resources/styles:usdb_syncer/gui/resources/styles'
           - os: macos-13
             TARGET: macOS-x64
             PYINSTALLER_ARGS: >-
               --windowed
               --icon src/usdb_syncer/gui/resources/qt/appicon_128x128.png
-              --add-data 'artifacts/song_list.json:data'
-              --add-data 'src/usdb_syncer/db/sql:src/usdb_syncer/db/sql'
-              --add-data 'src/usdb_syncer/gui/resources/fonts:src/usdb_syncer/gui/resources/fonts'
-              --add-data 'src/usdb_syncer/gui/resources/styles:src/usdb_syncer/gui/resources/styles'
+              --add-data 'artifacts/song_list.json:usdb_syncer/data'
+              --add-data 'src/usdb_syncer/db/sql:usdb_syncer/db/sql'
+              --add-data 'src/usdb_syncer/gui/resources/fonts:usdb_syncer/gui/resources/fonts'
+              --add-data 'src/usdb_syncer/gui/resources/styles:usdb_syncer/gui/resources/styles'
           - os: windows-latest
             TARGET: Windows
             PYINSTALLER_ARGS: >-
               --onefile
               --icon src/usdb_syncer/gui/resources/qt/appicon_128x128.png
-              --add-data 'artifacts/song_list.json;data'
-              --add-data 'src/usdb_syncer/db/sql;src/usdb_syncer/db/sql'
-              --add-data 'src/usdb_syncer/gui/resources/fonts;src/usdb_syncer/gui/resources/fonts'
-              --add-data 'src/usdb_syncer/gui/resources/styles;src/usdb_syncer/gui/resources/styles'
+              --add-data 'artifacts/song_list.json;usdb_syncer/data'
+              --add-data 'src/usdb_syncer/db/sql;usdb_syncer/db/sql'
+              --add-data 'src/usdb_syncer/gui/resources/fonts;usdb_syncer/gui/resources/fonts'
+              --add-data 'src/usdb_syncer/gui/resources/styles;usdb_syncer/gui/resources/styles'
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: actions/download-artifact@v4
       - name: On macOS and windows, install python normally
         if: contains(matrix.os, 'macos') || contains(matrix.os, 'windows')
@@ -109,20 +111,17 @@ jobs:
           python --version
           python -m pip install --upgrade pip
       - name: Install poetry
-        run: |
-          python -m pip install poetry
+        run: python -m pip install poetry
+      - name: Workaround Poetry issue https://github.com/python-poetry/poetry/issues/10028
+        if: contains(matrix.TARGET, 'windows')
+        run: python -m pip install "poetry-dynamic-versioning[plugin]"
       - name: Install dependencies
-        run: |
-          poetry install --without dev
-      - name: Write version and commit hash
-        run: >
-          poetry run write_release_info
-          -p src/usdb_syncer/constants.py
-          -v ${{ github.ref_name }}
-          -c ${{ github.workflow_sha }}
+        run: poetry install --without dev
+      - name: Write release version
+        run: echo "__version__ = '$(poetry run dunamai from git)'" > src/usdb_syncer/_version.py
       - name: Generate GUI elements
-        run: poetry run generate_pyside_files
-      - name: Build with pyinstaller for ${{matrix.os}}
+        run: poetry run python -m tools.generate_pyside_files
+      - name: Bundle with pyinstaller for ${{matrix.os}}
         # _tkinter hook is run erroneously?
         run: >
           poetry run pyinstaller
@@ -160,7 +159,7 @@ jobs:
     name: Create release
     permissions:
       contents: write
-    needs: build
+    needs: bundle
     runs-on: ubuntu-latest
     steps:
       - uses: actions/download-artifact@v4
@@ -178,3 +177,36 @@ jobs:
         with:
           artifacts: "artifacts/USDB_Syncer*"
           bodyFile: "CHANGELOG.md"
+
+  publish:
+    name: Build and publish release to PyPI
+    needs: release
+    runs-on: ubuntu-latest
+    environment:
+      name: pypi
+      url: https://pypi.org/p/usdb_syncer
+    permissions:
+      id-token: write # IMPORTANT: this permission is mandatory for trusted publishing
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/download-artifact@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install poetry
+        run: python -m pip install poetry
+      - name: Install dependencies
+        run: poetry install --only build
+      - name: Write release version
+        run: echo "__version__ = '$(poetry run dunamai from git)'" > src/usdb_syncer/_version.py
+      - name: Generate GUI elements
+        run: poetry run python -m tools.generate_pyside_files
+      - name: Build package
+        run: poetry build
+      - name: Publish package distributions to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          verbose: true

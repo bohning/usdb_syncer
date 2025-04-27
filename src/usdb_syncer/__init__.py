@@ -8,6 +8,7 @@ import random
 from pathlib import Path
 
 from usdb_syncer import errors
+from usdb_syncer._version import __version__ as __version__
 from usdb_syncer.constants import Usdb
 
 

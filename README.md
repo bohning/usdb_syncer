@@ -11,6 +11,14 @@
 The project [extensively uses the `#VIDEO` tag](https://github.com/bohning/usdb_syncer/wiki/Meta-Tags#format) to automaticly retrieve the resources (audio, video, images, etc...) to make the UltraStar song complete.
 Once a song is downloaded it can be synchronized (new notes, audio, video, images...) by redownloading the song. If a resource didn't change it's skipped.
 
+## Installation
+
+There are three ways to run USDB Syncer:
+
+1. To run from source, see [Development](#Development).
+2. Use your favourite package manager to install the Python package, e.g. [pipx](https://pipx.pypa.io/stable/): `pipx install usdb_syncer`
+3. We provide [ready-to-run executables](https://github.com/bohning/usdb_syncer/releases) for all major operating systems.
+
 ## Development
 
 **USDB Syncer** is written in Python, and uses Poetry to manage its dependencies.
@@ -19,7 +27,7 @@ The following explains how to set up a development environment.
 ### Prerequisites
 
 - [git](https://www.git-scm.com/downloads)
-- [Python 3.12](https://www.python.org/downloads/)
+- [Python 3.12](https://www.python.org/downloads/) (3.11 should work as well)
 - [Poetry](https://python-poetry.org/docs/#installation)
 
 ### Project Setup
@@ -45,23 +53,20 @@ Now make sure the Python 3.12 environment you installed Poetry to is activated a
 
 ```bash
 poetry install
-# optionally activate the venv
-poetry shell
 ```
 
 ### Run usdb_syncer
 
-The package has a defined entry point for the GUI. Simply type in `usdb_syncer` in your
-terminal (`poetry run usdb_syncer` if you did not activate the venv).
+The package has a defined entry point for the GUI. Simply type in `poetry run usdb_syncer` in your terminal.
 
 ### Run tests
 
 [tox](https://github.com/tox-dev/tox) makes it easy to run the full CI pipeline on your local machine, i.e., if the pipeline passes on your machine there is a good chance it will also pass on the build server.
 
-Run `tox` (or `poetry run tox`) to execute the test pipeline. The tox pipelines are configured in the tox.ini file.
+Run `poetry run tox` to execute the test pipeline. The tox pipelines are configured in the tox.ini file.
 Configurations for specific tools in the pipeline are maintained in the `pyproject.toml` file.
 Tox is configured to create its own virtual environments, install test dependencies and the package you are developing, and run all tests.
-If you changed the test requirements or want to perform a clean run for some reason, you can run `tox -r` to recreate tox's virtual environment.
+If you changed the test requirements or want to perform a clean run for some reason, you can run `poetry run tox -r` to recreate tox's virtual environment.
 
 The following tools are part of the test pipeline:
 
@@ -74,7 +79,7 @@ The following tools are part of the test pipeline:
 - [unittest](https://docs.python.org/3/library/unittest.html): A built-in objective unittest framework
   with extensive support for mocking.
 
-If you don’t want to run the whole test pipeline, you can also use single commands from the pipeline, e.g., `pytest`. The tools will automatically pick up the correct configuration from the `pyproject.toml` file.
+If you don’t want to run the whole test pipeline, you can also use single commands from the pipeline, e.g., `poetry run pytest`. The tools will automatically pick up the correct configuration from the `pyproject.toml` file.
 
 ## Versioning
 
@@ -109,7 +114,7 @@ startup phase, they cannot be completely ruled out.
 
 ## Linux Distributions
 
-Linux builds are generated on AlmaLinux 9. They should be compatible with any modern distribution. If not, please open an issue.
+Linux bundles are generated on AlmaLinux 9. They should be compatible with any modern distribution. If not, please open an issue.
 
 The only known requirement for the binary is `glibc >= 2.34`. The current `glibc` version can be checked with:
 

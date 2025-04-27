@@ -5,11 +5,12 @@ import json
 
 import requests
 
-from usdb_syncer import constants, utils
+from usdb_syncer import constants
 from usdb_syncer.logger import logger
+from usdb_syncer.utils import AppPaths
 
 _CONFIG_URL = f"{constants.GITHUB_SHARED_CONTENT}/config.json"
-_CONFIG_PATH = utils.AppPaths.shared.joinpath("config.json")
+_CONFIG_PATH = AppPaths.shared.joinpath("config.json") if AppPaths.shared else None
 
 
 @functools.lru_cache(maxsize=1)
@@ -26,10 +27,10 @@ def discord_webhook_url() -> str | None:
 
 @functools.lru_cache(maxsize=1)
 def _fetch_config() -> dict:
-    if utils.is_bundle():
-        return _fetch_remote_config()
-    with _CONFIG_PATH.open(encoding="utf-8") as file:
-        return json.load(file)
+    if _CONFIG_PATH:
+        with _CONFIG_PATH.open(encoding="utf-8") as file:
+            return json.load(file)
+    return _fetch_remote_config()
 
 
 def _fetch_remote_config() -> dict:

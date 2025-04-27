@@ -3,13 +3,15 @@
 from __future__ import annotations
 
 import enum
+from importlib import resources
 from typing import assert_never
 
 import attrs
 from PySide6 import QtWidgets
 from PySide6.QtGui import QColor, QColorConstants, QPalette
 
-from usdb_syncer import events, settings, utils
+from usdb_syncer import events, settings
+from usdb_syncer.gui.resources import styles
 
 
 def apply_theme(
@@ -93,7 +95,7 @@ class DarkTheme:
     on_secondary: QColor = QColorConstants.Svg.black
     on_background: QColor = QColorConstants.Svg.white
     on_surface: QColor = QColorConstants.Svg.white
-    _style_template = utils.AppPaths.stylesheets.joinpath("dark.qss")
+    _style_template = resources.files(styles).joinpath("dark.qss")
     primary_swatch: Swatch = attrs.field(init=False)
     primary: QColor = attrs.field(init=False)
     base_surface: QColor = attrs.field(init=False)

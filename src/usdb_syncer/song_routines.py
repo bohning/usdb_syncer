@@ -3,6 +3,8 @@
 import json
 import os
 from collections.abc import Generator
+from importlib import resources
+from importlib.abc import Traversable
 from pathlib import Path
 
 import requests
@@ -12,6 +14,7 @@ from requests import Session
 from usdb_syncer import (
     SongId,
     SyncMetaId,
+    data,
     db,
     errors,
     events,
@@ -66,9 +69,9 @@ def _download_subscribed_songs(songs: list[UsdbSong]) -> None:
 
 def load_cached_songs() -> list[UsdbSong] | None:
     if AppPaths.song_list.exists():
-        path = AppPaths.song_list
-    elif AppPaths.fallback_song_list.exists():
-        path = AppPaths.fallback_song_list
+        path: Path | Traversable = AppPaths.song_list
+    elif (resource := resources.files(data).joinpath("song_list.json")).is_file():
+        path = resource
     else:
         return None
     with path.open(encoding="utf8") as file:

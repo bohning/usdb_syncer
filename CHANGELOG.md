@@ -2,9 +2,8 @@
 
 # Changes
 
-## Fixes
-
 ## Features
+- We are now on PyPI! Simply install and update USDB Syncer with your favourite package manager, e.g. [pipx](https://pipx.pypa.io/stable/): `pipx install usdb_syncer`
 - We got a dark mode, and it's even customisable! Try it out with the View tab in the settings.
 - Image resources are now redownloaded if metatag postprocessing parameters have changed.
 
