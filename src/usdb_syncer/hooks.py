@@ -11,7 +11,6 @@ from usdb_syncer.logger import logger
 
 if TYPE_CHECKING:
     from usdb_syncer import usdb_song
-    from usdb_syncer.gui.mw import MainWindow
 
 
 P = ParamSpec("P")
@@ -51,11 +50,3 @@ class SongLoaderDidFinish(_Hook):
     @classmethod
     def call(cls, song: usdb_song.UsdbSong) -> None:
         super().call(song)
-
-
-class MainWindowDidLoad(_Hook):
-    """Called after the main window has loaded."""
-
-    @classmethod
-    def call(cls, main_window: MainWindow) -> None:
-        super().call(main_window)

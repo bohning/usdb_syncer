@@ -1,6 +1,6 @@
 """Demo add-on"""
 
-from usdb_syncer import hooks, logger, usdb_song
+from usdb_syncer import gui, hooks, logger, usdb_song
 from usdb_syncer.gui.mw import MainWindow
 
 
@@ -18,5 +18,5 @@ def on_download_finished(song: usdb_song.UsdbSong) -> None:
 
 
 # this will be executed when the app is started
-hooks.MainWindowDidLoad.subscribe(on_window_loaded)
+gui.hooks.MainWindowDidLoad.subscribe(on_window_loaded)
 hooks.SongLoaderDidFinish.subscribe(on_download_finished)

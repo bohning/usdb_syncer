@@ -23,7 +23,6 @@ from usdb_syncer import (
     db,
     errors,
     events,
-    hooks,
     logger,
     settings,
     song_routines,
@@ -31,7 +30,7 @@ from usdb_syncer import (
     usdb_song,
     utils,
 )
-from usdb_syncer.gui import theme
+from usdb_syncer.gui import hooks, theme
 
 if TYPE_CHECKING:
     # only import from gui after pyside file generation
