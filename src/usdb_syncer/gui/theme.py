@@ -34,6 +34,12 @@ def apply_theme(
     events.ThemeChanged(theme).post()
 
 
+def current_palette() -> QPalette:
+    app = QtWidgets.QApplication.instance()
+    assert isinstance(app, QtWidgets.QApplication), "Theming requires a GUI application"
+    return app.palette()
+
+
 class _Surface(enum.Enum):
     """A surface of a certain level."""
 

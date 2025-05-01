@@ -248,6 +248,7 @@ class SongTable:
             self.mw.action_open_song_in_yass_reloaded,
             self.mw.action_delete,
             self.mw.action_pin,
+            self.mw.action_preview,
             self.mw.menu_custom_data,
         ):
             action.setEnabled(song.is_local())

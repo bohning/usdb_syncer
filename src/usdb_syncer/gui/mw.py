@@ -9,12 +9,13 @@ from PySide6.QtWidgets import QFileDialog, QLabel, QMainWindow
 
 from usdb_syncer import SongId, db, events, settings, song_routines, usdb_id_file
 from usdb_syncer.constants import Usdb
-from usdb_syncer.gui import gui_utils, icons, progress, progress_bar
+from usdb_syncer.gui import ffmpeg_dialog, gui_utils, icons, progress, progress_bar
 from usdb_syncer.gui.about_dialog import AboutDialog
 from usdb_syncer.gui.comment_dialog import CommentDialog
 from usdb_syncer.gui.debug_console import DebugConsole
 from usdb_syncer.gui.forms.MainWindow import Ui_MainWindow
 from usdb_syncer.gui.meta_tags_dialog import MetaTagsDialog
+from usdb_syncer.gui.preview_dialog import PreviewDialog
 from usdb_syncer.gui.progress import run_with_progress
 from usdb_syncer.gui.report_dialog import ReportDialog
 from usdb_syncer.gui.search_tree.tree import FilterTree
@@ -146,6 +147,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
             ),
             (self.action_delete, self.table.delete_selected_songs),
             (self.action_pin, self.table.set_pin_selected_songs),
+            (self.action_preview, self._show_preview_dialog),
         ):
             action.triggered.connect(func)
         self.menu_custom_data.aboutToShow.connect(self.table.build_custom_data_menu)
@@ -293,6 +295,11 @@ class MainWindow(Ui_MainWindow, QMainWindow):
             CommentDialog(self, song).show()
         else:
             logger.debug("Not opening comment dialog: no song selected.")
+
+    def _show_preview_dialog(self) -> None:
+        song = self.table.current_song()
+        if song:
+            ffmpeg_dialog.check_ffmpeg(self, lambda: PreviewDialog(self, song).show())
 
     def _rate_in_usdb(self, stars: int) -> None:
         song = self.table.current_song()
