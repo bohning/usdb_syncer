@@ -8,7 +8,8 @@ import numpy as np
 import sounddevice as sd
 from PySide6 import QtCore, QtGui, QtWidgets
 
-from usdb_syncer.gui import theme
+from usdb_syncer import events, settings
+from usdb_syncer.gui import icons, theme
 from usdb_syncer.gui.forms.PreviewDialog import Ui_Dialog
 from usdb_syncer.logger import song_logger
 from usdb_syncer.song_txt import SongTxt, tracks
@@ -19,6 +20,8 @@ _SAMPLE_RATE = 44100
 _CHANNELS = 2
 _FPS = 60
 _REFRESH_RATE_MS = 1000 // _FPS
+_NEEDLE_WIDTH = 2
+_DOUBLECLICK_DELAY_SECS = 0.3
 
 
 class PreviewDialog(Ui_Dialog, QtWidgets.QDialog):
@@ -34,10 +37,24 @@ class PreviewDialog(Ui_Dialog, QtWidgets.QDialog):
             txt = SongTxt.parse(contents, song_logger(song.song_id))
             self.setWindowTitle(txt.headers.artist_title_str())
             view = PianoRollWidget(txt)
-            self.layout_main.addWidget(view)
+            self.layout_main.insertWidget(0, view)
             if song.sync_meta and song.sync_meta.audio:
                 path = song.sync_meta.path.parent.joinpath(song.sync_meta.audio.fname)
                 self.player = AudioPlayer(path, view.update_position)
+        self.button_pause.toggled.connect(lambda t: self.player.set_pause(t))
+        self.button_backward.pressed.connect(
+            lambda: self.player.seek_to(view.previous_start())
+        )
+        self.button_forward.pressed.connect(
+            lambda: self.player.seek_to(view.next_start())
+        )
+        self._on_theme_changed(settings.get_theme())
+        events.ThemeChanged.subscribe(lambda e: self._on_theme_changed(e.theme))
+
+    def _on_theme_changed(self, theme: settings.Theme) -> None:
+        self.button_pause.setIcon(icons.Icon.PAUSE_REMOTE.icon(theme))
+        self.button_backward.setIcon(icons.Icon.SKIP_BACKWARD.icon(theme))
+        self.button_forward.setIcon(icons.Icon.SKIP_FORWARD.icon(theme))
 
     def closeEvent(self, event: QtGui.QCloseEvent) -> None:  # noqa: N802
         self.player.stop()
@@ -69,19 +86,22 @@ class PianoRollWidget(QtWidgets.QWidget):
             for line in txt.notes.track_1
         ]
         self.current_time = 0.0  # In seconds
+        self._current_idx = 0
+        self._current_line = self.lines[0]
         self.setMinimumSize(800, 200)
-        # self.update()
+
+    # def _current_line(self) -> _LineTimings:
+    #     return next(
+    #         li
+    #         for li in self.lines
+    #         if li.line_break is None or li.line_break > self.current_time
+    #     )
 
     def paintEvent(self, event: QtGui.QPaintEvent) -> None:  # noqa: N802
         with QtGui.QPainter(self) as painter:
             height = self.height()
             width = self.width()
-            timings = next(
-                li
-                for li in self.lines
-                if li.line_break is None or li.line_break > self.current_time
-            )
-            line = timings.line
+            line = self._current_line.line
 
             rel_start = line.start()
             rel_end = line.end()
@@ -98,15 +118,40 @@ class PianoRollWidget(QtWidgets.QWidget):
                 painter.drawRect(x, y, w, bar_height)
 
             # Draw playback position
-            painter.setPen(QtGui.QPen(theme.current_palette().highlight(), 2))
-            x_pos = round(
-                max((self.current_time - timings.start, 0)) / timings.len * width
+            painter.setPen(
+                QtGui.QPen(theme.current_palette().highlight(), _NEEDLE_WIDTH)
             )
+            x_pos = round(
+                (self.current_time - self._current_line.start)
+                / self._current_line.len
+                * width
+            )
+            x_pos = min(max(x_pos, 0), width - _NEEDLE_WIDTH)
             painter.drawLine(x_pos, 0, x_pos, height)
 
     def update_position(self, time_in_seconds: float) -> None:
         self.current_time = time_in_seconds
+        new_idx, new_line = next(
+            (i, li)
+            for i, li in enumerate(self.lines)
+            if li.line_break is None or li.line_break > self.current_time
+        )
+        self._current_idx = new_idx
+        self._current_line = new_line
         self.update()
+
+    def previous_start(self) -> float:
+        if (
+            self._current_idx > 0
+            and self.current_time - _DOUBLECLICK_DELAY_SECS < self._current_line.start
+        ):
+            return self.lines[self._current_idx - 1].start
+        return self._current_line.start
+
+    def next_start(self) -> float | None:
+        if self._current_idx + 1 >= len(self.lines):
+            return None
+        return self.lines[self._current_idx + 1].start
 
 
 class AudioPlayer:
@@ -186,11 +231,8 @@ class AudioPlayer:
             current_time = self.samples_played / _SAMPLE_RATE
             self.ui_update_callback(current_time)
 
-    def pause(self) -> None:
-        self.paused = True
-
-    def resume(self) -> None:
-        self.paused = False
+    def set_pause(self, value: bool) -> None:
+        self.paused = value
 
     def stop(self) -> None:
         self.paused = True
@@ -202,7 +244,7 @@ class AudioPlayer:
             self.process = None
         self.timer.stop()
 
-    def seek_to(self, seconds) -> None:
+    def seek_to(self, seconds: float) -> None:
         """Optional: restart FFmpeg from a given time."""
         self.stop()
         self.samples_played = int(seconds * _SAMPLE_RATE)

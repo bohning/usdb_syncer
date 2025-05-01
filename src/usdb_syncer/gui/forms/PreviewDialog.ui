@@ -19,7 +19,7 @@
      <item>
       <layout class="QHBoxLayout" name="layout_buttons">
        <item>
-        <widget class="QToolButton" name="toolButton_3">
+        <widget class="QToolButton" name="button_backward">
          <property name="text">
           <string>...</string>
          </property>
@@ -40,7 +40,7 @@
         </widget>
        </item>
        <item>
-        <widget class="QToolButton" name="toolButton_2">
+        <widget class="QToolButton" name="button_forward">
          <property name="text">
           <string>...</string>
          </property>

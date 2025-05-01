@@ -72,6 +72,8 @@ class Icon(enum.Enum):
     SAFARI = "safari.png", None
     SAVED_SEARCH = "heart.png", "heart-white.svg"
     SETTINGS = "cog.png", "cog-white.svg"
+    SKIP_BACKWARD = "control-double-180.png", "chevron-left-white.svg"
+    SKIP_FORWARD = "control-double.png", "chevron-right-white.svg"
     SONG_FOLDER = "folder_note.png", "folder-music-white.svg"
     TAGS = "price-tag.png", "tag-white.svg"
     TEXT = "text.png", "file-document-white.svg"
