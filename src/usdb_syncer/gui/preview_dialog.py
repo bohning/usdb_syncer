@@ -3,11 +3,10 @@
 from __future__ import annotations
 
 import subprocess
-from collections.abc import Callable
 from pathlib import Path
+from typing import Any
 
 import attrs
-import cffi
 import numpy as np
 import sounddevice as sd
 from PySide6 import QtCore, QtGui, QtWidgets
@@ -25,8 +24,10 @@ _CHANNELS = 2
 _FPS = 60
 _REFRESH_RATE_MS = 1000 // _FPS
 _NEEDLE_WIDTH = 2
-_DOUBLECLICK_DELAY_MS = 400
+_DOUBLECLICK_DELAY_MS = 200
+_DOUBLECLICK_DELAY_SECS = _DOUBLECLICK_DELAY_MS / 1000
 _STREAM_BUFFER_SIZE = 2048
+_CORNER_RADIUS = 20.0
 
 
 def load_preview_dialog(parent: QtWidgets.QWidget, song: UsdbSong) -> None:
@@ -49,50 +50,62 @@ def clamp(value: int, lower: int, upper: int) -> int:
 class PreviewDialog(Ui_Dialog, QtWidgets.QDialog):
     """Dialog to preview a downloaded song."""
 
-    _line_delta = 0
-
     def __init__(self, parent: QtWidgets.QWidget, txt: SongTxt, audio: Path) -> None:
         super().__init__(parent=parent)
         self.setupUi(self)
         self.setWindowTitle(txt.headers.artist_title_str())
+
         self._state = _PlayState.new(txt, audio)
-        self._line_view = _LineView(self._state)
         self._song_view = _SongView(self._state)
-        self.layout_main.insertWidget(0, self._line_view)
         self.layout_main.insertWidget(0, self._song_view)
-        self.player = _AudioPlayer.new(audio, self._update_time)
-        self.button_pause.toggled.connect(lambda t: self.player.set_pause(t))
+        self._line_view = _LineView(self._state)
+        self.layout_main.insertWidget(1, self._line_view)
+        self.player = _AudioPlayer.new(audio, self._state)
+        self._update_timer = QtCore.QTimer(self, interval=_REFRESH_RATE_MS)
+        self._update_timer.timeout.connect(self._update_time)
+        self._update_timer.start()
+
+        self.button_pause.toggled.connect(self._on_pause_toggled)
         self._seek_timer = QtCore.QTimer(
             self, singleShot=True, interval=_DOUBLECLICK_DELAY_MS
         )
         self._seek_timer.timeout.connect(self._on_seek_timeout)
         self.button_backward.pressed.connect(self._on_seek_backward)
         self.button_forward.pressed.connect(self._on_seek_forward)
+
         self._on_theme_changed(settings.get_theme())
         events.ThemeChanged.subscribe(lambda e: self._on_theme_changed(e.theme))
 
-    def _update_time(self, secs: float) -> None:
-        self._state.set_current_time(secs)
+    def _update_time(self) -> None:
+        # only get current time from playback stream if not currently seeking
+        if not self._state.seeking:
+            self._state.calculate_time_from_samples()
         self._song_view.update()
         self._line_view.update()
 
+    def _on_pause_toggled(self, paused: bool) -> None:
+        self._state.paused = paused
+
     def _on_seek_backward(self) -> None:
-        self._line_delta -= 1
-        self._seek_timer.start()
+        line_elapsed = self._state.current_time - self._state.current_line.start
+        if line_elapsed > _DOUBLECLICK_DELAY_SECS:
+            self._start_seeking(0)
+        elif self._state.current_idx > 0:
+            self._start_seeking(-1)
 
     def _on_seek_forward(self) -> None:
-        self._line_delta += 1
+        if self._state.current_idx < len(self._state.lines) - 1:
+            self._start_seeking(1)
+
+    def _start_seeking(self, line_delta: int) -> None:
+        self._state.seeking = True
+        idx = self._state.current_idx + line_delta
+        self._state.set_current_time(self._state.lines[idx].start)
         self._seek_timer.start()
 
     def _on_seek_timeout(self) -> None:
-        idx = self._state.current_idx + self._line_delta
-        idx = clamp(idx, 0, len(self._state.lines) - 1)
-        target = self._state.lines[idx].start
-        if (self._line_delta < 0 and target < self._state.current_time) or (
-            self._line_delta > 0 and target > self._state.current_time
-        ):
-            self.player.seek_to(target)
-        self._line_delta = 0
+        self.player.seek_to(self._state.current_time)
+        self._state.seeking = False
 
     def _on_theme_changed(self, theme: settings.Theme) -> None:
         self.button_pause.setIcon(icons.Icon.PAUSE_REMOTE.icon(theme))
@@ -114,7 +127,10 @@ class _PlayState:
     current_line: _LineTimings
     current_time: float
     current_rel_pos: float
+    samples_played: int
     song_secs: float
+    seeking: bool = False
+    paused: bool = False
 
     @classmethod
     def new(cls, txt: SongTxt, audio: Path) -> _PlayState:
@@ -130,16 +146,24 @@ class _PlayState:
             current_line=lines[0],
             current_time=lines[0].start,
             current_rel_pos=0.0,
+            samples_played=0,
             song_secs=song_secs,
         )
 
+    def calculate_time_from_samples(self) -> None:
+        self.current_time = self.samples_played / _SAMPLE_RATE
+        self._update_with_current_time()
+
     def set_current_time(self, secs: float) -> None:
         self.current_time = secs
-        self.current_rel_pos = secs / self.song_secs
+        self._update_with_current_time()
+
+    def _update_with_current_time(self) -> None:
+        self.current_rel_pos = self.current_time / self.song_secs
         self.current_idx, self.current_line = next(
             (i, li)
             for i, li in enumerate(self.lines)
-            if li.line_break is None or li.line_break > secs
+            if li.line_break is None or li.line_break > self.current_time
         )
 
 
@@ -185,6 +209,7 @@ class _SongView(QtWidgets.QWidget):
     def __init__(self, state: _PlayState):
         super().__init__()
         self._state = state
+        self.setMinimumSize(600, 20)
 
     def paintEvent(self, event: QtGui.QPaintEvent) -> None:  # noqa: N802
         height = self.height()
@@ -208,7 +233,7 @@ class _LineView(QtWidgets.QWidget):
     def __init__(self, state: _PlayState):
         super().__init__()
         self._state = state
-        self.setMinimumSize(800, 200)
+        self.setMinimumSize(600, 200)
 
     def paintEvent(self, event: QtGui.QPaintEvent) -> None:  # noqa: N802
         height = self.height()
@@ -228,7 +253,9 @@ class _LineView(QtWidgets.QWidget):
                 x = round((note.start - rel_start) / rel_len * width)
                 w = round(note.duration / rel_len * width)
                 y = round((note.pitch - min_pitch) / pitch_spread * height)
-                painter.drawRect(x, y, w, bar_height)
+                painter.drawRoundedRect(
+                    x, y, w, bar_height, _CORNER_RADIUS, _CORNER_RADIUS
+                )
 
             # Draw playback position
             painter.setPen(
@@ -245,28 +272,14 @@ class _LineView(QtWidgets.QWidget):
 
 @attrs.define
 class _AudioPlayer:
-    source: Path
-    callback: Callable[[float], None]
-    timer: QtCore.QTimer
-    start_secs: float = 0.0
-
-    samples_played: int = 0
-    paused: bool = False
+    _source: Path
+    _state: _PlayState
     stream: sd.OutputStream | None = None
     process: subprocess.Popen | None = None
-    buffer_size: int = 2048
 
     @classmethod
-    def new(
-        cls, source: Path, callback: Callable[[float], None], start_secs: float = 0.0
-    ) -> _AudioPlayer:
-        player = cls(
-            source=source,
-            callback=callback,
-            timer=QtCore.QTimer(),
-            start_secs=start_secs,
-        )
-        player.timer.timeout.connect(player.tick)
+    def new(cls, source: Path, state: _PlayState) -> _AudioPlayer:
+        player = cls(source=source, state=state)
         player.start_ffmpeg()
         player.start_stream()
         return player
@@ -276,7 +289,7 @@ class _AudioPlayer:
             [
                 "ffmpeg",
                 "-i",
-                self.source,
+                self._source,
                 "-f",
                 "s16le",
                 "-acodec",
@@ -300,53 +313,38 @@ class _AudioPlayer:
             callback=self._stream_callback,
         )
         self.stream.start()
-        self.timer.start(_REFRESH_RATE_MS)
 
     def _stream_callback(
-        self,
-        outdata: np.ndarray,
-        frames: int,
-        time: "cffi.FFI.CData",
-        status: sd.CallbackFlags,
+        self, outdata: np.ndarray, frames: int, time: Any, status: sd.CallbackFlags
     ) -> None:
-        if self.paused or not self.process or not self.process.stdout:
+        if (
+            not (self.process and self.process.stdout and self.stream)
+            or self._state.paused
+        ):
             outdata[:] = np.zeros((frames, _CHANNELS), dtype=np.int16)
             return
-
         bytes_needed = frames * _CHANNELS * 2
         data = self.process.stdout.read(bytes_needed)
         if len(data) < bytes_needed:
             outdata[:] = np.zeros((frames, _CHANNELS), dtype=np.int16)
             self.stream.stop()
-            self.timer.stop()
             return
-
         array = np.frombuffer(data, dtype=np.int16).reshape(-1, _CHANNELS)
         outdata[:] = array
-        self.samples_played += frames
-
-    def tick(self) -> None:
-        if not self.paused:
-            current_time = self.samples_played / _SAMPLE_RATE
-            self.callback(current_time)
-
-    def set_pause(self, value: bool) -> None:
-        self.paused = value
+        self._state.samples_played += frames
 
     def stop(self) -> None:
-        self.paused = True
         if self.stream:
             self.stream.stop()
             self.stream.close()
         if self.process:
             self.process.terminate()
             self.process = None
-        self.timer.stop()
 
     def seek_to(self, seconds: float) -> None:
         """Optional: restart FFmpeg from a given time."""
         self.stop()
-        self.samples_played = int(seconds * _SAMPLE_RATE)
+        self._state.samples_played = int(seconds * _SAMPLE_RATE)
 
         self.process = subprocess.Popen(
             [
@@ -354,7 +352,7 @@ class _AudioPlayer:
                 "-ss",
                 str(seconds),
                 "-i",
-                self.source,
+                self._source,
                 "-f",
                 "s16le",
                 "-acodec",
@@ -377,5 +375,3 @@ class _AudioPlayer:
             callback=self._stream_callback,
         )
         self.stream.start()
-        self.timer.start(_REFRESH_RATE_MS)
-        self.paused = False
