@@ -1,15 +1,18 @@
 """Dialog to preview a downloaded song."""
 
+from __future__ import annotations
+
 import subprocess
 from collections.abc import Callable
 from pathlib import Path
 
+import attrs
 import cffi
 import numpy as np
 import sounddevice as sd
 from PySide6 import QtCore, QtGui, QtWidgets
 
-from usdb_syncer import events, settings
+from usdb_syncer import events, settings, utils
 from usdb_syncer.gui import icons, theme
 from usdb_syncer.gui.forms.PreviewDialog import Ui_Dialog
 from usdb_syncer.logger import song_logger
@@ -23,6 +26,7 @@ _FPS = 60
 _REFRESH_RATE_MS = 1000 // _FPS
 _NEEDLE_WIDTH = 2
 _DOUBLECLICK_DELAY_SECS = 0.3
+_STREAM_BUFFER_SIZE = 2048
 
 
 def load_preview_dialog(parent: QtWidgets.QWidget, song: UsdbSong) -> None:
@@ -45,18 +49,28 @@ class PreviewDialog(Ui_Dialog, QtWidgets.QDialog):
         super().__init__(parent=parent)
         self.setupUi(self)
         self.setWindowTitle(txt.headers.artist_title_str())
-        view = _LineView(txt)
-        self.layout_main.insertWidget(0, view)
-        self.player = _AudioPlayer(audio, view.update_position)
+        self._state = _PlayState.new(txt, audio)
+        self._line_view = _LineView(self._state)
+        self._song_view = _SongView(self._state)
+        self.layout_main.insertWidget(0, self._line_view)
+        self.layout_main.insertWidget(0, self._song_view)
+        self.player = _AudioPlayer.new(audio, self._update_time)
         self.button_pause.toggled.connect(lambda t: self.player.set_pause(t))
         self.button_backward.pressed.connect(
-            lambda: self.player.seek_to(view.previous_start())
+            lambda: self.player.seek_to(self._state.previous_start())
         )
         self.button_forward.pressed.connect(
-            lambda: None if (s := view.next_start()) is None else self.player.seek_to(s)
+            lambda: None
+            if (s := self._state.next_start()) is None
+            else self.player.seek_to(s)
         )
         self._on_theme_changed(settings.get_theme())
         events.ThemeChanged.subscribe(lambda e: self._on_theme_changed(e.theme))
+
+    def _update_time(self, secs: float) -> None:
+        self._state.set_current_time(secs)
+        self._song_view.update()
+        self._line_view.update()
 
     def _on_theme_changed(self, theme: settings.Theme) -> None:
         self.button_pause.setIcon(icons.Icon.PAUSE_REMOTE.icon(theme))
@@ -68,47 +82,130 @@ class PreviewDialog(Ui_Dialog, QtWidgets.QDialog):
         event.accept()
 
 
+@attrs.define
+class _PlayState:
+    """State of the current playback."""
+
+    txt: SongTxt
+    lines: list[_LineTimings]
+    current_idx: int
+    current_line: _LineTimings
+    current_time: float
+    current_rel_pos: float
+    song_secs: float
+
+    @classmethod
+    def new(cls, txt: SongTxt, audio: Path) -> _PlayState:
+        song_secs = utils.get_media_duration(audio)
+        lines = [
+            _LineTimings.new(line, txt.headers.gap, txt.headers.bpm, song_secs)
+            for line in txt.notes.track_1
+        ]
+        return cls(
+            txt=txt,
+            lines=lines,
+            current_idx=0,
+            current_line=lines[0],
+            current_time=lines[0].start,
+            current_rel_pos=0.0,
+            song_secs=song_secs,
+        )
+
+    def set_current_time(self, secs: float) -> None:
+        self.current_time = secs
+        self.current_rel_pos = secs / self.song_secs
+        self.current_idx, self.current_line = next(
+            (i, li)
+            for i, li in enumerate(self.lines)
+            if li.line_break is None or li.line_break > secs
+        )
+
+    def previous_start(self) -> float:
+        if (
+            self.current_idx > 0
+            and self.current_time - _DOUBLECLICK_DELAY_SECS < self.current_line.start
+        ):
+            return self.lines[self.current_idx - 1].start
+        return self.current_line.start
+
+    def next_start(self) -> float | None:
+        if self.current_idx + 1 >= len(self.lines):
+            return None
+        return self.lines[self.current_idx + 1].start
+
+
+@attrs.define
 class _LineTimings:
     """Wrapper for a line with absolute timings in seconds."""
 
-    line_break: float | None = None
+    line: tracks.Line
+    start: float
+    end: float
+    duration: float
+    line_break: float | None
+    rel_start: float
+    rel_end: float
+    rel_duration: float
 
-    def __init__(self, line: tracks.Line, gap: int, bpm: BeatsPerMinute) -> None:
-        self.line = line
-        self.start = gap / 1000 + bpm.beats_to_secs(line.start())
-        self.end = gap / 1000 + bpm.beats_to_secs(line.end())
-        self.len = self.end - self.start
+    @classmethod
+    def new(
+        cls, line: tracks.Line, gap: int, bpm: BeatsPerMinute, song_duration: float
+    ) -> _LineTimings:
+        start = gap / 1000 + bpm.beats_to_secs(line.start())
+        end = gap / 1000 + bpm.beats_to_secs(line.end())
+        duration = end - start
         if line.line_break:
-            self.line_break = gap / 1000 + bpm.beats_to_secs(
+            line_break = gap / 1000 + bpm.beats_to_secs(
                 line.line_break.previous_line_out_time
             )
+        else:
+            line_break = None
+        return cls(
+            line=line,
+            start=start,
+            end=end,
+            duration=duration,
+            rel_start=start / song_duration,
+            rel_end=end / song_duration,
+            rel_duration=duration / song_duration,
+            line_break=line_break,
+        )
+
+
+class _SongView(QtWidgets.QWidget):
+    def __init__(self, state: _PlayState):
+        super().__init__()
+        self._state = state
+
+    def paintEvent(self, event: QtGui.QPaintEvent) -> None:  # noqa: N802
+        height = self.height()
+        width = self.width()
+        with QtGui.QPainter(self) as painter:
+            painter.setBrush(QtGui.QColor(100, 150, 255))
+            for line in self._state.lines:
+                x = round(line.rel_start * width)
+                w = round(line.rel_duration * width)
+                painter.drawRect(x, 0, w, height)
+
+            painter.setPen(
+                QtGui.QPen(theme.current_palette().highlight(), _NEEDLE_WIDTH)
+            )
+            x_pos = round(self._state.current_rel_pos * width)
+            x_pos = min(x_pos, width - _NEEDLE_WIDTH)
+            painter.drawLine(x_pos, 0, x_pos, height)
 
 
 class _LineView(QtWidgets.QWidget):
-    def __init__(self, txt: SongTxt):
+    def __init__(self, state: _PlayState):
         super().__init__()
-        self.txt = txt
-        self.lines = [
-            _LineTimings(line, txt.headers.gap, txt.headers.bpm)
-            for line in txt.notes.track_1
-        ]
-        self.current_time = 0.0  # In seconds
-        self._current_idx = 0
-        self._current_line = self.lines[0]
+        self._state = state
         self.setMinimumSize(800, 200)
 
-    # def _current_line(self) -> _LineTimings:
-    #     return next(
-    #         li
-    #         for li in self.lines
-    #         if li.line_break is None or li.line_break > self.current_time
-    #     )
-
     def paintEvent(self, event: QtGui.QPaintEvent) -> None:  # noqa: N802
+        height = self.height()
+        width = self.width()
         with QtGui.QPainter(self) as painter:
-            height = self.height()
-            width = self.width()
-            line = self._current_line.line
+            line = self._state.current_line.line
 
             rel_start = line.start()
             rel_end = line.end()
@@ -129,62 +226,48 @@ class _LineView(QtWidgets.QWidget):
                 QtGui.QPen(theme.current_palette().highlight(), _NEEDLE_WIDTH)
             )
             x_pos = round(
-                (self.current_time - self._current_line.start)
-                / self._current_line.len
+                (self._state.current_time - self._state.current_line.start)
+                / self._state.current_line.duration
                 * width
             )
             x_pos = min(max(x_pos, 0), width - _NEEDLE_WIDTH)
             painter.drawLine(x_pos, 0, x_pos, height)
 
-    def update_position(self, time_in_seconds: float) -> None:
-        self.current_time = time_in_seconds
-        new_idx, new_line = next(
-            (i, li)
-            for i, li in enumerate(self.lines)
-            if li.line_break is None or li.line_break > self.current_time
-        )
-        self._current_idx = new_idx
-        self._current_line = new_line
-        self.update()
 
-    def previous_start(self) -> float:
-        if (
-            self._current_idx > 0
-            and self.current_time - _DOUBLECLICK_DELAY_SECS < self._current_line.start
-        ):
-            return self.lines[self._current_idx - 1].start
-        return self._current_line.start
-
-    def next_start(self) -> float | None:
-        if self._current_idx + 1 >= len(self.lines):
-            return None
-        return self.lines[self._current_idx + 1].start
-
-
+@attrs.define
 class _AudioPlayer:
-    def __init__(self, source: Path, callback: Callable[[float], None]) -> None:
-        self._source = source
-        self._callback = callback
+    source: Path
+    callback: Callable[[float], None]
+    timer: QtCore.QTimer
+    start_secs: float = 0.0
 
-        self.samples_played = 0
-        self.paused = False
-        self.stream = None
-        self.process = None
+    samples_played: int = 0
+    paused: bool = False
+    stream: sd.OutputStream | None = None
+    process: subprocess.Popen | None = None
+    buffer_size: int = 2048
 
-        self.timer = QtCore.QTimer()
-        self.timer.timeout.connect(self.tick)
-
-        self.buffer_size = 2048  # Can be adjusted for latency/performance tradeoff
-
-        self.start_ffmpeg()
-        self.start_stream()
+    @classmethod
+    def new(
+        cls, source: Path, callback: Callable[[float], None], start_secs: float = 0.0
+    ) -> _AudioPlayer:
+        player = cls(
+            source=source,
+            callback=callback,
+            timer=QtCore.QTimer(),
+            start_secs=start_secs,
+        )
+        player.timer.timeout.connect(player.tick)
+        player.start_ffmpeg()
+        player.start_stream()
+        return player
 
     def start_ffmpeg(self) -> None:
         self.process = subprocess.Popen(
             [
                 "ffmpeg",
                 "-i",
-                self._source,
+                self.source,
                 "-f",
                 "s16le",
                 "-acodec",
@@ -204,13 +287,13 @@ class _AudioPlayer:
             samplerate=_SAMPLE_RATE,
             channels=_CHANNELS,
             dtype="int16",
-            blocksize=self.buffer_size,
-            callback=self.callback,
+            blocksize=_STREAM_BUFFER_SIZE,
+            callback=self._stream_callback,
         )
         self.stream.start()
         self.timer.start(_REFRESH_RATE_MS)
 
-    def callback(
+    def _stream_callback(
         self,
         outdata: np.ndarray,
         frames: int,
@@ -236,7 +319,7 @@ class _AudioPlayer:
     def tick(self) -> None:
         if not self.paused:
             current_time = self.samples_played / _SAMPLE_RATE
-            self._callback(current_time)
+            self.callback(current_time)
 
     def set_pause(self, value: bool) -> None:
         self.paused = value
@@ -262,7 +345,7 @@ class _AudioPlayer:
                 "-ss",
                 str(seconds),
                 "-i",
-                self._source,
+                self.source,
                 "-f",
                 "s16le",
                 "-acodec",
@@ -281,8 +364,8 @@ class _AudioPlayer:
             samplerate=_SAMPLE_RATE,
             channels=_CHANNELS,
             dtype="int16",
-            blocksize=self.buffer_size,
-            callback=self.callback,
+            blocksize=_STREAM_BUFFER_SIZE,
+            callback=self._stream_callback,
         )
         self.stream.start()
         self.timer.start(_REFRESH_RATE_MS)
