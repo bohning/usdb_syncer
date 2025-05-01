@@ -61,6 +61,17 @@ class SongTxt:
         except errors.TxtParseError:
             return None
 
+    @classmethod
+    def try_from_file(cls, path: Path, logger: Logger) -> SongTxt | None:
+        if not path.is_file():
+            return None
+        try:
+            txt = path.read_text(encoding="utf-8")
+        except UnicodeDecodeError:
+            logger.exception(None)
+            return None
+        return cls.try_parse(txt, logger)
+
     def maybe_split_duet_notes(self) -> None:
         if self.headers.relative and self.headers.relative.lower() == "yes":
             return

@@ -1,6 +1,7 @@
 """Dialog to preview a downloaded song."""
 
 import subprocess
+from collections.abc import Callable
 from pathlib import Path
 
 import cffi
@@ -24,29 +25,35 @@ _NEEDLE_WIDTH = 2
 _DOUBLECLICK_DELAY_SECS = 0.3
 
 
+def load_preview_dialog(parent: QtWidgets.QWidget, song: UsdbSong) -> None:
+    if not (txt_path := song.txt_path()) or not (audio_path := song.audio_path()):
+        QtWidgets.QMessageBox.warning(
+            parent, "Aborted", "Song must have txt and audio files!"
+        )
+        return
+    logger = song_logger(song.song_id)
+    if not (txt := SongTxt.try_from_file(txt_path, logger)):
+        QtWidgets.QMessageBox.warning(parent, "Aborted", "Txt file is invalid!")
+        return
+    PreviewDialog(parent, txt, audio_path).show()
+
+
 class PreviewDialog(Ui_Dialog, QtWidgets.QDialog):
     """Dialog to preview a downloaded song."""
 
-    def __init__(self, parent: QtWidgets.QWidget, song: UsdbSong) -> None:
+    def __init__(self, parent: QtWidgets.QWidget, txt: SongTxt, audio: Path) -> None:
         super().__init__(parent=parent)
         self.setupUi(self)
-        if song.sync_meta and song.sync_meta.txt:
-            contents = song.sync_meta.path.parent.joinpath(
-                song.sync_meta.txt.fname
-            ).read_text("utf-8")
-            txt = SongTxt.parse(contents, song_logger(song.song_id))
-            self.setWindowTitle(txt.headers.artist_title_str())
-            view = PianoRollWidget(txt)
-            self.layout_main.insertWidget(0, view)
-            if song.sync_meta and song.sync_meta.audio:
-                path = song.sync_meta.path.parent.joinpath(song.sync_meta.audio.fname)
-                self.player = AudioPlayer(path, view.update_position)
+        self.setWindowTitle(txt.headers.artist_title_str())
+        view = _LineView(txt)
+        self.layout_main.insertWidget(0, view)
+        self.player = _AudioPlayer(audio, view.update_position)
         self.button_pause.toggled.connect(lambda t: self.player.set_pause(t))
         self.button_backward.pressed.connect(
             lambda: self.player.seek_to(view.previous_start())
         )
         self.button_forward.pressed.connect(
-            lambda: self.player.seek_to(view.next_start())
+            lambda: None if (s := view.next_start()) is None else self.player.seek_to(s)
         )
         self._on_theme_changed(settings.get_theme())
         events.ThemeChanged.subscribe(lambda e: self._on_theme_changed(e.theme))
@@ -77,7 +84,7 @@ class _LineTimings:
             )
 
 
-class PianoRollWidget(QtWidgets.QWidget):
+class _LineView(QtWidgets.QWidget):
     def __init__(self, txt: SongTxt):
         super().__init__()
         self.txt = txt
@@ -154,10 +161,10 @@ class PianoRollWidget(QtWidgets.QWidget):
         return self.lines[self._current_idx + 1].start
 
 
-class AudioPlayer:
-    def __init__(self, source: Path, ui_update_callback) -> None:
-        self.source = source
-        self.ui_update_callback = ui_update_callback
+class _AudioPlayer:
+    def __init__(self, source: Path, callback: Callable[[float], None]) -> None:
+        self._source = source
+        self._callback = callback
 
         self.samples_played = 0
         self.paused = False
@@ -177,7 +184,7 @@ class AudioPlayer:
             [
                 "ffmpeg",
                 "-i",
-                self.source,
+                self._source,
                 "-f",
                 "s16le",
                 "-acodec",
@@ -229,7 +236,7 @@ class AudioPlayer:
     def tick(self) -> None:
         if not self.paused:
             current_time = self.samples_played / _SAMPLE_RATE
-            self.ui_update_callback(current_time)
+            self._callback(current_time)
 
     def set_pause(self, value: bool) -> None:
         self.paused = value
@@ -255,7 +262,7 @@ class AudioPlayer:
                 "-ss",
                 str(seconds),
                 "-i",
-                self.source,
+                self._source,
                 "-f",
                 "s16le",
                 "-acodec",

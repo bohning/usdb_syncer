@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Iterable
 from json import JSONEncoder
+from pathlib import Path
 from typing import Any, ClassVar
 
 import attrs
@@ -174,6 +175,16 @@ class UsdbSong:
 
     def creators(self) -> Iterable[str]:
         return (s for creator in self.creator.split(",") if (s := creator.strip()))
+
+    def txt_path(self) -> Path | None:
+        if not self.sync_meta:
+            return None
+        return self.sync_meta.txt_path()
+
+    def audio_path(self) -> Path | None:
+        if not self.sync_meta:
+            return None
+        return self.sync_meta.audio_path()
 
     @classmethod
     def clear_cache(cls) -> None:
