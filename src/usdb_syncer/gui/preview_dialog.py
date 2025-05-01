@@ -25,7 +25,7 @@ _CHANNELS = 2
 _FPS = 60
 _REFRESH_RATE_MS = 1000 // _FPS
 _NEEDLE_WIDTH = 2
-_DOUBLECLICK_DELAY_SECS = 0.3
+_DOUBLECLICK_DELAY_MS = 400
 _STREAM_BUFFER_SIZE = 2048
 
 
@@ -42,8 +42,14 @@ def load_preview_dialog(parent: QtWidgets.QWidget, song: UsdbSong) -> None:
     PreviewDialog(parent, txt, audio_path).show()
 
 
+def clamp(value: int, lower: int, upper: int) -> int:
+    return min(max(value, lower), upper)
+
+
 class PreviewDialog(Ui_Dialog, QtWidgets.QDialog):
     """Dialog to preview a downloaded song."""
+
+    _line_delta = 0
 
     def __init__(self, parent: QtWidgets.QWidget, txt: SongTxt, audio: Path) -> None:
         super().__init__(parent=parent)
@@ -56,14 +62,12 @@ class PreviewDialog(Ui_Dialog, QtWidgets.QDialog):
         self.layout_main.insertWidget(0, self._song_view)
         self.player = _AudioPlayer.new(audio, self._update_time)
         self.button_pause.toggled.connect(lambda t: self.player.set_pause(t))
-        self.button_backward.pressed.connect(
-            lambda: self.player.seek_to(self._state.previous_start())
+        self._seek_timer = QtCore.QTimer(
+            self, singleShot=True, interval=_DOUBLECLICK_DELAY_MS
         )
-        self.button_forward.pressed.connect(
-            lambda: None
-            if (s := self._state.next_start()) is None
-            else self.player.seek_to(s)
-        )
+        self._seek_timer.timeout.connect(self._on_seek_timeout)
+        self.button_backward.pressed.connect(self._on_seek_backward)
+        self.button_forward.pressed.connect(self._on_seek_forward)
         self._on_theme_changed(settings.get_theme())
         events.ThemeChanged.subscribe(lambda e: self._on_theme_changed(e.theme))
 
@@ -71,6 +75,24 @@ class PreviewDialog(Ui_Dialog, QtWidgets.QDialog):
         self._state.set_current_time(secs)
         self._song_view.update()
         self._line_view.update()
+
+    def _on_seek_backward(self) -> None:
+        self._line_delta -= 1
+        self._seek_timer.start()
+
+    def _on_seek_forward(self) -> None:
+        self._line_delta += 1
+        self._seek_timer.start()
+
+    def _on_seek_timeout(self) -> None:
+        idx = self._state.current_idx + self._line_delta
+        idx = clamp(idx, 0, len(self._state.lines) - 1)
+        target = self._state.lines[idx].start
+        if (self._line_delta < 0 and target < self._state.current_time) or (
+            self._line_delta > 0 and target > self._state.current_time
+        ):
+            self.player.seek_to(target)
+        self._line_delta = 0
 
     def _on_theme_changed(self, theme: settings.Theme) -> None:
         self.button_pause.setIcon(icons.Icon.PAUSE_REMOTE.icon(theme))
@@ -119,19 +141,6 @@ class _PlayState:
             for i, li in enumerate(self.lines)
             if li.line_break is None or li.line_break > secs
         )
-
-    def previous_start(self) -> float:
-        if (
-            self.current_idx > 0
-            and self.current_time - _DOUBLECLICK_DELAY_SECS < self.current_line.start
-        ):
-            return self.lines[self.current_idx - 1].start
-        return self.current_line.start
-
-    def next_start(self) -> float | None:
-        if self.current_idx + 1 >= len(self.lines):
-            return None
-        return self.lines[self.current_idx + 1].start
 
 
 @attrs.define
