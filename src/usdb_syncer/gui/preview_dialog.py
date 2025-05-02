@@ -250,6 +250,7 @@ class _SongView(QtWidgets.QWidget):
         super().__init__()
         self._state = state
         self.setMinimumSize(600, 20)
+        self.setMaximumHeight(40)
 
     def paintEvent(self, event: QtGui.QPaintEvent) -> None:  # noqa: N802
         height = self.height()
@@ -275,6 +276,7 @@ class _LineView(QtWidgets.QWidget):
         super().__init__()
         self._state = state
         self.setMinimumSize(600, 200)
+        self.setMaximumHeight(400)
 
     def paintEvent(self, event: QtGui.QPaintEvent) -> None:  # noqa: N802
         height = self.height()
