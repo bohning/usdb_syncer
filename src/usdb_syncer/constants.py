@@ -107,6 +107,7 @@ class YtErrorMsg:
         "Video unavailable. The uploader has not made this video available in your "
         "country"
     )
+    YT_GEO_BLOCKED = "Video unavailable. This video contains content from"
     YT_UNAVAILABLE = "Video unavailable"
     YT_PARSE_ERROR = "Failed to parse XML"
     YT_FORBIDDEN = "HTTP Error 403: Forbidden"

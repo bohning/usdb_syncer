@@ -43,6 +43,7 @@ class ResourceDLError(Enum):
     RESOURCE_INVALID = "resource invalid"
     RESOURCE_UNSUPPORTED = "resource unsupported"
     RESOURCE_GEO_RESTRICTED = "resource geo-restricted"
+    RESOURCE_GEO_BLOCKED = "resource geo-blocked"
     RESOURCE_UNAVAILABLE = "resource unavailable"
     RESOURCE_PARSE_ERROR = "resource parse error"
     RESOURCE_DL_FAILED = "resource download failed"
@@ -186,7 +187,10 @@ def _download_resource(
             if YtErrorMsg.YT_AGE_RESTRICTED in error_message:
                 dl_result = _retry_with_cookies(url, options, logger)
                 return ResourceDLResult(extension=dl_result.extension)
-            if YtErrorMsg.YT_GEO_RESTRICTED in error_message:
+            if (
+                YtErrorMsg.YT_GEO_RESTRICTED in error_message
+                or YtErrorMsg.YT_GEO_BLOCKED in error_message
+            ):
                 _handle_geo_restriction(url, resource, logger)
                 return ResourceDLResult(error=ResourceDLError.RESOURCE_GEO_RESTRICTED)
             if YtErrorMsg.YT_UNAVAILABLE in error_message:
