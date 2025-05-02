@@ -27,7 +27,7 @@ _NEEDLE_WIDTH = 2
 _DOUBLECLICK_DELAY_MS = 200
 _DOUBLECLICK_DELAY_SECS = _DOUBLECLICK_DELAY_MS / 1000
 _STREAM_BUFFER_SIZE = 2048
-_CORNER_RADIUS = 20.0
+_PITCH_ROWS = 14
 
 
 def load_preview_dialog(parent: QtWidgets.QWidget, song: UsdbSong) -> None:
@@ -226,7 +226,7 @@ class _Note:
     ) -> _Note:
         start = (note.start - line_start) / line_len
         duration = note.duration / line_len
-        pitch = (note.pitch - line_pitch.start) / len(line_pitch)
+        pitch = 1 - (note.pitch - line_pitch.start) / _PITCH_ROWS
         return cls(
             note=note,
             start=start,
@@ -279,15 +279,16 @@ class _LineView(QtWidgets.QWidget):
     def paintEvent(self, event: QtGui.QPaintEvent) -> None:  # noqa: N802
         height = self.height()
         width = self.width()
+        h = round(height / _PITCH_ROWS)
+        radius = h / 2
         with QtGui.QPainter(self) as painter:
             painter.setBrush(QtGui.QColor(100, 150, 255))
             painter.setPen(QtCore.Qt.PenStyle.NoPen)
             for note in self._state.current_line.notes:
                 x = round(note.start * width)
-                y = round(note.pitch * height)
+                y = round(note.pitch * height) - h
                 w = round(note.duration * width)
-                h = round(height / note.line_pitch_len)
-                painter.drawRoundedRect(x, y, w, h, _CORNER_RADIUS, _CORNER_RADIUS)
+                painter.drawRoundedRect(x, y, w, h, radius, radius)
 
             # Draw playback position
             painter.setPen(
