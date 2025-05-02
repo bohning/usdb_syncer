@@ -122,9 +122,9 @@ class _PlayState:
     """State of the current playback."""
 
     txt: SongTxt
-    lines: list[_LineTimings]
+    lines: list[_Line]
     current_idx: int
-    current_line: _LineTimings
+    current_line: _Line
     current_time: float
     current_rel_pos: float
     samples_played: int
@@ -136,7 +136,7 @@ class _PlayState:
     def new(cls, txt: SongTxt, audio: Path) -> _PlayState:
         song_secs = utils.get_media_duration(audio)
         lines = [
-            _LineTimings.new(line, txt.headers.gap, txt.headers.bpm, song_secs)
+            _Line.new(line, txt.headers.gap, txt.headers.bpm, song_secs)
             for line in txt.notes.track_1
         ]
         return cls(
@@ -168,10 +168,10 @@ class _PlayState:
 
 
 @attrs.define
-class _LineTimings:
-    """Wrapper for a line with absolute timings in seconds."""
+class _Line:
+    """Information for rendering a line."""
 
-    line: tracks.Line
+    notes: list[_Note]
     start: float
     end: float
     duration: float
@@ -183,7 +183,7 @@ class _LineTimings:
     @classmethod
     def new(
         cls, line: tracks.Line, gap: int, bpm: BeatsPerMinute, song_duration: float
-    ) -> _LineTimings:
+    ) -> _Line:
         start = gap / 1000 + bpm.beats_to_secs(line.start())
         end = gap / 1000 + bpm.beats_to_secs(line.end())
         duration = end - start
@@ -194,7 +194,7 @@ class _LineTimings:
         else:
             line_break = None
         return cls(
-            line=line,
+            notes=_Note.from_line(line),
             start=start,
             end=end,
             duration=duration,
@@ -203,6 +203,41 @@ class _LineTimings:
             rel_duration=duration / song_duration,
             line_break=line_break,
         )
+
+
+@attrs.define
+class _Note:
+    """Information for rendering a note."""
+
+    note: tracks.Note
+    start: float
+    duration: float
+    pitch: float
+    line_pitch_len: int
+
+    @classmethod
+    def new(
+        cls, note: tracks.Note, line_start: int, line_len: int, line_pitch: range
+    ) -> _Note:
+        start = (note.start - line_start) / line_len
+        duration = note.duration / line_len
+        pitch = (note.pitch - line_pitch.start) / len(line_pitch)
+        return cls(
+            note=note,
+            start=start,
+            duration=duration,
+            pitch=pitch,
+            line_pitch_len=len(line_pitch),
+        )
+
+    @classmethod
+    def from_line(cls, line: tracks.Line) -> list[_Note]:
+        start = line.start()
+        duration = line.end() - start
+        min_pitch = min(n.pitch for n in line.notes)
+        max_pitch = max(n.pitch for n in line.notes)
+        pitch = range(min_pitch, max_pitch + 1)
+        return [_Note.new(n, start, duration, pitch) for n in line.notes]
 
 
 class _SongView(QtWidgets.QWidget):
@@ -215,6 +250,7 @@ class _SongView(QtWidgets.QWidget):
         height = self.height()
         width = self.width()
         with QtGui.QPainter(self) as painter:
+            painter.setPen(QtCore.Qt.PenStyle.NoPen)
             painter.setBrush(QtGui.QColor(100, 150, 255))
             for line in self._state.lines:
                 x = round(line.rel_start * width)
@@ -239,23 +275,14 @@ class _LineView(QtWidgets.QWidget):
         height = self.height()
         width = self.width()
         with QtGui.QPainter(self) as painter:
-            line = self._state.current_line.line
-
-            rel_start = line.start()
-            rel_end = line.end()
-            rel_len = rel_end - rel_start
-            max_pitch = max(n.pitch for n in line.notes)
-            min_pitch = min(n.pitch for n in line.notes)
-            pitch_spread = max_pitch - min_pitch + 1
-            bar_height = round(height / pitch_spread)
             painter.setBrush(QtGui.QColor(100, 150, 255))
-            for note in line.notes:
-                x = round((note.start - rel_start) / rel_len * width)
-                w = round(note.duration / rel_len * width)
-                y = round((note.pitch - min_pitch) / pitch_spread * height)
-                painter.drawRoundedRect(
-                    x, y, w, bar_height, _CORNER_RADIUS, _CORNER_RADIUS
-                )
+            painter.setPen(QtCore.Qt.PenStyle.NoPen)
+            for note in self._state.current_line.notes:
+                x = round(note.start * width)
+                y = round(note.pitch * height)
+                w = round(note.duration * width)
+                h = round(height / note.line_pitch_len)
+                painter.drawRoundedRect(x, y, w, h, _CORNER_RADIUS, _CORNER_RADIUS)
 
             # Draw playback position
             painter.setPen(
