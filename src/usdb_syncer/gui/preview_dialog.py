@@ -94,7 +94,12 @@ class PreviewDialog(Ui_Dialog, QtWidgets.QDialog):
             self._start_seeking(-1)
 
     def _on_seek_forward(self) -> None:
-        if self._state.current_idx < len(self._state.lines) - 1:
+        if (
+            self._state.current_idx == 0
+            and self._state.current_time < self._state.current_line.start
+        ):
+            self._start_seeking(0)
+        elif self._state.current_idx < len(self._state.lines) - 1:
             self._start_seeking(1)
 
     def _start_seeking(self, line_delta: int) -> None:
