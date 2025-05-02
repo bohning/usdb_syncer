@@ -10,6 +10,7 @@
 ## Developer notes
 - All previously accepted environment variables have been converted to commandline arguments. Check out `poetry run usdb_syncer -h`.
 - pylint, black and isort have been replaced with [ruff](https://docs.astral.sh/ruff/), making the tox pipeline run much faster. ruff also integrates with common code editors.
+- The hook `MainWindowDidLoad` was moved to the new module `usdb_syncer.gui.hooks`. This will contain all hooks called from the GUI going forward.
 
 <!-- 0.12.1 -->
 
