@@ -29,6 +29,7 @@ _DOUBLECLICK_DELAY_MS = 200
 _DOUBLECLICK_DELAY_SECS = _DOUBLECLICK_DELAY_MS / 1000
 _STREAM_BUFFER_SIZE = 2048
 _PITCH_ROWS = 16
+_EPS_SECS = 0.01
 
 
 def load_preview_dialog(parent: QtWidgets.QWidget, song: UsdbSong) -> None:
