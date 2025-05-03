@@ -10,6 +10,7 @@ import attrs
 import numpy as np
 import sounddevice as sd
 from PySide6 import QtCore, QtGui, QtWidgets
+from PySide6.QtCore import Qt
 
 from usdb_syncer import events, settings, utils
 from usdb_syncer.gui import icons, theme
@@ -27,7 +28,7 @@ _NEEDLE_WIDTH = 2
 _DOUBLECLICK_DELAY_MS = 200
 _DOUBLECLICK_DELAY_SECS = _DOUBLECLICK_DELAY_MS / 1000
 _STREAM_BUFFER_SIZE = 2048
-_PITCH_ROWS = 14
+_PITCH_ROWS = 16
 
 
 def load_preview_dialog(parent: QtWidgets.QWidget, song: UsdbSong) -> None:
@@ -285,12 +286,18 @@ class _LineView(QtWidgets.QWidget):
         radius = h / 2
         with QtGui.QPainter(self) as painter:
             painter.setBrush(QtGui.QColor(100, 150, 255))
-            painter.setPen(QtCore.Qt.PenStyle.NoPen)
+            # painter.setPen(QtCore.Qt.PenStyle.NoPen)
+            font = painter.font()
+            font.setPixelSize(h * 2 // 3)
+            painter.setFont(font)
             for note in self._state.current_line.notes:
                 x = round(note.start * width)
                 y = round(note.pitch * height) - h
                 w = round(note.duration * width)
-                painter.drawRoundedRect(x, y, w, h, radius, radius)
+                rect = QtCore.QRect(x, y, w, h)
+                painter.drawText(rect, note.note.text, Qt.AlignmentFlag.AlignCenter)
+                rect.adjust(0, -h, 0, -h)
+                painter.drawRoundedRect(rect, radius, radius)
 
             # Draw playback position
             painter.setPen(
