@@ -98,7 +98,7 @@ class PreviewDialog(Ui_Dialog, QtWidgets.QDialog):
     def _on_seek_forward(self) -> None:
         if (
             self._state.current_idx == 0
-            and self._state.current_time < self._state.current_line.start
+            and self._state.current_time + _EPS_SECS < self._state.current_line.start
         ):
             self._start_seeking(0)
         elif self._state.current_idx < len(self._state.lines) - 1:
@@ -287,7 +287,6 @@ class _LineView(QtWidgets.QWidget):
         radius = h / 2
         with QtGui.QPainter(self) as painter:
             painter.setBrush(QtGui.QColor(100, 150, 255))
-            # painter.setPen(QtCore.Qt.PenStyle.NoPen)
             font = painter.font()
             font.setPixelSize(h * 2 // 3)
             painter.setFont(font)
@@ -295,12 +294,16 @@ class _LineView(QtWidgets.QWidget):
                 x = round(note.start * width)
                 y = round(note.pitch * height) - h
                 w = round(note.duration * width)
-                rect = QtCore.QRect(x, y, w, h)
-                painter.drawText(rect, note.note.text, Qt.AlignmentFlag.AlignCenter)
-                rect.adjust(0, -h, 0, -h)
-                painter.drawRoundedRect(rect, radius, radius)
+                painter.drawText(
+                    x - 50,
+                    height - h,
+                    w + 100,
+                    h,
+                    Qt.AlignmentFlag.AlignCenter,
+                    note.note.text,
+                )
+                painter.drawRoundedRect(x, y - h, w, h, radius, radius)
 
-            # Draw playback position
             painter.setPen(
                 QtGui.QPen(theme.current_palette().highlight(), _NEEDLE_WIDTH)
             )
@@ -309,7 +312,7 @@ class _LineView(QtWidgets.QWidget):
                 / self._state.current_line.duration
                 * width
             )
-            x_pos = min(max(x_pos, 0), width - _NEEDLE_WIDTH)
+            x_pos = clamp(x_pos, 0, width - _NEEDLE_WIDTH)
             painter.drawLine(x_pos, 0, x_pos, height)
 
 
