@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import abc
 import enum
 from importlib import resources
 from typing import assert_never
@@ -10,34 +11,9 @@ import attrs
 from PySide6 import QtWidgets
 from PySide6.QtGui import QColor, QColorConstants, QPalette
 
-from usdb_syncer import events, settings
+from usdb_syncer import settings
+from usdb_syncer.gui import events
 from usdb_syncer.gui.resources import styles
-
-
-def apply_theme(
-    theme: settings.Theme, primary_color: settings.Color, colored_background: bool
-) -> None:
-    app = QtWidgets.QApplication.instance()
-    assert isinstance(app, QtWidgets.QApplication), "Theming requires a GUI application"
-    match theme:
-        case settings.Theme.SYSTEM:
-            q_palette = QPalette()
-            style = ""
-        case settings.Theme.DARK:
-            dark_theme = DarkTheme(primary_color, colored_background)
-            q_palette = dark_theme.q_palette()
-            style = dark_theme.style()
-        case unreachable:
-            assert_never(unreachable)
-    app.setPalette(q_palette)
-    app.setStyleSheet(style)
-    events.ThemeChanged(theme).post()
-
-
-def current_palette() -> QPalette:
-    app = QtWidgets.QApplication.instance()
-    assert isinstance(app, QtWidgets.QApplication), "Theming requires a GUI application"
-    return app.palette()
 
 
 class _Surface(enum.Enum):
@@ -92,8 +68,93 @@ def _rgb_str(color: QColor) -> str:
 
 
 @attrs.define
-class DarkTheme:
+class PreviewPalette:
+    """Palette for the song preview."""
+
+    line: QColor
+    note: QColor
+    text: QColor
+    needle: QColor
+
+
+class Theme(abc.ABC):
+    """Abstract base class for themes."""
+
+    KEY: settings.Theme
+
+    @abc.abstractmethod
+    def q_palette(self) -> QPalette:
+        pass
+
+    @abc.abstractmethod
+    def style(self) -> str:
+        pass
+
+    @abc.abstractmethod
+    def preview_palette(self) -> PreviewPalette:
+        pass
+
+    @classmethod
+    def new(
+        cls,
+        setting: settings.Theme,
+        primary_color: settings.Color,
+        colored_background: bool,
+    ) -> Theme:
+        match setting:
+            case settings.Theme.SYSTEM:
+                return SystemTheme()
+            case settings.Theme.DARK:
+                return DarkTheme(
+                    primary_color=primary_color, colored_background=colored_background
+                )
+            case unreachable:
+                assert_never(unreachable)
+
+    @classmethod
+    def from_settings(cls) -> Theme:
+        return cls.new(
+            settings.get_theme(),
+            settings.get_primary_color(),
+            settings.get_colored_background(),
+        )
+
+    def apply(self) -> None:
+        app = QtWidgets.QApplication.instance()
+        assert isinstance(app, QtWidgets.QApplication), (
+            "Theming requires a GUI application"
+        )
+        app.setPalette(self.q_palette())
+        app.setStyleSheet(self.style())
+        events.ThemeChanged(self).post()
+
+
+class SystemTheme(Theme):
+    """Uncustomized theme, only OS and Qt defaults."""
+
+    KEY = settings.Theme.SYSTEM
+
+    def q_palette(self) -> QPalette:
+        return QPalette()
+
+    def style(self) -> str:
+        return ""
+
+    def preview_palette(self) -> PreviewPalette:
+        palette = self.q_palette()
+        return PreviewPalette(
+            line=palette.button().color(),
+            note=palette.button().color(),
+            text=palette.text().color(),
+            needle=palette.highlight().color(),
+        )
+
+
+@attrs.define
+class DarkTheme(Theme):
     """Style and palette builder for a dark theme."""
+
+    KEY = settings.Theme.DARK
 
     primary_color: settings.Color
     colored_background: bool
@@ -163,6 +224,14 @@ class DarkTheme:
             on_secondary=_rgb_str(self.on_secondary),
             on_background=_rgb_str(self.on_background),
             on_surface=_rgb_str(self.on_surface),
+        )
+
+    def preview_palette(self) -> PreviewPalette:
+        return PreviewPalette(
+            line=self.text(_Text.DISABLED),
+            note=self.text(_Text.DISABLED),
+            text=self.text(_Text.HIGH),
+            needle=self.primary,
         )
 
 

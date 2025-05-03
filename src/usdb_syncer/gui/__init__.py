@@ -22,7 +22,6 @@ from usdb_syncer import (
     addons,
     db,
     errors,
-    events,
     logger,
     settings,
     song_routines,
@@ -30,7 +29,7 @@ from usdb_syncer import (
     usdb_song,
     utils,
 )
-from usdb_syncer.gui import hooks, theme
+from usdb_syncer.gui import events, hooks, theme
 
 if TYPE_CHECKING:
     # only import from gui after pyside file generation
@@ -187,11 +186,7 @@ def _load_main_window(mw: MainWindow) -> None:
     mw.setWindowTitle(f"USDB Syncer ({usdb_syncer.__version__})")
     mw.show()
     logger.logger.info("Application successfully loaded.")
-    theme.apply_theme(
-        settings.get_theme(),
-        settings.get_primary_color(),
-        settings.get_colored_background(),
-    )
+    theme.Theme.from_settings().apply()
     splash.finish(mw)
 
 

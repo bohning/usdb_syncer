@@ -12,8 +12,8 @@ import sounddevice as sd
 from PySide6 import QtCore, QtGui, QtWidgets
 from PySide6.QtCore import Qt
 
-from usdb_syncer import events, settings, utils
-from usdb_syncer.gui import icons, theme
+from usdb_syncer import utils
+from usdb_syncer.gui import events, icons, theme
 from usdb_syncer.gui.forms.PreviewDialog import Ui_Dialog
 from usdb_syncer.logger import song_logger
 from usdb_syncer.song_txt import SongTxt, tracks
@@ -59,9 +59,10 @@ class PreviewDialog(Ui_Dialog, QtWidgets.QDialog):
         self.setWindowTitle(txt.headers.artist_title_str())
 
         self._state = _PlayState.new(txt, audio)
-        self._song_view = _SongView(self._state)
+        palette = theme.Theme.from_settings().preview_palette()
+        self._song_view = _SongView(self._state, palette)
         self.layout_main.insertWidget(0, self._song_view)
-        self._line_view = _LineView(self._state)
+        self._line_view = _LineView(self._state, palette)
         self.layout_main.insertWidget(1, self._line_view)
         self.player = _AudioPlayer.new(audio, self._state)
         self._update_timer = QtCore.QTimer(self, interval=_REFRESH_RATE_MS)
@@ -78,7 +79,7 @@ class PreviewDialog(Ui_Dialog, QtWidgets.QDialog):
         self.button_forward.pressed.connect(self._on_seek_forward)
         self.button_to_end.pressed.connect(self._on_seek_end)
 
-        self._on_theme_changed(settings.get_theme())
+        self._on_theme_changed(theme.Theme.from_settings())
         events.ThemeChanged.subscribe(lambda e: self._on_theme_changed(e.theme))
 
     def _update_time(self) -> None:
@@ -123,12 +124,13 @@ class PreviewDialog(Ui_Dialog, QtWidgets.QDialog):
         self.player.seek_to(self._state.current_time)
         self._state.seeking = False
 
-    def _on_theme_changed(self, theme: settings.Theme) -> None:
-        self.button_pause.setIcon(icons.Icon.PAUSE_REMOTE.icon(theme))
-        self.button_to_start.setIcon(icons.Icon.SKIP_TO_START.icon(theme))
-        self.button_backward.setIcon(icons.Icon.SKIP_BACKWARD.icon(theme))
-        self.button_forward.setIcon(icons.Icon.SKIP_FORWARD.icon(theme))
-        self.button_to_end.setIcon(icons.Icon.SKIP_TO_END.icon(theme))
+    def _on_theme_changed(self, theme: theme.Theme) -> None:
+        self.button_pause.setIcon(icons.Icon.PAUSE_REMOTE.icon(theme.KEY))
+        self.button_to_start.setIcon(icons.Icon.SKIP_TO_START.icon(theme.KEY))
+        self.button_backward.setIcon(icons.Icon.SKIP_BACKWARD.icon(theme.KEY))
+        self.button_forward.setIcon(icons.Icon.SKIP_FORWARD.icon(theme.KEY))
+        self.button_to_end.setIcon(icons.Icon.SKIP_TO_END.icon(theme.KEY))
+        self._song_view.colors = self._line_view.colors = theme.preview_palette()
 
     def closeEvent(self, event: QtGui.QCloseEvent) -> None:  # noqa: N802
         self.player.stop()
@@ -254,9 +256,10 @@ class _Note:
 
 
 class _SongView(QtWidgets.QWidget):
-    def __init__(self, state: _PlayState):
+    def __init__(self, state: _PlayState, colors: theme.PreviewPalette):
         super().__init__()
         self._state = state
+        self.colors = colors
         self.setMinimumSize(600, 20)
         self.setMaximumHeight(40)
 
@@ -264,25 +267,24 @@ class _SongView(QtWidgets.QWidget):
         height = self.height()
         width = self.width()
         with QtGui.QPainter(self) as painter:
-            painter.setPen(QtCore.Qt.PenStyle.NoPen)
-            painter.setBrush(QtGui.QColor(100, 150, 255))
+            painter.setPen(Qt.PenStyle.NoPen)
+            painter.setBrush(self.colors.line)
             for line in self._state.lines:
                 x = round(line.rel_start * width)
                 w = round(line.rel_duration * width)
                 painter.drawRect(x, 0, w, height)
 
-            painter.setPen(
-                QtGui.QPen(theme.current_palette().highlight(), _NEEDLE_WIDTH)
-            )
+            painter.setPen(QtGui.QPen(self.colors.needle, _NEEDLE_WIDTH))
             x_pos = round(self._state.current_rel_pos * width)
             x_pos = min(x_pos, width - _NEEDLE_WIDTH)
             painter.drawLine(x_pos, 0, x_pos, height)
 
 
 class _LineView(QtWidgets.QWidget):
-    def __init__(self, state: _PlayState):
+    def __init__(self, state: _PlayState, colors: theme.PreviewPalette):
         super().__init__()
         self._state = state
+        self.colors = colors
         self.setMinimumSize(600, 200)
         self.setMaximumHeight(400)
 
@@ -296,7 +298,7 @@ class _LineView(QtWidgets.QWidget):
         # make sides circular
         radius = row_height / 2
         with QtGui.QPainter(self) as painter:
-            painter.setBrush(QtGui.QColor(100, 150, 255))
+            painter.setBrush(self.colors.note)
             font = painter.font()
             font.setPixelSize(text_height * 2 // 3)
             painter.setFont(font)
@@ -304,6 +306,7 @@ class _LineView(QtWidgets.QWidget):
                 x = round(note.start * total_width)
                 y = round(note.pitch * notes_height) - row_height
                 w = round(note.duration * total_width)
+                painter.setPen(self.colors.text)
                 painter.drawText(
                     # text may overflow the note horizontally
                     x - 50,
@@ -313,13 +316,12 @@ class _LineView(QtWidgets.QWidget):
                     Qt.AlignmentFlag.AlignCenter,
                     note.note.text,
                 )
+                painter.setPen(Qt.PenStyle.NoPen)
                 painter.drawRoundedRect(
                     x, y - row_height, w, row_height, radius, radius
                 )
 
-            painter.setPen(
-                QtGui.QPen(theme.current_palette().highlight(), _NEEDLE_WIDTH)
-            )
+            painter.setPen(QtGui.QPen(self.colors.needle, _NEEDLE_WIDTH))
             x_pos = round(
                 (self._state.current_time - self._state.current_line.start)
                 / self._state.current_line.duration
