@@ -336,8 +336,8 @@ class _LineView(QtWidgets.QWidget):
             self._draw_pointer(painter, ctx)
 
     def _draw_grid(self, painter: QtGui.QPainter, ctx: _LinePaintContext) -> None:
+        painter.setPen(QtGui.QPen(self.colors.grid, 1))
         for i in range(1, _PITCH_ROWS):
-            painter.setPen(QtGui.QPen(self.colors.note, 1))
             y = ctx.notes_height - i * ctx.row_height
             painter.drawLine(0, y, ctx.total_width, y)
 

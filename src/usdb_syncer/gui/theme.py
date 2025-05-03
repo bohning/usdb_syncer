@@ -71,6 +71,7 @@ def _rgb_str(color: QColor) -> str:
 class PreviewPalette:
     """Palette for the song preview."""
 
+    grid: QColor
     line: QColor
     note: QColor
     active_note: QColor
@@ -145,6 +146,7 @@ class SystemTheme(Theme):
     def preview_palette(self) -> PreviewPalette:
         palette = self.q_palette()
         return PreviewPalette(
+            grid=palette.placeholderText().color(),
             line=palette.button().color(),
             note=palette.button().color(),
             active_note=palette.highlight().color(),
@@ -232,6 +234,7 @@ class DarkTheme(Theme):
 
     def preview_palette(self) -> PreviewPalette:
         return PreviewPalette(
+            grid=self.surface(_Surface.DP_24),
             line=self.text(_Text.DISABLED),
             note=self.text(_Text.DISABLED),
             active_note=self.primary,
