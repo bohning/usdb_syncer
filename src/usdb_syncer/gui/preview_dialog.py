@@ -329,6 +329,11 @@ class _LineView(QtWidgets.QWidget):
                 painter.setPen(Qt.PenStyle.NoPen)
                 painter.drawRoundedRect(x, y, w, row_height, radius, radius)
 
+            for i in range(_PITCH_ROWS + 1):
+                painter.setPen(QtGui.QPen(self.colors.note, 1))
+                y = notes_height - i * row_height
+                painter.drawLine(0, y, total_width, y)
+
             painter.setPen(QtGui.QPen(self.colors.needle, _NEEDLE_WIDTH))
             x_pos = round(needle_pos * total_width)
             x_pos = clamp(x_pos, 0, total_width - _NEEDLE_WIDTH // 2)
