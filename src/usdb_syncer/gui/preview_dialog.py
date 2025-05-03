@@ -282,7 +282,44 @@ class _SongView(QtWidgets.QWidget):
             painter.drawLine(x_pos, 0, x_pos, height)
 
 
+@attrs.define
+class _LinePaintContext:
+    """Values for painting a line."""
+
+    total_width: int
+    row_height: int
+    notes_height: int
+    current_pos: float
+    radius: float
+    text_height: int
+
+    @classmethod
+    def new(cls, view: _LineView) -> _LinePaintContext:
+        total_height = view.height()
+        total_width = view.width()
+
+        # divide into equally sized pitch rows plus one scaled row for text
+        row_height = round(total_height / (_PITCH_ROWS + _RELATIVE_TEXT_ROW_HEIGHT))
+        notes_height = row_height * _PITCH_ROWS
+        text_height = total_height - notes_height
+
+        line_elapsed = view._state.current_time - view._state.current_line.start
+        current_pos = line_elapsed / view._state.current_line.duration
+
+        return cls(
+            total_width=total_width,
+            row_height=row_height,
+            notes_height=notes_height,
+            current_pos=current_pos,
+            # make sides circular
+            radius=row_height / 2,
+            text_height=text_height,
+        )
+
+
 class _LineView(QtWidgets.QWidget):
+    _POINTER_SIZE_IN_ROWS = 1.5
+
     def __init__(self, state: _PlayState, colors: theme.PreviewPalette):
         super().__init__()
         self._state = state
@@ -291,54 +328,73 @@ class _LineView(QtWidgets.QWidget):
         self.setMaximumHeight(400)
 
     def paintEvent(self, event: QtGui.QPaintEvent) -> None:  # noqa: N802
-        total_height = self.height()
-        total_width = self.width()
-        # divide into equally sized pitch rows plus one scaled row for text
-        row_height = round(total_height / (_PITCH_ROWS + _RELATIVE_TEXT_ROW_HEIGHT))
-        notes_height = row_height * _PITCH_ROWS
-        text_height = round(row_height * _RELATIVE_TEXT_ROW_HEIGHT)
-        # make sides circular
-        radius = row_height / 2
-        line_elapsed = self._state.current_time - self._state.current_line.start
-        needle_pos = line_elapsed / self._state.current_line.duration
-        needle_pitch = self._state.current_line.notes[0].pitch
         with QtGui.QPainter(self) as painter:
-            font = painter.font()
-            font.setPixelSize(text_height * 2 // 3)
-            painter.setFont(font)
-            font_metrics = QtGui.QFontMetrics(font)
-            text_width = font_metrics.horizontalAdvance(self._state.current_line.text)
-            text_start = (total_width - text_width) // 2
-            for note in self._state.current_line.notes:
-                active = needle_pos > note.start
-                if active:
-                    needle_pitch = note.pitch
-                painter.setBrush(
-                    self.colors.active_note if active else self.colors.note
-                )
-                x = round(note.start * total_width)
-                y = round(note.pitch * notes_height) - row_height
-                w = round(note.duration * total_width)
-                painter.setPen(self.colors.active_text if active else self.colors.text)
-                painter.drawText(
-                    QtCore.QRect(text_start, notes_height, text_width, text_height),
-                    Qt.AlignmentFlag.AlignVCenter,
-                    note.note.text,
-                )
-                text_start += font_metrics.horizontalAdvance(note.note.text)
-                painter.setPen(Qt.PenStyle.NoPen)
-                painter.drawRoundedRect(x, y, w, row_height, radius, radius)
+            ctx = _LinePaintContext.new(self)
+            self._draw_grid(painter, ctx)
+            self._draw_notes(painter, ctx)
+            self._draw_text(painter, ctx)
+            self._draw_pointer(painter, ctx)
 
-            for i in range(_PITCH_ROWS + 1):
-                painter.setPen(QtGui.QPen(self.colors.note, 1))
-                y = notes_height - i * row_height
-                painter.drawLine(0, y, total_width, y)
+    def _draw_grid(self, painter: QtGui.QPainter, ctx: _LinePaintContext) -> None:
+        for i in range(1, _PITCH_ROWS):
+            painter.setPen(QtGui.QPen(self.colors.note, 1))
+            y = ctx.notes_height - i * ctx.row_height
+            painter.drawLine(0, y, ctx.total_width, y)
 
-            painter.setPen(QtGui.QPen(self.colors.needle, _NEEDLE_WIDTH))
-            x_pos = round(needle_pos * total_width)
-            x_pos = clamp(x_pos, 0, total_width - _NEEDLE_WIDTH // 2)
-            y_pos = round(needle_pitch * notes_height - row_height * 2.5)
-            painter.drawLine(x_pos, y_pos, x_pos, y_pos + row_height * 2)
+    def _draw_notes(self, painter: QtGui.QPainter, ctx: _LinePaintContext) -> None:
+        painter.setPen(Qt.PenStyle.NoPen)
+        for note in self._state.current_line.notes:
+            active = ctx.current_pos > note.start
+            painter.setBrush(self.colors.active_note if active else self.colors.note)
+            x = round(note.start * ctx.total_width)
+            y = round(note.pitch * ctx.notes_height) - ctx.row_height
+            w = round(note.duration * ctx.total_width)
+            painter.drawRoundedRect(x, y, w, ctx.row_height, ctx.radius, ctx.radius)
+
+    def _draw_text(self, painter: QtGui.QPainter, ctx: _LinePaintContext) -> None:
+        font = painter.font()
+        font.setPixelSize(ctx.text_height * 2 // 3)
+        painter.setFont(font)
+        font_metrics = QtGui.QFontMetrics(font)
+        text_width = font_metrics.horizontalAdvance(self._state.current_line.text)
+        text_start = (ctx.total_width - text_width) // 2
+        for note in self._state.current_line.notes:
+            active = ctx.current_pos > note.start
+            painter.setPen(self.colors.active_text if active else self.colors.text)
+            painter.drawText(
+                QtCore.QRect(text_start, ctx.notes_height, text_width, ctx.text_height),
+                Qt.AlignmentFlag.AlignVCenter,
+                note.note.text,
+            )
+            text_start += font_metrics.horizontalAdvance(note.note.text)
+
+    def _draw_pointer(self, painter: QtGui.QPainter, ctx: _LinePaintContext):
+        pointer_size = round(ctx.row_height * self._POINTER_SIZE_IN_ROWS)
+        x = round(ctx.current_pos * ctx.total_width)
+        current_pitch = next(
+            (
+                n
+                for n in reversed(self._state.current_line.notes)
+                if n.start < ctx.current_pos
+            ),
+            self._state.current_line.notes[0],
+        ).pitch
+        if current_pitch > 0.1:
+            y_point = round(current_pitch * ctx.notes_height) - ctx.row_height
+            y_base = y_point - pointer_size
+        else:
+            # close to top border, show pointer below note
+            # also ensure it's in view, even if the note is too high
+            y_point = max(round(current_pitch * ctx.notes_height), 0)
+            y_base = y_point + pointer_size
+        points = (
+            QtCore.QPoint(x, y_point),
+            QtCore.QPoint(x - pointer_size // 2, y_base),
+            QtCore.QPoint(x + pointer_size // 2, y_base),
+        )
+        painter.setPen(Qt.PenStyle.NoPen)
+        painter.setBrush(self.colors.active_note)
+        painter.drawPolygon(points)
 
 
 @attrs.define
