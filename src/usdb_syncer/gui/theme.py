@@ -73,7 +73,9 @@ class PreviewPalette:
 
     line: QColor
     note: QColor
+    active_note: QColor
     text: QColor
+    active_text: QColor
     needle: QColor
 
 
@@ -145,7 +147,9 @@ class SystemTheme(Theme):
         return PreviewPalette(
             line=palette.button().color(),
             note=palette.button().color(),
+            active_note=palette.highlight().color(),
             text=palette.text().color(),
+            active_text=palette.highlight().color(),
             needle=palette.highlight().color(),
         )
 
@@ -230,7 +234,9 @@ class DarkTheme(Theme):
         return PreviewPalette(
             line=self.text(_Text.DISABLED),
             note=self.text(_Text.DISABLED),
+            active_note=self.primary,
             text=self.text(_Text.HIGH),
+            active_text=self.primary,
             needle=self.primary,
         )
 

@@ -199,6 +199,7 @@ class _Line:
     rel_start: float
     rel_end: float
     rel_duration: float
+    text: str
 
     @classmethod
     def new(
@@ -222,6 +223,7 @@ class _Line:
             rel_end=end / song_duration,
             rel_duration=duration / song_duration,
             line_break=line_break,
+            text="".join(n.text for n in line.notes).strip(),
         )
 
 
@@ -297,36 +299,38 @@ class _LineView(QtWidgets.QWidget):
         text_height = round(row_height * _RELATIVE_TEXT_ROW_HEIGHT)
         # make sides circular
         radius = row_height / 2
+        line_elapsed = self._state.current_time - self._state.current_line.start
+        needle_pos = line_elapsed / self._state.current_line.duration
         with QtGui.QPainter(self) as painter:
-            painter.setBrush(self.colors.note)
             font = painter.font()
             font.setPixelSize(text_height * 2 // 3)
             painter.setFont(font)
+            font_metrics = QtGui.QFontMetrics(font)
+            text_width = font_metrics.horizontalAdvance(self._state.current_line.text)
+            text_start = (total_width - text_width) // 2
             for note in self._state.current_line.notes:
+                active = needle_pos > note.start
+                painter.setBrush(
+                    self.colors.active_note if active else self.colors.note
+                )
                 x = round(note.start * total_width)
                 y = round(note.pitch * notes_height) - row_height
                 w = round(note.duration * total_width)
-                painter.setPen(self.colors.text)
+                painter.setPen(self.colors.active_text if active else self.colors.text)
                 painter.drawText(
-                    # text may overflow the note horizontally
-                    x - 50,
+                    text_start,
                     total_height - text_height,
-                    w + 100,
-                    text_height,
-                    Qt.AlignmentFlag.AlignCenter,
+                    # Qt.AlignmentFlag.AlignCenter,
                     note.note.text,
                 )
+                text_start += font_metrics.horizontalAdvance(note.note.text)
                 painter.setPen(Qt.PenStyle.NoPen)
                 painter.drawRoundedRect(
                     x, y - row_height, w, row_height, radius, radius
                 )
 
             painter.setPen(QtGui.QPen(self.colors.needle, _NEEDLE_WIDTH))
-            x_pos = round(
-                (self._state.current_time - self._state.current_line.start)
-                / self._state.current_line.duration
-                * total_width
-            )
+            x_pos = round(needle_pos * total_width)
             x_pos = clamp(x_pos, 0, total_width - _NEEDLE_WIDTH // 2)
             painter.drawLine(x_pos, 0, x_pos, notes_height)
 
