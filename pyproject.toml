@@ -50,6 +50,8 @@ types-requests = "*"
 pytest = "*"
 # benchmark
 snakeviz = "*"
+# tools
+defusedxml = "^0.7.1"
 
 [tool.poetry.group.build.dependencies]
 PySide6 = "*"  # for file generation
