@@ -340,6 +340,9 @@ QMenu::separator {{
     height: 2px;
     margin: 5px;
 }}
+QMenu::icon:checked {{
+    border: 1px solid {on_surface};
+}}
 QMenuBar::item:selected {{
     background: {primary};
     color: {on_primary};
