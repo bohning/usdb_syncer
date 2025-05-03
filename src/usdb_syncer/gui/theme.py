@@ -235,7 +235,7 @@ class DarkTheme(Theme):
     def preview_palette(self) -> PreviewPalette:
         return PreviewPalette(
             grid=self.surface(_Surface.DP_24),
-            line=self.text(_Text.DISABLED),
+            line=self.surface(_Surface.DP_24),
             note=self.text(_Text.DISABLED),
             active_note=self.primary,
             text=self.text(_Text.HIGH),

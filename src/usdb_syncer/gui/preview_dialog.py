@@ -3,8 +3,9 @@
 from __future__ import annotations
 
 import subprocess
+from collections.abc import Callable
 from pathlib import Path
-from typing import Any
+from typing import Any, TypeVar
 
 import attrs
 import numpy as np
@@ -46,7 +47,10 @@ def load_preview_dialog(parent: QtWidgets.QWidget, song: UsdbSong) -> None:
     PreviewDialog(parent, txt, audio_path).show()
 
 
-def clamp(value: int, lower: int, upper: int) -> int:
+T = TypeVar("T", int, float)
+
+
+def clamp(value: T, lower: T, upper: T) -> T:
     return min(max(value, lower), upper)
 
 
@@ -60,7 +64,7 @@ class PreviewDialog(Ui_Dialog, QtWidgets.QDialog):
 
         self._state = _PlayState.new(txt, audio)
         palette = theme.Theme.from_settings().preview_palette()
-        self._song_view = _SongView(self._state, palette)
+        self._song_view = _SongView(self._state, palette, self._on_drag)
         self.layout_main.insertWidget(0, self._song_view)
         self._line_view = _LineView(self._state, palette)
         self.layout_main.insertWidget(1, self._line_view)
@@ -119,6 +123,13 @@ class PreviewDialog(Ui_Dialog, QtWidgets.QDialog):
         idx = self._state.current_idx + line_delta
         self._state.set_current_time(self._state.lines[idx].start)
         self._seek_timer.start()
+
+    def _on_drag(self, target_time: float, released: bool) -> None:
+        self._state.seeking = not released
+        self._seek_timer.stop()
+        self._state.set_current_time(target_time)
+        if released:
+            self.player.seek_to(self._state.current_time)
 
     def _on_seek_timeout(self) -> None:
         self.player.seek_to(self._state.current_time)
@@ -258,12 +269,21 @@ class _Note:
 
 
 class _SongView(QtWidgets.QWidget):
-    def __init__(self, state: _PlayState, colors: theme.PreviewPalette):
+    _is_dragging = False
+
+    def __init__(
+        self,
+        state: _PlayState,
+        colors: theme.PreviewPalette,
+        on_drag: Callable[[float, bool], None],
+    ):
         super().__init__()
         self._state = state
         self.colors = colors
+        self._on_drag = on_drag
         self.setMinimumSize(600, 20)
         self.setMaximumHeight(40)
+        self.setCursor(Qt.CursorShape.OpenHandCursor)
 
     def paintEvent(self, event: QtGui.QPaintEvent) -> None:  # noqa: N802
         height = self.height()
@@ -278,8 +298,27 @@ class _SongView(QtWidgets.QWidget):
 
             painter.setPen(QtGui.QPen(self.colors.needle, _NEEDLE_WIDTH))
             x_pos = round(self._state.current_rel_pos * width)
-            x_pos = min(x_pos, width - _NEEDLE_WIDTH)
+            x_pos = clamp(x_pos, _NEEDLE_WIDTH // 2, width - _NEEDLE_WIDTH // 2)
             painter.drawLine(x_pos, 0, x_pos, height)
+
+    def _x_pos_to_current_time(self, x: int) -> float:
+        return self._state.song_secs * clamp(x / self.width(), 0.0, 1.0)
+
+    def mousePressEvent(self, event: QtGui.QMouseEvent):  # noqa: N802
+        if event.button() == Qt.MouseButton.LeftButton:
+            self._is_dragging = True
+            self.setCursor(Qt.CursorShape.ClosedHandCursor)
+            self._on_drag(self._x_pos_to_current_time(event.pos().x()), False)
+
+    def mouseMoveEvent(self, event: QtGui.QMouseEvent):  # noqa: N802
+        if self._is_dragging:
+            self._on_drag(self._x_pos_to_current_time(event.pos().x()), False)
+
+    def mouseReleaseEvent(self, event: QtGui.QMouseEvent):  # noqa: N802
+        if self._is_dragging:
+            self._is_dragging = False
+            self.setCursor(Qt.CursorShape.OpenHandCursor)
+            self._on_drag(self._x_pos_to_current_time(event.pos().x()), True)
 
 
 @attrs.define
