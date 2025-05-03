@@ -230,7 +230,6 @@ class _Note:
     start: float
     duration: float
     pitch: float
-    line_pitch_len: int
 
     @classmethod
     def new(
@@ -238,14 +237,10 @@ class _Note:
     ) -> _Note:
         start = (note.start - line_start) / line_len
         duration = note.duration / line_len
-        pitch = 1 - (note.pitch - line_pitch.start) / _PITCH_ROWS
-        return cls(
-            note=note,
-            start=start,
-            duration=duration,
-            pitch=pitch,
-            line_pitch_len=len(line_pitch),
-        )
+        # move to the middle of available space
+        shift = max(_PITCH_ROWS - len(line_pitch), 0) // 2
+        pitch = 1 - (note.pitch - line_pitch.start + shift) / _PITCH_ROWS
+        return cls(note=note, start=start, duration=duration, pitch=pitch)
 
     @classmethod
     def from_line(cls, line: tracks.Line) -> list[_Note]:
