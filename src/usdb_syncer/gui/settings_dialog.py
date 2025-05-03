@@ -2,7 +2,7 @@
 
 import sys
 from pathlib import Path
-from typing import assert_never
+from typing import ClassVar, assert_never
 
 from PySide6 import QtWidgets
 from PySide6.QtWidgets import QDialog, QDialogButtonBox, QFileDialog, QWidget
@@ -33,12 +33,16 @@ _FALLBACK_SONG = UsdbSong(
 class SettingsDialog(Ui_Dialog, QDialog):
     """Dialog with app settings."""
 
+    _last_tab_index: ClassVar[int] = 0
     _path_template: PathTemplate | None = None
 
     def __init__(self, parent: QWidget, song: UsdbSong | None) -> None:
         super().__init__(parent=parent)
         self._song = song or _FALLBACK_SONG
         self.setupUi(self)
+        # restore last tab
+        self.tabWidget.setCurrentIndex(SettingsDialog._last_tab_index)
+        self.tabWidget.currentChanged.connect(self._on_tab_changed)
         self._populate_comboboxes()
         self._load_settings()
         self._setup_path_template()
@@ -347,3 +351,6 @@ class SettingsDialog(Ui_Dialog, QDialog):
             self.lineEdit_path_yass_reloaded.text(),
         )
         return True
+
+    def _on_tab_changed(self, index: int) -> None:
+        SettingsDialog._last_tab_index = index
