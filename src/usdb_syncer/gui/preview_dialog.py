@@ -301,6 +301,7 @@ class _LineView(QtWidgets.QWidget):
         radius = row_height / 2
         line_elapsed = self._state.current_time - self._state.current_line.start
         needle_pos = line_elapsed / self._state.current_line.duration
+        needle_pitch = self._state.current_line.notes[0].pitch
         with QtGui.QPainter(self) as painter:
             font = painter.font()
             font.setPixelSize(text_height * 2 // 3)
@@ -310,6 +311,8 @@ class _LineView(QtWidgets.QWidget):
             text_start = (total_width - text_width) // 2
             for note in self._state.current_line.notes:
                 active = needle_pos > note.start
+                if active:
+                    needle_pitch = note.pitch
                 painter.setBrush(
                     self.colors.active_note if active else self.colors.note
                 )
@@ -332,7 +335,8 @@ class _LineView(QtWidgets.QWidget):
             painter.setPen(QtGui.QPen(self.colors.needle, _NEEDLE_WIDTH))
             x_pos = round(needle_pos * total_width)
             x_pos = clamp(x_pos, 0, total_width - _NEEDLE_WIDTH // 2)
-            painter.drawLine(x_pos, 0, x_pos, notes_height)
+            y_pos = round(needle_pitch * notes_height - row_height * 2.5)
+            painter.drawLine(x_pos, y_pos, x_pos, y_pos + row_height * 2)
 
 
 @attrs.define
