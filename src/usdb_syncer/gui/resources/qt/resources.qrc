@@ -27,12 +27,14 @@
     <file>cog-white.svg</file>
     <file>cog.png</file>
     <file>comment-white.svg</file>
+    <file>control-double-180.png</file>
+    <file>control-double.png</file>
     <file>control-pause-local.png</file>
     <file>control-pause.png</file>
     <file>control-play-local.png</file>
     <file>control-play.png</file>
-    <file>control-double-180.png</file>
-    <file>control-double.png</file>
+    <file>control-skip-180.png</file>
+    <file>control-skip.png</file>
     <file>cover.png</file>
     <file>database-marker-white.svg</file>
     <file>database-white.svg</file>
@@ -101,6 +103,10 @@
     <file>report.png</file>
     <file>safari.png</file>
     <file>sample.png</file>
+    <file>skip-backward-white.svg</file>
+    <file>skip-forward-white.svg</file>
+    <file>skip-next-white.svg</file>
+    <file>skip-previous-white.svg</file>
     <file>spectrum-absorption.png</file>
     <file>status.png</file>
     <file>sync-white.svg</file>

@@ -72,8 +72,10 @@ class PreviewDialog(Ui_Dialog, QtWidgets.QDialog):
             self, singleShot=True, interval=_DOUBLECLICK_DELAY_MS
         )
         self._seek_timer.timeout.connect(self._on_seek_timeout)
+        self.button_to_start.pressed.connect(self._on_seek_start)
         self.button_backward.pressed.connect(self._on_seek_backward)
         self.button_forward.pressed.connect(self._on_seek_forward)
+        self.button_to_end.pressed.connect(self._on_seek_end)
 
         self._on_theme_changed(settings.get_theme())
         events.ThemeChanged.subscribe(lambda e: self._on_theme_changed(e.theme))
@@ -87,6 +89,12 @@ class PreviewDialog(Ui_Dialog, QtWidgets.QDialog):
 
     def _on_pause_toggled(self, paused: bool) -> None:
         self._state.paused = paused
+
+    def _on_seek_start(self) -> None:
+        self._start_seeking(-self._state.current_idx)
+
+    def _on_seek_end(self) -> None:
+        self._start_seeking(len(self._state.lines) - self._state.current_idx - 1)
 
     def _on_seek_backward(self) -> None:
         line_elapsed = self._state.current_time - self._state.current_line.start
@@ -116,8 +124,10 @@ class PreviewDialog(Ui_Dialog, QtWidgets.QDialog):
 
     def _on_theme_changed(self, theme: settings.Theme) -> None:
         self.button_pause.setIcon(icons.Icon.PAUSE_REMOTE.icon(theme))
+        self.button_to_start.setIcon(icons.Icon.SKIP_TO_START.icon(theme))
         self.button_backward.setIcon(icons.Icon.SKIP_BACKWARD.icon(theme))
         self.button_forward.setIcon(icons.Icon.SKIP_FORWARD.icon(theme))
+        self.button_to_end.setIcon(icons.Icon.SKIP_TO_END.icon(theme))
 
     def closeEvent(self, event: QtGui.QCloseEvent) -> None:  # noqa: N802
         self.player.stop()
@@ -312,7 +322,7 @@ class _LineView(QtWidgets.QWidget):
                 / self._state.current_line.duration
                 * width
             )
-            x_pos = clamp(x_pos, 0, width - _NEEDLE_WIDTH)
+            x_pos = clamp(x_pos, 0, width - _NEEDLE_WIDTH // 2)
             painter.drawLine(x_pos, 0, x_pos, height)
 
 
