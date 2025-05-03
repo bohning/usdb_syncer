@@ -29,6 +29,7 @@ _DOUBLECLICK_DELAY_MS = 200
 _DOUBLECLICK_DELAY_SECS = _DOUBLECLICK_DELAY_MS / 1000
 _STREAM_BUFFER_SIZE = 2048
 _PITCH_ROWS = 16
+_RELATIVE_TEXT_ROW_HEIGHT = 1.5
 _EPS_SECS = 0.01
 
 
@@ -286,28 +287,35 @@ class _LineView(QtWidgets.QWidget):
         self.setMaximumHeight(400)
 
     def paintEvent(self, event: QtGui.QPaintEvent) -> None:  # noqa: N802
-        height = self.height()
-        width = self.width()
-        h = round(height / _PITCH_ROWS)
-        radius = h / 2
+        total_height = self.height()
+        total_width = self.width()
+        # divide into equally sized pitch rows plus one scaled row for text
+        row_height = round(total_height / (_PITCH_ROWS + _RELATIVE_TEXT_ROW_HEIGHT))
+        notes_height = round(row_height * _PITCH_ROWS)
+        text_height = round(row_height * _RELATIVE_TEXT_ROW_HEIGHT)
+        # make sides circular
+        radius = row_height / 2
         with QtGui.QPainter(self) as painter:
             painter.setBrush(QtGui.QColor(100, 150, 255))
             font = painter.font()
-            font.setPixelSize(h * 2 // 3)
+            font.setPixelSize(text_height * 2 // 3)
             painter.setFont(font)
             for note in self._state.current_line.notes:
-                x = round(note.start * width)
-                y = round(note.pitch * height) - h
-                w = round(note.duration * width)
+                x = round(note.start * total_width)
+                y = round(note.pitch * notes_height) - row_height
+                w = round(note.duration * total_width)
                 painter.drawText(
+                    # text may overflow the note horizontally
                     x - 50,
-                    height - h,
+                    total_height - text_height,
                     w + 100,
-                    h,
+                    text_height,
                     Qt.AlignmentFlag.AlignCenter,
                     note.note.text,
                 )
-                painter.drawRoundedRect(x, y - h, w, h, radius, radius)
+                painter.drawRoundedRect(
+                    x, y - row_height, w, row_height, radius, radius
+                )
 
             painter.setPen(
                 QtGui.QPen(theme.current_palette().highlight(), _NEEDLE_WIDTH)
@@ -315,10 +323,10 @@ class _LineView(QtWidgets.QWidget):
             x_pos = round(
                 (self._state.current_time - self._state.current_line.start)
                 / self._state.current_line.duration
-                * width
+                * total_width
             )
-            x_pos = clamp(x_pos, 0, width - _NEEDLE_WIDTH // 2)
-            painter.drawLine(x_pos, 0, x_pos, height)
+            x_pos = clamp(x_pos, 0, total_width - _NEEDLE_WIDTH // 2)
+            painter.drawLine(x_pos, 0, x_pos, notes_height)
 
 
 @attrs.define
