@@ -146,9 +146,9 @@ class SystemTheme(Theme):
     def preview_palette(self) -> PreviewPalette:
         palette = self.q_palette()
         return PreviewPalette(
-            grid=palette.placeholderText().color(),
-            line=palette.button().color(),
-            note=palette.button().color(),
+            grid=palette.light().color(),
+            line=palette.light().color(),
+            note=palette.dark().color(),
             active_note=palette.highlight().color(),
             text=palette.text().color(),
             active_text=palette.highlight().color(),
