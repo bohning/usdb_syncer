@@ -21,16 +21,7 @@ from usdb_syncer.song_txt import SongTxt, tracks
 from usdb_syncer.song_txt.auxiliaries import BeatsPerMinute
 from usdb_syncer.usdb_song import UsdbSong
 
-_SAMPLE_RATE = 44100
-_CHANNELS = 2
-_FPS = 60
-_REFRESH_RATE_MS = 1000 // _FPS
-_NEEDLE_WIDTH = 2
-_DOUBLECLICK_DELAY_MS = 200
-_DOUBLECLICK_DELAY_SECS = _DOUBLECLICK_DELAY_MS / 1000
-_STREAM_BUFFER_SIZE = 2048
 _PITCH_ROWS = 16
-_RELATIVE_TEXT_ROW_HEIGHT = 2
 _EPS_SECS = 0.01
 
 
@@ -46,6 +37,10 @@ class PreviewDialog(Ui_Dialog, QtWidgets.QDialog):
 
     _MIN_COVER_SIZE = 100
     _MAX_COVER_SIZE = 200
+    _FPS = 60
+    _REFRESH_RATE_MS = 1000 // _FPS
+    _DOUBLECLICK_DELAY_MS = 200
+    _DOUBLECLICK_DELAY_SECS = _DOUBLECLICK_DELAY_MS / 1000
 
     def __init__(
         self, parent: QtWidgets.QWidget, txt: SongTxt, audio: Path, cover: Path | None
@@ -62,13 +57,13 @@ class PreviewDialog(Ui_Dialog, QtWidgets.QDialog):
         self.layout_main.insertWidget(1, self._line_view, 10)
         self.layout_main.insertStretch(2, 1)
         self.player = _AudioPlayer.new(audio, self._state)
-        self._update_timer = QtCore.QTimer(self, interval=_REFRESH_RATE_MS)
+        self._update_timer = QtCore.QTimer(self, interval=self._REFRESH_RATE_MS)
         self._update_timer.timeout.connect(self._update_time)
         self._update_timer.start()
 
         self.button_pause.toggled.connect(self._on_pause_toggled)
         self._seek_timer = QtCore.QTimer(
-            self, singleShot=True, interval=_DOUBLECLICK_DELAY_MS
+            self, singleShot=True, interval=self._DOUBLECLICK_DELAY_MS
         )
         self._seek_timer.timeout.connect(self._on_seek_timeout)
         self.button_to_start.pressed.connect(self._on_seek_start)
@@ -122,7 +117,7 @@ class PreviewDialog(Ui_Dialog, QtWidgets.QDialog):
 
     def _on_seek_backward(self) -> None:
         line_elapsed = self._state.current_time - self._state.current_line.start
-        if line_elapsed > _DOUBLECLICK_DELAY_SECS:
+        if line_elapsed > self._DOUBLECLICK_DELAY_SECS:
             self._start_seeking(0)
         elif self._state.current_idx > 0:
             self._start_seeking(-1)
@@ -169,7 +164,7 @@ class PreviewDialog(Ui_Dialog, QtWidgets.QDialog):
 class _SquareLabel(QtWidgets.QLabel):
     """Custom widget to contain the cover image and maintain sqaured."""
 
-    def hasHeightForWidth(self):  # noqa: N802
+    def hasHeightForWidth(self) -> bool:  # noqa: N802
         return True
 
     def heightForWidth(self, width: int) -> int:  # noqa: N802
@@ -196,6 +191,8 @@ class _PlayState:
     seeking: bool = False
     paused: bool = False
 
+    _SAMPLE_RATE = 44100
+
     @classmethod
     def new(cls, txt: SongTxt, audio: Path) -> _PlayState:
         song_secs = utils.get_media_duration(audio)
@@ -215,7 +212,7 @@ class _PlayState:
         )
 
     def calculate_time_from_samples(self) -> None:
-        self.current_time = self.samples_played / _SAMPLE_RATE
+        self.current_time = self.samples_played / self._SAMPLE_RATE
         self._update_with_current_time()
 
     def set_current_time(self, secs: float) -> None:
@@ -305,6 +302,7 @@ class _SongView(QtWidgets.QWidget):
     _is_dragging = False
     _MIN_HEIGHT = 20
     _MAX_HEIGHT = 40
+    _NEEDLE_WIDTH = 2
 
     def __init__(
         self,
@@ -331,25 +329,26 @@ class _SongView(QtWidgets.QWidget):
                 w = round(line.rel_duration * width)
                 painter.drawRect(x, 0, w, height)
 
-            painter.setPen(QtGui.QPen(self.colors.needle, _NEEDLE_WIDTH))
+            painter.setPen(QtGui.QPen(self.colors.needle, self._NEEDLE_WIDTH))
             x_pos = round(self._state.current_rel_pos * width)
-            x_pos = clamp(x_pos, _NEEDLE_WIDTH // 2, width - _NEEDLE_WIDTH // 2)
+            half_needle = self._NEEDLE_WIDTH // 2
+            x_pos = clamp(x_pos, half_needle, width - half_needle)
             painter.drawLine(x_pos, 0, x_pos, height)
 
     def _x_pos_to_current_time(self, x: int) -> float:
         return self._state.song_secs * clamp(x / self.width(), 0.0, 1.0)
 
-    def mousePressEvent(self, event: QtGui.QMouseEvent):  # noqa: N802
+    def mousePressEvent(self, event: QtGui.QMouseEvent) -> None:  # noqa: N802
         if event.button() == Qt.MouseButton.LeftButton:
             self._is_dragging = True
             self.setCursor(Qt.CursorShape.ClosedHandCursor)
             self._on_drag(self._x_pos_to_current_time(event.pos().x()), False)
 
-    def mouseMoveEvent(self, event: QtGui.QMouseEvent):  # noqa: N802
+    def mouseMoveEvent(self, event: QtGui.QMouseEvent) -> None:  # noqa: N802
         if self._is_dragging:
             self._on_drag(self._x_pos_to_current_time(event.pos().x()), False)
 
-    def mouseReleaseEvent(self, event: QtGui.QMouseEvent):  # noqa: N802
+    def mouseReleaseEvent(self, event: QtGui.QMouseEvent) -> None:  # noqa: N802
         if self._is_dragging:
             self._is_dragging = False
             self.setCursor(Qt.CursorShape.OpenHandCursor)
@@ -367,13 +366,15 @@ class _LinePaintContext:
     radius: float
     text_height: int
 
+    _RELATIVE_TEXT_ROW_HEIGHT = 2
+
     @classmethod
     def new(cls, view: _LineView) -> _LinePaintContext:
         total_height = view.height()
         total_width = view.width()
 
         # divide into equally sized pitch rows plus one scaled row for text
-        row_height = round(total_height / (_PITCH_ROWS + _RELATIVE_TEXT_ROW_HEIGHT))
+        row_height = round(total_height / (_PITCH_ROWS + cls._RELATIVE_TEXT_ROW_HEIGHT))
         notes_height = row_height * _PITCH_ROWS
         text_height = total_height - notes_height
 
@@ -446,7 +447,7 @@ class _LineView(QtWidgets.QWidget):
             )
             text_start += font_metrics.horizontalAdvance(note.note.text)
 
-    def _draw_pointer(self, painter: QtGui.QPainter, ctx: _LinePaintContext):
+    def _draw_pointer(self, painter: QtGui.QPainter, ctx: _LinePaintContext) -> None:
         pointer_size = round(ctx.row_height * self._POINTER_SIZE_IN_ROWS)
         x = round(ctx.current_pos * ctx.total_width)
         current_pitch = next(
@@ -479,104 +480,78 @@ class _LineView(QtWidgets.QWidget):
 class _AudioPlayer:
     _source: Path
     _state: _PlayState
-    stream: sd.OutputStream | None = None
-    process: subprocess.Popen | None = None
+    _stream: sd.OutputStream | None = None
+    _process: subprocess.Popen | None = None
+    _CHANNELS = 2
+    _STREAM_BUFFER_SIZE = 2048
 
     @classmethod
     def new(cls, source: Path, state: _PlayState) -> _AudioPlayer:
         player = cls(source=source, state=state)
-        player.start_ffmpeg()
-        player.start_stream()
+        player._start_ffmpeg()
+        player._start_stream()
         return player
 
-    def start_ffmpeg(self) -> None:
-        self.process = subprocess.Popen(
-            [
-                "ffmpeg",
-                "-i",
-                self._source,
-                "-f",
-                "s16le",
-                "-acodec",
-                "pcm_s16le",
-                "-ar",
-                str(_SAMPLE_RATE),
-                "-ac",
-                str(_CHANNELS),
-                "-",
-            ],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.DEVNULL,
+    def stop(self) -> None:
+        if self._stream:
+            self._stream.stop()
+            self._stream.close()
+        if self._process:
+            self._process.terminate()
+            self._process = None
+
+    def seek_to(self, seconds: float) -> None:
+        self.stop()
+        self._start_ffmpeg(seconds)
+        self._start_stream()
+
+    def _start_ffmpeg(self, start_secs: float = 0.0) -> None:
+        self._state.samples_played = int(start_secs * self._state._SAMPLE_RATE)
+        cmd = [
+            "ffmpeg",
+            "-ss",
+            str(start_secs),
+            "-i",
+            self._source,
+            "-f",
+            "s16le",
+            "-acodec",
+            "pcm_s16le",
+            "-ar",
+            str(self._state._SAMPLE_RATE),
+            "-ac",
+            str(self._CHANNELS),
+            "-",
+        ]
+        self._process = subprocess.Popen(
+            cmd, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL
         )
 
-    def start_stream(self) -> None:
-        self.stream = sd.OutputStream(
-            samplerate=_SAMPLE_RATE,
-            channels=_CHANNELS,
+    def _start_stream(self) -> None:
+        self._stream = sd.OutputStream(
+            samplerate=self._state._SAMPLE_RATE,
+            channels=self._CHANNELS,
             dtype="int16",
-            blocksize=_STREAM_BUFFER_SIZE,
+            blocksize=self._STREAM_BUFFER_SIZE,
             callback=self._stream_callback,
         )
-        self.stream.start()
+        self._stream.start()
 
     def _stream_callback(
         self, outdata: np.ndarray, frames: int, time: Any, status: sd.CallbackFlags
     ) -> None:
         if (
-            not (self.process and self.process.stdout and self.stream)
+            not (self._process and self._process.stdout and self._stream)
             or self._state.paused
         ):
-            outdata[:] = np.zeros((frames, _CHANNELS), dtype=np.int16)
+            outdata[:] = np.zeros((frames, self._CHANNELS), dtype=np.int16)
             return
-        bytes_needed = frames * _CHANNELS * 2
-        data = self.process.stdout.read(bytes_needed)
+        bytes_needed = frames * self._CHANNELS * 2
+        data = self._process.stdout.read(bytes_needed)
         if len(data) < bytes_needed:
-            outdata[:] = np.zeros((frames, _CHANNELS), dtype=np.int16)
-            self.stream.stop()
+            outdata[:] = np.zeros((frames, self._CHANNELS), dtype=np.int16)
+            self._stream.stop()
             return
-        array = np.frombuffer(data, dtype=np.int16).reshape(-1, _CHANNELS)
+        array = np.frombuffer(data, dtype=np.int16).reshape(-1, self._CHANNELS)
         outdata[:] = array
         self._state.samples_played += frames
-
-    def stop(self) -> None:
-        if self.stream:
-            self.stream.stop()
-            self.stream.close()
-        if self.process:
-            self.process.terminate()
-            self.process = None
-
-    def seek_to(self, seconds: float) -> None:
-        """Optional: restart FFmpeg from a given time."""
-        self.stop()
-        self._state.samples_played = int(seconds * _SAMPLE_RATE)
-
-        self.process = subprocess.Popen(
-            [
-                "ffmpeg",
-                "-ss",
-                str(seconds),
-                "-i",
-                self._source,
-                "-f",
-                "s16le",
-                "-acodec",
-                "pcm_s16le",
-                "-ar",
-                str(_SAMPLE_RATE),
-                "-ac",
-                str(_CHANNELS),
-                "-",
-            ],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.DEVNULL,
-        )
-
-        self.stream = sd.OutputStream(
-            samplerate=_SAMPLE_RATE,
-            channels=_CHANNELS,
-            dtype="int16",
-            blocksize=_STREAM_BUFFER_SIZE,
-            callback=self._stream_callback,
-        )
-        self.stream.start()
