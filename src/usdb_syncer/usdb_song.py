@@ -186,6 +186,11 @@ class UsdbSong:
             return None
         return self.sync_meta.audio_path()
 
+    def cover_path(self) -> Path | None:
+        if not self.sync_meta:
+            return None
+        return self.sync_meta.cover_path()
+
     @classmethod
     def clear_cache(cls) -> None:
         _UsdbSongCache.clear()

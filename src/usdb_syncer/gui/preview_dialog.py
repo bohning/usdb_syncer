@@ -44,7 +44,12 @@ def clamp(value: T, lower: T, upper: T) -> T:
 class PreviewDialog(Ui_Dialog, QtWidgets.QDialog):
     """Dialog to preview a downloaded song."""
 
-    def __init__(self, parent: QtWidgets.QWidget, txt: SongTxt, audio: Path) -> None:
+    _MIN_COVER_SIZE = 100
+    _MAX_COVER_SIZE = 200
+
+    def __init__(
+        self, parent: QtWidgets.QWidget, txt: SongTxt, audio: Path, cover: Path | None
+    ) -> None:
         super().__init__(parent=parent)
         self.setupUi(self)
         self.setWindowTitle(txt.headers.artist_title_str())
@@ -74,6 +79,18 @@ class PreviewDialog(Ui_Dialog, QtWidgets.QDialog):
         self._on_theme_changed(theme.Theme.from_settings())
         events.ThemeChanged.subscribe(lambda e: self._on_theme_changed(e.theme))
 
+        if cover:
+            label = _SquareLabel("")
+            label.setScaledContents(True)
+            label.setPixmap(QtGui.QPixmap(cover))
+            label.setMinimumSize(self._MIN_COVER_SIZE, self._MIN_COVER_SIZE)
+            label.setMaximumSize(self._MAX_COVER_SIZE, self._MAX_COVER_SIZE)
+            self.layout_extra.insertWidget(0, label)
+        self.label_bpm.setText(f"#BPM: {txt.headers.bpm}")
+        self.label_gap.setText(f"#GAP: {txt.headers.gap}")
+        self.label_start.setText(f"#START: {txt.headers.start or '-'}")
+        self.label_end.setText(f"#END: {txt.headers.end or '-'}")
+
     @classmethod
     def load(cls, parent: QtWidgets.QWidget, song: UsdbSong) -> None:
         if not (txt_path := song.txt_path()) or not (audio_path := song.audio_path()):
@@ -85,7 +102,7 @@ class PreviewDialog(Ui_Dialog, QtWidgets.QDialog):
         if not (txt := SongTxt.try_from_file(txt_path, logger)):
             QtWidgets.QMessageBox.warning(parent, "Aborted", "Txt file is invalid!")
             return
-        cls(parent, txt, audio_path).show()
+        cls(parent, txt, audio_path, song.cover_path()).show()
 
     def _update_time(self) -> None:
         # only get current time from playback stream if not currently seeking
@@ -147,6 +164,21 @@ class PreviewDialog(Ui_Dialog, QtWidgets.QDialog):
     def closeEvent(self, event: QtGui.QCloseEvent) -> None:  # noqa: N802
         self.player.stop()
         event.accept()
+
+
+class _SquareLabel(QtWidgets.QLabel):
+    """Custom widget to contain the cover image and maintain sqaured."""
+
+    def hasHeightForWidth(self):  # noqa: N802
+        return True
+
+    def heightForWidth(self, width: int) -> int:  # noqa: N802
+        return width
+
+    def sizeHint(self) -> QtCore.QSize:  # noqa: N802
+        base = super().sizeHint()
+        side = min(base.width(), base.height())
+        return QtCore.QSize(side, side)
 
 
 @attrs.define
@@ -271,6 +303,8 @@ class _Note:
 
 class _SongView(QtWidgets.QWidget):
     _is_dragging = False
+    _MIN_HEIGHT = 20
+    _MAX_HEIGHT = 40
 
     def __init__(
         self,
@@ -282,8 +316,8 @@ class _SongView(QtWidgets.QWidget):
         self._state = state
         self.colors = colors
         self._on_drag = on_drag
-        self.setMinimumSize(600, 20)
-        self.setMaximumHeight(40)
+        self.setMinimumHeight(self._MIN_HEIGHT)
+        self.setMaximumHeight(self._MAX_HEIGHT)
         self.setCursor(Qt.CursorShape.OpenHandCursor)
 
     def paintEvent(self, event: QtGui.QPaintEvent) -> None:  # noqa: N802
@@ -360,13 +394,15 @@ class _LinePaintContext:
 class _LineView(QtWidgets.QWidget):
     _POINTER_SIZE_IN_ROWS = 1.5
     _GRID_LINE_WIDTH = 1
+    _MIN_SIZE = (600, 200)
+    _MAX_HEIGHT = 600
 
     def __init__(self, state: _PlayState, colors: theme.PreviewPalette):
         super().__init__()
         self._state = state
         self.colors = colors
-        self.setMinimumSize(600, 200)
-        self.setMaximumHeight(400)
+        self.setMinimumSize(*self._MIN_SIZE)
+        self.setMaximumHeight(self._MAX_HEIGHT)
 
     def paintEvent(self, event: QtGui.QPaintEvent) -> None:  # noqa: N802
         with QtGui.QPainter(self) as painter:
