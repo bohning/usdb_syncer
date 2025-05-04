@@ -56,7 +56,7 @@ class PreviewDialog(Ui_Dialog, QtWidgets.QDialog):
         self._line_view = _LineView(self._state, palette)
         self.layout_main.insertWidget(1, self._line_view, 10)
         self.layout_main.insertStretch(2, 1)
-        self.player = _AudioPlayer.new(audio, self._state)
+        self._player = _AudioPlayer.new(audio, self._state)
         self._update_timer = QtCore.QTimer(self, interval=self._REFRESH_RATE_MS)
         self._update_timer.timeout.connect(self._update_time)
         self._update_timer.start()
@@ -142,10 +142,10 @@ class PreviewDialog(Ui_Dialog, QtWidgets.QDialog):
         self._seek_timer.stop()
         self._state.set_current_time(target_time)
         if released:
-            self.player.seek_to(self._state.current_time)
+            self._player.seek_to(self._state.current_time)
 
     def _on_seek_timeout(self) -> None:
-        self.player.seek_to(self._state.current_time)
+        self._player.seek_to(self._state.current_time)
         self._state.seeking = False
 
     def _on_theme_changed(self, theme: theme.Theme) -> None:
@@ -157,8 +157,12 @@ class PreviewDialog(Ui_Dialog, QtWidgets.QDialog):
         self._song_view.colors = self._line_view.colors = theme.preview_palette()
 
     def closeEvent(self, event: QtGui.QCloseEvent) -> None:  # noqa: N802
-        self.player.stop()
+        self._player.stop()
         event.accept()
+
+    def reject(self) -> None:
+        self._player.stop()
+        super().reject()
 
 
 class _SquareLabel(QtWidgets.QLabel):
