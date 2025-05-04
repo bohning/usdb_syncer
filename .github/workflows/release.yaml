@@ -51,6 +51,7 @@ jobs:
               --add-data 'src/usdb_syncer/db/sql:usdb_syncer/db/sql'
               --add-data 'src/usdb_syncer/gui/resources/fonts:usdb_syncer/gui/resources/fonts'
               --add-data 'src/usdb_syncer/gui/resources/styles:usdb_syncer/gui/resources/styles'
+              --add-data 'src/usdb_syncer/gui/resources/audio:usdb_syncer/gui/resources/audio'
           - os: macos-latest
             TARGET: macOS-arm64
             PYINSTALLER_ARGS: >-
@@ -60,6 +61,7 @@ jobs:
               --add-data 'src/usdb_syncer/db/sql:usdb_syncer/db/sql'
               --add-data 'src/usdb_syncer/gui/resources/fonts:usdb_syncer/gui/resources/fonts'
               --add-data 'src/usdb_syncer/gui/resources/styles:usdb_syncer/gui/resources/styles'
+              --add-data 'src/usdb_syncer/gui/resources/audio:usdb_syncer/gui/resources/audio'
           - os: macos-13
             TARGET: macOS-x64
             PYINSTALLER_ARGS: >-
@@ -69,6 +71,7 @@ jobs:
               --add-data 'src/usdb_syncer/db/sql:usdb_syncer/db/sql'
               --add-data 'src/usdb_syncer/gui/resources/fonts:usdb_syncer/gui/resources/fonts'
               --add-data 'src/usdb_syncer/gui/resources/styles:usdb_syncer/gui/resources/styles'
+              --add-data 'src/usdb_syncer/gui/resources/audio:usdb_syncer/gui/resources/audio'
           - os: windows-latest
             TARGET: Windows
             PYINSTALLER_ARGS: >-
@@ -78,6 +81,7 @@ jobs:
               --add-data 'src/usdb_syncer/db/sql;usdb_syncer/db/sql'
               --add-data 'src/usdb_syncer/gui/resources/fonts;usdb_syncer/gui/resources/fonts'
               --add-data 'src/usdb_syncer/gui/resources/styles;usdb_syncer/gui/resources/styles'
+              --add-data 'src/usdb_syncer/gui/resources/audio;usdb_syncer/gui/resources/audio'
     steps:
       - uses: actions/checkout@v4
         with:

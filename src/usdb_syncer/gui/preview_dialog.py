@@ -4,18 +4,21 @@ from __future__ import annotations
 
 import subprocess
 from collections.abc import Callable
+from importlib import resources
 from pathlib import Path
 from typing import Any, TypeVar
 
 import attrs
 import numpy as np
-import sounddevice as sd
+import sounddevice
+import soundfile
 from PySide6 import QtCore, QtGui, QtWidgets
 from PySide6.QtCore import Qt
 
 from usdb_syncer import utils
 from usdb_syncer.gui import events, icons, theme
 from usdb_syncer.gui.forms.PreviewDialog import Ui_Dialog
+from usdb_syncer.gui.resources import audio
 from usdb_syncer.logger import song_logger
 from usdb_syncer.song_txt import SongTxt, tracks
 from usdb_syncer.song_txt.auxiliaries import BeatsPerMinute
@@ -23,6 +26,8 @@ from usdb_syncer.usdb_song import UsdbSong
 
 _PITCH_ROWS = 16
 _EPS_SECS = 0.01
+_INT16_MAX = 2**15 - 1
+_SAMPLE_RATE = 44100
 
 
 T = TypeVar("T", int, float)
@@ -39,6 +44,7 @@ class PreviewDialog(Ui_Dialog, QtWidgets.QDialog):
     _MAX_COVER_SIZE = 200
     _FPS = 60
     _REFRESH_RATE_MS = 1000 // _FPS
+    _REFRESH_RATE_SECS = _REFRESH_RATE_MS / 1000
     _DOUBLECLICK_DELAY_MS = 200
     _DOUBLECLICK_DELAY_SECS = _DOUBLECLICK_DELAY_MS / 1000
 
@@ -186,6 +192,7 @@ class _PlayState:
 
     txt: SongTxt
     lines: list[_Line]
+    ticks: list[int]
     current_idx: int
     current_line: _Line
     current_time: float
@@ -194,19 +201,21 @@ class _PlayState:
     song_secs: float
     seeking: bool = False
     paused: bool = False
-
-    _SAMPLE_RATE = 44100
+    next_tick_idx: int = 0
 
     @classmethod
     def new(cls, txt: SongTxt, audio: Path) -> _PlayState:
         song_secs = utils.get_media_duration(audio)
+        track = txt.notes.track_1
         lines = [
             _Line.new(line, txt.headers.gap, txt.headers.bpm, song_secs)
-            for line in txt.notes.track_1
+            for line in track
         ]
+        ticks = _note_start_samples(track, txt.headers.gap, txt.headers.bpm)
         return cls(
             txt=txt,
             lines=lines,
+            ticks=ticks,
             current_idx=0,
             current_line=lines[0],
             current_time=lines[0].start,
@@ -216,7 +225,7 @@ class _PlayState:
         )
 
     def calculate_time_from_samples(self) -> None:
-        self.current_time = self.samples_played / self._SAMPLE_RATE
+        self.current_time = self.samples_played / _SAMPLE_RATE
         self._update_with_current_time()
 
     def set_current_time(self, secs: float) -> None:
@@ -230,6 +239,17 @@ class _PlayState:
             for i, li in enumerate(self.lines)
             if li.line_break is None or li.line_break > self.current_time
         )
+
+
+def _note_start_samples(
+    lines: list[tracks.Line], gap: int, bpm: BeatsPerMinute
+) -> list[int]:
+    """Returns the first sample for every note."""
+    return [
+        int((gap / 1000 + bpm.beats_to_secs(note.start)) * _SAMPLE_RATE)
+        for line in lines
+        for note in line.notes
+    ]
 
 
 @attrs.define
@@ -484,14 +504,17 @@ class _LineView(QtWidgets.QWidget):
 class _AudioPlayer:
     _source: Path
     _state: _PlayState
-    _stream: sd.OutputStream | None = None
+    _tick_data: np.ndarray
+    _stream: sounddevice.OutputStream | None = None
     _process: subprocess.Popen | None = None
     _CHANNELS = 2
     _STREAM_BUFFER_SIZE = 2048
 
     @classmethod
     def new(cls, source: Path, state: _PlayState) -> _AudioPlayer:
-        player = cls(source=source, state=state)
+        wav = resources.files(audio).joinpath("metronome-tick.wav")
+        data, _samplerate = soundfile.read(wav, dtype="float32")
+        player = cls(source=source, state=state, tick_data=data)
         player._start_ffmpeg()
         player._start_stream()
         return player
@@ -510,7 +533,15 @@ class _AudioPlayer:
         self._start_stream()
 
     def _start_ffmpeg(self, start_secs: float = 0.0) -> None:
-        self._state.samples_played = int(start_secs * self._state._SAMPLE_RATE)
+        self._state.samples_played = int(start_secs * _SAMPLE_RATE)
+        self._state.next_tick_idx = next(
+            (
+                i
+                for i, t in enumerate(self._state.ticks)
+                if t >= self._state.samples_played
+            ),
+            len(self._state.ticks),
+        )
         cmd = [
             "ffmpeg",
             "-ss",
@@ -522,7 +553,7 @@ class _AudioPlayer:
             "-acodec",
             "pcm_s16le",
             "-ar",
-            str(self._state._SAMPLE_RATE),
+            str(_SAMPLE_RATE),
             "-ac",
             str(self._CHANNELS),
             "-",
@@ -532,8 +563,8 @@ class _AudioPlayer:
         )
 
     def _start_stream(self) -> None:
-        self._stream = sd.OutputStream(
-            samplerate=self._state._SAMPLE_RATE,
+        self._stream = sounddevice.OutputStream(
+            samplerate=_SAMPLE_RATE,
             channels=self._CHANNELS,
             dtype="int16",
             blocksize=self._STREAM_BUFFER_SIZE,
@@ -542,7 +573,11 @@ class _AudioPlayer:
         self._stream.start()
 
     def _stream_callback(
-        self, outdata: np.ndarray, frames: int, time: Any, status: sd.CallbackFlags
+        self,
+        outdata: np.ndarray,
+        frames: int,
+        time: Any,
+        status: sounddevice.CallbackFlags,
     ) -> None:
         if (
             not (self._process and self._process.stdout and self._stream)
@@ -557,5 +592,35 @@ class _AudioPlayer:
             self._stream.stop()
             return
         array = np.frombuffer(data, dtype=np.int16).reshape(-1, self._CHANNELS)
+        array = self._mix_in_tick(array, frames)
         outdata[:] = array
         self._state.samples_played += frames
+
+    def _mix_in_tick(self, data: np.ndarray, frames: int) -> np.ndarray:
+        if self._state.next_tick_idx >= len(self._state.ticks):
+            return data
+
+        start_sample = self._state.samples_played
+        end_sample = start_sample + frames
+
+        tick_start = self._state.ticks[self._state.next_tick_idx]
+        tick_end = tick_start + len(self._tick_data)
+
+        overlap_start = max(start_sample, tick_start)
+        overlap_end = min(end_sample, tick_end)
+
+        if overlap_start >= overlap_end:
+            return data
+
+        main_offset = overlap_start - start_sample
+        tick_offset = overlap_start - tick_start
+        length = overlap_end - overlap_start
+
+        data = data.astype(np.float32) / _INT16_MAX
+
+        data[main_offset : main_offset + length] += self._tick_data[
+            tick_offset : tick_offset + length
+        ]
+        if tick_end <= end_sample:
+            self._state.next_tick_idx += 1
+        return np.clip(data * _INT16_MAX, -32768, 32767).astype(np.int16)
