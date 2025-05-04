@@ -54,6 +54,9 @@ class ProgressDialog(QtWidgets.QProgressDialog):
     def closeEvent(self, event: QtGui.QCloseEvent) -> None:  # noqa: N802
         event.ignore()
 
+    def reject(self) -> None:
+        pass
+
 
 def run_with_progress(
     label: str,
