@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import subprocess
 from collections.abc import Callable
-from importlib import resources
 from pathlib import Path
 from typing import Any, TypeVar
 
@@ -18,7 +17,7 @@ from PySide6.QtCore import Qt
 from usdb_syncer import utils
 from usdb_syncer.gui import events, icons, theme
 from usdb_syncer.gui.forms.PreviewDialog import Ui_Dialog
-from usdb_syncer.gui.resources import audio
+from usdb_syncer.gui.resources.audio import METRONOME_TICK_WAV
 from usdb_syncer.logger import song_logger
 from usdb_syncer.song_txt import SongTxt, tracks
 from usdb_syncer.song_txt.auxiliaries import BeatsPerMinute
@@ -27,6 +26,7 @@ from usdb_syncer.usdb_song import UsdbSong
 _PITCH_ROWS = 16
 _EPS_SECS = 0.01
 _INT16_MAX = 2**15 - 1
+_INT16_MIN = -(2**15)
 _SAMPLE_RATE = 44100
 
 
@@ -512,8 +512,7 @@ class _AudioPlayer:
 
     @classmethod
     def new(cls, source: Path, state: _PlayState) -> _AudioPlayer:
-        wav = resources.files(audio).joinpath("metronome-tick.wav")
-        data, _samplerate = soundfile.read(wav, dtype="float32")
+        data, _samplerate = soundfile.read(METRONOME_TICK_WAV, dtype="float32")
         player = cls(source=source, state=state, tick_data=data)
         player._start_ffmpeg()
         player._start_stream()
@@ -547,7 +546,7 @@ class _AudioPlayer:
             "-ss",
             str(start_secs),
             "-i",
-            self._source,
+            str(self._source),
             "-f",
             "s16le",
             "-acodec",
@@ -623,4 +622,4 @@ class _AudioPlayer:
         ]
         if tick_end <= end_sample:
             self._state.next_tick_idx += 1
-        return np.clip(data * _INT16_MAX, -32768, 32767).astype(np.int16)
+        return np.clip(data * _INT16_MAX, _INT16_MIN, _INT16_MAX).astype(np.int16)

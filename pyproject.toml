@@ -76,7 +76,7 @@ substitution.files = []
 [tool.ruff]
 extend-exclude = [
     "forms",
-    "resources",
+    "qt",
 ]
 target-version = "py312"
 preview = true

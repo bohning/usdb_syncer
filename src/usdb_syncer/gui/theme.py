@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import abc
 import enum
-from importlib import resources
 from typing import assert_never
 
 import attrs
@@ -168,7 +167,7 @@ class DarkTheme(Theme):
     on_secondary: QColor = QColorConstants.Svg.black
     on_background: QColor = QColorConstants.Svg.white
     on_surface: QColor = QColorConstants.Svg.white
-    _style_template = resources.files(styles).joinpath("dark.qss")
+    _style_template = styles.DARK_QSS
     primary_swatch: Swatch = attrs.field(init=False)
     primary: QColor = attrs.field(init=False)
     base_surface: QColor = attrs.field(init=False)

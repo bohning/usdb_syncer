@@ -3,7 +3,6 @@
 from collections import defaultdict
 from collections.abc import Iterable
 from dataclasses import dataclass
-from importlib import resources
 from typing import assert_never
 
 from reportlab.lib import colors
@@ -21,14 +20,12 @@ from usdb_syncer.gui.song_table.column import Column
 from usdb_syncer.settings import ReportPDFOrientation, ReportPDFPagesize
 from usdb_syncer.usdb_song import UsdbSong
 
-NOTOSANS_BLACK = "NotoSans-Black"
-NOTOSANS_BOLD = "NotoSans-Bold"
-NOTOSANS_REGULAR = "NotoSans-Regular"
-
-
-_font_files = resources.files(fonts)
-for name in (NOTOSANS_BLACK, NOTOSANS_BOLD, NOTOSANS_REGULAR):
-    pdfmetrics.registerFont(TTFont(name, _font_files.joinpath(f"{name}.ttf")))
+for font in (
+    fonts.NOTOSANS_BLACK_TTF,
+    fonts.NOTOSANS_BOLD_TTF,
+    fonts.NOTOSANS_REGULAR_TTF,
+):
+    pdfmetrics.registerFont(TTFont(font.name, font))
 
 
 class Bookmark(Flowable):
@@ -120,7 +117,7 @@ def _create_paragraph_styles(base_font_size: int) -> ParagraphStyles:
     return ParagraphStyles(
         initial=ParagraphStyle(
             "Initial",
-            fontName=NOTOSANS_BLACK,
+            fontName=fonts.NOTOSANS_BLACK_TTF.name,
             fontSize=base_font_size * 3,
             textColor=colors.green,
             spaceBefore=base_font_size * 2.4,
@@ -128,7 +125,7 @@ def _create_paragraph_styles(base_font_size: int) -> ParagraphStyles:
         ),
         artist=ParagraphStyle(
             "Artist",
-            fontName=NOTOSANS_BOLD,
+            fontName=fonts.NOTOSANS_BOLD_TTF.name,
             fontSize=base_font_size * 1.2,
             spaceBefore=base_font_size * 1.2,
             leading=base_font_size * 1.6,
@@ -137,7 +134,7 @@ def _create_paragraph_styles(base_font_size: int) -> ParagraphStyles:
         ),
         entry=ParagraphStyle(
             "Entry",
-            fontName=NOTOSANS_REGULAR,
+            fontName=fonts.NOTOSANS_REGULAR_TTF.name,
             fontSize=base_font_size,
             leftIndent=base_font_size,
             leading=base_font_size * 1.4,
@@ -211,7 +208,7 @@ def _format_song_entry(  # noqa: C901
 def _add_page_number(canvas: Canvas, doc: BaseDocTemplate) -> None:
     canvas.saveState()
     page_num: str = str(doc.page)
-    canvas.setFont(NOTOSANS_REGULAR, 8)
+    canvas.setFont(fonts.NOTOSANS_REGULAR_TTF.name, 8)
     canvas.setFillColor(colors.grey)
     canvas.drawCentredString(doc.pagesize[0] / 2, doc.bottomMargin * 0.5, page_num)
     canvas.restoreState()
