@@ -34,19 +34,6 @@ _RELATIVE_TEXT_ROW_HEIGHT = 2
 _EPS_SECS = 0.01
 
 
-def load_preview_dialog(parent: QtWidgets.QWidget, song: UsdbSong) -> None:
-    if not (txt_path := song.txt_path()) or not (audio_path := song.audio_path()):
-        QtWidgets.QMessageBox.warning(
-            parent, "Aborted", "Song must have txt and audio files!"
-        )
-        return
-    logger = song_logger(song.song_id)
-    if not (txt := SongTxt.try_from_file(txt_path, logger)):
-        QtWidgets.QMessageBox.warning(parent, "Aborted", "Txt file is invalid!")
-        return
-    PreviewDialog(parent, txt, audio_path).show()
-
-
 T = TypeVar("T", int, float)
 
 
@@ -86,6 +73,19 @@ class PreviewDialog(Ui_Dialog, QtWidgets.QDialog):
 
         self._on_theme_changed(theme.Theme.from_settings())
         events.ThemeChanged.subscribe(lambda e: self._on_theme_changed(e.theme))
+
+    @classmethod
+    def load(cls, parent: QtWidgets.QWidget, song: UsdbSong) -> None:
+        if not (txt_path := song.txt_path()) or not (audio_path := song.audio_path()):
+            QtWidgets.QMessageBox.warning(
+                parent, "Aborted", "Song must have txt and audio files!"
+            )
+            return
+        logger = song_logger(song.song_id)
+        if not (txt := SongTxt.try_from_file(txt_path, logger)):
+            QtWidgets.QMessageBox.warning(parent, "Aborted", "Txt file is invalid!")
+            return
+        cls(parent, txt, audio_path).show()
 
     def _update_time(self) -> None:
         # only get current time from playback stream if not currently seeking
@@ -359,6 +359,7 @@ class _LinePaintContext:
 
 class _LineView(QtWidgets.QWidget):
     _POINTER_SIZE_IN_ROWS = 1.5
+    _GRID_LINE_WIDTH = 1
 
     def __init__(self, state: _PlayState, colors: theme.PreviewPalette):
         super().__init__()
@@ -376,7 +377,7 @@ class _LineView(QtWidgets.QWidget):
             self._draw_pointer(painter, ctx)
 
     def _draw_grid(self, painter: QtGui.QPainter, ctx: _LinePaintContext) -> None:
-        painter.setPen(QtGui.QPen(self.colors.grid, 1))
+        painter.setPen(QtGui.QPen(self.colors.grid, self._GRID_LINE_WIDTH))
         for i in range(1, _PITCH_ROWS):
             y = ctx.notes_height - i * ctx.row_height
             painter.drawLine(0, y, ctx.total_width, y)
@@ -387,9 +388,10 @@ class _LineView(QtWidgets.QWidget):
             active = ctx.current_pos > note.start
             painter.setBrush(self.colors.active_note if active else self.colors.note)
             x = round(note.start * ctx.total_width)
-            y = round(note.pitch * ctx.notes_height) - ctx.row_height
+            net_row_height = ctx.row_height - self._GRID_LINE_WIDTH
+            y = round(note.pitch * ctx.notes_height) - net_row_height
             w = round(note.duration * ctx.total_width)
-            painter.drawRoundedRect(x, y, w, ctx.row_height, ctx.radius, ctx.radius)
+            painter.drawRoundedRect(x, y, w, net_row_height, ctx.radius, ctx.radius)
 
     def _draw_text(self, painter: QtGui.QPainter, ctx: _LinePaintContext) -> None:
         font = painter.font()

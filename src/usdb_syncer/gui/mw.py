@@ -16,7 +16,7 @@ from usdb_syncer.gui.comment_dialog import CommentDialog
 from usdb_syncer.gui.debug_console import DebugConsole
 from usdb_syncer.gui.forms.MainWindow import Ui_MainWindow
 from usdb_syncer.gui.meta_tags_dialog import MetaTagsDialog
-from usdb_syncer.gui.preview_dialog import load_preview_dialog
+from usdb_syncer.gui.preview_dialog import PreviewDialog
 from usdb_syncer.gui.progress import run_with_progress
 from usdb_syncer.gui.report_dialog import ReportDialog
 from usdb_syncer.gui.search_tree.tree import FilterTree
@@ -300,7 +300,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
     def _show_preview_dialog(self) -> None:
         song = self.table.current_song()
         if song:
-            ffmpeg_dialog.check_ffmpeg(self, lambda: load_preview_dialog(self, song))
+            ffmpeg_dialog.check_ffmpeg(self, lambda: PreviewDialog.load(self, song))
 
     def _rate_in_usdb(self, stars: int) -> None:
         song = self.table.current_song()
