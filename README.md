@@ -8,16 +8,19 @@
 [![tox](https://github.com/bohning/usdb_syncer/actions/workflows/tox.yaml/badge.svg)](https://github.com/bohning/usdb_syncer/actions/workflows/tox.yaml)
 
 **USDB Syncer** is an app to download and synchronize UltraStar songs hosted on [USDB](https://usdb.animux.de).
-The project [extensively uses the `#VIDEO` tag](https://github.com/bohning/usdb_syncer/wiki/Meta-Tags#format) to automaticly retrieve the resources (audio, video, images, etc...) to make the UltraStar song complete.
+The project [extensively uses the `#VIDEO` tag](https://github.com/bohning/usdb_syncer/wiki/Meta-Tags#format) to automatically retrieve the resources (audio, video, images, etc...) to make the UltraStar song complete.
 Once a song is downloaded it can be synchronized (new notes, audio, video, images...) by redownloading the song. If a resource didn't change it's skipped.
 
 ## Installation
 
 There are three ways to run USDB Syncer:
 
-1. To run from source, see [Development](#Development).
+1. To run from source, see [Development](#development).
 2. Use your favourite package manager to install the Python package, e.g. [pipx](https://pipx.pypa.io/stable/): `pipx install usdb_syncer`
 3. We provide [ready-to-run executables](https://github.com/bohning/usdb_syncer/releases) for all major operating systems.
+
+> [!IMPORTANT]  
+> Linux users should check [Linux Compatibility](#linux-compatibility) as additional packages might be required.
 
 ## Development
 
@@ -38,16 +41,6 @@ Clone the project:
 git clone https://github.com/bohning/usdb_syncer.git
 cd usdb_syncer
 ```
-
-<details>
-
-<summary>If you're on <b>Linux</b>, make sure required packages for Qt are installed.</summary>
-
-```bash
-apt install -y libgstreamer-gl1.0-0 libxcb-glx0 libxcb-icccm4 libxcb-image0 libxcb-keysyms1 libxcb-randr0 libxcb-render-util0 libxcb-render0 libxcb-shape0 libxcb-shm0 libxcb-sync1 libxcb-util1 libxcb-xfixes0 libxcb1 libxkbcommon-dev libxkbcommon-x11-0 libxcb-cursor0 libva-dev libva-drm2 libva-x11-2
-```
-
-</details>
 
 Now make sure the Python 3.12 environment you installed Poetry to is activated and run:
 
@@ -95,6 +88,10 @@ versions according to the following scheme:
 We will try to avoid `MAJOR` version increments whenever possible, but since the project is still in the
 startup phase, they cannot be completely ruled out.
 
+## Addons
+
+**USDB Syncer** supports simple addons. Consult `addons/README.md` for detailed information.
+
 ## Support
 
 <a href="https://www.buymeacoffee.com/usdbsyncer"><img src="https://img.buymeacoffee.com/button-api/?text=Buy us some vegan pizza!&emoji=🍕&slug=usdbsyncer&button_colour=40DCA5&font_colour=ffffff&font_family=Cookie&outline_colour=000000&coffee_colour=FFDD00" /></a>
@@ -112,7 +109,23 @@ startup phase, they cannot be completely ruled out.
 - One user using KDE Plasma experiencing an [issue with the menu bar](https://github.com/bohning/usdb_syncer/issues/198)
   solved it by forcing XWayland instead of Wayland being used: `env WAYLAND_DISPLAY=`.
 
-## Linux Distributions
+## Linux Compatibility
+
+### Running from source or using the official python package
+
+Qt requires some additional packages on linux that might not be installed by default.
+The following command should include everything needed.
+
+```bash
+apt install -y libgstreamer-gl1.0-0 libxcb-glx0 libxcb-icccm4 libxcb-image0 libxcb-keysyms1 libxcb-randr0 libxcb-render-util0 libxcb-render0 libxcb-shape0 libxcb-shm0 libxcb-sync1 libxcb-util1 libxcb-xfixes0 libxcb1 libxkbcommon-dev libxkbcommon-x11-0 libxcb-cursor0 libva-dev libva-drm2 libva-x11-2
+```
+
+If this doesn't work, you might also check:
+
+- https://doc.qt.io/qt-6/linux.html#requirements-for-development-host
+- https://doc.qt.io/qt-6/linux-requirements.html
+
+### Binaries
 
 Linux bundles are generated on AlmaLinux 9. They should be compatible with any modern distribution. If not, please open an issue.
 
