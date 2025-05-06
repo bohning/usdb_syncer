@@ -54,6 +54,7 @@ class Headers:
     # not rewritten, as it depends on the chosen encoding
     encoding: str | None = None
     comment: str | None = None
+    providedby: str | None = None
     resolution: str | None = None
     tags: str | None = None
 
@@ -126,6 +127,7 @@ class Headers:
                 "p2",
                 "album",
                 "comment",
+                "providedby",
                 "tags",
             )
             if (val := getattr(self, key)) is not None
@@ -224,6 +226,7 @@ def _set_header_value(kwargs: dict[str, Any], header: str, value: str) -> None:
         "p2",
         "encoding",
         "comment",
+        "providedby",
         "resolution",
         "tags",
     ):
