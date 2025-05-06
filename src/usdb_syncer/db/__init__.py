@@ -27,6 +27,12 @@ SCHEMA_VERSION = 6
 # https://www.sqlite.org/limits.html
 _SQL_VARIABLES_LIMIT = 32766
 
+# 1000 is the maximum expression tree depth. Since
+# an sqlite update could change this without us
+# noticing quickly, we're leaving some space.
+# Performance impact is negligible.
+_SQL_SMALLER_THAN_EXPRESSION_TREE = 980
+
 
 class _SqlCache:
     _cache: ClassVar[dict[str, str]] = {}
@@ -820,7 +826,7 @@ class ResourceFileParams:
 
 
 def delete_resource_files(ids: Iterable[tuple[SyncMetaId, ResourceFileKind]]) -> None:
-    for batch in batched(ids, _SQL_VARIABLES_LIMIT // 2):
+    for batch in batched(ids, _SQL_SMALLER_THAN_EXPRESSION_TREE):
         if not batch:
             continue
         conditions = " OR ".join("(sync_meta_id = ? AND kind = ?)" for _ in batch)
