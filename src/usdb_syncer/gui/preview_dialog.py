@@ -92,6 +92,9 @@ class PreviewDialog(Ui_Dialog, QtWidgets.QDialog):
         self.label_start.setText(f"#START: {txt.headers.start or '-'}")
         self.label_end.setText(f"#END: {txt.headers.end or '-'}")
 
+        self.slider_source.valueChanged.connect(self._on_source_volume_changed)
+        self.slider_ticks.valueChanged.connect(self._on_ticks_volume_changed)
+
     @classmethod
     def load(cls, parent: QtWidgets.QWidget, song: UsdbSong) -> None:
         if not (txt_path := song.txt_path()) or not (audio_path := song.audio_path()):
@@ -162,6 +165,14 @@ class PreviewDialog(Ui_Dialog, QtWidgets.QDialog):
         self.button_to_end.setIcon(icons.Icon.SKIP_TO_END.icon(theme.KEY))
         self._song_view.colors = self._line_view.colors = theme.preview_palette()
 
+    def _on_source_volume_changed(self, value: int) -> None:
+        self.label_source_volume.setText(str(value * 10))
+        self._state.source_volume = value / 10
+
+    def _on_ticks_volume_changed(self, value: int) -> None:
+        self.label_ticks_volume.setText(str(value * 10))
+        self._state.ticks_volume = value / 10
+
     def closeEvent(self, event: QtGui.QCloseEvent) -> None:  # noqa: N802
         self._player.stop()
         event.accept()
@@ -202,6 +213,9 @@ class _PlayState:
     seeking: bool = False
     paused: bool = False
     next_tick_idx: int = 0
+
+    source_volume: float = 1.0
+    ticks_volume: float = 1.0
 
     @classmethod
     def new(cls, txt: SongTxt, audio: Path) -> _PlayState:
@@ -591,7 +605,9 @@ class _AudioPlayer:
             self._stream.stop()
             return
         array = np.frombuffer(data, dtype=np.int16).reshape(-1, self._CHANNELS)
+        array = array.astype(np.float32) / _INT16_MAX * self._state.source_volume
         array = self._mix_in_tick(array, frames)
+        array = np.clip(array * _INT16_MAX, _INT16_MIN, _INT16_MAX).astype(np.int16)
         outdata[:] = array
         self._state.samples_played += frames
 
@@ -615,11 +631,10 @@ class _AudioPlayer:
         tick_offset = overlap_start - tick_start
         length = overlap_end - overlap_start
 
-        data = data.astype(np.float32) / _INT16_MAX
-
-        data[main_offset : main_offset + length] += self._tick_data[
-            tick_offset : tick_offset + length
-        ]
+        data[main_offset : main_offset + length] += (
+            self._tick_data[tick_offset : tick_offset + length]
+            * self._state.ticks_volume
+        )
         if tick_end <= end_sample:
             self._state.next_tick_idx += 1
-        return np.clip(data * _INT16_MAX, _INT16_MIN, _INT16_MAX).astype(np.int16)
+        return data
