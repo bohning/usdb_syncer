@@ -60,7 +60,6 @@ pyinstaller-hooks-contrib = "*"
 altgraph = "*"
 macholib = {version = "*", markers="sys_platform == 'darwin'"}
 pywin32-ctypes = {version = "*", markers="sys_platform == 'win32'"}
-setuptools = { version = "^75.8.0", optional = true }
 
 [tool.poetry.scripts]
 usdb_syncer = "usdb_syncer.gui:main"
