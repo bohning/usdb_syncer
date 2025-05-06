@@ -25,7 +25,6 @@ attrs = "*"
 beautifulsoup4 = "*"
 ffmpeg-normalize = ">=1.27"
 filetype = "*"
-importlib-metadata = "*"
 keyring = "*"
 lxml = "*"
 mutagen = "*"
@@ -36,7 +35,6 @@ reportlab = "*"
 requests = "*"
 rookiepy = "^0.5.3"
 send2trash = "*"
-setuptools = "^75.8.0"
 unidecode = "*"
 yt-dlp = {version = "*", extras = ["default", "curl_cffi"]}
 
@@ -45,7 +43,6 @@ tox = "*"
 # lint
 ruff = "0.11.6"
 mypy = "*"
-types-setuptools = "*"
 types-requests = "*"
 # test
 pytest = "*"
