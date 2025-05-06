@@ -820,7 +820,10 @@ class ResourceFileParams:
 
 
 def delete_resource_files(ids: Iterable[tuple[SyncMetaId, ResourceFileKind]]) -> None:
-    for batch in batched(ids, _SQL_VARIABLES_LIMIT // 2):
+    for batch in batched(ids, 980):  # 998 is the maximum batch size we can use. Since
+        # an sqlite update could change this without us
+        # noticing quickly, we're leaving some space.
+        # Performance impact is negligible.
         if not batch:
             continue
         conditions = " OR ".join("(sync_meta_id = ? AND kind = ?)" for _ in batch)
