@@ -166,12 +166,15 @@ class PreviewDialog(Ui_Dialog, QtWidgets.QDialog):
         self._song_view.colors = self._line_view.colors = theme.preview_palette()
 
     def _on_source_volume_changed(self, value: int) -> None:
-        self.label_source_volume.setText(str(value * 10))
-        self._state.source_volume = value / 10
+        # ticks are in 10% steps
+        value = value * 10
+        self.label_source_volume.setText(str(value))
+        self._state.source_volume = _percentage_to_amplitude_factor(value)
 
     def _on_ticks_volume_changed(self, value: int) -> None:
-        self.label_ticks_volume.setText(str(value * 10))
-        self._state.ticks_volume = value / 10
+        value = value * 10
+        self.label_ticks_volume.setText(str(value))
+        self._state.ticks_volume = _percentage_to_amplitude_factor(value)
 
     def closeEvent(self, event: QtGui.QCloseEvent) -> None:  # noqa: N802
         self._player.stop()
@@ -638,3 +641,13 @@ class _AudioPlayer:
         if tick_end <= end_sample:
             self._state.next_tick_idx += 1
         return data
+
+
+def _percentage_to_amplitude_factor(value: int) -> float:
+    """Given a percentage of volume, return the amplitude factor.
+
+    - 0%   -> silence
+    - 100% -> original
+    - 200% -> double perceived loudness, i.e. +10dB
+    """
+    return 10 ** ((value / 100 - 1) / 2) if value > 0 else 0
