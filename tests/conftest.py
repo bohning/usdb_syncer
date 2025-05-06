@@ -4,12 +4,39 @@ import datetime
 from pathlib import Path
 
 import pytest
+from _pytest.config import Config
+from _pytest.config.argparsing import Parser
+from _pytest.nodes import Item
 
 from usdb_syncer import SongId, SyncMetaId
 from usdb_syncer.meta_tags import ImageMetaTags, MetaTags
 from usdb_syncer.sync_meta import ResourceFile, SyncMeta
 from usdb_syncer.usdb_scraper import SongDetails
 from usdb_syncer.usdb_song import UsdbSong
+
+
+# taken from https://docs.pytest.org/en/latest/example/simple.html#control-skipping-of-tests-according-to-command-line-option
+def pytest_addoption(parser: Parser) -> None:
+    parser.addoption(
+        "--runslow", action="store_true", default=False, help="run slow tests"
+    )
+
+
+def pytest_configure(config: Config) -> None:
+    config.addinivalue_line("markers", "slow: mark test as slow to run")
+
+
+def pytest_collection_modifyitems(config: Config, items: list[Item]) -> None:
+    if config.getoption("--runslow"):
+        # --runslow given in cli: do not skip slow tests
+        return
+    skip_slow = pytest.mark.skip(reason="need --runslow option to run")
+    for item in items:
+        if "slow" in item.keywords:
+            item.add_marker(skip_slow)
+
+
+#
 
 
 @pytest.fixture(scope="session", name="resource_dir")
