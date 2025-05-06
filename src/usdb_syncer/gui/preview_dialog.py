@@ -54,46 +54,14 @@ class PreviewDialog(Ui_Dialog, QtWidgets.QDialog):
         super().__init__(parent=parent)
         self.setupUi(self)
         self.setWindowTitle(txt.headers.artist_title_str())
-
         self._state = _PlayState.new(txt, audio)
-        palette = theme.Theme.from_settings().preview_palette()
-        self._song_view = _SongView(self._state, palette, self._on_drag)
-        self.layout_main.insertWidget(0, self._song_view, 10)
-        self._line_view = _LineView(self._state, palette)
-        self.layout_main.insertWidget(1, self._line_view, 10)
-        self.layout_main.insertStretch(2, 1)
         self._player = _AudioPlayer.new(audio, self._state)
-        self._update_timer = QtCore.QTimer(self, interval=self._REFRESH_RATE_MS)
-        self._update_timer.timeout.connect(self._update_time)
-        self._update_timer.start()
-
-        self.button_pause.toggled.connect(self._on_pause_toggled)
-        self._seek_timer = QtCore.QTimer(
-            self, singleShot=True, interval=self._DOUBLECLICK_DELAY_MS
-        )
-        self._seek_timer.timeout.connect(self._on_seek_timeout)
-        self.button_to_start.pressed.connect(self._on_seek_start)
-        self.button_backward.pressed.connect(self._on_seek_backward)
-        self.button_forward.pressed.connect(self._on_seek_forward)
-        self.button_to_end.pressed.connect(self._on_seek_end)
-
+        self._setup_views()
+        self._set_song_info(txt, cover)
+        self._connect_ui_inputs()
+        self._setup_timers()
         self._on_theme_changed(theme.Theme.from_settings())
         events.ThemeChanged.subscribe(lambda e: self._on_theme_changed(e.theme))
-
-        if cover:
-            label = _SquareLabel("")
-            label.setScaledContents(True)
-            label.setPixmap(QtGui.QPixmap(cover))
-            label.setMinimumSize(self._MIN_COVER_SIZE, self._MIN_COVER_SIZE)
-            label.setMaximumSize(self._MAX_COVER_SIZE, self._MAX_COVER_SIZE)
-            self.layout_extra.insertWidget(0, label)
-        self.label_bpm.setText(f"#BPM: {txt.headers.bpm}")
-        self.label_gap.setText(f"#GAP: {txt.headers.gap}")
-        self.label_start.setText(f"#START: {txt.headers.start or '-'}")
-        self.label_end.setText(f"#END: {txt.headers.end or '-'}")
-
-        self.slider_source.valueChanged.connect(self._on_source_volume_changed)
-        self.slider_ticks.valueChanged.connect(self._on_ticks_volume_changed)
 
     @classmethod
     def load(cls, parent: QtWidgets.QWidget, song: UsdbSong) -> None:
@@ -107,6 +75,45 @@ class PreviewDialog(Ui_Dialog, QtWidgets.QDialog):
             QtWidgets.QMessageBox.warning(parent, "Aborted", "Txt file is invalid!")
             return
         cls(parent, txt, audio_path, song.cover_path()).show()
+
+    def _setup_views(self) -> None:
+        palette = theme.Theme.from_settings().preview_palette()
+        self._song_view = _SongView(self._state, palette, self._on_drag)
+        self.layout_main.insertWidget(0, self._song_view, 10)
+        self._line_view = _LineView(self._state, palette)
+        self.layout_main.insertWidget(1, self._line_view, 10)
+        self.layout_main.insertStretch(2, 1)
+
+    def _connect_ui_inputs(self) -> None:
+        self.button_pause.toggled.connect(self._on_pause_toggled)
+        self.button_to_start.pressed.connect(self._on_seek_start)
+        self.button_backward.pressed.connect(self._on_seek_backward)
+        self.button_forward.pressed.connect(self._on_seek_forward)
+        self.button_to_end.pressed.connect(self._on_seek_end)
+        self.slider_source.valueChanged.connect(self._on_source_volume_changed)
+        self.slider_ticks.valueChanged.connect(self._on_ticks_volume_changed)
+
+    def _set_song_info(self, txt: SongTxt, cover: Path | None) -> None:
+        if cover:
+            label = _SquareLabel("")
+            label.setScaledContents(True)
+            label.setPixmap(QtGui.QPixmap(cover))
+            label.setMinimumSize(self._MIN_COVER_SIZE, self._MIN_COVER_SIZE)
+            label.setMaximumSize(self._MAX_COVER_SIZE, self._MAX_COVER_SIZE)
+            self.layout_extra.insertWidget(0, label)
+        self.label_bpm.setText(f"#BPM: {txt.headers.bpm}")
+        self.label_gap.setText(f"#GAP: {txt.headers.gap}")
+        self.label_start.setText(f"#START: {txt.headers.start or '-'}")
+        self.label_end.setText(f"#END: {txt.headers.end or '-'}")
+
+    def _setup_timers(self) -> None:
+        self._update_timer = QtCore.QTimer(self, interval=self._REFRESH_RATE_MS)
+        self._update_timer.timeout.connect(self._update_time)
+        self._update_timer.start()
+        self._seek_timer = QtCore.QTimer(
+            self, singleShot=True, interval=self._DOUBLECLICK_DELAY_MS
+        )
+        self._seek_timer.timeout.connect(self._on_seek_timeout)
 
     def _update_time(self) -> None:
         # only get current time from playback stream if not currently seeking
@@ -608,39 +615,43 @@ class _AudioPlayer:
             self._stream.stop()
             return
         array = np.frombuffer(data, dtype=np.int16).reshape(-1, self._CHANNELS)
-        array = array.astype(np.float32) / _INT16_MAX * self._state.source_volume
-        array = self._mix_in_tick(array, frames)
-        array = np.clip(array * _INT16_MAX, _INT16_MIN, _INT16_MAX).astype(np.int16)
-        outdata[:] = array
+        outdata[:] = self._mix_audio(array, frames)
         self._state.samples_played += frames
 
-    def _mix_in_tick(self, data: np.ndarray, frames: int) -> np.ndarray:
-        if self._state.next_tick_idx >= len(self._state.ticks):
+    def _mix_audio(self, data: np.ndarray, frames: int) -> np.ndarray:
+        ticks = self._get_tick_start_and_data(frames)
+        if ticks is None and self._state.source_volume == 1.0:
+            # nothing to mix; skip conversion
             return data
+        data = data.astype(np.float32) / _INT16_MAX
+        data *= self._state.source_volume
+        if ticks is not None:
+            tick_start, tick_data = ticks
+            data[tick_start : tick_start + len(tick_data)] += tick_data
+        return np.clip(data * _INT16_MAX, _INT16_MIN, _INT16_MAX).astype(np.int16)
+
+    def _get_tick_start_and_data(self, frames: int) -> tuple[int, np.ndarray] | None:
+        if self._state.next_tick_idx >= len(self._state.ticks):
+            return None
+        if self._state.ticks_volume == 0.0:
+            return None
 
         start_sample = self._state.samples_played
         end_sample = start_sample + frames
-
         tick_start = self._state.ticks[self._state.next_tick_idx]
         tick_end = tick_start + len(self._tick_data)
-
         overlap_start = max(start_sample, tick_start)
         overlap_end = min(end_sample, tick_end)
-
         if overlap_start >= overlap_end:
-            return data
-
+            return None
         main_offset = overlap_start - start_sample
         tick_offset = overlap_start - tick_start
         length = overlap_end - overlap_start
 
-        data[main_offset : main_offset + length] += (
-            self._tick_data[tick_offset : tick_offset + length]
-            * self._state.ticks_volume
-        )
         if tick_end <= end_sample:
             self._state.next_tick_idx += 1
-        return data
+        data = self._tick_data[tick_offset : tick_offset + length]
+        return main_offset, data * self._state.ticks_volume
 
 
 def _percentage_to_amplitude_factor(value: int) -> float:
