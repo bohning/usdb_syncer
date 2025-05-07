@@ -231,20 +231,22 @@ class _SquareLabel(QtWidgets.QLabel):
 class _PlayState:
     """State of the current playback."""
 
+    # shared state
     lines: list[_Line]
     song_secs: float
     seeking: bool = False
     paused: bool = False
 
+    # video state
     current_video_line_idx: int = 0
     current_video_line: _Line = attrs.field(init=False)
     current_video_time: float = attrs.field(init=False)
     current_rel_pos_in_line: float = 0.0
 
+    # audio state
     current_sample: int = 0
     _audio_note_iter: Generator[_Note, None, None] = attrs.field(init=False)
     current_audio_note: _Note | None = attrs.field(init=False)
-
     source_volume: float = 0.0
     ticks_volume: float = 0.0
     pitch_volume: float = 0.0
@@ -312,9 +314,8 @@ class _Line:
     end: float
     duration: float
     line_break: float | None
-    rel_start: float
-    rel_end: float
-    rel_duration: float
+    rel_x_pos_in_song: float
+    rel_width_in_song: float
     text: str
 
     @classmethod
@@ -335,9 +336,8 @@ class _Line:
             start=start,
             end=end,
             duration=duration,
-            rel_start=start / song_duration,
-            rel_end=end / song_duration,
-            rel_duration=duration / song_duration,
+            rel_x_pos_in_song=start / song_duration,
+            rel_width_in_song=duration / song_duration,
             line_break=line_break,
             text="".join(n.text for n in line.notes).strip(),
         )
@@ -418,8 +418,8 @@ class _SongView(QtWidgets.QWidget):
             painter.setPen(Qt.PenStyle.NoPen)
             painter.setBrush(self.colors.line)
             for line in self._state.lines:
-                x = round(line.rel_start * width)
-                w = round(line.rel_duration * width)
+                x = round(line.rel_x_pos_in_song * width)
+                w = round(line.rel_width_in_song * width)
                 painter.drawRect(x, 0, w, height)
 
             painter.setPen(QtGui.QPen(self.colors.needle, self._NEEDLE_WIDTH))
