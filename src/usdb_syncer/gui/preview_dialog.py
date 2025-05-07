@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import functools
 import subprocess
-from collections.abc import Callable
+from collections.abc import Callable, Generator
 from pathlib import Path
 from typing import Any, TypeVar
 
@@ -222,7 +222,6 @@ class _PlayState:
     """State of the current playback."""
 
     lines: list[_Line]
-    ticks: list[int]
     current_idx: int
     current_line: _Line
     current_time: float
@@ -231,10 +230,9 @@ class _PlayState:
     song_secs: float
     seeking: bool = False
     paused: bool = False
-    next_tick_idx: int = 0
 
-    _current_line_idx_by_frame: int = 0
-    _current_note_idx_by_frame: int = 0
+    _audio_note_iter: Generator[_Note, None, None] = attrs.field(init=False)
+    current_audio_note: _Note | None = attrs.field(init=False)
 
     source_volume: float = 0.0
     ticks_volume: float = 0.0
@@ -248,10 +246,8 @@ class _PlayState:
             _Line.new(line, txt.headers.gap, txt.headers.bpm, song_secs)
             for line in track
         ]
-        ticks = _note_start_samples(track, txt.headers.gap, txt.headers.bpm)
         return cls(
             lines=lines,
-            ticks=ticks,
             current_idx=0,
             current_line=lines[0],
             current_time=lines[0].start,
@@ -259,6 +255,10 @@ class _PlayState:
             samples_played=0,
             song_secs=song_secs,
         )
+
+    def __attrs_post_init__(self) -> None:
+        self._audio_note_iter = self._iter_notes()
+        self.current_audio_note = next(self._audio_note_iter, None)
 
     def calculate_time_from_samples(self) -> None:
         self.current_time = self.samples_played / _SAMPLE_RATE
@@ -276,43 +276,26 @@ class _PlayState:
             if li.line_break is None or li.line_break > self.current_time
         )
 
-    def get_current_note_by_sample(self) -> _Note | None:
-        if self._current_line_idx_by_frame < len(self.lines):
-            return self.lines[self._current_line_idx_by_frame].notes[
-                self._current_note_idx_by_frame
-            ]
-        return None
-
     def advance_samples_played(self, delta: int) -> None:
         self.samples_played += delta
         self._advance_to_next_unplayed_note()
 
     def set_samples_played_from_secs(self, secs: float) -> None:
         self.samples_played = int(secs * _SAMPLE_RATE)
-        self._current_line_idx_by_frame = 0
-        self._current_note_idx_by_frame = 0
+        self._audio_note_iter = self._iter_notes()
+        self.current_audio_note = next(self._audio_note_iter, None)
         self._advance_to_next_unplayed_note()
 
     def _advance_to_next_unplayed_note(self) -> None:
         while (
-            note := self.get_current_note_by_sample()
-        ) and self.samples_played > note.end_sample:
-            if self._current_note_idx_by_frame + 1 < len(
-                self.lines[self._current_line_idx_by_frame].notes
-            ):
-                self._current_note_idx_by_frame += 1
-            else:
-                self._current_line_idx_by_frame += 1
-                self._current_note_idx_by_frame = 0
+            self.current_audio_note
+            and self.samples_played > self.current_audio_note.end_sample
+        ):
+            self.current_audio_note = next(self._audio_note_iter, None)
 
-
-def _note_start_samples(
-    lines: list[tracks.Line], gap: int, bpm: BeatsPerMinute
-) -> list[int]:
-    """Returns the first sample for every note."""
-    return [
-        _beat_to_sample(note.start, gap, bpm) for line in lines for note in line.notes
-    ]
+    def _iter_notes(self) -> Generator[_Note, None, None]:
+        for line in self.lines:
+            yield from line.notes
 
 
 def _beat_to_sample(beat: int, gap: int, bpm: BeatsPerMinute) -> int:
@@ -368,7 +351,7 @@ class _Note:
     duration: float
     pitch: float
 
-    us_pitch: int
+    freq: float
     start_sample: int
     end_sample: int
 
@@ -392,7 +375,7 @@ class _Note:
             start=start,
             duration=duration,
             pitch=pitch,
-            us_pitch=note.pitch,
+            freq=_ultrastar_pitch_to_freq(note.pitch),
             start_sample=_beat_to_sample(note.start, gap, bpm),
             end_sample=_beat_to_sample(note.end(), gap, bpm),
         )
@@ -618,14 +601,6 @@ class _AudioPlayer:
 
     def _start_ffmpeg(self, start_secs: float = 0.0) -> None:
         self._state.set_samples_played_from_secs(start_secs)
-        self._state.next_tick_idx = next(
-            (
-                i
-                for i, t in enumerate(self._state.ticks)
-                if t >= self._state.samples_played
-            ),
-            len(self._state.ticks),
-        )
         cmd = [
             "ffmpeg",
             "-ss",
@@ -696,7 +671,7 @@ class _AudioPlayer:
         return np.clip(data * _INT16_MAX, _INT16_MIN, _INT16_MAX).astype(np.int16)
 
     def _get_tick_start_and_data(self, frames: int) -> tuple[int, np.ndarray] | None:
-        if (note := self._state.get_current_note_by_sample()) is None:
+        if (note := self._state.current_audio_note) is None:
             return None
         if self._state.ticks_volume == 0.0:
             return None
@@ -716,7 +691,7 @@ class _AudioPlayer:
         return main_offset, data * self._state.ticks_volume
 
     def _get_pitch_start_and_data(self, frames: int) -> tuple[int, np.ndarray] | None:
-        if (note := self._state.get_current_note_by_sample()) is None:
+        if (note := self._state.current_audio_note) is None:
             return None
         if self._state.pitch_volume == 0.0:
             return None
@@ -732,7 +707,7 @@ class _AudioPlayer:
         length = overlap_end - overlap_start
 
         data = _synth_note(
-            note.us_pitch, note.end_sample - note.start_sample, self._CHANNELS
+            note.freq, note.end_sample - note.start_sample, self._CHANNELS
         )[pitch_offset : pitch_offset + length]
         return main_offset, data * self._state.pitch_volume
 
@@ -764,8 +739,7 @@ def _ultrastar_pitch_to_freq(pitch: int) -> float:
 
 
 @functools.lru_cache(1)
-def _synth_note(pitch: int, samples: int, channels: int) -> np.ndarray:
-    freq = _ultrastar_pitch_to_freq(pitch)
+def _synth_note(freq: float, samples: int, channels: int) -> np.ndarray:
     t = np.linspace(0, samples / _SAMPLE_RATE, samples, endpoint=False)
     waveform = _SYNTH_AMPLITUDE * np.sin(2 * np.pi * freq * t)
     envelope = _get_synth_envelope(samples)
