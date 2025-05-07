@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import functools
 import subprocess
 from collections.abc import Callable
 from pathlib import Path
@@ -90,8 +91,12 @@ class PreviewDialog(Ui_Dialog, QtWidgets.QDialog):
         self.button_backward.pressed.connect(self._on_seek_backward)
         self.button_forward.pressed.connect(self._on_seek_forward)
         self.button_to_end.pressed.connect(self._on_seek_end)
+        self._on_source_volume_changed(self.slider_source.value())
+        self._on_ticks_volume_changed(self.slider_ticks.value())
+        self._on_pitch_volume_changed(self.slider_pitch.value())
         self.slider_source.valueChanged.connect(self._on_source_volume_changed)
         self.slider_ticks.valueChanged.connect(self._on_ticks_volume_changed)
+        self.slider_pitch.valueChanged.connect(self._on_pitch_volume_changed)
 
     def _set_song_info(self, txt: SongTxt, cover: Path | None) -> None:
         if cover:
@@ -183,6 +188,11 @@ class PreviewDialog(Ui_Dialog, QtWidgets.QDialog):
         self.label_ticks_volume.setText(str(value))
         self._state.ticks_volume = _percentage_to_amplitude_factor(value)
 
+    def _on_pitch_volume_changed(self, value: int) -> None:
+        value = value * 10
+        self.label_pitch_volume.setText(str(value))
+        self._state.pitch_volume = _percentage_to_amplitude_factor(value)
+
     def closeEvent(self, event: QtGui.QCloseEvent) -> None:  # noqa: N802
         self._player.stop()
         event.accept()
@@ -211,7 +221,6 @@ class _SquareLabel(QtWidgets.QLabel):
 class _PlayState:
     """State of the current playback."""
 
-    txt: SongTxt
     lines: list[_Line]
     ticks: list[int]
     current_idx: int
@@ -224,8 +233,12 @@ class _PlayState:
     paused: bool = False
     next_tick_idx: int = 0
 
-    source_volume: float = 1.0
-    ticks_volume: float = 1.0
+    _current_line_idx_by_frame: int = 0
+    _current_note_idx_by_frame: int = 0
+
+    source_volume: float = 0.0
+    ticks_volume: float = 0.0
+    pitch_volume: float = 0.0
 
     @classmethod
     def new(cls, txt: SongTxt, audio: Path) -> _PlayState:
@@ -237,7 +250,6 @@ class _PlayState:
         ]
         ticks = _note_start_samples(track, txt.headers.gap, txt.headers.bpm)
         return cls(
-            txt=txt,
             lines=lines,
             ticks=ticks,
             current_idx=0,
@@ -264,16 +276,47 @@ class _PlayState:
             if li.line_break is None or li.line_break > self.current_time
         )
 
+    def get_current_note_by_sample(self) -> _Note | None:
+        if self._current_line_idx_by_frame < len(self.lines):
+            return self.lines[self._current_line_idx_by_frame].notes[
+                self._current_note_idx_by_frame
+            ]
+        return None
+
+    def advance_samples_played(self, delta: int) -> None:
+        self.samples_played += delta
+        self._advance_to_next_unplayed_note()
+
+    def set_samples_played_from_secs(self, secs: float) -> None:
+        self.samples_played = int(secs * _SAMPLE_RATE)
+        self._current_line_idx_by_frame = 0
+        self._current_note_idx_by_frame = 0
+        self._advance_to_next_unplayed_note()
+
+    def _advance_to_next_unplayed_note(self) -> None:
+        while (
+            note := self.get_current_note_by_sample()
+        ) and self.samples_played > note.end_sample:
+            if self._current_note_idx_by_frame + 1 < len(
+                self.lines[self._current_line_idx_by_frame].notes
+            ):
+                self._current_note_idx_by_frame += 1
+            else:
+                self._current_line_idx_by_frame += 1
+                self._current_note_idx_by_frame = 0
+
 
 def _note_start_samples(
     lines: list[tracks.Line], gap: int, bpm: BeatsPerMinute
 ) -> list[int]:
     """Returns the first sample for every note."""
     return [
-        int((gap / 1000 + bpm.beats_to_secs(note.start)) * _SAMPLE_RATE)
-        for line in lines
-        for note in line.notes
+        _beat_to_sample(note.start, gap, bpm) for line in lines for note in line.notes
     ]
+
+
+def _beat_to_sample(beat: int, gap: int, bpm: BeatsPerMinute) -> int:
+    return int((gap / 1000 + bpm.beats_to_secs(beat)) * _SAMPLE_RATE)
 
 
 @attrs.define
@@ -304,7 +347,7 @@ class _Line:
         else:
             line_break = None
         return cls(
-            notes=_Note.from_line(line),
+            notes=_Note.from_line(line, gap, bpm),
             start=start,
             end=end,
             duration=duration,
@@ -318,32 +361,50 @@ class _Line:
 
 @attrs.define
 class _Note:
-    """Information for rendering a note."""
+    """Information for rendering and playing a note."""
 
-    note: tracks.Note
+    text: str
     start: float
     duration: float
     pitch: float
 
+    us_pitch: int
+    start_sample: int
+    end_sample: int
+
     @classmethod
     def new(
-        cls, note: tracks.Note, line_start: int, line_len: int, line_pitch: range
+        cls,
+        note: tracks.Note,
+        line_start: int,
+        line_len: int,
+        line_pitch: range,
+        gap: int,
+        bpm: BeatsPerMinute,
     ) -> _Note:
         start = (note.start - line_start) / line_len
         duration = note.duration / line_len
         # move to the middle of available space
         shift = max(_PITCH_ROWS - len(line_pitch), 0) // 2
         pitch = 1 - (note.pitch - line_pitch.start + shift) / _PITCH_ROWS
-        return cls(note=note, start=start, duration=duration, pitch=pitch)
+        return cls(
+            text=note.text,
+            start=start,
+            duration=duration,
+            pitch=pitch,
+            us_pitch=note.pitch,
+            start_sample=_beat_to_sample(note.start, gap, bpm),
+            end_sample=_beat_to_sample(note.end(), gap, bpm),
+        )
 
     @classmethod
-    def from_line(cls, line: tracks.Line) -> list[_Note]:
+    def from_line(cls, line: tracks.Line, gap: int, bpm: BeatsPerMinute) -> list[_Note]:
         start = line.start()
         duration = line.end() - start
         min_pitch = min(n.pitch for n in line.notes)
         max_pitch = max(n.pitch for n in line.notes)
         pitch = range(min_pitch, max_pitch + 1)
-        return [_Note.new(n, start, duration, pitch) for n in line.notes]
+        return [_Note.new(n, start, duration, pitch, gap, bpm) for n in line.notes]
 
 
 class _SongView(QtWidgets.QWidget):
@@ -491,9 +552,9 @@ class _LineView(QtWidgets.QWidget):
             painter.drawText(
                 QtCore.QRect(text_start, ctx.notes_height, text_width, ctx.text_height),
                 Qt.AlignmentFlag.AlignVCenter,
-                note.note.text,
+                note.text,
             )
-            text_start += font_metrics.horizontalAdvance(note.note.text)
+            text_start += font_metrics.horizontalAdvance(note.text)
 
     def _draw_pointer(self, painter: QtGui.QPainter, ctx: _LinePaintContext) -> None:
         pointer_size = round(ctx.row_height * self._POINTER_SIZE_IN_ROWS)
@@ -556,7 +617,7 @@ class _AudioPlayer:
         self._start_stream()
 
     def _start_ffmpeg(self, start_secs: float = 0.0) -> None:
-        self._state.samples_played = int(start_secs * _SAMPLE_RATE)
+        self._state.set_samples_played_from_secs(start_secs)
         self._state.next_tick_idx = next(
             (
                 i
@@ -616,11 +677,12 @@ class _AudioPlayer:
             return
         array = np.frombuffer(data, dtype=np.int16).reshape(-1, self._CHANNELS)
         outdata[:] = self._mix_audio(array, frames)
-        self._state.samples_played += frames
+        self._state.advance_samples_played(frames)
 
     def _mix_audio(self, data: np.ndarray, frames: int) -> np.ndarray:
         ticks = self._get_tick_start_and_data(frames)
-        if ticks is None and self._state.source_volume == 1.0:
+        pitch = self._get_pitch_start_and_data(frames)
+        if ticks is None and pitch is None and self._state.source_volume == 1.0:
             # nothing to mix; skip conversion
             return data
         data = data.astype(np.float32) / _INT16_MAX
@@ -628,30 +690,51 @@ class _AudioPlayer:
         if ticks is not None:
             tick_start, tick_data = ticks
             data[tick_start : tick_start + len(tick_data)] += tick_data
+        if pitch is not None:
+            pitch_start, pitch_data = pitch
+            data[pitch_start : pitch_start + len(pitch_data)] += pitch_data
         return np.clip(data * _INT16_MAX, _INT16_MIN, _INT16_MAX).astype(np.int16)
 
     def _get_tick_start_and_data(self, frames: int) -> tuple[int, np.ndarray] | None:
-        if self._state.next_tick_idx >= len(self._state.ticks):
+        if (note := self._state.get_current_note_by_sample()) is None:
             return None
         if self._state.ticks_volume == 0.0:
             return None
 
         start_sample = self._state.samples_played
         end_sample = start_sample + frames
-        tick_start = self._state.ticks[self._state.next_tick_idx]
-        tick_end = tick_start + len(self._tick_data)
-        overlap_start = max(start_sample, tick_start)
+        tick_end = note.start_sample + len(self._tick_data)
+        overlap_start = max(start_sample, note.start_sample)
         overlap_end = min(end_sample, tick_end)
         if overlap_start >= overlap_end:
             return None
         main_offset = overlap_start - start_sample
-        tick_offset = overlap_start - tick_start
+        tick_offset = overlap_start - note.start_sample
         length = overlap_end - overlap_start
 
-        if tick_end <= end_sample:
-            self._state.next_tick_idx += 1
         data = self._tick_data[tick_offset : tick_offset + length]
         return main_offset, data * self._state.ticks_volume
+
+    def _get_pitch_start_and_data(self, frames: int) -> tuple[int, np.ndarray] | None:
+        if (note := self._state.get_current_note_by_sample()) is None:
+            return None
+        if self._state.pitch_volume == 0.0:
+            return None
+
+        start_sample = self._state.samples_played
+        end_sample = start_sample + frames
+        overlap_start = max(start_sample, note.start_sample)
+        overlap_end = min(end_sample, note.end_sample)
+        if overlap_start >= overlap_end:
+            return None
+        main_offset = overlap_start - start_sample
+        pitch_offset = overlap_start - note.start_sample
+        length = overlap_end - overlap_start
+
+        data = _synth_note(
+            note.us_pitch, note.end_sample - note.start_sample, self._CHANNELS
+        )[pitch_offset : pitch_offset + length]
+        return main_offset, data * self._state.pitch_volume
 
 
 def _percentage_to_amplitude_factor(value: int) -> float:
@@ -662,3 +745,39 @@ def _percentage_to_amplitude_factor(value: int) -> float:
     - 200% -> double perceived loudness, i.e. +10dB
     """
     return 10 ** ((value / 100 - 1) / 2) if value > 0 else 0
+
+
+_SYNTH_AMPLITUDE = 0.4
+_SYNTH_ATTACK_SECS = 0.01
+_SYNTH_RELEASE_SECS = 0.05
+_SYNTH_ATTACK_SAMPLES = int(_SYNTH_ATTACK_SECS * _SAMPLE_RATE)
+_SYNTH_RELEASE_SAMPLES = int(_SYNTH_RELEASE_SECS * _SAMPLE_RATE)
+
+
+def _ultrastar_to_midi_pitch(pitch: int) -> float:
+    return pitch + 60
+
+
+def _ultrastar_pitch_to_freq(pitch: int) -> float:
+    # https://en.wikipedia.org/wiki/MIDI_tuning_standard
+    return 440.0 * 2 ** ((_ultrastar_to_midi_pitch(pitch) - 69) / 12.0)
+
+
+@functools.lru_cache(1)
+def _synth_note(pitch: int, samples: int, channels: int) -> np.ndarray:
+    freq = _ultrastar_pitch_to_freq(pitch)
+    t = np.linspace(0, samples / _SAMPLE_RATE, samples, endpoint=False)
+    waveform = _SYNTH_AMPLITUDE * np.sin(2 * np.pi * freq * t)
+    envelope = _get_synth_envelope(samples)
+    mono_wave = (waveform * envelope).astype(np.float32)
+    return np.column_stack([mono_wave for _ in range(channels)])
+
+
+def _get_synth_envelope(samples: int) -> np.ndarray:
+    attack_samples = min(_SYNTH_ATTACK_SAMPLES, samples)
+    release_samples = min(_SYNTH_RELEASE_SAMPLES, samples - attack_samples)
+    sustain_samples = samples - (attack_samples + release_samples)
+    attack = np.linspace(0, 1, attack_samples)
+    sustain = np.ones(sustain_samples)
+    release = np.linspace(1, 0, release_samples)
+    return np.concatenate((attack, sustain, release))
