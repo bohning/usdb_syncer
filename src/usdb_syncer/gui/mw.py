@@ -57,6 +57,10 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         self._setup_buttons()
         self._restore_state()
 
+    def _focus_search(self) -> None:
+        self.lineEdit_search.setFocus()
+        self.lineEdit_search.selectAll()
+
     def _setup_statusbar(self) -> None:
         self._status_label = QLabel(self)
         self.statusbar.addWidget(self._status_label)
@@ -148,6 +152,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
 
     def _setup_shortcuts(self) -> None:
         gui_utils.set_shortcut("Ctrl+.", self, lambda: DebugConsole(self).show())
+        gui_utils.set_shortcut("Ctrl+F", self, self._focus_search)
 
     def _setup_song_dir(self) -> None:
         self.song_dir = settings.get_song_dir()
