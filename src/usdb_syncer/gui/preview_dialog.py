@@ -267,7 +267,13 @@ class _PlayState:
             )
             for line in track
         ]
-        return cls(lines=lines, song_duration=song_duration)
+        state = cls(lines=lines, song_duration=song_duration)
+        if txt.headers.previewstart is not None:
+            start = Seconds(txt.headers.previewstart)
+        else:
+            start = lines[0].start
+        state.set_current_video_time(start)
+        return state
 
     def __attrs_post_init__(self) -> None:
         self.current_video_line = self.lines[0]
@@ -626,7 +632,7 @@ class _AudioPlayer:
     def new(cls, source: Path, state: _PlayState) -> _AudioPlayer:
         data, _samplerate = soundfile.read(METRONOME_TICK_WAV, dtype="float32")
         player = cls(source=source, state=state, tick_data=data)
-        player._start_ffmpeg()
+        player._start_ffmpeg(state.current_video_time)
         player._start_stream()
         return player
 
