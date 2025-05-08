@@ -371,6 +371,7 @@ class _Note:
     freq: float
     start_sample: Sample
     end_sample: Sample
+    kind: tracks.NoteKind
 
     @classmethod
     def new(
@@ -389,6 +390,7 @@ class _Note:
         y_pos = Fraction(1 - (note.pitch - line_pitch.start + shift) / _PITCH_ROWS)
         return cls(
             text=note.text,
+            kind=note.kind,
             x_pos=x_pos,
             width=width,
             y_pos=y_pos,
@@ -539,22 +541,38 @@ class _LineView(QtWidgets.QWidget):
     def _draw_notes(self, painter: QtGui.QPainter, ctx: _LinePaintContext) -> None:
         painter.setPen(Qt.PenStyle.NoPen)
         for note in self._state.current_video_line.notes:
-            active = ctx.current_pos > note.x_pos
-            painter.setBrush(self.colors.active_note if active else self.colors.note)
+            painter.setBrush(self._brush_for_note(note, ctx))
             x = round(note.x_pos * ctx.total_width)
             net_row_height = ctx.row_height - self._GRID_LINE_WIDTH
             y = round(note.y_pos * ctx.notes_height) - net_row_height
             w = round(note.width * ctx.total_width)
             painter.drawRoundedRect(x, y, w, net_row_height, ctx.radius, ctx.radius)
 
+    def _brush_for_note(self, note: _Note, ctx: _LinePaintContext) -> QtGui.QBrush:
+        color = (
+            self.colors.active_note
+            if ctx.current_pos > note.x_pos
+            else self.colors.note
+        )
+        style = (
+            Qt.BrushStyle.SolidPattern
+            if note.kind.has_pitch()
+            else Qt.BrushStyle.Dense5Pattern
+        )
+        return QtGui.QBrush(color, style)
+
     def _draw_text(self, painter: QtGui.QPainter, ctx: _LinePaintContext) -> None:
         font = painter.font()
         font.setPixelSize(ctx.text_height * 2 // 3)
-        painter.setFont(font)
         font_metrics = QtGui.QFontMetrics(font)
+        # for simplicity's sake, don't take account for italicization
         text_width = font_metrics.horizontalAdvance(self._state.current_video_line.text)
         text_start = (ctx.total_width - text_width) // 2
+        font.setItalic(True)
+        italic_font_metrics = QtGui.QFontMetrics(font)
         for note in self._state.current_video_line.notes:
+            font.setItalic(not note.kind.has_pitch())
+            painter.setFont(font)
             active = ctx.current_pos > note.x_pos
             painter.setPen(self.colors.active_text if active else self.colors.text)
             painter.drawText(
@@ -562,7 +580,8 @@ class _LineView(QtWidgets.QWidget):
                 Qt.AlignmentFlag.AlignVCenter,
                 note.text,
             )
-            text_start += font_metrics.horizontalAdvance(note.text)
+            metrics = font_metrics if note.kind.has_pitch() else italic_font_metrics
+            text_start += metrics.horizontalAdvance(note.text)
 
     def _draw_pointer(self, painter: QtGui.QPainter, ctx: _LinePaintContext) -> None:
         pointer_size = round(ctx.row_height * self._POINTER_SIZE_IN_ROWS)
@@ -723,6 +742,8 @@ class _AudioPlayer:
         if (note := self._state.current_audio_note) is None:
             return None
         if self._state.pitch_volume == 0.0:
+            return None
+        if not note.kind.has_pitch():
             return None
 
         start_sample = self._state.current_sample
