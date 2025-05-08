@@ -66,6 +66,7 @@ class PreviewDialog(Ui_Dialog, QtWidgets.QDialog):
         super().__init__(parent=parent)
         self.setupUi(self)
         self.setWindowTitle(txt.headers.artist_title_str())
+        self._setup_voice_selection(txt)
         self._state = _PlayState.new(txt, audio)
         self._player = _AudioPlayer.new(audio, self._state)
         self._setup_views()
@@ -88,6 +89,12 @@ class PreviewDialog(Ui_Dialog, QtWidgets.QDialog):
             return
         cls(parent, txt, audio_path, song.cover_path()).show()
 
+    def _setup_voice_selection(self, txt: SongTxt) -> None:
+        self.label_voice.setVisible(bool(txt.notes.track_2))
+        self.comboBox_voice.setVisible(bool(txt.notes.track_2))
+        self.comboBox_voice.addItem(txt.headers.p1 or "P1")
+        self.comboBox_voice.addItem(txt.headers.p2 or "P2")
+
     def _setup_views(self) -> None:
         palette = theme.Theme.from_settings().preview_palette()
         self._song_view = _SongView(self._state, palette, self._on_drag)
@@ -108,6 +115,7 @@ class PreviewDialog(Ui_Dialog, QtWidgets.QDialog):
         self.slider_source.valueChanged.connect(self._on_source_volume_changed)
         self.slider_ticks.valueChanged.connect(self._on_ticks_volume_changed)
         self.slider_pitch.valueChanged.connect(self._on_pitch_volume_changed)
+        self.comboBox_voice.currentIndexChanged.connect(self._state.set_voice)
 
     def _set_song_info(self, txt: SongTxt, cover: Path | None) -> None:
         if cover:
@@ -209,6 +217,9 @@ class PreviewDialog(Ui_Dialog, QtWidgets.QDialog):
         self.label_pitch_volume.setText(str(value))
         self._state.pitch_volume = _percentage_to_amplitude_factor(value)
 
+    def _on_voice_changed(self, voice: int) -> None:
+        pass
+
     def closeEvent(self, event: QtGui.QCloseEvent) -> None:  # noqa: N802
         self._player.stop()
         event.accept()
@@ -238,7 +249,8 @@ class _PlayState:
     """State of the current playback."""
 
     # shared state
-    lines: list[_Line]
+    _tracks: list[list[_Line]]
+    lines: list[_Line] = attrs.field(init=False)
     song_duration: Seconds
     seeking: bool = False
     paused: bool = False
@@ -260,22 +272,26 @@ class _PlayState:
     @classmethod
     def new(cls, txt: SongTxt, audio: Path) -> _PlayState:
         song_duration = Seconds(utils.get_media_duration(audio))
-        track = txt.notes.track_1
-        lines = [
-            _Line.new(
-                line, Milliseconds(txt.headers.gap), txt.headers.bpm, song_duration
-            )
-            for line in track
+        track_list = list(filter(None, [txt.notes.track_1, txt.notes.track_2]))
+        tracks_ = [
+            [
+                _Line.new(
+                    line, Milliseconds(txt.headers.gap), txt.headers.bpm, song_duration
+                )
+                for line in track
+            ]
+            for track in track_list
         ]
-        state = cls(lines=lines, song_duration=song_duration)
+        state = cls(tracks=tracks_, song_duration=song_duration)
         if txt.headers.previewstart is not None:
             start = Seconds(txt.headers.previewstart)
         else:
-            start = lines[0].start
+            start = state.lines[0].start
         state.set_current_video_time(start)
         return state
 
     def __attrs_post_init__(self) -> None:
+        self.lines = self._tracks[0]
         self.current_video_line = self.lines[0]
         self.current_video_time = self.lines[0].start
         self._audio_note_iter = self._iter_notes()
@@ -301,6 +317,9 @@ class _PlayState:
 
     def set_current_sample_from_secs(self, secs: float) -> None:
         self.current_sample = Sample(int(secs * _SAMPLE_RATE))
+        self._reset_current_audio_note()
+
+    def _reset_current_audio_note(self) -> None:
         self._audio_note_iter = self._iter_notes()
         self.current_audio_note = next(self._audio_note_iter, None)
         self._advance_to_next_unplayed_note()
@@ -315,6 +334,11 @@ class _PlayState:
     def _iter_notes(self) -> Generator[_Note, None, None]:
         for line in self.lines:
             yield from line.notes
+
+    def set_voice(self, voice: int) -> None:
+        self.lines = self._tracks[voice]
+        self.set_current_video_time(self.current_video_time)
+        self._reset_current_audio_note()
 
 
 def _beat_to_secs(beat: int, gap: Milliseconds, bpm: BeatsPerMinute) -> Seconds:
