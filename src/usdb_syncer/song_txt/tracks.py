@@ -36,6 +36,15 @@ class NoteKind(Enum):
             case unreachable:
                 assert_never(unreachable)
 
+    def is_golden(self) -> bool:
+        match self:
+            case NoteKind.GOLDEN | NoteKind.GOLDEN_RAP:
+                return True
+            case NoteKind.FREESTYLE | NoteKind.RAP | NoteKind.REGULAR:
+                return False
+            case unreachable:
+                assert_never(unreachable)
+
 
 @attrs.define
 class Note:

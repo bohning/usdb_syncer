@@ -549,16 +549,16 @@ class _LineView(QtWidgets.QWidget):
             painter.drawRoundedRect(x, y, w, net_row_height, ctx.radius, ctx.radius)
 
     def _brush_for_note(self, note: _Note, ctx: _LinePaintContext) -> QtGui.QBrush:
-        color = (
-            self.colors.active_note
-            if ctx.current_pos > note.x_pos
-            else self.colors.note
-        )
-        style = (
-            Qt.BrushStyle.SolidPattern
-            if note.kind.has_pitch()
-            else Qt.BrushStyle.Dense5Pattern
-        )
+        if note.kind.is_golden():
+            color = self.colors.golden_note
+        elif ctx.current_pos > note.x_pos:
+            color = self.colors.active_note
+        else:
+            color = self.colors.note
+        if note.kind.has_pitch():
+            style = Qt.BrushStyle.SolidPattern
+        else:
+            style = Qt.BrushStyle.Dense5Pattern
         return QtGui.QBrush(color, style)
 
     def _draw_text(self, painter: QtGui.QPainter, ctx: _LinePaintContext) -> None:
