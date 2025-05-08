@@ -579,12 +579,16 @@ class _LineView(QtWidgets.QWidget):
             painter.drawRoundedRect(x, y, w, net_row_height, ctx.radius, ctx.radius)
 
     def _brush_for_note(self, note: _Note, ctx: _LinePaintContext) -> QtGui.QBrush:
-        if note.kind.is_golden():
-            color = self.colors.golden_note
-        elif ctx.current_pos > note.x_pos:
-            color = self.colors.active_note
+        if ctx.current_pos > note.x_pos:
+            if note.kind.is_golden():
+                color = self.colors.active_golden_note
+            else:
+                color = self.colors.active_note
         else:
-            color = self.colors.note
+            if note.kind.is_golden():
+                color = self.colors.golden_note
+            else:
+                color = self.colors.note
         if note.kind.has_pitch():
             style = Qt.BrushStyle.SolidPattern
         else:

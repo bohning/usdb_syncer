@@ -75,6 +75,7 @@ class PreviewPalette:
     note: QColor
     active_note: QColor
     golden_note: QColor
+    active_golden_note: QColor
     text: QColor
     active_text: QColor
     needle: QColor
@@ -151,7 +152,8 @@ class SystemTheme(Theme):
             line=palette.light().color(),
             note=palette.dark().color(),
             active_note=palette.highlight().color(),
-            golden_note=self.GOLD,
+            golden_note=_overlay_colors(palette.text().color(), self.GOLD, 0.8),
+            active_golden_note=self.GOLD,
             text=palette.text().color(),
             active_text=palette.highlight().color(),
             needle=palette.highlight().color(),
@@ -242,7 +244,8 @@ class DarkTheme(Theme):
             line=self.surface(_Surface.DP_24),
             note=self.text(_Text.DISABLED),
             active_note=self.primary,
-            golden_note=self.GOLD,
+            golden_note=_overlay_colors(self.base_surface, self.GOLD, 0.4),
+            active_golden_note=self.GOLD,
             text=self.text(_Text.HIGH),
             active_text=self.primary,
             needle=self.primary,
