@@ -6,7 +6,7 @@ import functools
 import subprocess
 from collections.abc import Callable, Generator
 from pathlib import Path
-from typing import Any, TypeVar
+from typing import Any, NewType, TypeVar
 
 import attrs
 import numpy as np
@@ -24,16 +24,23 @@ from usdb_syncer.song_txt import SongTxt, tracks
 from usdb_syncer.song_txt.auxiliaries import BeatsPerMinute
 from usdb_syncer.usdb_song import UsdbSong
 
+Seconds = NewType("Seconds", float)
+Milliseconds = NewType("Milliseconds", int)
+Sample = NewType("Sample", int)
+Pixel = NewType("Pixel", int)
+Fraction = NewType("Fraction", float)
+"""A relative size, i.e. from the interval [0, 1]."""
+
 _PITCH_ROWS = 16
-_EPS_SECS = 0.01
+_EPS_SECS = Seconds(0.01)
 _INT16_MAX = 2**15 - 1
 _INT16_MIN = -(2**15)
-_SAMPLE_RATE = 44100
+_SAMPLE_RATE = Sample(44100)
 _SYNTH_AMPLITUDE = 0.4
-_SYNTH_ATTACK_SECS = 0.01
-_SYNTH_RELEASE_SECS = 0.05
-_SYNTH_ATTACK_SAMPLES = int(_SYNTH_ATTACK_SECS * _SAMPLE_RATE)
-_SYNTH_RELEASE_SAMPLES = int(_SYNTH_RELEASE_SECS * _SAMPLE_RATE)
+_SYNTH_ATTACK_SECS = Seconds(0.01)
+_SYNTH_RELEASE_SECS = Seconds(0.05)
+_SYNTH_ATTACK_SAMPLES = Sample(int(_SYNTH_ATTACK_SECS * _SAMPLE_RATE))
+_SYNTH_RELEASE_SAMPLES = Sample(int(_SYNTH_RELEASE_SECS * _SAMPLE_RATE))
 
 
 T = TypeVar("T", int, float)
@@ -46,13 +53,12 @@ def clamp(value: T, lower: T, upper: T) -> T:
 class PreviewDialog(Ui_Dialog, QtWidgets.QDialog):
     """Dialog to preview a downloaded song."""
 
-    _MIN_COVER_SIZE = 100
-    _MAX_COVER_SIZE = 200
+    _MIN_COVER_SIZE = Pixel(100)
+    _MAX_COVER_SIZE = Pixel(200)
     _FPS = 60
-    _REFRESH_RATE_MS = 1000 // _FPS
-    _REFRESH_RATE_SECS = _REFRESH_RATE_MS / 1000
-    _DOUBLECLICK_DELAY_MS = 200
-    _DOUBLECLICK_DELAY_SECS = _DOUBLECLICK_DELAY_MS / 1000
+    _REFRESH_RATE = Milliseconds(1000 // _FPS)
+    _DOUBLECLICK_DELAY_MS = Milliseconds(200)
+    _DOUBLECLICK_DELAY_SECS = Seconds(_DOUBLECLICK_DELAY_MS / 1000)
 
     def __init__(
         self, parent: QtWidgets.QWidget, txt: SongTxt, audio: Path, cover: Path | None
@@ -117,7 +123,7 @@ class PreviewDialog(Ui_Dialog, QtWidgets.QDialog):
         self.label_end.setText(f"#END: {txt.headers.end or '-'}")
 
     def _setup_timers(self) -> None:
-        self._update_timer = QtCore.QTimer(self, interval=self._REFRESH_RATE_MS)
+        self._update_timer = QtCore.QTimer(self, interval=self._REFRESH_RATE)
         self._update_timer.timeout.connect(self._update_time)
         self._update_timer.start()
         self._seek_timer = QtCore.QTimer(
@@ -168,10 +174,10 @@ class PreviewDialog(Ui_Dialog, QtWidgets.QDialog):
         self._state.set_current_video_time(self._state.lines[idx].start)
         self._seek_timer.start()
 
-    def _on_drag(self, target_time: float, released: bool) -> None:
+    def _on_drag(self, target_time: Seconds, released: bool) -> None:
         self._state.seeking = not released
         self._seek_timer.stop()
-        self._state.set_current_video_time(target_time)
+        self._state.set_current_video_time(Seconds(target_time))
         if released:
             self._player.seek_to(self._state.current_video_time)
 
@@ -233,18 +239,18 @@ class _PlayState:
 
     # shared state
     lines: list[_Line]
-    song_secs: float
+    song_duration: Seconds
     seeking: bool = False
     paused: bool = False
 
     # video state
     current_video_line_idx: int = 0
     current_video_line: _Line = attrs.field(init=False)
-    current_video_time: float = attrs.field(init=False)
-    current_rel_pos_in_line: float = 0.0
+    current_video_time: Seconds = attrs.field(init=False)
+    current_pos_in_line: Fraction = Fraction(0.0)
 
     # audio state
-    current_sample: int = 0
+    current_sample: Sample = Sample(0)
     _audio_note_iter: Generator[_Note, None, None] = attrs.field(init=False)
     current_audio_note: _Note | None = attrs.field(init=False)
     source_volume: float = 0.0
@@ -253,13 +259,15 @@ class _PlayState:
 
     @classmethod
     def new(cls, txt: SongTxt, audio: Path) -> _PlayState:
-        song_secs = utils.get_media_duration(audio)
+        song_duration = Seconds(utils.get_media_duration(audio))
         track = txt.notes.track_1
         lines = [
-            _Line.new(line, txt.headers.gap, txt.headers.bpm, song_secs)
+            _Line.new(
+                line, Milliseconds(txt.headers.gap), txt.headers.bpm, song_duration
+            )
             for line in track
         ]
-        return cls(lines=lines, song_secs=song_secs)
+        return cls(lines=lines, song_duration=song_duration)
 
     def __attrs_post_init__(self) -> None:
         self.current_video_line = self.lines[0]
@@ -268,23 +276,25 @@ class _PlayState:
         self.current_audio_note = next(self._audio_note_iter, None)
 
     def calculate_video_time_from_audio(self) -> None:
-        self.set_current_video_time(self.current_sample / _SAMPLE_RATE)
+        self.set_current_video_time(Seconds(self.current_sample / _SAMPLE_RATE))
 
-    def set_current_video_time(self, secs: float) -> None:
+    def set_current_video_time(self, secs: Seconds) -> None:
         self.current_video_time = secs
-        self.current_rel_pos_in_line = self.current_video_time / self.song_secs
+        self.current_pos_in_line = Fraction(
+            self.current_video_time / self.song_duration
+        )
         self.current_video_line_idx, self.current_video_line = next(
             (i, li)
             for i, li in enumerate(self.lines)
             if li.line_break is None or li.line_break > self.current_video_time
         )
 
-    def advance_samples_played(self, delta: int) -> None:
-        self.current_sample += delta
+    def advance_current_sample(self, delta: int) -> None:
+        self.current_sample = Sample(self.current_sample + delta)
         self._advance_to_next_unplayed_note()
 
     def set_current_sample_from_secs(self, secs: float) -> None:
-        self.current_sample = int(secs * _SAMPLE_RATE)
+        self.current_sample = Sample(int(secs * _SAMPLE_RATE))
         self._audio_note_iter = self._iter_notes()
         self.current_audio_note = next(self._audio_note_iter, None)
         self._advance_to_next_unplayed_note()
@@ -301,8 +311,12 @@ class _PlayState:
             yield from line.notes
 
 
-def _beat_to_sample(beat: int, gap: int, bpm: BeatsPerMinute) -> int:
-    return int((gap / 1000 + bpm.beats_to_secs(beat)) * _SAMPLE_RATE)
+def _beat_to_secs(beat: int, gap: Milliseconds, bpm: BeatsPerMinute) -> Seconds:
+    return Seconds(gap / 1000 + bpm.beats_to_secs(beat))
+
+
+def _beat_to_sample(beat: int, gap: Milliseconds, bpm: BeatsPerMinute) -> Sample:
+    return Sample(int(_beat_to_secs(beat, gap, bpm) * _SAMPLE_RATE))
 
 
 @attrs.define
@@ -310,25 +324,27 @@ class _Line:
     """Information for rendering a line."""
 
     notes: list[_Note]
-    start: float
-    end: float
-    duration: float
-    line_break: float | None
-    rel_x_pos_in_song: float
-    rel_width_in_song: float
+    start: Seconds
+    end: Seconds
+    duration: Seconds
+    line_break: Seconds | None
+    rel_x_pos_in_song: Fraction
+    rel_width_in_song: Fraction
     text: str
 
     @classmethod
     def new(
-        cls, line: tracks.Line, gap: int, bpm: BeatsPerMinute, song_duration: float
+        cls,
+        line: tracks.Line,
+        gap: Milliseconds,
+        bpm: BeatsPerMinute,
+        song_duration: Seconds,
     ) -> _Line:
-        start = gap / 1000 + bpm.beats_to_secs(line.start())
-        end = gap / 1000 + bpm.beats_to_secs(line.end())
-        duration = end - start
+        start = _beat_to_secs(line.start(), gap, bpm)
+        end = _beat_to_secs(line.end(), gap, bpm)
+        duration = Seconds(end - start)
         if line.line_break:
-            line_break = gap / 1000 + bpm.beats_to_secs(
-                line.line_break.previous_line_out_time
-            )
+            line_break = _beat_to_secs(line.line_break.previous_line_out_time, gap, bpm)
         else:
             line_break = None
         return cls(
@@ -336,8 +352,8 @@ class _Line:
             start=start,
             end=end,
             duration=duration,
-            rel_x_pos_in_song=start / song_duration,
-            rel_width_in_song=duration / song_duration,
+            rel_x_pos_in_song=Fraction(start / song_duration),
+            rel_width_in_song=Fraction(duration / song_duration),
             line_break=line_break,
             text="".join(n.text for n in line.notes).strip(),
         )
@@ -348,13 +364,13 @@ class _Note:
     """Information for rendering and playing a note."""
 
     text: str
-    start: float
-    duration: float
-    pitch: float
+    x_pos: Fraction
+    width: Fraction
+    y_pos: Fraction
 
     freq: float
-    start_sample: int
-    end_sample: int
+    start_sample: Sample
+    end_sample: Sample
 
     @classmethod
     def new(
@@ -363,26 +379,28 @@ class _Note:
         line_start: int,
         line_len: int,
         line_pitch: range,
-        gap: int,
+        gap: Milliseconds,
         bpm: BeatsPerMinute,
     ) -> _Note:
-        start = (note.start - line_start) / line_len
-        duration = note.duration / line_len
+        x_pos = Fraction((note.start - line_start) / line_len)
+        width = Fraction(note.duration / line_len)
         # move to the middle of available space
         shift = max(_PITCH_ROWS - len(line_pitch), 0) // 2
-        pitch = 1 - (note.pitch - line_pitch.start + shift) / _PITCH_ROWS
+        y_pos = Fraction(1 - (note.pitch - line_pitch.start + shift) / _PITCH_ROWS)
         return cls(
             text=note.text,
-            start=start,
-            duration=duration,
-            pitch=pitch,
+            x_pos=x_pos,
+            width=width,
+            y_pos=y_pos,
             freq=_ultrastar_pitch_to_freq(note.pitch),
             start_sample=_beat_to_sample(note.start, gap, bpm),
             end_sample=_beat_to_sample(note.end(), gap, bpm),
         )
 
     @classmethod
-    def from_line(cls, line: tracks.Line, gap: int, bpm: BeatsPerMinute) -> list[_Note]:
+    def from_line(
+        cls, line: tracks.Line, gap: Milliseconds, bpm: BeatsPerMinute
+    ) -> list[_Note]:
         start = line.start()
         duration = line.end() - start
         min_pitch = min(n.pitch for n in line.notes)
@@ -393,15 +411,15 @@ class _Note:
 
 class _SongView(QtWidgets.QWidget):
     _is_dragging = False
-    _MIN_HEIGHT = 20
-    _MAX_HEIGHT = 40
-    _NEEDLE_WIDTH = 2
+    _MIN_HEIGHT = Pixel(20)
+    _MAX_HEIGHT = Pixel(40)
+    _NEEDLE_WIDTH = Pixel(2)
 
     def __init__(
         self,
         state: _PlayState,
         colors: theme.PreviewPalette,
-        on_drag: Callable[[float, bool], None],
+        on_drag: Callable[[Seconds, bool], None],
     ):
         super().__init__()
         self._state = state
@@ -423,58 +441,62 @@ class _SongView(QtWidgets.QWidget):
                 painter.drawRect(x, 0, w, height)
 
             painter.setPen(QtGui.QPen(self.colors.needle, self._NEEDLE_WIDTH))
-            x_pos = round(self._state.current_rel_pos_in_line * width)
+            x_pos = round(self._state.current_pos_in_line * width)
             half_needle = self._NEEDLE_WIDTH // 2
             x_pos = clamp(x_pos, half_needle, width - half_needle)
             painter.drawLine(x_pos, 0, x_pos, height)
 
-    def _x_pos_to_current_time(self, x: int) -> float:
-        return self._state.song_secs * clamp(x / self.width(), 0.0, 1.0)
+    def _current_time_at_mouse(self, event: QtGui.QMouseEvent) -> Seconds:
+        return Seconds(
+            self._state.song_duration * clamp(event.pos().x() / self.width(), 0.0, 1.0)
+        )
 
     def mousePressEvent(self, event: QtGui.QMouseEvent) -> None:  # noqa: N802
         if event.button() == Qt.MouseButton.LeftButton:
             self._is_dragging = True
             self.setCursor(Qt.CursorShape.ClosedHandCursor)
-            self._on_drag(self._x_pos_to_current_time(event.pos().x()), False)
+            self._on_drag(self._current_time_at_mouse(event), False)
 
     def mouseMoveEvent(self, event: QtGui.QMouseEvent) -> None:  # noqa: N802
         if self._is_dragging:
-            self._on_drag(self._x_pos_to_current_time(event.pos().x()), False)
+            self._on_drag(self._current_time_at_mouse(event), False)
 
     def mouseReleaseEvent(self, event: QtGui.QMouseEvent) -> None:  # noqa: N802
         if self._is_dragging:
             self._is_dragging = False
             self.setCursor(Qt.CursorShape.OpenHandCursor)
-            self._on_drag(self._x_pos_to_current_time(event.pos().x()), True)
+            self._on_drag(self._current_time_at_mouse(event), True)
 
 
 @attrs.define
 class _LinePaintContext:
     """Values for painting a line."""
 
-    total_width: int
-    row_height: int
-    notes_height: int
-    current_pos: float
+    total_width: Pixel
+    row_height: Pixel
+    notes_height: Pixel
+    current_pos: Fraction
     radius: float
-    text_height: int
+    text_height: Pixel
 
     _RELATIVE_TEXT_ROW_HEIGHT = 2
 
     @classmethod
     def new(cls, view: _LineView) -> _LinePaintContext:
-        total_height = view.height()
-        total_width = view.width()
+        total_height = Pixel(view.height())
+        total_width = Pixel(view.width())
 
         # divide into equally sized pitch rows plus one scaled row for text
-        row_height = round(total_height / (_PITCH_ROWS + cls._RELATIVE_TEXT_ROW_HEIGHT))
-        notes_height = row_height * _PITCH_ROWS
-        text_height = total_height - notes_height
+        row_height = Pixel(
+            round(total_height / (_PITCH_ROWS + cls._RELATIVE_TEXT_ROW_HEIGHT))
+        )
+        notes_height = Pixel(row_height * _PITCH_ROWS)
+        text_height = Pixel(total_height - notes_height)
 
         line_elapsed = (
             view._state.current_video_time - view._state.current_video_line.start
         )
-        current_pos = line_elapsed / view._state.current_video_line.duration
+        current_pos = Fraction(line_elapsed / view._state.current_video_line.duration)
 
         return cls(
             total_width=total_width,
@@ -489,9 +511,9 @@ class _LinePaintContext:
 
 class _LineView(QtWidgets.QWidget):
     _POINTER_SIZE_IN_ROWS = 1.5
-    _GRID_LINE_WIDTH = 1
-    _MIN_SIZE = (600, 200)
-    _MAX_HEIGHT = 600
+    _GRID_LINE_WIDTH = Pixel(1)
+    _MIN_SIZE = (Pixel(600), Pixel(200))
+    _MAX_HEIGHT = Pixel(600)
 
     def __init__(self, state: _PlayState, colors: theme.PreviewPalette):
         super().__init__()
@@ -517,12 +539,12 @@ class _LineView(QtWidgets.QWidget):
     def _draw_notes(self, painter: QtGui.QPainter, ctx: _LinePaintContext) -> None:
         painter.setPen(Qt.PenStyle.NoPen)
         for note in self._state.current_video_line.notes:
-            active = ctx.current_pos > note.start
+            active = ctx.current_pos > note.x_pos
             painter.setBrush(self.colors.active_note if active else self.colors.note)
-            x = round(note.start * ctx.total_width)
+            x = round(note.x_pos * ctx.total_width)
             net_row_height = ctx.row_height - self._GRID_LINE_WIDTH
-            y = round(note.pitch * ctx.notes_height) - net_row_height
-            w = round(note.duration * ctx.total_width)
+            y = round(note.y_pos * ctx.notes_height) - net_row_height
+            w = round(note.width * ctx.total_width)
             painter.drawRoundedRect(x, y, w, net_row_height, ctx.radius, ctx.radius)
 
     def _draw_text(self, painter: QtGui.QPainter, ctx: _LinePaintContext) -> None:
@@ -533,7 +555,7 @@ class _LineView(QtWidgets.QWidget):
         text_width = font_metrics.horizontalAdvance(self._state.current_video_line.text)
         text_start = (ctx.total_width - text_width) // 2
         for note in self._state.current_video_line.notes:
-            active = ctx.current_pos > note.start
+            active = ctx.current_pos > note.x_pos
             painter.setPen(self.colors.active_text if active else self.colors.text)
             painter.drawText(
                 QtCore.QRect(text_start, ctx.notes_height, text_width, ctx.text_height),
@@ -549,10 +571,10 @@ class _LineView(QtWidgets.QWidget):
             (
                 n
                 for n in reversed(self._state.current_video_line.notes)
-                if n.start < ctx.current_pos
+                if n.x_pos < ctx.current_pos
             ),
             self._state.current_video_line.notes[0],
-        ).pitch
+        ).y_pos
         if current_pitch > 0.1:
             y_point = round(current_pitch * ctx.notes_height) - ctx.row_height
             y_base = y_point - pointer_size
@@ -579,7 +601,7 @@ class _AudioPlayer:
     _stream: sounddevice.OutputStream | None = None
     _process: subprocess.Popen | None = None
     _CHANNELS = 2
-    _STREAM_BUFFER_SIZE = 2048
+    _STREAM_BUFFER_SIZE = Sample(2048)
 
     @classmethod
     def new(cls, source: Path, state: _PlayState) -> _AudioPlayer:
@@ -597,17 +619,17 @@ class _AudioPlayer:
             self._process.terminate()
             self._process = None
 
-    def seek_to(self, seconds: float) -> None:
+    def seek_to(self, seconds: Seconds) -> None:
         self.stop()
         self._start_ffmpeg(seconds)
         self._start_stream()
 
-    def _start_ffmpeg(self, start_secs: float = 0.0) -> None:
-        self._state.set_current_sample_from_secs(start_secs)
+    def _start_ffmpeg(self, start: Seconds = Seconds(0.0)) -> None:
+        self._state.set_current_sample_from_secs(start)
         cmd = [
             "ffmpeg",
             "-ss",
-            str(start_secs),
+            str(start),
             "-i",
             str(self._source),
             "-f",
@@ -637,7 +659,7 @@ class _AudioPlayer:
     def _stream_callback(
         self,
         outdata: np.ndarray,
-        frames: int,
+        samples: Sample,
         time: Any,
         status: sounddevice.CallbackFlags,
     ) -> None:
@@ -645,21 +667,21 @@ class _AudioPlayer:
             not (self._process and self._process.stdout and self._stream)
             or self._state.paused
         ):
-            outdata[:] = np.zeros((frames, self._CHANNELS), dtype=np.int16)
+            outdata[:] = np.zeros((samples, self._CHANNELS), dtype=np.int16)
             return
-        bytes_needed = frames * self._CHANNELS * 2
+        bytes_needed = samples * self._CHANNELS * 2
         data = self._process.stdout.read(bytes_needed)
         if len(data) < bytes_needed:
-            outdata[:] = np.zeros((frames, self._CHANNELS), dtype=np.int16)
+            outdata[:] = np.zeros((samples, self._CHANNELS), dtype=np.int16)
             self._stream.stop()
             return
         array = np.frombuffer(data, dtype=np.int16).reshape(-1, self._CHANNELS)
-        outdata[:] = self._mix_audio(array, frames)
-        self._state.advance_samples_played(frames)
+        outdata[:] = self._mix_audio(array, samples)
+        self._state.advance_current_sample(samples)
 
-    def _mix_audio(self, data: np.ndarray, frames: int) -> np.ndarray:
-        ticks = self._get_tick_start_and_data(frames)
-        pitch = self._get_pitch_start_and_data(frames)
+    def _mix_audio(self, data: np.ndarray, samples: Sample) -> np.ndarray:
+        ticks = self._get_tick_start_and_data(samples)
+        pitch = self._get_pitch_start_and_data(samples)
         if ticks is None and pitch is None and self._state.source_volume == 1.0:
             # nothing to mix; skip conversion
             return data
@@ -673,39 +695,43 @@ class _AudioPlayer:
             data[pitch_start : pitch_start + len(pitch_data)] += pitch_data
         return np.clip(data * _INT16_MAX, _INT16_MIN, _INT16_MAX).astype(np.int16)
 
-    def _get_tick_start_and_data(self, frames: int) -> tuple[int, np.ndarray] | None:
+    def _get_tick_start_and_data(
+        self, samples: Sample
+    ) -> tuple[Sample, np.ndarray] | None:
         if (note := self._state.current_audio_note) is None:
             return None
         if self._state.ticks_volume == 0.0:
             return None
 
         start_sample = self._state.current_sample
-        end_sample = start_sample + frames
+        end_sample = start_sample + samples
         tick_end = note.start_sample + len(self._tick_data)
         overlap_start = max(start_sample, note.start_sample)
         overlap_end = min(end_sample, tick_end)
         if overlap_start >= overlap_end:
             return None
-        main_offset = overlap_start - start_sample
+        main_offset = Sample(overlap_start - start_sample)
         tick_offset = overlap_start - note.start_sample
         length = overlap_end - overlap_start
 
         data = self._tick_data[tick_offset : tick_offset + length]
         return main_offset, data * self._state.ticks_volume
 
-    def _get_pitch_start_and_data(self, frames: int) -> tuple[int, np.ndarray] | None:
+    def _get_pitch_start_and_data(
+        self, samples: Sample
+    ) -> tuple[Sample, np.ndarray] | None:
         if (note := self._state.current_audio_note) is None:
             return None
         if self._state.pitch_volume == 0.0:
             return None
 
         start_sample = self._state.current_sample
-        end_sample = start_sample + frames
+        end_sample = start_sample + samples
         overlap_start = max(start_sample, note.start_sample)
         overlap_end = min(end_sample, note.end_sample)
         if overlap_start >= overlap_end:
             return None
-        main_offset = overlap_start - start_sample
+        main_offset = Sample(overlap_start - start_sample)
         pitch_offset = overlap_start - note.start_sample
         length = overlap_end - overlap_start
 
@@ -735,7 +761,7 @@ def _ultrastar_pitch_to_freq(pitch: int) -> float:
 
 
 @functools.lru_cache(1)
-def _synth_note(freq: float, samples: int, channels: int) -> np.ndarray:
+def _synth_note(freq: float, samples: Sample, channels: int) -> np.ndarray:
     t = np.linspace(0, samples / _SAMPLE_RATE, samples, endpoint=False)
     waveform = _SYNTH_AMPLITUDE * np.sin(2 * np.pi * freq * t)
     envelope = _get_synth_envelope(samples)
@@ -743,7 +769,7 @@ def _synth_note(freq: float, samples: int, channels: int) -> np.ndarray:
     return np.column_stack([mono_wave for _ in range(channels)])
 
 
-def _get_synth_envelope(samples: int) -> np.ndarray:
+def _get_synth_envelope(samples: Sample) -> np.ndarray:
     attack_samples = min(_SYNTH_ATTACK_SAMPLES, samples)
     release_samples = min(_SYNTH_RELEASE_SAMPLES, samples - attack_samples)
     sustain_samples = samples - (attack_samples + release_samples)
