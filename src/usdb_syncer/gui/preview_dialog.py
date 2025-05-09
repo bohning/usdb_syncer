@@ -124,7 +124,7 @@ class PreviewDialog(Ui_Dialog, QtWidgets.QDialog):
             label.setPixmap(QtGui.QPixmap(cover))
             label.setMinimumSize(self._MIN_COVER_SIZE, self._MIN_COVER_SIZE)
             label.setMaximumSize(self._MAX_COVER_SIZE, self._MAX_COVER_SIZE)
-            self.layout_extra.insertWidget(0, label)
+            self.layout_extra.insertWidget(1, label)
         self.label_bpm.setText(f"#BPM: {txt.headers.bpm}")
         self.label_gap.setText(f"#GAP: {txt.headers.gap}")
         self.label_start.setText(f"#START: {txt.headers.start or '-'}")
@@ -145,6 +145,9 @@ class PreviewDialog(Ui_Dialog, QtWidgets.QDialog):
             self._state.calculate_video_time_from_audio()
         self._song_view.update()
         self._line_view.update()
+        current = _secs_to_str(self._state.current_video_time)
+        song = _secs_to_str(self._state.song_duration)
+        self.label_time.setText(f"{current} / {song}")
 
     def _on_pause_toggled(self, paused: bool) -> None:
         self._state.paused = paused
@@ -227,6 +230,11 @@ class PreviewDialog(Ui_Dialog, QtWidgets.QDialog):
     def reject(self) -> None:
         self._player.stop()
         super().reject()
+
+
+def _secs_to_str(seconds: Seconds) -> str:
+    secs = int(seconds)
+    return f"{secs // 60:02}:{secs % 60:02}"
 
 
 class _SquareLabel(QtWidgets.QLabel):
