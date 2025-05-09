@@ -195,8 +195,10 @@ def _decoration_data(song: UsdbSong, column: int) -> QIcon | None:  # noqa: C901
                 icon = icons.Icon.PAUSE_REMOTE
             elif local:
                 icon = icons.Icon.PLAY_LOCAL
-            else:
+            elif song.sample_url:
                 icon = icons.Icon.PLAY_REMOTE
+            else:
+                return None
         case Column.TXT:
             if not (song.sync_meta and song.sync_meta.txt):
                 return None
