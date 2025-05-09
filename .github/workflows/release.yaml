@@ -121,7 +121,10 @@ jobs:
       - name: Install dependencies
         run: poetry install --without dev
       - name: Write release version
-        run: echo "__version__ = '$(poetry run dunamai from git)'" > src/usdb_syncer/_version.py
+        run: |
+          set -e
+          version=$(poetry run dunamai from git)
+          echo "__version__ = '${version}'" > src/usdb_syncer/_version.py
       - name: Generate GUI elements
         run: poetry run python -m tools.generate_pyside_files
       - name: Bundle with pyinstaller for ${{matrix.os}}
