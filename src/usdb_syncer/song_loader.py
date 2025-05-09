@@ -19,6 +19,7 @@ from PySide6 import QtCore
 from usdb_syncer import (
     SongId,
     SyncMetaId,
+    constants,
     db,
     download_options,
     errors,
@@ -588,6 +589,9 @@ def _write_headers(ctx: _Context) -> None:
         else FormatVersion.V1_0_0
     )
 
+    if version >= FormatVersion.V1_1_0:
+        ctx.txt.headers.providedby = constants.Usdb.BASE_URL
+
     if path := ctx.out.audio.path(ctx.locations, temp=True):
         _set_audio_headers(ctx, version, path)
 
@@ -619,14 +623,14 @@ def _set_audio_headers(ctx: _Context, version: FormatVersion, path: Path) -> Non
 
 def _set_video_headers(ctx: _Context, version: FormatVersion, path: Path) -> None:
     ctx.txt.headers.video = path.name
-    if version == FormatVersion.V1_2_0 and (resource := ctx.txt.meta_tags.video):
+    if version >= FormatVersion.V1_2_0 and (resource := ctx.txt.meta_tags.video):
         ctx.txt.headers.videourl = video_url_from_resource(resource)
 
 
 def _set_cover_headers(ctx: _Context, version: FormatVersion, path: Path) -> None:
     ctx.txt.headers.cover = path.name
     if (
-        version == FormatVersion.V1_2_0
+        version >= FormatVersion.V1_2_0
         and ctx.txt.meta_tags.cover
         and (url := ctx.txt.meta_tags.cover.source_url(ctx.logger))
     ):
@@ -636,7 +640,7 @@ def _set_cover_headers(ctx: _Context, version: FormatVersion, path: Path) -> Non
 def _set_background_headers(ctx: _Context, version: FormatVersion, path: Path) -> None:
     ctx.txt.headers.background = path.name
     if (
-        version == FormatVersion.V1_2_0
+        version >= FormatVersion.V1_2_0
         and ctx.txt.meta_tags.background
         and (url := ctx.txt.meta_tags.background.source_url(ctx.logger))
     ):

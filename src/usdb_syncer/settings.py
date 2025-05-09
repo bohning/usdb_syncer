@@ -7,6 +7,7 @@ and getters should be added to this module.
 
 from __future__ import annotations
 
+import functools
 import os
 import shutil
 import subprocess
@@ -250,6 +251,7 @@ class Newline(Enum):
         return Newline.LF
 
 
+@functools.total_ordering
 class FormatVersion(Enum):
     """Supported format versions for song txts."""
 
@@ -259,6 +261,20 @@ class FormatVersion(Enum):
 
     def __str__(self) -> str:
         return str(self.value)
+
+    def __eq__(self, other: object) -> bool:
+        if isinstance(other, str):
+            return self.value == other
+        if isinstance(other, FormatVersion):
+            return self.value == other.value
+        return NotImplemented
+
+    def __lt__(self, other: object) -> bool:
+        if isinstance(other, str):
+            return self.value < other
+        if isinstance(other, FormatVersion):
+            return self.value < other.value
+        return NotImplemented
 
 
 class FixLinebreaks(Enum):
