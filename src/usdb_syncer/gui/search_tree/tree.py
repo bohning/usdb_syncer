@@ -9,7 +9,8 @@ from typing import TYPE_CHECKING
 from PySide6 import QtCore, QtGui, QtWidgets
 from PySide6.QtCore import QModelIndex, Qt
 
-from usdb_syncer import db, events
+from usdb_syncer import db
+from usdb_syncer.gui import events
 from usdb_syncer.gui.gui_utils import keyboard_modifiers
 
 from .item import Filter, SavedSearch

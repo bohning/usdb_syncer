@@ -2,4 +2,4 @@
 
 from importlib import resources
 
-DARK_QSS = resources.files() / "dark.qss"
+METRONOME_TICK_WAV = resources.files() / "metronome-tick.wav"

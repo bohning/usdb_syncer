@@ -28,6 +28,7 @@ filetype = "*"
 keyring = "*"
 lxml = "*"
 mutagen = "*"
+numpy = "^2.2.5"
 packaging = "*"
 pillow = ">=10"
 PySide6 = "*"
@@ -35,6 +36,8 @@ reportlab = "*"
 requests = "*"
 rookiepy = "^0.5.3"
 send2trash = "*"
+sounddevice = "^0.5.1"
+soundfile = "^0.13.1"
 unidecode = "*"
 yt-dlp = {version = "*", extras = ["default", "curl_cffi"]}
 
@@ -48,6 +51,8 @@ types-requests = "*"
 pytest = "*"
 # benchmark
 snakeviz = "*"
+# tools
+defusedxml = "^0.7.1"
 
 [tool.poetry.group.build.dependencies]
 PySide6 = "*"  # for file generation
@@ -71,7 +76,7 @@ substitution.files = []
 [tool.ruff]
 extend-exclude = [
     "forms",
-    "resources",
+    "qt",
 ]
 target-version = "py312"
 preview = true

@@ -290,7 +290,7 @@ class SettingsDialog(Ui_Dialog, QDialog):
         settings.set_theme(new_theme)
         settings.set_primary_color(new_primary_color)
         settings.set_colored_background(colored_background)
-        theme.apply_theme(new_theme, new_primary_color, colored_background)
+        theme.Theme.new(new_theme, new_primary_color, colored_background).apply()
         settings.set_browser(self.comboBox_browser.currentData())
         settings.set_cover(self.groupBox_cover.isChecked())
         settings.set_cover_max_size(self.comboBox_cover_max_size.currentData())

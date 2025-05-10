@@ -331,6 +331,24 @@ def start_process_detached(command: list[str]) -> subprocess.Popen:
         return subprocess.Popen(command, creationflags=flags, close_fds=True, env=env)
 
 
+def get_media_duration(path: Path) -> float:
+    result = subprocess.run(
+        [
+            "ffprobe",
+            "-v",
+            "error",
+            "-show_entries",
+            "format=duration",
+            "-of",
+            "default=noprint_wrappers=1:nokey=1",
+            str(path),
+        ],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+    )
+    return float(result.stdout)
+
+
 class LinuxEnvCleaner:
     """Context manager to clean an environment. Specifically, it removes paths starting
     with /tmp/_MEI and some specific Qt-related paths from the environment.

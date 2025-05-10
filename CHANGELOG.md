@@ -1,13 +1,28 @@
+<!-- 0.14.0 -->
+
+# Changes
+
+## Features
+
+- Check out how a downloaded song will appear in-game with the _Preview Song_ feature!
+
+## Fixes
+
+- Fixed the Linux bundle.
+- Fixed an error on startup for large collections.
+
 <!-- 0.13.0 -->
 
 # Changes
 
 ## Features
+
 - We are now on PyPI! Simply install and update USDB Syncer with your favourite package manager, e.g. [pipx](https://pipx.pypa.io/stable/): `pipx install usdb_syncer`
 - We got a dark mode, and it's even customisable! Try it out with the View tab in the settings.
 - Image resources are now redownloaded if metatag postprocessing parameters have changed.
 
 ## Developer notes
+
 - All previously accepted environment variables have been converted to commandline arguments. Check out `poetry run usdb_syncer -h`.
 - pylint, black and isort have been replaced with [ruff](https://docs.astral.sh/ruff/), making the tox pipeline run much faster. ruff also integrates with common code editors.
 - The hook `MainWindowDidLoad` was moved to the new module `usdb_syncer.gui.hooks`. This will contain all hooks called from the GUI going forward.
@@ -17,6 +32,7 @@
 # Changes
 
 ## Fixes
+
 - Fix ReplayGain for Windows (by updating ffmpeg-normalize).
 
 <!-- 0.12.0 -->
@@ -24,12 +40,14 @@
 # Changes
 
 ## Fixes
+
 - Audio/video format selection regression in 0.11.0 fixed.
 - Downloads of non-jpg images are now correctly converted to jpg.
 - Image processing order is now correctly handled (crop before resize for covers, resize before crop for backgrounds).
 - Improve compatibility of Linux bundle with older distributions (glibc >= 2.34).
 
 ## Features
+
 - The Syncer now checks if a new version is available.
 - Infos about unavailable or invalid resources are now sent to Discord (**please enable this in the settings to support the community**).
 - Songs can now be rated on USDB via the Syncer (1-5 star rating).
@@ -38,6 +56,7 @@
 - PDF report (song list) creation has been fixed and extended.
 
 ## Developer notes
+
 - Added hook when MainWindow was loaded.
 
 <!-- 0.11.0 -->
@@ -45,9 +64,11 @@
 # Changes
 
 ## Fixes
+
 - Cover postprocessing parameters are ignored if USDB cover is downloaded as fallback.
 
 ## Features
+
 - Add more fine-grained options for video container/codec selection.
 
 <!-- 0.10.0 -->

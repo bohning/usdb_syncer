@@ -72,10 +72,15 @@ class Icon(enum.Enum):
     SAFARI = "safari.png", None
     SAVED_SEARCH = "heart.png", "heart-white.svg"
     SETTINGS = "cog.png", "cog-white.svg"
+    SKIP_BACKWARD = "control-double-180.png", "skip-previous-white.svg"
+    SKIP_FORWARD = "control-double.png", "skip-next-white.svg"
+    SKIP_TO_END = "control-skip.png", "skip-forward-white.svg"
+    SKIP_TO_START = "control-skip-180.png", "skip-backward-white.svg"
     SONG_FOLDER = "folder_note.png", "folder-music-white.svg"
     TAGS = "price-tag.png", "tag-white.svg"
     TEXT = "text.png", "file-document-white.svg"
     TITLE = "title.png", "format-title-white.svg"
+    ULTRASTAR_GAME = "ultrastar-game-black.svg", "ultrastar-game-white.svg"
     ULTRASTAR_MANAGER = "ultrastar-manager.png", None
     USDB = "faviconUSDB.png", "usdb-white.svg"
     USDX = "usdx.png", None

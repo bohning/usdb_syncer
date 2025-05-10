@@ -53,12 +53,12 @@ def set_usdb_auth(username: str, password: str) -> None:
 
 
 def ffmpeg_is_available() -> bool:
-    if shutil.which("ffmpeg"):
+    if shutil.which("ffmpeg") and shutil.which("ffprobe"):
         return True
     if (path := get_ffmpeg_dir()) and path not in os.environ["PATH"]:
         # first run; restore path from settings
         utils.add_to_system_path(path)
-        if shutil.which("ffmpeg"):
+        if shutil.which("ffmpeg") and shutil.which("ffprobe"):
             return True
     return False
 

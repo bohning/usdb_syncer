@@ -5,6 +5,7 @@ from __future__ import annotations
 import re
 from collections.abc import Callable, Iterator
 from enum import Enum
+from typing import assert_never
 
 import attrs
 
@@ -25,6 +26,24 @@ class NoteKind(Enum):
     FREESTYLE = "F"
     RAP = "R"
     GOLDEN_RAP = "G"
+
+    def has_pitch(self) -> bool:
+        match self:
+            case NoteKind.REGULAR | NoteKind.GOLDEN:
+                return True
+            case NoteKind.FREESTYLE | NoteKind.RAP | NoteKind.GOLDEN_RAP:
+                return False
+            case unreachable:
+                assert_never(unreachable)
+
+    def is_golden(self) -> bool:
+        match self:
+            case NoteKind.GOLDEN | NoteKind.GOLDEN_RAP:
+                return True
+            case NoteKind.FREESTYLE | NoteKind.RAP | NoteKind.REGULAR:
+                return False
+            case unreachable:
+                assert_never(unreachable)
 
 
 @attrs.define

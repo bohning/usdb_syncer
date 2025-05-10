@@ -2,36 +2,17 @@
 
 from __future__ import annotations
 
+import abc
 import enum
-from importlib import resources
 from typing import assert_never
 
 import attrs
 from PySide6 import QtWidgets
 from PySide6.QtGui import QColor, QColorConstants, QPalette
 
-from usdb_syncer import events, settings
+from usdb_syncer import settings
+from usdb_syncer.gui import events
 from usdb_syncer.gui.resources import styles
-
-
-def apply_theme(
-    theme: settings.Theme, primary_color: settings.Color, colored_background: bool
-) -> None:
-    app = QtWidgets.QApplication.instance()
-    assert isinstance(app, QtWidgets.QApplication), "Theming requires a GUI application"
-    match theme:
-        case settings.Theme.SYSTEM:
-            q_palette = QPalette()
-            style = ""
-        case settings.Theme.DARK:
-            dark_theme = DarkTheme(primary_color, colored_background)
-            q_palette = dark_theme.q_palette()
-            style = dark_theme.style()
-        case unreachable:
-            assert_never(unreachable)
-    app.setPalette(q_palette)
-    app.setStyleSheet(style)
-    events.ThemeChanged(theme).post()
 
 
 class _Surface(enum.Enum):
@@ -86,8 +67,104 @@ def _rgb_str(color: QColor) -> str:
 
 
 @attrs.define
-class DarkTheme:
+class PreviewPalette:
+    """Palette for the song preview."""
+
+    grid: QColor
+    line: QColor
+    note: QColor
+    active_note: QColor
+    golden_note: QColor
+    active_golden_note: QColor
+    text: QColor
+    active_text: QColor
+    needle: QColor
+
+
+class Theme(abc.ABC):
+    """Abstract base class for themes."""
+
+    KEY: settings.Theme
+
+    @abc.abstractmethod
+    def q_palette(self) -> QPalette:
+        pass
+
+    @abc.abstractmethod
+    def style(self) -> str:
+        pass
+
+    @abc.abstractmethod
+    def preview_palette(self) -> PreviewPalette:
+        pass
+
+    @classmethod
+    def new(
+        cls,
+        setting: settings.Theme,
+        primary_color: settings.Color,
+        colored_background: bool,
+    ) -> Theme:
+        match setting:
+            case settings.Theme.SYSTEM:
+                return SystemTheme()
+            case settings.Theme.DARK:
+                return DarkTheme(
+                    primary_color=primary_color, colored_background=colored_background
+                )
+            case unreachable:
+                assert_never(unreachable)
+
+    @classmethod
+    def from_settings(cls) -> Theme:
+        return cls.new(
+            settings.get_theme(),
+            settings.get_primary_color(),
+            settings.get_colored_background(),
+        )
+
+    def apply(self) -> None:
+        app = QtWidgets.QApplication.instance()
+        assert isinstance(app, QtWidgets.QApplication), (
+            "Theming requires a GUI application"
+        )
+        app.setPalette(self.q_palette())
+        app.setStyleSheet(self.style())
+        events.ThemeChanged(self).post()
+
+
+class SystemTheme(Theme):
+    """Uncustomized theme, only OS and Qt defaults."""
+
+    KEY = settings.Theme.SYSTEM
+    GOLD = QColor(245, 189, 2)
+
+    def q_palette(self) -> QPalette:
+        return QPalette()
+
+    def style(self) -> str:
+        return ""
+
+    def preview_palette(self) -> PreviewPalette:
+        palette = self.q_palette()
+        return PreviewPalette(
+            grid=palette.light().color(),
+            line=palette.light().color(),
+            note=palette.dark().color(),
+            active_note=palette.highlight().color(),
+            golden_note=_overlay_colors(palette.text().color(), self.GOLD, 0.8),
+            active_golden_note=self.GOLD,
+            text=palette.text().color(),
+            active_text=palette.highlight().color(),
+            needle=palette.highlight().color(),
+        )
+
+
+@attrs.define
+class DarkTheme(Theme):
     """Style and palette builder for a dark theme."""
+
+    KEY = settings.Theme.DARK
 
     primary_color: settings.Color
     colored_background: bool
@@ -95,11 +172,13 @@ class DarkTheme:
     on_secondary: QColor = QColorConstants.Svg.black
     on_background: QColor = QColorConstants.Svg.white
     on_surface: QColor = QColorConstants.Svg.white
-    _style_template = resources.files(styles).joinpath("dark.qss")
+    _style_template = styles.DARK_QSS
     primary_swatch: Swatch = attrs.field(init=False)
     primary: QColor = attrs.field(init=False)
     base_surface: QColor = attrs.field(init=False)
     default_surface: QColor = attrs.field(init=False, default=QColor(18, 18, 18))
+
+    GOLD = QColor(255, 215, 0)
 
     def __attrs_post_init__(self) -> None:
         self.primary_swatch = Swatch.get(self.primary_color)
@@ -157,6 +236,19 @@ class DarkTheme:
             on_secondary=_rgb_str(self.on_secondary),
             on_background=_rgb_str(self.on_background),
             on_surface=_rgb_str(self.on_surface),
+        )
+
+    def preview_palette(self) -> PreviewPalette:
+        return PreviewPalette(
+            grid=self.surface(_Surface.DP_24),
+            line=self.surface(_Surface.DP_24),
+            note=self.text(_Text.DISABLED),
+            active_note=self.primary,
+            golden_note=_overlay_colors(self.base_surface, self.GOLD, 0.4),
+            active_golden_note=self.GOLD,
+            text=self.text(_Text.HIGH),
+            active_text=self.primary,
+            needle=self.primary,
         )
 
 

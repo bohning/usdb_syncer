@@ -349,6 +349,14 @@ QMenuBar::item:selected {{
 }}
 
 
-QCommandLinkButton {{
-  color: red;
+QSlider::groove {{
+    height: 8px;
+    background: {surface_02dp};
+    border-radius: 4px;
+}}
+QSlider::handle {{
+    background: {surface_24dp};
+    width: 16px;
+    margin: -4px 0;
+    border-radius: 8px;
 }}

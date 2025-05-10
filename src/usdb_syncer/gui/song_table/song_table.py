@@ -12,6 +12,7 @@ from PySide6.QtCore import QItemSelectionModel, Qt
 from PySide6.QtGui import QAction, QCursor, QKeySequence, QShortcut
 
 from usdb_syncer import SongId, db, events, media_player, settings, sync_meta
+from usdb_syncer.gui import events as gui_events
 from usdb_syncer.gui import ffmpeg_dialog
 from usdb_syncer.gui.custom_data_dialog import CustomDataDialog
 from usdb_syncer.gui.progress import run_with_progress
@@ -49,9 +50,9 @@ class SongTable:
         )
         events.SongChanged.subscribe(self._on_song_changed)
         self._setup_search_timer()
-        events.TreeFilterChanged.subscribe(self._on_tree_filter_changed)
-        events.TextFilterChanged.subscribe(self._on_text_filter_changed)
-        events.SavedSearchRestored.subscribe(self._on_saved_search_restored)
+        gui_events.TreeFilterChanged.subscribe(self._on_tree_filter_changed)
+        gui_events.TextFilterChanged.subscribe(self._on_text_filter_changed)
+        gui_events.SavedSearchRestored.subscribe(self._on_saved_search_restored)
         QShortcut(QKeySequence(Qt.Key.Key_Space), self._view).activated.connect(
             self._on_space
         )
@@ -248,6 +249,7 @@ class SongTable:
             self.mw.action_open_song_in_yass_reloaded,
             self.mw.action_delete,
             self.mw.action_pin,
+            self.mw.action_preview,
             self.mw.menu_custom_data,
         ):
             action.setEnabled(song.is_local())
@@ -362,14 +364,14 @@ class SongTable:
             self._model.set_songs(db.search_usdb_songs(self._search))
             self._on_current_song_changed()
 
-    def _on_tree_filter_changed(self, event: events.TreeFilterChanged) -> None:
+    def _on_tree_filter_changed(self, event: gui_events.TreeFilterChanged) -> None:
         event.search.order = self._search.order
         event.search.descending = self._search.descending
         event.search.text = self._search.text
         self._search = event.search
         self.search_songs(100)
 
-    def _on_saved_search_restored(self, event: events.SavedSearchRestored) -> None:
+    def _on_saved_search_restored(self, event: gui_events.SavedSearchRestored) -> None:
         self._search.order = event.search.order
         self._search.descending = event.search.descending
         self._search.text = event.search.text
@@ -383,14 +385,16 @@ class SongTable:
         )
         self.search_songs(100)
 
-    def _on_text_filter_changed(self, event: events.TextFilterChanged) -> None:
+    def _on_text_filter_changed(self, event: gui_events.TextFilterChanged) -> None:
         self._search.text = event.search
         self.search_songs(400)
 
     def _on_sort_order_changed(self, section: int, order: Qt.SortOrder) -> None:
         self._search.order = Column(section).song_order()
         self._search.descending = bool(order.value)
-        events.SearchOrderChanged(self._search.order, self._search.descending).post()
+        gui_events.SearchOrderChanged(
+            self._search.order, self._search.descending
+        ).post()
         self.search_songs()
 
 

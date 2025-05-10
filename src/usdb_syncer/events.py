@@ -7,7 +7,7 @@ from typing import Any, Self, cast
 import attrs
 from PySide6 import QtCore
 
-from usdb_syncer import SongId, db, settings
+from usdb_syncer import SongId
 
 
 class _EventProcessor(QtCore.QObject):
@@ -62,38 +62,6 @@ class SubscriptableEvent(QtCore.QEvent):
             func(self)
 
 
-# search
-
-
-@attrs.define(slots=False)
-class TreeFilterChanged(SubscriptableEvent):
-    """Sent when a tree filter row has been selected or deselected."""
-
-    search: db.SearchBuilder
-
-
-@attrs.define(slots=False)
-class TextFilterChanged(SubscriptableEvent):
-    """Sent when the free text search has been changed."""
-
-    search: str
-
-
-@attrs.define(slots=False)
-class SearchOrderChanged(SubscriptableEvent):
-    """Sent when the search order has been changed or reversed."""
-
-    order: db.SongOrder
-    descending: bool
-
-
-@attrs.define(slots=False)
-class SavedSearchRestored(SubscriptableEvent):
-    """Sent when the a save search is set."""
-
-    search: db.SearchBuilder
-
-
 # songs
 
 
@@ -136,13 +104,3 @@ class SongDirChanged(SubscriptableEvent):
     """Sent when the selected song directory has changed."""
 
     new_dir: Path
-
-
-# UI
-
-
-@attrs.define(slots=False)
-class ThemeChanged(SubscriptableEvent):
-    """Sent when a new theme has been applied."""
-
-    theme: settings.Theme

@@ -251,6 +251,15 @@ class SyncMeta:
             if meta:
                 yield meta
 
+    def txt_path(self) -> Path | None:
+        return self.path.parent / self.txt.fname if self.txt else None
+
+    def audio_path(self) -> Path | None:
+        return self.path.parent / self.audio.fname if self.audio else None
+
+    def cover_path(self) -> Path | None:
+        return self.path.parent / self.cover.fname if self.cover else None
+
 
 class SyncMetaEncoder(json.JSONEncoder):
     """Custom JSON encoder"""
