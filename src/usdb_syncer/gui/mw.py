@@ -396,3 +396,4 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         self.action_find_local_songs.setIcon(icons.Icon.DATABASE.icon(key))
         self.action_import_usdb_ids.setIcon(icons.Icon.FILE_IMPORT.icon(key))
         self.action_export_usdb_ids.setIcon(icons.Icon.FILE_EXPORT.icon(key))
+        self.action_preview.setIcon(icons.Icon.ULTRASTAR_GAME.icon(key))
