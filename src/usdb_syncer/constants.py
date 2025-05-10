@@ -25,6 +25,7 @@ class UsdbStrings:
     DATE: str
     UPLOADED_BY: str
     VIEWS: str
+    VERIFY_NEW_SONGS: str
     YES: str
     NO: str
     DATASET_NOT_FOUND = "Datensatz nicht gefunden"
@@ -46,6 +47,7 @@ class UsdbStringsEnglish(UsdbStrings):
     DATE = "Date"
     UPLOADED_BY = "Uploaded by"
     VIEWS = "Views"
+    VERIFY_NEW_SONGS = "Verify New Songs"
     YES = "Yes"
     NO = "No"
 
@@ -63,6 +65,7 @@ class UsdbStringsGerman(UsdbStrings):
     DATE = "Datum"
     UPLOADED_BY = "Hochgeladen von"
     VIEWS = "Aufrufe"
+    VERIFY_NEW_SONGS = "Neue Songs verifizieren"
     YES = "Ja"
     NO = "Nein"
 
@@ -80,6 +83,7 @@ class UsdbStringsFrench(UsdbStrings):
     DATE = "Date"
     UPLOADED_BY = "Téléchargé par"
     VIEWS = "Affichages"
+    VERIFY_NEW_SONGS = "Vérifier les nouvelles chansons"
     YES = "Oui"
     NO = "Non"
 

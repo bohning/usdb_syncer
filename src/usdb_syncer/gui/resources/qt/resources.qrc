@@ -81,13 +81,17 @@
     <file>music-white.svg</file>
     <file>notebook-white.svg</file>
     <file>octo_browser.png</file>
-    <file>offline.png</file>
-    <file>online.png</file>
     <file>opera_gx.png</file>
+    <file>usdb_logged_out.png</file>
+    <file>usdb_logged_in.png</file>
+    <file>ffmpeg_available.svg</file>
+    <file>ffmpeg_unavailable.svg</file>
     <file>opera.png</file>
     <file>pause-white.svg</file>
     <file>performous.png</file>
     <file>pin-white.svg</file>
+    <file>youtube_cookies_available.svg</file>
+    <file>youtube_cookies_unavailable.svg</file>
     <file>pin.png</file>
     <file>play-network-white.svg</file>
     <file>play-white.svg</file>

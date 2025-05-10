@@ -13,7 +13,6 @@ class Icon(enum.Enum):
     """Available icons with auto-theming."""
 
     ABORT = "minus-circle.png", "minus-circle-white.svg"
-    ADMIN = "admin.png", None
     ARC = "arc.png", None
     ARTIST = "artist.png", "artist-white.svg"
     AUDIO = "audio.png", "music-white.svg"
@@ -40,6 +39,8 @@ class Icon(enum.Enum):
     EDGE = "edge.png", None
     EDITION = "edition.png", "edition-white.svg"
     ERROR = "error.png", "close-octagon-white.svg"
+    FFMPEG_AVAILABLE = "ffmpeg_available.svg", None
+    FFMPEG_UNAVAILABLE = "ffmpeg_unavailable.svg", None
     FILE_EXPORT = "document-export.png", "file-export-white.svg"
     FILE_IMPORT = "document-import.png", "file-import-white.svg"
     FIREFOX = "firefox.png", None
@@ -56,10 +57,7 @@ class Icon(enum.Enum):
     MENU_RIGHT = None, "menu-right-white.svg"
     MENU_UP = None, "menu-up-white.svg"
     META_TAGS = "tag-hash.png", "pound-box-white.svg"
-    MOD = "mod.png", None
     OCTO_BROWSER = "octo_browser.png", None
-    ONLINE = "online.png", None
-    OFFLINE = "offline.png", None
     OPEN_SONG_WITH = "music--arrow.png", "folder-play-white.svg"
     OPERA = "opera.png", None
     OPERA_GX = "opera_gx.png", None
@@ -82,6 +80,8 @@ class Icon(enum.Enum):
     TITLE = "title.png", "format-title-white.svg"
     ULTRASTAR_MANAGER = "ultrastar-manager.png", None
     USDB = "faviconUSDB.png", "usdb-white.svg"
+    USDB_LOGGED_IN = "usdb_logged_in.png", None
+    USDB_LOGGED_OUT = "usdb_logged_out.png", None
     USDX = "usdx.png", None
     USER = "user.png", None
     VIDEO = "video.png", "filmstrip-white.svg"
@@ -91,6 +91,8 @@ class Icon(enum.Enum):
     WARNING = "warning.png", "alert-white.svg"
     YASS = "yass.png", None
     YASS_RELOADED = "yass-reloaded.png", None
+    YOUTUBE_COOKIES_AVAILABLE = "youtube_cookies_available.svg", None
+    YOUTUBE_COOKIES_UNAVAILABLE = "youtube_cookies_unavailable.svg", None
 
     def __init__(self, colored_name: str | None, white_name: str | None):
         colored = colored_name or white_name

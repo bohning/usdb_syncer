@@ -3,7 +3,6 @@
 import webbrowser
 from collections.abc import Callable
 from pathlib import Path
-from typing import assert_never
 
 from PySide6 import QtGui
 from PySide6.QtWidgets import QFileDialog, QHBoxLayout, QLabel, QMainWindow, QWidget
@@ -81,34 +80,49 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         user_layout.setContentsMargins(0, 0, 0, 0)
         user_layout.setSpacing(4)
 
-        user_label = QLabel("John Doe")  # TODO: Replace with actual username
-        user_type = UsdbUserType.MODERATOR  # TODO: Replace with actual status
-        icon_label = QLabel()
-        icon_label.setToolTip(user_type)
-        match user_type:
-            case UsdbUserType.ADMIN:
-                icon_label.setPixmap(QtGui.QPixmap(icons.Icon.ADMIN.icon().pixmap(16)))
-            case UsdbUserType.MODERATOR:
-                icon_label.setPixmap(QtGui.QPixmap(icons.Icon.MOD.icon().pixmap(16)))
-            case UsdbUserType.USER:
-                icon_label.setPixmap(QtGui.QPixmap(icons.Icon.USER.icon().pixmap(16)))
-            case _ as unreachable:
-                assert_never(unreachable)
-        connection_status = "online"  # TODO: Replace with actual connection status
-        connection_label = QLabel()
-        connection_label.setToolTip(connection_status)
-        if connection_status == "online":
-            connection_label.setPixmap(
-                QtGui.QPixmap(icons.Icon.ONLINE.icon().pixmap(16))
+        user_icon = QLabel()
+        user_icon.setPixmap(QtGui.QPixmap(icons.Icon.USER.icon().pixmap(16)))
+        user_icon.setToolTip(UsdbUserType.MODERATOR)  # TODO: use actual status
+        user_name = QLabel("John Doe")  # TODO: use actual username
+        usdb_status = "USDB: logged in"  # TODO: use actual connection status
+        usdb_label = QLabel()
+        usdb_label.setToolTip(usdb_status)
+        if usdb_status == "USDB: logged in":
+            usdb_label.setPixmap(
+                QtGui.QPixmap(icons.Icon.USDB_LOGGED_IN.icon().pixmap(16))
             )
         else:
-            connection_label.setPixmap(
-                QtGui.QPixmap(icons.Icon.OFFLINE.icon().pixmap(16))
+            usdb_label.setPixmap(
+                QtGui.QPixmap(icons.Icon.USDB_LOGGED_OUT.icon().pixmap(16))
+            )
+        youtube_status = "YouTube: cookies available"  # TODO: use actual youtube status
+        youtube_label = QLabel()
+        youtube_label.setToolTip(youtube_status)
+        if youtube_status == "YouTube: cookies available":
+            youtube_label.setPixmap(
+                QtGui.QPixmap(icons.Icon.YOUTUBE_COOKIES_AVAILABLE.icon().pixmap(16))
+            )
+        else:
+            youtube_label.setPixmap(
+                QtGui.QPixmap(icons.Icon.YOUTUBE_COOKIES_UNAVAILABLE.icon().pixmap(16))
+            )
+        ffmpeg_status = "FFmpeg: available"  # TODO: use actual ffmpeg status
+        ffmpeg_label = QLabel()
+        ffmpeg_label.setToolTip(ffmpeg_status)
+        if ffmpeg_status == "FFmpeg: available":
+            ffmpeg_label.setPixmap(
+                QtGui.QPixmap(icons.Icon.FFMPEG_AVAILABLE.icon().pixmap(16))
+            )
+        else:
+            ffmpeg_label.setPixmap(
+                QtGui.QPixmap(icons.Icon.FFMPEG_UNAVAILABLE.icon().pixmap(16))
             )
 
-        user_layout.addWidget(icon_label)
-        user_layout.addWidget(user_label)
-        user_layout.addWidget(connection_label)
+        user_layout.addWidget(user_icon)
+        user_layout.addWidget(user_name)
+        user_layout.addWidget(usdb_label)
+        user_layout.addWidget(youtube_label)
+        user_layout.addWidget(ffmpeg_label)
 
         self.statusbar.addPermanentWidget(self._user_info)
 
