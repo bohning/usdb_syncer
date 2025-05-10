@@ -3,12 +3,13 @@
 import webbrowser
 from collections.abc import Callable
 from pathlib import Path
+from typing import assert_never
 
 from PySide6 import QtGui
-from PySide6.QtWidgets import QFileDialog, QLabel, QMainWindow
+from PySide6.QtWidgets import QFileDialog, QHBoxLayout, QLabel, QMainWindow, QWidget
 
 from usdb_syncer import SongId, db, events, settings, song_routines, usdb_id_file
-from usdb_syncer.constants import Usdb
+from usdb_syncer.constants import Usdb, UsdbUserType
 from usdb_syncer.gui import gui_utils, icons, progress, progress_bar
 from usdb_syncer.gui.about_dialog import AboutDialog
 from usdb_syncer.gui.comment_dialog import CommentDialog
@@ -62,6 +63,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         self.lineEdit_search.selectAll()
 
     def _setup_statusbar(self) -> None:
+        # Left-aligned song count
         self._status_label = QLabel(self)
         self.statusbar.addWidget(self._status_label)
 
@@ -72,6 +74,43 @@ class MainWindow(Ui_MainWindow, QMainWindow):
             )
 
         self.table.connect_row_count_changed(on_count_changed)
+
+        # Right-aligned user / login status info
+        self._user_info = QWidget(self)
+        user_layout = QHBoxLayout(self._user_info)
+        user_layout.setContentsMargins(0, 0, 0, 0)
+        user_layout.setSpacing(4)
+
+        user_label = QLabel("John Doe")  # TODO: Replace with actual username
+        user_type = UsdbUserType.MODERATOR  # TODO: Replace with actual status
+        icon_label = QLabel()
+        icon_label.setToolTip(user_type)
+        match user_type:
+            case UsdbUserType.ADMIN:
+                icon_label.setPixmap(QtGui.QPixmap(icons.Icon.ADMIN.icon().pixmap(16)))
+            case UsdbUserType.MODERATOR:
+                icon_label.setPixmap(QtGui.QPixmap(icons.Icon.MOD.icon().pixmap(16)))
+            case UsdbUserType.USER:
+                icon_label.setPixmap(QtGui.QPixmap(icons.Icon.USER.icon().pixmap(16)))
+            case _ as unreachable:
+                assert_never(unreachable)
+        connection_status = "online"  # TODO: Replace with actual connection status
+        connection_label = QLabel()
+        connection_label.setToolTip(connection_status)
+        if connection_status == "online":
+            connection_label.setPixmap(
+                QtGui.QPixmap(icons.Icon.ONLINE.icon().pixmap(16))
+            )
+        else:
+            connection_label.setPixmap(
+                QtGui.QPixmap(icons.Icon.OFFLINE.icon().pixmap(16))
+            )
+
+        user_layout.addWidget(icon_label)
+        user_layout.addWidget(user_label)
+        user_layout.addWidget(connection_label)
+
+        self.statusbar.addPermanentWidget(self._user_info)
 
     def _setup_log(self) -> None:
         self.plainTextEdit.setReadOnly(True)

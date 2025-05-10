@@ -90,7 +90,7 @@
          <string>Download</string>
         </property>
         <property name="icon">
-         <iconset resource="../resources/resources.qrc">
+         <iconset>
           <normaloff>:/icons/drive-download.png</normaloff>:/icons/drive-download.png</iconset>
         </property>
         <property name="iconSize">
@@ -107,7 +107,7 @@
          <string>Pause</string>
         </property>
         <property name="icon">
-         <iconset resource="../resources/resources.qrc">
+         <iconset resource="../resources/qt/resources.qrc">
           <normaloff>:/icons/control-pause.png</normaloff>:/icons/control-pause.png</iconset>
         </property>
         <property name="iconSize">
@@ -169,7 +169,7 @@
          <string>Select song folder</string>
         </property>
         <property name="icon">
-         <iconset resource="../resources/resources.qrc">
+         <iconset resource="../resources/qt/resources.qrc">
           <normaloff>:/icons/folder_note.png</normaloff>:/icons/folder_note.png</iconset>
         </property>
        </widget>
@@ -243,7 +243,7 @@
       <string>Custom Data</string>
      </property>
      <property name="icon">
-      <iconset resource="../resources/resources.qrc">
+      <iconset resource="../resources/qt/resources.qrc">
        <normaloff>:/icons/drawer.png</normaloff>:/icons/drawer.png</iconset>
      </property>
     </widget>
@@ -252,7 +252,7 @@
       <string>Open Song in</string>
      </property>
      <property name="icon">
-      <iconset resource="../resources/resources.qrc">
+      <iconset resource="../resources/qt/resources.qrc">
        <normaloff>:/icons/music--arrow.png</normaloff>:/icons/music--arrow.png</iconset>
      </property>
      <addaction name="action_open_song_in_usdx"/>
@@ -268,7 +268,7 @@
       <string>Rate Song on USDB</string>
      </property>
      <property name="icon">
-      <iconset resource="../resources/resources.qrc">
+      <iconset resource="../resources/qt/resources.qrc">
        <normaloff>:/icons/rating.png</normaloff>:/icons/rating.png</iconset>
      </property>
      <addaction name="action_rate_1star"/>
@@ -334,7 +334,7 @@
           <string>Errors</string>
          </property>
          <property name="icon">
-          <iconset resource="../resources/resources.qrc">
+          <iconset resource="../resources/qt/resources.qrc">
            <normaloff>:/icons/error.png</normaloff>:/icons/error.png</iconset>
          </property>
          <property name="iconSize">
@@ -360,7 +360,7 @@
           <string>Warnings</string>
          </property>
          <property name="icon">
-          <iconset resource="../resources/resources.qrc">
+          <iconset resource="../resources/qt/resources.qrc">
            <normaloff>:/icons/warning.png</normaloff>:/icons/warning.png</iconset>
          </property>
          <property name="iconSize">
@@ -386,7 +386,7 @@
           <string>Infos</string>
          </property>
          <property name="icon">
-          <iconset resource="../resources/resources.qrc">
+          <iconset resource="../resources/qt/resources.qrc">
            <normaloff>:/icons/info.png</normaloff>:/icons/info.png</iconset>
          </property>
          <property name="iconSize">
@@ -409,7 +409,7 @@
           <string>Debugs</string>
          </property>
          <property name="icon">
-          <iconset resource="../resources/resources.qrc">
+          <iconset resource="../resources/qt/resources.qrc">
            <normaloff>:/icons/bug.png</normaloff>:/icons/bug.png</iconset>
          </property>
          <property name="iconSize">
@@ -482,7 +482,7 @@
   </widget>
   <action name="action_meta_tags">
    <property name="icon">
-    <iconset resource="../resources/resources.qrc">
+    <iconset resource="../resources/qt/resources.qrc">
      <normaloff>:/icons/tag-hash.png</normaloff>:/icons/tag-hash.png</iconset>
    </property>
    <property name="text">
@@ -491,7 +491,7 @@
   </action>
   <action name="action_settings">
    <property name="icon">
-    <iconset resource="../resources/resources.qrc">
+    <iconset resource="../resources/qt/resources.qrc">
      <normaloff>:/icons/cog.png</normaloff>:/icons/cog.png</iconset>
    </property>
    <property name="text">
@@ -500,7 +500,7 @@
   </action>
   <action name="action_generate_song_list">
    <property name="icon">
-    <iconset resource="../resources/resources.qrc">
+    <iconset resource="../resources/qt/resources.qrc">
      <normaloff>:/icons/report.png</normaloff>:/icons/report.png</iconset>
    </property>
    <property name="text">
@@ -509,7 +509,7 @@
   </action>
   <action name="action_refetch_song_list">
    <property name="icon">
-    <iconset resource="../resources/resources.qrc">
+    <iconset resource="../resources/qt/resources.qrc">
      <normaloff>:/icons/check_for_update.png</normaloff>:/icons/check_for_update.png</iconset>
    </property>
    <property name="text">
@@ -521,7 +521,7 @@
   </action>
   <action name="action_find_local_songs">
    <property name="icon">
-    <iconset resource="../resources/resources.qrc">
+    <iconset resource="../resources/qt/resources.qrc">
      <normaloff>:/icons/database.png</normaloff>:/icons/database.png</iconset>
    </property>
    <property name="text">
@@ -533,7 +533,7 @@
   </action>
   <action name="action_show_log">
    <property name="icon">
-    <iconset resource="../resources/resources.qrc">
+    <iconset resource="../resources/qt/resources.qrc">
      <normaloff>:/icons/log.png</normaloff>:/icons/log.png</iconset>
    </property>
    <property name="text">
@@ -542,7 +542,7 @@
   </action>
   <action name="action_import_usdb_ids">
    <property name="icon">
-    <iconset resource="../resources/resources.qrc">
+    <iconset resource="../resources/qt/resources.qrc">
      <normaloff>:/icons/document-export.png</normaloff>:/icons/document-export.png</iconset>
    </property>
    <property name="text">
@@ -554,7 +554,7 @@
   </action>
   <action name="action_export_usdb_ids">
    <property name="icon">
-    <iconset resource="../resources/resources.qrc">
+    <iconset resource="../resources/qt/resources.qrc">
      <normaloff>:/icons/document-import.png</normaloff>:/icons/document-import.png</iconset>
    </property>
    <property name="text">
@@ -566,7 +566,7 @@
   </action>
   <action name="action_songs_download">
    <property name="icon">
-    <iconset resource="../resources/resources.qrc">
+    <iconset>
      <normaloff>:/icons/drive-download.png</normaloff>:/icons/drive-download.png</iconset>
    </property>
    <property name="text">
@@ -575,7 +575,7 @@
   </action>
   <action name="action_usdb_login">
    <property name="icon">
-    <iconset resource="../resources/resources.qrc">
+    <iconset resource="../resources/qt/resources.qrc">
      <normaloff>:/icons/faviconUSDB.png</normaloff>:/icons/faviconUSDB.png</iconset>
    </property>
    <property name="text">
@@ -584,7 +584,7 @@
   </action>
   <action name="action_about">
    <property name="icon">
-    <iconset resource="../resources/resources.qrc">
+    <iconset resource="../resources/qt/resources.qrc">
      <normaloff>:/app/appicon_128x128.png</normaloff>:/app/appicon_128x128.png</iconset>
    </property>
    <property name="text">
@@ -593,7 +593,7 @@
   </action>
   <action name="action_show_in_usdb">
    <property name="icon">
-    <iconset resource="../resources/resources.qrc">
+    <iconset resource="../resources/qt/resources.qrc">
      <normaloff>:/icons/faviconUSDB.png</normaloff>:/icons/faviconUSDB.png</iconset>
    </property>
    <property name="text">
@@ -602,7 +602,7 @@
   </action>
   <action name="action_post_comment_in_usdb">
    <property name="icon">
-    <iconset resource="../resources/resources.qrc">
+    <iconset resource="../resources/qt/resources.qrc">
      <normaloff>:/icons/balloon.png</normaloff>:/icons/balloon.png</iconset>
    </property>
    <property name="text">
@@ -611,7 +611,7 @@
   </action>
   <action name="action_open_song_folder">
    <property name="icon">
-    <iconset resource="../resources/resources.qrc">
+    <iconset resource="../resources/qt/resources.qrc">
      <normaloff>:/icons/folder_note.png</normaloff>:/icons/folder_note.png</iconset>
    </property>
    <property name="text">
@@ -620,7 +620,7 @@
   </action>
   <action name="action_delete">
    <property name="icon">
-    <iconset resource="../resources/resources.qrc">
+    <iconset resource="../resources/qt/resources.qrc">
      <normaloff>:/icons/bin.png</normaloff>:/icons/bin.png</iconset>
    </property>
    <property name="text">
@@ -635,7 +635,7 @@
     <bool>true</bool>
    </property>
    <property name="icon">
-    <iconset resource="../resources/resources.qrc">
+    <iconset resource="../resources/qt/resources.qrc">
      <normaloff>:/icons/pin.png</normaloff>:/icons/pin.png</iconset>
    </property>
    <property name="text">
@@ -647,7 +647,7 @@
   </action>
   <action name="action_songs_abort">
    <property name="icon">
-    <iconset resource="../resources/resources.qrc">
+    <iconset resource="../resources/qt/resources.qrc">
      <normaloff>:/icons/minus-circle.png</normaloff>:/icons/minus-circle.png</iconset>
    </property>
    <property name="text">
@@ -705,7 +705,7 @@
   </action>
   <action name="action_open_song_in_karedi">
    <property name="icon">
-    <iconset resource="../resources/resources.qrc">
+    <iconset resource="../resources/qt/resources.qrc">
      <normaloff>:/icons/karedi.png</normaloff>:/icons/karedi.png</iconset>
    </property>
    <property name="text">
@@ -714,7 +714,7 @@
   </action>
   <action name="action_open_song_in_performous">
    <property name="icon">
-    <iconset resource="../resources/resources.qrc">
+    <iconset resource="../resources/qt/resources.qrc">
      <normaloff>:/icons/performous.png</normaloff>:/icons/performous.png</iconset>
    </property>
    <property name="text">
@@ -723,7 +723,7 @@
   </action>
   <action name="action_open_song_in_usdx">
    <property name="icon">
-    <iconset resource="../resources/resources.qrc">
+    <iconset resource="../resources/qt/resources.qrc">
      <normaloff>:/icons/usdx.png</normaloff>:/icons/usdx.png</iconset>
    </property>
    <property name="text">
@@ -732,7 +732,7 @@
   </action>
   <action name="action_open_song_in_ultrastar_manager">
    <property name="icon">
-    <iconset resource="../resources/resources.qrc">
+    <iconset resource="../resources/qt/resources.qrc">
      <normaloff>:/icons/ultrastar-manager.png</normaloff>:/icons/ultrastar-manager.png</iconset>
    </property>
    <property name="text">
@@ -741,7 +741,7 @@
   </action>
   <action name="action_open_song_in_vocaluxe">
    <property name="icon">
-    <iconset resource="../resources/resources.qrc">
+    <iconset resource="../resources/qt/resources.qrc">
      <normaloff>:/icons/vocaluxe.png</normaloff>:/icons/vocaluxe.png</iconset>
    </property>
    <property name="text">
@@ -750,7 +750,7 @@
   </action>
   <action name="action_open_song_in_yass_reloaded">
    <property name="icon">
-    <iconset resource="../resources/resources.qrc">
+    <iconset resource="../resources/qt/resources.qrc">
      <normaloff>:/icons/yass-reloaded.png</normaloff>:/icons/yass-reloaded.png</iconset>
    </property>
    <property name="text">
@@ -759,7 +759,7 @@
   </action>
   <action name="action_rate_in_usdb">
    <property name="icon">
-    <iconset resource="../resources/resources.qrc">
+    <iconset resource="../resources/qt/resources.qrc">
      <normaloff>:/icons/rating.png</normaloff>:/icons/rating.png</iconset>
    </property>
    <property name="text">
@@ -811,7 +811,7 @@
   </action>
  </widget>
  <resources>
-  <include location="../resources/resources.qrc"/>
+  <include location="../resources/qt/resources.qrc"/>
  </resources>
  <connections/>
 </ui>

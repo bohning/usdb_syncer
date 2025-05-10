@@ -1,6 +1,7 @@
 """Constants"""
 
 import re
+from enum import StrEnum
 
 MINIMUM_BPM = 200.0
 GITHUB_API_LATEST = "https://api.github.com/repos/bohning/usdb_syncer/releases/latest"
@@ -95,6 +96,12 @@ class Usdb:
     MAX_SONG_ID = 100_000
     MAX_SONGS_PER_PAGE = 100
     DATETIME_STRF = "%d.%m.%y - %H:%M"
+
+
+class UsdbUserType(StrEnum):
+    ADMIN = "admin"
+    MODERATOR = "mod"
+    USER = "user"
 
 
 class YtErrorMsg:

@@ -13,6 +13,7 @@ class Icon(enum.Enum):
     """Available icons with auto-theming."""
 
     ABORT = "minus-circle.png", "minus-circle-white.svg"
+    ADMIN = "admin.png", None
     ARC = "arc.png", None
     ARTIST = "artist.png", "artist-white.svg"
     AUDIO = "audio.png", "music-white.svg"
@@ -55,7 +56,10 @@ class Icon(enum.Enum):
     MENU_RIGHT = None, "menu-right-white.svg"
     MENU_UP = None, "menu-up-white.svg"
     META_TAGS = "tag-hash.png", "pound-box-white.svg"
+    MOD = "mod.png", None
     OCTO_BROWSER = "octo_browser.png", None
+    ONLINE = "online.png", None
+    OFFLINE = "offline.png", None
     OPEN_SONG_WITH = "music--arrow.png", "folder-play-white.svg"
     OPERA = "opera.png", None
     OPERA_GX = "opera_gx.png", None
@@ -79,6 +83,7 @@ class Icon(enum.Enum):
     ULTRASTAR_MANAGER = "ultrastar-manager.png", None
     USDB = "faviconUSDB.png", "usdb-white.svg"
     USDX = "usdx.png", None
+    USER = "user.png", None
     VIDEO = "video.png", "filmstrip-white.svg"
     VIEWS = "views.png", "views-white.svg"
     VIVALDI = "vivaldi.png", None

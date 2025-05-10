@@ -1,6 +1,6 @@
-
 <RCC>
   <qresource prefix="icons">
+    <file>admin.png</file>
     <file>alert-white.svg</file>
     <file>arc.png</file>
     <file>artist-white.svg</file>
@@ -75,11 +75,14 @@
     <file>menu-up-white.svg</file>
     <file>minus-circle-white.svg</file>
     <file>minus-circle.png</file>
+    <file>mod.png</file>
     <file>music--arrow.png</file>
     <file>music-note-white.svg</file>
     <file>music-white.svg</file>
     <file>notebook-white.svg</file>
     <file>octo_browser.png</file>
+    <file>offline.png</file>
+    <file>online.png</file>
     <file>opera_gx.png</file>
     <file>opera.png</file>
     <file>pause-white.svg</file>
@@ -111,6 +114,7 @@
     <file>ultrastar-manager.png</file>
     <file>usdb-white.svg</file>
     <file>usdx.png</file>
+    <file>user.png</file>
     <file>video.png</file>
     <file>views-white.svg</file>
     <file>views.png</file>
