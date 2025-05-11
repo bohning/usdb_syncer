@@ -1,6 +1,5 @@
 <RCC>
   <qresource prefix="icons">
-    <file>admin.png</file>
     <file>alert-white.svg</file>
     <file>arc.png</file>
     <file>artist-white.svg</file>
@@ -15,8 +14,8 @@
     <file>calendar-white.svg</file>
     <file>calendar.png</file>
     <file>cards-white.svg</file>
-    <file>check_for_update.png</file>
     <file>check-white.svg</file>
+    <file>check_for_update.png</file>
     <file>chevron-down-white.svg</file>
     <file>chevron-left-white.svg</file>
     <file>chevron-right-white.svg</file>
@@ -47,14 +46,16 @@
     <file>error.png</file>
     <file>faviconUSDB.png</file>
     <file>feather-white.svg</file>
+    <file>ffmpeg_available.svg</file>
+    <file>ffmpeg_unavailable.svg</file>
     <file>file-document-white.svg</file>
     <file>file-export-white.svg</file>
     <file>file-import-white.svg</file>
     <file>filmstrip-white.svg</file>
     <file>firefox.png</file>
-    <file>folder_note.png</file>
     <file>folder-music-white.svg</file>
     <file>folder-play-white.svg</file>
+    <file>folder_note.png</file>
     <file>format-title-white.svg</file>
     <file>gold-white.svg</file>
     <file>golden_notes.png</file>
@@ -75,23 +76,16 @@
     <file>menu-up-white.svg</file>
     <file>minus-circle-white.svg</file>
     <file>minus-circle.png</file>
-    <file>mod.png</file>
     <file>music--arrow.png</file>
     <file>music-note-white.svg</file>
     <file>music-white.svg</file>
     <file>notebook-white.svg</file>
     <file>octo_browser.png</file>
-    <file>opera_gx.png</file>
-    <file>usdb_logged_out.png</file>
-    <file>usdb_logged_in.png</file>
-    <file>ffmpeg_available.svg</file>
-    <file>ffmpeg_unavailable.svg</file>
     <file>opera.png</file>
+    <file>opera_gx.png</file>
     <file>pause-white.svg</file>
     <file>performous.png</file>
     <file>pin-white.svg</file>
-    <file>youtube_cookies_available.svg</file>
-    <file>youtube_cookies_unavailable.svg</file>
     <file>pin.png</file>
     <file>play-network-white.svg</file>
     <file>play-white.svg</file>
@@ -117,6 +111,8 @@
     <file>translate-variant-white.svg</file>
     <file>ultrastar-manager.png</file>
     <file>usdb-white.svg</file>
+    <file>usdb_logged_in.png</file>
+    <file>usdb_logged_out.png</file>
     <file>usdx.png</file>
     <file>user.png</file>
     <file>video.png</file>
@@ -127,6 +123,8 @@
     <file>warning.png</file>
     <file>yass-reloaded.png</file>
     <file>yass.png</file>
+    <file>youtube_cookies_available.svg</file>
+    <file>youtube_cookies_unavailable.svg</file>
   </qresource>
   <qresource prefix="app">
     <file>appicon_128x128.png</file>
