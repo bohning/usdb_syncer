@@ -34,7 +34,8 @@ class Logger(logging.LoggerAdapter):
         """Log exception info with debug and message with error level."""
         if exc_info:
             self.debug(None, exc_info=exc_info, **kwargs)
-        self.error(msg, *args, exc_info=False, **kwargs)
+        if msg:
+            self.error(msg, *args, exc_info=False, **kwargs)
 
 
 class SongLogger(Logger):
