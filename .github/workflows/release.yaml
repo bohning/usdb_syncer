@@ -125,6 +125,7 @@ jobs:
       - name: Install dependencies
         run: poetry install --without dev
       - name: Write release version
+        shell: bash
         run: |
           set -e
           version=$(poetry run dunamai from git)
