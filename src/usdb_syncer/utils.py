@@ -345,6 +345,7 @@ def get_media_duration(path: Path) -> float:
         ],
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT,
+        check=True,
     )
     return float(result.stdout)
 
