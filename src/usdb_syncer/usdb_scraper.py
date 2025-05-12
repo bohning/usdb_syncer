@@ -12,7 +12,7 @@ import requests
 from bs4 import BeautifulSoup, NavigableString, Tag
 from requests import Session
 
-from usdb_syncer import SongId, errors, settings
+from usdb_syncer import SongId, errors, events, settings
 from usdb_syncer.constants import (
     SUPPORTED_VIDEO_SOURCES_REGEX,
     Usdb,
@@ -222,11 +222,15 @@ def get_usdb_page(
         )
 
     try:
-        return page()
-    except requests.ConnectionError:
+        ret = page()
+        events.ConnectedStatusChanged(True).post()
+        return ret
+    except requests.ConnectionError as e:
+        events.ConnectedStatusChanged(False, e.errno).post()
         logger.debug("Connection failed; session may have expired; retrying ...")
     except errors.UsdbLoginError:
         # skip login retry if custom or just created session
+        events.ConnectedStatusChanged(False).post()
         if session or not existing_session:
             raise
         logger.debug(f"Page '{rel_url}' is private; trying to log in ...")

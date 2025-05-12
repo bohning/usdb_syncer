@@ -8,7 +8,7 @@ from PySide6 import QtGui
 from PySide6.QtWidgets import QFileDialog, QHBoxLayout, QLabel, QMainWindow, QWidget
 
 from usdb_syncer import SongId, db, events, settings, song_routines, usdb_id_file
-from usdb_syncer.constants import Usdb, UsdbUserType
+from usdb_syncer.constants import Usdb
 from usdb_syncer.gui import gui_utils, icons, progress, progress_bar
 from usdb_syncer.gui.about_dialog import AboutDialog
 from usdb_syncer.gui.comment_dialog import CommentDialog
@@ -53,6 +53,8 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         events.SavedSearchRestored.subscribe(
             lambda event: self.lineEdit_search.setText(event.search.text)
         )
+        events.UsernameChanged.subscribe(self._on_username_changed)
+        events.ConnectedStatusChanged.subscribe(self._on_connection_status_changed)
         events.ThemeChanged.subscribe(self._on_theme_changed)
         self._setup_buttons()
         self._restore_state()
@@ -80,21 +82,9 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         user_layout.setContentsMargins(0, 0, 0, 0)
         user_layout.setSpacing(4)
 
-        user_icon = QLabel()
-        user_icon.setPixmap(QtGui.QPixmap(icons.Icon.USER.icon().pixmap(16)))
-        user_icon.setToolTip(UsdbUserType.MODERATOR)  # TODO: use actual status
-        user_name = QLabel("John Doe")  # TODO: use actual username
-        usdb_status = "USDB: logged in"  # TODO: use actual connection status
-        usdb_label = QLabel()
-        usdb_label.setToolTip(usdb_status)
-        if usdb_status == "USDB: logged in":
-            usdb_label.setPixmap(
-                QtGui.QPixmap(icons.Icon.USDB_LOGGED_IN.icon().pixmap(16))
-            )
-        else:
-            usdb_label.setPixmap(
-                QtGui.QPixmap(icons.Icon.USDB_LOGGED_OUT.icon().pixmap(16))
-            )
+        self._user_name_label = QLabel()
+        self._usdb_status_label = QLabel()
+
         youtube_status = "YouTube: cookies available"  # TODO: use actual youtube status
         youtube_label = QLabel()
         youtube_label.setToolTip(youtube_status)
@@ -118,9 +108,8 @@ class MainWindow(Ui_MainWindow, QMainWindow):
                 QtGui.QPixmap(icons.Icon.FFMPEG_UNAVAILABLE.icon().pixmap(16))
             )
 
-        user_layout.addWidget(user_icon)
-        user_layout.addWidget(user_name)
-        user_layout.addWidget(usdb_label)
+        user_layout.addWidget(self._user_name_label)
+        user_layout.addWidget(self._usdb_status_label)
         user_layout.addWidget(youtube_label)
         user_layout.addWidget(ffmpeg_label)
 
@@ -402,6 +391,35 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         settings.set_geometry_main_window(self.saveGeometry())
         settings.set_state_main_window(self.saveState())
         settings.set_geometry_log_dock(self.dock_log.saveGeometry())
+
+    def _on_username_changed(self, event: events.UsernameChanged) -> None:
+        text: str
+        tooltip: str
+        if not event.set_:
+            text = "Not logged in"
+            tooltip = "Not logged in to USDB"
+        else:
+            text = event.username
+            tooltip = f'Logged in to USDB as "{event.username}"'
+
+        self._user_name_label.setText(text)
+        self._user_name_label.setToolTip(tooltip)
+
+    def _on_connection_status_changed(
+        self, event: events.ConnectedStatusChanged
+    ) -> None:
+        icon: QtGui.QIcon
+        tooltip: str
+
+        if event.connected:
+            icon = icons.Icon.USDB_LOGGED_IN.icon()
+            tooltip = "Connected to USDB"
+        else:
+            icon = icons.Icon.USDB_LOGGED_OUT.icon()
+            tooltip = "Disconnected from USDB"
+
+        self._usdb_status_label.setPixmap(icon.pixmap(16))
+        self._usdb_status_label.setToolTip(tooltip)
 
     def _on_theme_changed(self, event: events.ThemeChanged) -> None:
         theme = event.theme

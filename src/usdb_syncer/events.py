@@ -146,3 +146,23 @@ class ThemeChanged(SubscriptableEvent):
     """Sent when a new theme has been applied."""
 
     theme: settings.Theme
+
+
+# status
+
+
+@attrs.define(slots=False)
+class UsernameChanged(SubscriptableEvent):
+    """Sent when the username has changed."""
+
+    set_: bool
+    username: str
+
+
+@attrs.define(slots=False)
+class ConnectedStatusChanged(SubscriptableEvent):
+    """Sent when the connection status has changed."""
+
+    connected: bool
+    error_code: int | None = None
+    error_msg: str | None = None

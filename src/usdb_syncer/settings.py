@@ -21,7 +21,7 @@ import keyring
 import rookiepy
 from PySide6.QtCore import QByteArray, QSettings
 
-from usdb_syncer import path_template, utils
+from usdb_syncer import events, path_template, utils
 from usdb_syncer.constants import Usdb
 from usdb_syncer.logger import logger
 
@@ -34,6 +34,7 @@ NO_KEYRING_BACKEND_WARNING = (
 
 def get_usdb_auth() -> tuple[str, str]:
     username = _Settings.get(SettingKey.USDB_USER_NAME, "")
+    events.UsernameChanged(True, username).post()
     pwd = ""
     try:
         pwd = keyring.get_password(SYSTEM_USDB, username) or ""
@@ -45,6 +46,7 @@ def get_usdb_auth() -> tuple[str, str]:
 
 def set_usdb_auth(username: str, password: str) -> None:
     _Settings.set(SettingKey.USDB_USER_NAME, username)
+    events.UsernameChanged(True, username).post()
     try:
         keyring.set_password(SYSTEM_USDB, username, password)
     except keyring.core.backend.errors.NoKeyringError as error:
