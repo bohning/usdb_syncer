@@ -63,26 +63,22 @@ def get_allowed_countries(resource: str) -> list[str] | None:
     if not response.ok:
         return None
 
-    soup = BeautifulSoup(response.text, "html.parser")
+    soup = BeautifulSoup(response.text, "lxml")
     allowed_countries = []
 
     table = soup.find("table")
     if not table or not isinstance(table, Tag):
         return None
 
-    rows = table.find_all("tr")[1:]  # Skip the header row
+    rows = table.find_all("tr")[1:]
 
     for row in rows:
         if not isinstance(row, Tag):
             continue
-        columns = row.find_all("td")
-        if len(columns) < 2:
-            continue  # Skip invalid rows
-
-        allowed_text = columns[0].get_text(strip=True)
-
-        if allowed_text:
-            country_code = allowed_text.split(" - ")[0]
+        cols = row.find_all("td")
+        if len(cols) < 2:
+            continue
+        if country_code := cols[0].text.split(" - ", 1)[0]:
             allowed_countries.append(country_code)
 
     return allowed_countries
