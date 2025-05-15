@@ -111,16 +111,21 @@ startup phase, they cannot be completely ruled out.
 
 ## Linux Compatibility
 
-### Running from source or using the official python package
+### Required packages
 
-Qt requires some additional packages on linux that might not be installed by default.
-The following command should include everything needed.
+The bundles contain all necessary dependencies with the exception for some hardware-specific packages:
 
 ```bash
-apt install -y libgstreamer-gl1.0-0 libxcb-glx0 libxcb-icccm4 libxcb-image0 libxcb-keysyms1 libxcb-randr0 libxcb-render-util0 libxcb-render0 libxcb-shape0 libxcb-shm0 libxcb-sync1 libxcb-util1 libxcb-xfixes0 libxcb1 libxkbcommon-dev libxkbcommon-x11-0 libxcb-cursor0 libva-dev libva-drm2 libva-x11-2
+apt install -y libportaudio2
 ```
 
-If this doesn't work, you might also check:
+More packages are required when running from source or the official Python package, mostly for Qt:
+
+```bash
+apt install -y libgstreamer-gl1.0-0 libxcb-glx0 libxcb-icccm4 libxcb-image0 libxcb-keysyms1 libxcb-randr0 libxcb-render-util0 libxcb-render0 libxcb-shape0 libxcb-shm0 libxcb-sync1 libxcb-util1 libxcb-xfixes0 libxcb1 libxkbcommon-dev libxkbcommon-x11-0 libxcb-cursor0 libva-dev libva-drm2 libva-x11-2 libportaudio2
+```
+
+If this doesn't help, you might also check:
 
 - https://doc.qt.io/qt-6/linux.html#requirements-for-development-host
 - https://doc.qt.io/qt-6/linux-requirements.html
