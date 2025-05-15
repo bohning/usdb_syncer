@@ -1,0 +1,260 @@
+<html><head>
+    <title>YouTube region restriction checker</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+  <style class="datamaps-style-block">.datamap path {stroke: #FFFFFF; stroke-width: 1px;} .datamaps-legend dt, .datamaps-legend dd { float: left; margin: 0 3px 0 0;} .datamaps-legend dd {width: 20px; margin-right: 6px; border-radius: 3px;} .datamaps-legend {padding-bottom: 20px; z-index: 1001; position: absolute; left: 4px; font-size: 12px; font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;} .datamaps-hoverover {display: none; font-family: "Helvetica Neue", Helvetica, Arial, sans-serif; } .hoverinfo {padding: 4px; border-radius: 1px; background-color: #FFF; box-shadow: 1px 1px 5px #CCC; font-size: 12px; border: 1px solid #CCC; } .hoverinfo hr {border:1px dotted #CCC; }</style></head>
+  <body>
+  <form method="GET">
+  <input type="checkbox" name="agreed" checked="">I agree to the <a href="ytr-policy.html">Terms of Use and Privacy Policy</a><hr><br>
+  Enter video URL (eg https://youtube.com/watch?v=wAsBta25OGQ, https://youtu.be/wAsBta25OGQ) or video ID (eg 5TFhUHwQg8g)<br>
+  <input type="text" name="ytid" value="https://www.youtube.com/watch?v=g-t65s7Ur5g" size="50" maxlength="43"><br>
+  <input type="submit">
+  </form>
+  <hr>
+  <b>Video <a href="https://www.youtube.com/watch?v=g-t65s7Ur5g">g-t65s7Ur5g</a></b> : Lena - Taken By A Stranger<br><br><script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.3/d3.min.js"></script>
+  <table style="border-spacing: 20px 0px">
+  <colgroup><col width="400px">
+  </colgroup><tbody><tr><th>Allowed countries</th><th>Disallowed countries
+  </th></tr><tr><td>AT - Austria</td><td>AD - Andorra
+  </td></tr><tr><td>CH - Switzerland</td><td>AE - United Arab Emirates
+  </td></tr><tr><td>DE - Germany</td><td>AF - Afghanistan
+  </td></tr><tr><td></td><td>AG - Antigua and Barbuda
+  </td></tr><tr><td></td><td>AI - Anguilla
+  </td></tr><tr><td></td><td>AL - Albania
+  </td></tr><tr><td></td><td>AM - Armenia
+  </td></tr><tr><td></td><td>AO - Angola
+  </td></tr><tr><td></td><td>AQ - Antarctica
+  </td></tr><tr><td></td><td>AR - Argentina
+  </td></tr><tr><td></td><td>AS - American Samoa
+  </td></tr><tr><td></td><td>AU - Australia
+  </td></tr><tr><td></td><td>AW - Aruba
+  </td></tr><tr><td></td><td>AX - Åland Islands
+  </td></tr><tr><td></td><td>AZ - Azerbaijan
+  </td></tr><tr><td></td><td>BA - Bosnia and Herzegovina
+  </td></tr><tr><td></td><td>BB - Barbados
+  </td></tr><tr><td></td><td>BD - Bangladesh
+  </td></tr><tr><td></td><td>BE - Belgium
+  </td></tr><tr><td></td><td>BF - Burkina Faso
+  </td></tr><tr><td></td><td>BG - Bulgaria
+  </td></tr><tr><td></td><td>BH - Bahrain
+  </td></tr><tr><td></td><td>BI - Burundi
+  </td></tr><tr><td></td><td>BJ - Benin
+  </td></tr><tr><td></td><td>BL - Saint Barthélemy
+  </td></tr><tr><td></td><td>BM - Bermuda
+  </td></tr><tr><td></td><td>BN - Brunei Darussalam
+  </td></tr><tr><td></td><td>BO - Bolivia (Plurinational State of)
+  </td></tr><tr><td></td><td>BR - Brazil
+  </td></tr><tr><td></td><td>BS - Bahamas
+  </td></tr><tr><td></td><td>BT - Bhutan
+  </td></tr><tr><td></td><td>BV - Bouvet Island
+  </td></tr><tr><td></td><td>BW - Botswana
+  </td></tr><tr><td></td><td>BY - Belarus
+  </td></tr><tr><td></td><td>BZ - Belize
+  </td></tr><tr><td></td><td>CA - Canada
+  </td></tr><tr><td></td><td>CC - Cocos (Keeling) Islands
+  </td></tr><tr><td></td><td>CD - Congo (Democratic Republic of the)
+  </td></tr><tr><td></td><td>CF - Central African Republic
+  </td></tr><tr><td></td><td>CG - Republic of the Congo
+  </td></tr><tr><td></td><td>CI - Côte d'Ivoire
+  </td></tr><tr><td></td><td>CK - Cook Islands
+  </td></tr><tr><td></td><td>CL - Chile
+  </td></tr><tr><td></td><td>CM - Cameroon
+  </td></tr><tr><td></td><td>CN - China
+  </td></tr><tr><td></td><td>CO - Colombia
+  </td></tr><tr><td></td><td>CR - Costa Rica
+  </td></tr><tr><td></td><td>CU - Cuba
+  </td></tr><tr><td></td><td>CV - Cabo Verde
+  </td></tr><tr><td></td><td>CX - Christmas Island
+  </td></tr><tr><td></td><td>CY - Cyprus
+  </td></tr><tr><td></td><td>CZ - Czech Republic
+  </td></tr><tr><td></td><td>DJ - Djibouti
+  </td></tr><tr><td></td><td>DK - Denmark
+  </td></tr><tr><td></td><td>DM - Dominica
+  </td></tr><tr><td></td><td>DO - Dominican Republic
+  </td></tr><tr><td></td><td>DZ - Algeria
+  </td></tr><tr><td></td><td>EC - Ecuador
+  </td></tr><tr><td></td><td>EE - Estonia
+  </td></tr><tr><td></td><td>EG - Egypt
+  </td></tr><tr><td></td><td>EH - Western Sahara
+  </td></tr><tr><td></td><td>ER - Eritrea
+  </td></tr><tr><td></td><td>ES - Spain
+  </td></tr><tr><td></td><td>ET - Ethiopia
+  </td></tr><tr><td></td><td>FI - Finland
+  </td></tr><tr><td></td><td>FJ - Fiji
+  </td></tr><tr><td></td><td>FK - Falkland Islands (Malvinas)
+  </td></tr><tr><td></td><td>FM - Micronesia (Federated States of)
+  </td></tr><tr><td></td><td>FO - Faroe Islands
+  </td></tr><tr><td></td><td>FR - France
+  </td></tr><tr><td></td><td>GA - Gabon
+  </td></tr><tr><td></td><td>GB - United Kingdom of Great Britain and Northern Ireland
+  </td></tr><tr><td></td><td>GD - Grenada
+  </td></tr><tr><td></td><td>GE - Georgia (country)
+  </td></tr><tr><td></td><td>GF - French Guiana
+  </td></tr><tr><td></td><td>GG - Guernsey
+  </td></tr><tr><td></td><td>GH - Ghana
+  </td></tr><tr><td></td><td>GI - Gibraltar
+  </td></tr><tr><td></td><td>GL - Greenland
+  </td></tr><tr><td></td><td>GM - Gambia
+  </td></tr><tr><td></td><td>GN - Guinea
+  </td></tr><tr><td></td><td>GP - Guadeloupe
+  </td></tr><tr><td></td><td>GQ - Equatorial Guinea
+  </td></tr><tr><td></td><td>GR - Greece
+  </td></tr><tr><td></td><td>GS - South Georgia and the South Sandwich Islands
+  </td></tr><tr><td></td><td>GT - Guatemala
+  </td></tr><tr><td></td><td>GU - Guam
+  </td></tr><tr><td></td><td>GW - Guinea-Bissau
+  </td></tr><tr><td></td><td>GY - Guyana
+  </td></tr><tr><td></td><td>HK - Hong Kong
+  </td></tr><tr><td></td><td>HM - Heard Island and McDonald Islands
+  </td></tr><tr><td></td><td>HN - Honduras
+  </td></tr><tr><td></td><td>HR - Croatia
+  </td></tr><tr><td></td><td>HT - Haiti
+  </td></tr><tr><td></td><td>HU - Hungary
+  </td></tr><tr><td></td><td>ID - Indonesia
+  </td></tr><tr><td></td><td>IE - Republic of Ireland
+  </td></tr><tr><td></td><td>IL - Israel
+  </td></tr><tr><td></td><td>IM - Isle of Man
+  </td></tr><tr><td></td><td>IN - India
+  </td></tr><tr><td></td><td>IO - British Indian Ocean Territory
+  </td></tr><tr><td></td><td>IQ - Iraq
+  </td></tr><tr><td></td><td>IR - Iran (Islamic Republic of)
+  </td></tr><tr><td></td><td>IS - Iceland
+  </td></tr><tr><td></td><td>IT - Italy
+  </td></tr><tr><td></td><td>JE - Jersey
+  </td></tr><tr><td></td><td>JM - Jamaica
+  </td></tr><tr><td></td><td>JO - Jordan
+  </td></tr><tr><td></td><td>JP - Japan
+  </td></tr><tr><td></td><td>KE - Kenya
+  </td></tr><tr><td></td><td>KG - Kyrgyzstan
+  </td></tr><tr><td></td><td>KH - Cambodia
+  </td></tr><tr><td></td><td>KI - Kiribati
+  </td></tr><tr><td></td><td>KM - Comoros
+  </td></tr><tr><td></td><td>KN - Saint Kitts and Nevis
+  </td></tr><tr><td></td><td>KP - North Korea
+  </td></tr><tr><td></td><td>KR - Korea (Republic of)
+  </td></tr><tr><td></td><td>KW - Kuwait
+  </td></tr><tr><td></td><td>KY - Cayman Islands
+  </td></tr><tr><td></td><td>KZ - Kazakhstan
+  </td></tr><tr><td></td><td>LA - Lao People's Democratic Republic
+  </td></tr><tr><td></td><td>LB - Lebanon
+  </td></tr><tr><td></td><td>LC - Saint Lucia
+  </td></tr><tr><td></td><td>LI - Liechtenstein
+  </td></tr><tr><td></td><td>LK - Sri Lanka
+  </td></tr><tr><td></td><td>LR - Liberia
+  </td></tr><tr><td></td><td>LS - Lesotho
+  </td></tr><tr><td></td><td>LT - Lithuania
+  </td></tr><tr><td></td><td>LU - Luxembourg
+  </td></tr><tr><td></td><td>LV - Latvia
+  </td></tr><tr><td></td><td>LY - Libya
+  </td></tr><tr><td></td><td>MA - Morocco
+  </td></tr><tr><td></td><td>MC - Monaco
+  </td></tr><tr><td></td><td>MD - Moldova (Republic of)
+  </td></tr><tr><td></td><td>ME - Montenegro
+  </td></tr><tr><td></td><td>MG - Madagascar
+  </td></tr><tr><td></td><td>MH - Marshall Islands
+  </td></tr><tr><td></td><td>MK - Republic of Macedonia
+  </td></tr><tr><td></td><td>ML - Mali
+  </td></tr><tr><td></td><td>MM - Myanmar
+  </td></tr><tr><td></td><td>MN - Mongolia
+  </td></tr><tr><td></td><td>MO - Macao
+  </td></tr><tr><td></td><td>MP - Northern Mariana Islands
+  </td></tr><tr><td></td><td>MQ - Martinique
+  </td></tr><tr><td></td><td>MR - Mauritania
+  </td></tr><tr><td></td><td>MS - Montserrat
+  </td></tr><tr><td></td><td>MT - Malta
+  </td></tr><tr><td></td><td>MU - Mauritius
+  </td></tr><tr><td></td><td>MV - Maldives
+  </td></tr><tr><td></td><td>MW - Malawi
+  </td></tr><tr><td></td><td>MX - Mexico
+  </td></tr><tr><td></td><td>MY - Malaysia
+  </td></tr><tr><td></td><td>MZ - Mozambique
+  </td></tr><tr><td></td><td>NA - Namibia
+  </td></tr><tr><td></td><td>NC - New Caledonia
+  </td></tr><tr><td></td><td>NE - Niger
+  </td></tr><tr><td></td><td>NF - Norfolk Island
+  </td></tr><tr><td></td><td>NG - Nigeria
+  </td></tr><tr><td></td><td>NI - Nicaragua
+  </td></tr><tr><td></td><td>NL - Netherlands
+  </td></tr><tr><td></td><td>NO - Norway
+  </td></tr><tr><td></td><td>NP - Nepal
+  </td></tr><tr><td></td><td>NR - Nauru
+  </td></tr><tr><td></td><td>NU - Niue
+  </td></tr><tr><td></td><td>NZ - New Zealand
+  </td></tr><tr><td></td><td>OM - Oman
+  </td></tr><tr><td></td><td>PA - Panama
+  </td></tr><tr><td></td><td>PE - Peru
+  </td></tr><tr><td></td><td>PF - French Polynesia
+  </td></tr><tr><td></td><td>PG - Papua New Guinea
+  </td></tr><tr><td></td><td>PH - Philippines
+  </td></tr><tr><td></td><td>PK - Pakistan
+  </td></tr><tr><td></td><td>PL - Poland
+  </td></tr><tr><td></td><td>PM - Saint Pierre and Miquelon
+  </td></tr><tr><td></td><td>PN - Pitcairn
+  </td></tr><tr><td></td><td>PR - Puerto Rico
+  </td></tr><tr><td></td><td>PS - State of Palestine
+  </td></tr><tr><td></td><td>PT - Portugal
+  </td></tr><tr><td></td><td>PW - Palau
+  </td></tr><tr><td></td><td>PY - Paraguay
+  </td></tr><tr><td></td><td>QA - Qatar
+  </td></tr><tr><td></td><td>RE - Réunion
+  </td></tr><tr><td></td><td>RO - Romania
+  </td></tr><tr><td></td><td>RS - Serbia
+  </td></tr><tr><td></td><td>RU - Russian Federation
+  </td></tr><tr><td></td><td>RW - Rwanda
+  </td></tr><tr><td></td><td>SA - Saudi Arabia
+  </td></tr><tr><td></td><td>SB - Solomon Islands
+  </td></tr><tr><td></td><td>SC - Seychelles
+  </td></tr><tr><td></td><td>SD - Sudan
+  </td></tr><tr><td></td><td>SE - Sweden
+  </td></tr><tr><td></td><td>SG - Singapore
+  </td></tr><tr><td></td><td>SH - Saint Helena, Ascension and Tristan da Cunha
+  </td></tr><tr><td></td><td>SI - Slovenia
+  </td></tr><tr><td></td><td>SJ - Svalbard and Jan Mayen
+  </td></tr><tr><td></td><td>SK - Slovakia
+  </td></tr><tr><td></td><td>SL - Sierra Leone
+  </td></tr><tr><td></td><td>SM - San Marino
+  </td></tr><tr><td></td><td>SN - Senegal
+  </td></tr><tr><td></td><td>SO - Somalia
+  </td></tr><tr><td></td><td>SR - Suriname
+  </td></tr><tr><td></td><td>ST - Sao Tome and Principe
+  </td></tr><tr><td></td><td>SV - El Salvador
+  </td></tr><tr><td></td><td>SY - Syrian Arab Republic
+  </td></tr><tr><td></td><td>SZ - Swaziland
+  </td></tr><tr><td></td><td>TC - Turks and Caicos Islands
+  </td></tr><tr><td></td><td>TD - Chad
+  </td></tr><tr><td></td><td>TF - French Southern Territories
+  </td></tr><tr><td></td><td>TG - Togo
+  </td></tr><tr><td></td><td>TH - Thailand
+  </td></tr><tr><td></td><td>TJ - Tajikistan
+  </td></tr><tr><td></td><td>TK - Tokelau
+  </td></tr><tr><td></td><td>TL - Timor-Leste
+  </td></tr><tr><td></td><td>TM - Turkmenistan
+  </td></tr><tr><td></td><td>TN - Tunisia
+  </td></tr><tr><td></td><td>TO - Tonga
+  </td></tr><tr><td></td><td>TR - Turkey
+  </td></tr><tr><td></td><td>TT - Trinidad and Tobago
+  </td></tr><tr><td></td><td>TV - Tuvalu
+  </td></tr><tr><td></td><td>TW - Taiwan
+  </td></tr><tr><td></td><td>TZ - Tanzania, United Republic of
+  </td></tr><tr><td></td><td>UA - Ukraine
+  </td></tr><tr><td></td><td>UG - Uganda
+  </td></tr><tr><td></td><td>UM - United States Minor Outlying Islands
+  </td></tr><tr><td></td><td>US - United States of America
+  </td></tr><tr><td></td><td>UY - Uruguay
+  </td></tr><tr><td></td><td>UZ - Uzbekistan
+  </td></tr><tr><td></td><td>VA - Vatican City State
+  </td></tr><tr><td></td><td>VC - Saint Vincent and the Grenadines
+  </td></tr><tr><td></td><td>VE - Venezuela (Bolivarian Republic of)
+  </td></tr><tr><td></td><td>VG - British Virgin Islands
+  </td></tr><tr><td></td><td>VI - United States Virgin Islands
+  </td></tr><tr><td></td><td>VN - Viet Nam
+  </td></tr><tr><td></td><td>VU - Vanuatu
+  </td></tr><tr><td></td><td>WF - Wallis and Futuna
+  </td></tr><tr><td></td><td>WS - Samoa
+  </td></tr><tr><td></td><td>YE - Yemen
+  </td></tr><tr><td></td><td>YT - Mayotte
+  </td></tr><tr><td></td><td>ZA - South Africa
+  </td></tr><tr><td></td><td>ZM - Zambia
+  </td></tr><tr><td></td><td>ZW - Zimbabwe
+  </td></tr></tbody></table>
+  
+  </body></html>
