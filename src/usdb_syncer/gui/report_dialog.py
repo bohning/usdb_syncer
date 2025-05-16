@@ -17,12 +17,12 @@ from PySide6.QtWidgets import (
 from usdb_syncer import SongId, db, settings, utils
 from usdb_syncer.gui import progress
 from usdb_syncer.gui.forms.ReportDialog import Ui_Dialog
+from usdb_syncer.gui.pdf import generate_report_pdf
 from usdb_syncer.gui.progress import run_with_progress
 from usdb_syncer.gui.song_table.column import Column
 from usdb_syncer.gui.song_table.song_table import SongTable
 from usdb_syncer.json_export import generate_report_json
 from usdb_syncer.logger import logger
-from usdb_syncer.pdf import generate_report_pdf
 
 optional_columns = [
     Column.LANGUAGE,
