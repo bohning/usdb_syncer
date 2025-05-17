@@ -14,7 +14,9 @@ from usdb_syncer.usdb_scraper import (
 
 
 def get_soup(resource_dir: Path, resource: str) -> BeautifulSoup:
-    with resource_dir.joinpath("html", resource).open(encoding="utf8") as html:
+    with resource_dir.joinpath("html", "usdb-animux-de", resource).open(
+        encoding="utf8"
+    ) as html:
         return BeautifulSoup(html, "lxml")
 
 
@@ -93,7 +95,9 @@ def test__parse_song_page_without_comments_or_cover(resource_dir: Path) -> None:
 
 
 def test_parse_song_list(resource_dir: Path) -> None:
-    html = (resource_dir / "html" / "song_list.htm").read_text(encoding="utf8")
+    html = (resource_dir / "html" / "usdb-animux-de" / "song_list.htm").read_text(
+        encoding="utf8"
+    )
     songs = list(_parse_songs_from_songlist(html))
     assert len(songs) == 3
     # first song: no audio sample, but cover image

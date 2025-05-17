@@ -103,10 +103,7 @@ class YtErrorMsg:
     YT_AGE_RESTRICTED = (
         "Sign in to confirm your age. This video may be inappropriate for some users."
     )
-    YT_GEO_RESTRICTED = (
-        "Video unavailable. The uploader has not made this video available in your "
-        "country"
-    )
+    YT_GEO_RESTRICTED = "The uploader has not made this video available in your country"
     YT_GEO_BLOCKED = "Video unavailable. This video contains content from"
     YT_UNAVAILABLE = "Video unavailable"
     YT_PARSE_ERROR = "Failed to parse XML"

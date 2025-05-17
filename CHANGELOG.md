@@ -1,3 +1,13 @@
+<!-- 0.15.0 -->
+
+# Changes
+
+## Features
+
+## Fixes
+
+- Fixed extraction of allowed countries for geo-restricted resources.
+
 <!-- 0.14.0 -->
 
 # Changes
