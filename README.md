@@ -113,7 +113,7 @@ startup phase, they cannot be completely ruled out.
 
 ### Required packages
 
-The bundles contain all necessary dependencies with the exception for some hardware-specific packages:
+The bundles contain all necessary dependencies with the exception of some hardware-specific packages:
 
 ```bash
 apt install -y libportaudio2
