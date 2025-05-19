@@ -433,18 +433,11 @@
              </widget>
             </item>
             <item row="4" column="0">
-            <widget class="QLabel" name="label_audio_instrumental">
-            <property name="text">
-            <string>Instrumental:</string>
-            </property>
-            </widget>
-            </item>
-            <item row="4" column="1">
-            <widget class="QCheckBox" name="checkBox_audio_instrumental">
-            <property name="text">
-            <string/>
-            </property>
-            </widget>
+             <widget class="QLabel" name="label_audio_instrumental">
+              <property name="text">
+               <string>Instrumental:</string>
+              </property>
+             </widget>
             </item>
             <item row="1" column="0">
              <widget class="QLabel" name="label_audio_bitrate">
@@ -491,6 +484,13 @@
              <widget class="QComboBox" name="comboBox_audio_normalization">
               <property name="toolTip">
                <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;It is recommended to adjust the volume of your audio files so that they all have the same level of perceived loudness.&lt;/p&gt;&lt;p&gt;If you use a recent version of USDX (2025.4.0 or newer), then choose &lt;span style=&quot; font-weight:700;&quot;&gt;ReplayGain&lt;/span&gt;, as this does not reencode the file but instead writes the normalization information into the audio header. You have to enable ReplayGain in USDX sound settings for this take effect.&lt;/p&gt;&lt;p&gt;For karaoke softwares that do not (yet) support replay gain, choose &lt;span style=&quot; font-weight:700;&quot;&gt;Normalize&lt;/span&gt;. This will adjust the loudness by re-encoding the file.&lt;/p&gt;&lt;p&gt;To skip normalization, choose &lt;span style=&quot; font-weight:700;&quot;&gt;disabled&lt;/span&gt;. This saves time, but resulting audio files will have different loudness levels.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+              </property>
+             </widget>
+            </item>
+            <item row="4" column="3">
+             <widget class="QCheckBox" name="checkBox_audio_instrumental">
+              <property name="text">
+               <string/>
               </property>
              </widget>
             </item>
@@ -1197,9 +1197,7 @@
    </item>
   </layout>
  </widget>
- <resources>
-  <include location="../resources/resources.qrc"/>
- </resources>
+ <resources/>
  <connections>
   <connection>
    <sender>buttonBox</sender>
