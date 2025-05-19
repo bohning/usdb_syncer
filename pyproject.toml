@@ -24,16 +24,16 @@ appdirs = "*"
 attrs = "*"
 beautifulsoup4 = "*"
 torch = [
-    { version = "2.1.0", markers = "sys_platform == 'win32'" }
-    { version = "2.2.2", markers = "sys_platform == 'darwin' and platform_machine == 'x86_64'" }
-    { version = "2.7.0", markers = "sys_platform == 'darwin' and platform_machine == 'arm64'" }
-    { version = "2.1.0", markers = "sys_platform == 'linux' }
+    { version = "2.1.0", markers = "sys_platform == 'win32'" },
+    { version = "2.2.2", markers = "sys_platform == 'darwin' and platform_machine == 'x86_64'" },
+    { version = "2.7.0", markers = "sys_platform == 'darwin' and platform_machine == 'arm64'" },
+    { version = "2.1.0", markers = "sys_platform == 'linux'" } # Trailing comma is optional for the last item
 ]
-torch = [
-    { version = "2.1.0", markers = "sys_platform == 'win32'" }
-    { version = "2.2.2", markers = "sys_platform == 'darwin' and platform_machine == 'x86_64'" }
-    { version = "2.7.0", markers = "sys_platform == 'darwin' and platform_machine == 'arm64'" }
-    { version = "2.1.0", markers = "sys_platform == 'linux' }
+torchaudio = [
+    { version = "2.1.0", markers = "sys_platform == 'win32'" },
+    { version = "2.2.2", markers = "sys_platform == 'darwin' and platform_machine == 'x86_64'" },
+    { version = "2.2.2", markers = "sys_platform == 'darwin' and platform_machine == 'arm64'" }, # Note: torchaudio 2.7.0 might not exist, adjust version
+    { version = "2.1.0", markers = "sys_platform == 'linux'" }
 ]
 demucs = "*"
 ffmpeg-normalize = ">=1.27"
