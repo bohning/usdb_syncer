@@ -6,7 +6,7 @@ from unittest.mock import patch
 
 import pytest
 
-from usdb_syncer.utils import get_allowed_countries
+from usdb_syncer.utils import _parse_polsy_html, get_allowed_countries
 
 
 @pytest.fixture
@@ -55,34 +55,29 @@ def test_get_allowed_countries(
 ) -> None:
     """Test get_allowed_countries with different HTML/JSON pairs."""
     # Load test data
-    with html_file.open("r", encoding="utf-8") as f:
-        html_content = f.read()
+    html_content = html_file.read_text(encoding="utf-8")
 
     with json_file.open("r", encoding="utf-8") as f:
-        expected_data = json.load(f)
+        expected_data: dict = json.load(f)
 
     # Extract expected allowed countries
     expected_allowed_countries = None
     if expected_data.get("none") is False and "allowed" in expected_data:
         expected_allowed_countries = expected_data["allowed"]
 
-    # Mock the requests.get call
-    with patch("requests.get") as mock_get:
-        mock_get.return_value = MockResponse(html_content)
+    result = _parse_polsy_html(html_content)
+    for cc in result if result else []:
+        assert check_valid_country_code(country_codes, cc), (
+            f"Invalid country code: {cc}"
+        )
 
-        result = get_allowed_countries("dummy-video-id")
-        for cc in result if result else []:
-            assert check_valid_country_code(country_codes, cc), (
-                f"Invalid country code: {cc}"
-            )
-
-        if expected_data.get("none") is True:
-            assert result is None
+    if expected_data.get("none") is True:
+        assert result is None
+    else:
+        if expected_allowed_countries:
+            assert result == expected_allowed_countries
         else:
-            if expected_allowed_countries:
-                assert result == expected_allowed_countries
-            else:
-                assert result is not None
+            assert result is not None
 
 
 def test_get_allowed_countries_request_error() -> None:

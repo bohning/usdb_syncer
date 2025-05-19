@@ -54,16 +54,10 @@ def video_url_from_resource(resource: str) -> str | None:
     return None
 
 
-def get_allowed_countries(resource: str) -> list[str] | None:
-    """Fetches YouTube video availability information from polsy.org.uk."""
+def _parse_polsy_html(html: str) -> list[str] | None:
+    """Parses the HTML from polsy.org.uk and returns a list of allowed countries."""
 
-    url = f"https://polsy.org.uk/stuff/ytrestrict.cgi?agreed=on&ytid={resource}"
-    response = requests.get(url, timeout=5)
-
-    if not response.ok:
-        return None
-
-    soup = BeautifulSoup(response.text, "lxml")
+    soup = BeautifulSoup(html, "lxml")
     allowed_countries = []
 
     table = soup.find("table")
@@ -82,6 +76,18 @@ def get_allowed_countries(resource: str) -> list[str] | None:
             allowed_countries.append(country_code)
 
     return allowed_countries
+
+
+def get_allowed_countries(resource: str) -> list[str] | None:
+    """Fetches YouTube video availability information from polsy.org.uk."""
+
+    url = f"https://polsy.org.uk/stuff/ytrestrict.cgi?agreed=on&ytid={resource}"
+    response = requests.get(url, timeout=5)
+
+    if not response.ok:
+        return None
+
+    return _parse_polsy_html(response.text)
 
 
 def remove_ansi_codes(text: str) -> str:
