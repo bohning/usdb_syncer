@@ -23,26 +23,13 @@ python = ">3.10,<3.13"
 appdirs = "*"
 attrs = "*"
 beautifulsoup4 = "*"
-torch = [
-    { version = "2.1.0", markers = "sys_platform == 'win32'" },
-    { version = "2.2.2", markers = "sys_platform == 'darwin' and platform_machine == 'x86_64'" },
-    { version = "2.7.0", markers = "sys_platform == 'darwin' and platform_machine == 'arm64'" },
-    { version = "2.1.0", markers = "sys_platform == 'linux'" } # Trailing comma is optional for the last item
-]
-torchaudio = [
-    { version = "2.1.0", markers = "sys_platform == 'win32'" },
-    { version = "2.2.2", markers = "sys_platform == 'darwin' and platform_machine == 'x86_64'" },
-    { version = "2.2.2", markers = "sys_platform == 'darwin' and platform_machine == 'arm64'" }, # Note: torchaudio 2.7.0 might not exist, adjust version
-    { version = "2.1.0", markers = "sys_platform == 'linux'" }
-]
 demucs = "*"
 ffmpeg-normalize = ">=1.27"
 filetype = "*"
 keyring = "*"
 lxml = "*"
 mutagen = "*"
-#numpy = "^2.2.5"
-numpy = "<2.0.0"
+numpy = "<2.0.0"  # torchaudio 2.2.2 needs numpy < 2.0.0
 packaging = "*"
 pillow = ">=10"
 PySide6 = "*"
@@ -52,6 +39,8 @@ rookiepy = "^0.5.3"
 send2trash = "*"
 sounddevice = "^0.5.1"
 soundfile = "^0.13.1"
+torch = "2.2.2"  # 2.2.2 is latest version available for macosx_x86_64 (Intel Macs)
+torchaudio = "2.2.2"
 unidecode = "*"
 yt-dlp = {version = "*", extras = ["default", "curl_cffi"]}
 
