@@ -725,7 +725,7 @@ def _maybe_generate_instrumental(ctx: _Context) -> None:
         return
 
     audio = ctx.out.audio.path(ctx.locations, temp=True)
-    model = "mdx_extra"
+    model = "htdemucs_ft"
     demucs.separate.main([
         "--mp3",
         "--two-stems",
