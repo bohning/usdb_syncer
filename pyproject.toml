@@ -4,7 +4,7 @@ build-backend = "poetry_dynamic_versioning.backend"
 
 [tool.poetry]
 name = "usdb_syncer"
-version = "0.0.0"  # will be replaced by current git tag via poetry-dynamic-versioning
+version = "0.14.0.post14.dev0+0116878"  # will be replaced by current git tag via poetry-dynamic-versioning
 authors = ["Markus Böhning <markus.boehning@gmail.com>"]
 description = "A download manager for USDB songs."
 readme = ["README.md"]
@@ -23,13 +23,26 @@ python = ">3.10,<3.13"
 appdirs = "*"
 attrs = "*"
 beautifulsoup4 = "*"
+torch = [
+    { version = "2.1.0", markers = "sys_platform == 'win32'" }
+    { version = "2.2.2", markers = "sys_platform == 'darwin' and platform_machine == 'x86_64'" }
+    { version = "2.7.0", markers = "sys_platform == 'darwin' and platform_machine == 'arm64'" }
+    { version = "2.1.0", markers = "sys_platform == 'linux' }
+]
+torch = [
+    { version = "2.1.0", markers = "sys_platform == 'win32'" }
+    { version = "2.2.2", markers = "sys_platform == 'darwin' and platform_machine == 'x86_64'" }
+    { version = "2.7.0", markers = "sys_platform == 'darwin' and platform_machine == 'arm64'" }
+    { version = "2.1.0", markers = "sys_platform == 'linux' }
+]
 demucs = "*"
 ffmpeg-normalize = ">=1.27"
 filetype = "*"
 keyring = "*"
 lxml = "*"
 mutagen = "*"
-numpy = "^2.2.5"
+#numpy = "^2.2.5"
+numpy = "<2.0.0"
 packaging = "*"
 pillow = ">=10"
 PySide6 = "*"
@@ -71,7 +84,7 @@ pywin32-ctypes = {version = "*", markers="sys_platform == 'win32'"}
 usdb_syncer = "usdb_syncer.gui:main"
 
 [tool.poetry-dynamic-versioning]
-enable = true
+enable = false
 substitution.files = []
 
 [tool.ruff]
