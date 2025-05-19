@@ -2,48 +2,17 @@
 
 from __future__ import annotations
 
-import math
-from typing import Any, Callable
+from collections.abc import Callable
+from typing import Any
 
 import attrs
 
 from usdb_syncer import errors
-from usdb_syncer.constants import MINIMUM_BPM
-from usdb_syncer.logger import Log
+from usdb_syncer.logger import Logger
+from usdb_syncer.meta_tags import MetaTags
+from usdb_syncer.settings import FormatVersion
+from usdb_syncer.song_txt.auxiliaries import BeatsPerMinute, replace_false_apostrophes
 from usdb_syncer.song_txt.language_translations import LANGUAGE_TRANSLATIONS
-from usdb_syncer.song_txt.tracks import replace_false_apostrophes_and_quotation_marks
-
-
-@attrs.define
-class BeatsPerMinute:
-    """New type for beats per minute float."""
-
-    value: float = NotImplemented
-
-    def __str__(self) -> str:
-        return f"{round(self.value, 2):g}"
-
-    @classmethod
-    def parse(cls, value: str) -> BeatsPerMinute:
-        return cls(float(value.replace(",", ".")))
-
-    def beats_to_secs(self, beats: int) -> float:
-        return beats / (self.value * 4) * 60
-
-    def beats_to_ms(self, beats: int) -> float:
-        return self.beats_to_secs(beats) * 1000
-
-    def is_too_low(self) -> bool:
-        return self.value < MINIMUM_BPM
-
-    def make_large_enough(self) -> int:
-        """Double BPM (if necessary, multiple times) until it is above MINIMUM_BPM
-        and returns the required multiplication factor."""
-        # how often to double bpm until it is larger or equal to the threshold
-        exp = math.ceil(math.log2(MINIMUM_BPM / self.value))
-        factor = 2**exp
-        self.value = self.value * factor
-        return factor
 
 
 @attrs.define
@@ -55,6 +24,7 @@ class Headers:
     artist: str
     bpm: BeatsPerMinute
     gap: int = 0
+    version: str | None = None
     language: str | None = None
     edition: str | None = None
     genre: str | None = None
@@ -62,11 +32,16 @@ class Headers:
     year: str | None = None
     creator: str | None = None
     mp3: str | None = None
-    instrumental: str | None = None
+    audio: str | None = None
+    audiourl: str | None = None
     vocals: str | None = None
+    instrumental: str | None = None
     cover: str | None = None
+    coverurl: str | None = None
     background: str | None = None
+    backgroundurl: str | None = None
     video: str | None = None
+    videourl: str | None = None
     videogap: float | None = None
     start: float | None = None
     end: int | None = None
@@ -79,18 +54,19 @@ class Headers:
     # not rewritten, as it depends on the chosen encoding
     encoding: str | None = None
     comment: str | None = None
+    providedby: str | None = None
     resolution: str | None = None
     tags: str | None = None
 
     @classmethod
-    def parse(cls, lines: list[str], logger: Log) -> Headers:
+    def parse(cls, lines: list[str], logger: Logger) -> Headers:
         """Consumes a stream of lines while they are headers."""
         kwargs: dict[str, Any] = {"unknown": {}}
         while lines:
             if not lines[0].startswith("#"):
                 break
             line = lines.pop(0).removeprefix("#")
-            if not ":" in line:
+            if ":" not in line:
                 logger.warning(f"header without value: '{line}'")
                 continue
             header, value = line.split(":", maxsplit=1)
@@ -102,19 +78,23 @@ class Headers:
             except ValueError:
                 logger.warning(f"invalid header value: '{line}'")
         if "title" not in kwargs or "artist" not in kwargs or "bpm" not in kwargs:
-            raise errors.NotesParseError(
-                "cannot parse song without artist, title or bpm"
-            )
+            raise errors.HeadersRequiredMissingError()
         return cls(**kwargs)
+
+    def set_version(self, version: FormatVersion) -> None:
+        self.version = version.value
 
     def reset_file_location_headers(self) -> None:
         """Clear all tags with local file locations."""
-        self.mp3 = self.video = self.cover = self.background = None
+        self.mp3 = self.audio = self.vocals = self.instrumental = self.video = (
+            self.cover
+        ) = self.background = None
 
     def __str__(self) -> str:
         out = "\n".join(
             f"#{key.upper()}:{val}"
             for key in (
+                "version",
                 "title",
                 "artist",
                 "language",
@@ -123,11 +103,16 @@ class Headers:
                 "year",
                 "creator",
                 "mp3",
-                "instrumental",
+                "audio",
+                "audiourl",
                 "vocals",
+                "instrumental",
                 "cover",
+                "coverurl",
                 "background",
+                "backgroundurl",
                 "video",
+                "videourl",
                 "videogap",
                 "resolution",
                 "start",
@@ -142,24 +127,26 @@ class Headers:
                 "p2",
                 "album",
                 "comment",
+                "providedby",
                 "tags",
             )
             if (val := getattr(self, key)) is not None
         )
         if self.unknown:
-            out = "\n".join(
-                (out, *(f"#{key.upper()}:{val}" for key, val in self.unknown.items()))
-            )
+            out = "\n".join((
+                out,
+                *(f"#{key.upper()}:{val}" for key, val in self.unknown.items()),
+            ))
         return out
 
     def artist_title_str(self) -> str:
         return f"{self.artist} - {self.title}"
 
-    def fix_apostrophes(self, logger: Log) -> None:
+    def fix_apostrophes(self, logger: Logger) -> None:
         apostrophes_and_quotation_marks_fixed = False
         for key in ("artist", "title", "language", "genre", "p1", "p2", "album"):
             if value := getattr(self, key):
-                corrected_value = replace_false_apostrophes_and_quotation_marks(value)
+                corrected_value = replace_false_apostrophes(value)
                 if value != corrected_value:
                     setattr(self, key, corrected_value)
                     apostrophes_and_quotation_marks_fixed = True
@@ -172,7 +159,7 @@ class Headers:
         if self.medleyendbeat:
             self.medleyendbeat = func(self.medleyendbeat)
 
-    def fix_language(self, logger: Log) -> None:
+    def fix_language(self, logger: Logger) -> None:
         if not self.language:
             logger.debug("No #LANGUAGE tag found. Consider adding it.")
         if old_language := self.language:
@@ -196,11 +183,27 @@ class Headers:
             return self.language.split(",", maxsplit=1)[0].removesuffix(" (romanized)")
         return ""
 
+    def fix_videogap(self, meta_tags: MetaTags, logger: Logger) -> None:
+        if self.videogap is not None:
+            if (
+                meta_tags.audio is None
+                or meta_tags.video is None
+                or meta_tags.audio == meta_tags.video
+            ):
+                logger.warning(
+                    "This song contains a non-zero #VIDEOGAP, which only makes sense "
+                    "if different resources for audio and video are specified, which "
+                    "is not the case here. This should be fixed in USDB. Removing "
+                    "#VIDEOGAP in local text file."
+                )
+                self.videogap = None
+
 
 def _set_header_value(kwargs: dict[str, Any], header: str, value: str) -> None:
     header = "creator" if header == "AUTHOR" else header.lower()
     if header in (
         "artist",
+        "version",
         "language",
         "edition",
         "genre",
@@ -208,14 +211,22 @@ def _set_header_value(kwargs: dict[str, Any], header: str, value: str) -> None:
         "year",
         "creator",
         "mp3",
+        "audio",
+        "audiourl",
+        "vocals",
+        "instrumental",
         "cover",
+        "coverurl",
         "background",
-        "relative",
+        "backgroundurl",
         "video",
+        "videourl",
+        "relative",
         "p1",
         "p2",
         "encoding",
         "comment",
+        "providedby",
         "resolution",
         "tags",
     ):

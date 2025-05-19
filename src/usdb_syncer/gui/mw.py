@@ -1,38 +1,40 @@
 """usdb_syncer's GUI"""
 
-import datetime
-import os
 import webbrowser
+from collections.abc import Callable
 from pathlib import Path
 
 from PySide6 import QtGui
 from PySide6.QtWidgets import QFileDialog, QLabel, QMainWindow
 
-from usdb_syncer import db, events, settings, song_routines, usdb_id_file, utils
+from usdb_syncer import SongId, db, events, settings, song_routines, usdb_id_file
 from usdb_syncer.constants import Usdb
-from usdb_syncer.gui import gui_utils, progress_bar
+from usdb_syncer.gui import events as gui_events
+from usdb_syncer.gui import ffmpeg_dialog, gui_utils, icons, progress, progress_bar
 from usdb_syncer.gui.about_dialog import AboutDialog
+from usdb_syncer.gui.comment_dialog import CommentDialog
 from usdb_syncer.gui.debug_console import DebugConsole
 from usdb_syncer.gui.forms.MainWindow import Ui_MainWindow
 from usdb_syncer.gui.meta_tags_dialog import MetaTagsDialog
+from usdb_syncer.gui.preview_dialog import PreviewDialog
 from usdb_syncer.gui.progress import run_with_progress
+from usdb_syncer.gui.report_dialog import ReportDialog
 from usdb_syncer.gui.search_tree.tree import FilterTree
 from usdb_syncer.gui.settings_dialog import SettingsDialog
 from usdb_syncer.gui.song_table.song_table import SongTable
 from usdb_syncer.gui.usdb_login_dialog import UsdbLoginDialog
-from usdb_syncer.json_export import generate_song_json
-from usdb_syncer.logger import get_logger
-from usdb_syncer.pdf import generate_song_pdf
+from usdb_syncer.logger import logger
 from usdb_syncer.song_loader import DownloadManager
 from usdb_syncer.sync_meta import SyncMeta
+from usdb_syncer.usdb_scraper import post_song_rating
 from usdb_syncer.usdb_song import UsdbSong
-from usdb_syncer.utils import AppPaths, open_file_explorer
-
-_logger = get_logger(__file__)
+from usdb_syncer.utils import AppPaths, LinuxEnvCleaner, open_path_or_file
 
 
 class MainWindow(Ui_MainWindow, QMainWindow):
     """The app's main window and entry point to the GUI."""
+
+    _cleaned_up = False
 
     def __init__(self) -> None:
         super().__init__()
@@ -48,10 +50,18 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         self._setup_shortcuts()
         self._setup_song_dir()
         self.lineEdit_search.textChanged.connect(
-            lambda txt: events.TextFilterChanged(txt).post()
+            lambda txt: gui_events.TextFilterChanged(txt).post()
         )
+        gui_events.SavedSearchRestored.subscribe(
+            lambda event: self.lineEdit_search.setText(event.search.text)
+        )
+        gui_events.ThemeChanged.subscribe(self._on_theme_changed)
         self._setup_buttons()
         self._restore_state()
+
+    def _focus_search(self) -> None:
+        self.lineEdit_search.setFocus()
+        self.lineEdit_search.selectAll()
 
     def _setup_statusbar(self) -> None:
         self._status_label = QLabel(self)
@@ -86,25 +96,70 @@ class MainWindow(Ui_MainWindow, QMainWindow):
             (self.action_refetch_song_list, self._refetch_song_list),
             (self.action_usdb_login, lambda: UsdbLoginDialog(self).show()),
             (self.action_meta_tags, lambda: MetaTagsDialog(self).show()),
-            (self.action_settings, lambda: SettingsDialog(self).show()),
+            (
+                self.action_settings,
+                lambda: SettingsDialog(self, self.table.current_song()).show(),
+            ),
             (self.action_about, lambda: AboutDialog(self).show()),
-            (self.action_generate_song_pdf, self._generate_song_pdf),
-            (self.action_generate_song_json, self._generate_song_json),
+            (
+                self.action_generate_song_list,
+                lambda: ReportDialog(self, self.table).show(),
+            ),
             (self.action_import_usdb_ids, self._import_usdb_ids_from_files),
             (self.action_export_usdb_ids, self._export_usdb_ids_to_file),
-            (self.action_show_log, lambda: open_file_explorer(AppPaths.log)),
+            (self.action_show_log, lambda: open_path_or_file(AppPaths.log.parent)),
             (self.action_show_in_usdb, self._show_current_song_in_usdb),
+            (self.action_post_comment_in_usdb, self._show_comment_dialog),
+            (self.action_rate_1star, lambda: self._rate_in_usdb(1)),
+            (self.action_rate_2stars, lambda: self._rate_in_usdb(2)),
+            (self.action_rate_3stars, lambda: self._rate_in_usdb(3)),
+            (self.action_rate_4stars, lambda: self._rate_in_usdb(4)),
+            (self.action_rate_5stars, lambda: self._rate_in_usdb(5)),
             (self.action_open_song_folder, self._open_current_song_folder),
+            (
+                self.action_open_song_in_karedi,
+                lambda: self._open_current_song_in_app(settings.SupportedApps.KAREDI),
+            ),
+            (
+                self.action_open_song_in_performous,
+                lambda: self._open_current_song_in_app(
+                    settings.SupportedApps.PERFORMOUS
+                ),
+            ),
+            (
+                self.action_open_song_in_ultrastar_manager,
+                lambda: self._open_current_song_in_app(
+                    settings.SupportedApps.ULTRASTAR_MANAGER
+                ),
+            ),
+            (
+                self.action_open_song_in_usdx,
+                lambda: self._open_current_song_in_app(settings.SupportedApps.USDX),
+            ),
+            (
+                self.action_open_song_in_vocaluxe,
+                lambda: self._open_current_song_in_app(settings.SupportedApps.VOCALUXE),
+            ),
+            (
+                self.action_open_song_in_yass_reloaded,
+                lambda: self._open_current_song_in_app(
+                    settings.SupportedApps.YASS_RELOADED
+                ),
+            ),
             (self.action_delete, self.table.delete_selected_songs),
             (self.action_pin, self.table.set_pin_selected_songs),
+            (self.action_preview, self._show_preview_dialog),
         ):
             action.triggered.connect(func)
+        self.menu_custom_data.aboutToShow.connect(self.table.build_custom_data_menu)
 
     def _setup_shortcuts(self) -> None:
         gui_utils.set_shortcut("Ctrl+.", self, lambda: DebugConsole(self).show())
+        gui_utils.set_shortcut("Ctrl+F", self, self._focus_search)
 
     def _setup_song_dir(self) -> None:
-        self.lineEdit_song_dir.setText(str(utils.get_song_dir()))
+        self.song_dir = settings.get_song_dir()
+        self.lineEdit_song_dir.setText(str(self.song_dir))
         self.pushButton_select_song_dir.clicked.connect(self._select_song_dir)
 
     def _setup_buttons(self) -> None:
@@ -145,116 +200,153 @@ class MainWindow(Ui_MainWindow, QMainWindow):
                     self.plainTextEdit.appendPlainText(message)
 
     def _select_local_songs(self) -> None:
-        if directory := QFileDialog.getExistingDirectory(self, "Select Song Directory"):
-            songs = run_with_progress(
-                "Reading song txts ...",
-                lambda _: song_routines.find_local_songs(Path(directory)),
-            )
+        def on_done(result: progress.Result[set[SongId]]) -> None:
+            songs = result.result()
             self.table.set_selection_to_song_ids(songs)
-            _logger.info(f"Selected {len(songs)} songs.")
+            logger.info(f"Selected {len(songs)} songs.")
+
+        if directory := QFileDialog.getExistingDirectory(self, "Select Song Directory"):
+            run_with_progress(
+                "Reading song txts ...",
+                lambda: song_routines.find_local_songs(Path(directory)),
+                on_done=on_done,
+            )
 
     def _refetch_song_list(self) -> None:
-        with db.transaction():
-            run_with_progress(
-                "Fetching song list ...",
-                lambda _: song_routines.load_available_songs(force_reload=True),
-            )
-        self.table.reset()
+        def task() -> None:
+            with db.transaction():
+                song_routines.load_available_songs(force_reload=True)
+
+        def on_done(result: progress.Result[None]) -> None:
+            UsdbSong.clear_cache()
+            self.table.end_reset()
+            self.table.search_songs()
+            result.result()
+
+        self.table.begin_reset()
+        run_with_progress("Fetching song list ...", task=task, on_done=on_done)
 
     def _select_song_dir(self) -> None:
         song_dir = QFileDialog.getExistingDirectory(self, "Select Song Directory")
         if not song_dir:
             return
         path = Path(song_dir).resolve(strict=True)
-        with db.transaction():
-            run_with_progress(
-                "Reading meta files ...",
-                lambda _: song_routines.synchronize_sync_meta_folder(path),
-            )
-            SyncMeta.reset_active(path)
-        self.lineEdit_song_dir.setText(str(path))
-        settings.set_song_dir(path)
-        UsdbSong.clear_cache()
-        events.SongDirChanged(path).post()
 
-    def _generate_song_pdf(self) -> None:
-        fname = f"{datetime.datetime.now():%Y-%m-%d}_songlist.pdf"
-        path = os.path.join(utils.get_song_dir(), fname)
-        path = QFileDialog.getSaveFileName(self, dir=path, filter="PDF (*.pdf)")[0]
-        if path:
-            generate_song_pdf(db.all_local_usdb_songs(), path)
+        def task() -> None:
+            with db.transaction():
+                song_routines.synchronize_sync_meta_folder(path)
+                SyncMeta.reset_active(path)
 
-    def _generate_song_json(self) -> None:
-        fname = f"{datetime.datetime.now():%Y-%m-%d}_songlist.json"
-        path = os.path.join(utils.get_song_dir(), fname)
-        path = QFileDialog.getSaveFileName(self, dir=path, filter="JSON (*.json)")[0]
-        if path:
-            num_of_songs = generate_song_json(db.all_local_usdb_songs(), Path(path))
-            _logger.info(f"exported {num_of_songs} songs to {path}")
+        def on_done(result: progress.Result[None]) -> None:
+            result.result()
+            self.lineEdit_song_dir.setText(str(path))
+            settings.set_song_dir(path)
+            UsdbSong.clear_cache()
+            events.SongDirChanged(path).post()
+
+        run_with_progress("Reading meta files ...", task=task, on_done=on_done)
 
     def _import_usdb_ids_from_files(self) -> None:
         file_list = QFileDialog.getOpenFileNames(
             self,
             caption="Select one or more files to import USDB IDs from",
-            dir=os.getcwd(),
+            dir=str(Path.cwd()),
             filter=(
                 "JSON, USDB IDs, Weblinks (*.json *.usdb_ids *.url *.webloc *.desktop)"
             ),
         )[0]
         if not file_list:
-            _logger.info("no files selected to import USDB IDs from")
+            logger.info("no files selected to import USDB IDs from")
             return
-        if available := usdb_id_file.get_available_song_ids_from_files(file_list):
+        paths = [Path(f) for f in file_list]
+        if available := usdb_id_file.get_available_song_ids_from_files(paths):
             self.table.set_selection_to_song_ids(available)
 
     def _export_usdb_ids_to_file(self) -> None:
         selected_ids = [song.song_id for song in self.table.selected_songs()]
         if not selected_ids:
-            _logger.info("Skipping export: no songs selected.")
+            logger.info("Skipping export: no songs selected.")
             return
 
         # Note: automatically checks if file already exists
         path = QFileDialog.getSaveFileName(
             self,
             caption="Select export file for USDB IDs",
-            dir=os.getcwd(),
+            dir=str(Path.cwd()),
             filter="USDB ID File (*.usdb_ids)",
         )[0]
         if not path:
-            _logger.info("export aborted")
+            logger.info("export aborted")
             return
 
-        usdb_id_file.write_usdb_id_file(path, selected_ids)
-        _logger.info(f"exported {len(selected_ids)} USDB IDs to {path}")
+        usdb_id_file.write_usdb_id_file(Path(path), selected_ids)
+        logger.info(f"exported {len(selected_ids)} USDB IDs to {path}")
 
     def _show_current_song_in_usdb(self) -> None:
         if song := self.table.current_song():
-            _logger.debug(f"Opening song page #{song.song_id} in webbrowser.")
-            webbrowser.open(f"{Usdb.BASE_URL}?link=detail&id={song.song_id:d}")
+            logger.debug(f"Opening song page #{song.song_id} in webbrowser.")
+            with LinuxEnvCleaner():
+                webbrowser.open(f"{Usdb.DETAIL_URL}{song.song_id:d}")
         else:
-            _logger.info("No current song.")
+            logger.info("No current song.")
 
-    def _open_current_song_folder(self) -> None:
+    def _show_comment_dialog(self) -> None:
+        song = self.table.current_song()
+        if song:
+            CommentDialog(self, song).show()
+        else:
+            logger.debug("Not opening comment dialog: no song selected.")
+
+    def _show_preview_dialog(self) -> None:
+        song = self.table.current_song()
+        if song:
+            ffmpeg_dialog.check_ffmpeg(self, lambda: PreviewDialog.load(self, song))
+
+    def _rate_in_usdb(self, stars: int) -> None:
+        song = self.table.current_song()
+        if song:
+            post_song_rating(song.song_id, stars)
+        else:
+            logger.debug("Not rating song: no song selected.")
+
+    def _open_current_song(self, action: Callable[[Path], None]) -> None:
         if song := self.table.current_song():
             if song.sync_meta:
                 if song.sync_meta.path.exists():
-                    open_file_explorer(song.sync_meta.path.parent)
+                    action(song.sync_meta.path.parent)
                 else:
                     with db.transaction():
                         song.remove_sync_meta()
                     events.SongChanged(song.song_id)
-                    _logger.info("Song does not exist locally anymore.")
+                    logger.info("Song does not exist locally anymore.")
             else:
-                _logger.info("Song does not exist locally.")
+                logger.info("Song does not exist locally.")
         else:
-            _logger.info("No current song.")
+            logger.info("No current song.")
 
-    def closeEvent(self, event: QtGui.QCloseEvent) -> None:
-        DownloadManager.quit()
-        self.table.save_state()
-        self._save_state()
-        db.close()
-        event.accept()
+    def _open_current_song_folder(self) -> None:
+        self._open_current_song(open_path_or_file)
+
+    def _open_current_song_in_app(self, app: settings.SupportedApps) -> None:
+        self._open_current_song(lambda path: settings.SupportedApps.open_app(app, path))
+
+    def closeEvent(self, event: QtGui.QCloseEvent) -> None:  # noqa: N802
+        def on_done(result: progress.Result) -> None:
+            result.log_error()
+            self.table.save_state()
+            self._save_state()
+            db.close()
+            self._cleaned_up = True
+            logger.debug("Closing after cleanup.")
+            self.close()
+
+        if self._cleaned_up:
+            logger.debug("Accepting close event.")
+            event.accept()
+        else:
+            logger.debug("Close event deferred, cleaning up ...")
+            run_with_progress("Shutting down ...", DownloadManager.quit, on_done)
+            event.ignore()
 
     def _restore_state(self) -> None:
         self.restoreGeometry(settings.get_geometry_main_window())
@@ -265,3 +357,43 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         settings.set_geometry_main_window(self.saveGeometry())
         settings.set_state_main_window(self.saveState())
         settings.set_geometry_log_dock(self.dock_log.saveGeometry())
+
+    def _on_theme_changed(self, event: gui_events.ThemeChanged) -> None:
+        key = event.theme.KEY
+        self.toolButton_debugs.setIcon(icons.Icon.BUG.icon(key))
+        self.toolButton_infos.setIcon(icons.Icon.INFO.icon(key))
+        self.toolButton_warnings.setIcon(icons.Icon.WARNING.icon(key))
+        self.toolButton_errors.setIcon(icons.Icon.ERROR.icon(key))
+        self.button_download.setIcon(icons.Icon.DOWNLOAD.icon(key))
+        self.button_pause.setIcon(icons.Icon.PAUSE_REMOTE.icon(key))
+        self.pushButton_select_song_dir.setIcon(icons.Icon.SONG_FOLDER.icon(key))
+        self.action_settings.setIcon(icons.Icon.SETTINGS.icon(key))
+        self.action_meta_tags.setIcon(icons.Icon.META_TAGS.icon(key))
+        self.action_generate_song_list.setIcon(icons.Icon.REPORT.icon(key))
+        self.action_usdb_login.setIcon(icons.Icon.USDB.icon(key))
+        self.action_refetch_song_list.setIcon(icons.Icon.CHECK_FOR_UPDATE.icon(key))
+        self.action_show_log.setIcon(icons.Icon.LOG.icon(key))
+        self.action_songs_download.setIcon(icons.Icon.DOWNLOAD.icon(key))
+        self.action_songs_abort.setIcon(icons.Icon.ABORT.icon(key))
+        self.action_show_in_usdb.setIcon(icons.Icon.USDB.icon(key))
+        self.action_post_comment_in_usdb.setIcon(icons.Icon.COMMENT.icon(key))
+        self.menu_rate_song_on_usdb.setIcon(icons.Icon.RATING.icon(key))
+        self.action_open_song_folder.setIcon(icons.Icon.SONG_FOLDER.icon(key))
+        self.menu_open_song_in.setIcon(icons.Icon.OPEN_SONG_WITH.icon(key))
+        self.menu_custom_data.setIcon(icons.Icon.CUSTOM_DATA.icon(key))
+        self.action_pin.setIcon(icons.Icon.PIN.icon(key))
+        self.action_delete.setIcon(icons.Icon.DELETE.icon(key))
+        self.action_open_song_in_usdx.setIcon(icons.Icon.USDX.icon(key))
+        self.action_open_song_in_vocaluxe.setIcon(icons.Icon.VOCALUXE.icon(key))
+        self.action_open_song_in_performous.setIcon(icons.Icon.PERFORMOUS.icon(key))
+        self.action_open_song_in_yass_reloaded.setIcon(
+            icons.Icon.YASS_RELOADED.icon(key)
+        )
+        self.action_open_song_in_karedi.setIcon(icons.Icon.KAREDI.icon(key))
+        self.action_open_song_in_ultrastar_manager.setIcon(
+            icons.Icon.ULTRASTAR_MANAGER.icon(key)
+        )
+        self.action_find_local_songs.setIcon(icons.Icon.DATABASE.icon(key))
+        self.action_import_usdb_ids.setIcon(icons.Icon.FILE_IMPORT.icon(key))
+        self.action_export_usdb_ids.setIcon(icons.Icon.FILE_EXPORT.icon(key))
+        self.action_preview.setIcon(icons.Icon.ULTRASTAR_GAME.icon(key))

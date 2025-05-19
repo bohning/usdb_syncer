@@ -6,7 +6,7 @@ from typing import Literal
 
 import attrs
 
-from usdb_syncer.logger import Log
+from usdb_syncer.logger import Logger
 
 # Characters that have special meaning for the meta tag syntax and therefore
 # must be escaped. Escaping is done with percent encoding.
@@ -38,7 +38,7 @@ class CropMetaTags:
     lower: int
 
     @classmethod
-    def try_parse(cls, value: str, logger: Log) -> CropMetaTags | None:
+    def try_parse(cls, value: str, logger: Logger) -> CropMetaTags | None:
         try:
             left, upper, width, height = map(int, value.split("-"))
         except ValueError:
@@ -61,7 +61,7 @@ class ResizeMetaTags:
     height: int
 
     @classmethod
-    def try_parse(cls, value: str, logger: Log) -> ResizeMetaTags | None:
+    def try_parse(cls, value: str, logger: Logger) -> ResizeMetaTags | None:
         try:
             if "-" in value:
                 width, height = map(int, value.split("-"))
@@ -90,7 +90,7 @@ class ImageMetaTags:
     resize: ResizeMetaTags | None = None
     contrast: Literal["auto"] | float | None = None
 
-    def source_url(self, logger: Log) -> str:
+    def source_url(self, logger: Logger) -> str:
         if "://" in self.source:
             if "fanart.tv" in self.source:
                 logger.debug(
@@ -127,7 +127,7 @@ class MedleyTag:
     end: int
 
     @classmethod
-    def try_parse(cls, value: str, logger: Log) -> MedleyTag | None:
+    def try_parse(cls, value: str, logger: Logger) -> MedleyTag | None:
         try:
             start, end = map(int, value.split("-"))
         except ValueError:
@@ -146,30 +146,33 @@ class MetaTags:
     #VIDEO:a=example,co=foobar.jpg,bg=background.jpg
     """
 
-    video: str | None = None
     audio: str | None = None
+    video: str | None = None
     cover: ImageMetaTags | None = None
     background: ImageMetaTags | None = None
     player1: str | None = None
     player2: str | None = None
     preview: float | None = None
     medley: MedleyTag | None = None
+    tags: str | None = None
 
     @classmethod
-    def parse(cls, video_tag: str, logger: Log) -> MetaTags:
-        tags = cls()
-        if not "=" in video_tag:
+    def parse(cls, video_tag: str, logger: Logger) -> MetaTags:
+        meta_tags = cls()
+        if "=" not in video_tag:
             # probably a regular video file name and not a meta tag
-            return tags
+            return meta_tags
         for pair in video_tag.split(","):
             if "=" not in pair:
                 logger.warning(f"missing key or value for meta tag: '{pair}'")
                 continue
             key, value = pair.split("=", maxsplit=1)
-            tags._parse_key_value_pair(key, value, logger)
-        return tags
+            meta_tags._parse_key_value_pair(key, value, logger)
+        return meta_tags
 
-    def _parse_key_value_pair(self, key: str, value: str, logger: Log) -> None:
+    def _parse_key_value_pair(  # noqa: C901
+        self, key: str, value: str, logger: Logger
+    ) -> None:
         value = decode_meta_tag_value(value)
         match key:
             case "v":
@@ -202,6 +205,8 @@ class MetaTags:
                 self.preview = _try_parse_float(value, logger)
             case "medley":
                 self.medley = MedleyTag.try_parse(value, logger)
+            case "tags":
+                self.tags = value
             case _:
                 logger.warning(f"unknown key for meta tag: '{key}={value}'")
 
@@ -211,14 +216,15 @@ class MetaTags:
 
     def __str__(self) -> str:
         return _join_tags(
-            _key_value_str("v", self.video),
             _key_value_str("a", self.audio),
+            _key_value_str("v", self.video),
             self.cover.to_str("co") if self.cover else None,
             self.background.to_str("bg") if self.background else None,
             _key_value_str("p1", self.player1),
             _key_value_str("p2", self.player2),
             _key_value_str("preview", self.preview),
             str(self.medley) if self.medley else None,
+            _key_value_str("tags", self.tags),
         )
 
 
@@ -226,11 +232,11 @@ def _key_value_str(key: str, value: str | float | None) -> str | None:
     return None if value is None else f"{key}={encode_meta_tag_value(str(value))}"
 
 
-def _join_tags(*tags: str | None) -> str:
-    return ",".join(filter(None, tags))
+def _join_tags(*meta_tags: str | None) -> str:
+    return ",".join(filter(None, meta_tags))
 
 
-def _try_parse_float(value: str, logger: Log) -> float | None:
+def _try_parse_float(value: str, logger: Logger) -> float | None:
     try:
         return float(value)
     except ValueError:
@@ -238,7 +244,7 @@ def _try_parse_float(value: str, logger: Log) -> float | None:
         return None
 
 
-def _try_parse_contrast(value: str, logger: Log) -> Literal["auto"] | float | None:
+def _try_parse_contrast(value: str, logger: Logger) -> Literal["auto"] | float | None:
     if value == "auto":
         return "auto"
     try:

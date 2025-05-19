@@ -1,15 +1,8 @@
 """Dialog to create meta tags."""
 
 import re
-from typing import Callable, Literal
+from typing import Literal
 
-from pyshorteners.exceptions import (
-    BadAPIResponseException,
-    BadURLException,
-    ExpandingErrorException,
-    ShorteningErrorException,
-)
-from pyshorteners.shorteners import tinyurl
 from PySide6.QtGui import QGuiApplication
 from PySide6.QtWidgets import QDialog, QWidget
 
@@ -23,7 +16,6 @@ from usdb_syncer.meta_tags import (
 )
 from usdb_syncer.utils import extract_vimeo_id, extract_youtube_id
 
-MAX_LEN = 255
 URL_TAG_NAMES = ("cover_url", "background_url", "audio_url", "video_url")
 
 
@@ -33,8 +25,6 @@ class MetaTagsDialog(Ui_Dialog, QDialog):
     def __init__(self, parent: QWidget) -> None:
         super().__init__(parent=parent)
         self.setupUi(self)
-        self._output = "#VIDEO:"
-        self._update_output()
         self._connect_signals()
         self._shortened_urls: dict[str, str] = {}
 
@@ -65,8 +55,9 @@ class MetaTagsDialog(Ui_Dialog, QDialog):
             self.preview_start.valueChanged,
             self.medley_start.valueChanged,
             self.medley_end.valueChanged,
+            self.tags.textChanged,
         ):
-            signal.connect(self._update_output)
+            signal.connect(lambda: self.output.setText(f"#VIDEO:{self._meta_tags()}"))
 
         self.button_copy_to_clipboard.pressed.connect(self._on_copy_to_clipboard)
 
@@ -153,78 +144,23 @@ class MetaTagsDialog(Ui_Dialog, QDialog):
 
     def _meta_tags(self) -> MetaTags:
         return MetaTags(
-            video=_sanitize_video_url(self.video_url.text()) or None,
             audio=self._audio_source(),
+            video=_sanitize_video_url(self.video_url.text()) or None,
             cover=self._cover_meta_tags(),
             background=self._background_meta_tags(),
             player1=self._p1_meta_tag(),
             player2=self._p2_meta_tag(),
             preview=round(self.preview_start.value(), 3) or None,
             medley=self._medley_tag(),
+            tags=self.tags.text() or None,
         )
-
-    def _update_output(self) -> None:
-        values = self._meta_tags()
-        while True:
-            self._output = f"#VIDEO:{values}"
-            if len(self._output) <= MAX_LEN:
-                break
-            if not self._try_shorten_url(values):
-                break
-        self.output.setText(self._output)
-        self.char_count.setText(f"{len(self._output)} / {MAX_LEN} characters")
-        self.button_copy_to_clipboard.setEnabled(len(self._output) <= MAX_LEN)
 
     def _toggle_auto_contrast(self) -> None:
         auto = self.cover_contrast_auto.isChecked()
         self.cover_contrast.setEnabled(not auto)
 
     def _on_copy_to_clipboard(self) -> None:
-        QGuiApplication.clipboard().setText(self._output)
-
-    def _try_shorten_url(self, tags: MetaTags) -> bool:
-        """True if some URL was shortened."""
-        for url, setter in _urls_and_setters(tags):
-            if cached := self._shortened_urls.get(url, ""):
-                setter(cached)
-                return True
-            if len(url) < 30:
-                continue
-            if shortened := _try_shorten_url(url):
-                self._shortened_urls[url] = shortened
-                setter(shortened)
-                return True
-        return False
-
-
-def _urls_and_setters(tags: MetaTags) -> list[tuple[str, Callable[[str], None]]]:
-    """Returns meta tag urls by length in ascending order and a setter for each."""
-    urls = []
-    if tags.audio:
-        urls.append((tags.audio, lambda s: setattr(tags, "audio", s)))
-    if tags.video:
-        urls.append((tags.video, lambda s: setattr(tags, "video", s)))
-    if tags.cover:
-        urls.append((tags.cover.source, lambda s: setattr(tags.cover, "source", s)))
-    if background := tags.background:
-        urls.append((background.source, lambda s: setattr(background, "source", s)))
-    urls.sort(key=lambda u: len(u[0]), reverse=True)
-    return urls
-
-
-def _try_shorten_url(url: str) -> str:
-    try:
-        short = tinyurl.Shortener().short(url)
-    except (
-        BadAPIResponseException,
-        BadURLException,
-        ExpandingErrorException,
-        ShorteningErrorException,
-    ):
-        return ""
-    if len(short) < len(url):
-        return short
-    return ""
+        QGuiApplication.clipboard().setText(self.output.text())
 
 
 def _sanitize_video_url(url: str) -> str:

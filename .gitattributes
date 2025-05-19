@@ -1,2 +1,5 @@
-Pipfile       text eol=lf
-Pipfile.lock  text eol=lf
+* text eol=lf
+*.jpg -text
+*.png -text
+*.afphoto -text
+*.ttf -text

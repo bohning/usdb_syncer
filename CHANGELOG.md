@@ -1,3 +1,151 @@
+<!-- 0.14.0 -->
+
+# Changes
+
+## Features
+
+- Check out how a downloaded song will appear in-game with the _Preview Song_ feature!
+
+## Fixes
+
+- Fixed the Linux bundle.
+- Fixed an error on startup for large collections.
+
+<!-- 0.13.0 -->
+
+# Changes
+
+## Features
+
+- We are now on PyPI! Simply install and update USDB Syncer with your favourite package manager, e.g. [pipx](https://pipx.pypa.io/stable/): `pipx install usdb_syncer`
+- We got a dark mode, and it's even customisable! Try it out with the View tab in the settings.
+- Image resources are now redownloaded if metatag postprocessing parameters have changed.
+
+## Developer notes
+
+- All previously accepted environment variables have been converted to commandline arguments. Check out `poetry run usdb_syncer -h`.
+- pylint, black and isort have been replaced with [ruff](https://docs.astral.sh/ruff/), making the tox pipeline run much faster. ruff also integrates with common code editors.
+- The hook `MainWindowDidLoad` was moved to the new module `usdb_syncer.gui.hooks`. This will contain all hooks called from the GUI going forward.
+
+<!-- 0.12.1 -->
+
+# Changes
+
+## Fixes
+
+- Fix ReplayGain for Windows (by updating ffmpeg-normalize).
+
+<!-- 0.12.0 -->
+
+# Changes
+
+## Fixes
+
+- Audio/video format selection regression in 0.11.0 fixed.
+- Downloads of non-jpg images are now correctly converted to jpg.
+- Image processing order is now correctly handled (crop before resize for covers, resize before crop for backgrounds).
+- Improve compatibility of Linux bundle with older distributions (glibc >= 2.34).
+
+## Features
+
+- The Syncer now checks if a new version is available.
+- Infos about unavailable or invalid resources are now sent to Discord (**please enable this in the settings to support the community**).
+- Songs can now be rated on USDB via the Syncer (1-5 star rating).
+- Artist initial is now available for templates.
+- Audio normalization has a new option ReplayGain. If your karaoke software supports ReplayGain (e.g. UltraStar deluxe >= 2025.4.0), this is the preferred option as it does not reencode the audio file but instead only writes normalization information into the header of the audio file.
+- PDF report (song list) creation has been fixed and extended.
+
+## Developer notes
+
+- Added hook when MainWindow was loaded.
+
+<!-- 0.11.0 -->
+
+# Changes
+
+## Fixes
+
+- Cover postprocessing parameters are ignored if USDB cover is downloaded as fallback.
+
+## Features
+
+- Add more fine-grained options for video container/codec selection.
+
+<!-- 0.10.0 -->
+
+# Changes
+
+## Fixes
+
+- The check for existing / outdated local resources has been improved to account for different precisions of modified times for different file systems.
+- Provide binaries for Intel-based MacOS systems.
+- YouTube logged-in cookies are now used for age-restricted resources.
+- Games started from within the Syncer are properly cleaned up, fixing subsequent starts.
+
+## Features
+
+- Song tags are no longer parsed from comments, but instead from meta tags
+  (Use `%2C` as separation, e.g. `tags=explicit%2C80s%2CSoundtrack).
+  See https://github.com/bohning/usdb_syncer/wiki/Meta-Tags for a full list of
+  supported tags.
+- The UltraStar format version can now be specified in the settings (see https://usdx.eu/format/).
+- The number of download threads and the per-thread bandwidth limit for Youtube can be configured in the settings.
+- Option to embed artwork into video files (mp4).
+
+<!-- 0.9.0 -->
+
+# Changes
+
+## Fixes
+
+- Switch from browser_cookie3 to rookiepy in order to retrieve browser cookies on
+  different OSes more reliably.
+
+## Features
+
+- Third-party karaoke software can now be launched from within the Syncer, passing
+  the song directory as parameter.
+- Add optional fix for quotation marks (language-specific)
+
+<!-- 0.8.0 -->
+
+# Changes
+
+## Fixes
+
+- Age-restricted content can now be successfully downloaded if you are logged in to
+  YouTube in your browser.
+
+## Features
+
+- Custom data may be added to downloaded songs as key-value pairs.
+- The download path can now be customized using a dedicated template syntax (see
+  _Settings_). The template must contain at least two components, which are separated
+  using slashes. The last component specifies the filename, excluding its extension.
+  Example: `:year: / :artist: / :title: / song` will store files like
+  `1975/Queen/Bohemian Rhapsody/song.txt` and so on.
+  - You can even reference custom data with `:*my_key:`, which resolves to the value
+    associated with `my_key` for a given song.
+- Searches can be saved to the sidebar.
+  - A single saved search may be made the default to automatically apply it on startup.
+  - You can subscribe to saved searches to automatically download matches when new songs
+    are found on USDB.
+- Comments can now be posted on songs. Each comment includes a message and a rating.
+  Ratings can be negative, neutral, or positive, with neutral being the default.
+- The VP9 codec can be excluded for mp4 video containers (see _Settings_).
+- Tags such as artist, title and year are now also written to the video file (mp4 only).
+- Some text file fixes are now optional and can be configured in the settings:
+  - fix linebreaks (disabled | USDX style | YASS style)
+  - fix first words capitalization (disabled | enabled)
+  - fix spaces (after words | before words)
+- We're trying out a hook system to make the syncer extensible. See addons/README.md.
+
+## Developer notes
+
+- We have upgraded to Python 3.12.
+- The build process was migrated to Poetry. Pipenv is no longer used.
+  See the README for instructions.
+
 <!-- 0.7.0 -->
 
 # Changes

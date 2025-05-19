@@ -3,27 +3,81 @@
  <class>Dialog</class>
  <widget class="QDialog" name="Dialog">
   <property name="windowModality">
-   <enum>Qt::ApplicationModal</enum>
+   <enum>Qt::WindowModality::ApplicationModal</enum>
   </property>
   <property name="geometry">
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>359</width>
-    <height>188</height>
+    <width>631</width>
+    <height>180</height>
    </rect>
   </property>
   <property name="windowTitle">
-   <string>Ffmpeg not found</string>
+   <string>FFmpeg not found</string>
   </property>
   <layout class="QVBoxLayout" name="verticalLayout">
    <item>
-    <widget class="QLabel" name="label">
+    <widget class="QLabel" name="label_ffmpeg">
      <property name="text">
-      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;ffmpeg was not found on the system &lt;span style=&quot; font-style:italic;&quot;&gt;PATH&lt;/span&gt;, but is required to download songs!&lt;/p&gt;&lt;p&gt;Please download it from &lt;a href=&quot;https://ffmpeg.org/download.html&quot;&gt;&lt;span style=&quot; text-decoration: underline; color:#0000ff;&quot;&gt;https://ffmpeg.org/download.html&lt;/span&gt;&lt;/a&gt;, then set the location below. &lt;/p&gt;&lt;p&gt;Alternatively, you can use a package manager. E.g. with Homebrew: &lt;span style=&quot; font-family:'Courier New';&quot;&gt;brew install ffmpeg&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:700;&quot;&gt;FFmpeg&lt;/span&gt; and ffprobe are required to proceed!&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
      </property>
      <property name="textFormat">
-      <enum>Qt::RichText</enum>
+      <enum>Qt::TextFormat::RichText</enum>
+     </property>
+     <property name="wordWrap">
+      <bool>true</bool>
+     </property>
+    </widget>
+   </item>
+   <item>
+    <widget class="QLabel" name="label_windows">
+     <property name="enabled">
+      <bool>true</bool>
+     </property>
+     <property name="text">
+      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;The recommended way to install FFmpeg is to use a package manager such as &lt;a href=&quot;https://chocolatey.org/&quot;&gt;&lt;span style=&quot; text-decoration: underline; color:#2e54ff;&quot;&gt;Chocolatey&lt;/span&gt;&lt;/a&gt; (&lt;span style=&quot; font-family:'Courier New';&quot;&gt;choco install ffmpeg&lt;/span&gt;) or &lt;a href=&quot;https://learn.microsoft.com/en-us/windows/package-manager/winget/&quot;&gt;&lt;span style=&quot; text-decoration: underline; color:#2e54ff;&quot;&gt;winget&lt;/span&gt;&lt;/a&gt; (&lt;span style=&quot; font-family:'Courier New';&quot;&gt;winget install --id=Gyan.FFmpeg -e&lt;/span&gt;).&lt;/p&gt;&lt;p&gt;Alternatively, download the FFmpeg binaries from &lt;a href=&quot;https://www.gyan.dev/ffmpeg/builds/ffmpeg-git-full.7z&quot;&gt;&lt;span style=&quot; text-decoration: underline; color:#2e54ff;&quot;&gt;https://www.gyan.dev/ffmpeg/builds/ffmpeg-git-full.7z&lt;/span&gt;&lt;/a&gt;, extract the archive and then set the location with the button below. &lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+     </property>
+     <property name="textFormat">
+      <enum>Qt::TextFormat::RichText</enum>
+     </property>
+     <property name="wordWrap">
+      <bool>true</bool>
+     </property>
+     <property name="textInteractionFlags">
+      <set>Qt::TextInteractionFlag::LinksAccessibleByMouse|Qt::TextInteractionFlag::TextSelectableByMouse</set>
+     </property>
+    </widget>
+   </item>
+   <item>
+    <widget class="QLabel" name="label_macos">
+     <property name="enabled">
+      <bool>true</bool>
+     </property>
+     <property name="text">
+      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;The recommended way to install FFmpeg is via &lt;a href=&quot;https://brew.sh/&quot;&gt;&lt;span style=&quot; text-decoration: underline; color:#2e54ff;&quot;&gt;Homebrew&lt;/span&gt;&lt;/a&gt; (&lt;span style=&quot; font-family:'Courier New';&quot;&gt;brew install ffmpeg&lt;/span&gt;).&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+     </property>
+     <property name="textFormat">
+      <enum>Qt::TextFormat::RichText</enum>
+     </property>
+     <property name="wordWrap">
+      <bool>true</bool>
+     </property>
+     <property name="textInteractionFlags">
+      <set>Qt::TextInteractionFlag::LinksAccessibleByMouse|Qt::TextInteractionFlag::TextSelectableByMouse</set>
+     </property>
+    </widget>
+   </item>
+   <item>
+    <widget class="QLabel" name="label_linux">
+     <property name="enabled">
+      <bool>true</bool>
+     </property>
+     <property name="text">
+      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Please install the FFmpeg package through your distribution’s package manager.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+     </property>
+     <property name="textFormat">
+      <enum>Qt::TextFormat::RichText</enum>
      </property>
      <property name="wordWrap">
       <bool>true</bool>
@@ -33,7 +87,7 @@
    <item>
     <spacer name="verticalSpacer">
      <property name="orientation">
-      <enum>Qt::Vertical</enum>
+      <enum>Qt::Orientation::Vertical</enum>
      </property>
      <property name="sizeHint" stdset="0">
       <size>
@@ -55,10 +109,10 @@
      <item>
       <widget class="QDialogButtonBox" name="buttonBox">
        <property name="orientation">
-        <enum>Qt::Horizontal</enum>
+        <enum>Qt::Orientation::Horizontal</enum>
        </property>
        <property name="standardButtons">
-        <set>QDialogButtonBox::Close</set>
+        <set>QDialogButtonBox::StandardButton::Close</set>
        </property>
       </widget>
      </item>

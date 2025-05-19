@@ -1,10 +1,10 @@
 """Tests for functions from the note_utils module."""
 
 from usdb_syncer import SongId
-from usdb_syncer.logger import get_logger
+from usdb_syncer.logger import song_logger
 from usdb_syncer.meta_tags import MetaTags
 
-_logger = get_logger(__file__, SongId(1))
+_logger = song_logger(SongId(1))
 
 
 def test_video_meta_tags() -> None:

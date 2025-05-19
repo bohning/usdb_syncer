@@ -16,11 +16,22 @@
   <widget class="QWidget" name="centralwidget">
    <layout class="QVBoxLayout" name="verticalLayout_3">
     <item>
-     <widget class="QLineEdit" name="lineEdit_search">
-      <property name="placeholderText">
-       <string>Search for anything ...</string>
-      </property>
-     </widget>
+     <layout class="QHBoxLayout" name="horizontalLayout_4">
+      <item>
+       <widget class="QLineEdit" name="lineEdit_search">
+        <property name="placeholderText">
+         <string>Search for anything ...</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QLabel" name="label_update_hint">
+        <property name="text">
+         <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;a href=&quot;https://github.com/bohning/usdb_syncer/releases&quot;&gt;&lt;span style=&quot; text-decoration: underline; color:#3586ff;&quot;&gt;USDB Syncer VERSION available!&lt;/span&gt;&lt;/a&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+        </property>
+       </widget>
+      </item>
+     </layout>
     </item>
     <item>
      <widget class="QTableView" name="table_view">
@@ -31,16 +42,16 @@
        </sizepolicy>
       </property>
       <property name="editTriggers">
-       <set>QAbstractItemView::NoEditTriggers</set>
+       <set>QAbstractItemView::EditTrigger::NoEditTriggers</set>
       </property>
       <property name="alternatingRowColors">
        <bool>true</bool>
       </property>
       <property name="selectionMode">
-       <enum>QAbstractItemView::ExtendedSelection</enum>
+       <enum>QAbstractItemView::SelectionMode::ExtendedSelection</enum>
       </property>
       <property name="selectionBehavior">
-       <enum>QAbstractItemView::SelectRows</enum>
+       <enum>QAbstractItemView::SelectionBehavior::SelectRows</enum>
       </property>
       <property name="sortingEnabled">
        <bool>true</bool>
@@ -79,7 +90,7 @@
          <string>Download</string>
         </property>
         <property name="icon">
-         <iconset resource="../resources/resources.qrc">
+         <iconset>
           <normaloff>:/icons/drive-download.png</normaloff>:/icons/drive-download.png</iconset>
         </property>
         <property name="iconSize">
@@ -96,7 +107,7 @@
          <string>Pause</string>
         </property>
         <property name="icon">
-         <iconset resource="../resources/resources.qrc">
+         <iconset resource="../resources/qt/resources.qrc">
           <normaloff>:/icons/control-pause.png</normaloff>:/icons/control-pause.png</iconset>
         </property>
         <property name="iconSize">
@@ -132,14 +143,14 @@
          <string>0/0</string>
         </property>
         <property name="alignment">
-         <set>Qt::AlignCenter</set>
+         <set>Qt::AlignmentFlag::AlignCenter</set>
         </property>
        </widget>
       </item>
       <item>
        <spacer name="horizontalSpacer_2">
         <property name="orientation">
-         <enum>Qt::Horizontal</enum>
+         <enum>Qt::Orientation::Horizontal</enum>
         </property>
         <property name="sizeHint" stdset="0">
          <size>
@@ -158,7 +169,7 @@
          <string>Select song folder</string>
         </property>
         <property name="icon">
-         <iconset resource="../resources/resources.qrc">
+         <iconset resource="../resources/qt/resources.qrc">
           <normaloff>:/icons/folder_note.png</normaloff>:/icons/folder_note.png</iconset>
         </property>
        </widget>
@@ -178,6 +189,9 @@
    </layout>
   </widget>
   <widget class="QMenuBar" name="menubar">
+   <property name="enabled">
+    <bool>true</bool>
+   </property>
    <property name="geometry">
     <rect>
      <x>0</x>
@@ -195,8 +209,7 @@
     </property>
     <addaction name="action_settings"/>
     <addaction name="action_meta_tags"/>
-    <addaction name="action_generate_song_pdf"/>
-    <addaction name="action_generate_song_json"/>
+    <addaction name="action_generate_song_list"/>
    </widget>
    <widget class="QMenu" name="menu_usdb">
     <property name="title">
@@ -225,13 +238,58 @@
     <property name="toolTipsVisible">
      <bool>true</bool>
     </property>
+    <widget class="QMenu" name="menu_custom_data">
+     <property name="title">
+      <string>Custom Data</string>
+     </property>
+     <property name="icon">
+      <iconset resource="../resources/qt/resources.qrc">
+       <normaloff>:/icons/drawer.png</normaloff>:/icons/drawer.png</iconset>
+     </property>
+    </widget>
+    <widget class="QMenu" name="menu_open_song_in">
+     <property name="title">
+      <string>Open Song in</string>
+     </property>
+     <property name="icon">
+      <iconset resource="../resources/qt/resources.qrc">
+       <normaloff>:/icons/music--arrow.png</normaloff>:/icons/music--arrow.png</iconset>
+     </property>
+     <addaction name="action_open_song_in_usdx"/>
+     <addaction name="action_open_song_in_vocaluxe"/>
+     <addaction name="action_open_song_in_performous"/>
+     <addaction name="separator"/>
+     <addaction name="action_open_song_in_yass_reloaded"/>
+     <addaction name="action_open_song_in_karedi"/>
+     <addaction name="action_open_song_in_ultrastar_manager"/>
+    </widget>
+    <widget class="QMenu" name="menu_rate_song_on_usdb">
+     <property name="title">
+      <string>Rate Song on USDB</string>
+     </property>
+     <property name="icon">
+      <iconset resource="../resources/qt/resources.qrc">
+       <normaloff>:/icons/rating.png</normaloff>:/icons/rating.png</iconset>
+     </property>
+     <addaction name="action_rate_1star"/>
+     <addaction name="action_rate_2stars"/>
+     <addaction name="action_rate_3stars"/>
+     <addaction name="action_rate_4stars"/>
+     <addaction name="action_rate_5stars"/>
+    </widget>
     <addaction name="action_songs_download"/>
     <addaction name="action_songs_abort"/>
     <addaction name="action_show_in_usdb"/>
+    <addaction name="action_post_comment_in_usdb"/>
+    <addaction name="menu_rate_song_on_usdb"/>
     <addaction name="separator"/>
     <addaction name="action_open_song_folder"/>
-    <addaction name="action_delete"/>
+    <addaction name="menu_open_song_in"/>
+    <addaction name="menu_custom_data"/>
     <addaction name="action_pin"/>
+    <addaction name="action_preview"/>
+    <addaction name="separator"/>
+    <addaction name="action_delete"/>
    </widget>
    <widget class="QMenu" name="menu_local">
     <property name="title">
@@ -277,7 +335,7 @@
           <string>Errors</string>
          </property>
          <property name="icon">
-          <iconset resource="../resources/resources.qrc">
+          <iconset resource="../resources/qt/resources.qrc">
            <normaloff>:/icons/error.png</normaloff>:/icons/error.png</iconset>
          </property>
          <property name="iconSize">
@@ -303,7 +361,7 @@
           <string>Warnings</string>
          </property>
          <property name="icon">
-          <iconset resource="../resources/resources.qrc">
+          <iconset resource="../resources/qt/resources.qrc">
            <normaloff>:/icons/warning.png</normaloff>:/icons/warning.png</iconset>
          </property>
          <property name="iconSize">
@@ -329,7 +387,7 @@
           <string>Infos</string>
          </property>
          <property name="icon">
-          <iconset resource="../resources/resources.qrc">
+          <iconset resource="../resources/qt/resources.qrc">
            <normaloff>:/icons/info.png</normaloff>:/icons/info.png</iconset>
          </property>
          <property name="iconSize">
@@ -352,7 +410,7 @@
           <string>Debugs</string>
          </property>
          <property name="icon">
-          <iconset resource="../resources/resources.qrc">
+          <iconset resource="../resources/qt/resources.qrc">
            <normaloff>:/icons/bug.png</normaloff>:/icons/bug.png</iconset>
          </property>
          <property name="iconSize">
@@ -369,7 +427,7 @@
        <item>
         <spacer name="horizontalSpacer">
          <property name="orientation">
-          <enum>Qt::Horizontal</enum>
+          <enum>Qt::Orientation::Horizontal</enum>
          </property>
          <property name="sizeHint" stdset="0">
           <size>
@@ -416,7 +474,7 @@
      <item>
       <widget class="QTreeView" name="search_view">
        <property name="frameShape">
-        <enum>QFrame::NoFrame</enum>
+        <enum>QFrame::Shape::NoFrame</enum>
        </property>
       </widget>
      </item>
@@ -425,7 +483,7 @@
   </widget>
   <action name="action_meta_tags">
    <property name="icon">
-    <iconset resource="../resources/resources.qrc">
+    <iconset resource="../resources/qt/resources.qrc">
      <normaloff>:/icons/tag-hash.png</normaloff>:/icons/tag-hash.png</iconset>
    </property>
    <property name="text">
@@ -434,34 +492,25 @@
   </action>
   <action name="action_settings">
    <property name="icon">
-    <iconset resource="../resources/resources.qrc">
+    <iconset resource="../resources/qt/resources.qrc">
      <normaloff>:/icons/cog.png</normaloff>:/icons/cog.png</iconset>
    </property>
    <property name="text">
     <string>Settings</string>
    </property>
   </action>
-  <action name="action_generate_song_pdf">
+  <action name="action_generate_song_list">
    <property name="icon">
-    <iconset resource="../resources/resources.qrc">
+    <iconset resource="../resources/qt/resources.qrc">
      <normaloff>:/icons/report.png</normaloff>:/icons/report.png</iconset>
    </property>
    <property name="text">
-    <string>Generate Song List (PDF)</string>
-   </property>
-  </action>
-  <action name="action_generate_song_json">
-   <property name="icon">
-    <iconset resource="../resources/resources.qrc">
-     <normaloff>:/icons/report.png</normaloff>:/icons/report.png</iconset>
-   </property>
-   <property name="text">
-    <string>Generate Song List (JSON)</string>
+    <string>Create Report</string>
    </property>
   </action>
   <action name="action_refetch_song_list">
    <property name="icon">
-    <iconset resource="../resources/resources.qrc">
+    <iconset resource="../resources/qt/resources.qrc">
      <normaloff>:/icons/check_for_update.png</normaloff>:/icons/check_for_update.png</iconset>
    </property>
    <property name="text">
@@ -473,7 +522,7 @@
   </action>
   <action name="action_find_local_songs">
    <property name="icon">
-    <iconset resource="../resources/resources.qrc">
+    <iconset resource="../resources/qt/resources.qrc">
      <normaloff>:/icons/database.png</normaloff>:/icons/database.png</iconset>
    </property>
    <property name="text">
@@ -485,7 +534,7 @@
   </action>
   <action name="action_show_log">
    <property name="icon">
-    <iconset resource="../resources/resources.qrc">
+    <iconset resource="../resources/qt/resources.qrc">
      <normaloff>:/icons/log.png</normaloff>:/icons/log.png</iconset>
    </property>
    <property name="text">
@@ -494,7 +543,7 @@
   </action>
   <action name="action_import_usdb_ids">
    <property name="icon">
-    <iconset resource="../resources/resources.qrc">
+    <iconset resource="../resources/qt/resources.qrc">
      <normaloff>:/icons/document-export.png</normaloff>:/icons/document-export.png</iconset>
    </property>
    <property name="text">
@@ -506,7 +555,7 @@
   </action>
   <action name="action_export_usdb_ids">
    <property name="icon">
-    <iconset resource="../resources/resources.qrc">
+    <iconset resource="../resources/qt/resources.qrc">
      <normaloff>:/icons/document-import.png</normaloff>:/icons/document-import.png</iconset>
    </property>
    <property name="text">
@@ -518,8 +567,8 @@
   </action>
   <action name="action_songs_download">
    <property name="icon">
-    <iconset resource="../resources/resources.qrc">
-     <normaloff>:/icons/drive-download.png</normaloff>:/icons/drive-download.png</iconset>
+    <iconset resource="../resources/qt/resources.qrc">
+     <normaloff>:/icons/status.png</normaloff>:/icons/status.png</iconset>
    </property>
    <property name="text">
     <string>Download</string>
@@ -527,8 +576,8 @@
   </action>
   <action name="action_usdb_login">
    <property name="icon">
-    <iconset resource="../resources/resources.qrc">
-     <normaloff>:/icons/faviconUSDB.ico</normaloff>:/icons/faviconUSDB.ico</iconset>
+    <iconset resource="../resources/qt/resources.qrc">
+     <normaloff>:/icons/faviconUSDB.png</normaloff>:/icons/faviconUSDB.png</iconset>
    </property>
    <property name="text">
     <string>USDB Login</string>
@@ -536,7 +585,7 @@
   </action>
   <action name="action_about">
    <property name="icon">
-    <iconset resource="../resources/resources.qrc">
+    <iconset resource="../resources/qt/resources.qrc">
      <normaloff>:/app/appicon_128x128.png</normaloff>:/app/appicon_128x128.png</iconset>
    </property>
    <property name="text">
@@ -545,16 +594,25 @@
   </action>
   <action name="action_show_in_usdb">
    <property name="icon">
-    <iconset resource="../resources/resources.qrc">
-     <normaloff>:/icons/faviconUSDB.ico</normaloff>:/icons/faviconUSDB.ico</iconset>
+    <iconset resource="../resources/qt/resources.qrc">
+     <normaloff>:/icons/faviconUSDB.png</normaloff>:/icons/faviconUSDB.png</iconset>
    </property>
    <property name="text">
     <string>Show on USDB</string>
    </property>
   </action>
+  <action name="action_post_comment_in_usdb">
+   <property name="icon">
+    <iconset resource="../resources/qt/resources.qrc">
+     <normaloff>:/icons/balloon.png</normaloff>:/icons/balloon.png</iconset>
+   </property>
+   <property name="text">
+    <string>Post Comment on USDB</string>
+   </property>
+  </action>
   <action name="action_open_song_folder">
    <property name="icon">
-    <iconset resource="../resources/resources.qrc">
+    <iconset resource="../resources/qt/resources.qrc">
      <normaloff>:/icons/folder_note.png</normaloff>:/icons/folder_note.png</iconset>
    </property>
    <property name="text">
@@ -563,7 +621,7 @@
   </action>
   <action name="action_delete">
    <property name="icon">
-    <iconset resource="../resources/resources.qrc">
+    <iconset resource="../resources/qt/resources.qrc">
      <normaloff>:/icons/bin.png</normaloff>:/icons/bin.png</iconset>
    </property>
    <property name="text">
@@ -578,7 +636,7 @@
     <bool>true</bool>
    </property>
    <property name="icon">
-    <iconset resource="../resources/resources.qrc">
+    <iconset resource="../resources/qt/resources.qrc">
      <normaloff>:/icons/pin.png</normaloff>:/icons/pin.png</iconset>
    </property>
    <property name="text">
@@ -590,16 +648,176 @@
   </action>
   <action name="action_songs_abort">
    <property name="icon">
-    <iconset resource="../resources/resources.qrc">
+    <iconset resource="../resources/qt/resources.qrc">
      <normaloff>:/icons/minus-circle.png</normaloff>:/icons/minus-circle.png</iconset>
    </property>
    <property name="text">
     <string>Abort Download</string>
    </property>
   </action>
+  <action name="action_delete_saved_search">
+   <property name="text">
+    <string>Delete</string>
+   </property>
+   <property name="menuRole">
+    <enum>QAction::MenuRole::NoRole</enum>
+   </property>
+  </action>
+  <action name="action_add_saved_search">
+   <property name="text">
+    <string>Save current search</string>
+   </property>
+   <property name="menuRole">
+    <enum>QAction::MenuRole::NoRole</enum>
+   </property>
+  </action>
+  <action name="action_update_saved_search">
+   <property name="text">
+    <string>Update with current search</string>
+   </property>
+   <property name="menuRole">
+    <enum>QAction::MenuRole::NoRole</enum>
+   </property>
+  </action>
+  <action name="action_set_saved_search_default">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Apply on startup</string>
+   </property>
+   <property name="toolTip">
+    <string>If checked, this search will automatically applied every time you start the application.</string>
+   </property>
+   <property name="menuRole">
+    <enum>QAction::MenuRole::NoRole</enum>
+   </property>
+  </action>
+  <action name="action_set_saved_search_subscribed">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Download new matches</string>
+   </property>
+   <property name="menuRole">
+    <enum>QAction::MenuRole::NoRole</enum>
+   </property>
+  </action>
+  <action name="action_open_song_in_karedi">
+   <property name="icon">
+    <iconset resource="../resources/qt/resources.qrc">
+     <normaloff>:/icons/karedi.png</normaloff>:/icons/karedi.png</iconset>
+   </property>
+   <property name="text">
+    <string>Karedi</string>
+   </property>
+  </action>
+  <action name="action_open_song_in_performous">
+   <property name="icon">
+    <iconset resource="../resources/qt/resources.qrc">
+     <normaloff>:/icons/performous.png</normaloff>:/icons/performous.png</iconset>
+   </property>
+   <property name="text">
+    <string>Performous</string>
+   </property>
+  </action>
+  <action name="action_open_song_in_usdx">
+   <property name="icon">
+    <iconset resource="../resources/qt/resources.qrc">
+     <normaloff>:/icons/usdx.png</normaloff>:/icons/usdx.png</iconset>
+   </property>
+   <property name="text">
+    <string>UltraStar Deluxe</string>
+   </property>
+  </action>
+  <action name="action_open_song_in_ultrastar_manager">
+   <property name="icon">
+    <iconset resource="../resources/qt/resources.qrc">
+     <normaloff>:/icons/ultrastar-manager.png</normaloff>:/icons/ultrastar-manager.png</iconset>
+   </property>
+   <property name="text">
+    <string>UltraStar Manager</string>
+   </property>
+  </action>
+  <action name="action_open_song_in_vocaluxe">
+   <property name="icon">
+    <iconset resource="../resources/qt/resources.qrc">
+     <normaloff>:/icons/vocaluxe.png</normaloff>:/icons/vocaluxe.png</iconset>
+   </property>
+   <property name="text">
+    <string>Vocaluxe</string>
+   </property>
+  </action>
+  <action name="action_open_song_in_yass_reloaded">
+   <property name="icon">
+    <iconset resource="../resources/qt/resources.qrc">
+     <normaloff>:/icons/yass-reloaded.png</normaloff>:/icons/yass-reloaded.png</iconset>
+   </property>
+   <property name="text">
+    <string>YASS Reloaded</string>
+   </property>
+  </action>
+  <action name="action_rate_in_usdb">
+   <property name="icon">
+    <iconset resource="../resources/qt/resources.qrc">
+     <normaloff>:/icons/rating.png</normaloff>:/icons/rating.png</iconset>
+   </property>
+   <property name="text">
+    <string>action_rate_in_usdb</string>
+   </property>
+   <property name="menuRole">
+    <enum>QAction::MenuRole::NoRole</enum>
+   </property>
+  </action>
+  <action name="action_rate_1star">
+   <property name="text">
+    <string>★ – Unusable, requires a complete overhaul</string>
+   </property>
+   <property name="toolTip">
+    <string>unusable, needs a total rework</string>
+   </property>
+  </action>
+  <action name="action_rate_2stars">
+   <property name="text">
+    <string>★★ – Barely usable, needs significant revisions</string>
+   </property>
+   <property name="toolTip">
+    <string>hardly usable, needs a lot of improvements</string>
+   </property>
+  </action>
+  <action name="action_rate_3stars">
+   <property name="text">
+    <string>★★★ – Usable, but requires improvements</string>
+   </property>
+   <property name="toolTip">
+    <string>usable, but room for improvement</string>
+   </property>
+  </action>
+  <action name="action_rate_4stars">
+   <property name="text">
+    <string>★★★★ – Very good, with minor areas for improvement</string>
+   </property>
+   <property name="toolTip">
+    <string>room for some improvements</string>
+   </property>
+  </action>
+  <action name="action_rate_5stars">
+   <property name="text">
+    <string>★★★★★ – Excellent, no improvements needed</string>
+   </property>
+   <property name="toolTip">
+    <string>simply perfect</string>
+   </property>
+  </action>
+  <action name="action_preview">
+   <property name="text">
+    <string>Preview Song</string>
+   </property>
+  </action>
  </widget>
  <resources>
-  <include location="../resources/resources.qrc"/>
+  <include location="../resources/qt/resources.qrc"/>
  </resources>
  <connections/>
 </ui>

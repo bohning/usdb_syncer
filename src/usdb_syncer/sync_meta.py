@@ -3,17 +3,21 @@
 from __future__ import annotations
 
 import json
+from collections.abc import Iterator
 from pathlib import Path
-from typing import Any, Iterator
+from typing import Any
 
 import attrs
 
-from usdb_syncer import SongId, SyncMetaId, db, utils
-from usdb_syncer.logger import get_logger
+from usdb_syncer import SongId, SyncMetaId, db, settings, utils
+from usdb_syncer.custom_data import CustomData
+from usdb_syncer.logger import logger
 from usdb_syncer.meta_tags import MetaTags
 
 SYNC_META_VERSION = 1
-_logger = get_logger(__file__)
+# mtimes may deviate up to 2 seconds on different file systems
+# See https://en.wikipedia.org/wiki/File_Allocation_Table
+MTIME_TOLERANCE_SECS = 2
 
 
 class SyncMetaTooNewError(Exception):
@@ -57,7 +61,11 @@ class ResourceFile:
     def is_in_sync(self, folder: Path) -> bool:
         """True if this file exists in the given folder and is in sync."""
         path = folder.joinpath(self.fname)
-        return path.exists() and utils.get_mtime(path) == self.mtime
+        return (
+            path.exists()
+            and abs(utils.get_mtime(path) - self.mtime) / 1_000_000
+            < MTIME_TOLERANCE_SECS
+        )
 
     def db_params(
         self, sync_meta_id: SyncMetaId, kind: db.ResourceFileKind
@@ -88,6 +96,7 @@ class SyncMeta:
     background: ResourceFile | None = None
     instrumental: ResourceFile | None = None
     vocals: ResourceFile | None = None
+    custom_data: CustomData = attrs.field(factory=CustomData)
 
     @classmethod
     def new(cls, song_id: SongId, folder: Path, meta_tags: MetaTags) -> SyncMeta:
@@ -122,20 +131,21 @@ class SyncMeta:
                 song_id=SongId(dct["song_id"]),
                 path=path,
                 mtime=utils.get_mtime(path),
-                meta_tags=MetaTags.parse(dct["meta_tags"], _logger),
+                meta_tags=MetaTags.parse(dct["meta_tags"], logger),
                 pinned=bool(dct.get("pinned", False)),
                 txt=ResourceFile.from_nested_dict(dct["txt"]),
                 audio=ResourceFile.from_nested_dict(dct["audio"]),
                 video=ResourceFile.from_nested_dict(dct["video"]),
                 cover=ResourceFile.from_nested_dict(dct["cover"]),
                 background=ResourceFile.from_nested_dict(dct["background"]),
+                custom_data=CustomData(dct.get("custom_data")),
             )
         except (TypeError, KeyError, ValueError):
             return None
         if new_id:
             meta.path = path.with_name(sync_meta_id.to_filename())
             path.rename(meta.path)
-            _logger.info(f"Assigned new ID to meta file: '{path}' > '{meta.path}'.")
+            logger.info(f"Assigned new ID to meta file: '{path}' > '{meta.path}'.")
         return meta
 
     @classmethod
@@ -146,7 +156,7 @@ class SyncMeta:
             song_id=SongId(row[1]),
             path=Path(row[2]),
             mtime=row[3],
-            meta_tags=MetaTags.parse(row[4], _logger),
+            meta_tags=MetaTags.parse(row[4], logger),
             pinned=bool(row[5]),
         )
         meta.txt = ResourceFile.from_db_row(row[6:9])
@@ -154,6 +164,7 @@ class SyncMeta:
         meta.video = ResourceFile.from_db_row(row[12:15])
         meta.cover = ResourceFile.from_db_row(row[15:18])
         meta.background = ResourceFile.from_db_row(row[18:])
+        meta.custom_data = CustomData(db.get_custom_data(meta.sync_meta_id))
         return meta
 
     @classmethod
@@ -166,7 +177,7 @@ class SyncMeta:
 
     def upsert(self) -> None:
         db.upsert_sync_meta(self.db_params())
-        db.update_active_sync_metas(utils.get_song_dir(), self.song_id)
+        db.update_active_sync_metas(settings.get_song_dir(), self.song_id)
         files = self.all_resource_files()
         db.upsert_resource_files(
             file.db_params(self.sync_meta_id, kind) for file, kind in files if file
@@ -174,11 +185,16 @@ class SyncMeta:
         db.delete_resource_files(
             (self.sync_meta_id, kind) for file, kind in files if not file
         )
+        db.delete_custom_meta_data((self.sync_meta_id,))
+        db.upsert_custom_meta_data(
+            db.CustomMetaDataParams(self.sync_meta_id, k, v)
+            for k, v in self.custom_data.items()
+        )
 
     @classmethod
     def upsert_many(cls, metas: list[SyncMeta]) -> None:
         db.upsert_sync_metas(meta.db_params() for meta in metas)
-        db.reset_active_sync_metas(utils.get_song_dir())
+        db.reset_active_sync_metas(settings.get_song_dir())
         db.upsert_resource_files(
             file.db_params(meta.sync_meta_id, kind)
             for meta in metas
@@ -190,6 +206,12 @@ class SyncMeta:
             for meta in metas
             for file, kind in meta.all_resource_files()
             if not file
+        )
+        db.delete_custom_meta_data(m.sync_meta_id for m in metas)
+        db.upsert_custom_meta_data(
+            db.CustomMetaDataParams(m.sync_meta_id, k, v)
+            for m in metas
+            for k, v in m.custom_data.items()
         )
 
     def delete(self) -> None:
@@ -233,6 +255,15 @@ class SyncMeta:
             if meta:
                 yield meta
 
+    def txt_path(self) -> Path | None:
+        return self.path.parent / self.txt.fname if self.txt else None
+
+    def audio_path(self) -> Path | None:
+        return self.path.parent / self.audio.fname if self.audio else None
+
+    def cover_path(self) -> Path | None:
+        return self.path.parent / self.cover.fname if self.cover else None
+
 
 class SyncMetaEncoder(json.JSONEncoder):
     """Custom JSON encoder"""
@@ -248,4 +279,6 @@ class SyncMetaEncoder(json.JSONEncoder):
             dct = attrs.asdict(o, recurse=False, filter=filt)
             dct["version"] = SYNC_META_VERSION
             return dct
+        if isinstance(o, CustomData):
+            return o.inner()
         return super().default(o)

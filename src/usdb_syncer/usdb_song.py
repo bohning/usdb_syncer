@@ -2,8 +2,10 @@
 
 from __future__ import annotations
 
+from collections.abc import Iterable
 from json import JSONEncoder
-from typing import Any, Iterable, Type
+from pathlib import Path
+from typing import Any, ClassVar
 
 import attrs
 
@@ -44,7 +46,7 @@ class UsdbSong:
     @classmethod
     def from_html(
         cls,
-        strings: Type[UsdbStrings],
+        strings: type[UsdbStrings],
         *,
         song_id: str,
         artist: str,
@@ -114,7 +116,7 @@ class UsdbSong:
         if self.sync_meta:
             self.sync_meta.delete()
             self.sync_meta = None
-            _UsdbSongCache.remove(self.song_id)
+            _UsdbSongCache.update(self)
 
     @classmethod
     def delete_all(cls) -> None:
@@ -128,7 +130,7 @@ class UsdbSong:
         db.upsert_usdb_songs_creators([(self.song_id, self.creators())])
         if self.sync_meta:
             self.sync_meta.upsert()
-        _UsdbSongCache.remove(self.song_id)
+        _UsdbSongCache.update(self)
 
     @classmethod
     def upsert_many(cls, songs: list[UsdbSong]) -> None:
@@ -138,7 +140,7 @@ class UsdbSong:
         db.upsert_usdb_songs_creators([(s.song_id, s.creators()) for s in songs])
         SyncMeta.upsert_many([song.sync_meta for song in songs if song.sync_meta])
         for song in songs:
-            _UsdbSongCache.remove(song.song_id)
+            _UsdbSongCache.update(song)
 
     def db_params(self) -> db.UsdbSongParams:
         return db.UsdbSongParams(
@@ -166,13 +168,28 @@ class UsdbSong:
         return self.sync_meta is not None and self.sync_meta.pinned
 
     def languages(self) -> Iterable[str]:
-        return (l for lang in self.language.split(",") if (l := lang.strip()))
+        return (s for lang in self.language.split(",") if (s := lang.strip()))
 
     def genres(self) -> Iterable[str]:
-        return (l for lang in self.genre.split(",") if (l := lang.strip()))
+        return (s for genre in self.genre.split(",") if (s := genre.strip()))
 
     def creators(self) -> Iterable[str]:
-        return (l for lang in self.creator.split(",") if (l := lang.strip()))
+        return (s for creator in self.creator.split(",") if (s := creator.strip()))
+
+    def txt_path(self) -> Path | None:
+        if not self.sync_meta:
+            return None
+        return self.sync_meta.txt_path()
+
+    def audio_path(self) -> Path | None:
+        if not self.sync_meta:
+            return None
+        return self.sync_meta.audio_path()
+
+    def cover_path(self) -> Path | None:
+        if not self.sync_meta:
+            return None
+        return self.sync_meta.cover_path()
 
     @classmethod
     def clear_cache(cls) -> None:
@@ -196,7 +213,7 @@ class UsdbSongEncoder(JSONEncoder):
 class _UsdbSongCache:
     """Cache for songs loaded from the DB."""
 
-    _songs: dict[SongId, UsdbSong] = {}
+    _songs: ClassVar[dict[SongId, UsdbSong]] = {}
 
     @classmethod
     def get(cls, song_id: SongId) -> UsdbSong | None:

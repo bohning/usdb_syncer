@@ -3,7 +3,7 @@
 from dataclasses import dataclass
 from pathlib import Path
 
-from usdb_syncer import settings, utils
+from usdb_syncer import path_template, settings
 
 
 @dataclass(frozen=True)
@@ -12,6 +12,11 @@ class TxtOptions:
 
     encoding: settings.Encoding
     newline: settings.Newline
+    format_version: settings.FormatVersion
+    fix_linebreaks: settings.FixLinebreaks
+    fix_first_words_capitalization: bool
+    fix_spaces: settings.FixSpaces
+    fix_quotation_marks: bool
 
 
 @dataclass(frozen=True)
@@ -20,9 +25,10 @@ class AudioOptions:
 
     format: settings.AudioFormat
     bitrate: settings.AudioBitrate
-    normalize: bool
+    normalization: settings.AudioNormalization
     embed_artwork: bool
     instrumental: bool
+    rate_limit: settings.YtdlpRateLimit
 
     def ytdl_format(self) -> str:
         return self.format.ytdl_format()
@@ -36,14 +42,27 @@ class VideoOptions:
     reencode_format: settings.VideoCodec | None
     max_resolution: settings.VideoResolution
     max_fps: settings.VideoFps
+    embed_artwork: bool
+    rate_limit: settings.YtdlpRateLimit
 
     def ytdl_format(self) -> str:
-        fmt = self.format.ytdl_format()
+        container = f"[ext={self.format.ytdl_ext()}]" if self.format.ytdl_ext() else ""
+        codec = (
+            f"[vcodec~='{self.format.ytdl_vcodec()}']"
+            if self.format.ytdl_vcodec()
+            else ""
+        )
+        fmt = ["bestvideo*"]
+        if container:
+            fmt.insert(0, f"bestvideo*{container}")
+        if codec:
+            fmt.insert(0, f"bestvideo*{container}{codec}")
         width = f"[width<={self.max_resolution.width()}]"
         height = f"[height<={self.max_resolution.height()}]"
         fps = f"[fps<={self.max_fps.value}]"
         # fps filter always fails for some platforms, so skip it as a fallback
-        return f"{fmt}{width}{height}{fps}/{fmt}{width}{height}"
+        # also some formats don't offer resolution information
+        return "/".join(f"{f}{width}{height}{fps}/{f}{width}{height}/{f}" for f in fmt)
 
 
 @dataclass(frozen=True)
@@ -68,6 +87,8 @@ class Options:
     """Settings for downloading songs."""
 
     song_dir: Path
+    path_template: path_template.PathTemplate
+    notify_discord: bool
     txt_options: TxtOptions | None
     audio_options: AudioOptions | None
     browser: settings.Browser
@@ -78,7 +99,9 @@ class Options:
 
 def download_options() -> Options:
     return Options(
-        song_dir=utils.get_song_dir(),
+        song_dir=settings.get_song_dir(),
+        path_template=settings.get_path_template(),
+        notify_discord=settings.get_discord_allowed(),
         txt_options=_txt_options(),
         audio_options=_audio_options(),
         browser=settings.get_browser(),
@@ -91,7 +114,15 @@ def download_options() -> Options:
 def _txt_options() -> TxtOptions | None:
     if not settings.get_txt():
         return None
-    return TxtOptions(encoding=settings.get_encoding(), newline=settings.get_newline())
+    return TxtOptions(
+        encoding=settings.get_encoding(),
+        newline=settings.get_newline(),
+        format_version=settings.get_version(),
+        fix_linebreaks=settings.get_fix_linebreaks(),
+        fix_first_words_capitalization=settings.get_fix_first_words_capitalization(),
+        fix_spaces=settings.get_fix_spaces(),
+        fix_quotation_marks=settings.get_fix_quotation_marks(),
+    )
 
 
 def _audio_options() -> AudioOptions | None:
@@ -100,9 +131,10 @@ def _audio_options() -> AudioOptions | None:
     return AudioOptions(
         format=settings.get_audio_format(),
         bitrate=settings.get_audio_bitrate(),
-        normalize=settings.get_audio_normalize(),
+        normalization=settings.get_audio_normalization(),
         embed_artwork=settings.get_audio_embed_artwork(),
         instrumental=settings.get_audio_instrumental(),
+        rate_limit=settings.get_ytdlp_rate_limit(),
     )
 
 
@@ -116,6 +148,8 @@ def _video_options() -> VideoOptions | None:
         ),
         max_resolution=settings.get_video_resolution(),
         max_fps=settings.get_video_fps(),
+        embed_artwork=settings.get_video_embed_artwork(),
+        rate_limit=settings.get_ytdlp_rate_limit(),
     )
 
 

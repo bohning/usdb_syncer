@@ -1,7 +1,8 @@
 """Table model for song data."""
 
+from collections.abc import Iterable
 from functools import cache
-from typing import Any, Iterable, assert_never
+from typing import Any, assert_never
 
 from PySide6.QtCore import (
     QAbstractTableModel,
@@ -13,6 +14,7 @@ from PySide6.QtCore import (
 from PySide6.QtGui import QIcon
 
 from usdb_syncer import SongId, events, utils
+from usdb_syncer.gui import icons
 from usdb_syncer.gui.song_table.column import Column
 from usdb_syncer.usdb_song import DownloadStatus, UsdbSong
 
@@ -22,7 +24,7 @@ QIndex = QModelIndex | QPersistentModelIndex
 class TableModel(QAbstractTableModel):
     """Table model for song data."""
 
-    _ids: tuple[SongId, ...] = tuple()
+    _ids: tuple[SongId, ...] = ()
     _rows: dict[SongId, int]
 
     def __init__(self, parent: QObject) -> None:
@@ -75,12 +77,16 @@ class TableModel(QAbstractTableModel):
         self._ids = self._ids[:row] + self._ids[row + 1 :]
         self.endRemoveRows()
 
-    ### QAbstractTableModel implementation
+    # QAbstractTableModel implementation
 
-    def columnCount(self, parent: QIndex = QModelIndex()) -> int:
+    def columnCount(self, parent: QIndex | None = None) -> int:  # noqa: N802
+        if parent is None:
+            parent = QModelIndex()
         return 0 if parent.isValid() else len(Column)
 
-    def rowCount(self, parent: QIndex = QModelIndex()) -> int:
+    def rowCount(self, parent: QIndex | None = None) -> int:  # noqa: N802
+        if parent is None:
+            parent = QModelIndex()
         return 0 if parent.isValid() else len(self._ids)
 
     def data(self, index: QIndex, role: int = Qt.ItemDataRole.DisplayRole) -> Any:
@@ -100,7 +106,7 @@ class TableModel(QAbstractTableModel):
             return song
         return None
 
-    def headerData(
+    def headerData(  # noqa: N802
         self,
         section: int,
         orientation: Qt.Orientation,
@@ -115,7 +121,7 @@ class TableModel(QAbstractTableModel):
         return None
 
 
-def _display_data(song: UsdbSong, column: int) -> str | None:
+def _display_data(song: UsdbSong, column: int) -> str | None:  # noqa: C901
     col = Column(column)
     match col:
         case Column.SONG_ID:
@@ -162,7 +168,7 @@ def _display_data(song: UsdbSong, column: int) -> str | None:
             assert_never(unreachable)
 
 
-def _decoration_data(song: UsdbSong, column: int) -> QIcon | None:
+def _decoration_data(song: UsdbSong, column: int) -> QIcon | None:  # noqa: C901
     col = Column(column)
     match col:
         case (
@@ -182,38 +188,44 @@ def _decoration_data(song: UsdbSong, column: int) -> QIcon | None:
         ):
             return None
         case Column.SAMPLE_URL:
-            if song.sync_meta and song.sync_meta.audio:
-                suffix = "-local"
+            local = bool(song.sync_meta and song.sync_meta.audio)
+            if song.is_playing and local:
+                icon = icons.Icon.PAUSE_LOCAL
+            elif song.is_playing:
+                icon = icons.Icon.PAUSE_REMOTE
+            elif local:
+                icon = icons.Icon.PLAY_LOCAL
             elif song.sample_url:
-                suffix = ""
+                icon = icons.Icon.PLAY_REMOTE
             else:
                 return None
-            action = "pause" if song.is_playing else "play"
-            return icon(f":/icons/control-{action}{suffix}.png")
         case Column.TXT:
-            return icon(":/icons/tick.png", bool(song.sync_meta and song.sync_meta.txt))
+            if not (song.sync_meta and song.sync_meta.txt):
+                return None
+            icon = icons.Icon.CHECK
         case Column.AUDIO:
-            return icon(
-                ":/icons/tick.png", bool(song.sync_meta and song.sync_meta.audio)
-            )
+            if not (song.sync_meta and song.sync_meta.audio):
+                return None
+            icon = icons.Icon.CHECK
         case Column.VIDEO:
-            return icon(
-                ":/icons/tick.png", bool(song.sync_meta and song.sync_meta.video)
-            )
+            if not (song.sync_meta and song.sync_meta.video):
+                return None
+            icon = icons.Icon.CHECK
         case Column.COVER:
-            return icon(
-                ":/icons/tick.png", bool(song.sync_meta and song.sync_meta.cover)
-            )
+            if not (song.sync_meta and song.sync_meta.cover):
+                return None
+            icon = icons.Icon.CHECK
         case Column.BACKGROUND:
-            return icon(
-                ":/icons/tick.png", bool(song.sync_meta and song.sync_meta.background)
-            )
+            if not (song.sync_meta and song.sync_meta.background):
+                return None
+            icon = icons.Icon.CHECK
         case Column.PINNED:
-            return icon(
-                ":/icons/pin.png", bool(song.sync_meta and song.sync_meta.pinned)
-            )
+            if not (song.sync_meta and song.sync_meta.pinned):
+                return None
+            icon = icons.Icon.PIN
         case _ as unreachable:
             assert_never(unreachable)
+    return icon.icon()
 
 
 @cache
@@ -223,11 +235,3 @@ def rating_str(rating: int) -> str:
 
 def yes_no_str(yes: bool) -> str:
     return "Yes" if yes else "No"
-
-
-# Creating a QIcon without a QApplication gives a runtime error, so we can't put it
-# in a global, but we also don't want to keep recreating it.
-# So we store them in these convenience functions.
-@cache
-def icon(resource: str, yes: bool = True) -> QIcon | None:
-    return QIcon(resource) if yes else None

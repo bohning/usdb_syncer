@@ -11,20 +11,15 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ["3.11"]
+        python-version: ["3.12"]
 
     steps:
       - uses: actions/checkout@v3
-      - name: Install Linux specific dependencies for dbus-python
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y gcc python3-dev libdbus-1-dev
-          pkg-config --cflags --libs dbus-1
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v4
         with:
           python-version: ${{ matrix.python-version }}
-      - name: Install tox and pipenv
-        run: python -m pip install tox pipenv
+      - name: Install tox and poetry
+        run: python -m pip install tox poetry
       - name: Test with tox
-        run: tox
+        run: tox -- --runslow

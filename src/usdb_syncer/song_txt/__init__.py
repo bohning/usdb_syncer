@@ -3,12 +3,14 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import assert_never
 
 import attrs
 
-from usdb_syncer import errors
-from usdb_syncer.logger import Log
+from usdb_syncer import download_options, errors
+from usdb_syncer.logger import Logger
 from usdb_syncer.meta_tags import MetaTags
+from usdb_syncer.settings import FixLinebreaks, FixSpaces
 from usdb_syncer.song_txt.headers import Headers
 from usdb_syncer.song_txt.tracks import Tracks
 
@@ -20,7 +22,7 @@ class SongTxt:
     headers: Headers
     notes: Tracks
     meta_tags: MetaTags
-    logger: Log
+    logger: Logger
 
     def __str__(self) -> str:
         return f"{self.headers}\n{self.notes}"
@@ -43,7 +45,7 @@ class SongTxt:
         ]
 
     @classmethod
-    def parse(cls, value: str, logger: Log) -> SongTxt:
+    def parse(cls, value: str, logger: Logger) -> SongTxt:
         lines = [line for line in value.splitlines() if line]
         headers = Headers.parse(lines, logger)
         meta_tags = MetaTags.parse(headers.video or "", logger)
@@ -53,11 +55,22 @@ class SongTxt:
         return cls(headers=headers, meta_tags=meta_tags, notes=notes, logger=logger)
 
     @classmethod
-    def try_parse(cls, value: str, logger: Log) -> SongTxt | None:
+    def try_parse(cls, value: str, logger: Logger) -> SongTxt | None:
         try:
             return cls.parse(value, logger)
-        except errors.NotesParseError:
+        except errors.TxtParseError:
             return None
+
+    @classmethod
+    def try_from_file(cls, path: Path, logger: Logger) -> SongTxt | None:
+        if not path.is_file():
+            return None
+        try:
+            txt = path.read_text(encoding="utf-8")
+        except UnicodeDecodeError:
+            logger.exception(None)
+            return None
+        return cls.try_parse(txt, logger)
 
     def maybe_split_duet_notes(self) -> None:
         if self.headers.relative and self.headers.relative.lower() == "yes":
@@ -73,6 +86,8 @@ class SongTxt:
         if medley := self.meta_tags.medley:
             self.headers.medleystartbeat = medley.start
             self.headers.medleyendbeat = medley.end
+        if self.meta_tags.tags:
+            self.headers.tags = self.meta_tags.tags
 
     def write_to_file(self, path: Path, encoding: str, newline: str) -> None:
         with path.open(
@@ -80,12 +95,14 @@ class SongTxt:
         ) as file:
             file.write(str(self))
 
-    def sanitize(self) -> None:
+    def sanitize(self, txt_options: download_options.TxtOptions | None) -> None:
         """Sanitize USDB issues and prepare for local usage."""
         self.headers.reset_file_location_headers()
-        self.fix()
+        if txt_options:
+            self.headers.set_version(txt_options.format_version)
+            self.fix(txt_options)
 
-    def fix(self) -> None:
+    def fix(self, txt_options: download_options.TxtOptions) -> None:
         # non-optional fixes
         self.fix_relative_songs()
         self.notes.maybe_split_duet_notes()
@@ -93,14 +110,31 @@ class SongTxt:
         self.fix_first_timestamp()
         self.fix_low_bpm()
         self.notes.fix_overlapping_and_touching_notes(self.logger)
-        self.notes.fix_line_breaks(self.logger)
         self.notes.fix_pitch_values(self.logger)
-        self.notes.fix_apostrophes_and_quotation_marks(self.logger)
+        self.notes.fix_apostrophes(self.logger)
         self.headers.fix_apostrophes(self.logger)
-        self.notes.fix_spaces(self.logger)
         self.notes.fix_all_caps(self.logger)
-        self.notes.fix_first_words_capitalization(self.logger)
         self.headers.fix_language(self.logger)
+        self.headers.fix_videogap(self.meta_tags, self.logger)
+        # optional fixes
+        if txt_options:
+            match txt_options.fix_linebreaks:
+                case FixLinebreaks.DISABLE:
+                    pass
+                case FixLinebreaks.USDX_STYLE:
+                    self.notes.fix_linebreaks_usdx_style(self.logger)
+                case FixLinebreaks.YASS_STYLE:
+                    self.notes.fix_linebreaks_yass_style(self.headers.bpm, self.logger)
+                case _ as unreachable:
+                    assert_never(unreachable)
+            if txt_options.fix_first_words_capitalization:
+                self.notes.fix_first_words_capitalization(self.logger)
+            if txt_options.fix_spaces != FixSpaces.DISABLE:
+                self.notes.fix_spaces(txt_options.fix_spaces, self.logger)
+            if txt_options.fix_quotation_marks:
+                self.notes.fix_quotation_marks(
+                    self.headers.main_language(), self.logger
+                )
 
     def minimum_song_length(self) -> str:
         """Return the minimum song length based on last beat, BPM and GAP"""

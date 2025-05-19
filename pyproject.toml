@@ -1,45 +1,143 @@
 [build-system]
-requires = ["setuptools>=42", "wheel", "setuptools_scm[toml]>=3.4"]
-build-backend = "setuptools.build_meta"
+requires = ["poetry-core>=1.0.0", "poetry-dynamic-versioning>=1.0.0,<2.0.0"]
+build-backend = "poetry_dynamic_versioning.backend"
 
-# Enables the usage of setuptools_scm
-[tool.setuptools_scm]
-"root" = "."
+[tool.poetry]
+name = "usdb_syncer"
+version = "0.0.0"  # will be replaced by current git tag via poetry-dynamic-versioning
+authors = ["Markus Böhning <markus.boehning@gmail.com>"]
+description = "A download manager for USDB songs."
+readme = ["README.md"]
+repository = "https://github.com/bohning/usdb_syncer"
+include = [
+    { path = "src/usdb_syncer/gui/forms/*.py", format = ["sdist", "wheel"] },
+    { path = "src/usdb_syncer/gui/resources/qt/*.py", format = ["sdist", "wheel"] },
+    { path = "src/usdb_syncer/data/*.json", format = ["sdist", "wheel"] },
+]
 
-[tool.isort]
-profile = "black"
-skip_glob = ["src/usdb_syncer/gui/forms", "src/usdb_syncer/gui/resources"]
+[tool.poetry.requires-plugins]
+poetry-dynamic-versioning = { version = ">=1.0.0,<2.0.0", extras = ["plugin"] }
 
-[tool.black]
-skip-magic-trailing-comma = true
+[tool.poetry.dependencies]
+python = ">3.10,<3.13"
+appdirs = "*"
+attrs = "*"
+beautifulsoup4 = "*"
+ffmpeg-normalize = ">=1.27"
+filetype = "*"
+keyring = "*"
+lxml = "*"
+mutagen = "*"
+numpy = "^2.2.5"
+packaging = "*"
+pillow = ">=10"
+PySide6 = "*"
+reportlab = "*"
+requests = "*"
+rookiepy = "^0.5.3"
+send2trash = "*"
+sounddevice = "^0.5.1"
+soundfile = "^0.13.1"
+unidecode = "*"
+yt-dlp = {version = "*", extras = ["default", "curl_cffi"]}
+
+[tool.poetry.group.dev.dependencies]
+tox = "*"
+# lint
+ruff = "0.11.6"
+mypy = "*"
+types-requests = "*"
+# test
+pytest = "*"
+# benchmark
+snakeviz = "*"
+# tools
+defusedxml = "^0.7.1"
+
+[tool.poetry.group.build.dependencies]
+PySide6 = "*"  # for file generation
+dunamai = "*"
+
+[tool.poetry.group.bundle.dependencies]
+pyinstaller = "*"
+pyinstaller-hooks-contrib = "*"
+# specifically required for pyinstaller (Note: darwin -> macos)
+altgraph = "*"
+macholib = {version = "*", markers="sys_platform == 'darwin'"}
+pywin32-ctypes = {version = "*", markers="sys_platform == 'win32'"}
+
+[tool.poetry.scripts]
+usdb_syncer = "usdb_syncer.gui:main"
+
+[tool.poetry-dynamic-versioning]
+enable = true
+substitution.files = []
+
+[tool.ruff]
+extend-exclude = [
+    "forms",
+    "qt",
+]
+target-version = "py312"
 preview = true
 
-[tool.pylint.master]
-ignore-paths = [
-    "src/usdb_syncer/gui/forms",
-    "src/usdb_syncer/gui/resources",
-    "venv",
-    ".tox",
-]
-# Add McCabe code complexity checker
-load-plugins = "pylint.extensions.mccabe"
+[tool.ruff.format]
+skip-magic-trailing-comma = true
 
-[tool.pylint.basic]
-good-names = ["mw", "p1", "p2", "closeEvent", "customEvent"]
-
-[tool.pylint.messages_control]
-extension-pkg-whitelist = ["PySide6"]
-disable = [
-    "too-few-public-methods",
-    "logging-fstring-interpolation",
-    "too-many-instance-attributes",
-    "too-many-arguments",
-    "missing-function-docstring",
-    "too-many-return-statements",
-    "duplicate-code",
-    "too-many-public-methods",
-    "line-too-long",
+[tool.ruff.lint]
+select = [
+    "A",
+    "B",
+    "BLE",
+    "C4",
+    "C90",
+    "COM",
+    "E",
+    "F",
+    "I",
+    "LOG",
+    "N",
+    "PTH",
+    "Q",
+    "RUF",
+    "S",
+    "TRY",
+    "W",
 ]
+ignore = [
+    # Since we're using the ruff formatter, we follow ruff's official guide on what
+    # rules to skip: https://docs.astral.sh/ruff/formatter/#conflicting-lint-rules
+    "W191",
+    "E111",
+    "E114",
+    "E117",
+    "D206",
+    "D300",
+    "Q000",
+    "Q001",
+    "Q002",
+    "Q003",
+    "COM812",
+    "COM819",
+    # We're fine with `assert`s if they're not used for validation, but state facts
+    "S101",
+    # Allow `subprocess` and starting without shell.
+    "S404",
+    "S603",
+    "S606",
+    # Maybe investigate in the future, if it is possible to do this more safely.
+    "S607",
+    # This flags _all_ dynamic SQL constructions, so it's pointless.
+    "S608",
+]
+
+# Allow fix for all enabled rules (when `--fix`) is provided.
+fixable = ["ALL"]
+unfixable = []
+
+[tool.ruff.lint.isort]
+# For consistency with the formatter, see https://docs.astral.sh/ruff/settings/#lint_isort_split-on-trailing-comma 
+split-on-trailing-comma = false
 
 [tool.mypy]
 ignore_missing_imports = true

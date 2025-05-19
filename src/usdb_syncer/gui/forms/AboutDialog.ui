@@ -57,13 +57,13 @@ border-radius: 8px;
 padding: 10px;</string>
    </property>
    <property name="frameShape">
-    <enum>QFrame::NoFrame</enum>
+    <enum>QFrame::Shape::NoFrame</enum>
    </property>
    <property name="verticalScrollBarPolicy">
-    <enum>Qt::ScrollBarAlwaysOff</enum>
+    <enum>Qt::ScrollBarPolicy::ScrollBarAlwaysOff</enum>
    </property>
    <property name="horizontalScrollBarPolicy">
-    <enum>Qt::ScrollBarAlwaysOff</enum>
+    <enum>Qt::ScrollBarPolicy::ScrollBarAlwaysOff</enum>
    </property>
    <property name="markdown">
     <string>
@@ -90,16 +90,16 @@ Find the source code on
 
 
 
-***
+\***
 
 **Support**
 You can support the developers by buying them some 
 [vegan pizza!](https://www.buymeacoffee.com/usdbsyncer)
 
 
-***
+\***
 
-**Main Programmers
+**Main Programmers**
 bohning
 RumovZ
 
@@ -110,7 +110,8 @@ BWagener
 
 ***
 
-**Application Icon
+**
+Application Icon**
 rawpixel.com on Freepik
 Website: 
 [freepik.com](https://www.freepik.com/free-vector/pink-neon-cloud-icon-digital-networking-system_16406257.htm)
@@ -121,8 +122,7 @@ Website:
 License: 
 [CC Attribution 3.0 Unported](http://creativecommons.org/licenses/by/3.0)
 
-***
-
+\***
 
 **Testers**
 Rakuri
@@ -158,8 +158,8 @@ li.checked::marker { content: &quot;\2612&quot;; }
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>428</width>
-     <height>140</height>
+     <width>431</width>
+     <height>151</height>
     </rect>
    </property>
    <property name="styleSheet">
@@ -171,33 +171,12 @@ font: 24pt &quot;Kozuka Gothic Pro&quot;;</string>
     <string>VERSION</string>
    </property>
    <property name="alignment">
-    <set>Qt::AlignBottom|Qt::AlignRight|Qt::AlignTrailing</set>
-   </property>
-  </widget>
-  <widget class="QLabel" name="label_commit">
-   <property name="geometry">
-    <rect>
-     <x>0</x>
-     <y>0</y>
-     <width>428</width>
-     <height>155</height>
-    </rect>
-   </property>
-   <property name="styleSheet">
-    <string notr="true">background-image: url(); 
-color: rgb(0, 174, 238);
-font: 12pt &quot;Kozuka Gothic Pro&quot;;</string>
-   </property>
-   <property name="text">
-    <string>COMMIT HASH</string>
-   </property>
-   <property name="alignment">
-    <set>Qt::AlignBottom|Qt::AlignRight|Qt::AlignTrailing</set>
+    <set>Qt::AlignmentFlag::AlignBottom|Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing</set>
    </property>
   </widget>
  </widget>
  <resources>
-  <include location="../resources/resources.qrc"/>
+  <include location="../resources/qt/resources.qrc"/>
  </resources>
  <connections/>
 </ui>

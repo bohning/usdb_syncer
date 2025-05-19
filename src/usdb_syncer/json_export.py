@@ -4,18 +4,17 @@ from __future__ import annotations
 
 import datetime
 import json
+from collections.abc import Iterable
 from json import JSONEncoder
 from pathlib import Path
-from typing import Any, Iterable
+from typing import Any
 
 import attrs
 
 from usdb_syncer import SongId
-from usdb_syncer.logger import get_logger
+from usdb_syncer.logger import logger
 from usdb_syncer.usdb_song import UsdbSong
-from usdb_syncer.utils import url_from_resource
-
-_logger = get_logger(__file__)
+from usdb_syncer.utils import video_url_from_resource
 
 JSON_EXPORT_VERSION = 1
 
@@ -56,7 +55,7 @@ class SongExportData:
             language=song.language,
             golden_notes=song.golden_notes,
             cover_url=(
-                meta.meta_tags.cover.source_url(_logger)
+                meta.meta_tags.cover.source_url(logger)
                 if meta.meta_tags.cover
                 else None
             ),
@@ -64,12 +63,12 @@ class SongExportData:
                 meta.meta_tags.cover.to_str("co") if meta.meta_tags.cover else None
             ),
             audio_url=(
-                url_from_resource(meta.meta_tags.audio)
+                video_url_from_resource(meta.meta_tags.audio)
                 if meta.meta_tags.audio
                 else None
             ),
             video_url=(
-                url_from_resource(meta.meta_tags.video)
+                video_url_from_resource(meta.meta_tags.video)
                 if meta.meta_tags.video
                 else None
             ),
@@ -111,8 +110,12 @@ class JsonSongListEncoder(JSONEncoder):
         return super().default(o)
 
 
-def generate_song_json(songs: Iterable[SongId], path: Path) -> int:
+def generate_report_json(
+    songs: Iterable[SongId], path: Path, indent: int = 4
+) -> tuple[Path, int]:
     content = JsonSongList.from_songs(songs=songs, date=datetime.datetime.now())
     with path.open("w", encoding="utf8") as file:
-        json.dump(content, file, cls=JsonSongListEncoder, ensure_ascii=False)
-    return len(content.songs)
+        json.dump(
+            content, file, cls=JsonSongListEncoder, indent=indent, ensure_ascii=False
+        )
+    return path, len(content.songs)

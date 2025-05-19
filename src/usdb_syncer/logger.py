@@ -9,27 +9,64 @@ Logging levels:
 """
 
 import logging
+from types import TracebackType
 from typing import Any
 
 from usdb_syncer import SongId
 
 
-class SongLogger(logging.LoggerAdapter):
+class Logger(logging.LoggerAdapter):
+    """Logger wrapper with our custom logic."""
+
+    def exception(
+        self,
+        msg: object,
+        *args: object,
+        exc_info: (
+            bool
+            | tuple[type[BaseException], BaseException, TracebackType | None]
+            | tuple[None, None, None]
+            | BaseException
+            | None
+        ) = True,
+        **kwargs: Any,
+    ) -> None:
+        """Log exception info with debug and message with error level."""
+        if exc_info:
+            self.debug(None, exc_info=exc_info, **kwargs)
+        if msg:
+            self.error(msg, *args, exc_info=False, **kwargs)
+
+
+class SongLogger(Logger):
     """Logger wrapper that takes care of logging the song id."""
 
-    def __init__(self, song_id: SongId, logger: Any, extra: Any = ...) -> None:
-        super().__init__(logger, extra)
+    def __init__(self, song_id: SongId, logger_: Any, extra: Any = ...) -> None:
+        super().__init__(logger_, extra)
         self.song_id = song_id
 
     def process(self, msg: str, kwargs: Any) -> Any:
         return f"#{self.song_id}: {msg}", kwargs
 
 
-Log = logging.Logger | SongLogger
+_LOGGER_NAME = "usdb_syncer"
+_raw_logger = logging.getLogger(_LOGGER_NAME)
+logger = Logger(_raw_logger)
+error_logger = Logger(_raw_logger.getChild("errors"))
+error_logger.setLevel(logging.ERROR)
 
 
-def get_logger(file: str, song_id: SongId | None = None) -> Log:
-    logger = logging.getLogger(file)
-    if song_id:
-        return SongLogger(song_id, logger)
-    return logger
+def song_logger(song_id: SongId) -> SongLogger:
+    return SongLogger(song_id, logger)
+
+
+def configure_logging(*handlers: logging.Handler) -> None:
+    logging.basicConfig(
+        level=logging.INFO,
+        style="{",
+        format="{asctime} [{levelname}] {message}",
+        datefmt="%Y-%m-%d %H:%M:%S",
+        encoding="utf-8",
+        handlers=handlers,
+    )
+    logger.setLevel(logging.DEBUG)

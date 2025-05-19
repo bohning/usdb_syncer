@@ -1,18 +1,19 @@
 """Signals other components can notify and subscribe to."""
 
+from collections.abc import Callable
 from pathlib import Path
-from typing import Any, Callable, Self, cast
+from typing import Any, Self, cast
 
 import attrs
 from PySide6 import QtCore
 
-from usdb_syncer import SongId, db
+from usdb_syncer import SongId
 
 
 class _EventProcessor(QtCore.QObject):
     """Processes events."""
 
-    def customEvent(self, event: QtCore.QEvent) -> None:
+    def customEvent(self, event: QtCore.QEvent) -> None:  # noqa: N802
         if isinstance(event, SubscriptableEvent):
             event.process()
 
@@ -26,7 +27,8 @@ class _EventProcessorManager(QtCore.QObject):
     def processor(cls) -> _EventProcessor:
         if cls._processor is None:
             cls._processor = _EventProcessor()
-            assert (app := QtCore.QCoreApplication.instance())
+            app = QtCore.QCoreApplication.instance()
+            assert app
             cls._processor.moveToThread(app.thread())
         return cls._processor
 
@@ -58,23 +60,6 @@ class SubscriptableEvent(QtCore.QEvent):
     def process(self: Self) -> None:
         for func in self._subscribers:
             func(self)
-
-
-# search
-
-
-@attrs.define(slots=False)
-class TreeFilterChanged(SubscriptableEvent):
-    """Sent when a tree filter row has been selected or deselected."""
-
-    search: db.SearchBuilder
-
-
-@attrs.define(slots=False)
-class TextFilterChanged(SubscriptableEvent):
-    """Sent when the free text search has been changed."""
-
-    search: str
 
 
 # songs

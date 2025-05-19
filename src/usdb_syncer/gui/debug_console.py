@@ -49,8 +49,8 @@ class DebugConsole(Ui_Dialog, QDialog):
         code = self.input.toPlainText()
         with redirect_stdout(io.StringIO()) as captured:
             try:
-                exec(code, {"mw": self.parent()})  # pylint: disable=exec-used
-            except Exception:  # pylint: disable=broad-exception-caught
+                exec(code, {"mw": self.parent()})  # noqa: S102
+            except Exception:  # noqa: BLE001
                 print(traceback.format_exc())
         self._log_output(code, captured.getvalue())
 
