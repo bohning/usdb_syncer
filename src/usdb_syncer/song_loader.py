@@ -212,21 +212,21 @@ class _TempResourceFiles:
 
     txt: _TempResourceFile = attrs.field(factory=_TempResourceFile)
     audio: _TempResourceFile = attrs.field(factory=_TempResourceFile)
+    instrumental: _TempResourceFile = attrs.field(factory=_TempResourceFile)
+    vocals: _TempResourceFile = attrs.field(factory=_TempResourceFile)
     video: _TempResourceFile = attrs.field(factory=_TempResourceFile)
     cover: _TempResourceFile = attrs.field(factory=_TempResourceFile)
     background: _TempResourceFile = attrs.field(factory=_TempResourceFile)
-    instrumental: _TempResourceFile = attrs.field(factory=_TempResourceFile)
-    vocals: _TempResourceFile = attrs.field(factory=_TempResourceFile)
 
     def __iter__(self) -> Iterator[_TempResourceFile]:
         return iter((
             self.txt,
             self.audio,
+            self.instrumental,
+            self.vocals,
             self.video,
             self.cover,
             self.background,
-            self.instrumental,
-            self.vocals,
         ))
 
 
@@ -249,6 +249,8 @@ class _Context:
         if self.song.sync_meta and (current := self.locations.current_path()):
             for old, out in (
                 (self.song.sync_meta.audio, self.out.audio),
+                (self.song.sync_meta.instrumental, self.out.instrumental),
+                (self.song.sync_meta.vocals, self.out.vocals),
                 (self.song.sync_meta.video, self.out.video),
                 (self.song.sync_meta.cover, self.out.cover),
                 (self.song.sync_meta.background, self.out.background),
@@ -847,6 +849,12 @@ def _write_sync_meta(ctx: _Context) -> None:
     )
     ctx.song.sync_meta.txt = ctx.out.txt.to_resource_file(ctx.locations, temp=False)
     ctx.song.sync_meta.audio = ctx.out.audio.to_resource_file(ctx.locations, temp=False)
+    ctx.song.sync_meta.instrumental = ctx.out.instrumental.to_resource_file(
+        ctx.locations, temp=False
+    )
+    ctx.song.sync_meta.vocals = ctx.out.vocals.to_resource_file(
+        ctx.locations, temp=False
+    )
     ctx.song.sync_meta.video = ctx.out.video.to_resource_file(ctx.locations, temp=False)
     ctx.song.sync_meta.cover = ctx.out.cover.to_resource_file(ctx.locations, temp=False)
     ctx.song.sync_meta.background = ctx.out.background.to_resource_file(

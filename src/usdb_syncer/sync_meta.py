@@ -152,7 +152,7 @@ class SyncMeta:
 
     @classmethod
     def from_db_row(cls, row: tuple) -> SyncMeta:
-        assert len(row) == 21
+        assert len(row) == 27
         meta = cls(
             sync_meta_id=SyncMetaId(row[0]),
             song_id=SongId(row[1]),
@@ -163,9 +163,11 @@ class SyncMeta:
         )
         meta.txt = ResourceFile.from_db_row(row[6:9])
         meta.audio = ResourceFile.from_db_row(row[9:12])
-        meta.video = ResourceFile.from_db_row(row[12:15])
-        meta.cover = ResourceFile.from_db_row(row[15:18])
-        meta.background = ResourceFile.from_db_row(row[18:])
+        meta.instrumental = ResourceFile.from_db_row(row[12:15])
+        meta.vocals = ResourceFile.from_db_row(row[15:18])
+        meta.video = ResourceFile.from_db_row(row[18:21])
+        meta.cover = ResourceFile.from_db_row(row[21:24])
+        meta.background = ResourceFile.from_db_row(row[24:])
         meta.custom_data = CustomData(db.get_custom_data(meta.sync_meta_id))
         return meta
 

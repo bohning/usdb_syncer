@@ -34,8 +34,8 @@ class Headers:
     mp3: str | None = None
     audio: str | None = None
     audiourl: str | None = None
-    vocals: str | None = None
     instrumental: str | None = None
+    vocals: str | None = None
     cover: str | None = None
     coverurl: str | None = None
     background: str | None = None

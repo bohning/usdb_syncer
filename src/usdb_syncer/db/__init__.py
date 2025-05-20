@@ -22,7 +22,7 @@ from usdb_syncer.logger import logger
 
 from . import sql
 
-SCHEMA_VERSION = 6
+SCHEMA_VERSION = 7
 
 # https://www.sqlite.org/limits.html
 _SQL_VARIABLES_LIMIT = 32766
@@ -190,6 +190,7 @@ class SongOrder(enum.Enum):
     PINNED = enum.auto()
     TXT = enum.auto()
     AUDIO = enum.auto()
+    AUDIO_STEMS = enum.auto()
     VIDEO = enum.auto()
     COVER = enum.auto()
     BACKGROUND = enum.auto()
@@ -235,6 +236,8 @@ class SongOrder(enum.Enum):
                 return "txt.sync_meta_id IS NULL"
             case SongOrder.AUDIO:
                 return "audio.sync_meta_id IS NULL"
+            case SongOrder.AUDIO_STEMS:
+                return "instrumental.sync_meta_id IS NULL"
             case SongOrder.VIDEO:
                 return "video.sync_meta_id IS NULL"
             case SongOrder.COVER:
@@ -809,11 +812,11 @@ class ResourceFileKind(str, enum.Enum):
 
     TXT = "txt"
     AUDIO = "audio"
+    INSTRUMENTAL = "instrumental"
+    VOCALS = "vocals"
     VIDEO = "video"
     COVER = "cover"
     BACKGROUND = "background"
-    INSTRUMENTAL = "instrumental"
-    VOCALS = "vocals"
 
 
 @attrs.define(frozen=True, slots=False)

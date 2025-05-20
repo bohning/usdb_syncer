@@ -31,6 +31,7 @@ class Column(IntEnum):
     PINNED = enum.auto()
     TXT = enum.auto()
     AUDIO = enum.auto()
+    AUDIO_STEMS = enum.auto()
     VIDEO = enum.auto()
     COVER = enum.auto()
     BACKGROUND = enum.auto()
@@ -65,6 +66,7 @@ class Column(IntEnum):
                 | Column.VIEWS
                 | Column.TXT
                 | Column.AUDIO
+                | Column.AUDIO_STEMS
                 | Column.VIDEO
                 | Column.COVER
                 | Column.BACKGROUND
@@ -106,6 +108,8 @@ class Column(IntEnum):
                 icon = Icon.TEXT
             case Column.AUDIO:
                 icon = Icon.AUDIO
+            case Column.AUDIO_STEMS:
+                icon = Icon.AUDIO_STEMS
             case Column.VIDEO:
                 icon = Icon.VIDEO
             case Column.COVER:
@@ -142,6 +146,7 @@ class Column(IntEnum):
                 Column.SAMPLE_URL
                 | Column.TXT
                 | Column.AUDIO
+                | Column.AUDIO_STEMS
                 | Column.VIDEO
                 | Column.COVER
                 | Column.BACKGROUND
@@ -185,6 +190,8 @@ class Column(IntEnum):
                 return db.SongOrder.TXT
             case Column.AUDIO:
                 return db.SongOrder.AUDIO
+            case Column.AUDIO_STEMS:
+                return db.SongOrder.AUDIO_STEMS
             case Column.VIDEO:
                 return db.SongOrder.VIDEO
             case Column.COVER:
@@ -231,6 +238,8 @@ class Column(IntEnum):
                 return Column.TXT
             case db.SongOrder.AUDIO:
                 return Column.AUDIO
+            case db.SongOrder.AUDIO_STEMS:
+                return Column.AUDIO_STEMS
             case db.SongOrder.VIDEO:
                 return Column.VIDEO
             case db.SongOrder.COVER:
