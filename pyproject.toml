@@ -33,6 +33,7 @@ numpy = "<2.0.0"  # torchaudio 2.2.2 needs numpy < 2.0.0
 packaging = "*"
 pillow = ">=10"
 PySide6 = "*"
+python-ffmpeg = "^2.0.12"
 reportlab = "*"
 requests = "*"
 rookiepy = "^0.5.3"

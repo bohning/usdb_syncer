@@ -205,7 +205,7 @@
             <item row="2" column="1">
              <widget class="QComboBox" name="comboBox_format_version">
               <property name="toolTip">
-               <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:700;&quot;&gt;V1.0.0&lt;/span&gt;&lt;/p&gt;&lt;p&gt;Choose this version for highest compatibility. This uses #MP3 to specifiy the audio file.&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:700;&quot;&gt;V1.1.0&lt;/span&gt;&lt;/p&gt;&lt;p&gt;This version switches from #MP3 to #AUDIO to underline that other audio formats than mp3 are supported. For compatibility, the Syncer adds both #MP3 and #AUDIO to the text file, which should cause no issues when loading the song.&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:700;&quot;&gt;V1.2.0&lt;/span&gt;&lt;/p&gt;&lt;p&gt;This version introduces new tags #AUDIOURL, #COVERURL, #BACKGROUNDURL and #VIDEOURL to specify URLs for the respective sources. The syncer will fill these tags with the contents of the respective metatags, if available.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+               <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:700;&quot;&gt;V1.0.0&lt;/span&gt;&lt;/p&gt;&lt;p&gt;Choose this version for highest compatibility. This uses #MP3 to specifiy the audio file.&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:700;&quot;&gt;V1.1.0&lt;/span&gt;&lt;/p&gt;&lt;p&gt;This version switches from #MP3 to #AUDIO to underline that other audio formats than mp3 are supported. For compatibility, the Syncer adds both #MP3 and #AUDIO to the text file, which should cause no issues when loading the song. This version also adds the #INSTRUMENTAL and #VOCALS headers to support true karaoke singing with instrumental and vocals tracks.&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:700;&quot;&gt;V1.2.0&lt;/span&gt;&lt;/p&gt;&lt;p&gt;This version introduces new tags #AUDIOURL, #COVERURL, #BACKGROUNDURL and #VIDEOURL to specify URLs for the respective sources. The syncer will fill these tags with the contents of the respective metatags, if available.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
               </property>
              </widget>
             </item>
@@ -435,7 +435,7 @@
             <item row="4" column="0">
              <widget class="QLabel" name="label_audio_instrumental">
               <property name="text">
-               <string>Instrumental:</string>
+               <string>Stem separation:</string>
               </property>
              </widget>
             </item>
@@ -488,9 +488,12 @@
              </widget>
             </item>
             <item row="4" column="3">
-             <widget class="QCheckBox" name="checkBox_audio_instrumental">
-              <property name="text">
-               <string/>
+             <widget class="QComboBox" name="comboBox_audio_stem_separation">
+              <property name="enabled">
+               <bool>false</bool>
+              </property>
+              <property name="toolTip">
+               <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;The audio can be separated into vocals and instrumental by a trained model. This way you can sing along the instrumental track if the karaoke software supports this.&lt;/p&gt;&lt;p&gt;This requires format &lt;span style=&quot; font-weight:700;&quot;&gt;version 1.1.0&lt;/span&gt; or higher, otherwise this option is disabled.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
               </property>
              </widget>
             </item>

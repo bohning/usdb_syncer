@@ -74,12 +74,23 @@ class SettingsDialog(Ui_Dialog, QDialog):
             self._set_theme_settings_enabled
         )
         self._set_theme_settings_enabled()
+        self.comboBox_format_version.currentIndexChanged.connect(
+            self._handle_format_dependent_settings
+        )
+        self._handle_format_dependent_settings()
 
     def _set_theme_settings_enabled(self) -> None:
         hidden = self.comboBox_theme.currentData() == settings.Theme.SYSTEM
         self.label_primary_color.setHidden(hidden)
         self.comboBox_primary_color.setHidden(hidden)
         self.checkBox_colored_background.setHidden(hidden)
+
+    def _handle_format_dependent_settings(self) -> None:
+        if self.comboBox_format_version.currentData() == settings.FormatVersion.V1_0_0:
+            self.comboBox_audio_stem_separation.setCurrentIndex(0)
+            self.comboBox_audio_stem_separation.setDisabled(True)
+        else:
+            self.comboBox_audio_stem_separation.setEnabled(True)
 
     def _set_location(self, app: settings.SupportedApps) -> None:
         path = self._get_executable(app)
@@ -141,6 +152,7 @@ class SettingsDialog(Ui_Dialog, QDialog):
             (self.comboBox_audio_format, settings.AudioFormat),
             (self.comboBox_audio_bitrate, settings.AudioBitrate),
             (self.comboBox_audio_normalization, settings.AudioNormalization),
+            (self.comboBox_audio_stem_separation, settings.AudioStemSeparation),
             (self.comboBox_videocontainer, settings.VideoContainer),
             (self.comboBox_videoencoder, settings.VideoCodec),
             (self.comboBox_videoresolution, settings.VideoResolution),
@@ -207,7 +219,11 @@ class SettingsDialog(Ui_Dialog, QDialog):
             )
         )
         self.checkBox_audio_embed_artwork.setChecked(settings.get_audio_embed_artwork())
-        self.checkBox_audio_instrumental.setChecked(settings.get_audio_instrumental())
+        self.comboBox_audio_stem_separation.setCurrentIndex(
+            self.comboBox_audio_stem_separation.findData(
+                settings.get_audio_stem_separation()
+            )
+        )
         self.groupBox_video.setChecked(settings.get_video())
         self.comboBox_videocontainer.setCurrentIndex(
             self.comboBox_videocontainer.findData(settings.get_video_format())
@@ -314,7 +330,9 @@ class SettingsDialog(Ui_Dialog, QDialog):
             self.comboBox_audio_normalization.currentData()
         )
         settings.set_audio_embed_artwork(self.checkBox_audio_embed_artwork.isChecked())
-        settings.set_audio_instrumental(self.checkBox_audio_instrumental.isChecked())
+        settings.set_audio_stem_separation(
+            self.comboBox_audio_stem_separation.currentData()
+        )
         settings.set_video(self.groupBox_video.isChecked())
         settings.set_video_format(self.comboBox_videocontainer.currentData())
         settings.set_video_format_new(self.comboBox_videoencoder.currentData())

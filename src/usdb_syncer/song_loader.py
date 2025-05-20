@@ -15,6 +15,7 @@ import attrs
 import demucs.separate
 import send2trash
 import shiboken6
+from ffmpeg import FFmpeg
 from PySide6 import QtCore
 
 from usdb_syncer import (
@@ -36,7 +37,7 @@ from usdb_syncer.discord import notify_discord
 from usdb_syncer.logger import Logger, logger, song_logger
 from usdb_syncer.postprocessing import write_audio_tags, write_video_tags
 from usdb_syncer.resource_dl import ResourceDLError
-from usdb_syncer.settings import FormatVersion
+from usdb_syncer.settings import AudioStemSeparation, FormatVersion
 from usdb_syncer.song_txt import SongTxt
 from usdb_syncer.sync_meta import ResourceFile, SyncMeta
 from usdb_syncer.usdb_scraper import SongDetails
@@ -386,7 +387,7 @@ class _SongLoader(QtCore.QRunnable):
                 _maybe_download_cover,
                 _maybe_download_background,
                 _maybe_write_audio_tags,
-                _maybe_generate_instrumental,
+                _maybe_separate_stems,
                 _maybe_write_video_tags,
             ):
                 self._check_flags()
@@ -716,42 +717,57 @@ def _maybe_write_audio_tags(ctx: _Context) -> None:
     )
 
 
-def _maybe_generate_instrumental(ctx: _Context) -> None:
+def _maybe_separate_stems(ctx: _Context) -> None:
     if not (audio_options := ctx.options.audio_options):  # or not (
         # meta := ctx.song.sync_meta.audio
         # ):
         return
-    if not audio_options.instrumental:
+    if audio_options.stem_separation == AudioStemSeparation.DISABLE:
         return
 
-    audio = ctx.out.audio.path(ctx.locations, temp=True)
-    model = "htdemucs_ft"
+    model = audio_options.stem_separation.value
     demucs.separate.main([
-        "--mp3",
         "--two-stems",
         "vocals",
         "-n",
         model,
-        f"{audio}",
+        f"{ctx.out.audio.path(ctx.locations, temp=True)}",
         "-o",
         f"{ctx.locations._tempdir.as_posix()}",
     ])
-    # Properly rename the files
-    Path.rename(
-        Path(
-            ctx.locations._tempdir / model / ctx.locations.filename() / "no_vocals.mp3"
-        ),
-        f"{ctx.locations.temp_path()} [Instrumental].mp3",
+    # Transcode instrumental and vocals files to target format via ffmpeg
+    instrumental_input = Path(
+        ctx.locations._tempdir / model / ctx.locations.filename() / "no_vocals.wav"
+    ).as_posix()
+    instrumental_output = (
+        f"{ctx.locations.temp_path()} [INSTR].{audio_options.format.value}"
     )
-    ctx.out.instrumental.new_fname = Path(
-        f"{ctx.locations.temp_path()} [Instrumental].mp3"
-    ).name
-    Path.rename(
-        Path(ctx.locations._tempdir / model / ctx.locations.filename() / "vocals.mp3"),
-        f"{ctx.locations.temp_path()} [Vocals].mp3",
+    transcode_audio(audio_options, instrumental_input, instrumental_output)
+    ctx.out.instrumental.new_fname = (
+        f"{ctx.locations.filename()} [INSTR].{audio_options.format.value}"
     )
-    ctx.out.vocals.new_fname = Path(f"{ctx.locations.temp_path()} [Vocals].mp3").name
+
+    vocals_input = Path(
+        ctx.locations._tempdir / model / ctx.locations.filename() / "vocals.wav"
+    ).as_posix()
+    vocals_output = f"{ctx.locations.temp_path()} [VOC].{audio_options.format.value}"
+    transcode_audio(audio_options, vocals_input, vocals_output)
+    ctx.out.vocals.new_fname = (
+        f"{ctx.locations.filename()} [VOC].{audio_options.format.value}"
+    )
     ctx.logger.info("Success! Separated audio file into vocals and instrumental.")
+
+
+def transcode_audio(
+    audio_options: download_options.AudioOptions, src: str, dst: str
+) -> None:
+    ffmpeg = (
+        FFmpeg()
+        .option("y")
+        .input(src)
+        .output(dst, {"codec:a": audio_options.format.ffmpeg_encoder()})
+    )
+    ffmpeg.execute()
 
 
 def _maybe_write_video_tags(ctx: _Context) -> None:
