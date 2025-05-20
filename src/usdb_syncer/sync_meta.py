@@ -91,11 +91,11 @@ class SyncMeta:
     pinned: bool = False
     txt: ResourceFile | None = None
     audio: ResourceFile | None = None
+    instrumental: ResourceFile | None = None
+    vocals: ResourceFile | None = None
     video: ResourceFile | None = None
     cover: ResourceFile | None = None
     background: ResourceFile | None = None
-    instrumental: ResourceFile | None = None
-    vocals: ResourceFile | None = None
     custom_data: CustomData = attrs.field(factory=CustomData)
 
     @classmethod
@@ -135,6 +135,8 @@ class SyncMeta:
                 pinned=bool(dct.get("pinned", False)),
                 txt=ResourceFile.from_nested_dict(dct["txt"]),
                 audio=ResourceFile.from_nested_dict(dct["audio"]),
+                instrumental=ResourceFile.from_nested_dict(dct["instrumental"]),
+                vocals=ResourceFile.from_nested_dict(dct["vocals"]),
                 video=ResourceFile.from_nested_dict(dct["video"]),
                 cover=ResourceFile.from_nested_dict(dct["cover"]),
                 background=ResourceFile.from_nested_dict(dct["background"]),
@@ -227,11 +229,11 @@ class SyncMeta:
         return (
             (self.txt, db.ResourceFileKind.TXT),
             (self.audio, db.ResourceFileKind.AUDIO),
+            (self.instrumental, db.ResourceFileKind.INSTRUMENTAL),
+            (self.vocals, db.ResourceFileKind.VOCALS),
             (self.video, db.ResourceFileKind.VIDEO),
             (self.cover, db.ResourceFileKind.COVER),
             (self.background, db.ResourceFileKind.BACKGROUND),
-            (self.instrumental, db.ResourceFileKind.INSTRUMENTAL),
-            (self.vocals, db.ResourceFileKind.VOCALS),
         )
 
     def db_params(self) -> db.SyncMetaParams:
@@ -251,7 +253,15 @@ class SyncMeta:
         self.mtime = utils.get_mtime(self.path)
 
     def resource_files(self) -> Iterator[ResourceFile]:
-        for meta in (self.txt, self.audio, self.video, self.cover, self.background):
+        for meta in (
+            self.txt,
+            self.audio,
+            self.instrumental,
+            self.vocals,
+            self.video,
+            self.cover,
+            self.background,
+        ):
             if meta:
                 yield meta
 
