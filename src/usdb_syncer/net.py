@@ -147,25 +147,8 @@ class UsdbSession(SyncerSession):
         self.username = ""
         super().close()
 
-    def establish_login(self, auth: Tuple[str, str] | None = None) -> bool:
-        """Establish a login. Uses cookies first, then provided credentials or
-        credentials from settings.
-
-        Parameters:
-            auth (optional): tuple of username and password. If not provided, will use
-                the credentials from settings.
-        Returns:
-            True if login was successful, False otherwise.
-        """
-        text = self.get("", params={"link": "profil"}, headers={})
-        if username := usdb_scraper.username_from_html(text):
-            self.username = username
-            return True
-
-        if not auth:
-            username, password = settings.get_usdb_auth()
-        else:
-            username, password = auth[0]
+    def manual_login(self, username: str, password: str) -> bool:
+        """Try to login with the provided credentials."""
         if not username or not password:
             return False
         text = self.post(
@@ -180,6 +163,24 @@ class UsdbSession(SyncerSession):
 
         self.username = ""
         return False
+
+    def establish_login(self, auth: Tuple[str, str] | None = None) -> bool:
+        """Establish a login. Uses cookies first, then provided credentials.
+
+        Parameters:
+            auth (optional): tuple of username and password.
+        Returns:
+            True if login was successful, False otherwise.
+        """
+        text = self.get("", params={"link": "profil"}, headers={})
+        if username := usdb_scraper.username_from_html(text):
+            self.username = username
+            return True
+
+        if not auth:
+            return False
+        else:
+            return self.manual_login(*auth)
 
     def logout(self) -> None:
         """Logout from the session."""
@@ -273,7 +274,7 @@ class UsdbSessionManager:
             if cls._session is None:
                 cls._session = UsdbSession()
                 cls._session.set_cookies(settings.get_browser())
-                cls._session.establish_login()
+                cls._session.establish_login(settings.get_usdb_auth())
             return cls._session
 
     @classmethod
@@ -296,7 +297,7 @@ class _GenericSession(SyncerSession):
         super().__init__(base_url=base_url)
 
     @override
-    def conn_failed(self, error):
+    def conn_failed(self, error: RequestException) -> None:
         """Handle connection failure."""
         # TODO handle connection failure (dns, timeout, etc.)
         pass

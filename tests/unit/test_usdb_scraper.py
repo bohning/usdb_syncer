@@ -95,7 +95,9 @@ def test__parse_song_page_without_comments_or_cover(resource_dir: Path) -> None:
 
 
 def test_parse_song_list(resource_dir: Path) -> None:
-    html = (resource_dir / "html" / "song_list.htm").read_text(encoding="utf8")
+    html = (resource_dir / "html" / "usdb-animux-de" / "song_list.htm").read_text(
+        encoding="utf8"
+    )
     songs = list(parse_songs_from_songlist(html))
     assert len(songs) == 3
     # first song: no audio sample, but cover image

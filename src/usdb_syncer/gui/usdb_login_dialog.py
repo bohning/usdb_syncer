@@ -45,14 +45,14 @@ class UsdbLoginDialog(Ui_Dialog, QDialog):
         super().accept()
 
     def _on_check_login(self) -> None:
-        session = net.UsdbSessionManager.session()
+        session = net.UsdbSession()
         session.set_cookies(self.combobox_browser.currentData())
-        if session.logged_in:
+        if session.establish_login():
             message = f"Success! Existing session found with user '{session.username}'."
         elif (user := self.line_edit_username.text()) and (
             password := self.line_edit_password.text()
         ):
-            if session.establish_login((user, password)):
+            if session.manual_login((user, password)):
                 message = "Success! Logged in to USDB."
             else:
                 message = "Login failed!"
