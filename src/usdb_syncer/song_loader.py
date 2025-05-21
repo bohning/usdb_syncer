@@ -171,6 +171,12 @@ class _Locations:
         else:
             self._target.parent.mkdir(parents=True, exist_ok=True)
 
+    def stem_separation_instrumental_path(self, model: str) -> Path:
+        return Path(self._tempdir / model / self.filename() / "no_vocals.wav")
+
+    def stem_separation_vocals_path(self, model: str) -> Path:
+        return Path(self._tempdir / model / self.filename() / "vocals.wav")
+
 
 @attrs.define
 class _TempResourceFile:
@@ -738,22 +744,22 @@ def _maybe_separate_stems(ctx: _Context) -> None:
         f"{ctx.locations._tempdir.as_posix()}",
     ])
     # Transcode instrumental and vocals files to target format via ffmpeg
-    instrumental_input = Path(
-        ctx.locations._tempdir / model / ctx.locations.filename() / "no_vocals.wav"
+    instrumental_input = ctx.locations.stem_separation_instrumental_path(
+        model
     ).as_posix()
     instrumental_output = (
         f"{ctx.locations.temp_path()} [INSTR].{audio_options.format.value}"
     )
     transcode_audio(audio_options, instrumental_input, instrumental_output)
+    ctx.out.instrumental.resource = ctx.out.audio.resource
     ctx.out.instrumental.new_fname = (
         f"{ctx.locations.filename()} [INSTR].{audio_options.format.value}"
     )
 
-    vocals_input = Path(
-        ctx.locations._tempdir / model / ctx.locations.filename() / "vocals.wav"
-    ).as_posix()
+    vocals_input = ctx.locations.stem_separation_vocals_path(model).as_posix()
     vocals_output = f"{ctx.locations.temp_path()} [VOC].{audio_options.format.value}"
     transcode_audio(audio_options, vocals_input, vocals_output)
+    ctx.out.vocals.resource = ctx.out.audio.resource
     ctx.out.vocals.new_fname = (
         f"{ctx.locations.filename()} [VOC].{audio_options.format.value}"
     )
