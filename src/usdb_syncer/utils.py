@@ -54,6 +54,30 @@ def video_url_from_resource(resource: str) -> str | None:
     return None
 
 
+def _parse_polsy_html(html: str) -> list[str] | None:
+    """Parses the HTML from polsy.org.uk and returns a list of allowed countries."""
+
+    soup = BeautifulSoup(html, "lxml")
+    allowed_countries = []
+
+    table = soup.find("table")
+    if not table or not isinstance(table, Tag):
+        return None
+
+    rows = table.find_all("tr")[1:]
+
+    for row in rows:
+        if not isinstance(row, Tag):
+            continue
+        cols = row.find_all("td")
+        if len(cols) < 2:
+            continue
+        if country_code := cols[0].text.split(" - ", 1)[0]:
+            allowed_countries.append(country_code)
+
+    return allowed_countries
+
+
 def get_allowed_countries(resource: str) -> list[str] | None:
     """Fetches YouTube video availability information from polsy.org.uk."""
 
@@ -63,29 +87,7 @@ def get_allowed_countries(resource: str) -> list[str] | None:
     if not response.ok:
         return None
 
-    soup = BeautifulSoup(response.text, "html.parser")
-    allowed_countries = []
-
-    table = soup.find("table")
-    if not table or not isinstance(table, Tag):
-        return None
-
-    rows = table.find_all("tr")[1:]  # Skip the header row
-
-    for row in rows:
-        if not isinstance(row, Tag):
-            continue
-        columns = row.find_all("td")
-        if len(columns) < 2:
-            continue  # Skip invalid rows
-
-        allowed_text = columns[0].get_text(strip=True)
-
-        if allowed_text:
-            country_code = allowed_text.split(" - ")[0]
-            allowed_countries.append(country_code)
-
-    return allowed_countries
+    return _parse_polsy_html(response.text)
 
 
 def remove_ansi_codes(text: str) -> str:
