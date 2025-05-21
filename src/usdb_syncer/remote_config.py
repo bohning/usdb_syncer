@@ -3,9 +3,7 @@
 import functools
 import json
 
-import requests
-
-from usdb_syncer import constants
+from usdb_syncer import constants, net
 from usdb_syncer.logger import logger
 from usdb_syncer.utils import AppPaths
 
@@ -35,13 +33,6 @@ def _fetch_config() -> dict:
 
 def _fetch_remote_config() -> dict:
     try:
-        response = requests.get(_CONFIG_URL, timeout=5)
-        response.raise_for_status()
-        data = response.json()
-    except requests.RequestException as error:
-        logger.debug(f"Failed to retrieve remote configuration from {_CONFIG_URL}")
-        logger.error(str(error))
-        data = {}
-    else:
-        logger.debug(f"Retrieved remote configuration from {_CONFIG_URL}")
-    return data
+        return net.get_generic_session().get(_CONFIG_URL).json()
+    except json.JSONDecodeError:
+        return {}

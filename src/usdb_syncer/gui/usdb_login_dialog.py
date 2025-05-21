@@ -3,7 +3,7 @@
 from PySide6.QtGui import QDesktopServices
 from PySide6.QtWidgets import QDialog, QMessageBox, QWidget
 
-from usdb_syncer import net, settings
+from usdb_syncer import settings, usdb_scraper
 from usdb_syncer.constants import Usdb
 from usdb_syncer.gui import icons
 from usdb_syncer.gui.forms.UsdbLoginDialog import Ui_Dialog
@@ -41,18 +41,18 @@ class UsdbLoginDialog(Ui_Dialog, QDialog):
         settings.set_usdb_auth(
             self.line_edit_username.text(), self.line_edit_password.text()
         )
-        net.UsdbSessionManager.reset_session()
+        usdb_scraper.UsdbSessionManager.reset_session()
         super().accept()
 
     def _on_check_login(self) -> None:
-        session = net.UsdbSession()
+        session = usdb_scraper.UsdbSession()
         session.set_cookies(self.combobox_browser.currentData())
         if session.establish_login():
             message = f"Success! Existing session found with user '{session.username}'."
         elif (user := self.line_edit_username.text()) and (
             password := self.line_edit_password.text()
         ):
-            if session.manual_login((user, password)):
+            if session.manual_login(user, password):
                 message = "Success! Logged in to USDB."
             else:
                 message = "Login failed!"
@@ -61,4 +61,4 @@ class UsdbLoginDialog(Ui_Dialog, QDialog):
         QMessageBox.information(self._parent, "Login Result", message)
 
     def _on_log_out(self) -> None:
-        net.UsdbSessionManager.session().logout()
+        usdb_scraper.UsdbSessionManager.session().logout()

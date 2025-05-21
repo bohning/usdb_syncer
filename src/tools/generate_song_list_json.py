@@ -5,7 +5,7 @@ import sys
 from pathlib import Path
 
 from usdb_syncer import SongId, song_routines
-from usdb_syncer.net import UsdbSessionManager
+from usdb_syncer.usdb_scraper import UsdbSessionManager
 
 
 def main(target: Path, user: str, password: str) -> None:

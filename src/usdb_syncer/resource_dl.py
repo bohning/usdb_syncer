@@ -7,12 +7,11 @@ from pathlib import Path
 from typing import assert_never
 
 import filetype
-import requests
 import yt_dlp
 from PIL import Image, ImageEnhance, ImageOps
 from PIL.Image import Resampling
 
-from usdb_syncer import utils
+from usdb_syncer import net, utils
 from usdb_syncer.constants import YtErrorMsg
 from usdb_syncer.download_options import AudioOptions, VideoOptions
 from usdb_syncer.logger import Logger, song_logger
@@ -26,13 +25,6 @@ from usdb_syncer.settings import (
 )
 from usdb_syncer.usdb_scraper import SongDetails
 from usdb_syncer.utils import video_url_from_resource
-
-IMAGE_DOWNLOAD_HEADERS = {
-    "User-Agent": (
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
-        "(KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36"
-    )
-}
 
 YtdlOptions = dict[str, str | bool | tuple | list | int]
 
@@ -248,40 +240,14 @@ def _handle_forbidden(url: str, logger: Logger) -> None:
 
 
 def download_image(url: str, logger: Logger) -> bytes | None:
-    try:
-        reply = requests.get(
-            url, allow_redirects=True, headers=IMAGE_DOWNLOAD_HEADERS, timeout=60
-        )
-    except requests.exceptions.SSLError:
-        logger.exception(
-            f"Failed to retrieve {url}. The SSL certificate could not be verified."
-        )
-        return None
-    except requests.RequestException:
-        logger.exception(
-            f"Failed to retrieve {url}. The URL might be invalid, the server may be "
-            "down or your internet connection is currently unavailable."
-        )
-        return None
-    if reply.status_code in range(100, 299):
-        # 1xx informational response, 2xx success
-        return reply.content
+    reply = net.get_generic_session().get(url)
     if reply.status_code in range(300, 399):
         # 3xx redirection
         logger.debug(
             f"'{url}' redirects to '{reply.headers['Location']}'. "
             "Please adapt metatags."
         )
-        return reply.content
-    if reply.status_code in range(400, 499):
-        logger.error(
-            f"Client error {reply.status_code}. Failed to download {reply.url}"
-        )
-    elif reply.status_code in range(500, 599):
-        logger.error(
-            f"Server error {reply.status_code}. Failed to download {reply.url}"
-        )
-    return None
+    return reply.content
 
 
 def download_and_process_image(
@@ -296,7 +262,7 @@ def download_and_process_image(
 ) -> Path | None:
     logger = song_logger(details.song_id)
     if not (img_bytes := download_image(url, logger)):
-        logger.error(f"#{str(kind).upper()}: file does not exist at url: {url}")
+        logger.error("Failed to download image.")
         return None
 
     if not filetype.is_image(img_bytes):

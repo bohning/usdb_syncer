@@ -89,8 +89,8 @@ _db = mock.MagicMock()
 class SongLoaderTestCase(unittest.TestCase):
     """Tests for the song loader."""
 
-    @mock.patch("usdb_syncer.net.UsdbSession.get_song_details")
-    @mock.patch("usdb_syncer.net.UsdbSession.get_notes")
+    @mock.patch("usdb_syncer.usdb_scraper.UsdbSession.get_song_details")
+    @mock.patch("usdb_syncer.usdb_scraper.UsdbSession.get_notes")
     def test_download_new_song(
         self, notes_mock: mock.Mock, details_mock: mock.Mock, _audio_mock: mock.Mock
     ) -> None:
@@ -134,8 +134,8 @@ class SongLoaderTestCase(unittest.TestCase):
                         path_stem.with_name(meta.fname)
                     )
 
-    @mock.patch("usdb_syncer.net.UsdbSession.get_song_details")
-    @mock.patch("usdb_syncer.net.UsdbSession.get_notes")
+    @mock.patch("usdb_syncer.usdb_scraper.UsdbSession.get_song_details")
+    @mock.patch("usdb_syncer.usdb_scraper.UsdbSession.get_notes")
     def test_download_unchanged_resource(
         self, notes_mock: mock.Mock, details_mock: mock.Mock, audio_mock: mock.Mock
     ) -> None:
@@ -161,8 +161,8 @@ class SongLoaderTestCase(unittest.TestCase):
             assert loader.song.sync_meta
             assert mp3_path.exists()
 
-    @mock.patch("usdb_syncer.net.UsdbSession.get_song_details")
-    @mock.patch("usdb_syncer.net.UsdbSession.get_notes")
+    @mock.patch("usdb_syncer.usdb_scraper.UsdbSession.get_song_details")
+    @mock.patch("usdb_syncer.usdb_scraper.UsdbSession.get_notes")
     def test_download_misnamed_resource(
         self, notes_mock: mock.Mock, details_mock: mock.Mock, audio_mock: mock.Mock
     ) -> None:
@@ -189,8 +189,8 @@ class SongLoaderTestCase(unittest.TestCase):
             assert not mp3_path.exists()
             assert (song_dir / song.title / "song.mp3").exists()
 
-    @mock.patch("usdb_syncer.net.UsdbSession.get_song_details")
-    @mock.patch("usdb_syncer.net.UsdbSession.get_notes")
+    @mock.patch("usdb_syncer.usdb_scraper.UsdbSession.get_song_details")
+    @mock.patch("usdb_syncer.usdb_scraper.UsdbSession.get_notes")
     def test_download_outdated_resource(
         self, notes_mock: mock.Mock, details_mock: mock.Mock, audio_mock: mock.Mock
     ) -> None:

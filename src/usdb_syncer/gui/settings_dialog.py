@@ -10,8 +10,8 @@ from PySide6.QtWidgets import QDialog, QDialogButtonBox, QFileDialog, QWidget
 from usdb_syncer import SongId, path_template, settings
 from usdb_syncer.gui import icons, theme
 from usdb_syncer.gui.forms.SettingsDialog import Ui_Dialog
-from usdb_syncer.net import UsdbSessionManager
 from usdb_syncer.path_template import PathTemplate
+from usdb_syncer.usdb_scraper import UsdbSessionManager
 from usdb_syncer.usdb_song import UsdbSong
 
 _FALLBACK_SONG = UsdbSong(

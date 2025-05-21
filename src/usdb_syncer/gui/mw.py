@@ -24,9 +24,9 @@ from usdb_syncer.gui.settings_dialog import SettingsDialog
 from usdb_syncer.gui.song_table.song_table import SongTable
 from usdb_syncer.gui.usdb_login_dialog import UsdbLoginDialog
 from usdb_syncer.logger import logger
-from usdb_syncer.net import UsdbSessionManager
 from usdb_syncer.song_loader import DownloadManager
 from usdb_syncer.sync_meta import SyncMeta
+from usdb_syncer.usdb_scraper import UsdbSessionManager
 from usdb_syncer.usdb_song import UsdbSong
 from usdb_syncer.utils import AppPaths, LinuxEnvCleaner, open_path_or_file
 

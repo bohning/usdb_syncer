@@ -7,7 +7,6 @@ from importlib import resources
 from importlib.abc import Traversable
 from pathlib import Path
 
-import requests
 import send2trash
 
 from usdb_syncer import (
@@ -22,9 +21,9 @@ from usdb_syncer import (
     utils,
 )
 from usdb_syncer.logger import error_logger, logger
-from usdb_syncer.net import UsdbSessionManager
 from usdb_syncer.song_loader import DownloadManager
 from usdb_syncer.sync_meta import SyncMeta
+from usdb_syncer.usdb_scraper import UsdbSessionManager
 from usdb_syncer.usdb_song import UsdbSong, UsdbSongEncoder
 from usdb_syncer.utils import AppPaths
 
@@ -41,10 +40,6 @@ def load_available_songs(force_reload: bool) -> None:
         songs = session.get_usdb_available_songs(max_skip_id)
     except errors.UsdbLoginError:
         logger.debug("Skipping fetching new songs as there is no login.")
-        return
-    except requests.exceptions.ConnectionError:
-        logger.debug("", exc_info=True)
-        logger.error("Failed to fetch new songs; check network connection.")
         return
     if songs:
         UsdbSong.upsert_many(songs)
