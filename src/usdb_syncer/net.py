@@ -1,11 +1,12 @@
 import abc
 import time
-import urllib
 import urllib.parse
+from threading import Lock
 from typing import Tuple, override
 
 from bs4 import BeautifulSoup
 from requests import Response, Session
+from requests.exceptions import RequestException
 
 from usdb_syncer import SongId, constants, settings, usdb_scraper, usdb_song, utils
 
@@ -15,6 +16,10 @@ GLOBAL_HEADERS = {
         "(KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36"
     )
 }
+REQUEST_TIMEOUT = 10
+REQUEST_MAX_RETRIES = 3
+REQUEST_RETRY_DELAY = 1.0
+REQUEST_RETRY_BACKOFF = 3.0
 
 
 class SyncerSession(abc.ABC):
@@ -22,56 +27,79 @@ class SyncerSession(abc.ABC):
 
     BASE_URL: str
     session: Session
-    timeout: int
 
     @abc.abstractmethod
     def __init__(self, base_url: str, **kwargs: dict) -> None:
         self.BASE_URL = base_url
         self.session = Session(**kwargs)
+        self._lock = Lock()
         self.session.verify = True
         self.set_headers(GLOBAL_HEADERS)
-        self.timeout = 10
 
     @abc.abstractmethod
-    def conn_failed(self, response: Response) -> None:
+    def conn_failed(self, error: RequestException) -> None:
+        """The connection failed with an exception. Handle it."""
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def conn_error(self, response: Response) -> None:
+        """The response has an invalid status code. Handle it."""
         raise NotImplementedError
 
     def handle_response(self, response: Response) -> str:
+        """Handle the response."""
         return response.text
 
     def set_cookies(self, browser: settings.Browser) -> None:
         """Set cookies for the session. Clears existing cookies."""
-        self.session.cookies.clear()
-        if jar := browser.cookies():
-            for cookie in jar:
-                self.session.cookies.set_cookie(cookie)
+        with self._lock:
+            self.session.cookies.clear()
+            if jar := browser.cookies():
+                for cookie in jar:
+                    self.session.cookies.set_cookie(cookie)
 
     def set_headers(self, headers: dict) -> None:
         """Set headers for the session. Does not clear existing headers."""
-        self.session.headers.update(headers)
+        with self._lock:
+            self.session.headers.update(headers)
 
     def _request(
-        self,
-        method: str,
-        rel_url: str,
-        data: dict,
-        headers: dict,
-        params: dict,
+        self, method: str, rel_url: str, data: dict, headers: dict, params: dict
     ) -> str:
-        """Make a request. Calls conn_failed on error."""
+        """Make a request with retry capability. Calls conn_failed with the last
+        exception when all retries are exhausted."""
         complete_url = urllib.parse.urljoin(self.BASE_URL, rel_url)
-        response = self.session.request(
-            method=method,
-            url=complete_url,
-            data=data,
-            headers=headers,
-            params=params,
-            timeout=self.timeout,
-        )
-        if not response.ok:
-            self.conn_failed(response)
-        response.encoding = "utf-8"
-        return self.handle_response(response)
+
+        retry_count = 0
+        current_delay = REQUEST_RETRY_DELAY
+
+        while True:
+            try:
+                response = self.session.request(
+                    method=method,
+                    url=complete_url,
+                    data=data,
+                    headers=headers,
+                    params=params,
+                    timeout=REQUEST_TIMEOUT,
+                )
+
+                if response.ok:
+                    response.encoding = "utf-8"
+                    return self.handle_response(response)
+
+                # Response not ok
+                self.conn_error(response)
+                response.encoding = "utf-8"
+                return self.handle_response(response)
+
+            except RequestException as e:
+                if retry_count < REQUEST_MAX_RETRIES:
+                    time.sleep(current_delay)
+                    current_delay *= REQUEST_RETRY_BACKOFF
+                    retry_count += 1
+                    continue
+                self.conn_failed(e)
 
     def get(self, rel_url: str, params: dict, headers: dict) -> str:
         """Make a GET request."""
@@ -89,17 +117,21 @@ class SyncerSession(abc.ABC):
 class UsdbSession(SyncerSession):
     """Session class for USDB."""
 
-    logged_in: bool = False
-    username: str | None = None
-
-    @override
     def __init__(self, **kwargs: dict) -> None:
         super().__init__(base_url=constants.Usdb.BASE_URL, **kwargs)
+        self.username: str = ""
 
     @override
-    def conn_failed(self, response: Response) -> None:
+    def conn_failed(self, error: RequestException) -> None:
         """Handle connection failure."""
-        self.logged_in = False
+        # TODO handle connection failure (dns, timeout, etc.)
+        pass
+
+    @override
+    def conn_error(self, response: Response) -> None:
+        """Handle connection error."""
+        # TODO handle connection error (invalid response, etc.)
+        pass
 
     @override
     def handle_response(self, response: Response) -> str:
@@ -110,15 +142,24 @@ class UsdbSession(SyncerSession):
 
     @override
     def close(self) -> None:
+        """Close the session."""
+        # TODO decide whether to logout
+        self.username = ""
         super().close()
-        self.logged_in = False
-        self.username = None
 
-    def establish_login(self, *auth: Tuple[str, str]) -> bool:
+    def establish_login(self, auth: Tuple[str, str] | None = None) -> bool:
+        """Establish a login. Uses cookies first, then provided credentials or
+        credentials from settings.
+
+        Parameters:
+            auth (optional): tuple of username and password. If not provided, will use
+                the credentials from settings.
+        Returns:
+            True if login was successful, False otherwise.
+        """
         text = self.get("", params={"link": "profil"}, headers={})
         if username := usdb_scraper.username_from_html(text):
             self.username = username
-            self.logged_in = True
             return True
 
         if not auth:
@@ -135,18 +176,18 @@ class UsdbSession(SyncerSession):
         )
         if constants.UsdbStrings.LOGIN_INVALID not in text:
             self.username = username
-            self.logged_in = True
             return True
-        self.username = None
-        self.logged_in = False
+
+        self.username = ""
         return False
 
     def logout(self) -> None:
+        """Logout from the session."""
+        self.username = ""
         self.post("", params={"link": "logout"}, data={}, headers={})
-        self.logged_in = False
-        self.username = None
 
     def get_song_details(self, song_id: SongId) -> usdb_scraper.SongDetails:
+        """Get song details for a given song ID."""
         text = self.get(
             "index.php", params={"id": str(int(song_id)), "link": "detail"}, headers={}
         )
@@ -223,34 +264,31 @@ class UsdbSession(SyncerSession):
 
 class UsdbSessionManager:
     _session: UsdbSession | None = None
-    _connecting: bool = False
+    _lock: Lock = Lock()
 
     @classmethod
     def session(cls) -> UsdbSession:
-        while cls._connecting:
-            time.sleep(0.1)
-        if cls._session is None:
-            cls._connecting = True
-            try:
+        """Returns a logged-in session."""
+        with cls._lock:
+            if cls._session is None:
                 cls._session = UsdbSession()
                 cls._session.set_cookies(settings.get_browser())
                 cls._session.establish_login()
-            finally:
-                cls._connecting = False
-        return cls._session
+            return cls._session
 
     @classmethod
     def reset_session(cls) -> None:
-        if cls._session:
-            cls._session.close()
-            cls._session = None
+        with cls._lock:
+            if cls._session:
+                cls._session.close()
+                cls._session = None
 
     @classmethod
     def has_session(cls) -> bool:
         return cls._session is not None
 
 
-class GenericSession(SyncerSession):
+class _GenericSession(SyncerSession):
     """Generic session class for other sites."""
 
     @override
@@ -258,10 +296,17 @@ class GenericSession(SyncerSession):
         super().__init__(base_url=base_url)
 
     @override
-    def conn_failed(self, response: Response) -> None:
+    def conn_failed(self, error):
         """Handle connection failure."""
-        return None
+        # TODO handle connection failure (dns, timeout, etc.)
+        pass
+
+    @override
+    def conn_error(self, response: Response) -> None:
+        """Handle connection failure."""
+        # TODO handle connection error (invalid response, etc.)
+        pass
 
 
 def get_generic_session(base_url: str) -> SyncerSession:
-    return GenericSession(base_url)
+    return _GenericSession(base_url)
