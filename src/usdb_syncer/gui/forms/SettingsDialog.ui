@@ -435,7 +435,7 @@
             <item row="4" column="0">
              <widget class="QLabel" name="label_audio_instrumental">
               <property name="text">
-               <string>Stem separation:</string>
+               <string>Instrumental/vocals:</string>
               </property>
              </widget>
             </item>
