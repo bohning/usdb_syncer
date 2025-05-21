@@ -10,8 +10,8 @@ from PySide6.QtWidgets import QDialog, QDialogButtonBox, QFileDialog, QWidget
 from usdb_syncer import SongId, path_template, settings
 from usdb_syncer.gui import icons, theme
 from usdb_syncer.gui.forms.SettingsDialog import Ui_Dialog
+from usdb_syncer.net import UsdbSessionManager
 from usdb_syncer.path_template import PathTemplate
-from usdb_syncer.usdb_scraper import SessionManager
 from usdb_syncer.usdb_song import UsdbSong
 
 _FALLBACK_SONG = UsdbSong(
@@ -274,13 +274,17 @@ class SettingsDialog(Ui_Dialog, QDialog):
     def apply(self) -> None:
         self._save_settings()
         if self._browser != self.comboBox_browser.currentData():
-            SessionManager.reset_session()
+            UsdbSessionManager.session().set_cookies(
+                self.comboBox_browser.currentData()
+            )
 
     def accept(self) -> None:
         if not self._save_settings():
             return
         if self._browser != self.comboBox_browser.currentData():
-            SessionManager.reset_session()
+            UsdbSessionManager.session().set_cookies(
+                self.comboBox_browser.currentData()
+            )
         super().accept()
 
     def _save_settings(self) -> bool:

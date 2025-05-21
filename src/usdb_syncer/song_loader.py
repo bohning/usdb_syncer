@@ -25,9 +25,9 @@ from usdb_syncer import (
     errors,
     events,
     hooks,
+    net,
     resource_dl,
     settings,
-    usdb_scraper,
     utils,
 )
 from usdb_syncer.custom_data import CustomData
@@ -286,9 +286,10 @@ class _Context:
 def _get_usdb_data(
     song_id: SongId, txt_options: download_options.TxtOptions | None, log: Logger
 ) -> tuple[SongDetails, SongTxt]:
-    details = usdb_scraper.get_usdb_details(song_id)
+    session = net.UsdbSessionManager.session()
+    details = session.get_song_details(song_id)
     log.info(f"Found '{details.artist} - {details.title}' on USDB.")
-    txt_str = usdb_scraper.get_notes(details.song_id, log)
+    txt_str = session.get_notes(song_id)
     txt = SongTxt.parse(txt_str, log)
     txt.sanitize(txt_options)
     txt.headers.creator = txt.headers.creator or details.uploader or None

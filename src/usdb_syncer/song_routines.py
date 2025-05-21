@@ -9,7 +9,6 @@ from pathlib import Path
 
 import requests
 import send2trash
-from requests import Session
 
 from usdb_syncer import (
     SongId,
@@ -23,14 +22,14 @@ from usdb_syncer import (
     utils,
 )
 from usdb_syncer.logger import error_logger, logger
+from usdb_syncer.net import UsdbSessionManager
 from usdb_syncer.song_loader import DownloadManager
 from usdb_syncer.sync_meta import SyncMeta
-from usdb_syncer.usdb_scraper import get_usdb_available_songs
 from usdb_syncer.usdb_song import UsdbSong, UsdbSongEncoder
 from usdb_syncer.utils import AppPaths
 
 
-def load_available_songs(force_reload: bool, session: Session | None = None) -> None:
+def load_available_songs(force_reload: bool) -> None:
     if force_reload:
         max_skip_id = SongId(0)
         UsdbSong.delete_all()
@@ -38,7 +37,8 @@ def load_available_songs(force_reload: bool, session: Session | None = None) -> 
         UsdbSong.upsert_many(songs)
         max_skip_id = db.max_usdb_song_id()
     try:
-        songs = get_usdb_available_songs(max_skip_id, session=session)
+        session = UsdbSessionManager.session()
+        songs = session.get_usdb_available_songs(max_skip_id)
     except errors.UsdbLoginError:
         logger.debug("Skipping fetching new songs as there is no login.")
         return

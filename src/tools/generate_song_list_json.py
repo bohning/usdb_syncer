@@ -4,18 +4,16 @@ import argparse
 import sys
 from pathlib import Path
 
-from requests import Session
-
 from usdb_syncer import SongId, song_routines
-from usdb_syncer.usdb_scraper import get_usdb_available_songs, login_to_usdb
+from usdb_syncer.net import UsdbSessionManager
 
 
 def main(target: Path, user: str, password: str) -> None:
-    session = Session()
-    if not login_to_usdb(session, user, password):
+    session = UsdbSessionManager.session()
+    if not session.establish_login((user, password)):
         print("Invalid credentials!")
         sys.exit(1)
-    songs = get_usdb_available_songs(SongId(0), session=session)
+    songs = session.get_usdb_available_songs(SongId(0))
     song_routines.dump_available_songs(songs, target)
     print(f"{len(songs)} entries written to {target}.")
 

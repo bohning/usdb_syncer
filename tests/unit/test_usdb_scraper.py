@@ -7,9 +7,9 @@ from bs4 import BeautifulSoup
 
 from usdb_syncer import SongId
 from usdb_syncer.usdb_scraper import (
-    _parse_song_page,
-    _parse_song_txt_from_txt_page,
-    _parse_songs_from_songlist,
+    parse_song_page,
+    parse_song_txt_from_txt_page,
+    parse_songs_from_songlist,
 )
 
 
@@ -22,7 +22,7 @@ def get_soup(resource_dir: Path, resource: str) -> BeautifulSoup:
 
 def test__parse_song_txt_from_txt_page(resource_dir: Path) -> None:
     soup = get_soup(resource_dir, "txt_page.htm")
-    txt = _parse_song_txt_from_txt_page(soup)
+    txt = parse_song_txt_from_txt_page(soup)
     assert txt is not None
     assert txt.startswith("#ARTIST:")
     assert txt.endswith("\nE")
@@ -31,7 +31,7 @@ def test__parse_song_txt_from_txt_page(resource_dir: Path) -> None:
 def test__parse_song_page_with_commented_embedded_video(resource_dir: Path) -> None:
     song_id = SongId(26152)
     soup = get_soup(resource_dir, "song_page_with_embedded_video.htm")
-    details = _parse_song_page(soup, song_id)
+    details = parse_song_page(soup, song_id)
     assert details.song_id == song_id
     assert details.artist == "Revolverheld"
     assert details.title == "Ich lass für dich das Licht an"
@@ -65,7 +65,7 @@ def test__parse_song_page_with_commented_embedded_video(resource_dir: Path) -> N
 def test__parse_song_page_with_commented_unembedded_video(resource_dir: Path) -> None:
     song_id = SongId(16575)
     soup = get_soup(resource_dir, "song_page_with_unembedded_video.htm")
-    details = _parse_song_page(soup, song_id)
+    details = parse_song_page(soup, song_id)
     assert len(details.comments) == 1
     assert details.comments[0].contents.youtube_ids == ["WIAvMiUcCgw"]
 
@@ -73,7 +73,7 @@ def test__parse_song_page_with_commented_unembedded_video(resource_dir: Path) ->
 def test__parse_song_page_without_comments_or_cover(resource_dir: Path) -> None:
     song_id = SongId(26244)
     soup = get_soup(resource_dir, "song_page_without_comments_or_cover.htm")
-    details = _parse_song_page(soup, song_id)
+    details = parse_song_page(soup, song_id)
     assert details.song_id == song_id
     assert details.artist == "The Used"
     assert details.title == "River Stay"
@@ -95,10 +95,8 @@ def test__parse_song_page_without_comments_or_cover(resource_dir: Path) -> None:
 
 
 def test_parse_song_list(resource_dir: Path) -> None:
-    html = (resource_dir / "html" / "usdb-animux-de" / "song_list.htm").read_text(
-        encoding="utf8"
-    )
-    songs = list(_parse_songs_from_songlist(html))
+    html = (resource_dir / "html" / "song_list.htm").read_text(encoding="utf8")
+    songs = list(parse_songs_from_songlist(html))
     assert len(songs) == 3
     # first song: no audio sample, but cover image
     assert songs[0].sample_url == ""
