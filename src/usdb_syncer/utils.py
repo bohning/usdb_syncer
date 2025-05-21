@@ -55,7 +55,6 @@ def video_url_from_resource(resource: str) -> str | None:
 
 def _parse_polsy_html(html: str) -> list[str] | None:
     """Parses the HTML from polsy.org.uk and returns a list of allowed countries."""
-
     soup = BeautifulSoup(html, "lxml")
     allowed_countries = []
 
@@ -79,7 +78,6 @@ def _parse_polsy_html(html: str) -> list[str] | None:
 
 def get_allowed_countries(resource: str) -> list[str] | None:
     """Fetches YouTube video availability information from polsy.org.uk."""
-
     url = f"https://polsy.org.uk/stuff/ytrestrict.cgi?agreed=on&ytid={resource}"
     response = net.get_generic_session().get(url)
 
@@ -88,7 +86,6 @@ def get_allowed_countries(resource: str) -> list[str] | None:
 
 def remove_ansi_codes(text: str) -> str:
     """Removes ANSI escape codes from a string."""
-
     ansi_escape = re.compile(r"\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])")
     return ansi_escape.sub("", text)
 
@@ -141,7 +138,6 @@ def extract_youtube_id(url: str) -> str | None:
 
     Partially taken from `https://regexr.com/531i0`.
     """
-
     pattern = r"""
         (?:https?://)?
         (?:www\.)?
@@ -166,7 +162,6 @@ def extract_youtube_id(url: str) -> str | None:
 
 def extract_vimeo_id(url: str) -> str | None:
     """Extracts the Vimeo id from a variety of URLs."""
-
     pattern = r"""
         (?:https?://)?
         (?:

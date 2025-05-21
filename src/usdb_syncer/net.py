@@ -1,3 +1,10 @@
+"""Networking functionality for the syncer.
+
+Every networking operation should go
+through this module to ensure common headers, consistent error handling, and retry
+logic.
+"""
+
 import abc
 import time
 import urllib.parse
@@ -26,13 +33,14 @@ T = TypeVar("T")
 
 
 class SyncerSession(Generic[T], abc.ABC):
-    """Base session class."""
+    """Abstract base session class."""
 
     BASE_URL: str
     session: Session
 
     @abc.abstractmethod
     def __init__(self, base_url: str, **kwargs: dict) -> None:
+        """Initialize the session."""
         self.BASE_URL = base_url
         self.session = Session(**kwargs)
         self._lock = Lock()
@@ -41,12 +49,12 @@ class SyncerSession(Generic[T], abc.ABC):
 
     @abc.abstractmethod
     def conn_failed(self, error: RequestException) -> T:
-        """The connection failed with an exception. Handle it."""
+        """Handle connection failures."""
         raise NotImplementedError
 
     @abc.abstractmethod
     def conn_error(self, response: Response) -> None:
-        """The response has an invalid status code. Handle it."""
+        """Handle invalid status codes."""
         raise NotImplementedError
 
     @abc.abstractmethod
@@ -55,7 +63,12 @@ class SyncerSession(Generic[T], abc.ABC):
         raise NotImplementedError
 
     def set_cookies(self, browser: "settings.Browser") -> None:
-        """Set cookies for the session. Clears existing cookies."""
+        """Set cookies for the session. Clears existing cookies.
+
+        Args:
+            browser: The browser to get cookies from.
+
+        """
         with self._lock:
             self.session.cookies.clear()
             if jar := browser.cookies():
@@ -63,7 +76,12 @@ class SyncerSession(Generic[T], abc.ABC):
                     self.session.cookies.set_cookie(cookie)
 
     def set_headers(self, headers: dict) -> None:
-        """Set headers for the session. Does not clear existing headers."""
+        """Add new headers to the existing ones for the session.
+
+        Args:
+            headers: The headers to add
+
+        """
         with self._lock:
             self.session.headers.update(headers)
 
@@ -76,8 +94,24 @@ class SyncerSession(Generic[T], abc.ABC):
         headers: dict | None,
         params: dict | None,
     ) -> T:
-        """Make a request with retry capability. Calls conn_failed with the last
-        exception when all retries are exhausted."""
+        """Make a request with retry capability.
+
+        Calls handle_response to process the response.
+        Calls conn_failed with the last exception if all retries are exhausted.
+
+        Args:
+            method: The HTTP method to use.
+            rel_url: The relative URL to request. Merged with the base URL using
+                `urllib.parse.urljoin`.
+            data: The data to send with the request.
+            json: The JSON data to send with the request.
+            headers: The headers to send with the request.
+            params: The parameters to send with the request.
+
+        Returns:
+            An object defined by subclasses in handle_response.
+
+        """
         complete_url = urllib.parse.urljoin(self.BASE_URL, rel_url)
 
         retry_count = 0
@@ -115,7 +149,18 @@ class SyncerSession(Generic[T], abc.ABC):
     def get(
         self, rel_url: str, params: dict | None = None, headers: dict | None = None
     ) -> T:
-        """Make a GET request."""
+        """Make a GET request.
+
+        Args:
+            rel_url: The relative URL to request. Merged with the base URL using
+                `urllib.parse.urljoin`.
+            params: The parameters to send with the request.
+            headers: The headers to send with the request.
+
+        Returns:
+            An object defined by subclasses in handle_response.
+
+        """
         return self._request(
             "GET", rel_url, headers=headers, params=params, data=None, json=None
         )
@@ -128,7 +173,20 @@ class SyncerSession(Generic[T], abc.ABC):
         params: dict | None = None,
         headers: dict | None = None,
     ) -> T:
-        """Make a POST request."""
+        """Make a POST request.
+
+        Args:
+            rel_url: The relative URL to request. Merged with the base URL using
+                `urllib.parse.urljoin`.
+            data: The data to send with the request.
+            json: The JSON data to send with the request.
+            params: The parameters to send with the request.
+            headers: The headers to send with the request.
+
+        Returns:
+            An object defined by subclasses in handle_response.
+
+        """
         return self._request(
             "POST", rel_url, data=data, json=json, headers=headers, params=params
         )
@@ -139,7 +197,11 @@ class SyncerSession(Generic[T], abc.ABC):
 
 
 class _GenericSession(SyncerSession[Response]):
-    """Generic session class for other sites."""
+    """Generic session class for other sites.
+
+    This class is used for sites that do not require any special handling of
+    requests or responses.
+    """
 
     def __init__(self, base_url: str) -> None:
         super().__init__(base_url=base_url)
@@ -150,7 +212,12 @@ class _GenericSession(SyncerSession[Response]):
 
     @override
     def conn_failed(self, error: RequestException) -> Response:
-        """Handle connection failure."""
+        """Handle connection failure.
+
+        Returns:
+            Response: An empty response.
+
+        """
         # TODO handle connection failure (dns, timeout, etc.)
         return Response()
 
@@ -162,4 +229,13 @@ class _GenericSession(SyncerSession[Response]):
 
 
 def get_generic_session(base_url: str = "") -> _GenericSession:
+    """Get a generic session for the given base URL.
+
+    Args:
+        base_url(optional): The base URL for the session. Defaults to an empty string.
+
+    Returns:
+        _GenericSession: The generic session.
+
+    """
     return _GenericSession(base_url)

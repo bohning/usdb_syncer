@@ -74,7 +74,6 @@ class UsdbSession(SyncerSession[str]):
     @override
     def close(self) -> None:
         """Close the session."""
-        # TODO decide whether to logout
         self.username = ""
         super().close()
 
@@ -95,11 +94,15 @@ class UsdbSession(SyncerSession[str]):
     def establish_login(self, auth: Tuple[str, str] | None = None) -> bool:
         """Establish a login. Uses cookies first, then provided credentials.
 
-        Parameters:
+        Args:
             auth (optional): tuple of username and password.
+
         Returns:
             True if login was successful, False otherwise.
+
         """
+        # TODO: we could use https://usdb.animux.de/whoami.php instead of this stupid
+        # solution. Actually, we really should, I just haven't done it yet.
         text = self.get("", params={"link": "profil"})
         if username := username_from_html(text):
             self.username = username
@@ -111,7 +114,11 @@ class UsdbSession(SyncerSession[str]):
             return self.manual_login(*auth)
 
     def logout(self) -> None:
-        """Logout from the session."""
+        """Log out from the session.
+
+        Note that, obviously, if cookies are used, this logs out the user from their
+        browser as well.
+        """
         self.username = ""
         self.post("", params={"link": "logout"})
 
@@ -125,9 +132,10 @@ class UsdbSession(SyncerSession[str]):
     ) -> list[UsdbSong]:
         """Return a list of all available songs.
 
-        Parameters:
+        Args:
             max_skip_id: only fetch ids larger than this
             content_filter: filters response (e.g. {'artist': 'The Beatles'})
+
         """
         available_songs: list[UsdbSong] = []
         payload = {
@@ -183,12 +191,22 @@ class UsdbSession(SyncerSession[str]):
 
 
 class UsdbSessionManager:
+    """Manages the global USDB session."""
+
     _session: UsdbSession | None = None
     _lock: Lock = Lock()
 
     @classmethod
     def session(cls) -> UsdbSession:
-        """Returns a logged-in session."""
+        """Return a logged-in session.
+
+        If no session exists, create a new one and login.
+        If a session exists, return it.
+
+        Returns:
+            UsdbSession: The logged-in session.
+
+        """
         with cls._lock:
             if cls._session is None:
                 cls._session = UsdbSession()
@@ -198,6 +216,7 @@ class UsdbSessionManager:
 
     @classmethod
     def reset_session(cls) -> None:
+        """Reset the session."""
         with cls._lock:
             if cls._session:
                 cls._session.close()
@@ -205,6 +224,12 @@ class UsdbSessionManager:
 
     @classmethod
     def has_session(cls) -> bool:
+        """Check if a session exists.
+
+        Returns:
+            bool: True if a session exists, False otherwise.
+
+        """
         return cls._session is not None
 
 
@@ -234,8 +259,11 @@ class SongComment:
 
 @attrs.define
 class SongDetails:
-    """Details about a song that USDB shows on a song's page, or are specified in the
-    comment section."""
+    """Details about a song.
+
+    This combines details that USDB shows on a song's page and those specified in the
+    comment section.
+    """
 
     song_id: SongId
     artist: str
@@ -259,8 +287,13 @@ class SongDetails:
     comments: list[SongComment] = attrs.field(factory=list)
 
     def all_comment_videos(self) -> Iterator[str]:
-        """Yields all parsed URLs and YouTube ids. Order is latest to earliest, then ids
-        before URLs.
+        """Get all parsed URLs and YouTube ids.
+
+        Order is latest to earliest, then ids before URLs.
+
+        Yields:
+            str: URLs and YouTube ids from all comments.
+
         """
         for comment in self.comments:
             yield from comment.contents.youtube_ids
@@ -268,6 +301,15 @@ class SongDetails:
 
 
 def username_from_html(html: str) -> str | None:
+    """Extract the username from the HTML page.
+
+    Args:
+        html (str): The HTML content of the main USDB page.
+
+    Returns:
+        str | None: The username if found, otherwise None.
+
+    """
     if match := WELCOME_REGEX.search(html):
         return match.group(2)
     return None
@@ -333,9 +375,11 @@ def _parse_details_table(
 ) -> SongDetails:
     """Parse song attributes from usdb page.
 
-    Parameters:
+    Parameters
+    ----------
         details: dict of song attributes
         details_table: BeautifulSoup object of song details table
+
     """
     editors = []
     pointer = details_table.find(string=usdb_strings.SONG_EDITED_BY)

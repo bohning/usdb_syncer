@@ -75,7 +75,7 @@ def download_audio(
 ) -> ResourceDLResult:
     """Download audio from resource to path and process it according to options.
 
-    Parameters:
+    Args:
         resource: URL or YouTube id
         options: parameters for downloading and processing
         browser: browser to use cookies from
@@ -85,6 +85,7 @@ def download_audio(
     Returns:
         DownloadResult with the extension of the (postprocessed, possibly normalized)
         audio file, if successful
+
     """
     ydl_opts = _ytdl_options(
         options.ytdl_format(), browser, path_stem, options.rate_limit
@@ -123,7 +124,7 @@ def download_video(
 ) -> ResourceDLResult:
     """Download video from resource to path and process it according to options.
 
-    Parameters:
+    Args:
         resource: URL or YouTube id
         options: parameters for downloading and processing
         browser: browser to use cookies from
@@ -131,6 +132,7 @@ def download_video(
 
     Returns:
         DownloadResult with the extension of the downloaded file if successful
+
     """
     ydl_opts = _ytdl_options(
         options.ytdl_format(), browser, path_stem, options.rate_limit
