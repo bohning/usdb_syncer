@@ -22,7 +22,7 @@ from usdb_syncer.logger import logger
 
 from . import sql
 
-SCHEMA_VERSION = 7
+SCHEMA_VERSION = 6
 
 # https://www.sqlite.org/limits.html
 _SQL_VARIABLES_LIMIT = 32766
