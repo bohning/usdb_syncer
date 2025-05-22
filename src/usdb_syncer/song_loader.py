@@ -717,7 +717,6 @@ def _maybe_separate_stems(ctx: _Context) -> None:
     ):
         return
     if not (ctx.song.sync_meta):
-        print("return because no sync_meta")
         return
 
     model = audio_options.stem_separation.value
