@@ -730,34 +730,36 @@ def _maybe_separate_stems(ctx: _Context) -> None:
         f"{ctx.locations._tempdir}",
     ])
     # Transcode instrumental and vocals files to target format via ffmpeg
-    instrumental_input = str(ctx.locations.stem_separation_instrumental_path(model))
-    instrumental_output = (
-        f"{ctx.locations.temp_path()} [INSTR].{audio_options.format.value}"
+    instrumental_input = ctx.locations.stem_separation_instrumental_path(model)
+    instrumental_output = ctx.locations.temp_path(
+        ext=f" [INSTR].{audio_options.format.value}"
     )
     transcode_audio(audio_options, instrumental_input, instrumental_output)
     ctx.out.instrumental.resource = ctx.out.audio.resource
-    ctx.out.instrumental.new_fname = (
-        f"{ctx.locations.filename()} [INSTR].{audio_options.format.value}"
-    )
+    ctx.out.instrumental.new_fname = Path(instrumental_output).name
 
-    vocals_input = str(ctx.locations.stem_separation_vocals_path(model))
-    vocals_output = f"{ctx.locations.temp_path()} [VOC].{audio_options.format.value}"
+    vocals_input = ctx.locations.stem_separation_vocals_path(model)
+    vocals_output = ctx.locations.temp_path(ext=f" [VOC].{audio_options.format.value}")
     transcode_audio(audio_options, vocals_input, vocals_output)
     ctx.out.vocals.resource = ctx.out.audio.resource
-    ctx.out.vocals.new_fname = (
-        f"{ctx.locations.filename()} [VOC].{audio_options.format.value}"
-    )
-    ctx.logger.info("Success! Separated audio file into vocals and instrumental.")
+    ctx.out.vocals.new_fname = Path(vocals_output).name
+    ctx.logger.info("Success! Separated audio file into instrumental and vocals.")
 
 
 def transcode_audio(
-    audio_options: download_options.AudioOptions, src: str, dst: str
+    audio_options: download_options.AudioOptions, src: Path, dst: Path
 ) -> None:
     ffmpeg = (
         FFmpeg()
         .option("y")
-        .input(src)
-        .output(dst, {"codec:a": audio_options.format.ffmpeg_encoder()})
+        .input(str(src))
+        .output(
+            str(dst),
+            {
+                "codec:a": audio_options.format.ffmpeg_encoder(),
+                "b:a": f"{audio_options.bitrate.ffmpeg_format()}",
+            },
+        )
     )
     ffmpeg.execute()
 
