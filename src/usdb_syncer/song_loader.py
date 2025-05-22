@@ -172,10 +172,10 @@ class _Locations:
             self._target.parent.mkdir(parents=True, exist_ok=True)
 
     def stem_separation_instrumental_path(self, model: str) -> Path:
-        return Path(self._tempdir / model / self.filename() / "no_vocals.wav")
+        return self._tempdir / model / self.filename() / "no_vocals.wav"
 
     def stem_separation_vocals_path(self, model: str) -> Path:
-        return Path(self._tempdir / model / self.filename() / "vocals.wav")
+        return self._tempdir / model / self.filename() / "vocals.wav"
 
 
 @attrs.define
@@ -651,31 +651,17 @@ def _set_audio_headers(ctx: _Context, version: FormatVersion, path: Path) -> Non
 def _set_instrumental_headers(
     ctx: _Context, version: FormatVersion, path: Path
 ) -> None:
-    match version:
-        case FormatVersion.V1_0_0:
-            # not supported in this version
-            ctx.logger.warning(f"Instrumental not supported in {version}.")
-            pass
-        case FormatVersion.V1_1_0:
-            ctx.txt.headers.instrumental = path.name
-        case FormatVersion.V1_2_0:
-            ctx.txt.headers.instrumental = path.name
-        case _ as unreachable:
-            assert_never(unreachable)
+    if version >= FormatVersion.V1_1_0:
+        ctx.txt.headers.instrumental = path.name
+    else:
+        ctx.logger.warning(f"Instrumental not supported in {version}.")
 
 
 def _set_vocals_headers(ctx: _Context, version: FormatVersion, path: Path) -> None:
-    match version:
-        case FormatVersion.V1_0_0:
-            # not supported in this version
-            ctx.logger.warning(f"Vocals not supported in {version}.")
-            pass
-        case FormatVersion.V1_1_0:
-            ctx.txt.headers.vocals = path.name
-        case FormatVersion.V1_2_0:
-            ctx.txt.headers.vocals = path.name
-        case _ as unreachable:
-            assert_never(unreachable)
+    if version >= FormatVersion.V1_1_0:
+        ctx.txt.headers.vocals = path.name
+    else:
+        ctx.logger.warning(f"Vocals not supported in {version}.")
 
 
 def _set_video_headers(ctx: _Context, version: FormatVersion, path: Path) -> None:
@@ -726,11 +712,12 @@ def _maybe_write_audio_tags(ctx: _Context) -> None:
 
 
 def _maybe_separate_stems(ctx: _Context) -> None:
-    if not (audio_options := ctx.options.audio_options):  # or not (
-        # meta := ctx.song.sync_meta.audio
-        # ):
+    if not (audio_options := ctx.options.audio_options) or (
+        audio_options.stem_separation == AudioStemSeparation.DISABLE
+    ):
         return
-    if audio_options.stem_separation == AudioStemSeparation.DISABLE:
+    if not (ctx.song.sync_meta):
+        print("return because no sync_meta")
         return
 
     model = audio_options.stem_separation.value
@@ -741,12 +728,10 @@ def _maybe_separate_stems(ctx: _Context) -> None:
         model,
         f"{ctx.out.audio.path(ctx.locations, temp=True)}",
         "-o",
-        f"{ctx.locations._tempdir.as_posix()}",
+        f"{ctx.locations._tempdir}",
     ])
     # Transcode instrumental and vocals files to target format via ffmpeg
-    instrumental_input = ctx.locations.stem_separation_instrumental_path(
-        model
-    ).as_posix()
+    instrumental_input = str(ctx.locations.stem_separation_instrumental_path(model))
     instrumental_output = (
         f"{ctx.locations.temp_path()} [INSTR].{audio_options.format.value}"
     )
@@ -756,7 +741,7 @@ def _maybe_separate_stems(ctx: _Context) -> None:
         f"{ctx.locations.filename()} [INSTR].{audio_options.format.value}"
     )
 
-    vocals_input = ctx.locations.stem_separation_vocals_path(model).as_posix()
+    vocals_input = str(ctx.locations.stem_separation_vocals_path(model))
     vocals_output = f"{ctx.locations.temp_path()} [VOC].{audio_options.format.value}"
     transcode_audio(audio_options, vocals_input, vocals_output)
     ctx.out.vocals.resource = ctx.out.audio.resource
