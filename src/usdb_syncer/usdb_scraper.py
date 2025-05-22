@@ -5,7 +5,6 @@ import re
 from collections.abc import Iterator
 from datetime import datetime
 from threading import Lock
-from time import time
 from typing import Any, Tuple, cast, override
 
 import attrs
@@ -95,13 +94,10 @@ class UsdbSession(SyncerSession[str]):
         """Try to login with the provided credentials."""
         if not username or not password:
             return False
-        t = time()
         text = self.post(
             "", data={"user": username, "pass": password, "login": "Login"}
         )
-        print(len(text))
         if UsdbStrings.NOT_LOGGED_IN not in text:
-            print(f"Login took {time() - t:.2f} seconds")
             self.username = username
             return True
 
@@ -118,14 +114,10 @@ class UsdbSession(SyncerSession[str]):
 
         """
         username = cast(dict[str, str], json.loads(self.get("whoami.php"))).get(
-            "username", None
+            "username", ""
         )
-        if username:
-            self.username = username
-            return True
-
-        self.username = ""
-        return False
+        self.username = username
+        return bool(username)
 
     def establish_login(self, auth: Tuple[str, str] | None = None) -> bool:
         """Establish a login. Uses cookies first, then provided credentials.
@@ -342,10 +334,10 @@ def username_from_html(html: str) -> str | None:
     """Extract the username from the HTML page.
 
     Args:
-        html (str): The HTML content of the main USDB page.
+        html: The HTML content of the main USDB page.
 
     Returns:
-        str | None: The username if found, otherwise None.
+        The username if found, otherwise None.
 
     """
     if match := WELCOME_REGEX.search(html):
@@ -469,7 +461,7 @@ def _parse_details_table(
         uploader=_find_text_after(details_table, usdb_strings.UPLOADED_BY),
         editors=editors,
         views=int(_find_text_after(details_table, usdb_strings.VIEWS)),
-        rating=sum("star.png" in s.get("src") for s in stars),
+        rating=sum("star.png" in s.get("src") for s in stars),  # type: ignore
         votes=int(votes_str.split("(")[1].split(")")[0]),
         audio_sample=audio_sample or None,
     )
