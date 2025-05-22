@@ -14,6 +14,7 @@ class UsdbLoginDialog(Ui_Dialog, QDialog):
 
     def __init__(self, parent: QWidget) -> None:
         super().__init__(parent=parent)
+        self.session = usdb_scraper.UsdbSession()
         self._parent = parent
         self.setupUi(self)
         self.command_link_register.pressed.connect(
@@ -45,20 +46,28 @@ class UsdbLoginDialog(Ui_Dialog, QDialog):
         super().accept()
 
     def _on_check_login(self) -> None:
-        session = usdb_scraper.UsdbSession()
-        session.set_cookies(self.combobox_browser.currentData())
-        if session.establish_login():
-            message = f"Success! Existing session found with user '{session.username}'."
-        elif (user := self.line_edit_username.text()) and (
-            password := self.line_edit_password.text()
-        ):
-            if session.manual_login(user, password):
-                message = "Success! Logged in to USDB."
-            else:
-                message = "Login failed!"
+        self.session.clear_cookies()
+        self.session.set_cookies(self.combobox_browser.currentData())
+        if self.session.establish_login():
+            message = (
+                f"Success! Existing browser session found with user "
+                f"'{self.session.username}'."
+            )
         else:
-            message = "No existing session found!"
+            message = "No existing browser session found."
+
+            if (user := self.line_edit_username.text()) and (
+                password := self.line_edit_password.text()
+            ):
+                if self.session.manual_login(user, password):
+                    message = (
+                        f"Success! Logged in to USDB with user "
+                        f"'{self.session.username}'."
+                    )
+                else:
+                    message = "Login failed. Please check your credentials."
+
         QMessageBox.information(self._parent, "Login Result", message)
 
     def _on_log_out(self) -> None:
-        usdb_scraper.UsdbSessionManager.session().logout()
+        self.session.logout()

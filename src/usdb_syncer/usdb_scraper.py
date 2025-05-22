@@ -1,10 +1,12 @@
 """Functionality related to the usdb.animux.de web page."""
 
+import json
 import re
 from collections.abc import Iterator
 from datetime import datetime
 from threading import Lock
-from typing import Any, Tuple, override
+from time import time
+from typing import Any, Tuple, cast, override
 
 import attrs
 from bs4 import BeautifulSoup, NavigableString, Tag
@@ -20,7 +22,7 @@ from usdb_syncer.constants import (
     UsdbStringsFrench,
     UsdbStringsGerman,
 )
-from usdb_syncer.logger import Logger, song_logger
+from usdb_syncer.logger import Logger, logger, song_logger
 from usdb_syncer.net import SyncerSession
 from usdb_syncer.usdb_song import UsdbSong
 from usdb_syncer.utils import extract_youtube_id, normalize
@@ -50,7 +52,7 @@ class UsdbSession(SyncerSession[str]):
 
     def __init__(self, **kwargs: dict) -> None:
         super().__init__(base_url=Usdb.BASE_URL, **kwargs)
-        self.username: str = ""
+        self._username: str = ""
 
     @override
     def conn_failed(self, error: RequestException) -> str:
@@ -67,6 +69,7 @@ class UsdbSession(SyncerSession[str]):
     @override
     def handle_response(self, response: Response) -> str:
         """Handle response."""
+        self.set_cookies(response.cookies)
         page = normalize(response.text)
         # TODO handle errors
         return page
@@ -77,14 +80,47 @@ class UsdbSession(SyncerSession[str]):
         self.username = ""
         super().close()
 
+    @property
+    def username(self) -> str:
+        """Get the username of the logged-in user."""
+        return self._username
+
+    @username.setter
+    def username(self, value: str) -> None:
+        """Set the username of the logged-in user."""
+        self._username = value
+        logger.debug(f"Username set to {value or 'None'}.")
+
     def manual_login(self, username: str, password: str) -> bool:
         """Try to login with the provided credentials."""
         if not username or not password:
             return False
+        t = time()
         text = self.post(
             "", data={"user": username, "pass": password, "login": "Login"}
         )
-        if UsdbStrings.LOGIN_INVALID not in text:
+        print(len(text))
+        if UsdbStrings.NOT_LOGGED_IN not in text:
+            print(f"Login took {time() - t:.2f} seconds")
+            self.username = username
+            return True
+
+        self.username = ""
+        return False
+
+    def cookie_login_exists(self) -> bool:
+        """Check if a login exists using session cookies.
+
+        Uses the cookies stored in this session.
+
+        Returns:
+            True if login was successful, False otherwise.
+
+        """
+        username = cast(dict[str, str], json.loads(self.get("whoami.php"))).get(
+            "username", None
+        )
+        if username:
             self.username = username
             return True
 
@@ -101,17 +137,19 @@ class UsdbSession(SyncerSession[str]):
             True if login was successful, False otherwise.
 
         """
-        # TODO: we could use https://usdb.animux.de/whoami.php instead of this stupid
-        # solution. Actually, we really should, I just haven't done it yet.
-        text = self.get("", params={"link": "profil"})
-        if username := username_from_html(text):
-            self.username = username
+        if self.cookie_login_exists():
+            logger.info(
+                f"Using existing browser session for USDB with user '{self.username}'."
+            )
             return True
-
         if not auth:
+            logger.debug("Login with browser session failed. Try setting credentials.")
             return False
-        else:
-            return self.manual_login(*auth)
+        if self.manual_login(*auth):
+            logger.info(f"Logged in to USDB with user '{self.username}'.")
+            return True
+        logger.error("Login failed. Please check your credentials.")
+        return False
 
     def logout(self) -> None:
         """Log out from the session.

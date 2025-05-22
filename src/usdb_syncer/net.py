@@ -12,7 +12,10 @@ from threading import Lock
 from typing import TYPE_CHECKING, Generic, TypeVar, override
 
 from requests import Response, Session
+from requests.cookies import RequestsCookieJar
 from requests.exceptions import RequestException
+
+from usdb_syncer.logger import logger
 
 if TYPE_CHECKING:
     from usdb_syncer import settings
@@ -62,18 +65,25 @@ class SyncerSession(Generic[T], abc.ABC):
         """Handle the response."""
         raise NotImplementedError
 
-    def set_cookies(self, browser: "settings.Browser") -> None:
-        """Set cookies for the session. Clears existing cookies.
+    def clear_cookies(self) -> None:
+        """Clear all cookies for the session."""
+        with self._lock:
+            self.session.cookies.clear()
+
+    def set_cookies(self, cookiejar: "settings.Browser | RequestsCookieJar") -> None:
+        """Add cookies to the session..
 
         Args:
             browser: The browser to get cookies from.
 
         """
+        if not isinstance(cookiejar, RequestsCookieJar):
+            cookies = cookiejar.cookies()
+        else:
+            cookies = cookiejar
         with self._lock:
-            self.session.cookies.clear()
-            if jar := browser.cookies():
-                for cookie in jar:
-                    self.session.cookies.set_cookie(cookie)
+            for cookie in cookies or []:
+                self.session.cookies.set_cookie(cookie)
 
     def set_headers(self, headers: dict) -> None:
         """Add new headers to the existing ones for the session.
@@ -140,6 +150,11 @@ class SyncerSession(Generic[T], abc.ABC):
 
             except RequestException as e:
                 if retry_count < REQUEST_MAX_RETRIES:
+                    logger.debug(
+                        (f"{type(e)}. Retrying {method} request to {complete_url} "
+                         f"({retry_count + 1}/{REQUEST_MAX_RETRIES}) in "
+                         f"{current_delay:.1f}s")
+                    )
                     time.sleep(current_delay)
                     current_delay *= REQUEST_RETRY_BACKOFF
                     retry_count += 1
