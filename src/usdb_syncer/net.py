@@ -56,11 +56,6 @@ class SyncerSession(Generic[T], abc.ABC):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def conn_error(self, response: Response) -> None:
-        """Handle invalid status codes."""
-        raise NotImplementedError
-
-    @abc.abstractmethod
     def handle_response(self, response: Response) -> T:
         """Handle the response."""
         raise NotImplementedError
@@ -77,6 +72,7 @@ class SyncerSession(Generic[T], abc.ABC):
             browser: The browser to get cookies from.
 
         """
+        # The unintuitive `not isinstance` allows us to not import settings
         if not isinstance(cookiejar, RequestsCookieJar):
             cookies = cookiejar.cookies()
         else:
@@ -139,25 +135,22 @@ class SyncerSession(Generic[T], abc.ABC):
                     timeout=REQUEST_TIMEOUT,
                 )
 
-                if response.ok:
-                    response.encoding = "utf-8"
-                    return self.handle_response(response)
-
-                # Response not ok
-                self.conn_error(response)
                 response.encoding = "utf-8"
+
                 return self.handle_response(response)
 
             except RequestException as e:
                 if retry_count < REQUEST_MAX_RETRIES:
+                    retry_count += 1
                     logger.debug(
-                        (f"{type(e)}. Retrying {method} request to {complete_url} "
-                         f"({retry_count + 1}/{REQUEST_MAX_RETRIES}) in "
-                         f"{current_delay:.1f}s")
+                        (
+                            f"{e!s} while accessing {complete_url}. Retry "
+                            f"({retry_count}/{REQUEST_MAX_RETRIES}) in "
+                            f"{current_delay:.1f}s"
+                        )
                     )
                     time.sleep(current_delay)
                     current_delay *= REQUEST_RETRY_BACKOFF
-                    retry_count += 1
                     continue
                 return self.conn_failed(e)
 
@@ -223,6 +216,18 @@ class _GenericSession(SyncerSession[Response]):
 
     @override
     def handle_response(self, response: Response) -> Response:
+        """Handle the response.
+
+        Response might not be ok.
+
+        Args:
+            response: The response to handle.
+
+        Returns:
+            Response: The response.
+
+        """
+        # TODO handle invalid status codes
         return response
 
     @override
@@ -235,12 +240,6 @@ class _GenericSession(SyncerSession[Response]):
         """
         # TODO handle connection failure (dns, timeout, etc.)
         return Response()
-
-    @override
-    def conn_error(self, response: Response) -> None:
-        """Handle connection failure."""
-        # TODO handle connection error (invalid response, etc.)
-        pass
 
 
 def get_generic_session(base_url: str = "") -> _GenericSession:

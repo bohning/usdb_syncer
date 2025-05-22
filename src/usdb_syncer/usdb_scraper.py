@@ -52,26 +52,23 @@ class UsdbSession(SyncerSession[str]):
     def __init__(self, **kwargs: dict) -> None:
         super().__init__(base_url=Usdb.BASE_URL, **kwargs)
         self._username: str = ""
+        self._connected: bool = False
+
+    @override
+    def handle_response(self, response: Response) -> str:
+        """Handle response."""
+        if not self.connected:
+            self.connected = True
+        page = normalize(response.text)
+        # TODO handle invalid status codes
+        return page
 
     @override
     def conn_failed(self, error: RequestException) -> str:
         """Handle connection failure."""
         # TODO handle connection failure (dns, timeout, etc.)
+        self.connected = False
         return ""
-
-    @override
-    def conn_error(self, response: Response) -> None:
-        """Handle connection error."""
-        # TODO handle connection error (invalid response, etc.)
-        pass
-
-    @override
-    def handle_response(self, response: Response) -> str:
-        """Handle response."""
-        self.set_cookies(response.cookies)
-        page = normalize(response.text)
-        # TODO handle errors
-        return page
 
     @override
     def close(self) -> None:
@@ -90,6 +87,16 @@ class UsdbSession(SyncerSession[str]):
         self._username = value
         logger.debug(f"Username set to {value or 'None'}.")
 
+    @property
+    def connected(self) -> bool:
+        """Check if the session is connected."""
+        return self._connected
+
+    @connected.setter
+    def connected(self, value: bool) -> None:
+        """Set the connection status of the session."""
+        self._connected = value
+
     def manual_login(self, username: str, password: str) -> bool:
         """Try to login with the provided credentials."""
         if not username or not password:
@@ -98,7 +105,8 @@ class UsdbSession(SyncerSession[str]):
             "", data={"user": username, "pass": password, "login": "Login"}
         )
         if UsdbStrings.NOT_LOGGED_IN not in text:
-            self.username = username
+            if self.username != username:
+                self.username = username
             return True
 
         self.username = ""
@@ -116,7 +124,8 @@ class UsdbSession(SyncerSession[str]):
         username = cast(dict[str, str], json.loads(self.get("whoami.php"))).get(
             "username", ""
         )
-        self.username = username
+        if self.username != username:
+            self.username = username
         return bool(username)
 
     def establish_login(self, auth: Tuple[str, str] | None = None) -> bool:
