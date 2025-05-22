@@ -34,8 +34,8 @@ class Headers:
     mp3: str | None = None
     audio: str | None = None
     audiourl: str | None = None
-    vocals: str | None = None
     instrumental: str | None = None
+    vocals: str | None = None
     cover: str | None = None
     coverurl: str | None = None
     background: str | None = None
@@ -105,8 +105,8 @@ class Headers:
                 "mp3",
                 "audio",
                 "audiourl",
-                "vocals",
                 "instrumental",
+                "vocals",
                 "cover",
                 "coverurl",
                 "background",
@@ -213,8 +213,8 @@ def _set_header_value(kwargs: dict[str, Any], header: str, value: str) -> None:
         "mp3",
         "audio",
         "audiourl",
-        "vocals",
         "instrumental",
+        "vocals",
         "cover",
         "coverurl",
         "background",

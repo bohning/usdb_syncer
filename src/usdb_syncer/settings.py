@@ -175,6 +175,7 @@ class SettingKey(Enum):
     AUDIO_BITRATE = "downloads/audio_bitrate"
     AUDIO_NORMALIZATION = "downloads/audio_normalization"
     AUDIO_EMBED_ARTWORK = "downloads/audio_embed_artwork"
+    AUDIO_STEM_SEPARATION = "downloads/audio_stem_separation"
     VIDEO = "downloads/video"
     VIDEO_FORMAT = "downloads/video_format"
     VIDEO_REENCODE = "downloads/video_reencode"
@@ -435,6 +436,25 @@ class AudioNormalization(Enum):
         if self.value is not None:
             return self.value
         return "disabled"
+
+
+class AudioStemSeparation(Enum):
+    """Audio stem separation options (disable or model to use)"""
+
+    DISABLE = None
+    HTDEMUCS = "htdemucs"
+    HTDEMUCS_FT = "htdemucs_ft"
+
+    def __str__(self) -> str:
+        match self:
+            case AudioStemSeparation.DISABLE:
+                return "disabled"
+            case AudioStemSeparation.HTDEMUCS:
+                return "htdemucs (much faster, lower quality)"
+            case AudioStemSeparation.HTDEMUCS_FT:
+                return "htdemucs_ft (much slower, higher quality)"
+            case _ as unreachable:
+                assert_never(unreachable)
 
 
 class Browser(Enum):
@@ -841,6 +861,14 @@ def get_audio_embed_artwork() -> bool:
 
 def set_audio_embed_artwork(value: bool, temp: bool = False) -> None:
     _Settings.set(SettingKey.AUDIO_EMBED_ARTWORK, value, temp)
+
+
+def get_audio_stem_separation() -> AudioStemSeparation:
+    return _Settings.get(SettingKey.AUDIO_STEM_SEPARATION, AudioStemSeparation.DISABLE)
+
+
+def set_audio_stem_separation(value: bool) -> None:
+    _Settings.set(SettingKey.AUDIO_STEM_SEPARATION, value)
 
 
 def get_encoding() -> Encoding:
