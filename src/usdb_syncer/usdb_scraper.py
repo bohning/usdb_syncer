@@ -112,7 +112,6 @@ class UsdbSession(SyncerSession[str]):
                 self.username = username
             return True
 
-        self.username = ""
         return False
 
     def cookie_login_exists(self) -> bool:
@@ -127,7 +126,7 @@ class UsdbSession(SyncerSession[str]):
         username = cast(dict[str, str], json.loads(self.get("whoami.php"))).get(
             "username", ""
         )
-        if self.username != username:
+        if username and self.username != username:
             self.username = username
         return bool(username)
 

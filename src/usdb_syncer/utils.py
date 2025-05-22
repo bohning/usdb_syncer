@@ -254,7 +254,10 @@ def add_to_system_path(path: str) -> None:
 
 def normalize(text: str) -> str:
     """Return the Unicode NFC form of the string."""
-    return unicodedata.normalize("NFC", text)
+    t = time.time()
+    out = unicodedata.normalize("NFC", text)
+    print(f"normalize took {time.time() - t:.3f}s")
+    return out
 
 
 def normalize_path(path: Path) -> Path:

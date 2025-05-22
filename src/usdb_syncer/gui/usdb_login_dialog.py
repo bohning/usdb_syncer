@@ -48,7 +48,7 @@ class UsdbLoginDialog(Ui_Dialog, QDialog):
     def _on_check_login(self) -> None:
         self.session.clear_cookies()
         self.session.set_cookies(self.combobox_browser.currentData())
-        if self.session.establish_login():
+        if self.session.cookie_login_exists():
             message = (
                 f"Success! Existing browser session found with user "
                 f"'{self.session.username}'."
