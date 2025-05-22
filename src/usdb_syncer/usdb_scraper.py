@@ -77,6 +77,7 @@ class UsdbSession(SyncerSession[str]):
     def close(self) -> None:
         """Close the session."""
         self.username = ""
+        self.connected = False
         super().close()
 
     @property

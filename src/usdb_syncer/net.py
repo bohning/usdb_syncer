@@ -201,6 +201,7 @@ class SyncerSession(Generic[T], abc.ABC):
 
     def close(self) -> None:
         """Close the session."""
+        self.clear_cookies()
         self.session.close()
 
 
