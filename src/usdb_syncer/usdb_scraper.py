@@ -5,7 +5,7 @@ import re
 from collections.abc import Iterator
 from datetime import datetime
 from threading import Lock
-from typing import Any, Tuple, cast, override
+from typing import Any, cast, override
 
 import attrs
 from bs4 import BeautifulSoup, NavigableString, Tag
@@ -124,14 +124,14 @@ class UsdbSession(SyncerSession[str]):
             True if login was successful, False otherwise.
 
         """
-        username = cast(dict[str, str], json.loads(self.get("whoami.php"))).get(
+        username = cast(dict, json.loads(self.get("whoami.php") or "{}")).get(
             "username", ""
         )
-        if username and self.username != username:
+        if ret := username and self.username != username:
             self.username = username
-        return bool(username)
+        return ret
 
-    def establish_login(self, auth: Tuple[str, str] | None = None) -> bool:
+    def establish_login(self, auth: tuple[str, str] | None = None) -> bool:
         """Establish a login. Uses cookies first, then provided credentials.
 
         Args:
@@ -152,7 +152,7 @@ class UsdbSession(SyncerSession[str]):
         if self.manual_login(*auth):
             logger.info(f"Logged in to USDB with user '{self.username}'.")
             return True
-        logger.error("Login failed. Please check your credentials.")
+        logger.debug("Login with credentials failed.")
         return False
 
     def logout(self) -> None:
@@ -253,7 +253,13 @@ class UsdbSessionManager:
             if cls._session is None:
                 cls._session = UsdbSession()
                 cls._session.set_cookies(settings.get_browser())
-                cls._session.establish_login(settings.get_usdb_auth())
+                if not cls._session.establish_login(settings.get_usdb_auth()):
+                    logger.warning(
+                        "Not logged in to USDB. Please go to 'USDB > USDB "
+                        "Login', then select the browser you are logged in "
+                        "with and/or enter your credentials. If you have "
+                        "done this already, check the debug log for errors."
+                    )
             return cls._session
 
     @classmethod
@@ -417,8 +423,7 @@ def _parse_details_table(
 ) -> SongDetails:
     """Parse song attributes from usdb page.
 
-    Parameters
-    ----------
+    Args:
         details: dict of song attributes
         details_table: BeautifulSoup object of song details table
 
