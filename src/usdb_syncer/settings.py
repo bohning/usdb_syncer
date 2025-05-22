@@ -450,9 +450,9 @@ class AudioStemSeparation(Enum):
             case AudioStemSeparation.DISABLE:
                 return "disabled"
             case AudioStemSeparation.HTDEMUCS:
-                return "htdemucs (faster, lower quality)"
+                return "htdemucs (much faster, lower quality)"
             case AudioStemSeparation.HTDEMUCS_FT:
-                return "htdemucs_ft (slower, higher quality)"
+                return "htdemucs_ft (much slower, higher quality)"
             case _ as unreachable:
                 assert_never(unreachable)
 
