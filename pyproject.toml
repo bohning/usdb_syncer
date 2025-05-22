@@ -4,7 +4,7 @@ build-backend = "poetry_dynamic_versioning.backend"
 
 [tool.poetry]
 name = "usdb_syncer"
-version = "0.14.0.post14.dev0+0116878"  # will be replaced by current git tag via poetry-dynamic-versioning
+version = "0.0.0"  # will be replaced by current git tag via poetry-dynamic-versioning
 authors = ["Markus Böhning <markus.boehning@gmail.com>"]
 description = "A download manager for USDB songs."
 readme = ["README.md"]
@@ -74,7 +74,7 @@ pywin32-ctypes = {version = "*", markers="sys_platform == 'win32'"}
 usdb_syncer = "usdb_syncer.gui:main"
 
 [tool.poetry-dynamic-versioning]
-enable = false
+enable = true
 substitution.files = []
 
 [tool.ruff]
