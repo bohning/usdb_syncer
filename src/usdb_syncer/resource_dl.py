@@ -242,14 +242,16 @@ def _handle_forbidden(url: str, logger: Logger) -> None:
 
 
 def download_image(url: str, logger: Logger) -> bytes | None:
-    reply = net.get_generic_session().get(url)
-    if reply.status_code in range(300, 399):
-        # 3xx redirection
-        logger.debug(
-            f"'{url}' redirects to '{reply.headers['Location']}'. "
-            "Please adapt metatags."
-        )
-    return reply.content
+    if reply := net.get_generic_session().get(url):
+        if reply.status_code in range(300, 399):
+            # 3xx redirection
+            logger.debug(
+                f"'{url}' redirects to '{reply.headers['Location']}'. "
+                "Please adapt metatags."
+            )
+        return reply.content
+    logger.error(f"Failed to download image from '{url}'.")
+    return None
 
 
 def download_and_process_image(

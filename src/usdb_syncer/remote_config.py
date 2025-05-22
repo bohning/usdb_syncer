@@ -33,6 +33,9 @@ def _fetch_config() -> dict:
 
 def _fetch_remote_config() -> dict:
     try:
-        return net.get_generic_session().get(_CONFIG_URL).json()
+        if r := net.get_generic_session().get(_CONFIG_URL):
+            return r.json()
+        else:
+            return {}
     except json.JSONDecodeError:
         return {}

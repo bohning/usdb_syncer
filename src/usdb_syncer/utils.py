@@ -79,9 +79,9 @@ def _parse_polsy_html(html: str) -> list[str] | None:
 def get_allowed_countries(resource: str) -> list[str] | None:
     """Fetches YouTube video availability information from polsy.org.uk."""
     url = f"https://polsy.org.uk/stuff/ytrestrict.cgi?agreed=on&ytid={resource}"
-    response = net.get_generic_session().get(url)
-
-    return _parse_polsy_html(response.text)
+    if response := net.get_generic_session().get(url):
+        return _parse_polsy_html(response.text)
+    return None
 
 
 def remove_ansi_codes(text: str) -> str:
@@ -291,8 +291,7 @@ def format_timestamp(micros: int) -> str:
 
 
 def get_latest_version() -> str | None:
-    response = net.get_generic_session().get(constants.GITHUB_API_LATEST)
-    if response.status_code == 200:
+    if response := net.get_generic_session().get(constants.GITHUB_API_LATEST):
         return response.json()["tag_name"]
     return None
 

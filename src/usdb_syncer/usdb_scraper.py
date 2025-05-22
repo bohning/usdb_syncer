@@ -59,14 +59,17 @@ class UsdbSession(SyncerSession[str]):
         """Handle response."""
         if not self.connected:
             self.connected = True
-        page = normalize(response.text)
-        # TODO handle invalid status codes
-        return page
+        if not response.ok:
+            logger.debug(
+                f"Request failed with status code {response.status_code} for URL: "
+                f"{response.url}"
+            )
+            return ""
+        return normalize(response.text)
 
     @override
-    def conn_failed(self, error: RequestException) -> str:
+    def conn_failed(self, url: str, error: RequestException) -> str:
         """Handle connection failure."""
-        # TODO handle connection failure (dns, timeout, etc.)
         self.connected = False
         return ""
 

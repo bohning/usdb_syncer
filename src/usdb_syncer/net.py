@@ -51,7 +51,7 @@ class SyncerSession(Generic[T], abc.ABC):
         self.set_headers(GLOBAL_HEADERS)
 
     @abc.abstractmethod
-    def conn_failed(self, error: RequestException) -> T:
+    def conn_failed(self, url: str, error: RequestException) -> T:
         """Handle connection failures."""
         raise NotImplementedError
 
@@ -152,7 +152,7 @@ class SyncerSession(Generic[T], abc.ABC):
                     time.sleep(current_delay)
                     current_delay *= REQUEST_RETRY_BACKOFF
                     continue
-                return self.conn_failed(e)
+                return self.conn_failed(complete_url, e)
 
     def get(
         self, rel_url: str, params: dict | None = None, headers: dict | None = None
@@ -204,7 +204,7 @@ class SyncerSession(Generic[T], abc.ABC):
         self.session.close()
 
 
-class _GenericSession(SyncerSession[Response]):
+class _GenericSession(SyncerSession[Response | None]):
     """Generic session class for other sites.
 
     This class is used for sites that do not require any special handling of
@@ -215,31 +215,79 @@ class _GenericSession(SyncerSession[Response]):
         super().__init__(base_url=base_url)
 
     @override
-    def handle_response(self, response: Response) -> Response:
-        """Handle the response.
+    def get(
+        self, rel_url: str, params: dict | None = None, headers: dict | None = None
+    ) -> Response | None:
+        """Make a GET request.
 
-        Response might not be ok.
+        Args:
+            rel_url: The relative URL to request. Merged with the base URL using
+                `urllib.parse.urljoin`.
+            params: The parameters to send with the request.
+            headers: The headers to send with the request.
+
+        Returns:
+            Response: The response, guaranteed to be ok.
+
+        """
+        return super().get(rel_url, params=params, headers=headers)
+
+    @override
+    def post(
+        self,
+        rel_url: str,
+        data: dict | None = None,
+        json: dict | None = None,
+        params: dict | None = None,
+        headers: dict | None = None,
+    ) -> Response | None:
+        """Make a POST request.
+
+        Args:
+            rel_url: The relative URL to request. Merged with the base URL using
+                `urllib.parse.urljoin`.
+            data: The data to send with the request.
+            json: The JSON data to send with the request.
+            params: The parameters to send with the request.
+            headers: The headers to send with the request.
+        return super().post(rel_url, data, json, params, headers)
+
+        Returns:
+            Response: The response, guaranteed to be ok.
+
+        """
+        return super().post(
+            rel_url, data=data, json=json, params=params, headers=headers
+        )
+
+    @override
+    def handle_response(self, response: Response) -> Response | None:
+        """Handle the response.
 
         Args:
             response: The response to handle.
 
         Returns:
-            Response: The response.
+            Response: The response, guaranteed to be ok.
 
         """
-        # TODO handle invalid status codes
-        return response
+        if response.ok:
+            return response
+        logger.debug(
+            f"Request failed with status code {response.status_code} for {response.url}"
+        )
+        return None
 
     @override
-    def conn_failed(self, error: RequestException) -> Response:
+    def conn_failed(self, url: str, error: RequestException) -> None:
         """Handle connection failure.
 
         Returns:
             Response: An empty response.
 
         """
-        # TODO handle connection failure (dns, timeout, etc.)
-        return Response()
+        logger.debug(f"Connection failed for {url}: {error!s}.")
+        return None
 
 
 def get_generic_session(base_url: str = "") -> _GenericSession:
