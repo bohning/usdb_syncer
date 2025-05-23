@@ -57,7 +57,7 @@ def establish_usdb_login(session: Session) -> bool:
         logger.error(f"Login to USDB with user '{auth[0]}' failed!")
     else:
         logger.warning(
-            "Not logged in to USDB. Please go to 'Synchronize > USDB Login', then "
+            "Not logged in to USDB. Please go to 'USDB > USDB Login', then "
             "select the browser you are logged in with and/or enter your credentials."
         )
     return False
