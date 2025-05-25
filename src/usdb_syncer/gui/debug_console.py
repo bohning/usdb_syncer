@@ -9,6 +9,7 @@ from PySide6.QtWidgets import QDialog, QWidget
 
 from usdb_syncer.gui import gui_utils
 from usdb_syncer.gui.forms.DebugConsole import Ui_Dialog
+from usdb_syncer.gui.shortcuts import DebugConsoleShortcut
 
 
 class DebugConsole(Ui_Dialog, QDialog):
@@ -26,10 +27,10 @@ class DebugConsole(Ui_Dialog, QDialog):
         self.output.setFont(font)
 
     def _set_shortcuts(self) -> None:
-        gui_utils.set_shortcut("Ctrl+Return", self, self._execute)
-        gui_utils.set_shortcut("Ctrl+Shift+Return", self, self._execute_and_print)
-        gui_utils.set_shortcut("Ctrl+L", self, self.output.clear)
-        gui_utils.set_shortcut("Ctrl+Shift+L", self, self.input.clear)
+        DebugConsoleShortcut.EXECUTE.connect(self, self._execute)
+        DebugConsoleShortcut.EXECUTE_PRINT.connect(self, self._execute_and_print)
+        DebugConsoleShortcut.CLEAR_OUTPUT.connect(self, self.output.clear)
+        DebugConsoleShortcut.CLEAR_INPUT.connect(self, self.input.clear)
 
     def _execute_and_print(self) -> None:
         cursor = self.input.textCursor()
