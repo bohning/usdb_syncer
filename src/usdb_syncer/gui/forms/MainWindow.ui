@@ -249,12 +249,14 @@
     </widget>
     <widget class="QMenu" name="menu_open_song_in">
      <property name="title">
-      <string>Open &amp;Song in</string>
+      <string>&amp;Open Song in</string>
      </property>
      <property name="icon">
       <iconset resource="../resources/qt/resources.qrc">
        <normaloff>:/icons/music--arrow.png</normaloff>:/icons/music--arrow.png</iconset>
      </property>
+     <addaction name="action_open_song_folder"/>
+     <addaction name="separator"/>
      <addaction name="action_open_song_in_usdx"/>
      <addaction name="action_open_song_in_vocaluxe"/>
      <addaction name="action_open_song_in_performous"/>
@@ -283,7 +285,6 @@
     <addaction name="action_post_comment_in_usdb"/>
     <addaction name="menu_rate_song_on_usdb"/>
     <addaction name="separator"/>
-    <addaction name="action_open_song_folder"/>
     <addaction name="menu_open_song_in"/>
     <addaction name="menu_custom_data"/>
     <addaction name="action_pin"/>
@@ -627,7 +628,7 @@
      <normaloff>:/icons/folder_note.png</normaloff>:/icons/folder_note.png</iconset>
    </property>
    <property name="text">
-    <string>&amp;Open Song Folder</string>
+    <string>File &amp;Explorer</string>
    </property>
   </action>
   <action name="action_delete">
