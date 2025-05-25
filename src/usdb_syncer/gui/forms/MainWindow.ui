@@ -202,7 +202,7 @@
    </property>
    <widget class="QMenu" name="menu_tools">
     <property name="title">
-     <string>Tools</string>
+     <string>&amp;Tools</string>
     </property>
     <property name="toolTipsVisible">
      <bool>true</bool>
@@ -213,7 +213,7 @@
    </widget>
    <widget class="QMenu" name="menu_usdb">
     <property name="title">
-     <string>USDB</string>
+     <string>&amp;USDB</string>
     </property>
     <property name="toolTipsVisible">
      <bool>true</bool>
@@ -223,7 +223,7 @@
    </widget>
    <widget class="QMenu" name="menu_about">
     <property name="title">
-     <string>Help</string>
+     <string>&amp;Help</string>
     </property>
     <property name="toolTipsVisible">
      <bool>true</bool>
@@ -233,14 +233,14 @@
    </widget>
    <widget class="QMenu" name="menu_songs">
     <property name="title">
-     <string>Songs</string>
+     <string>&amp;Songs</string>
     </property>
     <property name="toolTipsVisible">
      <bool>true</bool>
     </property>
     <widget class="QMenu" name="menu_custom_data">
      <property name="title">
-      <string>Custom Data</string>
+      <string>Custo&amp;m Data</string>
      </property>
      <property name="icon">
       <iconset resource="../resources/qt/resources.qrc">
@@ -249,7 +249,7 @@
     </widget>
     <widget class="QMenu" name="menu_open_song_in">
      <property name="title">
-      <string>Open Song in</string>
+      <string>Open &amp;Song in</string>
      </property>
      <property name="icon">
       <iconset resource="../resources/qt/resources.qrc">
@@ -265,7 +265,7 @@
     </widget>
     <widget class="QMenu" name="menu_rate_song_on_usdb">
      <property name="title">
-      <string>Rate Song on USDB</string>
+      <string>&amp;Rate Song on USDB</string>
      </property>
      <property name="icon">
       <iconset resource="../resources/qt/resources.qrc">
@@ -293,7 +293,7 @@
    </widget>
    <widget class="QMenu" name="menu_local">
     <property name="title">
-     <string>Local</string>
+     <string>&amp;Local</string>
     </property>
     <property name="toolTipsVisible">
      <bool>true</bool>
@@ -304,12 +304,12 @@
    </widget>
    <widget class="QMenu" name="menu_view">
     <property name="title">
-     <string>View</string>
+     <string>&amp;View</string>
     </property>
    </widget>
    <widget class="QMenu" name="menuGo">
     <property name="title">
-     <string>Go</string>
+     <string>&amp;Go</string>
     </property>
     <addaction name="action_go_to_search"/>
     <addaction name="action_go_to_song_table"/>
@@ -497,7 +497,7 @@
      <normaloff>:/icons/tag-hash.png</normaloff>:/icons/tag-hash.png</iconset>
    </property>
    <property name="text">
-    <string>Create Meta Tags</string>
+    <string>Create &amp;Meta Tags</string>
    </property>
   </action>
   <action name="action_settings">
@@ -506,7 +506,7 @@
      <normaloff>:/icons/cog.png</normaloff>:/icons/cog.png</iconset>
    </property>
    <property name="text">
-    <string>Settings</string>
+    <string>&amp;Settings</string>
    </property>
   </action>
   <action name="action_generate_song_list">
@@ -515,7 +515,7 @@
      <normaloff>:/icons/report.png</normaloff>:/icons/report.png</iconset>
    </property>
    <property name="text">
-    <string>Create Report</string>
+    <string>Create &amp;Report</string>
    </property>
   </action>
   <action name="action_refetch_song_list">
@@ -524,7 +524,7 @@
      <normaloff>:/icons/check_for_update.png</normaloff>:/icons/check_for_update.png</iconset>
    </property>
    <property name="text">
-    <string>Check USDB Song List</string>
+    <string>Check USDB &amp;Song List</string>
    </property>
    <property name="toolTip">
     <string>Redownload the entire song list from USDB</string>
@@ -536,7 +536,7 @@
      <normaloff>:/icons/database.png</normaloff>:/icons/database.png</iconset>
    </property>
    <property name="text">
-    <string>Find Local Songs</string>
+    <string>Find &amp;Local Songs</string>
    </property>
    <property name="toolTip">
     <string>Select songs matching a txt file in the given folder</string>
@@ -548,7 +548,7 @@
      <normaloff>:/icons/log.png</normaloff>:/icons/log.png</iconset>
    </property>
    <property name="text">
-    <string>Show Log</string>
+    <string>Show &amp;Log</string>
    </property>
   </action>
   <action name="action_import_usdb_ids">
@@ -557,7 +557,7 @@
      <normaloff>:/icons/document-export.png</normaloff>:/icons/document-export.png</iconset>
    </property>
    <property name="text">
-    <string>Select Songs from Files</string>
+    <string>Select Songs from &amp;Files</string>
    </property>
    <property name="toolTip">
     <string>Read song IDs from selected files and select the corresponding songs in the song table</string>
@@ -569,7 +569,7 @@
      <normaloff>:/icons/document-import.png</normaloff>:/icons/document-import.png</iconset>
    </property>
    <property name="text">
-    <string>Export selected IDs to File</string>
+    <string>&amp;Export selected IDs to File</string>
    </property>
    <property name="toolTip">
     <string>Write the IDs of the selected songs to a file</string>
@@ -581,7 +581,7 @@
      <normaloff>:/icons/status.png</normaloff>:/icons/status.png</iconset>
    </property>
    <property name="text">
-    <string>Download</string>
+    <string>&amp;Download</string>
    </property>
   </action>
   <action name="action_usdb_login">
@@ -590,7 +590,7 @@
      <normaloff>:/icons/faviconUSDB.png</normaloff>:/icons/faviconUSDB.png</iconset>
    </property>
    <property name="text">
-    <string>USDB Login</string>
+    <string>USDB &amp;Login</string>
    </property>
   </action>
   <action name="action_about">
@@ -599,7 +599,7 @@
      <normaloff>:/app/appicon_128x128.png</normaloff>:/app/appicon_128x128.png</iconset>
    </property>
    <property name="text">
-    <string>About</string>
+    <string>&amp;About</string>
    </property>
   </action>
   <action name="action_show_in_usdb">
@@ -608,7 +608,7 @@
      <normaloff>:/icons/faviconUSDB.png</normaloff>:/icons/faviconUSDB.png</iconset>
    </property>
    <property name="text">
-    <string>Show on USDB</string>
+    <string>Show on &amp;USDB</string>
    </property>
   </action>
   <action name="action_post_comment_in_usdb">
@@ -617,7 +617,7 @@
      <normaloff>:/icons/balloon.png</normaloff>:/icons/balloon.png</iconset>
    </property>
    <property name="text">
-    <string>Post Comment on USDB</string>
+    <string>Post &amp;Comment on USDB</string>
    </property>
   </action>
   <action name="action_open_song_folder">
@@ -626,7 +626,7 @@
      <normaloff>:/icons/folder_note.png</normaloff>:/icons/folder_note.png</iconset>
    </property>
    <property name="text">
-    <string>Open Song Folder</string>
+    <string>&amp;Open Song Folder</string>
    </property>
   </action>
   <action name="action_delete">
@@ -635,7 +635,7 @@
      <normaloff>:/icons/bin.png</normaloff>:/icons/bin.png</iconset>
    </property>
    <property name="text">
-    <string>Delete</string>
+    <string>D&amp;elete</string>
    </property>
    <property name="toolTip">
     <string>Move to system recycle bin</string>
@@ -650,7 +650,7 @@
      <normaloff>:/icons/pin.png</normaloff>:/icons/pin.png</iconset>
    </property>
    <property name="text">
-    <string>Pin</string>
+    <string>&amp;Pin</string>
    </property>
    <property name="toolTip">
     <string>Disable or reenable updates to local files</string>
@@ -662,7 +662,7 @@
      <normaloff>:/icons/minus-circle.png</normaloff>:/icons/minus-circle.png</iconset>
    </property>
    <property name="text">
-    <string>Abort Download</string>
+    <string>&amp;Abort Download</string>
    </property>
   </action>
   <action name="action_delete_saved_search">
@@ -720,7 +720,7 @@
      <normaloff>:/icons/karedi.png</normaloff>:/icons/karedi.png</iconset>
    </property>
    <property name="text">
-    <string>Karedi</string>
+    <string>&amp;Karedi</string>
    </property>
   </action>
   <action name="action_open_song_in_performous">
@@ -729,7 +729,7 @@
      <normaloff>:/icons/performous.png</normaloff>:/icons/performous.png</iconset>
    </property>
    <property name="text">
-    <string>Performous</string>
+    <string>&amp;Performous</string>
    </property>
   </action>
   <action name="action_open_song_in_usdx">
@@ -738,7 +738,7 @@
      <normaloff>:/icons/usdx.png</normaloff>:/icons/usdx.png</iconset>
    </property>
    <property name="text">
-    <string>UltraStar Deluxe</string>
+    <string>&amp;UltraStar Deluxe</string>
    </property>
   </action>
   <action name="action_open_song_in_ultrastar_manager">
@@ -747,7 +747,7 @@
      <normaloff>:/icons/ultrastar-manager.png</normaloff>:/icons/ultrastar-manager.png</iconset>
    </property>
    <property name="text">
-    <string>UltraStar Manager</string>
+    <string>UltraStar &amp;Manager</string>
    </property>
   </action>
   <action name="action_open_song_in_vocaluxe">
@@ -756,7 +756,7 @@
      <normaloff>:/icons/vocaluxe.png</normaloff>:/icons/vocaluxe.png</iconset>
    </property>
    <property name="text">
-    <string>Vocaluxe</string>
+    <string>&amp;Vocaluxe</string>
    </property>
   </action>
   <action name="action_open_song_in_yass_reloaded">
@@ -765,7 +765,7 @@
      <normaloff>:/icons/yass-reloaded.png</normaloff>:/icons/yass-reloaded.png</iconset>
    </property>
    <property name="text">
-    <string>YASS Reloaded</string>
+    <string>&amp;YASS Reloaded</string>
    </property>
   </action>
   <action name="action_rate_in_usdb">
@@ -782,7 +782,7 @@
   </action>
   <action name="action_rate_1star">
    <property name="text">
-    <string>★ – Unusable, requires a complete overhaul</string>
+    <string>&amp;1: ★ – Unusable, requires a complete overhaul</string>
    </property>
    <property name="toolTip">
     <string>unusable, needs a total rework</string>
@@ -790,7 +790,7 @@
   </action>
   <action name="action_rate_2stars">
    <property name="text">
-    <string>★★ – Barely usable, needs significant revisions</string>
+    <string>&amp;2: ★★ – Barely usable, needs significant revisions</string>
    </property>
    <property name="toolTip">
     <string>hardly usable, needs a lot of improvements</string>
@@ -798,7 +798,7 @@
   </action>
   <action name="action_rate_3stars">
    <property name="text">
-    <string>★★★ – Usable, but requires improvements</string>
+    <string>&amp;3: ★★★ – Usable, but requires improvements</string>
    </property>
    <property name="toolTip">
     <string>usable, but room for improvement</string>
@@ -806,7 +806,7 @@
   </action>
   <action name="action_rate_4stars">
    <property name="text">
-    <string>★★★★ – Very good, with minor areas for improvement</string>
+    <string>&amp;4: ★★★★ – Very good, with minor areas for improvement</string>
    </property>
    <property name="toolTip">
     <string>room for some improvements</string>
@@ -814,7 +814,7 @@
   </action>
   <action name="action_rate_5stars">
    <property name="text">
-    <string>★★★★★ – Excellent, no improvements needed</string>
+    <string>&amp;5: ★★★★★ – Excellent, no improvements needed</string>
    </property>
    <property name="toolTip">
     <string>simply perfect</string>
@@ -822,27 +822,27 @@
   </action>
   <action name="action_preview">
    <property name="text">
-    <string>Preview Song</string>
+    <string>Pre&amp;view Song</string>
    </property>
   </action>
   <action name="action_go_to_search">
    <property name="text">
-    <string>Go to Search</string>
+    <string>Go to &amp;Search</string>
    </property>
   </action>
   <action name="action_go_to_song_table">
    <property name="text">
-    <string>Go to Song Table</string>
+    <string>Go to Song &amp;Table</string>
    </property>
   </action>
   <action name="action_go_to_filters">
    <property name="text">
-    <string>Go to Filters</string>
+    <string>Go to &amp;Filters</string>
    </property>
   </action>
   <action name="action_go_to_filter_search">
    <property name="text">
-    <string>Go to Filter Search</string>
+    <string>Go to F&amp;ilter Search</string>
    </property>
   </action>
  </widget>
