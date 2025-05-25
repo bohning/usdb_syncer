@@ -32,7 +32,7 @@ class SongTableShortcut(Shortcut):
 
     DOWNLOAD = "Ctrl+Return"
     ABORT_DOWNLOAD = "Ctrl+Alt+Return"
-    TRASH_SONG = "Ctrl+Delete"
+    TRASH_SONG = "Ctrl+D"
     PIN_SONG = "Ctrl+P"
     PLAY_SAMPLE = "Space"
     PREVIEW = "Shift+Space"
