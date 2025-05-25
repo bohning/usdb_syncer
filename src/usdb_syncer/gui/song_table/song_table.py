@@ -48,6 +48,8 @@ class SongTable:
         mw.table_view.selectionModel().currentChanged.connect(
             self._on_current_song_changed
         )
+        self._set_app_actions_visible()
+        events.PreferencesChanged.subscribe(lambda _: self._set_app_actions_visible())
         events.SongChanged.subscribe(self._on_song_changed)
         self._setup_search_timer()
         gui_events.TreeFilterChanged.subscribe(self._on_tree_filter_changed)
@@ -250,26 +252,25 @@ class SongTable:
             self.mw.menu_custom_data,
         ):
             action.setEnabled(song.is_local())
-        self.mw.action_open_song_in_karedi.setVisible(
-            settings.get_app_path(settings.SupportedApps.KAREDI) is not None
-        )
-        self.mw.action_open_song_in_performous.setVisible(
-            settings.get_app_path(settings.SupportedApps.PERFORMOUS) is not None
-        )
-        self.mw.action_open_song_in_ultrastar_manager.setVisible(
-            settings.get_app_path(settings.SupportedApps.ULTRASTAR_MANAGER) is not None
-        )
-        self.mw.action_open_song_in_usdx.setVisible(
-            settings.get_app_path(settings.SupportedApps.USDX) is not None
-        )
-        self.mw.action_open_song_in_vocaluxe.setVisible(
-            settings.get_app_path(settings.SupportedApps.VOCALUXE) is not None
-        )
-        self.mw.action_open_song_in_yass_reloaded.setVisible(
-            settings.get_app_path(settings.SupportedApps.YASS_RELOADED) is not None
-        )
         self.mw.action_pin.setChecked(song.is_pinned())
         self.mw.action_songs_abort.setEnabled(song.status.can_be_aborted())
+
+    def _set_app_actions_visible(self) -> None:
+        for action, app in (
+            (self.mw.action_open_song_in_karedi, settings.SupportedApps.KAREDI),
+            (self.mw.action_open_song_in_performous, settings.SupportedApps.PERFORMOUS),
+            (
+                self.mw.action_open_song_in_ultrastar_manager,
+                settings.SupportedApps.ULTRASTAR_MANAGER,
+            ),
+            (self.mw.action_open_song_in_usdx, settings.SupportedApps.USDX),
+            (self.mw.action_open_song_in_vocaluxe, settings.SupportedApps.VOCALUXE),
+            (
+                self.mw.action_open_song_in_yass_reloaded,
+                settings.SupportedApps.YASS_RELOADED,
+            ),
+        ):
+            action.setVisible(settings.get_app_path(app) is not None)
 
     def delete_selected_songs(self) -> None:
         with db.transaction():

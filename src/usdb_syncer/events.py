@@ -104,3 +104,11 @@ class SongDirChanged(SubscriptableEvent):
     """Sent when the selected song directory has changed."""
 
     new_dir: Path
+
+
+# other
+
+
+@attrs.define(slots=False)
+class PreferencesChanged(SubscriptableEvent):
+    """Sent when the preferences potentially changed."""
