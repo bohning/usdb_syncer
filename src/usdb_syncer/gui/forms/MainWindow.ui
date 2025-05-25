@@ -314,6 +314,7 @@
     <addaction name="action_go_to_search"/>
     <addaction name="action_go_to_song_table"/>
     <addaction name="action_go_to_filters"/>
+    <addaction name="action_go_to_filter_search"/>
    </widget>
    <addaction name="menu_view"/>
    <addaction name="menu_songs"/>
@@ -837,6 +838,11 @@
   <action name="action_go_to_filters">
    <property name="text">
     <string>Go to Filters</string>
+   </property>
+  </action>
+  <action name="action_go_to_filter_search">
+   <property name="text">
+    <string>Go to Filter Search</string>
    </property>
   </action>
  </widget>

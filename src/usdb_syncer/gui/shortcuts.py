@@ -17,11 +17,14 @@ class Shortcut(enum.StrEnum):
 class MainWindowShortcut(Shortcut):
     """Keyboard shortcuts within the main window."""
 
+    SELECT_FOLDER = "Ctrl+O"
     PAUSE_DOWNLOAD = "Ctrl+Shift+Return"
+    OPEN_PREFERNCES = "Ctrl+,"
     OPEN_DEBUG_CONSOLE = "Ctrl+."
     GO_TO_SEARCH = "Ctrl+F"
     GO_TO_SONG_TABLE = "Ctrl+T"
     GO_TO_FILTERS = "Ctrl+S"
+    GO_TO_FILTER_SEARCH = "Ctrl+Shift+F"
 
 
 class SongTableShortcut(Shortcut):
@@ -29,7 +32,10 @@ class SongTableShortcut(Shortcut):
 
     DOWNLOAD = "Ctrl+Return"
     ABORT_DOWNLOAD = "Ctrl+Alt+Return"
+    TRASH_SONG = "Ctrl+Delete"
+    PIN_SONG = "Ctrl+P"
     PLAY_SAMPLE = "Space"
+    PREVIEW = "Shift+Space"
 
 
 class DebugConsoleShortcut(Shortcut):

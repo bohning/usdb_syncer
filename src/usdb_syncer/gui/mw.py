@@ -64,6 +64,10 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         self.lineEdit_search.setFocus()
         self.lineEdit_search.selectAll()
 
+    def _focus_filter_search(self) -> None:
+        self.line_edit_search_filters.setFocus()
+        self.line_edit_search_filters.selectAll()
+
     def _setup_statusbar(self) -> None:
         self._status_label = QLabel(self)
         self.statusbar.addWidget(self._status_label)
@@ -96,7 +100,11 @@ class MainWindow(Ui_MainWindow, QMainWindow):
                 self.table.download_selection,
                 SongTableShortcut.DOWNLOAD,
             ),
-            (self.action_songs_abort, self.table.abort_selected_downloads, None),
+            (
+                self.action_songs_abort,
+                self.table.abort_selected_downloads,
+                SongTableShortcut.ABORT_DOWNLOAD,
+            ),
             (self.action_find_local_songs, self._select_local_songs, None),
             (self.action_refetch_song_list, self._refetch_song_list, None),
             (self.action_usdb_login, lambda: UsdbLoginDialog(self).show(), None),
@@ -104,7 +112,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
             (
                 self.action_settings,
                 lambda: SettingsDialog(self, self.table.current_song()).show(),
-                None,
+                MainWindowShortcut.OPEN_PREFERNCES,
             ),
             (self.action_about, lambda: AboutDialog(self).show(), None),
             (
@@ -163,13 +171,26 @@ class MainWindow(Ui_MainWindow, QMainWindow):
                 ),
                 None,
             ),
-            (self.action_delete, self.table.delete_selected_songs, None),
-            (self.action_pin, self.table.set_pin_selected_songs, None),
-            (self.action_preview, self._show_preview_dialog, None),
+            (
+                self.action_delete,
+                self.table.delete_selected_songs,
+                SongTableShortcut.TRASH_SONG,
+            ),
+            (
+                self.action_pin,
+                self.table.set_pin_selected_songs,
+                SongTableShortcut.PIN_SONG,
+            ),
+            (self.action_preview, self._show_preview_dialog, SongTableShortcut.PREVIEW),
             (
                 self.action_go_to_search,
                 self._focus_search,
                 MainWindowShortcut.GO_TO_SEARCH,
+            ),
+            (
+                self.action_go_to_filter_search,
+                self._focus_filter_search,
+                MainWindowShortcut.GO_TO_FILTER_SEARCH,
             ),
             (
                 self.action_go_to_song_table,
@@ -198,11 +219,15 @@ class MainWindow(Ui_MainWindow, QMainWindow):
     def _setup_song_dir(self) -> None:
         self.song_dir = settings.get_song_dir()
         self.lineEdit_song_dir.setText(str(self.song_dir))
-        self.pushButton_select_song_dir.clicked.connect(self._select_song_dir)
 
     def _setup_buttons(self) -> None:
         self.button_download.clicked.connect(self.table.download_selection)
+        self.pushButton_select_song_dir.setShortcut(MainWindowShortcut.SELECT_FOLDER)
+        self.pushButton_select_song_dir.clicked.connect(self._select_song_dir)
+        self.pushButton_select_song_dir.setToolTip(MainWindowShortcut.SELECT_FOLDER)
+        self.button_pause.setShortcut(MainWindowShortcut.PAUSE_DOWNLOAD)
         self.button_pause.clicked.connect(DownloadManager.set_pause)
+        self.button_pause.setToolTip(MainWindowShortcut.PAUSE_DOWNLOAD)
 
     def _on_log_filter_changed(self) -> None:
         messages = []
