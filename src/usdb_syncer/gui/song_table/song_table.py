@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING, Any
 import send2trash
 from PySide6 import QtCore, QtMultimedia, QtWidgets
 from PySide6.QtCore import QItemSelectionModel, Qt
-from PySide6.QtGui import QAction, QCursor, QKeySequence, QShortcut
+from PySide6.QtGui import QAction, QCursor
 
 from usdb_syncer import SongId, db, events, media_player, settings, sync_meta
 from usdb_syncer.gui import events as gui_events
@@ -53,9 +53,6 @@ class SongTable:
         gui_events.TreeFilterChanged.subscribe(self._on_tree_filter_changed)
         gui_events.TextFilterChanged.subscribe(self._on_text_filter_changed)
         gui_events.SavedSearchRestored.subscribe(self._on_saved_search_restored)
-        QShortcut(QKeySequence(Qt.Key.Key_Space), self._view).activated.connect(
-            self._on_space
-        )
 
     def _on_playback_state_changed(
         self, state: QtMultimedia.QMediaPlayer.PlaybackState
@@ -82,7 +79,7 @@ class SongTable:
         logger.error(f"Failed to play back source: {source}")
         logger.debug(self._media_player.errorString())
 
-    def _on_space(self) -> None:
+    def on_play_or_stop_sample(self) -> None:
         if song := self.current_song():
             self._play_or_stop_sample(song)
 

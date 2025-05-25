@@ -21,6 +21,7 @@ from usdb_syncer.gui.progress import run_with_progress
 from usdb_syncer.gui.report_dialog import ReportDialog
 from usdb_syncer.gui.search_tree.tree import FilterTree
 from usdb_syncer.gui.settings_dialog import SettingsDialog
+from usdb_syncer.gui.shortcuts import MainWindowShortcut, SongTableShortcut
 from usdb_syncer.gui.song_table.song_table import SongTable
 from usdb_syncer.gui.usdb_login_dialog import UsdbLoginDialog
 from usdb_syncer.logger import logger
@@ -89,73 +90,110 @@ class MainWindow(Ui_MainWindow, QMainWindow):
     def _setup_toolbar(self) -> None:
         self.menu_view.addAction(self.dock_search.toggleViewAction())
         self.menu_view.addAction(self.dock_log.toggleViewAction())
-        for action, func in (
-            (self.action_songs_download, self.table.download_selection),
-            (self.action_songs_abort, self.table.abort_selected_downloads),
-            (self.action_find_local_songs, self._select_local_songs),
-            (self.action_refetch_song_list, self._refetch_song_list),
-            (self.action_usdb_login, lambda: UsdbLoginDialog(self).show()),
-            (self.action_meta_tags, lambda: MetaTagsDialog(self).show()),
+        for action, func, shortcut in (
+            (
+                self.action_songs_download,
+                self.table.download_selection,
+                SongTableShortcut.DOWNLOAD,
+            ),
+            (self.action_songs_abort, self.table.abort_selected_downloads, None),
+            (self.action_find_local_songs, self._select_local_songs, None),
+            (self.action_refetch_song_list, self._refetch_song_list, None),
+            (self.action_usdb_login, lambda: UsdbLoginDialog(self).show(), None),
+            (self.action_meta_tags, lambda: MetaTagsDialog(self).show(), None),
             (
                 self.action_settings,
                 lambda: SettingsDialog(self, self.table.current_song()).show(),
+                None,
             ),
-            (self.action_about, lambda: AboutDialog(self).show()),
+            (self.action_about, lambda: AboutDialog(self).show(), None),
             (
                 self.action_generate_song_list,
                 lambda: ReportDialog(self, self.table).show(),
+                None,
             ),
-            (self.action_import_usdb_ids, self._import_usdb_ids_from_files),
-            (self.action_export_usdb_ids, self._export_usdb_ids_to_file),
-            (self.action_show_log, lambda: open_path_or_file(AppPaths.log.parent)),
-            (self.action_show_in_usdb, self._show_current_song_in_usdb),
-            (self.action_post_comment_in_usdb, self._show_comment_dialog),
-            (self.action_rate_1star, lambda: self._rate_in_usdb(1)),
-            (self.action_rate_2stars, lambda: self._rate_in_usdb(2)),
-            (self.action_rate_3stars, lambda: self._rate_in_usdb(3)),
-            (self.action_rate_4stars, lambda: self._rate_in_usdb(4)),
-            (self.action_rate_5stars, lambda: self._rate_in_usdb(5)),
-            (self.action_open_song_folder, self._open_current_song_folder),
+            (self.action_import_usdb_ids, self._import_usdb_ids_from_files, None),
+            (self.action_export_usdb_ids, self._export_usdb_ids_to_file, None),
+            (
+                self.action_show_log,
+                lambda: open_path_or_file(AppPaths.log.parent),
+                None,
+            ),
+            (self.action_show_in_usdb, self._show_current_song_in_usdb, None),
+            (self.action_post_comment_in_usdb, self._show_comment_dialog, None),
+            (self.action_rate_1star, lambda: self._rate_in_usdb(1), None),
+            (self.action_rate_2stars, lambda: self._rate_in_usdb(2), None),
+            (self.action_rate_3stars, lambda: self._rate_in_usdb(3), None),
+            (self.action_rate_4stars, lambda: self._rate_in_usdb(4), None),
+            (self.action_rate_5stars, lambda: self._rate_in_usdb(5), None),
+            (self.action_open_song_folder, self._open_current_song_folder, None),
             (
                 self.action_open_song_in_karedi,
                 lambda: self._open_current_song_in_app(settings.SupportedApps.KAREDI),
+                None,
             ),
             (
                 self.action_open_song_in_performous,
                 lambda: self._open_current_song_in_app(
                     settings.SupportedApps.PERFORMOUS
                 ),
+                None,
             ),
             (
                 self.action_open_song_in_ultrastar_manager,
                 lambda: self._open_current_song_in_app(
                     settings.SupportedApps.ULTRASTAR_MANAGER
                 ),
+                None,
             ),
             (
                 self.action_open_song_in_usdx,
                 lambda: self._open_current_song_in_app(settings.SupportedApps.USDX),
+                None,
             ),
             (
                 self.action_open_song_in_vocaluxe,
                 lambda: self._open_current_song_in_app(settings.SupportedApps.VOCALUXE),
+                None,
             ),
             (
                 self.action_open_song_in_yass_reloaded,
                 lambda: self._open_current_song_in_app(
                     settings.SupportedApps.YASS_RELOADED
                 ),
+                None,
             ),
-            (self.action_delete, self.table.delete_selected_songs),
-            (self.action_pin, self.table.set_pin_selected_songs),
-            (self.action_preview, self._show_preview_dialog),
+            (self.action_delete, self.table.delete_selected_songs, None),
+            (self.action_pin, self.table.set_pin_selected_songs, None),
+            (self.action_preview, self._show_preview_dialog, None),
+            (
+                self.action_go_to_search,
+                self._focus_search,
+                MainWindowShortcut.GO_TO_SEARCH,
+            ),
+            (
+                self.action_go_to_song_table,
+                self.table_view.setFocus,
+                MainWindowShortcut.GO_TO_SONG_TABLE,
+            ),
+            (
+                self.action_go_to_filters,
+                self.search_view.setFocus,
+                MainWindowShortcut.GO_TO_FILTERS,
+            ),
         ):
             action.triggered.connect(func)
+            if shortcut:
+                action.setShortcut(shortcut)
         self.menu_custom_data.aboutToShow.connect(self.table.build_custom_data_menu)
 
     def _setup_shortcuts(self) -> None:
-        gui_utils.set_shortcut("Ctrl+.", self, lambda: DebugConsole(self).show())
-        gui_utils.set_shortcut("Ctrl+F", self, self._focus_search)
+        MainWindowShortcut.OPEN_DEBUG_CONSOLE.connect(
+            self, lambda: DebugConsole(self).show()
+        )
+        SongTableShortcut.PLAY_SAMPLE.connect(
+            self.table_view, self.table.on_play_or_stop_sample
+        )
 
     def _setup_song_dir(self) -> None:
         self.song_dir = settings.get_song_dir()

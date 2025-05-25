@@ -307,11 +307,20 @@
      <string>View</string>
     </property>
    </widget>
+   <widget class="QMenu" name="menuGo">
+    <property name="title">
+     <string>Go</string>
+    </property>
+    <addaction name="action_go_to_search"/>
+    <addaction name="action_go_to_song_table"/>
+    <addaction name="action_go_to_filters"/>
+   </widget>
    <addaction name="menu_view"/>
    <addaction name="menu_songs"/>
    <addaction name="menu_usdb"/>
    <addaction name="menu_local"/>
    <addaction name="menu_tools"/>
+   <addaction name="menuGo"/>
    <addaction name="menu_about"/>
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
@@ -813,6 +822,21 @@
   <action name="action_preview">
    <property name="text">
     <string>Preview Song</string>
+   </property>
+  </action>
+  <action name="action_go_to_search">
+   <property name="text">
+    <string>Go to Search</string>
+   </property>
+  </action>
+  <action name="action_go_to_song_table">
+   <property name="text">
+    <string>Go to Song Table</string>
+   </property>
+  </action>
+  <action name="action_go_to_filters">
+   <property name="text">
+    <string>Go to Filters</string>
    </property>
   </action>
  </widget>
