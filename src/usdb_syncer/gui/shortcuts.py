@@ -36,6 +36,7 @@ class SongTableShortcut(Shortcut):
     PIN_SONG = "Ctrl+P"
     PLAY_SAMPLE = "Space"
     PREVIEW = "Shift+Space"
+    OPEN_SONG = "Ctrl+K"
 
 
 class DebugConsoleShortcut(Shortcut):

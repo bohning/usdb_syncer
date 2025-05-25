@@ -202,6 +202,11 @@ class MainWindow(Ui_MainWindow, QMainWindow):
                 self.search_view.setFocus,
                 MainWindowShortcut.GO_TO_FILTERS,
             ),
+            (
+                self.action_go_to_open_song_menu,
+                self._show_open_song_menu,
+                SongTableShortcut.OPEN_SONG,
+            ),
         ):
             action.triggered.connect(func)
             if shortcut:
@@ -222,6 +227,8 @@ class MainWindow(Ui_MainWindow, QMainWindow):
 
     def _setup_buttons(self) -> None:
         self.button_download.clicked.connect(self.table.download_selection)
+        # no need to actually set shortcut because there is an identical action
+        self.button_download.setToolTip(SongTableShortcut.DOWNLOAD)
         self.pushButton_select_song_dir.setShortcut(MainWindowShortcut.SELECT_FOLDER)
         self.pushButton_select_song_dir.clicked.connect(self._select_song_dir)
         self.pushButton_select_song_dir.setToolTip(MainWindowShortcut.SELECT_FOLDER)
@@ -392,6 +399,10 @@ class MainWindow(Ui_MainWindow, QMainWindow):
 
     def _open_current_song_in_app(self, app: settings.SupportedApps) -> None:
         self._open_current_song(lambda path: settings.SupportedApps.open_app(app, path))
+
+    def _show_open_song_menu(self) -> None:
+        pos = self.mapToGlobal(self.rect().center())
+        self.menu_open_song_in.popup(pos)
 
     def closeEvent(self, event: QtGui.QCloseEvent) -> None:  # noqa: N802
         def on_done(result: progress.Result) -> None:
