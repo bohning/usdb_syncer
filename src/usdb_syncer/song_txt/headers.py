@@ -191,12 +191,12 @@ class Headers:
                 or meta_tags.audio == meta_tags.video
             ):
                 logger.warning(
-                    "This song contains a non-zero #VIDEOGAP, which only makes sense "
-                    "if different resources for audio and video are specified, which "
-                    "is not the case here. This should be fixed in USDB. Removing "
-                    "#VIDEOGAP in local text file."
+                    "This song contains a non-zero #VIDEOGAP, which usually aligns "
+                    "audio and video from different sources. For this song, audio and "
+                    "video come from the same source, so the #VIDEOGAP is most likely "
+                    "incorrect unless the video track is indeed not in sync with its "
+                    "own audio track. Please check this manually."
                 )
-                self.videogap = None
 
 
 def _set_header_value(kwargs: dict[str, Any], header: str, value: str) -> None:
