@@ -184,19 +184,32 @@ class Headers:
         return ""
 
     def fix_videogap(self, meta_tags: MetaTags, logger: Logger) -> None:
-        if self.videogap is not None:
-            if (
-                meta_tags.audio is None
-                or meta_tags.video is None
-                or meta_tags.audio == meta_tags.video
-            ):
-                logger.warning(
-                    "This song contains a non-zero #VIDEOGAP, which usually aligns "
-                    "audio and video from different sources. For this song, audio and "
-                    "video come from the same source, so the #VIDEOGAP is most likely "
-                    "incorrect unless the video track is indeed not in sync with its "
-                    "own audio track. Please check this manually."
-                )
+        if self.videogap is None:
+            return
+
+        if meta_tags.audio and meta_tags.video is None:
+            logger.warning(
+                "This song is audio only, thus the #VIDEOGAP is without effect. "
+                "Deleting #VIDEOGAP from local file."
+            )
+            self.videogap = None
+        elif meta_tags.audio is None and meta_tags.video:
+            logger.warning(
+                "This song (implicitly) uses audio and video from the same source, "
+                "which are, generally, already in sync. Therefore, the #VIDEOGAP "
+                "actually causes audio and video to be asynchronized."
+                "To fix this, the #VIDEOGAP is deleted from the local file. "
+                "If the actual intention of the #VIDEOGAP is to sync audio and video "
+                "from the *same* source, both 'a=' and 'v=' metatags need to be "
+                "explicitly present and need to point to the same source. "
+            )
+            self.videogap = None
+        elif meta_tags.audio and meta_tags.video and meta_tags.audio == meta_tags.video:
+            logger.info(
+                "This song (explicitly) uses audio and video from the same source. It "
+                "is assumed that the #VIDEOGAP is intentional to actually fix the "
+                "misalignment of audio and video in that source."
+            )
 
 
 def _set_header_value(kwargs: dict[str, Any], header: str, value: str) -> None:
