@@ -188,13 +188,13 @@ class Headers:
             return
 
         if meta_tags.audio and meta_tags.video is None:
-            logger.warning(
+            logger.info(
                 "This song is audio only, thus the #VIDEOGAP is without effect. "
                 "Deleting #VIDEOGAP from local file."
             )
             self.videogap = None
         elif meta_tags.audio is None and meta_tags.video:
-            logger.warning(
+            logger.info(
                 "This song (implicitly) uses audio and video from the same source, "
                 "which are, generally, already in sync. Therefore, the #VIDEOGAP "
                 "actually causes audio and video to be asynchronized."
