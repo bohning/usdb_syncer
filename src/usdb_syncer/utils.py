@@ -13,14 +13,13 @@ from pathlib import Path
 from types import TracebackType
 from typing import ClassVar
 
-import requests
 from appdirs import AppDirs
 from bs4 import BeautifulSoup, Tag
 from packaging import version
 from unidecode import unidecode
 
 import usdb_syncer
-from usdb_syncer import constants
+from usdb_syncer import constants, net
 from usdb_syncer.logger import logger
 
 CACHE_LIFETIME = 60 * 60
@@ -56,7 +55,6 @@ def video_url_from_resource(resource: str) -> str | None:
 
 def _parse_polsy_html(html: str) -> list[str] | None:
     """Parses the HTML from polsy.org.uk and returns a list of allowed countries."""
-
     soup = BeautifulSoup(html, "lxml")
     allowed_countries = []
 
@@ -80,19 +78,14 @@ def _parse_polsy_html(html: str) -> list[str] | None:
 
 def get_allowed_countries(resource: str) -> list[str] | None:
     """Fetches YouTube video availability information from polsy.org.uk."""
-
     url = f"https://polsy.org.uk/stuff/ytrestrict.cgi?agreed=on&ytid={resource}"
-    response = requests.get(url, timeout=5)
-
-    if not response.ok:
-        return None
-
-    return _parse_polsy_html(response.text)
+    if response := net.get_generic_session().get(url):
+        return _parse_polsy_html(response.text)
+    return None
 
 
 def remove_ansi_codes(text: str) -> str:
     """Removes ANSI escape codes from a string."""
-
     ansi_escape = re.compile(r"\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])")
     return ansi_escape.sub("", text)
 
@@ -145,7 +138,6 @@ def extract_youtube_id(url: str) -> str | None:
 
     Partially taken from `https://regexr.com/531i0`.
     """
-
     pattern = r"""
         (?:https?://)?
         (?:www\.)?
@@ -170,7 +162,6 @@ def extract_youtube_id(url: str) -> str | None:
 
 def extract_vimeo_id(url: str) -> str | None:
     """Extracts the Vimeo id from a variety of URLs."""
-
     pattern = r"""
         (?:https?://)?
         (?:
@@ -300,8 +291,7 @@ def format_timestamp(micros: int) -> str:
 
 
 def get_latest_version() -> str | None:
-    response = requests.get(constants.GITHUB_API_LATEST, timeout=5)
-    if response.status_code == 200:
+    if response := net.get_generic_session().get(constants.GITHUB_API_LATEST):
         return response.json()["tag_name"]
     return None
 

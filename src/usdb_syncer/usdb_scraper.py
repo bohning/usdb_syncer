@@ -1,16 +1,16 @@
 """Functionality related to the usdb.animux.de web page."""
 
+import json
 import re
-import time
 from collections.abc import Iterator
 from datetime import datetime
-from enum import Enum
-from typing import Any, assert_never
+from threading import Lock
+from typing import Any, cast, override
 
 import attrs
-import requests
 from bs4 import BeautifulSoup, NavigableString, Tag
-from requests import Session
+from requests import Response
+from requests.exceptions import RequestException
 
 from usdb_syncer import SongId, errors, settings
 from usdb_syncer.constants import (
@@ -22,9 +22,13 @@ from usdb_syncer.constants import (
     UsdbStringsGerman,
 )
 from usdb_syncer.logger import Logger, logger, song_logger
+from usdb_syncer.net import SyncerSession
 from usdb_syncer.usdb_song import UsdbSong
 from usdb_syncer.utils import extract_youtube_id, normalize
 
+WELCOME_REGEX = re.compile(
+    r"<td class='row3' colspan='2'>\s*<span class='gen'>([^<]+) <b>([^<]+)</b>"
+)
 SONG_LIST_ROW_REGEX = re.compile(
     r'<td(?:.*?<source src="(?P<sample_url>.*?)".*?)?></td>'
     r'<td onclick="show_detail\((?P<song_id>\d+)\)".*?>'
@@ -40,95 +44,241 @@ SONG_LIST_ROW_REGEX = re.compile(
     r'<td onclick="show_detail\(\d+\)">(?P<rating>.*?)</td>\n'
     r'<td onclick="show_detail\(\d+\)">(?P<views>.*?)</td>'
 )
-WELCOME_REGEX = re.compile(
-    r"<td class='row3' colspan='2'>\s*<span class='gen'>([^<]+) <b>([^<]+)</b>"
-)
 
 
-def establish_usdb_login(session: Session) -> bool:
-    """Tries to log in to USDB if necessary. Returns final login status."""
-    if user := get_logged_in_usdb_user(session):
-        logger.info(f"Using existing login of USDB user '{user}'.")
-        return True
-    if (auth := settings.get_usdb_auth())[0] and auth[1]:
-        if login_to_usdb(session, *auth):
-            logger.info(f"Successfully logged in to USDB with user '{auth[0]}'.")
-            return True
-        logger.error(f"Login to USDB with user '{auth[0]}' failed!")
-    else:
-        logger.warning(
-            "Not logged in to USDB. Please go to 'Synchronize > USDB Login', then "
-            "select the browser you are logged in with and/or enter your credentials."
+class UsdbSession(SyncerSession[str]):
+    """Session class for USDB."""
+
+    def __init__(self, **kwargs: dict) -> None:
+        super().__init__(base_url=Usdb.BASE_URL, **kwargs)
+        self._username: str = ""
+        self._connected: bool = False
+
+    @override
+    def handle_response(self, response: Response) -> str:
+        """Handle response."""
+        if not self.connected:
+            self.connected = True
+        if not response.ok:
+            logger.debug(
+                f"Request failed with status code {response.status_code} for URL: "
+                f"{response.url}"
+            )
+            return ""
+        return normalize(response.text)
+
+    @override
+    def conn_failed(self, url: str, error: RequestException) -> str:
+        """Handle connection failure."""
+        self.connected = False
+        return ""
+
+    @override
+    def close(self) -> None:
+        """Close the session."""
+        self.username = ""
+        self.connected = False
+        super().close()
+
+    @property
+    def username(self) -> str:
+        """Get the username of the logged-in user."""
+        return self._username
+
+    @username.setter
+    def username(self, value: str) -> None:
+        """Set the username of the logged-in user."""
+        self._username = value
+        logger.debug(f"Username set to {value or 'None'}.")
+
+    @property
+    def connected(self) -> bool:
+        """Check if the session is connected."""
+        return self._connected
+
+    @connected.setter
+    def connected(self, value: bool) -> None:
+        """Set the connection status of the session."""
+        self._connected = value
+
+    def manual_login(self, username: str, password: str) -> bool:
+        """Try to login with the provided credentials."""
+        if not username or not password:
+            return False
+        text = self.post(
+            "", data={"user": username, "pass": password, "login": "Login"}
         )
-    return False
+        if UsdbStrings.NOT_LOGGED_IN not in text:
+            if self.username != username:
+                self.username = username
+            return True
+
+        return False
+
+    def cookie_login_exists(self) -> bool:
+        """Check if a login exists using session cookies.
+
+        Uses the cookies stored in this session.
+
+        Returns:
+            True if login was successful, False otherwise.
+
+        """
+        username = cast(dict, json.loads(self.get("whoami.php") or "{}")).get(
+            "username", ""
+        )
+        if ret := username and self.username != username:
+            self.username = username
+        return ret
+
+    def establish_login(self, auth: tuple[str, str] | None = None) -> bool:
+        """Establish a login. Uses cookies first, then provided credentials.
+
+        Args:
+            auth (optional): tuple of username and password.
+
+        Returns:
+            True if login was successful, False otherwise.
+
+        """
+        if self.cookie_login_exists():
+            logger.info(
+                f"Using existing browser session for USDB with user '{self.username}'."
+            )
+            return True
+        if not auth:
+            logger.debug("Login with browser session failed. Try setting credentials.")
+            return False
+        if self.manual_login(*auth):
+            logger.info(f"Logged in to USDB with user '{self.username}'.")
+            return True
+        logger.debug("Login with credentials failed.")
+        return False
+
+    def logout(self) -> None:
+        """Log out from the session.
+
+        Note that, obviously, if cookies are used, this logs out the user from their
+        browser as well.
+        """
+        self.username = ""
+        self.post("", params={"link": "logout"})
+
+    def get_song_details(self, song_id: SongId) -> "SongDetails":
+        """Get song details for a given song ID."""
+        text = self.get("index.php", params={"id": str(int(song_id)), "link": "detail"})
+        return parse_song_page(BeautifulSoup(normalize(text), "lxml"), song_id)
+
+    def get_usdb_available_songs(
+        self, max_skip_id: SongId, content_filter: dict[str, str] | None = None
+    ) -> list[UsdbSong]:
+        """Return a list of all available songs.
+
+        Args:
+            max_skip_id: only fetch ids larger than this
+            content_filter: filters response (e.g. {'artist': 'The Beatles'})
+
+        """
+        available_songs: list[UsdbSong] = []
+        payload = {
+            "order": "id",
+            "ud": "desc",
+            "limit": str(Usdb.MAX_SONGS_PER_PAGE),
+            "details": "1",
+        }
+
+        payload.update(content_filter or {})
+        for start in range(0, Usdb.MAX_SONG_ID, Usdb.MAX_SONGS_PER_PAGE):
+            payload["start"] = str(start)
+            html = self.post("index.php", params={"link": "list"}, data=payload)
+            songs = [
+                song
+                for song in parse_songs_from_songlist(html)
+                if song.song_id > max_skip_id
+            ]
+            available_songs.extend(songs)
+
+            if len(songs) < Usdb.MAX_SONGS_PER_PAGE:
+                break
+        return available_songs
+
+    def get_notes(self, song_id: SongId) -> str:
+        """Get notes for a song."""
+        html = self.post(
+            "index.php",
+            params={"link": "gettxt", "id": str(int(song_id))},
+            data={"wd": "1"},
+        )
+        return parse_song_txt_from_txt_page(BeautifulSoup(html, "lxml"))
+
+    def post_song_comment(self, song_id: SongId, text: str, rating: str) -> None:
+        """Post a comment to a song."""
+        data = {"text": text, "stars": rating}
+        self.post(
+            "index.php",
+            headers={"Content-Type": "application/x-www-form-urlencoded"},
+            params={"link": "detail", "id": str(int(song_id)), "comment": str(1)},
+            data=data,
+        )
+
+    def post_song_rating(self, song_id: SongId, stars: int) -> None:
+        """Post a rating to a song."""
+        data = {"stars": str(stars), "text": "onlyvoting"}
+        self.post(
+            "index.php",
+            headers={"Content-Type": "application/x-www-form-urlencoded"},
+            params={"link": "detail", "id": str(int(song_id)), "rating": str(1)},
+            data=data,
+        )
 
 
-def new_session_with_cookies(browser: settings.Browser) -> Session:
-    session = Session()
-    if cookies := browser.cookies():
-        for cookie in cookies:
-            session.cookies.set_cookie(cookie)
-    return session
+class UsdbSessionManager:
+    """Manages the global USDB session."""
 
-
-class SessionManager:
-    """Singleton for managing the global session instance."""
-
-    _session: Session | None = None
-    _connecting: bool = False
+    _session: UsdbSession | None = None
+    _lock: Lock = Lock()
 
     @classmethod
-    def session(cls) -> Session:
-        while cls._connecting:
-            time.sleep(0.1)
-        if cls._session is None:
-            cls._connecting = True
-            try:
-                cls._session = new_session_with_cookies(settings.get_browser())
-                establish_usdb_login(cls._session)
-            finally:
-                cls._connecting = False
-        return cls._session
+    def session(cls) -> UsdbSession:
+        """Return a logged-in session.
+
+        If no session exists, create a new one and login.
+        If a session exists, return it.
+
+        Returns:
+            UsdbSession: The logged-in session.
+
+        """
+        with cls._lock:
+            if cls._session is None:
+                cls._session = UsdbSession()
+                cls._session.set_cookies(settings.get_browser())
+                if not cls._session.establish_login(settings.get_usdb_auth()):
+                    logger.warning(
+                        "Not logged in to USDB. Please go to 'USDB > USDB "
+                        "Login', then select the browser you are logged in "
+                        "with and/or enter your credentials. If you have "
+                        "done this already, check the debug log for errors."
+                    )
+            return cls._session
 
     @classmethod
     def reset_session(cls) -> None:
-        if cls._session:
-            cls._session.close()
-            cls._session = None
+        """Reset the session."""
+        with cls._lock:
+            if cls._session:
+                cls._session.close()
+                cls._session = None
 
     @classmethod
     def has_session(cls) -> bool:
+        """Check if a session exists.
+
+        Returns:
+            bool: True if a session exists, False otherwise.
+
+        """
         return cls._session is not None
-
-
-def get_logged_in_usdb_user(session: Session) -> str | None:
-    response = session.get(Usdb.BASE_URL, timeout=10, params={"link": "profil"})
-    response.raise_for_status()
-    if match := WELCOME_REGEX.search(response.text):
-        return match.group(2)
-    return None
-
-
-def login_to_usdb(session: Session, user: str, password: str) -> bool:
-    """True if success."""
-    response = session.post(
-        Usdb.BASE_URL,
-        timeout=10,
-        data={"user": user, "pass": password, "login": "Login"},
-    )
-    response.raise_for_status()
-    return UsdbStrings.LOGIN_INVALID not in response.text
-
-
-def log_out_of_usdb(session: Session) -> None:
-    session.post(Usdb.BASE_URL, timeout=10, params={"link": "logout"})
-
-
-class RequestMethod(Enum):
-    """Supported HTTP requests."""
-
-    GET = "GET"
-    POST = "POST"
 
 
 @attrs.define(kw_only=True)
@@ -157,8 +307,11 @@ class SongComment:
 
 @attrs.define
 class SongDetails:
-    """Details about a song that USDB shows on a song's page, or are specified in the
-    comment section."""
+    """Details about a song.
+
+    This combines details that USDB shows on a song's page and those specified in the
+    comment section.
+    """
 
     song_id: SongId
     artist: str
@@ -182,103 +335,35 @@ class SongDetails:
     comments: list[SongComment] = attrs.field(factory=list)
 
     def all_comment_videos(self) -> Iterator[str]:
-        """Yields all parsed URLs and YouTube ids. Order is latest to earliest, then ids
-        before URLs.
+        """Get all parsed URLs and YouTube ids.
+
+        Order is latest to earliest, then ids before URLs.
+
+        Yields:
+            str: URLs and YouTube ids from all comments.
+
         """
         for comment in self.comments:
             yield from comment.contents.youtube_ids
             yield from comment.contents.urls
 
 
-def get_usdb_page(
-    rel_url: str,
-    method: RequestMethod = RequestMethod.GET,
-    *,
-    headers: dict[str, str] | None = None,
-    payload: dict[str, str] | None = None,
-    params: dict[str, str] | None = None,
-    session: Session | None = None,
-) -> str:
-    """Retrieve HTML subpage from USDB.
+def username_from_html(html: str) -> str | None:
+    """Extract the username from the HTML page.
 
-    Parameters:
-        rel_url: relative url of page to retrieve
-        method: GET or POST
-        headers: dict of headers to send with request
-        payload: dict of data to send with request
-        params: dict of params to send with request
-        session: Session to use instead of the global one
+    Args:
+        html: The HTML content of the main USDB page.
+
+    Returns:
+        The username if found, otherwise None.
+
     """
-    existing_session = SessionManager.has_session()
-
-    def page() -> str:
-        return _get_usdb_page_inner(
-            session or SessionManager.session(),
-            rel_url,
-            method=method,
-            headers=headers,
-            payload=payload,
-            params=params,
-        )
-
-    try:
-        return page()
-    except requests.ConnectionError:
-        logger.debug("Connection failed; session may have expired; retrying ...")
-    except errors.UsdbLoginError:
-        # skip login retry if custom or just created session
-        if session or not existing_session:
-            raise
-        logger.debug(f"Page '{rel_url}' is private; trying to log in ...")
-    if not session:
-        SessionManager.reset_session()
-    return page()
+    if match := WELCOME_REGEX.search(html):
+        return match.group(2)
+    return None
 
 
-def _get_usdb_page_inner(
-    session: Session,
-    rel_url: str,
-    method: RequestMethod = RequestMethod.GET,
-    *,
-    headers: dict[str, str] | None = None,
-    payload: dict[str, str] | None = None,
-    params: dict[str, str] | None = None,
-) -> str:
-    session = session or SessionManager.session()
-    url = Usdb.BASE_URL + rel_url
-    match method:
-        case RequestMethod.GET:
-            logger.debug(f"Get request for {url}")
-            response = session.get(url, headers=headers, params=params, timeout=10)
-        case RequestMethod.POST:
-            logger.debug(f"Post request for {url}")
-            response = session.post(
-                url, headers=headers, data=payload, params=params, timeout=10
-            )
-        case _ as unreachable:
-            assert_never(unreachable)
-    response.raise_for_status()
-    response.encoding = "utf-8"
-    if UsdbStrings.NOT_LOGGED_IN in (page := normalize(response.text)):
-        raise errors.UsdbLoginError
-    if UsdbStrings.DATASET_NOT_FOUND in page:
-        raise errors.UsdbNotFoundError
-    return page
-
-
-def get_usdb_details(song_id: SongId) -> SongDetails:
-    """Retrieve song details from usdb webpage, if song exists.
-
-    Parameters:
-        song_id: id of song to retrieve details for
-    """
-    html = get_usdb_page(
-        "index.php", params={"id": str(int(song_id)), "link": "detail"}
-    )
-    return _parse_song_page(BeautifulSoup(html, "lxml"), song_id)
-
-
-def _parse_song_page(soup: BeautifulSoup, song_id: SongId) -> SongDetails:
+def parse_song_page(soup: BeautifulSoup, song_id: SongId) -> SongDetails:
     logger = song_logger(song_id)
     usdb_strings = _usdb_strings_from_soup(soup)
     details_table, comments_table, *_ = soup.find_all("table", border="0", width="500")
@@ -312,49 +397,7 @@ def _usdb_strings_from_welcome(welcome_string: str) -> type[UsdbStrings]:
     raise errors.UsdbUnknownLanguageError
 
 
-def get_usdb_available_songs(
-    max_skip_id: SongId,
-    content_filter: dict[str, str] | None = None,
-    session: Session | None = None,
-) -> list[UsdbSong]:
-    """Return a list of all available songs.
-
-    Parameters:
-        max_skip_id: only fetch ids larger than this
-        content_filter: filters response (e.g. {'artist': 'The Beatles'})
-    """
-    available_songs: list[UsdbSong] = []
-    payload = {
-        "order": "id",
-        "ud": "desc",
-        "limit": str(Usdb.MAX_SONGS_PER_PAGE),
-        "details": "1",
-    }
-    payload.update(content_filter or {})
-    for start in range(0, Usdb.MAX_SONG_ID, Usdb.MAX_SONGS_PER_PAGE):
-        payload["start"] = str(start)
-        html = get_usdb_page(
-            "index.php",
-            RequestMethod.POST,
-            params={"link": "list"},
-            payload=payload,
-            session=session,
-        )
-        songs = [
-            song
-            for song in _parse_songs_from_songlist(html)
-            if song.song_id > max_skip_id
-        ]
-        available_songs.extend(songs)
-
-        if len(songs) < Usdb.MAX_SONGS_PER_PAGE:
-            break
-
-    logger.info(f"Fetched {len(available_songs)} new song(s) from USDB.")
-    return available_songs
-
-
-def _parse_songs_from_songlist(html: str) -> Iterator[UsdbSong]:
+def parse_songs_from_songlist(html: str) -> Iterator[UsdbSong]:
     return (
         UsdbSong.from_html(
             _usdb_strings_from_html(html),
@@ -380,9 +423,10 @@ def _parse_details_table(
 ) -> SongDetails:
     """Parse song attributes from usdb page.
 
-    Parameters:
+    Args:
         details: dict of song attributes
         details_table: BeautifulSoup object of song details table
+
     """
     editors = []
     pointer = details_table.find(string=usdb_strings.SONG_EDITED_BY)
@@ -434,7 +478,7 @@ def _parse_details_table(
         uploader=_find_text_after(details_table, usdb_strings.UPLOADED_BY),
         editors=editors,
         views=int(_find_text_after(details_table, usdb_strings.VIEWS)),
-        rating=sum("star.png" in s.get("src") for s in stars),
+        rating=sum("star.png" in s.get("src") for s in stars),  # type: ignore
         votes=int(votes_str.split("(")[1].split(")")[0]),
         audio_sample=audio_sample or None,
     )
@@ -520,51 +564,7 @@ def _extract_supported_video_source(tag: Any, attr_key: str) -> str | None:
     return None
 
 
-def get_notes(song_id: SongId, logger: Logger) -> str:
-    """Retrieve notes for a song."""
-    logger.debug("fetching notes")
-    html = get_usdb_page(
-        "index.php",
-        RequestMethod.POST,
-        headers={"Content-Type": "application/x-www-form-urlencoded"},
-        params={"link": "gettxt", "id": str(int(song_id))},
-        payload={"wd": "1"},
-    )
-    return _parse_song_txt_from_txt_page(BeautifulSoup(html, "lxml"))
-
-
-def _parse_song_txt_from_txt_page(soup: BeautifulSoup) -> str:
+def parse_song_txt_from_txt_page(soup: BeautifulSoup) -> str:
     if isinstance(textarea := soup.find("textarea"), Tag):
         return textarea.string or ""
     raise errors.UsdbParseError("textarea for notes not found")  # noqa: TRY003
-
-
-def post_song_comment(song_id: SongId, text: str, rating: str) -> None:
-    """Post a song comment to USDB."""
-    payload = {"text": text, "stars": rating}
-
-    get_usdb_page(
-        "index.php",
-        RequestMethod.POST,
-        headers={"Content-Type": "application/x-www-form-urlencoded"},
-        params={"link": "detail", "id": str(int(song_id)), "comment": str(1)},
-        payload=payload,
-    )
-    logger = song_logger(song_id)
-    logger.debug("Comment posted on USDB.")
-
-
-def post_song_rating(song_id: SongId, stars: int) -> None:
-    """Post a song rating to USDB."""
-
-    payload = {"stars": str(stars), "text": "onlyvoting"}
-
-    get_usdb_page(
-        "index.php",
-        RequestMethod.POST,
-        headers={"Content-Type": "application/x-www-form-urlencoded"},
-        params={"link": "detail", "id": str(int(song_id)), "comment": str(1)},
-        payload=payload,
-    )
-    logger = song_logger(song_id)
-    logger.debug(f"{stars}-star rating posted on USDB.")
