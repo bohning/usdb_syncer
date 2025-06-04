@@ -91,6 +91,8 @@ class SyncMeta:
     pinned: bool = False
     txt: ResourceFile | None = None
     audio: ResourceFile | None = None
+    instrumental: ResourceFile | None = None
+    vocals: ResourceFile | None = None
     video: ResourceFile | None = None
     cover: ResourceFile | None = None
     background: ResourceFile | None = None
@@ -133,6 +135,8 @@ class SyncMeta:
                 pinned=bool(dct.get("pinned", False)),
                 txt=ResourceFile.from_nested_dict(dct["txt"]),
                 audio=ResourceFile.from_nested_dict(dct["audio"]),
+                instrumental=ResourceFile.from_nested_dict(dct["instrumental"]),
+                vocals=ResourceFile.from_nested_dict(dct["vocals"]),
                 video=ResourceFile.from_nested_dict(dct["video"]),
                 cover=ResourceFile.from_nested_dict(dct["cover"]),
                 background=ResourceFile.from_nested_dict(dct["background"]),
@@ -148,7 +152,7 @@ class SyncMeta:
 
     @classmethod
     def from_db_row(cls, row: tuple) -> SyncMeta:
-        assert len(row) == 21
+        assert len(row) == 27
         meta = cls(
             sync_meta_id=SyncMetaId(row[0]),
             song_id=SongId(row[1]),
@@ -159,9 +163,11 @@ class SyncMeta:
         )
         meta.txt = ResourceFile.from_db_row(row[6:9])
         meta.audio = ResourceFile.from_db_row(row[9:12])
-        meta.video = ResourceFile.from_db_row(row[12:15])
-        meta.cover = ResourceFile.from_db_row(row[15:18])
-        meta.background = ResourceFile.from_db_row(row[18:])
+        meta.instrumental = ResourceFile.from_db_row(row[12:15])
+        meta.vocals = ResourceFile.from_db_row(row[15:18])
+        meta.video = ResourceFile.from_db_row(row[18:21])
+        meta.cover = ResourceFile.from_db_row(row[21:24])
+        meta.background = ResourceFile.from_db_row(row[24:])
         meta.custom_data = CustomData(db.get_custom_data(meta.sync_meta_id))
         return meta
 
@@ -225,6 +231,8 @@ class SyncMeta:
         return (
             (self.txt, db.ResourceFileKind.TXT),
             (self.audio, db.ResourceFileKind.AUDIO),
+            (self.instrumental, db.ResourceFileKind.INSTRUMENTAL),
+            (self.vocals, db.ResourceFileKind.VOCALS),
             (self.video, db.ResourceFileKind.VIDEO),
             (self.cover, db.ResourceFileKind.COVER),
             (self.background, db.ResourceFileKind.BACKGROUND),
@@ -247,7 +255,15 @@ class SyncMeta:
         self.mtime = utils.get_mtime(self.path)
 
     def resource_files(self) -> Iterator[ResourceFile]:
-        for meta in (self.txt, self.audio, self.video, self.cover, self.background):
+        for meta in (
+            self.txt,
+            self.audio,
+            self.instrumental,
+            self.vocals,
+            self.video,
+            self.cover,
+            self.background,
+        ):
             if meta:
                 yield meta
 

@@ -137,6 +137,9 @@ def _run() -> None:
             mw.label_update_hint.setOpenExternalLinks(True)
     else:
         logger.logger.info("Running in dev mode, skipping update check.")
+    logger.logger.info(f"Stem separation available: {utils.IS_TORCH_AVAILABLE}")
+    if utils.IS_TORCH_AVAILABLE:
+        logger.logger.debug(f"Cuda available: {utils.IS_CUDA_AVAILABLE}")
     try:
         _load_main_window(mw)
     except errors.UnknownSchemaError:
