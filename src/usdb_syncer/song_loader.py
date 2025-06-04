@@ -12,7 +12,6 @@ from pathlib import Path
 from typing import ClassVar, assert_never
 
 import attrs
-import demucs.separate
 import send2trash
 import shiboken6
 from ffmpeg import FFmpeg
@@ -43,6 +42,9 @@ from usdb_syncer.sync_meta import ResourceFile, SyncMeta
 from usdb_syncer.usdb_scraper import SongDetails
 from usdb_syncer.usdb_song import DownloadStatus, UsdbSong
 from usdb_syncer.utils import video_url_from_resource
+
+if utils.IS_TORCH_AVAILABLE:
+    import demucs.separate  # type: ignore
 
 
 class DownloadManager:
@@ -718,9 +720,14 @@ def _maybe_separate_stems(ctx: _Context) -> None:
         return
     if not (ctx.song.sync_meta):
         return
+    if not utils.IS_TORCH_AVAILABLE:
+        ctx.logger.warning(
+            "Stem separation was selected, but is not available."
+        )
+        return
 
     model = audio_options.stem_separation.value
-    demucs.separate.main([
+    demucs.separate.main([  # type: ignore
         "--two-stems",
         "vocals",
         "-n",

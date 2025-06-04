@@ -32,6 +32,17 @@ IS_BUNDLE = bool(getattr(sys, "frozen", False) and getattr(sys, "_MEIPASS", Fals
 IS_INSTALLED = "site-packages" in __file__
 IS_SOURCE = not IS_BUNDLE and not IS_INSTALLED
 
+# Check if torch is available for stem separation.
+try:
+    import torch  # type: ignore[import]
+
+    IS_TORCH_AVAILABLE = True
+    IS_CUDA_AVAILABLE: bool
+    IS_CUDA_AVAILABLE = torch.cuda.is_available()  # type: ignore
+except ImportError:
+    IS_TORCH_AVAILABLE = False
+    IS_CUDA_AVAILABLE = False
+
 
 def _root() -> Path:
     """Returns source root folder or temprory bundle folder if running as such."""

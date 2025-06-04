@@ -1,49 +1,80 @@
+[project]
+name = "usdb_syncer"
+authors = [
+    {name = "Markus Böhning", email = "markus.boehning@gmail.com"},
+]
+maintainers = [
+    {name = "RumovZ", email = "gp5glkw78@relay.firefox.com"},
+    {name = "randompersona1", email = "74961116+randompersona1@users.noreply.github.com"},
+]
+description = "A download manager for USDB songs."
+readme = "README.md"
+requires-python = ">3.10,<3.13"
+dependencies = [
+    "appdirs",
+    "attrs",
+    "beautifulsoup4",
+    "ffmpeg-normalize>=1.27",
+    "filetype",
+    "keyring",
+    "lxml",
+    "mutagen",
+    "numpy<2",
+    "packaging",
+    "pillow>=10",
+    "PySide6",
+    "python-ffmpeg==2.0.12",
+    "reportlab",
+    "requests",
+    "rookiepy>=0.5.3",
+    "send2trash",
+    "sounddevice>=0.5.1",
+    "soundfile>=0.13.1",
+    "unidecode",
+    "yt-dlp[default,curl_cffi]",
+]
+dynamic = ["version"]
+
+[project.urls]
+repository = "https://github.com/bohning/usdb_syncer"
+
+[project.scripts]
+usdb_syncer = "usdb_syncer.gui:main"
+
+[project.optional-dependencies]
+instrumental-cpu = [
+    "demucs==4.0.1",
+    "torch==2.7.0+cpu",
+    "torchaudio==2.7.0+cpu",
+]
+instrumental-cuda = [
+    "demucs==4.0.1",
+    "torch==2.7.0+cu128",
+    "torchaudio==2.7.0+cu128",
+]
+
 [build-system]
 requires = ["poetry-core>=1.0.0", "poetry-dynamic-versioning>=1.0.0,<2.0.0"]
 build-backend = "poetry_dynamic_versioning.backend"
 
 [tool.poetry]
-name = "usdb_syncer"
-version = "0.0.0"  # will be replaced by current git tag via poetry-dynamic-versioning
-authors = ["Markus Böhning <markus.boehning@gmail.com>"]
-description = "A download manager for USDB songs."
-readme = ["README.md"]
-repository = "https://github.com/bohning/usdb_syncer"
+# Add files that are excluded from vcs to wheel for distribution.
 include = [
     { path = "src/usdb_syncer/gui/forms/*.py", format = ["sdist", "wheel"] },
     { path = "src/usdb_syncer/gui/resources/qt/*.py", format = ["sdist", "wheel"] },
     { path = "src/usdb_syncer/data/*.json", format = ["sdist", "wheel"] },
 ]
-
-[tool.poetry.requires-plugins]
-poetry-dynamic-versioning = { version = ">=1.0.0,<2.0.0", extras = ["plugin"] }
+version = "0.0.0" # This will be dynamically set by poetry-dynamic-versioning.
 
 [tool.poetry.dependencies]
-python = ">3.10,<3.13"
-appdirs = "*"
-attrs = "*"
-beautifulsoup4 = "*"
-demucs = "*"
-ffmpeg-normalize = ">=1.27"
-filetype = "*"
-keyring = "*"
-lxml = "*"
-mutagen = "*"
-numpy = "<2.0.0"  # torchaudio 2.2.2 needs numpy < 2.0.0
-packaging = "*"
-pillow = ">=10"
-PySide6 = "*"
-python-ffmpeg = "^2.0.12"
-reportlab = "*"
-requests = "*"
-rookiepy = "^0.5.3"
-send2trash = "*"
-sounddevice = "^0.5.1"
-soundfile = "^0.13.1"
-torch = "2.2.2"  # 2.2.2 is latest version available for macosx_x86_64 (Intel Macs)
-torchaudio = "2.2.2"
-unidecode = "*"
-yt-dlp = {version = "*", extras = ["default", "curl_cffi"]}
+torch = [
+    { version = "==2.7.0+cpu", markers = "extra == 'instrumental-cpu' and extra != 'instrumental-cuda'", source = "torch-cpu" },
+    { version = "==2.7.0+cu128", markers = "extra == 'instrumental-cuda' and extra != 'instrumental-cpu'", source = "torch-cuda" },
+]
+torchaudio = [
+    { version = "==2.7.0+cpu", markers = "extra == 'instrumental-cpu' and extra != 'instrumental-cuda'", source = "torch-cpu" },
+    { version = "==2.7.0+cu128", markers = "extra == 'instrumental-cuda' and extra != 'instrumental-cpu'", source = "torch-cuda" },
+]
 
 [tool.poetry.group.dev.dependencies]
 tox = "*"
@@ -70,12 +101,22 @@ altgraph = "*"
 macholib = {version = "*", markers="sys_platform == 'darwin'"}
 pywin32-ctypes = {version = "*", markers="sys_platform == 'win32'"}
 
-[tool.poetry.scripts]
-usdb_syncer = "usdb_syncer.gui:main"
+[tool.poetry.requires-plugins]
+poetry-dynamic-versioning = { version = ">=1.0.0,<2.0.0", extras = ["plugin"] }
 
 [tool.poetry-dynamic-versioning]
 enable = true
 substitution.files = []
+
+[[tool.poetry.source]]
+name = "torch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+priority = "explicit"
+
+[[tool.poetry.source]]
+name = "torch-cuda"
+url = "https://download.pytorch.org/whl/cu128"
+priority = "explicit"
 
 [tool.ruff]
 extend-exclude = [
