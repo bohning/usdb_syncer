@@ -224,6 +224,9 @@ class SettingsDialog(Ui_Dialog, QDialog):
         self.checkBox_video_embed_artwork.setChecked(settings.get_video_embed_artwork())
         self.groupBox_background.setChecked(settings.get_background())
         self.checkBox_background_always.setChecked(settings.get_background_always())
+        self.checkBox_trash_remotely_deleted_songs.setChecked(
+            settings.get_trash_remotely_deleted_songs()
+        )
         if (path := settings.get_app_path(settings.SupportedApps.KAREDI)) is not None:
             self.lineEdit_path_karedi.setText(str(path))
         if (
@@ -330,6 +333,9 @@ class SettingsDialog(Ui_Dialog, QDialog):
                 self, "Invalid setting", "Please provide a valid path template!"
             )
             return False
+        settings.set_trash_remotely_deleted_songs(
+            self.checkBox_trash_remotely_deleted_songs.isChecked()
+        )
         settings.set_app_path(
             settings.SupportedApps.KAREDI, self.lineEdit_path_karedi.text()
         )
