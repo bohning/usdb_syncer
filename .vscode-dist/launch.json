@@ -6,11 +6,17 @@
   "configurations": [
     {
       "name": "GUI",
-      "type": "python",
+      "type": "debugpy",
       "request": "launch",
       "program": "${workspaceFolder}/src/usdb_syncer/gui/__init__.py",
       "console": "internalConsole",
-      "justMyCode": true
+      "justMyCode": false,
+      "redirectOutput": true,
+      "args": [
+        // "--profile",
+        // "TRACESQL": "1",
+        // "SONG_DIR": "c:/path/to/song_dir",
+      ]
     }
   ]
 }
