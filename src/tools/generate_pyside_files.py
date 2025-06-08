@@ -2,7 +2,12 @@
 
 import argparse
 import subprocess
+import sys
 from pathlib import Path
+
+bin_folder = "Scripts" if sys.platform == "win32" else "bin"
+uic_path = Path(sys.exec_prefix, bin_folder, "pyside6-uic")
+rcc_path = Path(sys.exec_prefix, bin_folder, "pyside6-rcc")
 
 
 def main() -> None:
@@ -10,11 +15,11 @@ def main() -> None:
     rc_py_files = []
     for path in Path("src/usdb_syncer/gui/forms").glob("*.ui"):
         out_path = path.with_suffix(".py")
-        subprocess.run(["pyside6-uic", str(path), "-o", str(out_path)], check=True)
+        subprocess.run([str(uic_path), str(path), "-o", str(out_path)], check=True)
         ui_py_files.append(out_path)
     for path in Path("src/usdb_syncer/gui/resources/qt").glob("*.qrc"):
         out_path = path.with_suffix(".py")
-        subprocess.run(["pyside6-rcc", str(path), "-o", str(out_path)], check=True)
+        subprocess.run([str(rcc_path), str(path), "-o", str(out_path)], check=True)
         rc_py_files.append(out_path)
     _fix_resource_imports(ui_py_files, rc_py_files)
 
