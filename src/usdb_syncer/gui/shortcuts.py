@@ -19,7 +19,7 @@ class MainWindowShortcut(Shortcut):
 
     SELECT_FOLDER = "Ctrl+O"
     PAUSE_DOWNLOAD = "Ctrl+Shift+Return"
-    OPEN_PREFERNCES = "Ctrl+,"
+    OPEN_PREFERENCES = "Ctrl+,"
     OPEN_DEBUG_CONSOLE = "Ctrl+."
     GO_TO_SEARCH = "Ctrl+F"
     GO_TO_SONG_TABLE = "Ctrl+T"
