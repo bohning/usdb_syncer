@@ -16,6 +16,7 @@ class Icon(enum.Enum):
     ARC = "arc.png", None
     ARTIST = "artist.png", "artist-white.svg"
     AUDIO = "audio.png", "music-white.svg"
+    AUDIO_STEMS = "audio_stems.png", "music-stems-white.svg"
     AUDIO_SAMPLE = "sample.png", "music-note-white.svg"
     BACKGROUND = "background.png", "image-area-white.svg"
     BRAVE = "brave.png", None

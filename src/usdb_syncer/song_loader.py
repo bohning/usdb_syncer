@@ -14,6 +14,7 @@ from typing import ClassVar, assert_never
 import attrs
 import send2trash
 import shiboken6
+from ffmpeg import FFmpeg
 from PySide6 import QtCore
 
 from usdb_syncer import (
@@ -35,12 +36,15 @@ from usdb_syncer.discord import notify_discord
 from usdb_syncer.logger import Logger, logger, song_logger
 from usdb_syncer.postprocessing import write_audio_tags, write_video_tags
 from usdb_syncer.resource_dl import ResourceDLError
-from usdb_syncer.settings import FormatVersion
+from usdb_syncer.settings import AudioStemSeparation, FormatVersion
 from usdb_syncer.song_txt import SongTxt
 from usdb_syncer.sync_meta import ResourceFile, SyncMeta
 from usdb_syncer.usdb_scraper import SongDetails
 from usdb_syncer.usdb_song import DownloadStatus, UsdbSong
 from usdb_syncer.utils import video_url_from_resource
+
+if utils.IS_TORCH_AVAILABLE:
+    import demucs.separate  # type: ignore
 
 
 class DownloadManager:
@@ -169,6 +173,12 @@ class _Locations:
         else:
             self._target.parent.mkdir(parents=True, exist_ok=True)
 
+    def stem_separation_instrumental_path(self, model: str) -> Path:
+        return self._tempdir / model / self.filename() / "no_vocals.wav"
+
+    def stem_separation_vocals_path(self, model: str) -> Path:
+        return self._tempdir / model / self.filename() / "vocals.wav"
+
 
 @attrs.define
 class _TempResourceFile:
@@ -210,12 +220,22 @@ class _TempResourceFiles:
 
     txt: _TempResourceFile = attrs.field(factory=_TempResourceFile)
     audio: _TempResourceFile = attrs.field(factory=_TempResourceFile)
+    instrumental: _TempResourceFile = attrs.field(factory=_TempResourceFile)
+    vocals: _TempResourceFile = attrs.field(factory=_TempResourceFile)
     video: _TempResourceFile = attrs.field(factory=_TempResourceFile)
     cover: _TempResourceFile = attrs.field(factory=_TempResourceFile)
     background: _TempResourceFile = attrs.field(factory=_TempResourceFile)
 
     def __iter__(self) -> Iterator[_TempResourceFile]:
-        return iter((self.txt, self.audio, self.video, self.cover, self.background))
+        return iter((
+            self.txt,
+            self.audio,
+            self.instrumental,
+            self.vocals,
+            self.video,
+            self.cover,
+            self.background,
+        ))
 
 
 @attrs.define
@@ -237,6 +257,8 @@ class _Context:
         if self.song.sync_meta and (current := self.locations.current_path()):
             for old, out in (
                 (self.song.sync_meta.audio, self.out.audio),
+                (self.song.sync_meta.instrumental, self.out.instrumental),
+                (self.song.sync_meta.vocals, self.out.vocals),
                 (self.song.sync_meta.video, self.out.video),
                 (self.song.sync_meta.cover, self.out.cover),
                 (self.song.sync_meta.background, self.out.background),
@@ -375,6 +397,7 @@ class _SongLoader(QtCore.QRunnable):
                 _maybe_download_cover,
                 _maybe_download_background,
                 _maybe_write_audio_tags,
+                _maybe_separate_stems,
                 _maybe_write_video_tags,
             ):
                 self._check_flags()
@@ -595,6 +618,12 @@ def _write_headers(ctx: _Context) -> None:
     if path := ctx.out.audio.path(ctx.locations, temp=True):
         _set_audio_headers(ctx, version, path)
 
+    if path := ctx.out.instrumental.path(ctx.locations, temp=True):
+        _set_instrumental_headers(ctx, version, path)
+
+    if path := ctx.out.vocals.path(ctx.locations, temp=True):
+        _set_vocals_headers(ctx, version, path)
+
     if path := ctx.out.video.path(ctx.locations, temp=True):
         _set_video_headers(ctx, version, path)
 
@@ -619,6 +648,22 @@ def _set_audio_headers(ctx: _Context, version: FormatVersion, path: Path) -> Non
                 ctx.txt.headers.audiourl = video_url_from_resource(resource)
         case _ as unreachable:
             assert_never(unreachable)
+
+
+def _set_instrumental_headers(
+    ctx: _Context, version: FormatVersion, path: Path
+) -> None:
+    if version >= FormatVersion.V1_1_0:
+        ctx.txt.headers.instrumental = path.name
+    else:
+        ctx.logger.warning(f"Instrumental not supported in {version}.")
+
+
+def _set_vocals_headers(ctx: _Context, version: FormatVersion, path: Path) -> None:
+    if version >= FormatVersion.V1_1_0:
+        ctx.txt.headers.vocals = path.name
+    else:
+        ctx.logger.warning(f"Vocals not supported in {version}.")
 
 
 def _set_video_headers(ctx: _Context, version: FormatVersion, path: Path) -> None:
@@ -666,6 +711,64 @@ def _maybe_write_audio_tags(ctx: _Context) -> None:
         background=background_path_resource,
         logger=ctx.logger,
     )
+
+
+def _maybe_separate_stems(ctx: _Context) -> None:
+    if not (audio_options := ctx.options.audio_options) or (
+        audio_options.stem_separation == AudioStemSeparation.DISABLE
+    ):
+        return
+    if not (ctx.song.sync_meta):
+        return
+    if not utils.IS_TORCH_AVAILABLE:
+        ctx.logger.warning(
+            "Stem separation was selected, but is not available."
+        )
+        return
+
+    model = audio_options.stem_separation.value
+    demucs.separate.main([  # type: ignore
+        "--two-stems",
+        "vocals",
+        "-n",
+        model,
+        f"{ctx.out.audio.path(ctx.locations, temp=True)}",
+        "-o",
+        f"{ctx.locations._tempdir}",
+    ])
+    # Transcode instrumental and vocals files to target format via ffmpeg
+    instrumental_input = ctx.locations.stem_separation_instrumental_path(model)
+    instrumental_output = ctx.locations.temp_path(
+        ext=f" [INSTR].{audio_options.format.value}"
+    )
+    transcode_audio(audio_options, instrumental_input, instrumental_output)
+    ctx.out.instrumental.resource = ctx.out.audio.resource
+    ctx.out.instrumental.new_fname = Path(instrumental_output).name
+
+    vocals_input = ctx.locations.stem_separation_vocals_path(model)
+    vocals_output = ctx.locations.temp_path(ext=f" [VOC].{audio_options.format.value}")
+    transcode_audio(audio_options, vocals_input, vocals_output)
+    ctx.out.vocals.resource = ctx.out.audio.resource
+    ctx.out.vocals.new_fname = Path(vocals_output).name
+    ctx.logger.info("Success! Separated audio file into instrumental and vocals.")
+
+
+def transcode_audio(
+    audio_options: download_options.AudioOptions, src: Path, dst: Path
+) -> None:
+    ffmpeg = (
+        FFmpeg()
+        .option("y")
+        .input(str(src))
+        .output(
+            str(dst),
+            {
+                "codec:a": audio_options.format.ffmpeg_encoder(),
+                "b:a": f"{audio_options.bitrate.ffmpeg_format()}",
+            },
+        )
+    )
+    ffmpeg.execute()
 
 
 def _maybe_write_video_tags(ctx: _Context) -> None:
@@ -745,6 +848,12 @@ def _write_sync_meta(ctx: _Context) -> None:
     )
     ctx.song.sync_meta.txt = ctx.out.txt.to_resource_file(ctx.locations, temp=False)
     ctx.song.sync_meta.audio = ctx.out.audio.to_resource_file(ctx.locations, temp=False)
+    ctx.song.sync_meta.instrumental = ctx.out.instrumental.to_resource_file(
+        ctx.locations, temp=False
+    )
+    ctx.song.sync_meta.vocals = ctx.out.vocals.to_resource_file(
+        ctx.locations, temp=False
+    )
     ctx.song.sync_meta.video = ctx.out.video.to_resource_file(ctx.locations, temp=False)
     ctx.song.sync_meta.cover = ctx.out.cover.to_resource_file(ctx.locations, temp=False)
     ctx.song.sync_meta.background = ctx.out.background.to_resource_file(
