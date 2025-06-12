@@ -187,6 +187,7 @@ class SettingKey(Enum):
     BACKGROUND = "downloads/background"
     BACKGROUND_ALWAYS = "downloads/background_always"
     DISCORD_ALLOWED = "downloads/discord_allowed"
+    TRASH_REMOTELY_DELETED_SONGS = "downloads/trash_remotely_deleted_songs"
     MAIN_WINDOW_GEOMETRY = "geometry/main_window"
     DOCK_LOG_GEOMETRY = "geometry/dock_log"
     MAIN_WINDOW_STATE = "state/main_window"
@@ -1181,3 +1182,11 @@ def get_report_json_indent() -> int:
 
 def set_report_json_indent(indent: int, temp: bool = False) -> None:
     _Settings.set(SettingKey.REPORT_JSON_INDENT, indent, temp)
+
+
+def get_trash_remotely_deleted_songs() -> bool:
+    return _Settings.get(SettingKey.TRASH_REMOTELY_DELETED_SONGS, False)
+
+
+def set_trash_remotely_deleted_songs(value: bool, temp: bool = False) -> None:
+    _Settings.set(SettingKey.TRASH_REMOTELY_DELETED_SONGS, value, temp)

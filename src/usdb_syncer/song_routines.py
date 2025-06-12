@@ -129,8 +129,11 @@ def synchronize_sync_meta_folder(folder: Path) -> None:
                     logger.info(f"New meta file found on disk: '{path}'.")
             else:
                 logger.info(
-                    f"{meta.song_id.usdb_detail_url()} no longer exists: '{path}'."
+                    f"{meta.song_id.usdb_detail_url()} no longer exists on USDB."
                 )
+                if settings.get_trash_remotely_deleted_songs():
+                    logger.info(f"Deleting '{path.parent}' locally as well.")
+                    send2trash.send2trash(path.parent)
 
     SyncMeta.delete_many(tuple(db_metas.keys() - found_metas))
     SyncMeta.upsert_many(to_upsert)
