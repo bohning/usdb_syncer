@@ -3,17 +3,10 @@
 from PySide6.QtGui import QDesktopServices
 from PySide6.QtWidgets import QDialog, QMessageBox, QWidget
 
-from usdb_syncer import settings
+from usdb_syncer import settings, usdb_scraper
 from usdb_syncer.constants import Usdb
 from usdb_syncer.gui import icons
 from usdb_syncer.gui.forms.UsdbLoginDialog import Ui_Dialog
-from usdb_syncer.usdb_scraper import (
-    SessionManager,
-    get_logged_in_usdb_user,
-    log_out_of_usdb,
-    login_to_usdb,
-    new_session_with_cookies,
-)
 
 
 class UsdbLoginDialog(Ui_Dialog, QDialog):
@@ -21,6 +14,7 @@ class UsdbLoginDialog(Ui_Dialog, QDialog):
 
     def __init__(self, parent: QWidget) -> None:
         super().__init__(parent=parent)
+        self.session = usdb_scraper.UsdbSession()
         self._parent = parent
         self.setupUi(self)
         self.command_link_register.pressed.connect(
@@ -48,23 +42,32 @@ class UsdbLoginDialog(Ui_Dialog, QDialog):
         settings.set_usdb_auth(
             self.line_edit_username.text(), self.line_edit_password.text()
         )
-        SessionManager.reset_session()
+        usdb_scraper.UsdbSessionManager.reset_session()
         super().accept()
 
     def _on_check_login(self) -> None:
-        session = new_session_with_cookies(self.combobox_browser.currentData())
-        if user := get_logged_in_usdb_user(session):
-            message = f"Success! Existing session found with user '{user}'."
-        elif (user := self.line_edit_username.text()) and (
-            password := self.line_edit_password.text()
-        ):
-            if login_to_usdb(session, user, password):
-                message = "Success! Logged in to USDB."
-            else:
-                message = "Login failed!"
+        self.session.clear_cookies()
+        self.session.set_cookies(self.combobox_browser.currentData())
+        if self.session.cookie_login_exists():
+            message = (
+                f"Success! Existing browser session found with user "
+                f"'{self.session.username}'."
+            )
         else:
-            message = "No existing session found!"
+            message = "No existing browser session found."
+
+            if (user := self.line_edit_username.text()) and (
+                password := self.line_edit_password.text()
+            ):
+                if self.session.manual_login(user, password):
+                    message = (
+                        f"Success! Logged in to USDB with user "
+                        f"'{self.session.username}'."
+                    )
+                else:
+                    message = "Login failed. Please check your credentials."
+
         QMessageBox.information(self._parent, "Login Result", message)
 
     def _on_log_out(self) -> None:
-        log_out_of_usdb(new_session_with_cookies(self.combobox_browser.currentData()))
+        self.session.logout()

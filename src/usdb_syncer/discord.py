@@ -1,8 +1,6 @@
 """Functions for Disord integration."""
 
-import requests
-
-from usdb_syncer import SongId, db, remote_config
+from usdb_syncer import SongId, db, net, remote_config
 from usdb_syncer.constants import Usdb
 from usdb_syncer.logger import Logger
 from usdb_syncer.usdb_song import UsdbSong
@@ -41,5 +39,4 @@ def notify_discord(
 
         payload = {"embeds": [embed]}
 
-        response = requests.post(dwh_url, json=payload, timeout=5)
-        response.raise_for_status()
+        net.get_generic_session().post(dwh_url, json=payload)
