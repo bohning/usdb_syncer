@@ -810,7 +810,7 @@
              <string/>
             </property>
             <property name="pixmap">
-             <pixmap>:/icons/usdx.png</pixmap>
+             <pixmap resource="../resources/qt/resources.qrc">:/icons/usdx.png</pixmap>
             </property>
             <property name="scaledContents">
              <bool>true</bool>
@@ -876,7 +876,7 @@
              <string/>
             </property>
             <property name="pixmap">
-             <pixmap>:/icons/vocaluxe.png</pixmap>
+             <pixmap resource="../resources/qt/resources.qrc">:/icons/vocaluxe.png</pixmap>
             </property>
             <property name="scaledContents">
              <bool>true</bool>
@@ -942,7 +942,7 @@
              <string/>
             </property>
             <property name="pixmap">
-             <pixmap>:/icons/performous.png</pixmap>
+             <pixmap resource="../resources/qt/resources.qrc">:/icons/performous.png</pixmap>
             </property>
             <property name="scaledContents">
              <bool>true</bool>
@@ -1008,7 +1008,7 @@
              <string/>
             </property>
             <property name="pixmap">
-             <pixmap>:/icons/ultrastar-manager.png</pixmap>
+             <pixmap resource="../resources/qt/resources.qrc">:/icons/ultrastar-manager.png</pixmap>
             </property>
             <property name="scaledContents">
              <bool>true</bool>
@@ -1074,7 +1074,7 @@
              <string/>
             </property>
             <property name="pixmap">
-             <pixmap>:/icons/yass-reloaded.png</pixmap>
+             <pixmap resource="../resources/qt/resources.qrc">:/icons/yass-reloaded.png</pixmap>
             </property>
             <property name="scaledContents">
              <bool>true</bool>
@@ -1140,7 +1140,7 @@
              <string/>
             </property>
             <property name="pixmap">
-             <pixmap>:/icons/karedi.png</pixmap>
+             <pixmap resource="../resources/qt/resources.qrc">:/icons/karedi.png</pixmap>
             </property>
             <property name="scaledContents">
              <bool>true</bool>
@@ -1156,6 +1156,72 @@
           </item>
           <item>
            <widget class="QPushButton" name="pushButton_browse_karedi">
+            <property name="text">
+             <string>...</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </widget>
+       </item>
+       <item>
+        <widget class="QGroupBox" name="groupBox_tune_perfect">
+         <property name="title">
+          <string>Tune Perfect</string>
+         </property>
+         <layout class="QHBoxLayout" name="horizontalLayout_13">
+          <property name="leftMargin">
+           <number>6</number>
+          </property>
+          <property name="topMargin">
+           <number>6</number>
+          </property>
+          <property name="rightMargin">
+           <number>6</number>
+          </property>
+          <property name="bottomMargin">
+           <number>6</number>
+          </property>
+          <item>
+           <widget class="QLabel" name="label_tune_perfect">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+            <property name="minimumSize">
+             <size>
+              <width>32</width>
+              <height>32</height>
+             </size>
+            </property>
+            <property name="maximumSize">
+             <size>
+              <width>32</width>
+              <height>32</height>
+             </size>
+            </property>
+            <property name="text">
+             <string/>
+            </property>
+            <property name="pixmap">
+             <pixmap resource="../resources/qt/resources.qrc">:/icons/tune-perfect.png</pixmap>
+            </property>
+            <property name="scaledContents">
+             <bool>true</bool>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QLineEdit" name="lineEdit_path_tune_perfect">
+            <property name="readOnly">
+             <bool>true</bool>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QPushButton" name="pushButton_browse_tune_perfect">
             <property name="text">
              <string>...</string>
             </property>
@@ -1184,7 +1250,7 @@
   </layout>
  </widget>
  <resources>
-  <include location="../resources/resources.qrc"/>
+  <include location="../resources/qt/resources.qrc"/>
  </resources>
  <connections>
   <connection>

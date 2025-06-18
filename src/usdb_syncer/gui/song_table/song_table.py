@@ -242,6 +242,7 @@ class SongTable:
             self.mw.menu_open_song_in,
             self.mw.action_open_song_in_karedi,
             self.mw.action_open_song_in_performous,
+            self.mw.action_open_song_in_tune_perfect,
             self.mw.action_open_song_in_ultrastar_manager,
             self.mw.action_open_song_in_usdx,
             self.mw.action_open_song_in_vocaluxe,
@@ -259,6 +260,10 @@ class SongTable:
         for action, app in (
             (self.mw.action_open_song_in_karedi, settings.SupportedApps.KAREDI),
             (self.mw.action_open_song_in_performous, settings.SupportedApps.PERFORMOUS),
+            (
+                self.mw.action_open_song_in_tune_perfect,
+                settings.SupportedApps.TUNE_PERFECT,
+            ),
             (
                 self.mw.action_open_song_in_ultrastar_manager,
                 settings.SupportedApps.ULTRASTAR_MANAGER,

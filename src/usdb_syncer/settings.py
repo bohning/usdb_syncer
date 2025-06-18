@@ -195,6 +195,7 @@ class SettingKey(Enum):
     PATH_TEMPLATE = "files/path_template"
     APP_PATH_KAREDI = "app_paths/karedi"
     APP_PATH_PERFORMOUS = "app_paths/performous"
+    APP_PATH_TUNE_PERFECT = "app_paths/tune_perfect"
     APP_PATH_ULTRASTAR_MANAGER = "app_paths/ultrastar_manager"
     APP_PATH_USDX = "app_paths/usdx"
     APP_PATH_VOCALUXE = "app_paths/vocaluxe"
@@ -678,6 +679,7 @@ class SupportedApps(StrEnum):
 
     KAREDI = auto()
     PERFORMOUS = auto()
+    TUNE_PERFECT = auto()
     ULTRASTAR_MANAGER = auto()
     USDX = auto()
     VOCALUXE = auto()
@@ -689,6 +691,8 @@ class SupportedApps(StrEnum):
                 return "Karedi"
             case SupportedApps.PERFORMOUS:
                 return "Performous"
+            case SupportedApps.TUNE_PERFECT:
+                return "Tune Perfect"
             case SupportedApps.ULTRASTAR_MANAGER:
                 return "UltraStar Manager"
             case SupportedApps.USDX:
@@ -706,6 +710,8 @@ class SupportedApps(StrEnum):
                 return "Karedi"
             case SupportedApps.PERFORMOUS:
                 return "performous"
+            case SupportedApps.TUNE_PERFECT:
+                return "tuneperfect"
             case SupportedApps.ULTRASTAR_MANAGER:
                 return "UltraStar-Manager"
             case SupportedApps.USDX:
@@ -723,6 +729,8 @@ class SupportedApps(StrEnum):
                 return ""
             case SupportedApps.PERFORMOUS:
                 return ""
+            case SupportedApps.TUNE_PERFECT:
+                return "--songpath"
             case SupportedApps.ULTRASTAR_MANAGER:
                 return "-songpath"
             case SupportedApps.USDX:
@@ -1097,6 +1105,8 @@ def get_app_path(app: SupportedApps) -> Path | None:
             path = _Settings.get(SettingKey.APP_PATH_KAREDI, "")
         case SupportedApps.PERFORMOUS:
             path = _Settings.get(SettingKey.APP_PATH_PERFORMOUS, "")
+        case SupportedApps.TUNE_PERFECT:
+            path = _Settings.get(SettingKey.APP_PATH_TUNE_PERFECT, "")
         case SupportedApps.ULTRASTAR_MANAGER:
             path = _Settings.get(SettingKey.APP_PATH_ULTRASTAR_MANAGER, "")
         case SupportedApps.USDX:
@@ -1117,6 +1127,8 @@ def set_app_path(app: SupportedApps, path: str, temp: bool = False) -> None:
             setting_key = SettingKey.APP_PATH_KAREDI
         case SupportedApps.PERFORMOUS:
             setting_key = SettingKey.APP_PATH_PERFORMOUS
+        case SupportedApps.TUNE_PERFECT:
+            setting_key = SettingKey.APP_PATH_TUNE_PERFECT
         case SupportedApps.ULTRASTAR_MANAGER:
             setting_key = SettingKey.APP_PATH_ULTRASTAR_MANAGER
         case SupportedApps.USDX:

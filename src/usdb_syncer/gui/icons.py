@@ -80,6 +80,7 @@ class Icon(enum.Enum):
     TAGS = "price-tag.png", "tag-white.svg"
     TEXT = "text.png", "file-document-white.svg"
     TITLE = "title.png", "format-title-white.svg"
+    TUNE_PERFECT = "tune-perfect.png", None
     ULTRASTAR_GAME = "ultrastar-game-black.svg", "ultrastar-game-white.svg"
     ULTRASTAR_MANAGER = "ultrastar-manager.png", None
     USDB = "faviconUSDB.png", "usdb-white.svg"

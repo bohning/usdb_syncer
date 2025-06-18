@@ -852,6 +852,11 @@
     <string>Go to &amp;Open Song Menu</string>
    </property>
   </action>
+  <action name="action_open_song_in_tune_perfect">
+   <property name="text">
+    <string>Tune Perfect</string>
+   </property>
+  </action>
  </widget>
  <resources>
   <include location="../resources/qt/resources.qrc"/>

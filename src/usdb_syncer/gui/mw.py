@@ -148,6 +148,13 @@ class MainWindow(Ui_MainWindow, QMainWindow):
                 None,
             ),
             (
+                self.action_open_song_in_tune_perfect,
+                lambda: self._open_current_song_in_app(
+                    settings.SupportedApps.TUNE_PERFECT
+                ),
+                None,
+            ),
+            (
                 self.action_open_song_in_ultrastar_manager,
                 lambda: self._open_current_song_in_app(
                     settings.SupportedApps.ULTRASTAR_MANAGER
@@ -460,6 +467,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         self.action_open_song_in_usdx.setIcon(icons.Icon.USDX.icon(key))
         self.action_open_song_in_vocaluxe.setIcon(icons.Icon.VOCALUXE.icon(key))
         self.action_open_song_in_performous.setIcon(icons.Icon.PERFORMOUS.icon(key))
+        self.action_open_song_in_tune_perfect.setIcon(icons.Icon.TUNE_PERFECT.icon(key))
         self.action_open_song_in_yass_reloaded.setIcon(
             icons.Icon.YASS_RELOADED.icon(key)
         )
