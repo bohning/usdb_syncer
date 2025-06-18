@@ -58,6 +58,9 @@ class SettingsDialog(Ui_Dialog, QDialog):
         self.pushButton_browse_performous.clicked.connect(
             lambda: self._set_location(settings.SupportedApps.PERFORMOUS)
         )
+        self.pushButton_browse_tune_perfect.clicked.connect(
+            lambda: self._set_location(settings.SupportedApps.TUNE_PERFECT)
+        )
         self.pushButton_browse_ultrastar_manager.clicked.connect(
             lambda: self._set_location(settings.SupportedApps.ULTRASTAR_MANAGER)
         )
@@ -89,6 +92,8 @@ class SettingsDialog(Ui_Dialog, QDialog):
                 self.lineEdit_path_karedi.setText(text)
             case settings.SupportedApps.PERFORMOUS:
                 self.lineEdit_path_performous.setText(text)
+            case settings.SupportedApps.TUNE_PERFECT:
+                self.lineEdit_path_tune_perfect.setText(text)
             case settings.SupportedApps.ULTRASTAR_MANAGER:
                 self.lineEdit_path_ultrastar_manager.setText(text)
             case settings.SupportedApps.USDX:
@@ -231,6 +236,10 @@ class SettingsDialog(Ui_Dialog, QDialog):
         ) is not None:
             self.lineEdit_path_performous.setText(str(path))
         if (
+            path := settings.get_app_path(settings.SupportedApps.TUNE_PERFECT)
+        ) is not None:
+            self.lineEdit_path_tune_perfect.setText(str(path))
+        if (
             path := settings.get_app_path(settings.SupportedApps.ULTRASTAR_MANAGER)
         ) is not None:
             self.lineEdit_path_ultrastar_manager.setText(str(path))
@@ -335,6 +344,9 @@ class SettingsDialog(Ui_Dialog, QDialog):
         )
         settings.set_app_path(
             settings.SupportedApps.PERFORMOUS, self.lineEdit_path_performous.text()
+        )
+        settings.set_app_path(
+            settings.SupportedApps.TUNE_PERFECT, self.lineEdit_path_tune_perfect.text()
         )
         settings.set_app_path(
             settings.SupportedApps.ULTRASTAR_MANAGER,

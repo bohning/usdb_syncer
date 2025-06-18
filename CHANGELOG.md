@@ -4,6 +4,8 @@
 
 ## Features
 
+. Added Tune Perfect (https://tuneperfect.org/) to supported apps. You can now open a selected song in Tune Perfect directly via the Syncer.
+ 
 ## Fixes
 
 - Fixed extraction of allowed countries for geo-restricted resources.

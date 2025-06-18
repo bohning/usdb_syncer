@@ -1,4 +1,3 @@
-
 <RCC>
   <qresource prefix="icons">
     <file>alert-white.svg</file>
@@ -116,6 +115,7 @@
     <file>tick.png</file>
     <file>title.png</file>
     <file>translate-variant-white.svg</file>
+    <file>tune-perfect.png</file>
     <file>ultrastar-game-black.svg</file>
     <file>ultrastar-game-white.svg</file>
     <file>ultrastar-manager.png</file>
