@@ -260,6 +260,7 @@
      <addaction name="action_open_song_in_usdx"/>
      <addaction name="action_open_song_in_vocaluxe"/>
      <addaction name="action_open_song_in_performous"/>
+     <addaction name="action_open_song_in_tune_perfect"/>
      <addaction name="separator"/>
      <addaction name="action_open_song_in_yass_reloaded"/>
      <addaction name="action_open_song_in_karedi"/>
