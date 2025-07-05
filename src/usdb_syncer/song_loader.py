@@ -5,6 +5,7 @@ from __future__ import annotations
 import copy
 import shutil
 import tempfile
+import filecmp
 import time
 from collections.abc import Iterable, Iterator
 from itertools import islice
@@ -577,9 +578,20 @@ def _maybe_write_txt(ctx: _Context) -> None:
     _write_headers(ctx)
     path = ctx.locations.temp_path(ext="txt")
     ctx.out.txt.new_fname = path.name
+    oldpath = None
+    if path.exists():
+        oldpath = path
+        path = path.with_suffix(".new")
     ctx.txt.write_to_file(path, options.encoding.value, options.newline.value)
     ctx.out.txt.resource = ctx.song.song_id.usdb_gettxt_url()
-    ctx.logger.info("Success! Created song txt.")
+    if oldpath and oldpath.exists():
+        if filecmp.cmp(path, oldpath, shallow=False):
+            path.unlink()
+            ctx.logger.info("Song txt is unchanged. No txt file update needed.")
+        else:
+            oldpath.unlink()
+            path.rename(oldpath)
+            ctx.logger.info("Success! Created song txt.")
 
 
 def _write_headers(ctx: _Context) -> None:
