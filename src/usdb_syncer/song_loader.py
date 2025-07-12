@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import copy
+import filecmp
 import shutil
 import tempfile
 import time
@@ -233,9 +234,9 @@ class _Context:
 
     def __attrs_post_init__(self) -> None:
         # reuse old resource files unless we acquire new ones later on
-        # txt is always rewritten
         if self.song.sync_meta and (current := self.locations.current_path()):
             for old, out in (
+                (self.song.sync_meta.txt, self.out.txt),
                 (self.song.sync_meta.audio, self.out.audio),
                 (self.song.sync_meta.video, self.out.video),
                 (self.song.sync_meta.cover, self.out.cover),
@@ -576,10 +577,17 @@ def _maybe_write_txt(ctx: _Context) -> None:
         return
     _write_headers(ctx)
     path = ctx.locations.temp_path(ext="txt")
-    ctx.out.txt.new_fname = path.name
     ctx.txt.write_to_file(path, options.encoding.value, options.newline.value)
-    ctx.out.txt.resource = ctx.song.song_id.usdb_gettxt_url()
-    ctx.logger.info("Success! Created song txt.")
+    if (
+        ctx.out.txt.old_fname
+        and (old_path := ctx.locations.current_path(ctx.out.txt.old_fname))
+        and filecmp.cmp(path, old_path, shallow=False)
+    ):
+        ctx.logger.info("Song txt is unchanged.")
+    else:
+        ctx.out.txt.new_fname = path.name
+        ctx.out.txt.resource = ctx.song.song_id.usdb_gettxt_url()
+        ctx.logger.info("Success! Created song txt.")
 
 
 def _write_headers(ctx: _Context) -> None:
@@ -715,8 +723,6 @@ def _cleanup_existing_resources(ctx: _Context) -> None:
                 path = old_path.with_name(target)
                 old_path.rename(path)
                 out.old_fname = target
-
-    return
 
 
 def _persist_tempfiles(ctx: _Context) -> None:

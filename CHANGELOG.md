@@ -6,7 +6,8 @@
 
 - Added Tune Perfect (https://tuneperfect.org/) to supported apps. You can now open a selected song in Tune Perfect directly via the Syncer.
 - Meta tags parsing is now case insensitive.
- 
+- Don't overwrite song txt if contents haven't changed (preserve metadata).
+
 ## Fixes
 
 - Fixed extraction of allowed countries for geo-restricted resources.
