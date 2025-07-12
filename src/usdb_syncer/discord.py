@@ -2,7 +2,7 @@
 
 import requests
 
-from usdb_syncer import SongId, db, remote_config
+from usdb_syncer import SongId, __version__, db, remote_config
 from usdb_syncer.constants import Usdb
 from usdb_syncer.logger import Logger
 from usdb_syncer.usdb_song import UsdbSong
@@ -37,6 +37,7 @@ def notify_discord(
                 "icon_url": f"{Usdb.COVER_URL}{song_id:d}.jpg",
             },
             "fields": [{"name": f"{kind} {error_str}:", "value": url, "inline": False}],
+            "footer": {"text": f"USDB Syncer {__version__}"},
         }
 
         payload = {"embeds": [embed]}
