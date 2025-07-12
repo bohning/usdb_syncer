@@ -173,6 +173,7 @@ class MetaTags:
     def _parse_key_value_pair(  # noqa: C901
         self, key: str, value: str, logger: Logger
     ) -> None:
+        key = key.lower()
         value = decode_meta_tag_value(value)
         match key:
             case "v":
