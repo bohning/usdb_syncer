@@ -27,7 +27,7 @@ from usdb_syncer.gui.usdb_login_dialog import UsdbLoginDialog
 from usdb_syncer.logger import logger
 from usdb_syncer.song_loader import DownloadManager
 from usdb_syncer.sync_meta import SyncMeta
-from usdb_syncer.usdb_scraper import post_song_rating
+from usdb_syncer.usdb_scraper import UsdbSessionManager
 from usdb_syncer.usdb_song import UsdbSong
 from usdb_syncer.utils import AppPaths, LinuxEnvCleaner, open_path_or_file
 
@@ -382,7 +382,8 @@ class MainWindow(Ui_MainWindow, QMainWindow):
     def _rate_in_usdb(self, stars: int) -> None:
         song = self.table.current_song()
         if song:
-            post_song_rating(song.song_id, stars)
+            session = UsdbSessionManager.session()
+            session.post_song_rating(song.song_id, stars)
         else:
             logger.debug("Not rating song: no song selected.")
 
