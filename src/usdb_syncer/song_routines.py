@@ -1,5 +1,7 @@
 """High-level routines for USDB and local songs."""
 
+from __future__ import annotations
+
 import json
 import os
 from collections.abc import Generator
@@ -7,6 +9,7 @@ from importlib import resources
 from importlib.abc import Traversable
 from pathlib import Path
 
+import attrs
 import requests
 import send2trash
 from requests import Session
@@ -30,7 +33,8 @@ from usdb_syncer.usdb_song import UsdbSong, UsdbSongEncoder
 from usdb_syncer.utils import AppPaths
 
 
-def load_available_songs(force_reload: bool, session: Session | None = None) -> None:
+def load_available_songs(force_reload: bool, session: Session | None = None) -> bool:
+    """True if USDB was queried successfully."""
     if force_reload:
         max_skip_id = SongId(0)
         UsdbSong.delete_all()
@@ -41,14 +45,15 @@ def load_available_songs(force_reload: bool, session: Session | None = None) -> 
         songs = get_usdb_available_songs(max_skip_id, session=session)
     except errors.UsdbLoginError:
         logger.debug("Skipping fetching new songs as there is no login.")
-        return
+        return False
     except requests.exceptions.ConnectionError:
         logger.debug("", exc_info=True)
         logger.error("Failed to fetch new songs; check network connection.")
-        return
+        return False
     if songs:
         UsdbSong.upsert_many(songs)
         _download_subscribed_songs(songs)
+    return True
 
 
 def _download_subscribed_songs(songs: list[UsdbSong]) -> None:
@@ -95,45 +100,72 @@ def _iterate_usdb_files_in_folder_recursively(
                 yield Path(root) / file
 
 
-def synchronize_sync_meta_folder(folder: Path) -> None:
-    db_metas = {m.sync_meta_id: m for m in SyncMeta.get_in_folder(folder)}
-    song_ids = set(db.all_song_ids())
-    to_upsert: list[SyncMeta] = []
-    found_metas: set[SyncMetaId] = set()
+@attrs.define
+class _SyncMetaFolderSyncer:
+    folder: Path
+    keep_unknown_song_ids: bool
+    db_metas: dict[SyncMetaId, SyncMeta]
+    song_ids: set[SongId]
+    to_upsert: list[SyncMeta]
+    found_metas: set[SyncMetaId]
 
-    for path in _iterate_usdb_files_in_folder_recursively(folder=folder):
+    @classmethod
+    def new(cls, folder: Path, keep_unknown_song_ids: bool) -> _SyncMetaFolderSyncer:
+        return cls(
+            folder=folder,
+            keep_unknown_song_ids=keep_unknown_song_ids,
+            db_metas={m.sync_meta_id: m for m in SyncMeta.get_in_folder(folder)},
+            song_ids=set(db.all_song_ids()),
+            to_upsert=[],
+            found_metas=set(),
+        )
+
+    def process(self) -> None:
+        for path in _iterate_usdb_files_in_folder_recursively(folder=self.folder):
+            self._process_path(path)
+        SyncMeta.delete_many(tuple(self.db_metas.keys() - self.found_metas))
+        SyncMeta.upsert_many(self.to_upsert)
+
+    def _process_path(self, path: Path) -> None:
         if meta_id := SyncMetaId.from_path(path):
-            if meta_id in found_metas:
+            if meta_id in self.found_metas:
                 send2trash.send2trash(path)
                 logger.warning(f"Trashed duplicated meta file: '{path}'")
-                continue
-            found_metas.add(meta_id)
+                return
+            self.found_metas.add(meta_id)
 
-        meta = None if meta_id is None else db_metas.get(meta_id)
+        meta = None if meta_id is None else self.db_metas.get(meta_id)
 
         if meta_id is not None and meta and meta.mtime == utils.get_mtime(path):
-            # file is unchanged
-            if not utils.compare_unicode_paths(path, meta.path):
-                meta.path = path
-                to_upsert.append(meta)
-                logger.info(f"Meta file was moved: '{path}'.")
-            continue
+            self._process_unchanged_file(path, meta)
+        else:
+            self._process_changed_or_new_file(path)
 
-        if meta := SyncMeta.try_from_file(path):
-            if meta.song_id in song_ids:
-                # file was changed and maybe moved
-                to_upsert.append(meta)
-                if meta.sync_meta_id in db_metas:
-                    logger.info(f"Updated meta file from disk: '{path}'.")
-                else:
-                    logger.info(f"New meta file found on disk: '{path}'.")
+    def _process_unchanged_file(self, path: Path, meta: SyncMeta) -> None:
+        if not utils.compare_unicode_paths(path, meta.path):
+            meta.path = path
+            self.to_upsert.append(meta)
+            logger.info(f"Meta file was moved: '{path}'.")
+
+    def _process_changed_or_new_file(self, path: Path) -> None:
+        if not (meta := SyncMeta.try_from_file(path)):
+            return
+        if meta.song_id in self.song_ids:
+            # file was changed and maybe moved
+            self.to_upsert.append(meta)
+            if meta.sync_meta_id in self.db_metas:
+                logger.info(f"Updated meta file from disk: '{path}'.")
             else:
-                logger.info(
-                    f"{meta.song_id.usdb_detail_url()} no longer exists: '{path}'."
-                )
+                logger.info(f"New meta file found on disk: '{path}'.")
+        elif not self.keep_unknown_song_ids:
+            logger.info(f"{meta.song_id.usdb_detail_url()} no longer exists on USDB.")
+            if settings.get_trash_remotely_deleted_songs():
+                logger.info(f"Deleting '{path.parent}' locally as well.")
+                send2trash.send2trash(path.parent)
 
-    SyncMeta.delete_many(tuple(db_metas.keys() - found_metas))
-    SyncMeta.upsert_many(to_upsert)
+
+def synchronize_sync_meta_folder(folder: Path, keep_unknown_song_ids: bool) -> None:
+    _SyncMetaFolderSyncer.new(folder, keep_unknown_song_ids).process()
 
 
 def find_local_songs(directory: Path) -> set[SongId]:

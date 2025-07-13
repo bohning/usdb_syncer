@@ -172,8 +172,8 @@ def _load_main_window(mw: MainWindow) -> None:
     folder = settings.get_song_dir()
     db.connect(utils.AppPaths.db)
     with db.transaction():
-        song_routines.load_available_songs(force_reload=False)
-        song_routines.synchronize_sync_meta_folder(folder)
+        keep_unknown_ids = not song_routines.load_available_songs(force_reload=False)
+        song_routines.synchronize_sync_meta_folder(folder, keep_unknown_ids)
         sync_meta.SyncMeta.reset_active(folder)
         usdb_song.UsdbSong.clear_cache()
         default_search = db.SavedSearch.get_default()
