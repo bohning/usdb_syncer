@@ -149,20 +149,23 @@ class SongTable:
                 existing_state = True
                 self._search.order = Column(header.sortIndicatorSection()).song_order()
                 self._search.descending = bool(header.sortIndicatorOrder().value)
+
+        header.setSectionsMovable(True)
+        header.setSectionsClickable(True)
+        header.setStretchLastSection(False)
+        header.setMinimumSectionSize(0)
+        header.setHighlightSections(True)
+
         for column in Column:
+            header.setSectionResizeMode(
+                column, QtWidgets.QHeaderView.ResizeMode.Interactive
+            )
+
             if size := column.fixed_size():
-                header.setSectionResizeMode(
-                    column, QtWidgets.QHeaderView.ResizeMode.Fixed
-                )
                 header.resizeSection(column, size)
-            # setting a (default) width on the last, stretching column seems to cause
-            # issues, so we set it manually on the other columns
             elif column is not max(Column):
                 if not existing_state:
                     header.resizeSection(column, DEFAULT_COLUMN_WIDTH)
-                header.setSectionResizeMode(
-                    column, QtWidgets.QHeaderView.ResizeMode.Interactive
-                )
 
     def build_custom_data_menu(self) -> None:
         if not (song := self.current_song()) or not song.sync_meta:
