@@ -941,7 +941,7 @@ def set_browser(value: Browser, temp: bool = False) -> None:
 
 
 def get_song_dir() -> Path:
-    return _Settings.get(SettingKey.SONG_DIR, Path("songs").resolve())
+    return _Settings.get(SettingKey.SONG_DIR, Path.home().joinpath("songs").resolve())
 
 
 def set_song_dir(value: Path, temp: bool = False) -> None:
