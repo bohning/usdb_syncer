@@ -29,7 +29,7 @@ if TYPE_CHECKING:
 else:
     try:
         import sounddevice
-    except OSError:
+    except (OSError, ImportError):
         _logger.exception(
             "Failed to load module 'sounddevice', some features may be unavailable."
         )
@@ -58,6 +58,10 @@ _MISSING_LIB_HELP = (
 )
 _MISSING_LIB_MSG = (
     f"This feature is unavailable due to missing libraries, see {_MISSING_LIB_HELP}."
+)
+_NO_DEVICES_MSG = (
+    "No audio devices found. This likely means your platform is not supported for this"
+    " feature."
 )
 
 
@@ -98,6 +102,9 @@ class PreviewDialog(Ui_Dialog, QtWidgets.QDialog):
     def load(cls, parent: QtWidgets.QWidget, song: UsdbSong) -> None:
         if not sounddevice:
             QtWidgets.QMessageBox.warning(parent, "Aborted", _MISSING_LIB_MSG)
+            return
+        if not sounddevice.query_devices():
+            QtWidgets.QMessageBox.warning(parent, "Aborted", _NO_DEVICES_MSG)
             return
         if not (txt_path := song.txt_path()) or not (audio_path := song.audio_path()):
             QtWidgets.QMessageBox.warning(
