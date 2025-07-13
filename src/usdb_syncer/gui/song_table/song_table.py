@@ -16,7 +16,7 @@ from usdb_syncer.gui import events as gui_events
 from usdb_syncer.gui import ffmpeg_dialog
 from usdb_syncer.gui.custom_data_dialog import CustomDataDialog
 from usdb_syncer.gui.progress import run_with_progress
-from usdb_syncer.gui.song_table.column import Column
+from usdb_syncer.gui.song_table.column import MINIMUM_COLUMN_WIDTH, Column
 from usdb_syncer.gui.song_table.table_model import TableModel
 from usdb_syncer.logger import song_logger
 from usdb_syncer.song_loader import DownloadManager
@@ -149,20 +149,18 @@ class SongTable:
                 existing_state = True
                 self._search.order = Column(header.sortIndicatorSection()).song_order()
                 self._search.descending = bool(header.sortIndicatorOrder().value)
+
+        header.setSectionsMovable(True)
+        header.setStretchLastSection(False)
+        header.setMinimumSectionSize(MINIMUM_COLUMN_WIDTH)
+        header.setSectionResizeMode(QtWidgets.QHeaderView.ResizeMode.Interactive)
+        header.setHighlightSections(False)
+
         for column in Column:
             if size := column.fixed_size():
-                header.setSectionResizeMode(
-                    column, QtWidgets.QHeaderView.ResizeMode.Fixed
-                )
                 header.resizeSection(column, size)
-            # setting a (default) width on the last, stretching column seems to cause
-            # issues, so we set it manually on the other columns
-            elif column is not max(Column):
-                if not existing_state:
-                    header.resizeSection(column, DEFAULT_COLUMN_WIDTH)
-                header.setSectionResizeMode(
-                    column, QtWidgets.QHeaderView.ResizeMode.Interactive
-                )
+            elif not existing_state:
+                header.resizeSection(column, DEFAULT_COLUMN_WIDTH)
 
     def build_custom_data_menu(self) -> None:
         if not (song := self.current_song()) or not song.sync_meta:
