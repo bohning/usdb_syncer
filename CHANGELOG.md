@@ -4,13 +4,17 @@
 
 ## Features
 
+- There are now shortcuts for commonly used actions.
 - Added Tune Perfect (https://tuneperfect.org/) to supported apps. You can now open a selected song in Tune Perfect directly via the Syncer.
 - Meta tags parsing is now case insensitive.
 - Don't overwrite song txt if contents haven't changed (preserve metadata).
+- Local songs may be automatically trashed if the according USDB songs were removed.
 
 ## Fixes
 
 - Fixed extraction of allowed countries for geo-restricted resources.
+- The song directory now defaults to ~/songs to avoid possible permission issues with the current directory.
+- Enable the app to run if sounddevice / portaudio is not available (required for the preview feature).
 
 <!-- 0.14.0 -->
 
