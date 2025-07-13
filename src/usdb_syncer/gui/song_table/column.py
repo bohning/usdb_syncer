@@ -11,6 +11,8 @@ from PySide6.QtGui import QIcon
 from usdb_syncer import db
 from usdb_syncer.gui.icons import Icon
 
+MINIMUM_COLUMN_WIDTH = 24
+
 
 class Column(IntEnum):
     """Table columns."""
@@ -147,7 +149,7 @@ class Column(IntEnum):
                 | Column.BACKGROUND
                 | Column.PINNED
             ):
-                return 24
+                return MINIMUM_COLUMN_WIDTH
             case _ as unreachable:
                 assert_never(unreachable)
 

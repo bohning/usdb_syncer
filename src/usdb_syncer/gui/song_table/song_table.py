@@ -16,7 +16,7 @@ from usdb_syncer.gui import events as gui_events
 from usdb_syncer.gui import ffmpeg_dialog
 from usdb_syncer.gui.custom_data_dialog import CustomDataDialog
 from usdb_syncer.gui.progress import run_with_progress
-from usdb_syncer.gui.song_table.column import Column
+from usdb_syncer.gui.song_table.column import MINIMUM_COLUMN_WIDTH, Column
 from usdb_syncer.gui.song_table.table_model import TableModel
 from usdb_syncer.logger import song_logger
 from usdb_syncer.song_loader import DownloadManager
@@ -151,21 +151,15 @@ class SongTable:
                 self._search.descending = bool(header.sortIndicatorOrder().value)
 
         header.setSectionsMovable(True)
-        header.setSectionsClickable(True)
         header.setStretchLastSection(False)
-        header.setMinimumSectionSize(0)
-        header.setHighlightSections(True)
+        header.setMinimumSectionSize(MINIMUM_COLUMN_WIDTH)
+        header.setSectionResizeMode(QtWidgets.QHeaderView.ResizeMode.Interactive)
 
         for column in Column:
-            header.setSectionResizeMode(
-                column, QtWidgets.QHeaderView.ResizeMode.Interactive
-            )
-
             if size := column.fixed_size():
                 header.resizeSection(column, size)
-            elif column is not max(Column):
-                if not existing_state:
-                    header.resizeSection(column, DEFAULT_COLUMN_WIDTH)
+            elif not existing_state:
+                header.resizeSection(column, DEFAULT_COLUMN_WIDTH)
 
     def build_custom_data_menu(self) -> None:
         if not (song := self.current_song()) or not song.sync_meta:
