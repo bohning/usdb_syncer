@@ -304,7 +304,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
 
         def task() -> None:
             with db.transaction():
-                song_routines.synchronize_sync_meta_folder(path)
+                song_routines.synchronize_sync_meta_folder(path, True)
                 SyncMeta.reset_active(path)
 
         def on_done(result: progress.Result[None]) -> None:
