@@ -154,6 +154,7 @@ class SongTable:
         header.setStretchLastSection(False)
         header.setMinimumSectionSize(MINIMUM_COLUMN_WIDTH)
         header.setSectionResizeMode(QtWidgets.QHeaderView.ResizeMode.Interactive)
+        header.setHighlightSections(False)
 
         for column in Column:
             if size := column.fixed_size():
