@@ -60,6 +60,7 @@ def example_usdb_song() -> UsdbSong:
     return UsdbSong(
         sample_url="",
         song_id=song_id,
+        usdb_mtime=0,
         artist="Foo",
         title="Bar",
         genre="Pop",
@@ -73,6 +74,7 @@ def example_usdb_song() -> UsdbSong:
         sync_meta=SyncMeta(
             sync_meta_id=sync_meta_id,
             song_id=song_id,
+            usdb_mtime=0,
             path=Path(f"C:/{sync_meta_id.to_filename()}"),
             mtime=0,
             meta_tags=MetaTags(),

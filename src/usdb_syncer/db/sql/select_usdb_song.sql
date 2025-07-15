@@ -1,5 +1,6 @@
 SELECT
     usdb_song.song_id,
+    usdb_song.usdb_mtime,
     usdb_song.artist,
     usdb_song.title,
     usdb_song.language,
@@ -12,10 +13,19 @@ SELECT
     usdb_song.genre,
     usdb_song.creator,
     usdb_song.tags,
-    coalesce(session_usdb_song.status, 0),
+    coalesce(
+        session_usdb_song.status,
+        CASE
+            sync_meta.usdb_mtime = usdb_song.usdb_mtime
+            WHEN true THEN 1
+            WHEN false THEN 2
+            ELSE 0
+        END
+    ) AS status,
     coalesce(session_usdb_song.is_playing, false),
     sync_meta.sync_meta_id,
     sync_meta.song_id,
+    sync_meta.usdb_mtime,
     sync_meta.path,
     sync_meta.mtime,
     sync_meta.meta_tags,

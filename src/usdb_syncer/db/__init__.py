@@ -22,7 +22,7 @@ from usdb_syncer.logger import logger
 
 from . import sql
 
-SCHEMA_VERSION = 6
+SCHEMA_VERSION = 7
 
 # https://www.sqlite.org/limits.html
 _SQL_VARIABLES_LIMIT = 32766
@@ -145,7 +145,10 @@ def set_trace_sql(trace_sql: bool) -> None:
 class DownloadStatus(enum.IntEnum):
     """Status of song in download queue."""
 
+    # integers must agree with select_usdb_song.sql
     NONE = 0
+    SYNCHRONIZED = enum.auto()
+    OUTDATED = enum.auto()
     PENDING = enum.auto()
     DOWNLOADING = enum.auto()
     FAILED = enum.auto()
@@ -154,6 +157,10 @@ class DownloadStatus(enum.IntEnum):
         match self:
             case DownloadStatus.NONE:
                 return ""
+            case DownloadStatus.SYNCHRONIZED:
+                return "Synchronized"
+            case DownloadStatus.OUTDATED:
+                return "Outdated"
             case DownloadStatus.PENDING:
                 return "Pending"
             case DownloadStatus.DOWNLOADING:
@@ -164,7 +171,7 @@ class DownloadStatus(enum.IntEnum):
                 assert_never(unreachable)
 
     def can_be_downloaded(self) -> bool:
-        return self in (DownloadStatus.NONE, DownloadStatus.FAILED)
+        return self not in (DownloadStatus.PENDING, DownloadStatus.DOWNLOADING)
 
     def can_be_aborted(self) -> bool:
         return self in (DownloadStatus.PENDING, DownloadStatus.DOWNLOADING)
@@ -519,6 +526,7 @@ class UsdbSongParams:
     """Parameters for inserting or updating a USDB song."""
 
     song_id: SongId
+    usdb_mtime: int
     artist: str
     title: str
     language: str
@@ -554,6 +562,33 @@ def usdb_song_count() -> int:
 def max_usdb_song_id() -> SongId:
     row = _DbState.connection().execute("SELECT max(song_id) FROM usdb_song").fetchone()
     return SongId(row[0] or 0)
+
+
+@attrs.define
+class LastUsdbUpdate:
+    """Last USDB update information."""
+
+    usdb_mtime: int
+    song_ids: list[SongId]
+
+    @classmethod
+    def get(cls) -> LastUsdbUpdate:
+        rows = (
+            _DbState.connection()
+            .execute(
+                "SELECT usdb_mtime, song_id FROM usdb_song WHERE usdb_mtime = "
+                "(SELECT max(usdb_mtime) FROM usdb_song)"
+            )
+            .fetchall()
+        )
+        return cls(rows[0][0] if rows else 0, [SongId(r[1]) for r in rows])
+
+    @classmethod
+    def zero(cls) -> LastUsdbUpdate:
+        return cls(0, [])
+
+    def is_zero(self) -> bool:
+        return self.usdb_mtime == 0
 
 
 def delete_all_usdb_songs() -> None:
@@ -731,6 +766,7 @@ class SyncMetaParams:
 
     sync_meta_id: SyncMetaId
     song_id: SongId
+    usdb_mtime: int
     path: str
     mtime: int
     meta_tags: str
