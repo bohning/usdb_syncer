@@ -743,6 +743,7 @@ def _write_sync_meta(ctx: _Context) -> None:
     ctx.song.sync_meta = SyncMeta(
         sync_meta_id=sync_meta_id,
         song_id=ctx.song.song_id,
+        lastchange=ctx.song.lastchange,
         path=ctx.locations.target_path(file=sync_meta_id.to_filename()),
         mtime=0,
         meta_tags=ctx.txt.meta_tags,

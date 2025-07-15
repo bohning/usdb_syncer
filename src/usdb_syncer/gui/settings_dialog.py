@@ -16,6 +16,7 @@ from usdb_syncer.usdb_song import UsdbSong
 
 _FALLBACK_SONG = UsdbSong(
     song_id=SongId(3715),
+    lastchange=0,
     artist="Queen",
     title="Bohemian Rhapsody",
     genre="Genre",

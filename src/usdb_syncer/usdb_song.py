@@ -20,6 +20,7 @@ class UsdbSong:
     """Meta data about a song that USDB shows in the result list."""
 
     song_id: SongId
+    lastchange: int
     artist: str
     title: str
     genre: str
@@ -49,6 +50,7 @@ class UsdbSong:
         strings: type[UsdbStrings],
         *,
         song_id: str,
+        lastchange: str,
         artist: str,
         title: str,
         genre: str,
@@ -63,6 +65,7 @@ class UsdbSong:
     ) -> UsdbSong:
         return cls(
             song_id=SongId.parse(song_id),
+            lastchange=int(lastchange),
             artist=artist,
             title=title,
             genre=genre,
@@ -78,24 +81,25 @@ class UsdbSong:
 
     @classmethod
     def from_db_row(cls, song_id: SongId, row: tuple) -> UsdbSong:
-        assert len(row) == 36
+        assert len(row) == 37
         return cls(
             song_id=song_id,
-            artist=row[1],
-            title=row[2],
-            language=row[3],
-            edition=row[4],
-            golden_notes=bool(row[5]),  # else would be 0/1 instead of False/True
-            rating=row[6],
-            views=row[7],
-            sample_url=row[8],
-            year=row[9],
-            genre=row[10],
-            creator=row[11],
-            tags=row[12],
-            status=DownloadStatus(row[13]),
-            is_playing=bool(row[14]),
-            sync_meta=None if row[15] is None else SyncMeta.from_db_row(row[15:]),
+            lastchange=row[1],
+            artist=row[2],
+            title=row[3],
+            language=row[4],
+            edition=row[5],
+            golden_notes=bool(row[6]),  # else would be 0/1 instead of False/True
+            rating=row[7],
+            views=row[8],
+            sample_url=row[9],
+            year=row[10],
+            genre=row[11],
+            creator=row[12],
+            tags=row[13],
+            status=DownloadStatus(row[14]),
+            is_playing=bool(row[15]),
+            sync_meta=None if row[16] is None else SyncMeta.from_db_row(row[16:]),
         )
 
     @classmethod
@@ -145,6 +149,7 @@ class UsdbSong:
     def db_params(self) -> db.UsdbSongParams:
         return db.UsdbSongParams(
             song_id=self.song_id,
+            lastchange=self.lastchange,
             artist=self.artist,
             title=self.title,
             language=self.language,

@@ -1,5 +1,6 @@
 SELECT
     usdb_song.song_id,
+    usdb_song.lastchange,
     usdb_song.artist,
     usdb_song.title,
     usdb_song.language,
