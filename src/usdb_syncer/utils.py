@@ -293,10 +293,17 @@ def get_mtime(path: Path) -> int:
 
 
 @functools.cache
-def format_timestamp(micros: int) -> str:
+def format_timestamp_mtime(micros: int) -> str:
     return datetime.datetime.fromtimestamp(micros / 1_000_000).strftime(
         "%Y-%m-%d %H:%M:%S"
     )
+
+
+@functools.cache
+def format_timestamp_utc(timestamp: int) -> str:
+    return datetime.datetime.fromtimestamp(
+        timestamp, tz=datetime.timezone.utc
+    ).strftime("%Y-%m-%d %H:%M:%S")
 
 
 def get_latest_version() -> str | None:

@@ -148,9 +148,11 @@ def _display_data(song: UsdbSong, column: int) -> str | None:  # noqa: C901
             return song.creator
         case Column.TAGS:
             return song.tags
+        case Column.LASTCHANGE:
+            return utils.format_timestamp_utc(song.lastchange)
         case Column.DOWNLOAD_STATUS:
             return (
-                utils.format_timestamp(song.sync_meta.mtime)
+                utils.format_timestamp_mtime(song.sync_meta.mtime)
                 if song.sync_meta and song.status is DownloadStatus.NONE
                 else str(song.status)
             )
@@ -180,6 +182,7 @@ def _decoration_data(song: UsdbSong, column: int) -> QIcon | None:  # noqa: C901
             | Column.GOLDEN_NOTES
             | Column.RATING
             | Column.VIEWS
+            | Column.LASTCHANGE
             | Column.DOWNLOAD_STATUS
             | Column.YEAR
             | Column.GENRE

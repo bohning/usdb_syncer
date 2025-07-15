@@ -1,6 +1,7 @@
 SELECT
     sync_meta.sync_meta_id,
     sync_meta.song_id,
+    sync_meta.lastchange,
     sync_meta.path,
     sync_meta.mtime,
     sync_meta.meta_tags,

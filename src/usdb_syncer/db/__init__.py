@@ -22,7 +22,7 @@ from usdb_syncer.logger import logger
 
 from . import sql
 
-SCHEMA_VERSION = 6
+SCHEMA_VERSION = 7
 
 # https://www.sqlite.org/limits.html
 _SQL_VARIABLES_LIMIT = 32766
@@ -193,6 +193,7 @@ class SongOrder(enum.Enum):
     VIDEO = enum.auto()
     COVER = enum.auto()
     BACKGROUND = enum.auto()
+    LASTCHANGE = enum.auto()
     STATUS = enum.auto()
 
     def sql(self) -> str | None:  # noqa: C901
@@ -241,6 +242,8 @@ class SongOrder(enum.Enum):
                 return "cover.sync_meta_id IS NULL"
             case SongOrder.BACKGROUND:
                 return "background.sync_meta_id IS NULL"
+            case SongOrder.LASTCHANGE:
+                return "usdb_song.lastchange"
             case SongOrder.STATUS:
                 return (
                     "coalesce(session_usdb_song.status, sync_meta.mtime,"
@@ -519,6 +522,7 @@ class UsdbSongParams:
     """Parameters for inserting or updating a USDB song."""
 
     song_id: SongId
+    lastchange: int
     artist: str
     title: str
     language: str
@@ -731,6 +735,7 @@ class SyncMetaParams:
 
     sync_meta_id: SyncMetaId
     song_id: SongId
+    lastchange: int
     path: str
     mtime: int
     meta_tags: str

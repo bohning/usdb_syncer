@@ -36,6 +36,7 @@ class Column(IntEnum):
     VIDEO = enum.auto()
     COVER = enum.auto()
     BACKGROUND = enum.auto()
+    LASTCHANGE = enum.auto()
     DOWNLOAD_STATUS = enum.auto()
 
     def display_data(self) -> str | None:  # noqa: C901
@@ -58,6 +59,8 @@ class Column(IntEnum):
                 return "Creator"
             case Column.TAGS:
                 return "Tags"
+            case Column.LASTCHANGE:
+                return "Last Change"
             case Column.DOWNLOAD_STATUS:
                 return "Status"
             case (
@@ -114,6 +117,8 @@ class Column(IntEnum):
                 icon = Icon.COVER
             case Column.BACKGROUND:
                 icon = Icon.BACKGROUND
+            case Column.LASTCHANGE:
+                icon = Icon.CALENDAR  # fixme
             case Column.DOWNLOAD_STATUS:
                 icon = Icon.DOWNLOAD
             case Column.PINNED:
@@ -138,6 +143,7 @@ class Column(IntEnum):
                 | Column.GENRE
                 | Column.CREATOR
                 | Column.TAGS
+                | Column.LASTCHANGE
             ):
                 return None
             case (
@@ -193,6 +199,8 @@ class Column(IntEnum):
                 return db.SongOrder.COVER
             case Column.BACKGROUND:
                 return db.SongOrder.BACKGROUND
+            case Column.LASTCHANGE:
+                return db.SongOrder.LASTCHANGE
             case Column.DOWNLOAD_STATUS:
                 return db.SongOrder.STATUS
             case unreachable:
@@ -239,6 +247,8 @@ class Column(IntEnum):
                 return Column.COVER
             case db.SongOrder.BACKGROUND:
                 return Column.BACKGROUND
+            case db.SongOrder.LASTCHANGE:
+                return Column.LASTCHANGE
             case db.SongOrder.STATUS:
                 return Column.DOWNLOAD_STATUS
             case unreachable:

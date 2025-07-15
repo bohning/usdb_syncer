@@ -26,19 +26,20 @@ from usdb_syncer.usdb_song import UsdbSong
 from usdb_syncer.utils import extract_youtube_id, normalize
 
 SONG_LIST_ROW_REGEX = re.compile(
+    r'<tr class="list_tr\d"\s+data-songid="(?P<song_id>\d+)"\s+'
+    r'data-lastchange="(?P<lastchange>\d+)"[^>]*?>\s*'
     r'<td(?:.*?<source src="(?P<sample_url>.*?)".*?)?></td>'
-    r'<td onclick="show_detail\((?P<song_id>\d+)\)".*?>'
-    r'<img src="(?P<cover_url>.*?)".*?></td>'
-    r'<td onclick="show_detail\(\d+\)">(?P<artist>.*?)</td>\n'
-    r'<td onclick="show_detail\(\d+\)"><a href=.*?>(?P<title>.*?)</td>\n'
-    r'<td onclick="show_detail\(\d+\)">(?P<genre>.*?)</td>\n'
-    r'<td onclick="show_detail\(\d+\)">(?P<year>.*?)</td>\n'
-    r'<td onclick="show_detail\(\d+\)">(?P<edition>.*?)</td>\n'
-    r'<td onclick="show_detail\(\d+\)">(?P<golden_notes>.*?)</td>\n'
-    r'<td onclick="show_detail\(\d+\)">(?P<language>.*?)</td>\n'
-    r'<td onclick="show_detail\(\d+\)">(?P<creator>.*?)</td>\n'
-    r'<td onclick="show_detail\(\d+\)">(?P<rating>.*?)</td>\n'
-    r'<td onclick="show_detail\(\d+\)">(?P<views>.*?)</td>'
+    r'<td[^>]*?><img src="(?P<cover_url>.*?)".*?></td>'
+    r"<td[^>]*?>(?P<artist>.*?)</td>\n"
+    r"<td[^>]*?><a href=.*?>(?P<title>.*?)</td>\n"
+    r"<td[^>]*?>(?P<genre>.*?)</td>\n"
+    r"<td[^>]*?>(?P<year>.*?)</td>\n"
+    r"<td[^>]*?>(?P<edition>.*?)</td>\n"
+    r"<td[^>]*?>(?P<golden_notes>.*?)</td>\n"
+    r"<td[^>]*?>(?P<language>.*?)</td>\n"
+    r"<td[^>]*?>(?P<creator>.*?)</td>\n"
+    r"<td[^>]*?>(?P<rating>.*?)</td>\n"
+    r"<td[^>]*?>(?P<views>.*?)</td>"
 )
 WELCOME_REGEX = re.compile(
     r"<td class='row3' colspan='2'>\s*<span class='gen'>([^<]+) <b>([^<]+)</b>"
@@ -358,8 +359,9 @@ def _parse_songs_from_songlist(html: str) -> Iterator[UsdbSong]:
     return (
         UsdbSong.from_html(
             _usdb_strings_from_html(html),
-            sample_url=match["sample_url"] or "",
             song_id=match["song_id"],
+            lastchange=match["lastchange"],
+            sample_url=match["sample_url"] or "",
             artist=match["artist"],
             title=match["title"],
             genre=match["genre"],
