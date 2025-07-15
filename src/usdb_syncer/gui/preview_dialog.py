@@ -6,11 +6,10 @@ import functools
 import subprocess
 from collections.abc import Callable, Generator
 from pathlib import Path
-from typing import Any, NewType, TypeVar
+from typing import TYPE_CHECKING, Any, NewType, TypeVar
 
 import attrs
 import numpy as np
-import sounddevice
 import soundfile
 from PySide6 import QtCore, QtGui, QtWidgets
 from PySide6.QtCore import Qt
@@ -19,10 +18,22 @@ from usdb_syncer import utils
 from usdb_syncer.gui import events, icons, theme
 from usdb_syncer.gui.forms.PreviewDialog import Ui_Dialog
 from usdb_syncer.gui.resources.audio import METRONOME_TICK_WAV
+from usdb_syncer.logger import logger as _logger
 from usdb_syncer.logger import song_logger
 from usdb_syncer.song_txt import SongTxt, tracks
 from usdb_syncer.song_txt.auxiliaries import BeatsPerMinute
 from usdb_syncer.usdb_song import UsdbSong
+
+if TYPE_CHECKING:
+    import sounddevice
+else:
+    try:
+        import sounddevice
+    except (OSError, ImportError):
+        _logger.exception(
+            "Failed to load module 'sounddevice', some features may be unavailable."
+        )
+        sounddevice = None
 
 Seconds = NewType("Seconds", float)
 Milliseconds = NewType("Milliseconds", int)
@@ -41,6 +52,17 @@ _SYNTH_ATTACK_SECS = Seconds(0.01)
 _SYNTH_RELEASE_SECS = Seconds(0.05)
 _SYNTH_ATTACK_SAMPLES = Sample(int(_SYNTH_ATTACK_SECS * _SAMPLE_RATE))
 _SYNTH_RELEASE_SAMPLES = Sample(int(_SYNTH_RELEASE_SECS * _SAMPLE_RATE))
+
+_MISSING_LIB_HELP = (
+    "https://github.com/bohning/usdb_syncer?tab=readme-ov-file#linux-compatibility"
+)
+_MISSING_LIB_MSG = (
+    f"This feature is unavailable due to missing libraries, see {_MISSING_LIB_HELP}."
+)
+_NO_DEVICES_MSG = (
+    "No audio devices found. This likely means your platform is not supported for this"
+    " feature."
+)
 
 
 T = TypeVar("T", int, float)
@@ -78,6 +100,12 @@ class PreviewDialog(Ui_Dialog, QtWidgets.QDialog):
 
     @classmethod
     def load(cls, parent: QtWidgets.QWidget, song: UsdbSong) -> None:
+        if not sounddevice:
+            QtWidgets.QMessageBox.warning(parent, "Aborted", _MISSING_LIB_MSG)
+            return
+        if not sounddevice.query_devices():
+            QtWidgets.QMessageBox.warning(parent, "Aborted", _NO_DEVICES_MSG)
+            return
         if not (txt_path := song.txt_path()) or not (audio_path := song.audio_path()):
             QtWidgets.QMessageBox.warning(
                 parent, "Aborted", "Song must have txt and audio files!"
