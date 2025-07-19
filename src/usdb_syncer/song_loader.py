@@ -68,7 +68,7 @@ class DownloadManager:
             if (job := cls._jobs.get(song)) and shiboken6.isValid(job):
                 if cls._threadpool().tryTake(job):
                     job.logger.info("Download aborted by user request.")
-                    job.song.status = DownloadStatus.OUTDATED
+                    job.song.reset_status()
                     with db.transaction():
                         job.song.upsert()
                     events.SongChanged(job.song_id).post()
@@ -333,7 +333,7 @@ class _SongLoader(QtCore.QRunnable):
                 self.song = self._run_inner()
             except errors.AbortError:
                 self.logger.info("Download aborted by user request.")
-                self.song.status = DownloadStatus.OUTDATED
+                self.song.reset_status()
             except errors.UsdbLoginError:
                 self.logger.error("Aborted; download requires login.")  # noqa: TRY400
                 self.song.status = DownloadStatus.FAILED

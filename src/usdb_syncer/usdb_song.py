@@ -206,6 +206,15 @@ class UsdbSong:
             and self.song_id not in last_update.song_ids
         )
 
+    def reset_status(self) -> None:
+        if self.sync_meta:
+            if self.sync_meta.usdb_mtime < self.usdb_mtime:
+                self.status = DownloadStatus.OUTDATED
+            else:
+                self.status = DownloadStatus.SYNCHRONIZED
+        else:
+            self.status = DownloadStatus.NONE
+
 
 class UsdbSongEncoder(JSONEncoder):
     """Custom JSON encoder"""
