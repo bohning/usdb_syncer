@@ -259,11 +259,7 @@ class SongOrder(enum.Enum):
             case SongOrder.BACKGROUND:
                 return "background.sync_meta_id IS NULL"
             case SongOrder.STATUS:
-                return (
-                    "coalesce(session_usdb_song.status, sync_meta.mtime,"
-                    # max integer in SQLite
-                    " 9223372036854775807)"
-                )
+                return _STATUS_COLUMN
 
 
 @attrs.define
