@@ -1,6 +1,7 @@
 INSERT INTO
     usdb_song (
         song_id,
+        usdb_mtime,
         artist,
         title,
         language,
@@ -17,6 +18,7 @@ INSERT INTO
 VALUES
     (
         :song_id,
+        :usdb_mtime,
         :artist,
         :title,
         :language,
@@ -32,6 +34,7 @@ VALUES
     ) ON CONFLICT (song_id) DO
 UPDATE
 SET
+    usdb_mtime = :usdb_mtime,
     artist = :artist,
     title = :title,
     language = :language,

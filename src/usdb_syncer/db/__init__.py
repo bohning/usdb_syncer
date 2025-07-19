@@ -22,7 +22,7 @@ from usdb_syncer.logger import logger
 
 from . import sql
 
-SCHEMA_VERSION = 6
+SCHEMA_VERSION = 7
 
 # https://www.sqlite.org/limits.html
 _SQL_VARIABLES_LIMIT = 32766
@@ -32,6 +32,16 @@ _SQL_VARIABLES_LIMIT = 32766
 # noticing quickly, we're leaving some space.
 # Performance impact is negligible.
 _SQL_SMALLER_THAN_EXPRESSION_TREE = 980
+
+_STATUS_COLUMN = """coalesce(
+    session_usdb_song.status,
+    CASE
+        sync_meta.usdb_mtime = usdb_song.usdb_mtime
+        WHEN true THEN 1
+        WHEN false THEN 2
+        ELSE 0
+    END
+)"""
 
 
 class _SqlCache:
@@ -56,6 +66,7 @@ class _DbState:
     """Singleton for managing the global database connection."""
 
     _local: _LocalConnection = _LocalConnection()
+    in_transaction: bool = False
     trace_sql: bool = False
 
     @classmethod
@@ -63,7 +74,7 @@ class _DbState:
         if cls._local.connection:
             raise errors.AlreadyConnectedError()
         cls._local.connection = sqlite3.connect(
-            db_path, check_same_thread=False, isolation_level=None, timeout=20
+            db_path, check_same_thread=False, isolation_level=None, timeout=60
         )
         thread = threading.current_thread().name
         logger.debug(f"Connected to database at '{db_path}' on thread {thread}.")
@@ -90,11 +101,14 @@ class _DbState:
 def transaction() -> Generator[None, None, None]:
     try:
         _DbState.connection().execute("BEGIN IMMEDIATE")
+        _DbState.in_transaction = True
         yield None
     except Exception:
         _DbState.connection().rollback()
+        _DbState.in_transaction = False
         raise
     _DbState.connection().commit()
+    _DbState.in_transaction = False
 
 
 def _validate_schema(connection: sqlite3.Connection) -> None:
@@ -145,7 +159,10 @@ def set_trace_sql(trace_sql: bool) -> None:
 class DownloadStatus(enum.IntEnum):
     """Status of song in download queue."""
 
+    # integers must agree with select_usdb_song.sql
     NONE = 0
+    SYNCHRONIZED = enum.auto()
+    OUTDATED = enum.auto()
     PENDING = enum.auto()
     DOWNLOADING = enum.auto()
     FAILED = enum.auto()
@@ -154,6 +171,10 @@ class DownloadStatus(enum.IntEnum):
         match self:
             case DownloadStatus.NONE:
                 return ""
+            case DownloadStatus.SYNCHRONIZED:
+                return "Synchronized"
+            case DownloadStatus.OUTDATED:
+                return "Outdated"
             case DownloadStatus.PENDING:
                 return "Pending"
             case DownloadStatus.DOWNLOADING:
@@ -164,7 +185,7 @@ class DownloadStatus(enum.IntEnum):
                 assert_never(unreachable)
 
     def can_be_downloaded(self) -> bool:
-        return self in (DownloadStatus.NONE, DownloadStatus.FAILED)
+        return self not in (DownloadStatus.PENDING, DownloadStatus.DOWNLOADING)
 
     def can_be_aborted(self) -> bool:
         return self in (DownloadStatus.PENDING, DownloadStatus.DOWNLOADING)
@@ -242,11 +263,7 @@ class SongOrder(enum.Enum):
             case SongOrder.BACKGROUND:
                 return "background.sync_meta_id IS NULL"
             case SongOrder.STATUS:
-                return (
-                    "coalesce(session_usdb_song.status, sync_meta.mtime,"
-                    # max integer in SQLite
-                    " 9223372036854775807)"
-                )
+                return _STATUS_COLUMN
 
 
 @attrs.define
@@ -281,7 +298,7 @@ class SearchBuilder:
             (self.editions, "usdb_song.edition"),
             (self.ratings, "usdb_song.rating"),
             (self.years, "usdb_song.year"),
-            (self.statuses, "session_usdb_song.status"),
+            (self.statuses, _STATUS_COLUMN),
         ):
             if vals:
                 yield _in_values_clause(col, cast(list, vals))
@@ -519,6 +536,7 @@ class UsdbSongParams:
     """Parameters for inserting or updating a USDB song."""
 
     song_id: SongId
+    usdb_mtime: int
     artist: str
     title: str
     language: str
@@ -542,8 +560,10 @@ def upsert_usdb_song(params: UsdbSongParams) -> None:
     _DbState.connection().execute(stmt, params.__dict__)
 
 
-def upsert_usdb_songs(params: Iterable[UsdbSongParams]) -> None:
+def upsert_usdb_songs(params: list[UsdbSongParams]) -> None:
     stmt = _SqlCache.get("upsert_usdb_song.sql")
+    _DbState.connection().executemany(stmt, (p.__dict__ for p in params))
+    stmt = _SqlCache.get("upsert_session_usdb_song.sql")
     _DbState.connection().executemany(stmt, (p.__dict__ for p in params))
 
 
@@ -554,6 +574,33 @@ def usdb_song_count() -> int:
 def max_usdb_song_id() -> SongId:
     row = _DbState.connection().execute("SELECT max(song_id) FROM usdb_song").fetchone()
     return SongId(row[0] or 0)
+
+
+@attrs.define
+class LastUsdbUpdate:
+    """Last USDB update information."""
+
+    usdb_mtime: int
+    song_ids: list[SongId]
+
+    @classmethod
+    def get(cls) -> LastUsdbUpdate:
+        rows = (
+            _DbState.connection()
+            .execute(
+                "SELECT usdb_mtime, song_id FROM usdb_song WHERE usdb_mtime = "
+                "(SELECT max(usdb_mtime) FROM usdb_song)"
+            )
+            .fetchall()
+        )
+        return cls(rows[0][0] if rows else 0, [SongId(r[1]) for r in rows])
+
+    @classmethod
+    def zero(cls) -> LastUsdbUpdate:
+        return cls(0, [])
+
+    def is_zero(self) -> bool:
+        return self.usdb_mtime == 0
 
 
 def delete_all_usdb_songs() -> None:
@@ -579,6 +626,10 @@ def find_similar_usdb_songs(artist: str, title: str) -> Iterable[SongId]:
     stmt = "SELECT rowid FROM fts_usdb_song WHERE artist MATCH ? AND title MATCH ?"
     params = (_fts5_start_phrase(artist), _fts5_start_phrase(title))
     return (SongId(r[0]) for r in _DbState.connection().execute(stmt, params))
+
+
+def delete_session_data() -> None:
+    _DbState.connection().execute("DELETE FROM session_usdb_song")
 
 
 # song filters
@@ -731,6 +782,7 @@ class SyncMetaParams:
 
     sync_meta_id: SyncMetaId
     song_id: SongId
+    usdb_mtime: int
     path: str
     mtime: int
     meta_tags: str

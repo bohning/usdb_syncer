@@ -55,6 +55,7 @@ def test_upsert_delete_sync_metas_many() -> None:
     sync_meta_params = [
         db.SyncMetaParams(
             sync_meta_id=sync_meta_id,
+            usdb_mtime=0,
             path=str(sync_meta_id),
             song_id=SongId(0),
             mtime=0,

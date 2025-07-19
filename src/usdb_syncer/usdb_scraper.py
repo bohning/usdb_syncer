@@ -12,7 +12,7 @@ import requests
 from bs4 import BeautifulSoup, NavigableString, Tag
 from requests import Session
 
-from usdb_syncer import SongId, errors, settings
+from usdb_syncer import SongId, db, errors, settings
 from usdb_syncer.constants import (
     SUPPORTED_VIDEO_SOURCES_REGEX,
     Usdb,
@@ -26,19 +26,20 @@ from usdb_syncer.usdb_song import UsdbSong
 from usdb_syncer.utils import extract_youtube_id, normalize
 
 SONG_LIST_ROW_REGEX = re.compile(
+    r'<tr class="list_tr\d"\s+data-songid="(?P<song_id>\d+)"\s+'
+    r'data-lastchange="(?P<lastchange>\d+)"[^>]*?>\s*'
     r'<td(?:.*?<source src="(?P<sample_url>.*?)".*?)?></td>'
-    r'<td onclick="show_detail\((?P<song_id>\d+)\)".*?>'
-    r'<img src="(?P<cover_url>.*?)".*?></td>'
-    r'<td onclick="show_detail\(\d+\)">(?P<artist>.*?)</td>\n'
-    r'<td onclick="show_detail\(\d+\)"><a href=.*?>(?P<title>.*?)</td>\n'
-    r'<td onclick="show_detail\(\d+\)">(?P<genre>.*?)</td>\n'
-    r'<td onclick="show_detail\(\d+\)">(?P<year>.*?)</td>\n'
-    r'<td onclick="show_detail\(\d+\)">(?P<edition>.*?)</td>\n'
-    r'<td onclick="show_detail\(\d+\)">(?P<golden_notes>.*?)</td>\n'
-    r'<td onclick="show_detail\(\d+\)">(?P<language>.*?)</td>\n'
-    r'<td onclick="show_detail\(\d+\)">(?P<creator>.*?)</td>\n'
-    r'<td onclick="show_detail\(\d+\)">(?P<rating>.*?)</td>\n'
-    r'<td onclick="show_detail\(\d+\)">(?P<views>.*?)</td>'
+    r'<td[^>]*?><img src="(?P<cover_url>.*?)".*?></td>'
+    r"<td[^>]*?>(?P<artist>.*?)</td>\n"
+    r"<td[^>]*?><a href=.*?>(?P<title>.*?)</td>\n"
+    r"<td[^>]*?>(?P<genre>.*?)</td>\n"
+    r"<td[^>]*?>(?P<year>.*?)</td>\n"
+    r"<td[^>]*?>(?P<edition>.*?)</td>\n"
+    r"<td[^>]*?>(?P<golden_notes>.*?)</td>\n"
+    r"<td[^>]*?>(?P<language>.*?)</td>\n"
+    r"<td[^>]*?>(?P<creator>.*?)</td>\n"
+    r"<td[^>]*?>(?P<rating>.*?)</td>\n"
+    r"<td[^>]*?>(?P<views>.*?)</td>"
 )
 WELCOME_REGEX = re.compile(
     r"<td class='row3' colspan='2'>\s*<span class='gen'>([^<]+) <b>([^<]+)</b>"
@@ -312,20 +313,20 @@ def _usdb_strings_from_welcome(welcome_string: str) -> type[UsdbStrings]:
     raise errors.UsdbUnknownLanguageError
 
 
-def get_usdb_available_songs(
-    max_skip_id: SongId,
+def get_updated_songs_from_usdb(
+    last_update: db.LastUsdbUpdate,
     content_filter: dict[str, str] | None = None,
     session: Session | None = None,
 ) -> list[UsdbSong]:
-    """Return a list of all available songs.
+    """Return a list of all songs that were updated (or added) since `last_update`.
 
     Parameters:
-        max_skip_id: only fetch ids larger than this
+        last_update: only fetch updates newer than this
         content_filter: filters response (e.g. {'artist': 'The Beatles'})
     """
-    available_songs: list[UsdbSong] = []
+    available_songs: dict[SongId, UsdbSong] = {}
     payload = {
-        "order": "id",
+        "order": "lastchange",
         "ud": "desc",
         "limit": str(Usdb.MAX_SONGS_PER_PAGE),
         "details": "1",
@@ -340,26 +341,27 @@ def get_usdb_available_songs(
             payload=payload,
             session=session,
         )
-        songs = [
-            song
+        songs = {
+            song.song_id: song
             for song in _parse_songs_from_songlist(html)
-            if song.song_id > max_skip_id
-        ]
-        available_songs.extend(songs)
+            if song.is_new_since_last_update(last_update)
+        }
+        available_songs.update(songs)
 
         if len(songs) < Usdb.MAX_SONGS_PER_PAGE:
             break
 
-    logger.info(f"Fetched {len(available_songs)} new song(s) from USDB.")
-    return available_songs
+    logger.info(f"Fetched {len(available_songs)} updated song(s) from USDB.")
+    return list(available_songs.values())
 
 
 def _parse_songs_from_songlist(html: str) -> Iterator[UsdbSong]:
     return (
         UsdbSong.from_html(
             _usdb_strings_from_html(html),
-            sample_url=match["sample_url"] or "",
             song_id=match["song_id"],
+            usdb_mtime=match["lastchange"],
+            sample_url=match["sample_url"] or "",
             artist=match["artist"],
             title=match["title"],
             genre=match["genre"],

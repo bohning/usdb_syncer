@@ -114,7 +114,7 @@ class SongLoaderTestCase(unittest.TestCase):
             loader.run()
 
             out = loader.song
-            assert out.status == DownloadStatus.NONE
+            assert out.status == DownloadStatus.SYNCHRONIZED
             path_stem = song_dir / out.artist / out.title / str(out.song_id)
             assert out.sync_meta
             assert path_stem.parent.exists()
@@ -157,7 +157,7 @@ class SongLoaderTestCase(unittest.TestCase):
             loader.run()
 
             audio_mock.assert_not_called()
-            assert loader.song.status == DownloadStatus.NONE
+            assert loader.song.status == DownloadStatus.SYNCHRONIZED
             assert loader.song.sync_meta
             assert mp3_path.exists()
 
@@ -183,7 +183,7 @@ class SongLoaderTestCase(unittest.TestCase):
             loader = _SongLoader(copy.deepcopy(song), options)
             loader.run()
 
-            assert loader.song.status == DownloadStatus.NONE
+            assert loader.song.status == DownloadStatus.SYNCHRONIZED
             audio_mock.assert_not_called()
             assert loader.song.sync_meta
             assert not mp3_path.exists()
@@ -214,7 +214,7 @@ class SongLoaderTestCase(unittest.TestCase):
             loader.run()
 
             audio_mock.assert_called_once()
-            assert loader.song.status == DownloadStatus.NONE
+            assert loader.song.status == DownloadStatus.SYNCHRONIZED
             assert utils.get_mtime(mp3_path) > song.sync_meta.audio.mtime
 
 

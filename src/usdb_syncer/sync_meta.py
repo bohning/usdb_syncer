@@ -85,6 +85,7 @@ class SyncMeta:
 
     sync_meta_id: SyncMetaId
     song_id: SongId
+    usdb_mtime: int
     path: Path
     mtime: int
     meta_tags: MetaTags
@@ -97,11 +98,14 @@ class SyncMeta:
     custom_data: CustomData = attrs.field(factory=CustomData)
 
     @classmethod
-    def new(cls, song_id: SongId, folder: Path, meta_tags: MetaTags) -> SyncMeta:
+    def new(
+        cls, song_id: SongId, usdb_mtime: int, folder: Path, meta_tags: MetaTags
+    ) -> SyncMeta:
         sync_meta_id = SyncMetaId.new()
         return cls(
             sync_meta_id=sync_meta_id,
             song_id=song_id,
+            usdb_mtime=usdb_mtime,
             path=folder.joinpath(sync_meta_id.to_filename()),
             mtime=0,
             meta_tags=meta_tags,
@@ -127,6 +131,7 @@ class SyncMeta:
             meta = cls(
                 sync_meta_id=sync_meta_id,
                 song_id=SongId(dct["song_id"]),
+                usdb_mtime=int(dct.get("usdb_mtime", 0)),
                 path=path,
                 mtime=utils.get_mtime(path),
                 meta_tags=MetaTags.parse(dct["meta_tags"], logger),
@@ -148,20 +153,21 @@ class SyncMeta:
 
     @classmethod
     def from_db_row(cls, row: tuple) -> SyncMeta:
-        assert len(row) == 21
+        assert len(row) == 22
         meta = cls(
             sync_meta_id=SyncMetaId(row[0]),
             song_id=SongId(row[1]),
-            path=Path(row[2]),
-            mtime=row[3],
-            meta_tags=MetaTags.parse(row[4], logger),
-            pinned=bool(row[5]),
+            usdb_mtime=row[2],
+            path=Path(row[3]),
+            mtime=row[4],
+            meta_tags=MetaTags.parse(row[5], logger),
+            pinned=bool(row[6]),
         )
-        meta.txt = ResourceFile.from_db_row(row[6:9])
-        meta.audio = ResourceFile.from_db_row(row[9:12])
-        meta.video = ResourceFile.from_db_row(row[12:15])
-        meta.cover = ResourceFile.from_db_row(row[15:18])
-        meta.background = ResourceFile.from_db_row(row[18:])
+        meta.txt = ResourceFile.from_db_row(row[7:10])
+        meta.audio = ResourceFile.from_db_row(row[10:13])
+        meta.video = ResourceFile.from_db_row(row[13:16])
+        meta.cover = ResourceFile.from_db_row(row[16:19])
+        meta.background = ResourceFile.from_db_row(row[19:])
         meta.custom_data = CustomData(db.get_custom_data(meta.sync_meta_id))
         return meta
 
@@ -234,6 +240,7 @@ class SyncMeta:
         return db.SyncMetaParams(
             sync_meta_id=self.sync_meta_id,
             song_id=self.song_id,
+            usdb_mtime=self.usdb_mtime,
             path=self.path.as_posix(),
             mtime=self.mtime,
             meta_tags=str(self.meta_tags),

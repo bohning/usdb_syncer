@@ -68,7 +68,7 @@ class DownloadManager:
             if (job := cls._jobs.get(song)) and shiboken6.isValid(job):
                 if cls._threadpool().tryTake(job):
                     job.logger.info("Download aborted by user request.")
-                    job.song.status = DownloadStatus.NONE
+                    job.song.status = DownloadStatus.OUTDATED
                     with db.transaction():
                         job.song.upsert()
                     events.SongChanged(job.song_id).post()
@@ -260,7 +260,7 @@ class _Context:
         paths = _Locations.new(song, options, tempdir)
         if not song.sync_meta:
             song.sync_meta = SyncMeta.new(
-                song.song_id, paths.target_path().parent, txt.meta_tags
+                song.song_id, song.usdb_mtime, paths.target_path().parent, txt.meta_tags
             )
         return cls(song, details, options, txt, paths, log)
 
@@ -333,7 +333,7 @@ class _SongLoader(QtCore.QRunnable):
                 self.song = self._run_inner()
             except errors.AbortError:
                 self.logger.info("Download aborted by user request.")
-                self.song.status = DownloadStatus.NONE
+                self.song.status = DownloadStatus.OUTDATED
             except errors.UsdbLoginError:
                 self.logger.error("Aborted; download requires login.")  # noqa: TRY400
                 self.song.status = DownloadStatus.FAILED
@@ -355,7 +355,7 @@ class _SongLoader(QtCore.QRunnable):
                 )
                 self.song.status = DownloadStatus.FAILED
             else:
-                self.song.status = DownloadStatus.NONE
+                self.song.status = DownloadStatus.SYNCHRONIZED
                 self.logger.info("All done!")
             with db.transaction():
                 self.song.upsert()
@@ -743,6 +743,7 @@ def _write_sync_meta(ctx: _Context) -> None:
     ctx.song.sync_meta = SyncMeta(
         sync_meta_id=sync_meta_id,
         song_id=ctx.song.song_id,
+        usdb_mtime=ctx.song.usdb_mtime,
         path=ctx.locations.target_path(file=sync_meta_id.to_filename()),
         mtime=0,
         meta_tags=ctx.txt.meta_tags,

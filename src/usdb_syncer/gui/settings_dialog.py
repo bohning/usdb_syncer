@@ -16,6 +16,7 @@ from usdb_syncer.usdb_song import UsdbSong
 
 _FALLBACK_SONG = UsdbSong(
     song_id=SongId(3715),
+    usdb_mtime=0,
     artist="Queen",
     title="Bohemian Rhapsody",
     genre="Genre",
@@ -171,6 +172,7 @@ class SettingsDialog(Ui_Dialog, QDialog):
         self.comboBox_browser.setCurrentIndex(
             self.comboBox_browser.findData(settings.get_browser())
         )
+        self.checkBox_auto_update.setChecked(settings.get_auto_update())
         self.groupBox_cover.setChecked(settings.get_cover())
         self.comboBox_cover_max_size.setCurrentIndex(
             self.comboBox_cover_max_size.findData(settings.get_cover_max_size())
@@ -303,6 +305,7 @@ class SettingsDialog(Ui_Dialog, QDialog):
         settings.set_primary_color(new_primary_color)
         settings.set_colored_background(colored_background)
         theme.Theme.new(new_theme, new_primary_color, colored_background).apply()
+        settings.set_auto_update(self.checkBox_auto_update.isChecked())
         settings.set_browser(self.comboBox_browser.currentData())
         settings.set_cover(self.groupBox_cover.isChecked())
         settings.set_cover_max_size(self.comboBox_cover_max_size.currentData())

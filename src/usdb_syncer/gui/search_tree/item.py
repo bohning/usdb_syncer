@@ -369,55 +369,21 @@ class Filter(enum.Enum):
 class StatusVariant(SongMatch, enum.Enum):
     """Variants of the status of a song."""
 
-    NONE = enum.auto()
-    DOWNLOADED = enum.auto()
-    IN_PROGRESS = enum.auto()
-    FAILED = enum.auto()
+    NONE = db.DownloadStatus.NONE
+    SYNCHRONIZED = db.DownloadStatus.SYNCHRONIZED
+    OUTDATED = db.DownloadStatus.OUTDATED
+    PENDING = db.DownloadStatus.PENDING
+    DOWNLOADING = db.DownloadStatus.DOWNLOADING
+    FAILED = db.DownloadStatus.FAILED
 
     def __str__(self) -> str:
-        match self:
-            case StatusVariant.NONE:
-                return "Not downloaded"
-            case StatusVariant.DOWNLOADED:
-                return "Downloaded"
-            case StatusVariant.IN_PROGRESS:
-                return "In progress"
-            case StatusVariant.FAILED:
-                return "Failed"
-            case _ as unreachable:
-                assert_never(unreachable)
+        return "None" if self == StatusVariant.NONE else str(self.value)
 
     def build_search(self, search: db.SearchBuilder) -> None:
-        match self:
-            case StatusVariant.IN_PROGRESS:
-                search.statuses.append(db.DownloadStatus.PENDING)
-                search.statuses.append(db.DownloadStatus.DOWNLOADING)
-            case StatusVariant.FAILED:
-                search.statuses.append(db.DownloadStatus.FAILED)
-            case StatusVariant.NONE | StatusVariant.DOWNLOADED:
-                search.downloaded = (
-                    self is StatusVariant.DOWNLOADED
-                    if search.downloaded is None
-                    else None
-                )
-            case unreachable:
-                assert_never(unreachable)
+        search.statuses.append(self.value)
 
     def is_in_search(self, search: db.SearchBuilder) -> bool:
-        match self:
-            case StatusVariant.IN_PROGRESS:
-                return (
-                    db.DownloadStatus.PENDING in search.statuses
-                    and db.DownloadStatus.DOWNLOADING in search.statuses
-                )
-            case StatusVariant.FAILED:
-                return db.DownloadStatus.FAILED in search.statuses
-            case StatusVariant.NONE:
-                return search.downloaded is False
-            case StatusVariant.DOWNLOADED:
-                return search.downloaded is True
-            case unreachable:
-                assert_never(unreachable)
+        return self.value in search.statuses
 
 
 class RatingVariant(SongMatch, enum.Enum):
