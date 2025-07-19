@@ -190,6 +190,23 @@ class DownloadStatus(enum.IntEnum):
     def can_be_aborted(self) -> bool:
         return self in (DownloadStatus.PENDING, DownloadStatus.DOWNLOADING)
 
+    def for_db(self) -> DownloadStatus | None:
+        match self:
+            case (
+                DownloadStatus.NONE
+                | DownloadStatus.SYNCHRONIZED
+                | DownloadStatus.OUTDATED
+            ):
+                return None
+            case (
+                DownloadStatus.PENDING
+                | DownloadStatus.DOWNLOADING
+                | DownloadStatus.FAILED
+            ):
+                return self
+            case _ as unreachable:
+                assert_never(unreachable)
+
 
 class SongOrder(enum.Enum):
     """Attributes songs can be sorted by."""
@@ -549,7 +566,7 @@ class UsdbSongParams:
     genre: str
     creator: str
     tags: str
-    status: DownloadStatus
+    status: DownloadStatus | None
     is_playing: bool
 
 
