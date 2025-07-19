@@ -33,6 +33,16 @@ _SQL_VARIABLES_LIMIT = 32766
 # Performance impact is negligible.
 _SQL_SMALLER_THAN_EXPRESSION_TREE = 980
 
+_STATUS_COLUMN = """coalesce(
+    session_usdb_song.status,
+    CASE
+        sync_meta.usdb_mtime = usdb_song.usdb_mtime
+        WHEN true THEN 1
+        WHEN false THEN 2
+        ELSE 0
+    END
+)"""
+
 
 class _SqlCache:
     _cache: ClassVar[dict[str, str]] = {}
@@ -288,7 +298,7 @@ class SearchBuilder:
             (self.editions, "usdb_song.edition"),
             (self.ratings, "usdb_song.rating"),
             (self.years, "usdb_song.year"),
-            (self.statuses, "session_usdb_song.status"),
+            (self.statuses, _STATUS_COLUMN),
         ):
             if vals:
                 yield _in_values_clause(col, cast(list, vals))
