@@ -73,7 +73,7 @@ class _DbState:
         if cls._local.connection:
             raise errors.AlreadyConnectedError()
         cls._local.connection = sqlite3.connect(
-            db_path, check_same_thread=False, isolation_level=None, timeout=20
+            db_path, check_same_thread=False, isolation_level=None, timeout=60
         )
         thread = threading.current_thread().name
         logger.debug(f"Connected to database at '{db_path}' on thread {thread}.")

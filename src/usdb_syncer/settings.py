@@ -159,6 +159,7 @@ class SettingKey(Enum):
 
     SONG_DIR = "song_dir"
     FFMPEG_DIR = "ffmpeg_dir"
+    AUTO_UPDATE = "downloads/auto_update"
     BROWSER = "downloads/browser"
     TXT = "downloads/txt"
     ENCODING = "downloads/encoding"
@@ -794,6 +795,14 @@ class ReportPDFOrientation(Enum):
 
 def reset() -> None:
     _Settings.reset()
+
+
+def get_auto_update() -> bool:
+    return _Settings.get(SettingKey.AUTO_UPDATE, False)
+
+
+def set_auto_update(value: bool, temp: bool = False) -> None:
+    _Settings.set(SettingKey.AUTO_UPDATE, value, temp)
 
 
 def get_throttling_threads() -> int:

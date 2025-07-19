@@ -33,43 +33,64 @@ from usdb_syncer.usdb_song import UsdbSong, UsdbSongEncoder
 from usdb_syncer.utils import AppPaths
 
 
-def load_available_songs(force_reload: bool, session: Session | None = None) -> bool:
+def load_available_songs_and_sync_meta(folder: Path, force_reload: bool) -> None:
+    """Load available songs from USDB and synchronize the sync meta folder."""
+    result = load_available_songs(force_reload=force_reload)
+    synchronize_sync_meta_folder(folder, not result.synced_with_usdb)
+    SyncMeta.reset_active(folder)
+    UsdbSong.clear_cache()
+    initialize_auto_downloads(result.new_songs)
+
+
+@attrs.define
+class LoadSongsResult:
+    """Result of loading songs from cache and USDB."""
+
+    new_songs: set[SongId] = attrs.field(factory=set)
+    synced_with_usdb: bool = False
+
+
+def load_available_songs(
+    force_reload: bool, session: Session | None = None
+) -> LoadSongsResult:
     """True if USDB was queried successfully."""
+    result = LoadSongsResult()
     if force_reload:
         last = db.LastUsdbUpdate.zero()
         UsdbSong.delete_all()
     elif (last := db.LastUsdbUpdate.get()).is_zero() and (songs := load_cached_songs()):
         UsdbSong.upsert_many(songs)
+        result.new_songs.update((s.song_id for s in songs))
         last = db.LastUsdbUpdate.get()
     try:
         songs = get_updated_songs_from_usdb(last, session=session)
     except errors.UsdbLoginError:
         logger.debug("Skipping fetching new songs as there is no login.")
-        return False
     except requests.exceptions.ConnectionError:
         logger.debug("", exc_info=True)
         logger.error("Failed to fetch new songs; check network connection.")
-        return False
-    if songs:
-        UsdbSong.upsert_many(songs)
-        _download_subscribed_songs(songs)
-    return True
+    else:
+        if songs:
+            UsdbSong.upsert_many(songs)
+            result.new_songs.update((s.song_id for s in songs))
+    return result
 
 
-def _download_subscribed_songs(songs: list[UsdbSong]) -> None:
+def initialize_auto_downloads(updates: set[SongId]) -> None:
     if not settings.ffmpeg_is_available():
         return
-    subscribed = set(db.SavedSearch.get_subscribed_song_ids())
-    to_download = []
-    if subscribed:
-        for song in songs:
-            if song.song_id in subscribed:
-                song.status = db.DownloadStatus.PENDING
-                UsdbSong.upsert(song)
-                to_download.append(song)
-    if to_download:
-        events.DownloadsRequested(len(to_download)).post()
-        DownloadManager.download(to_download)
+    download_ids = set(db.SavedSearch.get_subscribed_song_ids()).intersection(updates)
+    if settings.get_auto_update():
+        search = db.SearchBuilder(statuses=[db.DownloadStatus.OUTDATED])
+        download_ids.update(db.search_usdb_songs(search))
+    songs = [s for i in download_ids if (s := UsdbSong.get(i))]
+    if not songs:
+        return
+    for song in songs:
+        song.status = db.DownloadStatus.PENDING
+    UsdbSong.upsert_many(songs)
+    events.DownloadsRequested(len(songs)).post()
+    DownloadManager.download(songs)
 
 
 def load_cached_songs() -> list[UsdbSong] | None:

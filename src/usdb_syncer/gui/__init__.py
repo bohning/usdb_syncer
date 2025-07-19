@@ -18,17 +18,9 @@ from PySide6 import QtCore, QtGui, QtWidgets
 from PySide6.QtCore import Qt
 
 import usdb_syncer
-from usdb_syncer import (
-    addons,
-    db,
-    errors,
-    logger,
-    settings,
-    song_routines,
-    sync_meta,
-    usdb_song,
-    utils,
-)
+from usdb_syncer import addons, db, errors, logger, settings, song_routines, utils
+from usdb_syncer import sync_meta as sync_meta
+from usdb_syncer import usdb_song as usdb_song
 from usdb_syncer.gui import events, hooks, theme
 
 if TYPE_CHECKING:
@@ -172,13 +164,9 @@ def _load_main_window(mw: MainWindow) -> None:
     folder = settings.get_song_dir()
     db.connect(utils.AppPaths.db)
     with db.transaction():
-        keep_unknown_ids = not song_routines.load_available_songs(force_reload=False)
-        song_routines.synchronize_sync_meta_folder(folder, keep_unknown_ids)
-        sync_meta.SyncMeta.reset_active(folder)
-        usdb_song.UsdbSong.clear_cache()
-        default_search = db.SavedSearch.get_default()
+        song_routines.load_available_songs_and_sync_meta(folder, False)
     mw.tree.populate()
-    if default_search:
+    if default_search := db.SavedSearch.get_default():
         events.SavedSearchRestored(default_search.search).post()
         logger.logger.info(f"Applied default search '{default_search.name}'.")
     mw.table.search_songs()
