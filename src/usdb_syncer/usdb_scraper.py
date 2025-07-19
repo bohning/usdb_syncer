@@ -324,7 +324,7 @@ def get_updated_songs_from_usdb(
         last_update: only fetch updates newer than this
         content_filter: filters response (e.g. {'artist': 'The Beatles'})
     """
-    available_songs: list[UsdbSong] = []
+    available_songs: dict[SongId, UsdbSong] = {}
     payload = {
         "order": "lastchange",
         "ud": "desc",
@@ -341,18 +341,18 @@ def get_updated_songs_from_usdb(
             payload=payload,
             session=session,
         )
-        songs = [
-            song
+        songs = {
+            song.song_id: song
             for song in _parse_songs_from_songlist(html)
             if song.is_new_since_last_update(last_update)
-        ]
-        available_songs.extend(songs)
+        }
+        available_songs.update(songs)
 
         if len(songs) < Usdb.MAX_SONGS_PER_PAGE:
             break
 
     logger.info(f"Fetched {len(available_songs)} updated song(s) from USDB.")
-    return available_songs
+    return list(available_songs.values())
 
 
 def _parse_songs_from_songlist(html: str) -> Iterator[UsdbSong]:
