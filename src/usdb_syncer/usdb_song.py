@@ -162,7 +162,7 @@ class UsdbSong:
             genre=self.genre,
             creator=self.creator,
             tags=self.tags,
-            status=self.status,
+            status=self.status.for_db(),
             is_playing=self.is_playing,
         )
 
