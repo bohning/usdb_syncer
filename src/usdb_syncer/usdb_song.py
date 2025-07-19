@@ -117,6 +117,7 @@ class UsdbSong:
         _UsdbSongCache.remove(self.song_id)
 
     def remove_sync_meta(self) -> None:
+        self.status = DownloadStatus.NONE
         if self.sync_meta:
             self.sync_meta.delete()
             self.sync_meta = None
