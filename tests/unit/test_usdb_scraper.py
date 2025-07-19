@@ -100,42 +100,54 @@ def test_parse_song_list(resource_dir: Path) -> None:
     )
     songs = list(_parse_songs_from_songlist(html))
     assert len(songs) == 3
-    # first song: no audio sample, but cover image
-    assert songs[0].sample_url == ""
-    assert songs[0].song_id == SongId(29199)
-    assert songs[0].artist == "AUT of ORDA"
-    assert songs[0].title == "hoch gwimmas (n)imma"
-    assert songs[0].genre == "Austropop"
-    assert songs[0].year == 2023
+
+    assert songs[0].song_id == SongId(57)
+    assert songs[0].usdb_mtime == 1204046489
+    assert songs[0].artist == "Albert Hammond"
+    assert songs[0].title == "It Never Rains In Southern California"
+    assert songs[0].genre == "Soft Rock"
+    assert songs[0].year == 1972
+    assert songs[0].language == "English"
+    assert songs[0].creator == "Canni"
     assert songs[0].edition == ""
     assert songs[0].golden_notes is False
-    assert songs[0].language == "German"
-    assert songs[0].creator == "ultron"
     assert songs[0].rating == 0
-    assert songs[0].views == 0
-    # second song: no audio sample, default nocover.png
-    assert songs[1].sample_url == ""
-    assert songs[1].song_id == SongId(29198)
-    assert songs[1].artist == "Les enfantastiques"
-    assert songs[1].title == "Si j’allais en Chine"  # noqa: RUF001
+    assert songs[0].views == 446
+    assert (
+        songs[0].sample_url
+        == "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview115/v4/cb/4b/aa/cb4baa80-8845-098f-c52e-f1a4280dd5e5/mzaf_9190069867172822903.plus.aac.ep.m4a"
+    )
+
+    assert songs[1].song_id == SongId(59)
+    assert songs[1].usdb_mtime == 1204046505
+    assert songs[1].artist == "Alex Britti"
+    assert songs[1].title == "Prendere o lasciare"
     assert songs[1].genre == ""
-    assert songs[1].year is None
-    assert songs[1].edition == ""
+    assert songs[1].year == 2005
+    assert songs[1].language == "Italian, English"
+    assert songs[1].creator == "Canni"
+    assert songs[1].edition == "SingStar top.it"
     assert songs[1].golden_notes is True
-    assert songs[1].language == "French"
-    assert songs[1].creator == "ultrastarlover75"
     assert songs[1].rating == 0
-    assert songs[1].views == 1
-    # third song: audio sample and cover
-    assert songs[2].sample_url == "song_list_files/2239202.mp3"
-    assert songs[2].song_id == SongId(29197)
-    assert songs[2].artist == "STEFAN"
-    assert songs[2].title == "Hope (ESC 2022 Estonia)"
-    assert songs[2].genre == "Western-Pop"
-    assert songs[2].year == 2022
-    assert songs[2].edition == "Eurovision Song Contest 2022"
-    assert songs[2].golden_notes is True
+    assert songs[1].views == 339
+    assert (
+        songs[1].sample_url
+        == "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview125/v4/e9/09/16/e909161b-7076-e86f-ee75-daf8d4b6546e/mzaf_2071895916635162352.plus.aac.ep.m4a"
+    )
+
+    assert songs[2].song_id == SongId(60)
+    assert songs[2].usdb_mtime == 1708538299
+    assert songs[2].artist == "Alexander Klaws"
+    assert songs[2].title == "Take Me Tonight"
+    assert songs[2].genre == "Pop"
+    assert songs[2].year == 2003
     assert songs[2].language == "English"
-    assert songs[2].creator == "Dragon33"
-    assert songs[2].rating == 0
-    assert songs[2].views == 2
+    assert songs[2].creator == "Canni, b4St1@fuN"
+    assert songs[2].edition == "[SC]-Songs"
+    assert songs[2].golden_notes is True
+    assert songs[2].rating == 5
+    assert songs[2].views == 652
+    assert (
+        songs[2].sample_url
+        == "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview115/v4/07/7e/37/077e37a6-58ae-91bd-0e30-7311b7b1807c/mzaf_17099415661794586176.plus.aac.ep.m4a"
+    )
