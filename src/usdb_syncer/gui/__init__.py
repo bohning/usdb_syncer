@@ -164,7 +164,8 @@ def _load_main_window(mw: MainWindow) -> None:
     folder = settings.get_song_dir()
     db.connect(utils.AppPaths.db)
     with db.transaction():
-        song_routines.load_available_songs_and_sync_meta(folder, False)
+        db.delete_session_data()
+    song_routines.load_available_songs_and_sync_meta(folder, False)
     mw.tree.populate()
     if default_search := db.SavedSearch.get_default():
         events.SavedSearchRestored(default_search.search).post()

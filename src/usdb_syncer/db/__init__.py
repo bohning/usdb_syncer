@@ -66,6 +66,7 @@ class _DbState:
     """Singleton for managing the global database connection."""
 
     _local: _LocalConnection = _LocalConnection()
+    in_transaction: bool = False
     trace_sql: bool = False
 
     @classmethod
@@ -100,11 +101,14 @@ class _DbState:
 def transaction() -> Generator[None, None, None]:
     try:
         _DbState.connection().execute("BEGIN IMMEDIATE")
+        _DbState.in_transaction = True
         yield None
     except Exception:
         _DbState.connection().rollback()
+        _DbState.in_transaction = False
         raise
     _DbState.connection().commit()
+    _DbState.in_transaction = False
 
 
 def _validate_schema(connection: sqlite3.Connection) -> None:
@@ -556,8 +560,10 @@ def upsert_usdb_song(params: UsdbSongParams) -> None:
     _DbState.connection().execute(stmt, params.__dict__)
 
 
-def upsert_usdb_songs(params: Iterable[UsdbSongParams]) -> None:
+def upsert_usdb_songs(params: list[UsdbSongParams]) -> None:
     stmt = _SqlCache.get("upsert_usdb_song.sql")
+    _DbState.connection().executemany(stmt, (p.__dict__ for p in params))
+    stmt = _SqlCache.get("upsert_session_usdb_song.sql")
     _DbState.connection().executemany(stmt, (p.__dict__ for p in params))
 
 
@@ -620,6 +626,10 @@ def find_similar_usdb_songs(artist: str, title: str) -> Iterable[SongId]:
     stmt = "SELECT rowid FROM fts_usdb_song WHERE artist MATCH ? AND title MATCH ?"
     params = (_fts5_start_phrase(artist), _fts5_start_phrase(title))
     return (SongId(r[0]) for r in _DbState.connection().execute(stmt, params))
+
+
+def delete_session_data() -> None:
+    _DbState.connection().execute("DELETE FROM session_usdb_song")
 
 
 # song filters

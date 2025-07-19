@@ -291,9 +291,8 @@ class MainWindow(Ui_MainWindow, QMainWindow):
 
     def _refetch_song_list(self) -> None:
         def task() -> None:
-            with db.transaction():
-                folder = settings.get_song_dir()
-                song_routines.load_available_songs_and_sync_meta(folder, True)
+            folder = settings.get_song_dir()
+            song_routines.load_available_songs_and_sync_meta(folder, True)
 
         def on_done(result: progress.Result[None]) -> None:
             self.table.end_reset()

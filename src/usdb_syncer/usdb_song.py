@@ -138,7 +138,7 @@ class UsdbSong:
 
     @classmethod
     def upsert_many(cls, songs: list[UsdbSong]) -> None:
-        db.upsert_usdb_songs(song.db_params() for song in songs)
+        db.upsert_usdb_songs([song.db_params() for song in songs])
         db.upsert_usdb_songs_languages([(s.song_id, s.languages()) for s in songs])
         db.upsert_usdb_songs_genres([(s.song_id, s.genres()) for s in songs])
         db.upsert_usdb_songs_creators([(s.song_id, s.creators()) for s in songs])

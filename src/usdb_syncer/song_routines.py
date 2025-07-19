@@ -35,9 +35,10 @@ from usdb_syncer.utils import AppPaths
 
 def load_available_songs_and_sync_meta(folder: Path, force_reload: bool) -> None:
     """Load available songs from USDB and synchronize the sync meta folder."""
-    result = load_available_songs(force_reload=force_reload)
-    synchronize_sync_meta_folder(folder, not result.synced_with_usdb)
-    SyncMeta.reset_active(folder)
+    with db.transaction():
+        result = load_available_songs(force_reload=force_reload)
+        synchronize_sync_meta_folder(folder, not result.synced_with_usdb)
+        SyncMeta.reset_active(folder)
     UsdbSong.clear_cache()
     initialize_auto_downloads(result.new_songs)
 
@@ -88,7 +89,8 @@ def initialize_auto_downloads(updates: set[SongId]) -> None:
         return
     for song in songs:
         song.status = db.DownloadStatus.PENDING
-    UsdbSong.upsert_many(songs)
+    with db.transaction():
+        UsdbSong.upsert_many(songs)
     events.DownloadsRequested(len(songs)).post()
     DownloadManager.download(songs)
 
