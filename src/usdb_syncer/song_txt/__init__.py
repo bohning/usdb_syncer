@@ -84,7 +84,17 @@ class SongTxt:
         if self.meta_tags.preview is not None and self.meta_tags.preview != 0.0:
             self.headers.previewstart = self.meta_tags.preview
         if medley := self.meta_tags.medley:
+            if not any(line.start() == medley.start for line in self.notes.track_1):
+                self.logger.warning(
+                    f"medley start beat ({medley.start}) is not on a line start. Please"
+                    " adjust the medley start in the meta tags on USDB."
+                )
             self.headers.medleystartbeat = medley.start
+            if not any(line.end() == medley.end for line in self.notes.track_1):
+                self.logger.warning(
+                    f"medley end beat ({medley.end}) is not on a line end. Please"
+                    " adjust the medley end in the meta tags on USDB."
+                )
             self.headers.medleyendbeat = medley.end
         if self.meta_tags.tags:
             self.headers.tags = self.meta_tags.tags
