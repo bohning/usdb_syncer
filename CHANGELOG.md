@@ -4,11 +4,14 @@
 
 ## Features
 
+- Upon start, not only new songs are fetched, but updates for existing songs as well.
+  - The first launch may take a while, because the song list has to be rebuilt.
 - There are now shortcuts for commonly used actions.
 - Added Tune Perfect (https://tuneperfect.org/) to supported apps. You can now open a selected song in Tune Perfect directly via the Syncer.
 - Meta tags parsing is now case insensitive.
 - Don't overwrite song txt if contents haven't changed (preserve metadata).
 - Local songs may be automatically trashed if the according USDB songs were removed.
+- The columns of the song table may be reorganized by drag-and-drop.
 
 ## Fixes
 
