@@ -165,17 +165,13 @@ class SongTable:
     def build_custom_data_menu(self) -> None:
         if not (song := self.current_song()) or not song.sync_meta:
             return
-
-        def update(key: str, value: str | None) -> None:
-            if not song.sync_meta:
-                return
-            song.sync_meta.custom_data.set(key, value)
-            with db.transaction():
-                song.upsert()
-            events.SongChanged(song.song_id).post()
+        if not (selected := [s for s in self.selected_songs() if s.sync_meta]):
+            return
 
         def run_custom_data_dialog(key: str | None = None) -> None:
-            CustomDataDialog(self.mw, update, key).open()
+            CustomDataDialog(
+                self.mw, partial(_update_custom_data, selected), key
+            ).open()
 
         self.mw.menu_custom_data.clear()
         _add_action("New ...", self.mw.menu_custom_data, run_custom_data_dialog)
@@ -185,11 +181,19 @@ class SongTable:
             self.mw.menu_custom_data.addMenu(key_menu)
             _add_action("New ...", key_menu, partial(run_custom_data_dialog, key))
             key_menu.addSeparator()
-            _add_action(value, key_menu, partial(update, key, None), checked=True)
+            _add_action(
+                value,
+                key_menu,
+                partial(_update_custom_data, selected, key, None),
+                checked=True,
+            )
             for option in sync_meta.CustomData.value_options(key):
                 if option != value:
                     _add_action(
-                        option, key_menu, partial(update, key, option), checked=False
+                        option,
+                        key_menu,
+                        partial(_update_custom_data, selected, key, option),
+                        checked=False,
                     )
 
     def _on_click(self, index: QtCore.QModelIndex) -> None:
@@ -411,3 +415,13 @@ def _add_action(
         action.setChecked(checked)
     action.triggered.connect(slot)
     menu.addAction(action)
+
+
+def _update_custom_data(songs: list[UsdbSong], key: str, value: str | None) -> None:
+    for song in songs:
+        if song.sync_meta:
+            song.sync_meta.custom_data.set(key, value)
+    with db.transaction():
+        UsdbSong.upsert_many(songs)
+    for song in songs:
+        events.SongChanged(song.song_id).post()
