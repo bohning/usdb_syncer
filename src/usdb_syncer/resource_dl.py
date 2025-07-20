@@ -187,9 +187,13 @@ def _download_resource(
             if YtErrorMsg.YT_AGE_RESTRICTED in error_message:
                 dl_result = _retry_with_cookies(url, options, logger)
                 return ResourceDLResult(extension=dl_result.extension)
-            if (
-                YtErrorMsg.YT_GEO_RESTRICTED in error_message
-                or YtErrorMsg.YT_GEO_BLOCKED in error_message
+            if any(
+                msg in error_message
+                for msg in (
+                    YtErrorMsg.YT_GEO_RESTRICTED_1,
+                    YtErrorMsg.YT_GEO_RESTRICTED_2,
+                    YtErrorMsg.YT_GEO_RESTRICTED_3,
+                )
             ):
                 _handle_geo_restriction(url, resource, logger)
                 return ResourceDLResult(error=ResourceDLError.RESOURCE_GEO_RESTRICTED)
