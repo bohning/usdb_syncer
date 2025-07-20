@@ -1,3 +1,13 @@
+<!-- 0.16.0 -->
+
+# Changes
+
+## Features
+
+- Medley sections are now checked if they start on a line start and end on a line end, otherwise a warning is issued.
+
+## Fixes
+
 <!-- 0.15.0 -->
 
 # Changes
