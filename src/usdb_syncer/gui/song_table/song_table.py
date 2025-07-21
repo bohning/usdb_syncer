@@ -127,6 +127,8 @@ class SongTable:
                 song_logger(song.song_id).info("Not downloading song as it is pinned.")
                 continue
             if song.status.can_be_downloaded():
+                self.stop_playing_local_song(song)
+                preview_dialog.PreviewDialog.close_song(song.song_id)
                 song.status = DownloadStatus.PENDING
                 with db.transaction():
                     song.upsert()
