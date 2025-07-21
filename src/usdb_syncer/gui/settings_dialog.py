@@ -1,5 +1,7 @@
 """Dialog with app settings."""
 
+from __future__ import annotations
+
 import sys
 from pathlib import Path
 from typing import ClassVar, assert_never
@@ -34,6 +36,7 @@ _FALLBACK_SONG = UsdbSong(
 class SettingsDialog(Ui_Dialog, QDialog):
     """Dialog with app settings."""
 
+    _instance: ClassVar[SettingsDialog | None] = None
     _last_tab_index: ClassVar[int] = 0
     _path_template: PathTemplate | None = None
 
@@ -78,6 +81,15 @@ class SettingsDialog(Ui_Dialog, QDialog):
             self._set_theme_settings_enabled
         )
         self._set_theme_settings_enabled()
+
+    @classmethod
+    def load(cls, parent: QtWidgets.QWidget, song: UsdbSong | None) -> None:
+        if cls._instance:
+            cls._instance._song = song or _FALLBACK_SONG
+            cls._instance.raise_()
+        else:
+            cls._instance = cls(parent, song)
+            cls._instance.show()
 
     def _set_theme_settings_enabled(self) -> None:
         hidden = self.comboBox_theme.currentData() == settings.Theme.SYSTEM
@@ -295,7 +307,12 @@ class SettingsDialog(Ui_Dialog, QDialog):
             return
         if self._browser != self.comboBox_browser.currentData():
             SessionManager.reset_session()
+        SettingsDialog._instance = None
         super().accept()
+
+    def reject(self) -> None:
+        SettingsDialog._instance = None
+        super().reject()
 
     def _save_settings(self) -> bool:
         new_theme = self.comboBox_theme.currentData()

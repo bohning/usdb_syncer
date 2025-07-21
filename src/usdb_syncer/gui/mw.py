@@ -111,7 +111,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
             (self.action_meta_tags, lambda: MetaTagsDialog(self).show(), None),
             (
                 self.action_settings,
-                lambda: SettingsDialog(self, self.table.current_song()).show(),
+                lambda: SettingsDialog.load(self, self.table.current_song()),
                 MainWindowShortcut.OPEN_PREFERENCES,
             ),
             (self.action_about, lambda: AboutDialog(self).show(), None),
