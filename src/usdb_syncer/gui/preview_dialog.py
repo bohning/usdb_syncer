@@ -14,7 +14,7 @@ import soundfile
 from PySide6 import QtCore, QtGui, QtWidgets
 from PySide6.QtCore import Qt
 
-from usdb_syncer import utils
+from usdb_syncer import SongId, utils
 from usdb_syncer.gui import events, icons, theme
 from usdb_syncer.gui.forms.PreviewDialog import Ui_Dialog
 from usdb_syncer.gui.resources.audio import METRONOME_TICK_WAV
@@ -84,9 +84,15 @@ class PreviewDialog(Ui_Dialog, QtWidgets.QDialog):
     _DOUBLECLICK_DELAY_SECS = Seconds(_DOUBLECLICK_DELAY_MS / 1000)
 
     def __init__(
-        self, parent: QtWidgets.QWidget, txt: SongTxt, audio: Path, cover: Path | None
+        self,
+        parent: QtWidgets.QWidget,
+        song_id: SongId,
+        txt: SongTxt,
+        audio: Path,
+        cover: Path | None,
     ) -> None:
         super().__init__(parent=parent)
+        self.song_id = song_id
         self.setupUi(self)
         self._insert_cover_widget()
         self.setWindowTitle(txt.headers.artist_title_str())
@@ -118,14 +124,23 @@ class PreviewDialog(Ui_Dialog, QtWidgets.QDialog):
             QtWidgets.QMessageBox.warning(parent, "Aborted", "Txt file is invalid!")
             return
         if cls._instance:
-            cls._instance._change_song(txt, audio_path, song.cover_path())
+            cls._instance._change_song(song.song_id, txt, audio_path, song.cover_path())
             cls._instance.raise_()
         else:
-            cls._instance = cls(parent, txt, audio_path, song.cover_path())
+            cls._instance = cls(
+                parent, song.song_id, txt, audio_path, song.cover_path()
+            )
             cls._instance.show()
 
-    def _change_song(self, txt: SongTxt, audio: Path, cover: Path | None) -> None:
-        """Change the song currently being previewed."""
+    @classmethod
+    def close_song(cls, song_id: SongId) -> None:
+        if cls._instance and cls._instance.song_id == song_id:
+            cls._instance.reject()
+
+    def _change_song(
+        self, song_id: SongId, txt: SongTxt, audio: Path, cover: Path | None
+    ) -> None:
+        self.song_id = song_id
         self._player.stop()
         self.setWindowTitle(txt.headers.artist_title_str())
         self._setup_voice_selection(txt)
