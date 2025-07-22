@@ -28,9 +28,6 @@ class CustomDataDialog(Ui_Dialog, QtWidgets.QDialog):
         value = self.edit_value.text().strip()
         if not key or not value:
             warning = "Both key and value must be supplied!"
-            QtWidgets.QMessageBox.warning(
-                self, "Warning", "Both key and value must be supplied!"
-            )
         elif not CustomData.is_valid_key(key):
             warning = (
                 "Key must not contain any of these characters: "

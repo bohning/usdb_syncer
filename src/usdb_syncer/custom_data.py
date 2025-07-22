@@ -3,6 +3,7 @@
 import builtins
 import collections.abc
 from collections import defaultdict
+from typing import ClassVar
 
 from usdb_syncer import db
 
@@ -11,7 +12,7 @@ class CustomData:
     """Dict of custom data."""
 
     _data: dict[str, str]
-    _options: defaultdict[str, builtins.set[str]] | None = None
+    _options: ClassVar[defaultdict[str, builtins.set[str]] | None] = None
     FORBIDDEN_CHARACTERS = '?"<>|*.:/\\'
 
     @classmethod
