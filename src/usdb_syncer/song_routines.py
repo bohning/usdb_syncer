@@ -71,6 +71,7 @@ def load_available_songs(
         logger.debug("", exc_info=True)
         logger.error("Failed to fetch new songs; check network connection.")
     else:
+        result.synced_with_usdb = True
         if songs:
             UsdbSong.upsert_many(songs)
             result.new_songs.update((s.song_id for s in songs))
