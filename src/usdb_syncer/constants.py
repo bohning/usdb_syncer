@@ -111,6 +111,7 @@ class YtErrorMsg:
     YT_UNAVAILABLE = "Video unavailable"
     YT_PARSE_ERROR = "Failed to parse XML"
     YT_FORBIDDEN = "HTTP Error 403: Forbidden"
+    VM_UNAUTHENTICATED = "You're trying to use an unauthenticated request"
 
 
 SUPPORTED_VIDEO_SOURCES_REGEX = re.compile(

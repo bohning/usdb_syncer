@@ -8,6 +8,8 @@
 
 ## Fixes
 
+- The Syncer will now also retry for Vimeo resources with logged-in cookies if necessary.
+
 <!-- 0.15.0 -->
 
 # Changes
