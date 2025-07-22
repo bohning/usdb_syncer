@@ -150,6 +150,7 @@ class PreviewDialog(Ui_Dialog, QtWidgets.QDialog):
 
     def _setup_voice_selection(self, txt: SongTxt) -> None:
         self.label_voice.setVisible(bool(txt.notes.track_2))
+        self.comboBox_voice.clear()
         self.comboBox_voice.setVisible(bool(txt.notes.track_2))
         self.comboBox_voice.addItem(txt.headers.p1 or "P1")
         self.comboBox_voice.addItem(txt.headers.p2 or "P2")
