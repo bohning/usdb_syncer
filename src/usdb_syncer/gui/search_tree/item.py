@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import enum
 from collections.abc import Iterable
-from typing import Any, Generic, TypeVar, assert_never
+from typing import Generic, TypeVar, assert_never
 
 import attrs
 from PySide6.QtCore import Qt
@@ -14,8 +14,24 @@ from usdb_syncer import db
 from usdb_syncer.gui.icons import Icon
 
 
-class SongMatch:
-    """Interface for objects that can be matched against a song."""
+# not an ABC so enums can inherit it (otherwise there's a metaclass conflict)
+class TreeItemData:
+    """Interface for objects to be rendered as a tree node."""
+
+    def decoration(self) -> QIcon | None:
+        raise NotImplementedError
+
+    def is_checkable(self) -> bool:
+        raise NotImplementedError
+
+    def is_editable(self) -> bool:
+        raise NotImplementedError
+
+    def is_parent(self) -> bool:
+        raise NotImplementedError
+
+    def is_accepted(self, _matches: set[str | int]) -> bool:
+        raise NotImplementedError
 
     def build_search(self, search: db.SearchBuilder) -> None:
         raise NotImplementedError
@@ -23,15 +39,300 @@ class SongMatch:
     def is_in_search(self, search: db.SearchBuilder) -> bool:
         raise NotImplementedError
 
+    def child_data(self) -> Iterable[TreeItemData]:
+        raise NotImplementedError
+
+
+class RootItemData(TreeItemData):
+    """Implementation of the tree root."""
+
+    def decoration(self) -> QIcon | None:
+        return None
+
+    def is_checkable(self) -> bool:
+        return False
+
+    def is_editable(self) -> bool:
+        return False
+
+    def is_parent(self) -> bool:
+        return True
+
     def is_accepted(self, _matches: set[str | int]) -> bool:
         return True
+
+    def build_search(self, search: db.SearchBuilder) -> None:
+        pass
+
+    def is_in_search(self, search: db.SearchBuilder) -> bool:
+        return True
+
+    def child_data(self) -> Iterable[TreeItemData]:
+        return Filter
+
+
+@attrs.define(kw_only=True)
+class TreeItem:
+    """A row in the tree."""
+
+    data: TreeItemData = attrs.field(factory=RootItemData)
+    parent: TreeItem | None = None
+    row_in_parent: int = attrs.field(default=0, init=False)
+    children: list[TreeItem] = attrs.field(factory=list, init=False)
+    checked: bool | None = attrs.field(default=False, init=False)
+    checked_children: set[int] = attrs.field(factory=set, init=False)
+
+    def populate(self) -> None:
+        self.set_children(TreeItem(data=d, parent=self) for d in self.data.child_data())
+        for child in self.children:
+            child.populate()
+
+    def set_children(self, children: Iterable[TreeItem]) -> None:
+        self.children = list(children)
+        for row, child in enumerate(self.children):
+            child.parent = self
+            child.row_in_parent = row
+
+    def add_child(self, child: TreeItem) -> None:
+        child.parent = self
+        child.row_in_parent = len(self.children)
+        self.children.append(child)
+
+    def remove_child(self, child: TreeItem) -> None:
+        self.children.remove(child)
+        for row, child in enumerate(self.children):
+            child.row_in_parent = row
+
+    def flags(self) -> Qt.ItemFlag:
+        flags = Qt.ItemFlag.ItemIsEnabled
+        if self.checked or self.data.is_checkable():
+            flags |= Qt.ItemFlag.ItemIsUserCheckable
+        if self.data.is_editable():
+            flags |= Qt.ItemFlag.ItemIsEditable
+        if not self.data.is_parent():
+            flags |= Qt.ItemFlag.ItemNeverHasChildren
+        return flags
+
+    def toggle_checked(self, keep_siblings: bool) -> list[TreeItem]:
+        if self.parent and self.parent.data.is_checkable():
+            return self.parent._set_child_checked(
+                self.row_in_parent, not self.checked, keep_siblings
+            )
+        elif self.checked:
+            return self._uncheck_children()
+        return []
+
+    def _uncheck_children(self) -> list[TreeItem]:
+        changed = [self, *self._checked_child_items()]
+        for child in changed[1:]:
+            child.checked = False
+        self.checked_children.clear()
+        self.checked = False
+        return changed
+
+    def _set_child_checked(
+        self, child: int, checked: bool, keep_siblings: bool
+    ) -> list[TreeItem]:
+        changed = [self.children[child]]
+        if checked:
+            if not keep_siblings:
+                changed = self._uncheck_children()
+            self.checked_children.add(child)
+        else:
+            self.checked_children.remove(child)
+        self.children[child].checked = checked
+        if (new := bool(self.checked_children)) != self.checked:
+            if self.parent and self.parent.data.is_checkable():
+                changed += self.parent._set_child_checked(
+                    self.row_in_parent, new, keep_siblings=True
+                )
+            else:
+                self.checked = new
+                changed.append(self)
+        return changed
+
+    def set_checked_children(self, search: db.SearchBuilder) -> list[TreeItem]:
+        changed: list[TreeItem] = []
+        for idx, child in enumerate(self.children):
+            if child.data.is_in_search(search) == child.checked:
+                continue
+            changed.append(child)
+            child.checked = not child.checked
+            if child.checked:
+                self.checked_children.add(idx)
+            else:
+                self.checked_children.remove(idx)
+        if self.checked != bool(self.checked_children):
+            changed.append(self)
+            self.checked = not self.checked
+        return changed
+
+    def _checked_child_items(self) -> Iterable[TreeItem]:
+        return (self.children[row] for row in self.checked_children)
+
+    def build_search(self, search: db.SearchBuilder) -> None:
+        self.data.build_search(search)
+        for child in self._checked_child_items():
+            child.data.build_search(search)
+
+    def filter_accepts_child(
+        self, child_row: int, filters: dict[TreeItemData, set[str | int]]
+    ) -> bool:
+        if (matches := filters.get(self.data)) is None:
+            return True
+        return self.children[child_row].data.is_accepted(matches)
+
+
+class Filter(TreeItemData, enum.Enum):
+    """Kinds of filters in the tree."""
+
+    SAVED = 0
+    STATUS = enum.auto()
+    ARTIST = enum.auto()
+    TITLE = enum.auto()
+    EDITION = enum.auto()
+    LANGUAGE = enum.auto()
+    GOLDEN_NOTES = enum.auto()
+    RATING = enum.auto()
+    VIEWS = enum.auto()
+    YEAR = enum.auto()
+    GENRE = enum.auto()
+    CREATOR = enum.auto()
+
+    def __str__(self) -> str:  # noqa: C901
+        match self:
+            case Filter.SAVED:
+                return "Saved Searches"
+            case Filter.STATUS:
+                return "Status"
+            case Filter.ARTIST:
+                return "Artist"
+            case Filter.TITLE:
+                return "Title"
+            case Filter.EDITION:
+                return "Edition"
+            case Filter.LANGUAGE:
+                return "Language"
+            case Filter.GOLDEN_NOTES:
+                return "Golden Notes"
+            case Filter.RATING:
+                return "Rating"
+            case Filter.VIEWS:
+                return "Views"
+            case Filter.YEAR:
+                return "Year"
+            case Filter.GENRE:
+                return "Genre"
+            case Filter.CREATOR:
+                return "Creator"
+            case _ as unreachable:
+                assert_never(unreachable)
+
+    def child_data(self) -> Iterable[TreeItemData]:  # noqa: C901
+        match self:
+            case Filter.SAVED:
+                return SavedSearch.load_all()
+            case Filter.ARTIST:
+                return (SongArtistMatch(v, c) for v, c in db.usdb_song_artists())
+            case Filter.TITLE:
+                return (SongTitleMatch(v, c) for v, c in db.usdb_song_titles())
+            case Filter.EDITION:
+                return (SongEditionMatch(v, c) for v, c in db.usdb_song_editions())
+            case Filter.LANGUAGE:
+                return (SongLanguageMatch(v, c) for v, c in db.usdb_song_languages())
+            case Filter.STATUS:
+                return StatusVariant
+            case Filter.GOLDEN_NOTES:
+                return GoldenNotesVariant
+            case Filter.RATING:
+                return RatingVariant
+            case Filter.VIEWS:
+                return ViewsVariant
+            case Filter.YEAR:
+                return (SongYearMatch(v, c) for v, c in db.usdb_song_years())
+            case Filter.GENRE:
+                return (SongGenreMatch(v, c) for v, c in db.usdb_song_genres())
+            case Filter.CREATOR:
+                return (SongCreatorMatch(v, c) for v, c in db.usdb_song_creators())
+            case _ as unreachable:
+                assert_never(unreachable)
+
+    def decoration(self) -> QIcon:  # noqa: C901
+        match self:
+            case Filter.SAVED:
+                icon = Icon.SAVED_SEARCH
+            case Filter.STATUS:
+                icon = Icon.DOWNLOAD
+            case Filter.ARTIST:
+                icon = Icon.ARTIST
+            case Filter.TITLE:
+                icon = Icon.TITLE
+            case Filter.EDITION:
+                icon = Icon.EDITION
+            case Filter.LANGUAGE:
+                icon = Icon.LANGUAGE
+            case Filter.GOLDEN_NOTES:
+                icon = Icon.GOLDEN_NOTES
+            case Filter.RATING:
+                icon = Icon.RATING
+            case Filter.VIEWS:
+                icon = Icon.VIEWS
+            case Filter.YEAR:
+                icon = Icon.CALENDAR
+            case Filter.GENRE:
+                icon = Icon.GENRE
+            case Filter.CREATOR:
+                icon = Icon.CREATOR
+            case _ as unreachable:
+                assert_never(unreachable)
+        return icon.icon()
+
+    def is_checkable(self) -> bool:
+        return self != Filter.SAVED
+
+    def is_editable(self) -> bool:
+        return False
+
+    def is_parent(self) -> bool:
+        return True
+
+    def is_accepted(self, _matches: set[str | int]) -> bool:
+        return True
+
+    def build_search(self, search: db.SearchBuilder) -> None:
+        pass
+
+    def is_in_search(self, search: db.SearchBuilder) -> bool:
+        return True
+
+
+class NodeItemData(TreeItemData):
+    """Base implementation for a child of a filter item."""
+
+    def decoration(self) -> QIcon | None:
+        return None
+
+    def is_checkable(self) -> bool:
+        return True
+
+    def is_editable(self) -> bool:
+        return False
+
+    def is_parent(self) -> bool:
+        return False
+
+    def is_accepted(self, _matches: set[str | int]) -> bool:
+        return True
+
+    def child_data(self) -> Iterable[TreeItemData]:
+        return ()
 
 
 T = TypeVar("T")
 
 
 @attrs.define
-class SongValueMatch(SongMatch, Generic[T]):
+class SongValueMatch(NodeItemData, Generic[T]):
     """str that can be matched against a specific attribute of a song."""
 
     val: T
@@ -102,271 +403,7 @@ class SongCreatorMatch(SongValueMatch):
         return search.creators
 
 
-@attrs.define(kw_only=True)
-class TreeItem:
-    """A row in the tree."""
-
-    data: Any
-    parent: TreeItem | None
-    checkable: bool = False
-    row_in_parent: int = attrs.field(default=0, init=False)
-    children: tuple[TreeItem, ...] = attrs.field(factory=tuple, init=False)
-    checked: bool | None = attrs.field(default=False, init=False)
-
-    def toggle_checked(self, _keep_siblings: bool) -> tuple[TreeItem, ...]:
-        """Returns toggled items."""
-        return ()
-
-    def decoration(self) -> QIcon | None:
-        return None
-
-    def flags(self) -> Qt.ItemFlag:
-        return Qt.ItemFlag.ItemIsEnabled
-
-    def is_accepted(self, _matches: dict[Filter, set[str | int]]) -> bool:
-        return True
-
-
-@attrs.define(kw_only=True)
-class RootItem(TreeItem):
-    """The root item of the tree. Only used internally."""
-
-    data: None = attrs.field(default=None, init=False)
-    parent: None = attrs.field(default=None, init=False)
-    children: tuple[FilterItem, ...] = attrs.field(factory=tuple, init=False)
-
-    def set_children(self, children: Iterable[FilterItem]) -> None:
-        self.children = tuple(children)
-        for row, child in enumerate(self.children):
-            child.parent = self
-            child.row_in_parent = row
-
-
-@attrs.define(kw_only=True)
-class FilterItem(TreeItem):
-    """A top-level row in the tree representing a filter kind."""
-
-    data: Filter
-    parent: RootItem
-    children: tuple[VariantItem, ...] = attrs.field(factory=tuple, init=False)
-    checked_children: set[int] = attrs.field(factory=set, init=False)
-
-    def __attrs_post_init__(self) -> None:
-        self.checkable = self.data != Filter.SAVED
-
-    def add_child(self, child: VariantItem) -> None:
-        child.parent = self
-        child.row_in_parent = len(self.children)
-        self.children = (*self.children, child)
-
-    def set_children(self, children: Iterable[VariantItem]) -> None:
-        self.children = tuple(children)
-        for row, child in enumerate(self.children):
-            child.parent = self
-            child.row_in_parent = row
-
-    def flags(self) -> Qt.ItemFlag:
-        if self.checked_children:
-            return Qt.ItemFlag.ItemIsEnabled | Qt.ItemFlag.ItemIsUserCheckable
-        return Qt.ItemFlag.ItemIsEnabled
-
-    def toggle_checked(self, _keep_siblings: bool) -> tuple[TreeItem, ...]:
-        return self.uncheck_children() if self.checked else ()
-
-    def uncheck_children(self) -> tuple[TreeItem, ...]:
-        changed = tuple(self.checked_child_items())
-        for child in changed:
-            child.checked = False
-        self.checked_children.clear()
-        self.checked = False
-        return (*changed, self)
-
-    def set_child_checked(
-        self, child: int, checked: bool, keep_siblings: bool
-    ) -> tuple[TreeItem, ...]:
-        changed: tuple[TreeItem, ...] = (self, self.children[child])
-        if checked:
-            if not keep_siblings:
-                changed += self.uncheck_children()
-            self.checked_children.add(child)
-        else:
-            self.checked_children.remove(child)
-        self.children[child].checked = checked
-        self.checked = bool(self.checked_children)
-        return changed
-
-    def set_checked_children(self, search: db.SearchBuilder) -> list[TreeItem]:
-        changed: list[TreeItem] = []
-        for idx, child in enumerate(self.children):
-            if child.data.is_in_search(search) == child.checked:
-                continue
-            changed.append(child)
-            child.checked = not child.checked
-            if child.checked:
-                self.checked_children.add(idx)
-            else:
-                self.checked_children.remove(idx)
-        if self.checked != bool(self.checked_children):
-            changed.append(self)
-            self.checked = not self.checked
-        return changed
-
-    def decoration(self) -> QIcon:
-        return self.data.decoration()
-
-    def checked_child_items(self) -> Iterable[VariantItem]:
-        return (self.children[row] for row in self.checked_children)
-
-    def build_search(self, search: db.SearchBuilder) -> None:
-        for child in self.checked_child_items():
-            child.data.build_search(search)
-
-
-@attrs.define(kw_only=True)
-class VariantItem(TreeItem):
-    """A node row in the tree representing one variant of a specific filter."""
-
-    data: SongMatch
-    parent: FilterItem
-    children: tuple[TreeItem, ...] = attrs.field(factory=tuple, init=False)
-    _flags: Qt.ItemFlag = attrs.field(init=False)
-
-    def __attrs_post_init__(self) -> None:
-        if self.parent.data == Filter.SAVED:
-            self.checkable = False
-            self._flags = (
-                Qt.ItemFlag.ItemIsEnabled
-                | Qt.ItemFlag.ItemNeverHasChildren
-                | Qt.ItemFlag.ItemIsEditable
-            )
-        else:
-            self.checkable = True
-            self._flags = (
-                Qt.ItemFlag.ItemIsEnabled
-                | Qt.ItemFlag.ItemIsUserCheckable
-                | Qt.ItemFlag.ItemNeverHasChildren
-            )
-
-    def flags(self) -> Qt.ItemFlag:
-        return self._flags
-
-    def toggle_checked(self, keep_siblings: bool) -> tuple[TreeItem, ...]:
-        return self.parent.set_child_checked(
-            self.row_in_parent, not self.checked, keep_siblings
-        )
-
-    def is_accepted(self, matches: dict[Filter, set[str | int]]) -> bool:
-        if (parent_matches := matches.get(self.parent.data)) is None:
-            return True
-        return self.data.is_accepted(parent_matches)
-
-
-class Filter(enum.Enum):
-    """Kinds of filters in the tree."""
-
-    SAVED = 0
-    STATUS = enum.auto()
-    ARTIST = enum.auto()
-    TITLE = enum.auto()
-    EDITION = enum.auto()
-    LANGUAGE = enum.auto()
-    GOLDEN_NOTES = enum.auto()
-    RATING = enum.auto()
-    VIEWS = enum.auto()
-    YEAR = enum.auto()
-    GENRE = enum.auto()
-    CREATOR = enum.auto()
-
-    def __str__(self) -> str:  # noqa: C901
-        match self:
-            case Filter.SAVED:
-                return "Saved Searches"
-            case Filter.STATUS:
-                return "Status"
-            case Filter.ARTIST:
-                return "Artist"
-            case Filter.TITLE:
-                return "Title"
-            case Filter.EDITION:
-                return "Edition"
-            case Filter.LANGUAGE:
-                return "Language"
-            case Filter.GOLDEN_NOTES:
-                return "Golden Notes"
-            case Filter.RATING:
-                return "Rating"
-            case Filter.VIEWS:
-                return "Views"
-            case Filter.YEAR:
-                return "Year"
-            case Filter.GENRE:
-                return "Genre"
-            case Filter.CREATOR:
-                return "Creator"
-            case _ as unreachable:
-                assert_never(unreachable)
-
-    def variants(self) -> Iterable[SongMatch]:  # noqa: C901
-        match self:
-            case Filter.SAVED:
-                return SavedSearch.load_all()
-            case Filter.ARTIST:
-                return (SongArtistMatch(v, c) for v, c in db.usdb_song_artists())
-            case Filter.TITLE:
-                return (SongTitleMatch(v, c) for v, c in db.usdb_song_titles())
-            case Filter.EDITION:
-                return (SongEditionMatch(v, c) for v, c in db.usdb_song_editions())
-            case Filter.LANGUAGE:
-                return (SongLanguageMatch(v, c) for v, c in db.usdb_song_languages())
-            case Filter.STATUS:
-                return StatusVariant
-            case Filter.GOLDEN_NOTES:
-                return GoldenNotesVariant
-            case Filter.RATING:
-                return RatingVariant
-            case Filter.VIEWS:
-                return ViewsVariant
-            case Filter.YEAR:
-                return (SongYearMatch(v, c) for v, c in db.usdb_song_years())
-            case Filter.GENRE:
-                return (SongGenreMatch(v, c) for v, c in db.usdb_song_genres())
-            case Filter.CREATOR:
-                return (SongCreatorMatch(v, c) for v, c in db.usdb_song_creators())
-            case _ as unreachable:
-                assert_never(unreachable)
-
-    def decoration(self) -> QIcon:  # noqa: C901
-        match self:
-            case Filter.SAVED:
-                icon = Icon.SAVED_SEARCH
-            case Filter.STATUS:
-                icon = Icon.DOWNLOAD
-            case Filter.ARTIST:
-                icon = Icon.ARTIST
-            case Filter.TITLE:
-                icon = Icon.TITLE
-            case Filter.EDITION:
-                icon = Icon.EDITION
-            case Filter.LANGUAGE:
-                icon = Icon.LANGUAGE
-            case Filter.GOLDEN_NOTES:
-                icon = Icon.GOLDEN_NOTES
-            case Filter.RATING:
-                icon = Icon.RATING
-            case Filter.VIEWS:
-                icon = Icon.VIEWS
-            case Filter.YEAR:
-                icon = Icon.CALENDAR
-            case Filter.GENRE:
-                icon = Icon.GENRE
-            case Filter.CREATOR:
-                icon = Icon.CREATOR
-            case _ as unreachable:
-                assert_never(unreachable)
-        return icon.icon()
-
-
-class StatusVariant(SongMatch, enum.Enum):
+class StatusVariant(NodeItemData, enum.Enum):
     """Variants of the status of a song."""
 
     NONE = db.DownloadStatus.NONE
@@ -386,7 +423,7 @@ class StatusVariant(SongMatch, enum.Enum):
         return self.value in search.statuses
 
 
-class RatingVariant(SongMatch, enum.Enum):
+class RatingVariant(NodeItemData, enum.Enum):
     """Selectable variants for the song rating filter."""
 
     R_NONE = None
@@ -408,7 +445,7 @@ class RatingVariant(SongMatch, enum.Enum):
         return (self.value or 0) in search.ratings
 
 
-class GoldenNotesVariant(SongMatch, enum.Enum):
+class GoldenNotesVariant(NodeItemData, enum.Enum):
     """Selectable variants for the golden notes filter."""
 
     NO = False
@@ -434,7 +471,7 @@ class GoldenNotesVariant(SongMatch, enum.Enum):
         return self.value == search.golden_notes
 
 
-class ViewsVariant(SongMatch, enum.Enum):
+class ViewsVariant(NodeItemData, enum.Enum):
     """Selectable variants for the views filter."""
 
     V_0 = (0, 100)
@@ -457,7 +494,7 @@ class ViewsVariant(SongMatch, enum.Enum):
 
 
 @attrs.define
-class SavedSearch(SongMatch, db.SavedSearch):
+class SavedSearch(NodeItemData, db.SavedSearch):
     """A search saved by the user."""
 
     @classmethod
@@ -474,3 +511,9 @@ class SavedSearch(SongMatch, db.SavedSearch):
 
     def is_in_search(self, search: db.SearchBuilder) -> bool:
         return False
+
+    def is_checkable(self) -> bool:
+        return False
+
+    def is_editable(self) -> bool:
+        return True
