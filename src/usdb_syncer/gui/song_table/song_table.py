@@ -2,18 +2,18 @@
 
 from __future__ import annotations
 
+import time
 from collections.abc import Callable, Iterable, Iterator
 from functools import partial
 from typing import TYPE_CHECKING, Any
 
-import send2trash
 from PySide6 import QtCore, QtMultimedia, QtWidgets
 from PySide6.QtCore import QItemSelectionModel, Qt
 from PySide6.QtGui import QAction, QCursor
 
-from usdb_syncer import SongId, db, events, media_player, settings, sync_meta
+from usdb_syncer import SongId, db, events, media_player, settings, sync_meta, utils
 from usdb_syncer.gui import events as gui_events
-from usdb_syncer.gui import ffmpeg_dialog
+from usdb_syncer.gui import ffmpeg_dialog, previewer
 from usdb_syncer.gui.custom_data_dialog import CustomDataDialog
 from usdb_syncer.gui.progress import run_with_progress
 from usdb_syncer.gui.song_table.column import MINIMUM_COLUMN_WIDTH, Column
@@ -85,6 +85,15 @@ class SongTable:
         if song := self.current_song():
             self._play_or_stop_sample(song)
 
+    def stop_playing_local_song(self, song: UsdbSong) -> None:
+        if (
+            self._playing_song
+            and song.song_id == self._playing_song.song_id
+            and song.sync_meta
+            and song.sync_meta.audio
+        ):
+            self._media_player.stop()
+
     def _header(self) -> QtWidgets.QHeaderView:
         return self._view.horizontalHeader()
 
@@ -117,6 +126,8 @@ class SongTable:
                 song_logger(song.song_id).info("Not downloading song as it is pinned.")
                 continue
             if song.status.can_be_downloaded():
+                self.stop_playing_local_song(song)
+                previewer.Previewer.close_song(song.song_id)
                 song.status = DownloadStatus.PENDING
                 with db.transaction():
                     song.upsert()
@@ -176,7 +187,7 @@ class SongTable:
         self.mw.menu_custom_data.clear()
         _add_action("New ...", self.mw.menu_custom_data, run_custom_data_dialog)
         self.mw.menu_custom_data.addSeparator()
-        for key, value in song.sync_meta.custom_data.items():
+        for key, value in sorted(song.sync_meta.custom_data.items()):
             key_menu = QtWidgets.QMenu(key, self.mw.menu_custom_data)
             self.mw.menu_custom_data.addMenu(key_menu)
             _add_action("New ...", key_menu, partial(run_custom_data_dialog, key))
@@ -187,7 +198,7 @@ class SongTable:
                 partial(_update_custom_data, selected, key, None),
                 checked=True,
             )
-            for option in sync_meta.CustomData.value_options(key):
+            for option in sorted(sync_meta.CustomData.value_options(key)):
                 if option != value:
                     _add_action(
                         option,
@@ -280,19 +291,30 @@ class SongTable:
             action.setVisible(settings.get_app_path(app) is not None)
 
     def delete_selected_songs(self) -> None:
-        with db.transaction():
-            for song in self.selected_songs():
-                if not song.sync_meta:
+        for song in self.selected_songs():
+            if not song.sync_meta:
+                continue
+            logger = song_logger(song.song_id)
+            if song.is_pinned():
+                logger.info("Not trashing song folder as it is pinned.")
+                continue
+            self.stop_playing_local_song(song)
+            previewer.Previewer.close_song(song.song_id)
+            retries = 5
+            while song.sync_meta.path.exists():
+                try:
+                    utils.trash_or_delete_path(song.sync_meta.path.parent)
+                except (OSError, FileNotFoundError):
+                    retries -= 1
+                    if retries <= 0:
+                        raise
+                    time.sleep(0.1)
                     continue
-                logger = song_logger(song.song_id)
-                if song.is_pinned():
-                    logger.info("Not trashing song folder as it is pinned.")
-                    continue
-                if song.sync_meta.path.exists():
-                    send2trash.send2trash(song.sync_meta.path.parent)
+                break
+            with db.transaction():
                 song.remove_sync_meta()
-                events.SongChanged(song.song_id)
-                logger.debug("Trashed song folder.")
+            events.SongChanged(song.song_id)
+            logger.debug("Trashed song folder.")
 
     def set_pin_selected_songs(self, pin: bool) -> None:
         for song in self.selected_songs():

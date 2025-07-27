@@ -1,5 +1,7 @@
 """Errors thrown by the USDB Syncer."""
 
+from pathlib import Path
+
 
 class UsdbSyncerError(Exception):
     """Common base class for our own errors."""
@@ -124,3 +126,18 @@ class InvalidTrackError(TrackParseError):
 
 class AbortError(UsdbSyncerError):
     """Raised when the user requests to abort an operation."""
+
+
+# files
+
+
+class TrashError(UsdbSyncerError):
+    """Raised when a file cannot be trashed."""
+
+    def __init__(self, path: Path) -> None:
+        super().__init__(
+            f"Cannot trash file: '{path}'. If this issue persists, trashing may not be "
+            "supported for your system. Go to the settings to disable trashing and have"
+            " files be deleted permanently instead."
+        )
+        self.path = path

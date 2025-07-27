@@ -7,7 +7,7 @@ from pathlib import Path
 from PySide6 import QtGui
 from PySide6.QtWidgets import QFileDialog, QLabel, QMainWindow
 
-from usdb_syncer import SongId, db, events, settings, song_routines, usdb_id_file
+from usdb_syncer import SongId, db, events, settings, song_routines, usdb_id_file, utils
 from usdb_syncer.constants import Usdb
 from usdb_syncer.gui import events as gui_events
 from usdb_syncer.gui import ffmpeg_dialog, gui_utils, icons, progress, progress_bar
@@ -16,7 +16,7 @@ from usdb_syncer.gui.comment_dialog import CommentDialog
 from usdb_syncer.gui.debug_console import DebugConsole
 from usdb_syncer.gui.forms.MainWindow import Ui_MainWindow
 from usdb_syncer.gui.meta_tags_dialog import MetaTagsDialog
-from usdb_syncer.gui.preview_dialog import PreviewDialog
+from usdb_syncer.gui.previewer import Previewer
 from usdb_syncer.gui.progress import run_with_progress
 from usdb_syncer.gui.report_dialog import ReportDialog
 from usdb_syncer.gui.search_tree.tree import FilterTree
@@ -111,7 +111,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
             (self.action_meta_tags, lambda: MetaTagsDialog(self).show(), None),
             (
                 self.action_settings,
-                lambda: SettingsDialog(self, self.table.current_song()).show(),
+                lambda: SettingsDialog.load(self, self.table.current_song()),
                 MainWindowShortcut.OPEN_PREFERENCES,
             ),
             (self.action_about, lambda: AboutDialog(self).show(), None),
@@ -376,7 +376,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
     def _show_preview_dialog(self) -> None:
         song = self.table.current_song()
         if song:
-            ffmpeg_dialog.check_ffmpeg(self, lambda: PreviewDialog.load(self, song))
+            ffmpeg_dialog.check_ffmpeg(self, lambda: Previewer.load_song(song))
 
     def _rate_in_usdb(self, stars: int) -> None:
         song = self.table.current_song()
@@ -404,7 +404,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         self._open_current_song(open_path_or_file)
 
     def _open_current_song_in_app(self, app: settings.SupportedApps) -> None:
-        self._open_current_song(lambda path: settings.SupportedApps.open_app(app, path))
+        self._open_current_song(lambda path: utils.open_external_app(app, path))
 
     def _show_open_song_menu(self) -> None:
         pos = self.mapToGlobal(self.rect().center())

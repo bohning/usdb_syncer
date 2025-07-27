@@ -6,7 +6,7 @@ import functools
 import subprocess
 from collections.abc import Callable, Generator
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, NewType, TypeVar
+from typing import TYPE_CHECKING, Any, ClassVar, NewType, TypeVar
 
 import attrs
 import numpy as np
@@ -14,9 +14,9 @@ import soundfile
 from PySide6 import QtCore, QtGui, QtWidgets
 from PySide6.QtCore import Qt
 
-from usdb_syncer import utils
+from usdb_syncer import SongId, utils
 from usdb_syncer.gui import events, icons, theme
-from usdb_syncer.gui.forms.PreviewDialog import Ui_Dialog
+from usdb_syncer.gui.forms.PreviewWindow import Ui_MainWindow
 from usdb_syncer.gui.resources.audio import METRONOME_TICK_WAV
 from usdb_syncer.logger import logger as _logger
 from usdb_syncer.logger import song_logger
@@ -72,9 +72,10 @@ def clamp(value: T, lower: T, upper: T) -> T:
     return min(max(value, lower), upper)
 
 
-class PreviewDialog(Ui_Dialog, QtWidgets.QDialog):
+class Previewer(Ui_MainWindow, QtWidgets.QMainWindow):
     """Dialog to preview a downloaded song."""
 
+    _instance: ClassVar[Previewer | None] = None
     _MIN_COVER_SIZE = Pixel(100)
     _MAX_COVER_SIZE = Pixel(200)
     _FPS = 60
@@ -83,10 +84,12 @@ class PreviewDialog(Ui_Dialog, QtWidgets.QDialog):
     _DOUBLECLICK_DELAY_SECS = Seconds(_DOUBLECLICK_DELAY_MS / 1000)
 
     def __init__(
-        self, parent: QtWidgets.QWidget, txt: SongTxt, audio: Path, cover: Path | None
+        self, song_id: SongId | None, txt: SongTxt, audio: Path, cover: Path | None
     ) -> None:
-        super().__init__(parent=parent)
+        super().__init__()
+        self.song_id = song_id
         self.setupUi(self)
+        self._insert_cover_widget()
         self.setWindowTitle(txt.headers.artist_title_str())
         self._setup_voice_selection(txt)
         self._state = _PlayState.new(txt, audio)
@@ -99,26 +102,90 @@ class PreviewDialog(Ui_Dialog, QtWidgets.QDialog):
         events.ThemeChanged.subscribe(lambda e: self._on_theme_changed(e.theme))
 
     @classmethod
-    def load(cls, parent: QtWidgets.QWidget, song: UsdbSong) -> None:
+    def load(
+        cls,
+        *,
+        txt: SongTxt,
+        audio_path: Path,
+        cover_path: Path | None,
+        song_id: SongId | None,
+    ) -> bool:
         if not sounddevice:
-            QtWidgets.QMessageBox.warning(parent, "Aborted", _MISSING_LIB_MSG)
-            return
+            QtWidgets.QMessageBox.warning(None, "Aborted", _MISSING_LIB_MSG)
+            return False
         if not sounddevice.query_devices():
-            QtWidgets.QMessageBox.warning(parent, "Aborted", _NO_DEVICES_MSG)
-            return
-        if not (txt_path := song.txt_path()) or not (audio_path := song.audio_path()):
+            QtWidgets.QMessageBox.warning(None, "Aborted", _NO_DEVICES_MSG)
+            return False
+        if cls._instance:
+            cls._instance._change_song(song_id, txt, audio_path, cover_path)
+            cls._instance.raise_()
+        else:
+            cls._instance = cls(song_id, txt, audio_path, cover_path)
+            cls._instance.show()
+        return True
+
+    @classmethod
+    def load_song(cls, song: UsdbSong) -> bool:
+        if not (txt_path := song.txt_path()) or not (
+            txt := SongTxt.try_from_file(txt_path, song_logger(song.song_id))
+        ):
+            QtWidgets.QMessageBox.warning(None, "Aborted", "Txt file is invalid!")
+            return False
+        if not (audio_path := song.audio_path()):
             QtWidgets.QMessageBox.warning(
-                parent, "Aborted", "Song must have txt and audio files!"
+                None, "Aborted", "Song must have txt and audio files!"
             )
-            return
-        logger = song_logger(song.song_id)
-        if not (txt := SongTxt.try_from_file(txt_path, logger)):
-            QtWidgets.QMessageBox.warning(parent, "Aborted", "Txt file is invalid!")
-            return
-        cls(parent, txt, audio_path, song.cover_path()).show()
+            return False
+        return cls.load(
+            txt=txt,
+            audio_path=audio_path,
+            cover_path=song.cover_path(),
+            song_id=song.song_id,
+        )
+
+    @classmethod
+    def load_txt(cls, txt_path: Path) -> bool:
+        if not (txt := SongTxt.try_from_file(txt_path, _logger)):
+            QtWidgets.QMessageBox.warning(None, "Aborted", "Txt file is invalid!")
+            return False
+        if not (audio_file := txt.headers.audio or txt.headers.mp3):
+            QtWidgets.QMessageBox.warning(
+                None, "Aborted", "Song txt does not define an audio source!"
+            )
+            return False
+        if not (audio_path := txt_path.parent / audio_file).is_file():
+            QtWidgets.QMessageBox.warning(
+                None, "Aborted", f"Audio source '{audio_path}' not found!"
+            )
+            return False
+        if (
+            not txt.headers.cover
+            or not (cover_path := txt_path.parent / txt.headers.cover).is_file()
+        ):
+            cover_path = None
+        return cls.load(
+            txt=txt, audio_path=audio_path, cover_path=cover_path, song_id=None
+        )
+
+    @classmethod
+    def close_song(cls, song_id: SongId) -> None:
+        if cls._instance and cls._instance.song_id == song_id:
+            cls._instance.close()
+
+    def _change_song(
+        self, song_id: SongId | None, txt: SongTxt, audio: Path, cover: Path | None
+    ) -> None:
+        self.song_id = song_id
+        self._player.stop()
+        self.setWindowTitle(txt.headers.artist_title_str())
+        self._setup_voice_selection(txt)
+        self._state.change_song(txt, audio)
+        self._player.change_source(audio)
+        self._set_song_info(txt, cover)
 
     def _setup_voice_selection(self, txt: SongTxt) -> None:
         self.label_voice.setVisible(bool(txt.notes.track_2))
+        self.comboBox_voice.clear()
         self.comboBox_voice.setVisible(bool(txt.notes.track_2))
         self.comboBox_voice.addItem(txt.headers.p1 or "P1")
         self.comboBox_voice.addItem(txt.headers.p2 or "P2")
@@ -146,17 +213,18 @@ class PreviewDialog(Ui_Dialog, QtWidgets.QDialog):
         self.comboBox_voice.currentIndexChanged.connect(self._state.set_voice)
 
     def _set_song_info(self, txt: SongTxt, cover: Path | None) -> None:
-        if cover:
-            label = _SquareLabel("")
-            label.setScaledContents(True)
-            label.setPixmap(QtGui.QPixmap(cover))
-            label.setMinimumSize(self._MIN_COVER_SIZE, self._MIN_COVER_SIZE)
-            label.setMaximumSize(self._MAX_COVER_SIZE, self._MAX_COVER_SIZE)
-            self.layout_extra.insertWidget(1, label)
+        self._cover_label.setPixmap(QtGui.QPixmap(cover) if cover else QtGui.QPixmap())
         self.label_bpm.setText(f"#BPM: {txt.headers.bpm}")
         self.label_gap.setText(f"#GAP: {txt.headers.gap}")
         self.label_start.setText(f"#START: {txt.headers.start or '-'}")
         self.label_end.setText(f"#END: {txt.headers.end or '-'}")
+
+    def _insert_cover_widget(self) -> None:
+        self._cover_label = _SquareLabel("")
+        self._cover_label.setScaledContents(True)
+        self._cover_label.setMinimumSize(self._MIN_COVER_SIZE, self._MIN_COVER_SIZE)
+        self._cover_label.setMaximumSize(self._MAX_COVER_SIZE, self._MAX_COVER_SIZE)
+        self.layout_extra.insertWidget(1, self._cover_label)
 
     def _setup_timers(self) -> None:
         self._update_timer = QtCore.QTimer(self, interval=self._REFRESH_RATE)
@@ -253,11 +321,8 @@ class PreviewDialog(Ui_Dialog, QtWidgets.QDialog):
 
     def closeEvent(self, event: QtGui.QCloseEvent) -> None:  # noqa: N802
         self._player.stop()
+        Previewer._instance = None
         event.accept()
-
-    def reject(self) -> None:
-        self._player.stop()
-        super().reject()
 
 
 def _secs_to_str(seconds: Seconds) -> str:
@@ -319,12 +384,15 @@ class _PlayState:
             for track in track_list
         ]
         state = cls(tracks=tracks_, song_duration=song_duration)
+        state._set_initial_video_time(txt)
+        return state
+
+    def _set_initial_video_time(self, txt: SongTxt) -> None:
         if txt.headers.previewstart is not None:
             start = Seconds(txt.headers.previewstart)
         else:
-            start = state.lines[0].start
-        state.set_current_video_time(start)
-        return state
+            start = self.lines[0].start
+        self.set_current_video_time(start)
 
     def __attrs_post_init__(self) -> None:
         self.lines = self._tracks[0]
@@ -332,6 +400,13 @@ class _PlayState:
         self.current_video_time = self.lines[0].start
         self._audio_note_iter = self._iter_notes()
         self.current_audio_note = next(self._audio_note_iter, None)
+
+    def change_song(self, txt: SongTxt, audio: Path) -> None:
+        new = _PlayState.new(txt, audio)
+        self._tracks = new._tracks
+        self.song_duration = new.song_duration
+        self.__attrs_post_init__()
+        self._set_initial_video_time(txt)
 
     def calculate_video_time_from_audio(self) -> None:
         self.set_current_video_time(Seconds(self.current_sample / _SAMPLE_RATE))
@@ -699,6 +774,12 @@ class _AudioPlayer:
         player._start_ffmpeg(state.current_video_time)
         player._start_stream()
         return player
+
+    def change_source(self, source: Path) -> None:
+        self.stop()
+        self._source = source
+        self._start_ffmpeg(self._state.current_video_time)
+        self._start_stream()
 
     def stop(self) -> None:
         if self._stream:

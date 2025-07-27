@@ -17,7 +17,7 @@ from PySide6.QtWidgets import QWidget
 
 from usdb_syncer import db
 
-from .item import Filter, FilterItem, RootItem, SavedSearch, TreeItem, VariantItem
+from .item import Filter, SavedSearch, TreeItem
 
 QIndex = QModelIndex | QPersistentModelIndex
 
@@ -27,10 +27,8 @@ class TreeModel(QAbstractItemModel):
 
     def __init__(self, parent: QWidget) -> None:
         super().__init__(parent)
-        self.root = RootItem()
-        self.root.set_children(FilterItem(data=f, parent=self.root) for f in Filter)
-        # saved searches is not checkable
-        self.root.children[0].checked = None
+        self.root = TreeItem()
+        self.root.set_children(TreeItem(data=f, parent=self.root) for f in Filter)
 
     def item_for_index(self, idx: QIndex) -> TreeItem | None:
         if idx.isValid():
@@ -48,11 +46,7 @@ class TreeModel(QAbstractItemModel):
 
     def populate(self) -> None:
         self.beginResetModel()
-        for item in self.root.children:
-            item.set_children(
-                VariantItem(data=var, parent=item, checkable=item.checkable)
-                for var in item.data.variants()
-            )
+        self.root.populate()
         self.endResetModel()
 
     def set_checked(self, item: TreeItem, checked: bool) -> None:
@@ -67,13 +61,11 @@ class TreeModel(QAbstractItemModel):
             search.insert()
         parent = self.root.children[0]
         parent_idx = self.index_for_item(parent)
-        self.beginInsertRows(parent_idx, 0, 0)
-        self.root.children[0].children = (
-            VariantItem(data=search, parent=parent),
-            *self.root.children[0].children,
-        )
+        item = TreeItem(data=search, parent=parent)
+        self.beginInsertRows(parent_idx, item.row_in_parent, item.row_in_parent)
+        self.root.children[0].add_child(item)
         self.endInsertRows()
-        return self.index(0, 0, parent_idx)
+        return self.index(item.row_in_parent, 0, parent_idx)
 
     def delete_saved_search(self, index: QModelIndex) -> None:
         item = self.item_for_index(index)
@@ -82,8 +74,7 @@ class TreeModel(QAbstractItemModel):
         self.beginRemoveRows(index.parent(), index.row(), index.row())
         with db.transaction():
             item.data.delete()
-        children = item.parent.children
-        item.parent.children = (*children[: index.row()], *children[index.row() + 1 :])
+        item.parent.remove_child(item)
         self.endRemoveRows()
 
     # QAbstractItemModel implementation
@@ -135,14 +126,14 @@ class TreeModel(QAbstractItemModel):
         if role in (Qt.ItemDataRole.DisplayRole, Qt.ItemDataRole.EditRole):
             return str(item.data)
         if role == Qt.ItemDataRole.CheckStateRole:
-            return item.checked if item.checkable else None
+            return item.checked
         if role == Qt.ItemDataRole.DecorationRole:
-            return item.decoration()
+            return item.data.decoration()
         return None
 
     def flags(self, index: QIndex) -> Qt.ItemFlag:
         if item := self.item_for_index(index):
-            return item.flags()
+            return item.flags
         return Qt.ItemFlag.NoItemFlags
 
     def setData(self, index: QIndex, value: Any, role: int = 0) -> bool:  # noqa: N802
@@ -180,7 +171,7 @@ class TreeProxyModel(QSortFilterProxyModel):
             parent := self._source.item_for_index(source_parent)
         ):
             return True
-        return parent.children[source_row].is_accepted(self._matches)
+        return parent.filter_accepts_child(source_row, self._matches)
 
     def set_filter(self, text: str) -> None:
         if (new := text.strip()) != self._filter:

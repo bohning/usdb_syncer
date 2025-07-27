@@ -40,7 +40,7 @@
    <item row="0" column="0" rowspan="2" colspan="2">
     <widget class="QTabWidget" name="tabWidget">
      <property name="currentIndex">
-      <number>1</number>
+      <number>2</number>
      </property>
      <widget class="QWidget" name="tab">
       <attribute name="title">
@@ -784,9 +784,19 @@
          </property>
          <layout class="QVBoxLayout" name="verticalLayout_7">
           <item>
+           <widget class="QCheckBox" name="checkBox_trash_files">
+            <property name="text">
+             <string>When removing files, send them to the trash folder instead.</string>
+            </property>
+            <property name="checked">
+             <bool>true</bool>
+            </property>
+           </widget>
+          </item>
+          <item>
            <widget class="QCheckBox" name="checkBox_trash_remotely_deleted_songs">
             <property name="text">
-             <string>On startup, trash songs that have been deleted on USDB.</string>
+             <string>On startup, remove songs that have been deleted on USDB.</string>
             </property>
            </widget>
           </item>

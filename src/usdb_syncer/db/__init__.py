@@ -300,8 +300,10 @@ class SearchBuilder:
     years: list[int] = attrs.field(factory=list)
     genres: list[str] = attrs.field(factory=list)
     creators: list[str] = attrs.field(factory=list)
+    custom_data: defaultdict[str, list[str]] = attrs.field(
+        factory=lambda: defaultdict(list)
+    )
     golden_notes: bool | None = None
-    downloaded: bool | None = None
 
     def filters(self) -> Iterator[str]:
         if _fts5_phrases(self.text):
@@ -334,12 +336,15 @@ class SearchBuilder:
                 "usdb_song.song_id IN (SELECT song_id FROM usdb_song_creator WHERE"
                 f" {_in_values_clause('creator', self.creators)})"
             )
+        if self.custom_data:
+            yield (
+                "sync_meta.sync_meta_id IN (SELECT sync_meta_id FROM custom_meta_data "
+                f"WHERE {_custom_data_clause(self.custom_data)})"
+            )
         if self.views:
             yield _in_ranges_clause("usdb_song.views", self.views)
         if self.golden_notes is not None:
             yield "usdb_song.golden_notes = ?"
-        if self.downloaded is not None:
-            yield f"sync_meta.sync_meta_id IS {'NOT ' if self.downloaded else ''}NULL"
 
     def _where_clause(self) -> str:
         where = " AND ".join(self.filters())
@@ -362,6 +367,9 @@ class SearchBuilder:
         yield from self.languages
         yield from self.genres
         yield from self.creators
+        for key, values in self.custom_data.items():
+            yield key
+            yield from values
         for min_views, max_views in self.views:
             yield min_views
             if max_views is not None:
@@ -517,6 +525,13 @@ class SavedSearch:
 
 def _in_values_clause(attribute: str, values: list) -> str:
     return f"{attribute} IN ({', '.join('?' * len(values))})"
+
+
+def _custom_data_clause(key_values: dict[str, list[str]]) -> str:
+    return " AND ".join(
+        f"(key = ? AND value IN ({', '.join('?' * len(vals))}))"
+        for vals in key_values.values()
+    )
 
 
 def _in_ranges_clause(attribute: str, values: list[tuple[int, int | None]]) -> str:

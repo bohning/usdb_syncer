@@ -3,19 +3,19 @@
 import sys
 from collections.abc import Callable
 from pathlib import Path
+from typing import Any
 
 from PySide6.QtWidgets import QDialog, QFileDialog, QWidget
 
-from usdb_syncer import settings
+from usdb_syncer import settings, utils
 from usdb_syncer.gui.forms.FfmpegDialog import Ui_Dialog
-from usdb_syncer.utils import add_to_system_path
 
 
-def check_ffmpeg(parent: QWidget, on_success: Callable[[], None]) -> None:
+def check_ffmpeg(parent: QWidget, on_success: Callable[[], Any]) -> None:
     """If ffmpeg is available, can be restored from the settings or is provided
     by the user, executes `on_sucess`.
     """
-    if settings.ffmpeg_is_available():
+    if utils.ffmpeg_is_available():
         on_success()
     else:
         FfmpegDialog(parent, on_success).show()
@@ -51,7 +51,7 @@ class FfmpegDialog(Ui_Dialog, QDialog):
     def _set_location(self) -> None:
         if not (path := self._get_ffmpeg_dir()):
             return
-        add_to_system_path(path)
+        utils.add_to_system_path(path)
         settings.set_ffmpeg_dir(path)
         self.accept()
         self.on_success()

@@ -6,12 +6,11 @@ import json
 import os
 from collections.abc import Generator
 from importlib import resources
-from importlib.abc import Traversable
+from importlib.resources.abc import Traversable
 from pathlib import Path
 
 import attrs
 import requests
-import send2trash
 from requests import Session
 
 from usdb_syncer import (
@@ -71,6 +70,7 @@ def load_available_songs(
         logger.debug("", exc_info=True)
         logger.error("Failed to fetch new songs; check network connection.")
     else:
+        result.synced_with_usdb = True
         if songs:
             UsdbSong.upsert_many(songs)
             result.new_songs.update((s.song_id for s in songs))
@@ -78,7 +78,7 @@ def load_available_songs(
 
 
 def initialize_auto_downloads(updates: set[SongId]) -> None:
-    if not settings.ffmpeg_is_available():
+    if not utils.ffmpeg_is_available():
         return
     download_ids = set(db.SavedSearch.get_subscribed_song_ids()).intersection(updates)
     if settings.get_auto_update():
@@ -152,7 +152,7 @@ class _SyncMetaFolderSyncer:
     def _process_path(self, path: Path) -> None:
         if meta_id := SyncMetaId.from_path(path):
             if meta_id in self.found_metas:
-                send2trash.send2trash(path)
+                utils.trash_or_delete_path(path)
                 logger.warning(f"Trashed duplicated meta file: '{path}'")
                 return
             self.found_metas.add(meta_id)
@@ -184,7 +184,7 @@ class _SyncMetaFolderSyncer:
             logger.info(f"{meta.song_id.usdb_detail_url()} no longer exists on USDB.")
             if settings.get_trash_remotely_deleted_songs():
                 logger.info(f"Deleting '{path.parent}' locally as well.")
-                send2trash.send2trash(path.parent)
+                utils.trash_or_delete_path(path.parent)
 
 
 def synchronize_sync_meta_folder(folder: Path, keep_unknown_song_ids: bool) -> None:

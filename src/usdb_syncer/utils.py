@@ -5,6 +5,7 @@ import functools
 import itertools
 import os
 import re
+import shutil
 import subprocess
 import sys
 import time
@@ -14,13 +15,14 @@ from types import TracebackType
 from typing import ClassVar
 
 import requests
+import send2trash
 from appdirs import AppDirs
 from bs4 import BeautifulSoup, Tag
 from packaging import version
 from unidecode import unidecode
 
 import usdb_syncer
-from usdb_syncer import constants
+from usdb_syncer import constants, errors, settings
 from usdb_syncer.logger import logger
 
 CACHE_LIFETIME = 60 * 60
@@ -350,6 +352,51 @@ def get_media_duration(path: Path) -> float:
         check=True,
     )
     return float(result.stdout)
+
+
+def ffmpeg_is_available() -> bool:
+    if shutil.which("ffmpeg") and shutil.which("ffprobe"):
+        return True
+    if (path := settings.get_ffmpeg_dir()) and path not in os.environ["PATH"]:
+        # first run; restore path from settings
+        add_to_system_path(path)
+        if shutil.which("ffmpeg") and shutil.which("ffprobe"):
+            return True
+    return False
+
+
+def open_external_app(app: settings.SupportedApps, path: Path) -> None:
+    logger.debug(f"Starting {app} with '{path}'.")
+    executable = settings.get_app_path(app)
+    if executable is None:
+        return
+    if executable.suffix == ".jar":
+        cmd = ["java", "-jar", str(executable), str(path)]
+    else:
+        cmd = [str(executable), app.songpath_parameter(), str(path)]
+    try:
+        start_process_detached(cmd)
+    except FileNotFoundError:
+        logger.error(
+            f"Failed to launch {app} from '{executable!s}', file not found. "
+            "Please check the executable path in the settings."
+        )
+    except OSError:
+        logger.exception(f"Failed to launch {app} from '{executable!s}', I/O error.")
+    except subprocess.SubprocessError:
+        logger.exception(
+            f"Failed to launch {app} from '{executable!s}', subprocess error."
+        )
+
+
+def trash_or_delete_path(path: Path) -> None:
+    if settings.get_trash_files():
+        try:
+            send2trash.send2trash(path)
+        except send2trash.TrashPermissionError as err:
+            raise errors.TrashError(path) from err
+    else:
+        shutil.rmtree(path) if path.is_dir() else path.unlink()
 
 
 class LinuxEnvCleaner:

@@ -13,7 +13,6 @@ from pathlib import Path
 from typing import ClassVar, assert_never
 
 import attrs
-import send2trash
 import shiboken6
 from PySide6 import QtCore
 
@@ -344,7 +343,7 @@ class _SongLoader(QtCore.QRunnable):
                 if meta := self.song.sync_meta:
                     path = meta.path.parent
                     self.logger.info(f"Trashing local song {path}")
-                    send2trash.send2trash(path)
+                    utils.trash_or_delete_path(path)
                 events.SongDeleted(self.song_id).post()
                 events.DownloadFinished(self.song_id).post()
                 return
@@ -711,10 +710,10 @@ def _cleanup_existing_resources(ctx: _Context) -> None:
         if not out.old_fname:
             # out of sync
             if old_path.exists():
-                send2trash.send2trash(old_path)
+                utils.trash_or_delete_path(old_path)
                 ctx.logger.debug(f"Trashed untracked file: '{old_path}'.")
         elif out.new_fname:
-            send2trash.send2trash(old_path)
+            utils.trash_or_delete_path(old_path)
             ctx.logger.debug(f"Trashed existing file: '{old_path}'.")
         else:
             target = ctx.locations.filename(ext=utils.resource_file_ending(old.fname))
@@ -732,7 +731,7 @@ def _persist_tempfiles(ctx: _Context) -> None:
         ):
             target = ctx.locations.target_path(temp_path.name)
             if target.exists():
-                send2trash.send2trash(target)
+                utils.trash_or_delete_path(target)
                 ctx.logger.debug(f"Trashed existing file: '{target}'.")
             shutil.move(temp_path, target)
 

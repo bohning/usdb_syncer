@@ -1,5 +1,7 @@
 """Dialog with app settings."""
 
+from __future__ import annotations
+
 import sys
 from pathlib import Path
 from typing import ClassVar, assert_never
@@ -34,6 +36,7 @@ _FALLBACK_SONG = UsdbSong(
 class SettingsDialog(Ui_Dialog, QDialog):
     """Dialog with app settings."""
 
+    _instance: ClassVar[SettingsDialog | None] = None
     _last_tab_index: ClassVar[int] = 0
     _path_template: PathTemplate | None = None
 
@@ -78,6 +81,15 @@ class SettingsDialog(Ui_Dialog, QDialog):
             self._set_theme_settings_enabled
         )
         self._set_theme_settings_enabled()
+
+    @classmethod
+    def load(cls, parent: QtWidgets.QWidget, song: UsdbSong | None) -> None:
+        if cls._instance:
+            cls._instance._song = song or _FALLBACK_SONG
+            cls._instance.raise_()
+        else:
+            cls._instance = cls(parent, song)
+            cls._instance.show()
 
     def _set_theme_settings_enabled(self) -> None:
         hidden = self.comboBox_theme.currentData() == settings.Theme.SYSTEM
@@ -231,6 +243,7 @@ class SettingsDialog(Ui_Dialog, QDialog):
         self.checkBox_video_embed_artwork.setChecked(settings.get_video_embed_artwork())
         self.groupBox_background.setChecked(settings.get_background())
         self.checkBox_background_always.setChecked(settings.get_background_always())
+        self.checkBox_trash_files.setChecked(settings.get_trash_files())
         self.checkBox_trash_remotely_deleted_songs.setChecked(
             settings.get_trash_remotely_deleted_songs()
         )
@@ -260,7 +273,7 @@ class SettingsDialog(Ui_Dialog, QDialog):
 
     def _setup_path_template(self) -> None:
         self.edit_path_template.textChanged.connect(self._on_path_template_changed)
-        self.edit_path_template.setText(str(settings.get_path_template()))
+        self.edit_path_template.setText(str(path_template.PathTemplate.from_settings()))
         self.edit_path_template.setPlaceholderText(PathTemplate.default_str)
         self.button_default_path_template.pressed.connect(self.edit_path_template.clear)
         self.button_insert_placeholder.pressed.connect(
@@ -295,7 +308,12 @@ class SettingsDialog(Ui_Dialog, QDialog):
             return
         if self._browser != self.comboBox_browser.currentData():
             SessionManager.reset_session()
+        SettingsDialog._instance = None
         super().accept()
+
+    def reject(self) -> None:
+        SettingsDialog._instance = None
+        super().reject()
 
     def _save_settings(self) -> bool:
         new_theme = self.comboBox_theme.currentData()
@@ -345,6 +363,7 @@ class SettingsDialog(Ui_Dialog, QDialog):
                 self, "Invalid setting", "Please provide a valid path template!"
             )
             return False
+        settings.set_trash_files(self.checkBox_trash_files.isChecked())
         settings.set_trash_remotely_deleted_songs(
             self.checkBox_trash_remotely_deleted_songs.isChecked()
         )
