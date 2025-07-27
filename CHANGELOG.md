@@ -4,10 +4,13 @@
 
 ## Features
 
+- Added filters for custom data to the sidebar tree.
+- Files may be deleted permanently instead of being sent to the trash folder - useful to save disk space or if trashing is not supported on your system.
 - Medley sections are now checked if they start on a line start and end on a line end, otherwise a warning is issued.
 
 ## Fixes
 
+- Fixed deleting songs on startup that were removed from USDB.
 - The Syncer will now also retry for Vimeo resources with logged-in cookies if necessary.
 
 <!-- 0.15.0 -->
