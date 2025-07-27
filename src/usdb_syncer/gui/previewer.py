@@ -16,7 +16,7 @@ from PySide6.QtCore import Qt
 
 from usdb_syncer import SongId, utils
 from usdb_syncer.gui import events, icons, theme
-from usdb_syncer.gui.forms.PreviewDialog import Ui_Dialog
+from usdb_syncer.gui.forms.PreviewWindow import Ui_MainWindow
 from usdb_syncer.gui.resources.audio import METRONOME_TICK_WAV
 from usdb_syncer.logger import logger as _logger
 from usdb_syncer.logger import song_logger
@@ -72,10 +72,10 @@ def clamp(value: T, lower: T, upper: T) -> T:
     return min(max(value, lower), upper)
 
 
-class PreviewDialog(Ui_Dialog, QtWidgets.QDialog):
+class Previewer(Ui_MainWindow, QtWidgets.QMainWindow):
     """Dialog to preview a downloaded song."""
 
-    _instance: ClassVar[PreviewDialog | None] = None
+    _instance: ClassVar[Previewer | None] = None
     _MIN_COVER_SIZE = Pixel(100)
     _MAX_COVER_SIZE = Pixel(200)
     _FPS = 60
@@ -84,14 +84,9 @@ class PreviewDialog(Ui_Dialog, QtWidgets.QDialog):
     _DOUBLECLICK_DELAY_SECS = Seconds(_DOUBLECLICK_DELAY_MS / 1000)
 
     def __init__(
-        self,
-        parent: QtWidgets.QWidget,
-        song_id: SongId,
-        txt: SongTxt,
-        audio: Path,
-        cover: Path | None,
+        self, song_id: SongId, txt: SongTxt, audio: Path, cover: Path | None
     ) -> None:
-        super().__init__(parent=parent)
+        super().__init__()
         self.song_id = song_id
         self.setupUi(self)
         self._insert_cover_widget()
@@ -107,29 +102,27 @@ class PreviewDialog(Ui_Dialog, QtWidgets.QDialog):
         events.ThemeChanged.subscribe(lambda e: self._on_theme_changed(e.theme))
 
     @classmethod
-    def load(cls, parent: QtWidgets.QWidget, song: UsdbSong) -> None:
+    def load(cls, song: UsdbSong) -> None:
         if not sounddevice:
-            QtWidgets.QMessageBox.warning(parent, "Aborted", _MISSING_LIB_MSG)
+            QtWidgets.QMessageBox.warning(None, "Aborted", _MISSING_LIB_MSG)
             return
         if not sounddevice.query_devices():
-            QtWidgets.QMessageBox.warning(parent, "Aborted", _NO_DEVICES_MSG)
+            QtWidgets.QMessageBox.warning(None, "Aborted", _NO_DEVICES_MSG)
             return
         if not (txt_path := song.txt_path()) or not (audio_path := song.audio_path()):
             QtWidgets.QMessageBox.warning(
-                parent, "Aborted", "Song must have txt and audio files!"
+                None, "Aborted", "Song must have txt and audio files!"
             )
             return
         logger = song_logger(song.song_id)
         if not (txt := SongTxt.try_from_file(txt_path, logger)):
-            QtWidgets.QMessageBox.warning(parent, "Aborted", "Txt file is invalid!")
+            QtWidgets.QMessageBox.warning(None, "Aborted", "Txt file is invalid!")
             return
         if cls._instance:
             cls._instance._change_song(song.song_id, txt, audio_path, song.cover_path())
             cls._instance.raise_()
         else:
-            cls._instance = cls(
-                parent, song.song_id, txt, audio_path, song.cover_path()
-            )
+            cls._instance = cls(song.song_id, txt, audio_path, song.cover_path())
             cls._instance.show()
 
     @classmethod
@@ -286,12 +279,12 @@ class PreviewDialog(Ui_Dialog, QtWidgets.QDialog):
 
     def closeEvent(self, event: QtGui.QCloseEvent) -> None:  # noqa: N802
         self._player.stop()
-        PreviewDialog._instance = None
+        Previewer._instance = None
         event.accept()
 
     def reject(self) -> None:
         self._player.stop()
-        PreviewDialog._instance = None
+        Previewer._instance = None
         super().reject()
 
 

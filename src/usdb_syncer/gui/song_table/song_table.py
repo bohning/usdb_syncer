@@ -13,7 +13,7 @@ from PySide6.QtGui import QAction, QCursor
 
 from usdb_syncer import SongId, db, events, media_player, settings, sync_meta, utils
 from usdb_syncer.gui import events as gui_events
-from usdb_syncer.gui import ffmpeg_dialog, preview_dialog
+from usdb_syncer.gui import ffmpeg_dialog, previewer
 from usdb_syncer.gui.custom_data_dialog import CustomDataDialog
 from usdb_syncer.gui.progress import run_with_progress
 from usdb_syncer.gui.song_table.column import MINIMUM_COLUMN_WIDTH, Column
@@ -127,7 +127,7 @@ class SongTable:
                 continue
             if song.status.can_be_downloaded():
                 self.stop_playing_local_song(song)
-                preview_dialog.PreviewDialog.close_song(song.song_id)
+                previewer.Previewer.close_song(song.song_id)
                 song.status = DownloadStatus.PENDING
                 with db.transaction():
                     song.upsert()
@@ -299,7 +299,7 @@ class SongTable:
                 logger.info("Not trashing song folder as it is pinned.")
                 continue
             self.stop_playing_local_song(song)
-            preview_dialog.PreviewDialog.close_song(song.song_id)
+            previewer.Previewer.close_song(song.song_id)
             retries = 5
             while song.sync_meta.path.exists():
                 try:
