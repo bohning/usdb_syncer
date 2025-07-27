@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING, assert_never
 
 import attrs
 
-from usdb_syncer import errors, utils
+from usdb_syncer import errors, settings, utils
 from usdb_syncer.custom_data import CustomData
 
 if TYPE_CHECKING:
@@ -82,6 +82,10 @@ class PathTemplate:
     @classmethod
     def default(cls) -> PathTemplate:
         return cls.parse(cls.default_str)
+
+    @classmethod
+    def from_settings(cls) -> PathTemplate:
+        return settings.get_path_template(cls.default())
 
     def __str__(self) -> str:
         return " / ".join(map(str, self._components))

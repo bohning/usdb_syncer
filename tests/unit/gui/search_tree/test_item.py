@@ -16,7 +16,7 @@ from usdb_syncer.gui.search_tree.item import (
 
 
 @attrs.define(kw_only=True)
-class TestCustomDataTree:
+class _TestCustomDataTree:
     """Test data structure for custom data tree."""
 
     root: TreeItem
@@ -35,7 +35,7 @@ class TestCustomDataTree:
     fandango: TreeItem
 
     @classmethod
-    def new(cls) -> TestCustomDataTree:
+    def new(cls) -> _TestCustomDataTree:
         root = TreeItem()
         artist = TreeItem(data=Filter.ARTIST, parent=root)
         year = TreeItem(data=Filter.YEAR, parent=root)
@@ -77,7 +77,7 @@ class TestCustomDataTree:
         error = self.build_error_msg(**kwargs)
         for attr, checked in kwargs.items():
             assert getattr(self, attr).checked is checked, error
-        for field in attrs.fields(TestCustomDataTree):
+        for field in attrs.fields(_TestCustomDataTree):
             if field.name != "root" and field.name not in kwargs:
                 assert getattr(self, field.name).checked is False, error
 
@@ -113,7 +113,7 @@ def write_checked_tree(**kwargs: tuple[bool | None, int]) -> str:
 
 
 def test_toggling_items() -> None:
-    tree = TestCustomDataTree.new()
+    tree = _TestCustomDataTree.new()
 
     tree.abba.toggle_checked(keep_siblings=False)
     tree.assert_checked(abba=True, artist=True)
@@ -135,7 +135,7 @@ def test_toggling_items() -> None:
 
 
 def test_toggling_custom_data() -> None:
-    tree = TestCustomDataTree.new()
+    tree = _TestCustomDataTree.new()
 
     tree.bee.toggle_checked(keep_siblings=False)
     tree.assert_checked(custom_data=True, animal=True, bee=True)
@@ -156,13 +156,13 @@ def test_toggling_custom_data() -> None:
 
 
 def test_restoring_search() -> None:
-    tree = TestCustomDataTree.new()
+    tree = _TestCustomDataTree.new()
     tree.abba.toggle_checked(keep_siblings=False)
     tree.eisa.toggle_checked(keep_siblings=False)
     search = db.SearchBuilder()
     tree.root.build_search(search)
 
-    tree = TestCustomDataTree.new()
+    tree = _TestCustomDataTree.new()
     tree.y1999.toggle_checked(keep_siblings=False)
     tree.bee.toggle_checked(keep_siblings=False)
     tree.root.apply_search(search)

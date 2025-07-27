@@ -7,7 +7,7 @@ from pathlib import Path
 from PySide6 import QtGui
 from PySide6.QtWidgets import QFileDialog, QLabel, QMainWindow
 
-from usdb_syncer import SongId, db, events, settings, song_routines, usdb_id_file
+from usdb_syncer import SongId, db, events, settings, song_routines, usdb_id_file, utils
 from usdb_syncer.constants import Usdb
 from usdb_syncer.gui import events as gui_events
 from usdb_syncer.gui import ffmpeg_dialog, gui_utils, icons, progress, progress_bar
@@ -404,7 +404,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         self._open_current_song(open_path_or_file)
 
     def _open_current_song_in_app(self, app: settings.SupportedApps) -> None:
-        self._open_current_song(lambda path: settings.SupportedApps.open_app(app, path))
+        self._open_current_song(lambda path: utils.open_external_app(app, path))
 
     def _show_open_song_menu(self) -> None:
         pos = self.mapToGlobal(self.rect().center())

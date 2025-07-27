@@ -9,21 +9,21 @@ from __future__ import annotations
 
 import functools
 import os
-import shutil
-import subprocess
 import threading
 from enum import Enum, StrEnum, auto
 from http.cookiejar import CookieJar
 from pathlib import Path
-from typing import Any, ClassVar, TypeVar, assert_never, cast
+from typing import TYPE_CHECKING, Any, ClassVar, TypeVar, assert_never, cast
 
 import keyring
 import rookiepy
 from PySide6.QtCore import QByteArray, QSettings
 
-from usdb_syncer import path_template, utils
 from usdb_syncer.constants import Usdb
 from usdb_syncer.logger import logger
+
+if TYPE_CHECKING:
+    from usdb_syncer import path_template
 
 SYSTEM_USDB = "USDB Syncer/USDB"
 NO_KEYRING_BACKEND_WARNING = (
@@ -50,17 +50,6 @@ def set_usdb_auth(username: str, password: str) -> None:
     except keyring.core.backend.errors.NoKeyringError as error:
         logger.debug(error)
         logger.warning(NO_KEYRING_BACKEND_WARNING)
-
-
-def ffmpeg_is_available() -> bool:
-    if shutil.which("ffmpeg") and shutil.which("ffprobe"):
-        return True
-    if (path := get_ffmpeg_dir()) and path not in os.environ["PATH"]:
-        # first run; restore path from settings
-        utils.add_to_system_path(path)
-        if shutil.which("ffmpeg") and shutil.which("ffprobe"):
-            return True
-    return False
 
 
 class _TemporarySettings:
@@ -745,31 +734,6 @@ class SupportedApps(StrEnum):
             case _ as unreachable:
                 assert_never(unreachable)
 
-    def open_app(self, path: Path) -> None:
-        logger.debug(f"Starting {self} with '{path}'.")
-        executable = get_app_path(self)
-        if executable is None:
-            return
-        if executable.suffix == ".jar":
-            cmd = ["java", "-jar", str(executable), str(path)]
-        else:
-            cmd = [str(executable), self.songpath_parameter(), str(path)]
-        try:
-            utils.start_process_detached(cmd)
-        except FileNotFoundError:
-            logger.error(
-                f"Failed to launch {self} from '{executable!s}', file not found. "
-                "Please check the executable path in the settings."
-            )
-        except OSError:
-            logger.exception(
-                f"Failed to launch {self} from '{executable!s}', I/O error."
-            )
-        except subprocess.SubprocessError:
-            logger.exception(
-                f"Failed to launch {self} from '{executable!s}', subprocess error."
-            )
-
 
 class ReportPDFPagesize(Enum):
     """Supported PDF page sizes."""
@@ -1078,8 +1042,10 @@ def set_table_view_header_state(state: QByteArray, temp: bool = False) -> None:
     _Settings.set(SettingKey.TABLE_VIEW_HEADER_STATE, state, temp)
 
 
-def get_path_template() -> path_template.PathTemplate:
-    return _Settings.get(SettingKey.PATH_TEMPLATE, path_template.PathTemplate.default())
+def get_path_template(
+    default: path_template.PathTemplate,
+) -> path_template.PathTemplate:
+    return _Settings.get(SettingKey.PATH_TEMPLATE, default)
 
 
 def set_path_template(template: path_template.PathTemplate, temp: bool = False) -> None:

@@ -273,7 +273,7 @@ class SettingsDialog(Ui_Dialog, QDialog):
 
     def _setup_path_template(self) -> None:
         self.edit_path_template.textChanged.connect(self._on_path_template_changed)
-        self.edit_path_template.setText(str(settings.get_path_template()))
+        self.edit_path_template.setText(str(path_template.PathTemplate.from_settings()))
         self.edit_path_template.setPlaceholderText(PathTemplate.default_str)
         self.button_default_path_template.pressed.connect(self.edit_path_template.clear)
         self.button_insert_placeholder.pressed.connect(

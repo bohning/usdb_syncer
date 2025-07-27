@@ -99,7 +99,7 @@ class Options:
 def download_options() -> Options:
     return Options(
         song_dir=settings.get_song_dir(),
-        path_template=settings.get_path_template(),
+        path_template=path_template.PathTemplate.from_settings(),
         notify_discord=settings.get_discord_allowed(),
         txt_options=_txt_options(),
         audio_options=_audio_options(),

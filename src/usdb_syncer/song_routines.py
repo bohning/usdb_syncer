@@ -78,7 +78,7 @@ def load_available_songs(
 
 
 def initialize_auto_downloads(updates: set[SongId]) -> None:
-    if not settings.ffmpeg_is_available():
+    if not utils.ffmpeg_is_available():
         return
     download_ids = set(db.SavedSearch.get_subscribed_song_ids()).intersection(updates)
     if settings.get_auto_update():
