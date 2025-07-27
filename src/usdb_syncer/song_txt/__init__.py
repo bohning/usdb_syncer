@@ -126,6 +126,7 @@ class SongTxt:
         self.fix_first_timestamp()
         self.fix_low_bpm()
         self.notes.fix_overlapping_and_touching_notes(self.logger)
+        self.notes.fix_zero_length_notes(self.logger)
         self.notes.fix_pitch_values(self.logger)
         self.notes.fix_apostrophes(self.logger)
         self.headers.fix_apostrophes(self.logger)

@@ -378,6 +378,14 @@ class Tracks:
             if fixed:
                 logger.debug(f"FIX: Gap after note {current_note.start} fixed.")
 
+    def fix_zero_length_notes(self, logger: Logger) -> None:
+        for current_note, next_note in self.consecutive_notes():
+            if (current_note.duration == 0) and (
+                next_note.start >= current_note.end() + 2
+            ):
+                current_note.duration = 1
+                logger.debug(f"FIX: Zero-length note at {current_note.start} fixed.")
+
     def fix_pitch_values(self, logger: Logger) -> None:
         min_pitch = min(note.pitch for note in self.all_notes())
         octave_shift = min_pitch // 12
