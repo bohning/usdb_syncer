@@ -396,7 +396,7 @@ def trash_or_delete_path(path: Path) -> None:
         except send2trash.TrashPermissionError as err:
             raise errors.TrashError(path) from err
     else:
-        path.rmdir() if path.is_dir() else path.unlink()
+        shutil.rmtree(path) if path.is_dir() else path.unlink()
 
 
 class LinuxEnvCleaner:
