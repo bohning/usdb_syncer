@@ -376,7 +376,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
     def _show_preview_dialog(self) -> None:
         song = self.table.current_song()
         if song:
-            ffmpeg_dialog.check_ffmpeg(self, lambda: Previewer.load(song))
+            ffmpeg_dialog.check_ffmpeg(self, lambda: Previewer.load_song(song))
 
     def _rate_in_usdb(self, stars: int) -> None:
         song = self.table.current_song()

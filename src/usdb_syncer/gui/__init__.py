@@ -49,6 +49,9 @@ class CliArgs:
     skip_pyside: bool = not utils.IS_SOURCE
     trace_sql: bool = False
 
+    # Subcommands
+    txt: Path | None = None
+
     @classmethod
     def parse(cls) -> CliArgs:
         parser = ArgumentParser(description="USDB Syncer")
@@ -82,6 +85,12 @@ class CliArgs:
                 help="Skip PySide file generation.",
             )
 
+        subcommands = parser.add_subparsers(
+            title="subcommands", description="Subcommands."
+        )
+        preview = subcommands.add_parser("preview", help="Show preview for song txt.")
+        preview.add_argument("txt", type=Path, help="Path to the song txt file.")
+
         return parser.parse_args(namespace=cls())
 
     def apply(self) -> None:
@@ -102,17 +111,22 @@ def main() -> None:
     args = CliArgs.parse()
     args.apply()
     utils.AppPaths.make_dirs()
-    if args.profile:
-        _with_profile(_run)
-    else:
-        _run()
-
-
-def _run() -> None:
-    from usdb_syncer.gui.mw import MainWindow
-
     app = _init_app()
     app.setAttribute(Qt.ApplicationAttribute.AA_DontShowIconsInMenus, False)
+    if args.txt:
+        if not _run_preview(args.txt):
+            return
+    else:
+        if args.profile:
+            _with_profile(_run_main)
+        else:
+            _run_main()
+    app.exec()
+
+
+def _run_main() -> None:
+    from usdb_syncer.gui.mw import MainWindow
+
     mw = MainWindow()
     logger.configure_logging(
         logging.FileHandler(utils.AppPaths.log, encoding="utf-8"),
@@ -136,7 +150,13 @@ def _run() -> None:
         return
     addons.load_all()
     hooks.MainWindowDidLoad.call(mw)
-    app.exec()
+
+
+def _run_preview(txt: Path) -> bool:
+    from usdb_syncer.gui.previewer import Previewer
+
+    theme.Theme.from_settings().apply()
+    return Previewer.load_txt(txt)
 
 
 def _excepthook(

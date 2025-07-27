@@ -84,7 +84,7 @@ class Previewer(Ui_MainWindow, QtWidgets.QMainWindow):
     _DOUBLECLICK_DELAY_SECS = Seconds(_DOUBLECLICK_DELAY_MS / 1000)
 
     def __init__(
-        self, song_id: SongId, txt: SongTxt, audio: Path, cover: Path | None
+        self, song_id: SongId | None, txt: SongTxt, audio: Path, cover: Path | None
     ) -> None:
         super().__init__()
         self.song_id = song_id
@@ -102,36 +102,78 @@ class Previewer(Ui_MainWindow, QtWidgets.QMainWindow):
         events.ThemeChanged.subscribe(lambda e: self._on_theme_changed(e.theme))
 
     @classmethod
-    def load(cls, song: UsdbSong) -> None:
+    def load(
+        cls,
+        *,
+        txt: SongTxt,
+        audio_path: Path,
+        cover_path: Path | None,
+        song_id: SongId | None,
+    ) -> bool:
         if not sounddevice:
             QtWidgets.QMessageBox.warning(None, "Aborted", _MISSING_LIB_MSG)
-            return
+            return False
         if not sounddevice.query_devices():
             QtWidgets.QMessageBox.warning(None, "Aborted", _NO_DEVICES_MSG)
-            return
-        if not (txt_path := song.txt_path()) or not (audio_path := song.audio_path()):
+            return False
+        if cls._instance:
+            cls._instance._change_song(song_id, txt, audio_path, cover_path)
+            cls._instance.raise_()
+        else:
+            cls._instance = cls(song_id, txt, audio_path, cover_path)
+            cls._instance.show()
+        return True
+
+    @classmethod
+    def load_song(cls, song: UsdbSong) -> bool:
+        if not (txt_path := song.txt_path()) or not (
+            txt := SongTxt.try_from_file(txt_path, song_logger(song.song_id))
+        ):
+            QtWidgets.QMessageBox.warning(None, "Aborted", "Txt file is invalid!")
+            return False
+        if not (audio_path := song.audio_path()):
             QtWidgets.QMessageBox.warning(
                 None, "Aborted", "Song must have txt and audio files!"
             )
-            return
-        logger = song_logger(song.song_id)
-        if not (txt := SongTxt.try_from_file(txt_path, logger)):
+            return False
+        return cls.load(
+            txt=txt,
+            audio_path=audio_path,
+            cover_path=song.cover_path(),
+            song_id=song.song_id,
+        )
+
+    @classmethod
+    def load_txt(cls, txt_path: Path) -> bool:
+        if not (txt := SongTxt.try_from_file(txt_path, _logger)):
             QtWidgets.QMessageBox.warning(None, "Aborted", "Txt file is invalid!")
-            return
-        if cls._instance:
-            cls._instance._change_song(song.song_id, txt, audio_path, song.cover_path())
-            cls._instance.raise_()
-        else:
-            cls._instance = cls(song.song_id, txt, audio_path, song.cover_path())
-            cls._instance.show()
+            return False
+        if not (audio_file := txt.headers.audio or txt.headers.mp3):
+            QtWidgets.QMessageBox.warning(
+                None, "Aborted", "Song txt does not define an audio source!"
+            )
+            return False
+        if not (audio_path := txt_path.parent / audio_file).is_file():
+            QtWidgets.QMessageBox.warning(
+                None, "Aborted", f"Audio source '{audio_path}' not found!"
+            )
+            return False
+        if (
+            not txt.headers.cover
+            or not (cover_path := txt_path.parent / txt.headers.cover).is_file()
+        ):
+            cover_path = None
+        return cls.load(
+            txt=txt, audio_path=audio_path, cover_path=cover_path, song_id=None
+        )
 
     @classmethod
     def close_song(cls, song_id: SongId) -> None:
         if cls._instance and cls._instance.song_id == song_id:
-            cls._instance.reject()
+            cls._instance.close()
 
     def _change_song(
-        self, song_id: SongId, txt: SongTxt, audio: Path, cover: Path | None
+        self, song_id: SongId | None, txt: SongTxt, audio: Path, cover: Path | None
     ) -> None:
         self.song_id = song_id
         self._player.stop()
@@ -281,11 +323,6 @@ class Previewer(Ui_MainWindow, QtWidgets.QMainWindow):
         self._player.stop()
         Previewer._instance = None
         event.accept()
-
-    def reject(self) -> None:
-        self._player.stop()
-        Previewer._instance = None
-        super().reject()
 
 
 def _secs_to_str(seconds: Seconds) -> str:
