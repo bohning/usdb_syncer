@@ -243,6 +243,7 @@ class SettingsDialog(Ui_Dialog, QDialog):
         self.checkBox_video_embed_artwork.setChecked(settings.get_video_embed_artwork())
         self.groupBox_background.setChecked(settings.get_background())
         self.checkBox_background_always.setChecked(settings.get_background_always())
+        self.checkBox_trash_files.setChecked(settings.get_trash_files())
         self.checkBox_trash_remotely_deleted_songs.setChecked(
             settings.get_trash_remotely_deleted_songs()
         )
@@ -362,6 +363,7 @@ class SettingsDialog(Ui_Dialog, QDialog):
                 self, "Invalid setting", "Please provide a valid path template!"
             )
             return False
+        settings.set_trash_files(self.checkBox_trash_files.isChecked())
         settings.set_trash_remotely_deleted_songs(
             self.checkBox_trash_remotely_deleted_songs.isChecked()
         )

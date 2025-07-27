@@ -14,13 +14,14 @@ from types import TracebackType
 from typing import ClassVar
 
 import requests
+import send2trash
 from appdirs import AppDirs
 from bs4 import BeautifulSoup, Tag
 from packaging import version
 from unidecode import unidecode
 
 import usdb_syncer
-from usdb_syncer import constants
+from usdb_syncer import constants, errors, settings
 from usdb_syncer.logger import logger
 
 CACHE_LIFETIME = 60 * 60
@@ -350,6 +351,16 @@ def get_media_duration(path: Path) -> float:
         check=True,
     )
     return float(result.stdout)
+
+
+def trash_or_delete_path(path: Path) -> None:
+    if settings.get_trash_files():
+        try:
+            send2trash.send2trash(path)
+        except send2trash.TrashPermissionError as err:
+            raise errors.TrashError(path) from err
+    else:
+        path.rmdir() if path.is_dir() else path.unlink()
 
 
 class LinuxEnvCleaner:

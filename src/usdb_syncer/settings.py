@@ -195,6 +195,7 @@ class SettingKey(Enum):
     TABLE_VIEW_HEADER_STATE = "list_view/header/state"
     USDB_USER_NAME = "usdb/username"
     PATH_TEMPLATE = "files/path_template"
+    TRASH_FILES = "files/trash_files"
     APP_PATH_KAREDI = "app_paths/karedi"
     APP_PATH_PERFORMOUS = "app_paths/performous"
     APP_PATH_TUNE_PERFECT = "app_paths/tune_perfect"
@@ -1211,3 +1212,11 @@ def get_trash_remotely_deleted_songs() -> bool:
 
 def set_trash_remotely_deleted_songs(value: bool, temp: bool = False) -> None:
     _Settings.set(SettingKey.TRASH_REMOTELY_DELETED_SONGS, value, temp)
+
+
+def get_trash_files() -> bool:
+    return _Settings.get(SettingKey.TRASH_FILES, True)
+
+
+def set_trash_files(value: bool, temp: bool = False) -> None:
+    _Settings.set(SettingKey.TRASH_FILES, value, temp)

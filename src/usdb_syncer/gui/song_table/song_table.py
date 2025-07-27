@@ -7,12 +7,11 @@ from collections.abc import Callable, Iterable, Iterator
 from functools import partial
 from typing import TYPE_CHECKING, Any
 
-import send2trash
 from PySide6 import QtCore, QtMultimedia, QtWidgets
 from PySide6.QtCore import QItemSelectionModel, Qt
 from PySide6.QtGui import QAction, QCursor
 
-from usdb_syncer import SongId, db, events, media_player, settings, sync_meta
+from usdb_syncer import SongId, db, events, media_player, settings, sync_meta, utils
 from usdb_syncer.gui import events as gui_events
 from usdb_syncer.gui import ffmpeg_dialog, preview_dialog
 from usdb_syncer.gui.custom_data_dialog import CustomDataDialog
@@ -304,7 +303,7 @@ class SongTable:
             retries = 5
             while song.sync_meta.path.exists():
                 try:
-                    send2trash.send2trash(song.sync_meta.path.parent)
+                    utils.trash_or_delete_path(song.sync_meta.path.parent)
                 except (OSError, FileNotFoundError):
                     retries -= 1
                     if retries <= 0:
