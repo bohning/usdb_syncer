@@ -188,7 +188,7 @@ class SongTable:
         self.mw.menu_custom_data.clear()
         _add_action("New ...", self.mw.menu_custom_data, run_custom_data_dialog)
         self.mw.menu_custom_data.addSeparator()
-        for key, value in song.sync_meta.custom_data.items():
+        for key, value in sorted(song.sync_meta.custom_data.items()):
             key_menu = QtWidgets.QMenu(key, self.mw.menu_custom_data)
             self.mw.menu_custom_data.addMenu(key_menu)
             _add_action("New ...", key_menu, partial(run_custom_data_dialog, key))
@@ -199,7 +199,7 @@ class SongTable:
                 partial(_update_custom_data, selected, key, None),
                 checked=True,
             )
-            for option in sync_meta.CustomData.value_options(key):
+            for option in sorted(sync_meta.CustomData.value_options(key)):
                 if option != value:
                     _add_action(
                         option,

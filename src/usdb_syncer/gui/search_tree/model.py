@@ -17,7 +17,7 @@ from PySide6.QtWidgets import QWidget
 
 from usdb_syncer import db
 
-from .item import Filter, SavedSearch, TreeItem, TreeItemData
+from .item import Filter, SavedSearch, TreeItem
 
 QIndex = QModelIndex | QPersistentModelIndex
 
@@ -61,10 +61,11 @@ class TreeModel(QAbstractItemModel):
             search.insert()
         parent = self.root.children[0]
         parent_idx = self.index_for_item(parent)
-        self.beginInsertRows(parent_idx, 0, 0)
-        self.root.children[0].add_child(TreeItem(data=search, parent=parent))
+        item = TreeItem(data=search, parent=parent)
+        self.beginInsertRows(parent_idx, item.row_in_parent, item.row_in_parent)
+        self.root.children[0].add_child(item)
         self.endInsertRows()
-        return self.index(0, 0, parent_idx)
+        return self.index(item.row_in_parent, 0, parent_idx)
 
     def delete_saved_search(self, index: QModelIndex) -> None:
         item = self.item_for_index(index)
@@ -125,14 +126,14 @@ class TreeModel(QAbstractItemModel):
         if role in (Qt.ItemDataRole.DisplayRole, Qt.ItemDataRole.EditRole):
             return str(item.data)
         if role == Qt.ItemDataRole.CheckStateRole:
-            return item.checked if item.data.is_checkable() else None
+            return item.checked
         if role == Qt.ItemDataRole.DecorationRole:
             return item.data.decoration()
         return None
 
     def flags(self, index: QIndex) -> Qt.ItemFlag:
         if item := self.item_for_index(index):
-            return item.flags()
+            return item.flags
         return Qt.ItemFlag.NoItemFlags
 
     def setData(self, index: QIndex, value: Any, role: int = 0) -> bool:  # noqa: N802
@@ -157,7 +158,7 @@ class TreeProxyModel(QSortFilterProxyModel):
         self._source = source_model
         self.setSourceModel(source_model)
         self._filter: str = ""
-        self._matches: dict[TreeItemData, set[str | int]] = {}
+        self._matches: dict[Filter, set[str | int]] = {}
         self._filter_invalidation_timer = QTimer(parent)
         self._filter_invalidation_timer.setSingleShot(True)
         self._filter_invalidation_timer.setInterval(400)

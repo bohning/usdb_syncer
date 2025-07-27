@@ -11,6 +11,7 @@ from PySide6.QtCore import Qt
 from PySide6.QtGui import QIcon
 
 from usdb_syncer import db
+from usdb_syncer.custom_data import CustomData
 from usdb_syncer.gui.icons import Icon
 
 
@@ -21,7 +22,7 @@ class TreeItemData:
     def decoration(self) -> QIcon | None:
         raise NotImplementedError
 
-    def is_checkable(self) -> bool:
+    def is_checkable(self, has_checked_children: bool) -> bool:
         raise NotImplementedError
 
     def is_editable(self) -> bool:
@@ -49,7 +50,7 @@ class RootItemData(TreeItemData):
     def decoration(self) -> QIcon | None:
         return None
 
-    def is_checkable(self) -> bool:
+    def is_checkable(self, has_checked_children: bool) -> bool:
         return False
 
     def is_editable(self) -> bool:
@@ -81,6 +82,17 @@ class TreeItem:
     children: list[TreeItem] = attrs.field(factory=list, init=False)
     checked: bool | None = attrs.field(default=False, init=False)
     checked_children: set[int] = attrs.field(factory=set, init=False)
+    flags: Qt.ItemFlag = attrs.field(default=Qt.ItemFlag.ItemIsEnabled, init=False)
+
+    def __attrs_post_init__(self) -> None:
+        if self.data.is_checkable(True):
+            self.flags |= Qt.ItemFlag.ItemIsUserCheckable
+        else:
+            self.checked = None
+        if self.data.is_editable():
+            self.flags |= Qt.ItemFlag.ItemIsEditable
+        if not self.data.is_parent():
+            self.flags |= Qt.ItemFlag.ItemNeverHasChildren
 
     def populate(self) -> None:
         self.set_children(TreeItem(data=d, parent=self) for d in self.data.child_data())
@@ -100,85 +112,99 @@ class TreeItem:
 
     def remove_child(self, child: TreeItem) -> None:
         self.children.remove(child)
-        for row, child in enumerate(self.children):
-            child.row_in_parent = row
-
-    def flags(self) -> Qt.ItemFlag:
-        flags = Qt.ItemFlag.ItemIsEnabled
-        if self.checked or self.data.is_checkable():
-            flags |= Qt.ItemFlag.ItemIsUserCheckable
-        if self.data.is_editable():
-            flags |= Qt.ItemFlag.ItemIsEditable
-        if not self.data.is_parent():
-            flags |= Qt.ItemFlag.ItemNeverHasChildren
-        return flags
+        self.checked_children.discard(child.row_in_parent)
+        if self.checked is not None:
+            self.checked = bool(self.checked_children)
+        for later_child in self.children[child.row_in_parent :]:
+            if later_child.row_in_parent in self.checked_children:
+                self.checked_children.remove(later_child.row_in_parent)
+                self.checked_children.add(later_child.row_in_parent - 1)
+            later_child.row_in_parent -= 1
 
     def toggle_checked(self, keep_siblings: bool) -> list[TreeItem]:
-        if self.parent and self.parent.data.is_checkable():
-            return self.parent._set_child_checked(
-                self.row_in_parent, not self.checked, keep_siblings
-            )
-        elif self.checked:
-            return self._uncheck_children()
-        return []
+        if not self.is_checkable():
+            return []
+        if self.checked:
+            changed: list[TreeItem] = self._uncheck_children()
+        else:
+            changed = [self]
+            self.checked = True
+        if self.parent and self.parent.data.is_checkable(True):
+            changed += self.parent._update_after_child_toggled(self, keep_siblings)
+        return changed
+
+    def is_checkable(self) -> bool:
+        return self.data.is_checkable(bool(self.checked_children))
 
     def _uncheck_children(self) -> list[TreeItem]:
-        changed = [self, *self._checked_child_items()]
-        for child in changed[1:]:
-            child.checked = False
+        changed: list[TreeItem] = [self]
+        for child in self._checked_child_items():
+            changed += child._uncheck_children()
         self.checked_children.clear()
         self.checked = False
         return changed
 
-    def _set_child_checked(
-        self, child: int, checked: bool, keep_siblings: bool
+    def _update_after_child_toggled(
+        self, child: TreeItem, keep_siblings: bool
     ) -> list[TreeItem]:
-        changed = [self.children[child]]
-        if checked:
+        checked_before = self.checked
+        changed: list[TreeItem] = []
+        if child.checked:
             if not keep_siblings:
+                # `child` is not yet in children, so this is fine
                 changed = self._uncheck_children()
-            self.checked_children.add(child)
+            self.checked_children.add(child.row_in_parent)
         else:
-            self.checked_children.remove(child)
-        self.children[child].checked = checked
-        if (new := bool(self.checked_children)) != self.checked:
-            if self.parent and self.parent.data.is_checkable():
-                changed += self.parent._set_child_checked(
-                    self.row_in_parent, new, keep_siblings=True
+            self.checked_children.remove(child.row_in_parent)
+        self.checked = bool(self.checked_children)
+        if self.checked != checked_before:
+            changed.append(self)
+            if self.parent and self.parent.data.is_checkable(True):
+                changed += self.parent._update_after_child_toggled(
+                    self, keep_siblings=True
                 )
-            else:
-                self.checked = new
-                changed.append(self)
         return changed
 
-    def set_checked_children(self, search: db.SearchBuilder) -> list[TreeItem]:
-        changed: list[TreeItem] = []
-        for idx, child in enumerate(self.children):
-            if child.data.is_in_search(search) == child.checked:
-                continue
-            changed.append(child)
-            child.checked = not child.checked
-            if child.checked:
-                self.checked_children.add(idx)
-            else:
-                self.checked_children.remove(idx)
-        if self.checked != bool(self.checked_children):
-            changed.append(self)
+    def apply_search(self, search: db.SearchBuilder) -> list[TreeItem]:
+        changed = []
+        if self.children:
+            for child in self.children:
+                before = child.checked
+                changed.extend(child.apply_search(search))
+                if self.checked is not None and child.checked != before:
+                    if child.checked:
+                        self.checked_children.add(child.row_in_parent)
+                    else:
+                        self.checked_children.remove(child.row_in_parent)
+            if self.checked is not None and self.checked != bool(self.checked_children):
+                changed.append(self)
+                self.checked = not self.checked
+        elif (
+            self.checked is not None and self.data.is_in_search(search) != self.checked
+        ):
             self.checked = not self.checked
+            changed.append(self)
         return changed
 
     def _checked_child_items(self) -> Iterable[TreeItem]:
         return (self.children[row] for row in self.checked_children)
 
     def build_search(self, search: db.SearchBuilder) -> None:
-        self.data.build_search(search)
-        for child in self._checked_child_items():
-            child.data.build_search(search)
+        if self.checked is None:
+            for child in self.children:
+                child.build_search(search)
+        elif self.checked:
+            self.data.build_search(search)
+            for child in self._checked_child_items():
+                child.build_search(search)
 
     def filter_accepts_child(
-        self, child_row: int, filters: dict[TreeItemData, set[str | int]]
+        self, child_row: int, filters: dict[Filter, set[str | int]]
     ) -> bool:
-        if (matches := filters.get(self.data)) is None:
+        if (
+            not isinstance(self.data, Filter)
+            or (matches := filters.get(self.data)) is None
+        ):
             return True
         return self.children[child_row].data.is_accepted(matches)
 
@@ -198,6 +224,7 @@ class Filter(TreeItemData, enum.Enum):
     YEAR = enum.auto()
     GENRE = enum.auto()
     CREATOR = enum.auto()
+    CUSTOM_DATA = enum.auto()
 
     def __str__(self) -> str:  # noqa: C901
         match self:
@@ -225,6 +252,8 @@ class Filter(TreeItemData, enum.Enum):
                 return "Genre"
             case Filter.CREATOR:
                 return "Creator"
+            case Filter.CUSTOM_DATA:
+                return "Custom Data"
             case _ as unreachable:
                 assert_never(unreachable)
 
@@ -254,6 +283,8 @@ class Filter(TreeItemData, enum.Enum):
                 return (SongGenreMatch(v, c) for v, c in db.usdb_song_genres())
             case Filter.CREATOR:
                 return (SongCreatorMatch(v, c) for v, c in db.usdb_song_creators())
+            case Filter.CUSTOM_DATA:
+                return (CustomDataKeyMatch(k) for k in sorted(CustomData.key_options()))
             case _ as unreachable:
                 assert_never(unreachable)
 
@@ -283,12 +314,14 @@ class Filter(TreeItemData, enum.Enum):
                 icon = Icon.GENRE
             case Filter.CREATOR:
                 icon = Icon.CREATOR
+            case Filter.CUSTOM_DATA:
+                icon = Icon.CUSTOM_DATA
             case _ as unreachable:
                 assert_never(unreachable)
         return icon.icon()
 
-    def is_checkable(self) -> bool:
-        return self != Filter.SAVED
+    def is_checkable(self, has_checked_children: bool) -> bool:
+        return self != Filter.SAVED and has_checked_children
 
     def is_editable(self) -> bool:
         return False
@@ -312,7 +345,7 @@ class NodeItemData(TreeItemData):
     def decoration(self) -> QIcon | None:
         return None
 
-    def is_checkable(self) -> bool:
+    def is_checkable(self, has_checked_children: bool) -> bool:
         return True
 
     def is_editable(self) -> bool:
@@ -512,8 +545,59 @@ class SavedSearch(NodeItemData, db.SavedSearch):
     def is_in_search(self, search: db.SearchBuilder) -> bool:
         return False
 
-    def is_checkable(self) -> bool:
+    def is_checkable(self, has_checked_children: bool) -> bool:
         return False
 
     def is_editable(self) -> bool:
+        return True
+
+
+@attrs.define
+class CustomDataKeyMatch(NodeItemData):
+    """Key-value pair that can be matched against a song's custom data."""
+
+    key: str
+
+    def __str__(self) -> str:
+        return self.key
+
+    def build_search(self, search: db.SearchBuilder) -> None:
+        pass
+
+    def is_in_search(self, search: db.SearchBuilder) -> bool:
+        return True
+
+    def is_accepted(self, matches: set[str | int]) -> bool:
+        return True
+
+    def child_data(self) -> Iterable[TreeItemData]:
+        return (
+            CustomDataMatch(self.key, v)
+            for v in sorted(CustomData.value_options(self.key))
+        )
+
+    def is_parent(self) -> bool:
+        return True
+
+    def is_checkable(self, has_checked_children: bool) -> bool:
+        return has_checked_children
+
+
+@attrs.define
+class CustomDataMatch(NodeItemData):
+    """Key-value pair that can be matched against a song's custom data."""
+
+    key: str
+    value: str
+
+    def __str__(self) -> str:
+        return self.value
+
+    def build_search(self, search: db.SearchBuilder) -> None:
+        search.custom_data[self.key].append(self.value)
+
+    def is_in_search(self, search: db.SearchBuilder) -> bool:
+        return self.value in search.custom_data.get(self.key, [])
+
+    def is_accepted(self, _matches: set[str | int]) -> bool:
         return True

@@ -6,7 +6,7 @@ import json
 import os
 from collections.abc import Generator
 from importlib import resources
-from importlib.abc import Traversable
+from importlib.resources.abc import Traversable
 from pathlib import Path
 
 import attrs
