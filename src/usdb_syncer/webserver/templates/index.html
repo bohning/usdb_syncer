@@ -5,24 +5,26 @@
     <title>Ultrastar Song DB</title>
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.16/dist/tailwind.min.css" rel="stylesheet">
     <link href="{{ url_for('static', filename='style.css') }}" rel="stylesheet">
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <script src="https://cdn.rawgit.com/davidshimjs/qrcodejs/gh-pages/qrcode.min.js"></script>
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+    <!-- <script src="https://cdn.rawgit.com/davidshimjs/qrcodejs/gh-pages/qrcode.min.js"></script> -->
 </head>
 
 <body class="bg-gray-900">
     <div class="container mx-auto px-4 py-8">
         <h1 class="text-3xl font-bold mb-4 text-white">Ultrastar Song DB</h1>
-        <form method="GET" action="/" class="mb-6">
+        <form hx-get="/" hx-target="#songs-table" hx-trigger="change, keyup delay:300ms" hx-indicator="#loading" class="mb-6">
             <div class="flex flex-wrap gap-4">
                 <div class="flex-1 min-w-48">
                     <label for="artist_filter" class="block text-sm font-medium text-white mb-1">Filter by Artist:</label>
                     <input type="text" id="artist_filter" name="artist_filter" value="{{ artist_filter }}"
-                        class="w-full px-4 py-2 border border-gray-600 rounded-md bg-gray-800 text-white focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent">
+                        class="w-full px-4 py-2 border border-gray-600 rounded-md bg-gray-800 text-white focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent"
+                        placeholder="Type to filter...">
                 </div>
                 <div class="flex-1 min-w-48">
                     <label for="song_filter" class="block text-sm font-medium text-white mb-1">Filter by Song:</label>
                     <input type="text" id="song_filter" name="song_filter" value="{{ song_filter }}"
-                        class="w-full px-4 py-2 border border-gray-600 rounded-md bg-gray-800 text-white focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent">
+                        class="w-full px-4 py-2 border border-gray-600 rounded-md bg-gray-800 text-white focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent"
+                        placeholder="Type to filter...">
                 </div>
                 <div class="flex-1 min-w-48">
                     <label for="sort_by" class="block text-sm font-medium text-white mb-1">Sort by:</label>
@@ -34,172 +36,96 @@
                         <option value="year" {% if sort_by=='year' %}selected{% endif %}>Year</option>
                     </select>
                 </div>
-                <div class="flex items-end">
-                    <input type="submit" value="Apply Filters"
-                        class="px-6 py-2 bg-blue-500 text-white font-semibold rounded-md hover:bg-blue-600 transition-colors">
-                </div>
             </div>
         </form>
 
+        <div id="loading" class="htmx-indicator mb-4">
+            <div class="flex items-center justify-center p-4 bg-gray-800 rounded-lg">
+                <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+                <span class="ml-2 text-gray-300">Loading songs...</span>
+            </div>
+        </div>
+        
         <p class="mb-2 text-gray-300 text-sm">Showing {{ songs|length }} songs.</p>
         <p class="mb-4 text-gray-300 text-sm">Click the play icon to preview a song.</p>
-        <table class="w-full border-collapse border border-gray-600">
-            <thead>
-                <tr class="bg-gray-700">
-                    <th class="px-4 py-2 border border-gray-600"></th>
-                    <th class="px-4 py-2 border border-gray-600 text-left">ARTIST</th>
-                    <th class="px-4 py-2 border border-gray-600 text-left">TITLE</th>
-                    <th class="px-4 py-2 border border-gray-600 text-left">YEAR</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for song in songs %}
-                <tr class="hover:bg-gray-800 transition-colors">
-                    <td class="px-4 py-2 text-center border border-gray-600">
-                        <button class="play-button bg-transparent border-none cursor-pointer p-2 rounded-full text-2xl text-gray-400 hover:text-white hover:bg-white hover:bg-opacity-10 transition-all duration-200 ease-in-out active:scale-95"
-                            song_id="{{ song.song_id }}" 
-                            preview_offset="{{ song.sync_meta.meta_tags.preview if song.sync_meta and song.sync_meta.meta_tags and song.sync_meta.meta_tags.preview else 0 }}"
-                            title="Play">
-                            ▶
-                        </button>
-                    </td>
-                    <td class="px-4 py-2 border border-gray-600">{{ song.artist }}</td>
-                    <td class="px-4 py-2 border border-gray-600">{{ song.title }}</td>
-                    <td class="px-4 py-2 border border-gray-600">{{ song.year }}</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
+        
+        <div id="songs-table">
+            {% include 'songs_table.html' %}
+        </div>
 
     <script>
-$(document).ready(function() {
+        let currentAudio = null;
+        let currentPlayingButton = null;
 
-    var currentAudio = null;
-    var currentPlayingButton = null;
-    var isLoading = false;
-    var limit = 100;
-    var offset = limit;
-
-    function loadSongs() {
-        if (isLoading) {
-            return;
-        }
-
-        isLoading = true;
-
-        $.ajax({
-            url: '/api/songs',
-            data: {
-                offset: offset,
-                limit: limit,
-                artist_filter: $('#artist_filter').val(),
-                song_filter: $('#song_filter').val(),
-                sort_by: $('#sort_by').val()
-            },
-            success: function(data) {
-                var songs = data.songs;
-                console.log(songs.length + ' songs loaded')
-
-                if (songs.length > 0) {
-                    for (var i = 0; i < songs.length; i++) {
-                        var song = songs[i];
-                        var row = $('<tr class="hover:bg-gray-800 transition-colors"></tr>');
-
-                        // Create and append table cells for each song property
-                        var previewOffset = song.preview_offset || 0;
-                        $('<td class="px-4 py-2 text-center border border-gray-600"></td>').html('<button class="play-button bg-transparent border-none cursor-pointer p-2 rounded-full text-2xl text-gray-400 hover:text-white hover:bg-white hover:bg-opacity-10 transition-all duration-200 ease-in-out active:scale-95" song_id="' + song.song_id + '" preview_offset="' + previewOffset + '" title="Play">▶</button>').appendTo(row);
-                        $('<td class="px-4 py-2 border border-gray-600"></td>').text(song.artist).appendTo(row);
-                        $('<td class="px-4 py-2 border border-gray-600"></td>').text(song.title).appendTo(row);
-                        $('<td class="px-4 py-2 border border-gray-600"></td>').text(song.year).appendTo(row);
-
-                        row.appendTo('tbody');
+        // Handle play/pause button click event
+        document.addEventListener('click', function(event) {
+            if (event.target.classList.contains('play-button')) {
+                const button = event.target;
+                const songId = button.getAttribute('song_id');
+                const previewOffset = parseFloat(button.getAttribute('preview_offset')) || 0;
+                
+                // If this is the currently playing song, pause it
+                if (currentPlayingButton && currentPlayingButton.getAttribute('song_id') === songId) {
+                    if (currentAudio) {
+                        currentAudio.pause();
+                        currentAudio = null;
                     }
-
-                    offset += limit;
-                } else {
-                    // No more songs to load
-                    $(window).off('scroll');
+                    button.textContent = '▶';
+                    button.setAttribute('title', 'Play');
+                    currentPlayingButton = null;
+                    event.preventDefault();
+                    return;
                 }
-            },
-            complete: function() {
-                isLoading = false;
+                
+                // Stop any currently playing audio
+                if (currentAudio) {
+                    currentAudio.pause();
+                    currentAudio = null;
+                }
+                
+                // Reset the previous playing button
+                if (currentPlayingButton) {
+                    currentPlayingButton.textContent = '▶';
+                    currentPlayingButton.setAttribute('title', 'Play');
+                }
+                
+                // Create and play new audio
+                const audio = new Audio('/api/mp3?song_id=' + songId);
+                
+                // Set the preview offset when the audio is loaded
+                audio.addEventListener('loadedmetadata', function() {
+                    if (previewOffset > 0) {
+                        audio.currentTime = previewOffset;
+                    }
+                });
+                
+                audio.play();
+                
+                // Update current state
+                currentAudio = audio;
+                currentPlayingButton = button;
+                button.textContent = '⏸';
+                button.setAttribute('title', 'Pause');
+                
+                // Handle audio end event
+                audio.onended = function() {
+                    if (currentPlayingButton) {
+                        currentPlayingButton.textContent = '▶';
+                        currentPlayingButton.setAttribute('title', 'Play');
+                        currentPlayingButton = null;
+                    }
+                    currentAudio = null;
+                };
+                
+                event.preventDefault();
             }
         });
-    }
 
-
-    // Handle scrolling to the bottom of the page
-    $(window).scroll(function() {
-        var threshold = 100; // Adjust this value to define the threshold distance from the bottom
-
-        if ($(window).scrollTop() + $(window).height() >= $(document).height() - threshold) {
-            loadSongs();
-        }
-    });
-
-
-    // Handle play/pause button click event
-    $(document).on('click', '.play-button', function() {
-        var button = $(this);
-        var song_id = button.attr('song_id');
-        var previewOffset = parseFloat(button.attr('preview_offset')) || 0;
-        
-        // If this is the currently playing song, pause it
-        if (currentPlayingButton && currentPlayingButton.attr('song_id') === song_id) {
-            if (currentAudio) {
-                currentAudio.pause();
-                currentAudio = null;
-            }
-            button.text('▶').attr('title', 'Play');
-            currentPlayingButton = null;
-            return false;
-        }
-        
-        // Stop any currently playing audio
-        if (currentAudio) {
-            currentAudio.pause();
-            currentAudio = null;
-        }
-        
-        // Reset the previous playing button
-        if (currentPlayingButton) {
-            currentPlayingButton.text('▶').attr('title', 'Play');
-        }
-        
-        // Create and play new audio
-        var audio = new Audio('/api/mp3?song_id=' + song_id);
-        
-        // Set the preview offset when the audio is loaded
-        audio.addEventListener('loadedmetadata', function() {
-            if (previewOffset > 0) {
-                audio.currentTime = previewOffset;
-            }
+        // Handle HTMX after swap events to ensure play buttons work on dynamically loaded content
+        document.body.addEventListener('htmx:afterSwap', function(event) {
+            // The event listeners are already set up via event delegation above
+            console.log('Content swapped, play buttons ready');
         });
-        
-        audio.play();
-        
-        // Update current state
-        currentAudio = audio;
-        currentPlayingButton = button;
-        button.text('⏸').attr('title', 'Pause');
-        
-        // Handle audio end event
-        audio.onended = function() {
-            if (currentPlayingButton) {
-                currentPlayingButton.text('▶').attr('title', 'Play');
-                currentPlayingButton = null;
-            }
-            currentAudio = null;
-        };
-        
-        // Prevent the default button click behavior
-        return false;
-    });
-
-});
-
-
     </script>
 </body>
 

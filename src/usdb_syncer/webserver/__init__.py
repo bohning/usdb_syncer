@@ -73,32 +73,59 @@ def create_app() -> flask.Flask:
         artist_filter = flask.request.args.get("artist_filter", default="")
         song_filter = flask.request.args.get("song_filter", default="")
         sort_by = flask.request.args.get("sort_by", "artist")
+        offset = flask.request.args.get("offset", 0, type=int)
+
+        # Check if this is an HTMX request
+        if "HX-Request" in flask.request.headers:
+            return flask.render_template(
+                "songs_table.html",
+                songs=songs,
+                artist_filter=artist_filter,
+                song_filter=song_filter,
+                sort_by=sort_by,
+                offset=offset,
+            )
+
         return flask.render_template(
             "index.html",
             songs=songs,
             artist_filter=artist_filter,
             song_filter=song_filter,
             sort_by=sort_by,
+            offset=offset,
         )
 
     @app.route("/api/songs")
-    def api_songs() -> dict:
+    def api_songs() -> dict | str:
         songs = _get_songs(flask.request)
-        # Add preview offset to each song for the frontend
-        songs_with_preview = []
-        for song in songs:
-            song_dict = {
-                "song_id": song.song_id,
-                "artist": song.artist,
-                "title": song.title,
-                "year": song.year,
-                "preview_offset": song.sync_meta.meta_tags.preview
-                if song.sync_meta
-                and song.sync_meta.meta_tags
-                and song.sync_meta.meta_tags.preview
-                else 0,
-            }
-            songs_with_preview.append(song_dict)
+        artist_filter = flask.request.args.get("artist_filter", default="")
+        song_filter = flask.request.args.get("song_filter", default="")
+        sort_by = flask.request.args.get("sort_by", "artist")
+        offset = flask.request.args.get("offset", 0, type=int)
+
+        # Check if this is an HTMX request for infinite scroll
+        if "HX-Request" in flask.request.headers:
+            # Use different template based on offset
+            if offset == 0:
+                return flask.render_template(
+                    "songs_table.html",
+                    songs=songs,
+                    artist_filter=artist_filter,
+                    song_filter=song_filter,
+                    sort_by=sort_by,
+                    offset=offset,
+                )
+            else:
+                return flask.render_template(
+                    "songs_rows.html",
+                    songs=songs,
+                    artist_filter=artist_filter,
+                    song_filter=song_filter,
+                    sort_by=sort_by,
+                    offset=offset,
+                )
+
+        # Return JSON for regular API requests
         return {"songs": [attrs.asdict(SongRecord.from_usdb_song(s)) for s in songs]}
 
     @app.route("/api/mp3")
