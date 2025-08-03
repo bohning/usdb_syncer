@@ -31,7 +31,7 @@
 {% if songs|length >= 100 %}
 <!-- Infinite scroll trigger -->
 <div
-  hx-get="/api/songs?offset={{ offset + songs|length }}&limit=100&artist_filter={{ artist_filter }}&song_filter={{ song_filter }}&sort_by={{ sort_by }}"
+  hx-get="/api/songs?offset={{ offset + songs|length }}&limit=100&search={{ search }}&sort_by={{ sort_by }}"
   hx-trigger="intersect once"
   hx-target="#songs-tbody"
   hx-swap="beforeend"
@@ -42,7 +42,7 @@
     <div
       class="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500 mx-auto"
     ></div>
-    <span class="text-gray-300 text-sm">Loading more songs...</span>
+    <span class="text-gray-300 text-sm">Loading more songs ...</span>
   </div>
 </div>
 {% endif %}

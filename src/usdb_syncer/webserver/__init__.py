@@ -38,23 +38,21 @@ class SongRecord:
 
 
 def _get_songs(request: flask.Request) -> list[UsdbSong]:
-    search = db.SearchBuilder()
-    search.statuses = [db.DownloadStatus.OUTDATED, db.DownloadStatus.SYNCHRONIZED]
-    if artist_filter := request.args.get("artist_filter"):
-        search.artists.append(artist_filter)
-    if song_filter := request.args.get("song_filter"):
-        search.titles.append(song_filter)
+    builder = db.SearchBuilder()
+    builder.statuses = [db.DownloadStatus.OUTDATED, db.DownloadStatus.SYNCHRONIZED]
+    if search := request.args.get("search"):
+        builder.text = search
     match request.args.get("sort_by", "artist"):
         case "artist":
-            search.order = db.SongOrder.ARTIST
+            builder.order = db.SongOrder.ARTIST
         case "title":
-            search.order = db.SongOrder.TITLE
+            builder.order = db.SongOrder.TITLE
         case "year":
-            search.order = db.SongOrder.YEAR
+            builder.order = db.SongOrder.YEAR
     limit = request.args.get("limit", 100, type=int)
     offset = request.args.get("offset", 0, type=int)
 
-    song_ids = db.search_usdb_songs(search)
+    song_ids = db.search_usdb_songs(builder)
     songs = [
         s
         for i in itertools.islice(song_ids, offset, offset + limit)
@@ -70,8 +68,7 @@ def create_app() -> flask.Flask:
     @app.route("/")
     def index() -> str:
         songs = _get_songs(flask.request)
-        artist_filter = flask.request.args.get("artist_filter", default="")
-        song_filter = flask.request.args.get("song_filter", default="")
+        search = flask.request.args.get("search", default="")
         sort_by = flask.request.args.get("sort_by", "artist")
         offset = flask.request.args.get("offset", 0, type=int)
 
@@ -80,26 +77,19 @@ def create_app() -> flask.Flask:
             return flask.render_template(
                 "songs_table.html",
                 songs=songs,
-                artist_filter=artist_filter,
-                song_filter=song_filter,
+                search=search,
                 sort_by=sort_by,
                 offset=offset,
             )
 
         return flask.render_template(
-            "index.html",
-            songs=songs,
-            artist_filter=artist_filter,
-            song_filter=song_filter,
-            sort_by=sort_by,
-            offset=offset,
+            "index.html", songs=songs, search=search, sort_by=sort_by, offset=offset
         )
 
     @app.route("/api/songs")
     def api_songs() -> dict | str:
         songs = _get_songs(flask.request)
-        artist_filter = flask.request.args.get("artist_filter", default="")
-        song_filter = flask.request.args.get("song_filter", default="")
+        search = flask.request.args.get("search", default="")
         sort_by = flask.request.args.get("sort_by", "artist")
         offset = flask.request.args.get("offset", 0, type=int)
 
@@ -110,8 +100,7 @@ def create_app() -> flask.Flask:
                 return flask.render_template(
                     "songs_table.html",
                     songs=songs,
-                    artist_filter=artist_filter,
-                    song_filter=song_filter,
+                    search=search,
                     sort_by=sort_by,
                     offset=offset,
                 )
@@ -119,8 +108,7 @@ def create_app() -> flask.Flask:
                 return flask.render_template(
                     "songs_rows.html",
                     songs=songs,
-                    artist_filter=artist_filter,
-                    song_filter=song_filter,
+                    search=search,
                     sort_by=sort_by,
                     offset=offset,
                 )

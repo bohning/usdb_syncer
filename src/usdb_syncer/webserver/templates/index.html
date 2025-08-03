@@ -15,16 +15,9 @@
         <form hx-get="/" hx-target="#songs-table" hx-trigger="change, keyup delay:300ms" hx-indicator="#loading" class="mb-6">
             <div class="flex flex-wrap gap-4">
                 <div class="flex-1 min-w-48">
-                    <label for="artist_filter" class="block text-sm font-medium text-white mb-1">Filter by Artist:</label>
-                    <input type="text" id="artist_filter" name="artist_filter" value="{{ artist_filter }}"
+                    <input type="text" id="search" name="search" value="{{ search }}"
                         class="w-full px-4 py-2 border border-gray-600 rounded-md bg-gray-800 text-white focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent"
-                        placeholder="Type to filter...">
-                </div>
-                <div class="flex-1 min-w-48">
-                    <label for="song_filter" class="block text-sm font-medium text-white mb-1">Filter by Song:</label>
-                    <input type="text" id="song_filter" name="song_filter" value="{{ song_filter }}"
-                        class="w-full px-4 py-2 border border-gray-600 rounded-md bg-gray-800 text-white focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent"
-                        placeholder="Type to filter...">
+                        placeholder="Type to search ...">
                 </div>
                 <div class="flex-1 min-w-48">
                     <label for="sort_by" class="block text-sm font-medium text-white mb-1">Sort by:</label>
@@ -42,12 +35,11 @@
         <div id="loading" class="htmx-indicator mb-4">
             <div class="flex items-center justify-center p-4 bg-gray-800 rounded-lg">
                 <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
-                <span class="ml-2 text-gray-300">Loading songs...</span>
+                <span class="ml-2 text-gray-300">Loading songs ...</span>
             </div>
         </div>
         
         <p class="mb-2 text-gray-300 text-sm">Showing {{ songs|length }} songs.</p>
-        <p class="mb-4 text-gray-300 text-sm">Click the play icon to preview a song.</p>
         
         <div id="songs-table">
             {% include 'songs_table.html' %}
