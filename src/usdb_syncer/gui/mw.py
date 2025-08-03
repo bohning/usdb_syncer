@@ -7,7 +7,16 @@ from pathlib import Path
 from PySide6 import QtGui
 from PySide6.QtWidgets import QFileDialog, QLabel, QMainWindow
 
-from usdb_syncer import SongId, db, events, settings, song_routines, usdb_id_file, utils
+from usdb_syncer import (
+    SongId,
+    db,
+    events,
+    settings,
+    song_routines,
+    usdb_id_file,
+    utils,
+    webserver,
+)
 from usdb_syncer.constants import Usdb
 from usdb_syncer.gui import events as gui_events
 from usdb_syncer.gui import ffmpeg_dialog, gui_utils, icons, progress, progress_bar
@@ -411,6 +420,10 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         self.menu_open_song_in.popup(pos)
 
     def closeEvent(self, event: QtGui.QCloseEvent) -> None:  # noqa: N802
+        def cleanup() -> None:
+            DownloadManager.quit()
+            webserver.stop()
+
         def on_done(result: progress.Result) -> None:
             result.log_error()
             self.table.save_state()
@@ -425,7 +438,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
             event.accept()
         else:
             logger.debug("Close event deferred, cleaning up ...")
-            run_with_progress("Shutting down ...", DownloadManager.quit, on_done)
+            run_with_progress("Shutting down ...", cleanup, on_done)
             event.ignore()
 
     def _restore_state(self) -> None:

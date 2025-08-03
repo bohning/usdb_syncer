@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Ultrastar Song DB</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.16/dist/tailwind.min.css" rel="stylesheet">
+    <link href="{{ url_for('static', filename='style.css') }}" rel="stylesheet">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.rawgit.com/davidshimjs/qrcodejs/gh-pages/qrcode.min.js"></script>
+</head>
+
+<body class="bg-gray-900">
+    <div class="container mx-auto px-4 py-8">
+        <h1 class="text-3xl font-bold mb-4 text-white">Ultrastar Song DB</h1>
+        <form method="GET" action="/" class="mb-4">
+            <div class="flex space-x-4">
+                <div>
+                    <label for="artist_filter" class="block text-sm font-medium text-white">Filter by Artist:</label>
+                    <input type="text" id="artist_filter" name="artist_filter" value="{{ artist_filter }}"
+                        class="mt-1 px-4 py-2 border border-gray-300 rounded-md bg-gray-800 text-white focus:outline-none focus:ring focus:ring-blue-400">
+                </div>
+                <div>
+                    <label for="song_filter" class="block text-sm font-medium text-white">Filter by Song:</label>
+                    <input type="text" id="song_filter" name="song_filter" value="{{ song_filter }}"
+                        class="mt-1 px-4 py-2 border border-gray-300 rounded-md bg-gray-800 text-white focus:outline-none focus:ring focus:ring-blue-400">
+                </div>
+                <div>
+                    <label for="sort_by" class="block text-sm font-medium text-white">Sort by:</label>
+                    <select id="sort_by" name="sort_by"
+                        class="mt-1 px-4 py-2 border border-gray-300 rounded-md bg-gray-800 text-white focus:outline-none focus:ring focus:ring-blue-400">
+                        <option value="artist" {% if sort_by=='artist' %}selected{% endif %}>Artist</option>
+                        <option value="title" {% if sort_by=='title' %}selected{% endif %}>Title</option>
+                        <option value="genre" {% if sort_by=='genre' %}selected{% endif %}>Genre</option>
+                        <option value="year" {% if sort_by=='year' %}selected{% endif %}>Year</option>
+                    </select>
+                </div>
+                <div>
+                    <input type="submit" value="Apply Filters"
+                        class="mt-1 px-6 py-2 bg-blue-500 text-white font-semibold rounded-md hover:bg-blue-600">
+                </div>
+            </div>
+        </form>
+
+        <p class="mb-2 text-white">Showing {{ songs|length }} songs.</p>
+        <p class="mb-4 text-white">Click on the "Preview" button to play the song.</p>
+        <table class="w-full">
+            <thead>
+                <tr>
+                    <th class="px-4 py-2">ARTIST</th>
+                    <th class="px-4 py-2">TITLE</th>
+                    <th class="px-4 py-2">MP3</th>
+                    <th class="px-4 py-2">YEAR</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for song in songs %}
+                <tr>
+                    <td class="px-4 py-2">{{ song.artist }}</td>
+                    <td class="px-4 py-2">{{ song.title }}</td>
+                    <td class="px-4 py-2">
+                        <button class="preview bg-blue-500 text-white px-4 py-2 rounded-md"
+                            mp3_path="{{ song.mp3_path }}">Preview</button>
+                    </td>
+                    <td class="px-4 py-2">{{ song.year }}</td>
+                    
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <script>
+$(document).ready(function() {
+
+    var currentAudio = null;
+    var isLoading = false;
+    var limit = 1000;
+    var offset = limit;
+
+    function loadSongs() {
+        if (isLoading) {
+            return;
+        }
+
+        isLoading = true;
+
+        $.ajax({
+            url: '/api/songs',
+            data: {
+                offset: offset,
+                limit: limit,
+                artist_filter: $('#artist_filter').val(),
+                song_filter: $('#song_filter').val(),
+                sort_by: $('#sort_by').val()
+            },
+            success: function(data) {
+                var songs = data.songs;
+                console.log(songs.length + ' songs loaded')
+
+                if (songs.length > 0) {
+                    for (var i = 0; i < songs.length; i++) {
+                        var song = songs[i];
+                        var row = $('<tr></tr>');
+
+                        // Create and append table cells for each song property
+                        $('<td></td>').text(song.artist).appendTo(row);
+                        $('<td></td>').text(song.title).appendTo(row);
+                        $('<td></td>').html('<button class="preview bg-blue-500 text-white px-4 py-2 rounded-md" mp3_path="' + song.mp3_path + '">Preview</button>').appendTo(row);
+                        $('<td></td>').text(song.year).appendTo(row);
+
+                        row.appendTo('tbody');
+                    }
+
+                    offset += limit;
+                } else {
+                    // No more songs to load
+                    $(window).off('scroll');
+                }
+            },
+            complete: function() {
+                isLoading = false;
+            }
+        });
+    }
+
+
+    // Handle scrolling to the bottom of the page
+    $(window).scroll(function() {
+        var threshold = 1000; // Adjust this value to define the threshold distance from the bottom
+
+        if ($(window).scrollTop() + $(window).height() >= $(document).height() - threshold) {
+            loadSongs();
+        }
+    });
+
+
+    // Handle preview button click event
+    $(document).on('click', '.preview', function() {
+        // load the audio file from /api/mp3 using mp3_path as a argument
+        var mp3_path = $(this).attr('mp3_path');
+        var audio = new Audio('/api/mp3?mp3_path=' + mp3_path);
+
+        // If there is a currently playing audio file, stop it
+        if (currentAudio) {
+            currentAudio.pause();
+        }
+
+        // Play the new audio file
+        audio.play();
+
+        // Set the current audio file to the new audio file
+        currentAudio = audio;
+
+        // Prevent the default button click behavior
+        return false;
+    });
+
+});
+
+
+    </script>
+</body>
+
+</html>
