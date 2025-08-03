@@ -2,9 +2,48 @@
   <thead>
     <tr class="bg-gray-700">
       <th class="px-4 py-2 border border-gray-600"></th>
-      <th class="px-4 py-2 border border-gray-600 text-left">ARTIST</th>
-      <th class="px-4 py-2 border border-gray-600 text-left">TITLE</th>
-      <th class="px-4 py-2 border border-gray-600 text-left">YEAR</th>
+      <th class="px-4 py-2 border border-gray-600 text-left">
+        <button
+          hx-get="/?search={{ search }}&sort_by=artist&sort_order={{ 'desc' if sort_by == 'artist' and sort_order == 'asc' else 'asc' }}"
+          hx-target="#songs-table"
+          hx-indicator="#loading"
+          class="w-full text-left hover:text-blue-300 transition-colors flex items-center justify-between"
+        >
+          ARTIST {% if sort_by == 'artist' %}
+          <span class="text-blue-400"
+            >{{ '↑' if sort_order == 'asc' else '↓' }}</span
+          >
+          {% endif %}
+        </button>
+      </th>
+      <th class="px-4 py-2 border border-gray-600 text-left">
+        <button
+          hx-get="/?search={{ search }}&sort_by=title&sort_order={{ 'desc' if sort_by == 'title' and sort_order == 'asc' else 'asc' }}"
+          hx-target="#songs-table"
+          hx-indicator="#loading"
+          class="w-full text-left hover:text-blue-300 transition-colors flex items-center justify-between"
+        >
+          TITLE {% if sort_by == 'title' %}
+          <span class="text-blue-400"
+            >{{ '↑' if sort_order == 'asc' else '↓' }}</span
+          >
+          {% endif %}
+        </button>
+      </th>
+      <th class="px-4 py-2 border border-gray-600 text-left">
+        <button
+          hx-get="/?search={{ search }}&sort_by=year&sort_order={{ 'desc' if sort_by == 'year' and sort_order == 'asc' else 'asc' }}"
+          hx-target="#songs-table"
+          hx-indicator="#loading"
+          class="w-full text-left hover:text-blue-300 transition-colors flex items-center justify-between"
+        >
+          YEAR {% if sort_by == 'year' %}
+          <span class="text-blue-400"
+            >{{ '↑' if sort_order == 'asc' else '↓' }}</span
+          >
+          {% endif %}
+        </button>
+      </th>
     </tr>
   </thead>
   <tbody id="songs-tbody">
@@ -31,7 +70,7 @@
 {% if songs|length >= 100 %}
 <!-- Infinite scroll trigger -->
 <div
-  hx-get="/api/songs?offset={{ offset + songs|length }}&limit=100&search={{ search }}&sort_by={{ sort_by }}"
+  hx-get="/api/songs?offset={{ offset + songs|length }}&limit=100&search={{ search }}&sort_by={{ sort_by }}&sort_order={{ sort_order }}"
   hx-trigger="intersect once"
   hx-target="#songs-tbody"
   hx-swap="beforeend"

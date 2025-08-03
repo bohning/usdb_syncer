@@ -15,19 +15,10 @@
         <form hx-get="/" hx-target="#songs-table" hx-trigger="change, keyup delay:300ms" hx-indicator="#loading" class="mb-6">
             <div class="flex flex-wrap gap-4">
                 <div class="flex-1 min-w-48">
+                    <label for="search" class="block text-sm font-medium text-white mb-1">Search:</label>
                     <input type="text" id="search" name="search" value="{{ search }}"
                         class="w-full px-4 py-2 border border-gray-600 rounded-md bg-gray-800 text-white focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent"
-                        placeholder="Type to search ...">
-                </div>
-                <div class="flex-1 min-w-48">
-                    <label for="sort_by" class="block text-sm font-medium text-white mb-1">Sort by:</label>
-                    <select id="sort_by" name="sort_by"
-                        class="w-full px-4 py-2 border border-gray-600 rounded-md bg-gray-800 text-white focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent">
-                        <option value="artist" {% if sort_by=='artist' %}selected{% endif %}>Artist</option>
-                        <option value="title" {% if sort_by=='title' %}selected{% endif %}>Title</option>
-                        <option value="genre" {% if sort_by=='genre' %}selected{% endif %}>Genre</option>
-                        <option value="year" {% if sort_by=='year' %}selected{% endif %}>Year</option>
-                    </select>
+                        placeholder="Search by artist, title, or genre...">
                 </div>
             </div>
         </form>
