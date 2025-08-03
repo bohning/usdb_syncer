@@ -1,0 +1,63 @@
+body {
+  color: #ffffff;
+}
+
+table {
+  border-collapse: collapse;
+}
+
+th,
+td {
+  border: 1px solid #ffffff;
+  padding: 8px;
+}
+
+th {
+  background-color: #4a5568;
+}
+
+#qrcode {
+  position: relative;
+  width: 200px;
+  height: 200px;
+  background-color: transparent;
+  color: white;
+}
+
+.container {
+  width: 100%;
+  max-width: 768px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.input-field {
+  background-color: #1f2937;
+}
+
+.input-field input[type="text"],
+.input-field select {
+  background-color: #1f2937;
+  color: #ffffff;
+}
+
+.input-field input[type="text"]::placeholder,
+.input-field select option {
+  color: #9ca3af;
+}
+
+.input-field input[type="text"]:focus,
+.input-field select:focus {
+  outline: none;
+  border-color: #60a5fa;
+}
+
+.preview {
+  background-color: #3b82f6;
+  padding: 2px 8px;
+  font-size: 14px;
+}
+
+.preview:hover {
+  background-color: #2563eb;
+}
