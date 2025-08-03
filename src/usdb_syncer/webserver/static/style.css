@@ -1,21 +1,4 @@
-body {
-  color: #ffffff;
-}
-
-table {
-  border-collapse: collapse;
-}
-
-th,
-td {
-  border: 1px solid #ffffff;
-  padding: 8px;
-}
-
-th {
-  background-color: #4a5568;
-}
-
+/* QR Code styling */
 #qrcode {
   position: relative;
   width: 200px;
@@ -24,40 +7,13 @@ th {
   color: white;
 }
 
-.container {
-  width: 100%;
-  max-width: 768px;
-  margin-left: auto;
-  margin-right: auto;
+/* Play button styles - minimal fallback for any custom styling not covered by Tailwind */
+.play-button {
+  font-family: inherit;
+  line-height: 1;
 }
 
-.input-field {
-  background-color: #1f2937;
-}
-
-.input-field input[type="text"],
-.input-field select {
-  background-color: #1f2937;
-  color: #ffffff;
-}
-
-.input-field input[type="text"]::placeholder,
-.input-field select option {
-  color: #9ca3af;
-}
-
-.input-field input[type="text"]:focus,
-.input-field select:focus {
+.play-button:focus {
   outline: none;
-  border-color: #60a5fa;
-}
-
-.preview {
-  background-color: #3b82f6;
-  padding: 2px 8px;
-  font-size: 14px;
-}
-
-.preview:hover {
-  background-color: #2563eb;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.5);
 }
