@@ -1,12 +1,40 @@
+from __future__ import annotations
+
 import itertools
+import logging
 from typing import Any, ClassVar
 
+import attrs
 import flask
 import werkzeug.serving
 from PySide6 import QtCore
+from werkzeug.serving import WSGIRequestHandler
 
 from usdb_syncer import SongId, db, utils
 from usdb_syncer.usdb_song import UsdbSong
+
+
+@attrs.define
+class SongRecord:
+    song_id: SongId
+    artist: str
+    title: str
+    year: int | None
+    preview_offset: float
+
+    @classmethod
+    def from_usdb_song(cls, song: UsdbSong) -> SongRecord:
+        return cls(
+            song_id=song.song_id,
+            artist=song.artist,
+            title=song.title,
+            year=song.year,
+            preview_offset=song.sync_meta.meta_tags.preview
+            if song.sync_meta
+            and song.sync_meta.meta_tags
+            and song.sync_meta.meta_tags.preview
+            else 0.0,
+        )
 
 
 def _get_songs(request: flask.Request) -> list[UsdbSong]:
@@ -23,7 +51,7 @@ def _get_songs(request: flask.Request) -> list[UsdbSong]:
             search.order = db.SongOrder.TITLE
         case "year":
             search.order = db.SongOrder.YEAR
-    limit = request.args.get("limit", 1000, type=int)
+    limit = request.args.get("limit", 100, type=int)
     offset = request.args.get("offset", 0, type=int)
 
     song_ids = db.search_usdb_songs(search)
@@ -56,7 +84,22 @@ def create_app() -> flask.Flask:
     @app.route("/api/songs")
     def api_songs() -> dict:
         songs = _get_songs(flask.request)
-        return {"songs": songs}
+        # Add preview offset to each song for the frontend
+        songs_with_preview = []
+        for song in songs:
+            song_dict = {
+                "song_id": song.song_id,
+                "artist": song.artist,
+                "title": song.title,
+                "year": song.year,
+                "preview_offset": song.sync_meta.meta_tags.preview
+                if song.sync_meta
+                and song.sync_meta.meta_tags
+                and song.sync_meta.meta_tags.preview
+                else 0,
+            }
+            songs_with_preview.append(song_dict)
+        return {"songs": [attrs.asdict(SongRecord.from_usdb_song(s)) for s in songs]}
 
     @app.route("/api/mp3")
     def api_mp3():
@@ -85,6 +128,12 @@ def create_app() -> flask.Flask:
     return app
 
 
+class _CustomRequestHandler(WSGIRequestHandler):
+    def log(self, type: str, message: str, *args: Any) -> None:  # noqa: A002
+        # don't log requests to info level
+        super().log("debug", message, *args)
+
+
 class _WebserverThread(QtCore.QThread):
     def __init__(self, server: werkzeug.serving.BaseWSGIServer) -> None:
         super().__init__()
@@ -107,7 +156,9 @@ class _WebserverManager:
         cls.host = host
         cls.port = port
         app = create_app()
-        cls._server = werkzeug.serving.make_server(host, port, app)
+        cls._server = werkzeug.serving.make_server(
+            host, port, app, request_handler=_CustomRequestHandler
+        )
         cls._thread = _WebserverThread(cls._server)
         cls._thread.start()
 
@@ -123,6 +174,7 @@ class _WebserverManager:
 
 
 def start(host="127.0.0.1", port=5000) -> None:
+    logging.getLogger("werkzeug").setLevel(logging.DEBUG)
     _WebserverManager.start(host, port)
 
 
