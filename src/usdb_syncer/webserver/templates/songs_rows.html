@@ -19,7 +19,7 @@
 <tr>
   <td colspan="4" class="px-4 py-2 text-center">
     <div
-      hx-get="/api/songs?offset={{ offset + songs|length }}&limit=100&artist_filter={{ artist_filter }}&song_filter={{ song_filter }}&sort_by={{ sort_by }}"
+      hx-get="/api/songs?offset={{ offset + songs|length }}&limit=100&search={{ search }}&sort_by={{ sort_by }}&sort_order={{ sort_order }}"
       hx-trigger="intersect once"
       hx-target="#songs-tbody"
       hx-swap="beforeend"

@@ -49,6 +49,9 @@ def _get_songs(request: flask.Request) -> list[UsdbSong]:
             builder.order = db.SongOrder.TITLE
         case "year":
             builder.order = db.SongOrder.YEAR
+    sort_order = request.args.get("sort_order", "asc")
+    if sort_order == "desc":
+        builder.descending = True
     limit = request.args.get("limit", 100, type=int)
     offset = request.args.get("offset", 0, type=int)
 
@@ -70,6 +73,7 @@ def create_app() -> flask.Flask:
         songs = _get_songs(flask.request)
         search = flask.request.args.get("search", default="")
         sort_by = flask.request.args.get("sort_by", "artist")
+        sort_order = flask.request.args.get("sort_order", "asc")
         offset = flask.request.args.get("offset", 0, type=int)
 
         # Check if this is an HTMX request
@@ -79,11 +83,17 @@ def create_app() -> flask.Flask:
                 songs=songs,
                 search=search,
                 sort_by=sort_by,
+                sort_order=sort_order,
                 offset=offset,
             )
 
         return flask.render_template(
-            "index.html", songs=songs, search=search, sort_by=sort_by, offset=offset
+            "index.html",
+            songs=songs,
+            search=search,
+            sort_by=sort_by,
+            sort_order=sort_order,
+            offset=offset,
         )
 
     @app.route("/api/songs")
@@ -91,6 +101,7 @@ def create_app() -> flask.Flask:
         songs = _get_songs(flask.request)
         search = flask.request.args.get("search", default="")
         sort_by = flask.request.args.get("sort_by", "artist")
+        sort_order = flask.request.args.get("sort_order", "asc")
         offset = flask.request.args.get("offset", 0, type=int)
 
         # Check if this is an HTMX request for infinite scroll
@@ -102,6 +113,7 @@ def create_app() -> flask.Flask:
                     songs=songs,
                     search=search,
                     sort_by=sort_by,
+                    sort_order=sort_order,
                     offset=offset,
                 )
             else:
@@ -110,6 +122,7 @@ def create_app() -> flask.Flask:
                     songs=songs,
                     search=search,
                     sort_by=sort_by,
+                    sort_order=sort_order,
                     offset=offset,
                 )
 
