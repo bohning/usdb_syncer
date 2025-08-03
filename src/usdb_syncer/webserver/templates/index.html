@@ -59,7 +59,7 @@
                     <td class="px-4 py-2">{{ song.title }}</td>
                     <td class="px-4 py-2">
                         <button class="preview bg-blue-500 text-white px-4 py-2 rounded-md"
-                            mp3_path="{{ song.mp3_path }}">Preview</button>
+                            song_id="{{ song.song_id }}">Preview</button>
                     </td>
                     <td class="px-4 py-2">{{ song.year }}</td>
                     
@@ -105,7 +105,7 @@ $(document).ready(function() {
                         // Create and append table cells for each song property
                         $('<td></td>').text(song.artist).appendTo(row);
                         $('<td></td>').text(song.title).appendTo(row);
-                        $('<td></td>').html('<button class="preview bg-blue-500 text-white px-4 py-2 rounded-md" mp3_path="' + song.mp3_path + '">Preview</button>').appendTo(row);
+                        $('<td></td>').html('<button class="preview bg-blue-500 text-white px-4 py-2 rounded-md" song_id="' + song.song_id + '">Preview</button>').appendTo(row);
                         $('<td></td>').text(song.year).appendTo(row);
 
                         row.appendTo('tbody');
@@ -136,9 +136,9 @@ $(document).ready(function() {
 
     // Handle preview button click event
     $(document).on('click', '.preview', function() {
-        // load the audio file from /api/mp3 using mp3_path as a argument
-        var mp3_path = $(this).attr('mp3_path');
-        var audio = new Audio('/api/mp3?mp3_path=' + mp3_path);
+        // load the audio file from /api/mp3 using song_id as a argument
+        var song_id = $(this).attr('song_id');
+        var audio = new Audio('/api/mp3?song_id=' + song_id);
 
         // If there is a currently playing audio file, stop it
         if (currentAudio) {
