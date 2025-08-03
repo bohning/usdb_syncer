@@ -10,7 +10,7 @@ import werkzeug.serving
 from PySide6 import QtCore
 from werkzeug.serving import WSGIRequestHandler
 
-from usdb_syncer import SongId, db, utils
+from usdb_syncer import SongId, db, logger, utils
 from usdb_syncer.usdb_song import UsdbSong
 
 
@@ -65,7 +65,7 @@ def _get_songs(request: flask.Request) -> list[UsdbSong]:
     return songs
 
 
-def create_app() -> flask.Flask:
+def create_app(title: str) -> flask.Flask:
     app = flask.Flask(__name__)
 
     @app.route("/")
@@ -89,6 +89,7 @@ def create_app() -> flask.Flask:
 
         return flask.render_template(
             "index.html",
+            title=title,
             songs=songs,
             search=search,
             sort_by=sort_by,
@@ -174,18 +175,21 @@ class _WebserverThread(QtCore.QThread):
 class _WebserverManager:
     _server: ClassVar[werkzeug.serving.BaseWSGIServer | None] = None
     _thread: ClassVar[QtCore.QThread | None] = None
-    host: ClassVar[str] = ""
-    port: ClassVar[int] = 0
+    host: ClassVar[str] = "127.0.0.1"
+    port: ClassVar[int] = 5000
+    title: ClassVar[str] = "USDB Syncer Song Collection"
 
     @classmethod
-    def start(cls, host: str, port: int) -> None:
+    def start(cls, port: int | None = None, title: str | None = None) -> None:
         if cls._server:
             return
-        cls.host = host
-        cls.port = port
-        app = create_app()
+        if port:
+            cls.port = port
+        if title:
+            cls.title = title
+        app = create_app(cls.title)
         cls._server = werkzeug.serving.make_server(
-            host, port, app, request_handler=_CustomRequestHandler
+            cls.host, cls.port, app, request_handler=_CustomRequestHandler
         )
         cls._thread = _WebserverThread(cls._server)
         cls._thread.start()
@@ -201,10 +205,15 @@ class _WebserverManager:
             cls._thread = None
 
 
-def start(host="127.0.0.1", port=5000) -> None:
+def start(port: int | None = None, title: str | None = None) -> None:
     logging.getLogger("werkzeug").setLevel(logging.DEBUG)
-    _WebserverManager.start(host, port)
+    _WebserverManager.start(port, title)
+    logger.logger.info(f"Webserver is now running on {address()}")
 
 
 def stop() -> None:
     _WebserverManager.stop()
+
+
+def address() -> str:
+    return f"http://{_WebserverManager.host}:{_WebserverManager.port}"

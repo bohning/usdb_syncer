@@ -70,3 +70,7 @@ def configure_logging(*handlers: logging.Handler) -> None:
         handlers=handlers,
     )
     logger.setLevel(logging.DEBUG)
+
+
+def add_root_handler(handler: logging.Handler) -> None:
+    logging.getLogger().addHandler(handler)
