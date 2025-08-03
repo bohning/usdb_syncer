@@ -225,6 +225,10 @@ class SyncMeta:
     def delete_many(cls, ids: tuple[SyncMetaId, ...]) -> None:
         db.delete_sync_metas(ids)
 
+    @classmethod
+    def delete_many_in_folder(cls, folder: Path, ids: tuple[SyncMetaId, ...]) -> None:
+        db.delete_sync_metas_in_folder(folder, ids)
+
     def all_resource_files(
         self,
     ) -> tuple[tuple[ResourceFile | None, db.ResourceFileKind], ...]:

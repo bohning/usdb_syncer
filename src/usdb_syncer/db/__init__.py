@@ -845,6 +845,17 @@ def delete_sync_metas(ids: tuple[SyncMetaId, ...]) -> None:
         )
 
 
+def delete_sync_metas_in_folder(folder: Path, ids: tuple[SyncMetaId, ...]) -> None:
+    path = folder.as_posix()
+    for batch in batched(ids, _SQL_VARIABLES_LIMIT - 1):
+        id_str = ", ".join("?" for _ in range(len(batch)))
+        _DbState.connection().execute(
+            f"DELETE FROM sync_meta WHERE sync_meta_id IN ({id_str}) AND "
+            "path GLOB ? || '/*'",
+            (*batch, path),
+        )
+
+
 @attrs.define(frozen=True, slots=False)
 class CustomMetaDataParams:
     """Parameters for inserting or updating a resource file."""

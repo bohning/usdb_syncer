@@ -146,7 +146,9 @@ class _SyncMetaFolderSyncer:
     def process(self) -> None:
         for path in _iterate_usdb_files_in_folder_recursively(folder=self.folder):
             self._process_path(path)
-        SyncMeta.delete_many(tuple(self.db_metas.keys() - self.found_metas))
+        SyncMeta.delete_many_in_folder(
+            self.folder, tuple(self.db_metas.keys() - self.found_metas)
+        )
         SyncMeta.upsert_many(self.to_upsert)
 
     def _process_path(self, path: Path) -> None:
