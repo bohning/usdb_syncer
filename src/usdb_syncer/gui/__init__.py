@@ -60,8 +60,12 @@ class CliArgs:
     skip_pyside: bool = not utils.IS_SOURCE
     trace_sql: bool = False
 
-    # Subcommands
+    # preview
     txt: Path | None = None
+
+    # webserver
+    port: int | None = None
+    title: str | None = None
 
     @classmethod
     def parse(cls) -> CliArgs:
@@ -101,7 +105,12 @@ class CliArgs:
         )
         preview = subcommands.add_parser("preview", help="Show preview for song txt.")
         preview.add_argument("txt", type=Path, help="Path to the song txt file.")
-        subcommands.add_parser("serve", help="Launch webserver with local songs.")
+
+        serve = subcommands.add_parser(
+            "serve", help="Launch webserver with local songs."
+        )
+        serve.add_argument("--port", type=int, help="Port the webservice will bind to.")
+        serve.add_argument("--title", help="Title displayed at the top of the page.")
 
         return parser.parse_args(namespace=cls())
 
@@ -130,7 +139,7 @@ def main() -> None:
             if not args.txt or not _run_preview(args.txt):
                 return
         case "serve":
-            _run_webserver()
+            _run_webserver(port=args.port, title=args.title)
             return
         case _:
             if args.profile:
@@ -140,15 +149,20 @@ def main() -> None:
     app.exec()
 
 
+def configure_logging(mw: MainWindow | None = None) -> None:
+    handlers = [
+        logging.FileHandler(utils.AppPaths.log, encoding="utf-8"),
+        logging.StreamHandler(sys.stdout),
+        _TextEditLogger(mw) if mw else None,
+    ]
+    logger.configure_logging(*filter(None, handlers))
+
+
 def _run_main() -> None:
     from usdb_syncer.gui.mw import MainWindow
 
     mw = MainWindow()
-    logger.configure_logging(
-        logging.FileHandler(utils.AppPaths.log, encoding="utf-8"),
-        logging.StreamHandler(sys.stdout),
-        _TextEditLogger(mw),
-    )
+    configure_logging(mw)
     mw.label_update_hint.setVisible(False)
     if not utils.IS_SOURCE:
         if version := utils.newer_version_available():
@@ -169,21 +183,23 @@ def _run_main() -> None:
 
 
 def _run_preview(txt: Path) -> bool:
+    configure_logging()
     from usdb_syncer.gui.previewer import Previewer
 
     theme.Theme.from_settings().apply()
     return Previewer.load_txt(txt)
 
 
-def _run_webserver() -> None:
-    webserver.start()
-    print("Web server running in headless mode. Press Ctrl+C to stop.")
+def _run_webserver(port: int | None = None, title: str | None = None) -> None:
+    configure_logging()
+    webserver.start(port=port, title=title)
+    logger.logger.info("Web server running in headless mode. Press Ctrl+C to stop.")
     try:
         while True:
             time.sleep(1)
     except KeyboardInterrupt:
         webserver.stop()
-        print("Server stopped.")
+        logger.logger.info("Server stopped.")
 
 
 def _excepthook(
