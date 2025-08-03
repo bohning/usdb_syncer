@@ -6,6 +6,7 @@ import cProfile
 import logging
 import subprocess
 import sys
+import time
 import traceback
 from argparse import ArgumentParser
 from collections.abc import Callable
@@ -18,7 +19,16 @@ from PySide6 import QtCore, QtGui, QtWidgets
 from PySide6.QtCore import Qt
 
 import usdb_syncer
-from usdb_syncer import addons, db, errors, logger, settings, song_routines, utils
+from usdb_syncer import (
+    addons,
+    db,
+    errors,
+    logger,
+    settings,
+    song_routines,
+    utils,
+    webserver,
+)
 from usdb_syncer import sync_meta as sync_meta
 from usdb_syncer import usdb_song as usdb_song
 from usdb_syncer.gui import events, hooks, theme
@@ -40,6 +50,7 @@ class CliArgs:
     """Command line arguments."""
 
     reset_settings: bool = False
+    subcommand: str = ""
 
     # Settings
     songpath: Path | None = None
@@ -86,10 +97,11 @@ class CliArgs:
             )
 
         subcommands = parser.add_subparsers(
-            title="subcommands", description="Subcommands."
+            title="subcommands", description="Subcommands.", dest="subcommand"
         )
         preview = subcommands.add_parser("preview", help="Show preview for song txt.")
         preview.add_argument("txt", type=Path, help="Path to the song txt file.")
+        subcommands.add_parser("serve", help="Launch webserver with local songs.")
 
         return parser.parse_args(namespace=cls())
 
@@ -113,14 +125,18 @@ def main() -> None:
     utils.AppPaths.make_dirs()
     app = _init_app()
     app.setAttribute(Qt.ApplicationAttribute.AA_DontShowIconsInMenus, False)
-    if args.txt:
-        if not _run_preview(args.txt):
+    match args.subcommand:
+        case "preview":
+            if not args.txt or not _run_preview(args.txt):
+                return
+        case "serve":
+            _run_webserver()
             return
-    else:
-        if args.profile:
-            _with_profile(_run_main)
-        else:
-            _run_main()
+        case _:
+            if args.profile:
+                _with_profile(_run_main)
+            else:
+                _run_main()
     app.exec()
 
 
@@ -157,6 +173,17 @@ def _run_preview(txt: Path) -> bool:
 
     theme.Theme.from_settings().apply()
     return Previewer.load_txt(txt)
+
+
+def _run_webserver() -> None:
+    webserver.start()
+    print("Web server running in headless mode. Press Ctrl+C to stop.")
+    try:
+        while True:
+            time.sleep(1)
+    except KeyboardInterrupt:
+        webserver.stop()
+        print("Server stopped.")
 
 
 def _excepthook(
