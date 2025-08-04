@@ -1,11 +1,15 @@
 from __future__ import annotations
 
+import base64
+import functools
 import itertools
 import logging
+from io import BytesIO
 from typing import Any, ClassVar
 
 import attrs
 import flask
+import qrcode
 import werkzeug.serving
 from PySide6 import QtCore
 from werkzeug.serving import WSGIRequestHandler
@@ -90,6 +94,7 @@ def create_app(title: str) -> flask.Flask:
         return flask.render_template(
             "index.html",
             title=title,
+            qrcode=base64.b64encode(get_qrcode(address())).decode("utf-8"),
             songs=songs,
             search=search,
             sort_by=sort_by,
@@ -217,3 +222,10 @@ def stop() -> None:
 
 def address() -> str:
     return f"http://{_WebserverManager.host}:{_WebserverManager.port}"
+
+
+@functools.lru_cache(maxsize=1)
+def get_qrcode(data: str) -> bytes:
+    buf = BytesIO()
+    qrcode.make(data, box_size=5, border=2).save(buf)
+    return buf.getvalue()

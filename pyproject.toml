@@ -33,6 +33,7 @@ packaging = "*"
 pillow = ">=10"
 platformdirs = "*"
 PySide6 = "*"
+qrcode = {extras = ["pil"], version = "^8.2"}
 reportlab = "*"
 requests = "*"
 rookiepy = "^0.5.3"
