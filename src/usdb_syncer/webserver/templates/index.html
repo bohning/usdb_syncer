@@ -15,34 +15,31 @@
   </head>
 
   <body class="bg-slate-900 text-slate-200">
-    <div class="container mx-auto px-4 py-8">
-      <div class="flex flex-row justify-between mb-4">
-        <h1 class="text-4xl font-bold mb-4 text-blue-300">{{ title }}</h1>
-        <img
-          class="w-16 transition-transform duration-300 hover:scale-[4] origin-top-right active:scale-[4]"
-          src="data:image/png;base64,{{ qrcode }}"
-        />
-      </div>
-      <form
-        hx-get="/"
-        hx-target="#songs-table"
-        hx-trigger="change, keyup delay:400ms"
-        hx-indicator="#loading"
-        class="mb-6"
-      >
-        <div class="flex flex-wrap gap-4">
-          <div class="flex-1 min-w-48">
+    <div class="container mx-auto px-4 py-8 flex flex-col h-screen">
+      <div class="flex flex-row justify-between mb-4 gap-16">
+        <div class="flex flex-col flex-grow">
+          <h1 class="text-4xl font-bold mb-10 text-blue-300">{{ title }}</h1>
+          <form
+            hx-get="/"
+            hx-target="#songs-table"
+            hx-trigger="change, keyup delay:400ms"
+            hx-indicator="#loading"
+          >
             <input
               type="text"
               id="search"
               name="search"
               value="{{ search }}"
               class="w-full px-4 py-2 border border-slate-600 rounded-md bg-slate-800 text-white focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent"
-              placeholder="Search by artist, title, or genre..."
+              placeholder="Search by artist, title, genre ..."
             />
-          </div>
+          </form>
         </div>
-      </form>
+        <img
+          class="z-50 w-16 h-16 transition-transform duration-300 hover:scale-[4] origin-top-right active:scale-[4]"
+          src="data:image/png;base64,{{ qrcode }}"
+        />
+      </div>
 
       <div id="loading" class="htmx-indicator mb-4">
         <div
@@ -55,7 +52,9 @@
         </div>
       </div>
 
-      <div id="songs-table">{% include 'songs_table.html' %}</div>
+      <div id="songs-table" class="flex-1 overflow-y-auto">
+        {% include 'songs_table.html' %}
+      </div>
     </div>
 
     <script>
