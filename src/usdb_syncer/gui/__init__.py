@@ -64,6 +64,7 @@ class CliArgs:
     txt: Path | None = None
 
     # webserver
+    host: str | None = None
     port: int | None = None
     title: str | None = None
 
@@ -109,7 +110,18 @@ class CliArgs:
         serve = subcommands.add_parser(
             "serve", help="Launch webserver with local songs."
         )
-        serve.add_argument("--port", type=int, help="Port the webservice will bind to.")
+        serve.add_argument(
+            "--host",
+            type=int,
+            help="Host for the webservice. Default is the device's public IP address. "
+            "Use 127.0.0.1 (localhost) to not be accessible by other devies "
+            "on the local network.",
+        )
+        serve.add_argument(
+            "--port",
+            type=int,
+            help="Port the webservice will bind to. Defaults to a random free port.",
+        )
         serve.add_argument("--title", help="Title displayed at the top of the page.")
 
         return parser.parse_args(namespace=cls())
@@ -139,7 +151,7 @@ def main() -> None:
             if not args.txt or not _run_preview(args.txt):
                 return
         case "serve":
-            _run_webserver(port=args.port, title=args.title)
+            _run_webserver(host=args.host, port=args.port, title=args.title)
             return
         case _:
             if args.profile:
@@ -190,10 +202,12 @@ def _run_preview(txt: Path) -> bool:
     return Previewer.load_txt(txt)
 
 
-def _run_webserver(port: int | None = None, title: str | None = None) -> None:
+def _run_webserver(
+    host: str | None = None, port: int | None = None, title: str | None = None
+) -> None:
     configure_logging()
-    webserver.start(port=port, title=title)
-    logger.logger.info("Web server running in headless mode. Press Ctrl+C to stop.")
+    webserver.start(host=host, port=port, title=title)
+    logger.logger.info("Webserver is running in headless mode. Press Ctrl+C to stop.")
     try:
         while True:
             time.sleep(1)
