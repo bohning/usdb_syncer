@@ -1,8 +1,8 @@
 {% for song in songs %}
-<tr class="hover:bg-gray-800 transition-colors">
-  <td class="px-4 py-2 text-center border border-gray-600">
+<tr class="hover:bg-blue-800 odd:bg-slate-700 even:bg-slate-800">
+  <td class="px-4 py-1 text-center">
     <button
-      class="play-button bg-transparent border-none cursor-pointer p-2 rounded-full text-2xl text-gray-400 hover:text-white hover:bg-white hover:bg-opacity-10 transition-all duration-200 ease-in-out active:scale-95"
+      class="play-button cursor-pointer text-2xl"
       song_id="{{ song.song_id }}"
       preview_offset="{{ song.sync_meta.meta_tags.preview if song.sync_meta and song.sync_meta.meta_tags and song.sync_meta.meta_tags.preview else 0 }}"
       title="Play"
@@ -10,14 +10,14 @@
       ▶
     </button>
   </td>
-  <td class="px-4 py-2 border border-gray-600">{{ song.artist }}</td>
-  <td class="px-4 py-2 border border-gray-600">{{ song.title }}</td>
-  <td class="px-4 py-2 border border-gray-600">{{ song.year }}</td>
+  <td class="px-4">{{ song.artist }}</td>
+  <td class="px-4">{{ song.title }}</td>
+  <td class="px-4">{{ song.year }}</td>
 </tr>
 {% endfor %} {% if songs|length >= 100 %}
 <!-- Infinite scroll trigger -->
 <tr>
-  <td colspan="4" class="px-4 py-2 text-center">
+  <td colspan="4" class="px-4 py-1 text-center">
     <div
       hx-get="/api/songs?offset={{ offset + songs|length }}&limit=100&search={{ search }}&sort_by={{ sort_by }}&sort_order={{ sort_order }}"
       hx-trigger="intersect once"
@@ -30,7 +30,7 @@
         <div
           class="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500 mx-auto"
         ></div>
-        <span class="text-gray-300 text-sm">Loading more songs ...</span>
+        <span class="text-slate-300 text-sm">Loading more songs ...</span>
       </div>
     </div>
   </td>

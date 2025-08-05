@@ -1,24 +1,3 @@
-/* QR Code styling */
-#qrcode {
-  position: relative;
-  width: 200px;
-  height: 200px;
-  background-color: transparent;
-  color: white;
-}
-
-/* Play button styles - minimal fallback for any custom styling not covered by Tailwind */
-.play-button {
-  font-family: inherit;
-  line-height: 1;
-}
-
-.play-button:focus {
-  outline: none;
-  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.5);
-}
-
-/* HTMX loading indicators */
 .htmx-indicator {
   display: none;
 }
