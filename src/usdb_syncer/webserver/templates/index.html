@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html>
   <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{{ title }}</title>
     <link
       href="{{ url_for('static', filename='style.css') }}"
@@ -18,11 +19,13 @@
     <script src="https://cdn.tailwindcss.com"></script>
   </head>
 
-  <body class="bg-slate-900 text-slate-200">
+  <body class="bg-slate-900 text-slate-200 text-xs md:text-base">
     <div class="container mx-auto px-4 py-4 flex flex-col h-screen">
-      <div class="flex flex-row justify-between mb-4 gap-16">
+      <div class="flex flex-row justify-between mb-4 gap-6 md:gap-16">
         <div class="flex flex-col flex-grow">
-          <h1 class="text-4xl font-bold mb-10 text-blue-300">{{ title }}</h1>
+          <h1 class="text-2xl md:text-4xl font-bold mb-2 md:mb-6 text-blue-200">
+            {{ title }}
+          </h1>
           <form
             hx-get="/"
             hx-target="#songs-table"
@@ -34,13 +37,13 @@
               id="search"
               name="search"
               value="{{ search }}"
-              class="w-full px-4 py-2 border border-slate-600 rounded-md bg-slate-800 text-white focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent"
+              class="w-full px-2 md:px-4 py-1 md:py-2 border border-slate-600 rounded-md bg-slate-800 text-white focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent"
               placeholder="Search by artist, title, genre ..."
             />
           </form>
         </div>
         <img
-          class="z-50 w-16 h-16 transition-transform duration-300 hover:scale-[4] origin-top-right active:scale-[4]"
+          class="z-50 w-12 md:w-32 h-12 md:h-32 transition-transform duration-300 hover:scale-[4] origin-top-right active:scale-[4]"
           src="data:image/png;base64,{{ qrcode }}"
         />
       </div>
