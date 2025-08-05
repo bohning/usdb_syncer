@@ -1,8 +1,8 @@
 <table class="w-full border-collaps">
   <thead class="sticky top-0 z-10">
     <tr class="bg-blue-950">
-      <th class="px-4 py-4"></th>
-      <th class="px-4 py-4 text-left">
+      <th class="px-4 py-3"></th>
+      <th class="px-4 py-3 text-left">
         <button
           hx-get="/?search={{ search }}&sort_by=artist&sort_order={{ 'desc' if sort_by == 'artist' and sort_order == 'asc' else 'asc' }}"
           hx-target="#songs-table"
@@ -16,7 +16,7 @@
           {% endif %}
         </button>
       </th>
-      <th class="px-4 py-4 text-left">
+      <th class="px-4 py-3 text-left">
         <button
           hx-get="/?search={{ search }}&sort_by=title&sort_order={{ 'desc' if sort_by == 'title' and sort_order == 'asc' else 'asc' }}"
           hx-target="#songs-table"
@@ -30,7 +30,7 @@
           {% endif %}
         </button>
       </th>
-      <th class="px-4 py-4 text-left">
+      <th class="px-4 py-3 text-left">
         <button
           hx-get="/?search={{ search }}&sort_by=year&sort_order={{ 'desc' if sort_by == 'year' and sort_order == 'asc' else 'asc' }}"
           hx-target="#songs-table"
