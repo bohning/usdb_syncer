@@ -4,6 +4,7 @@ import base64
 import functools
 import itertools
 import logging
+import socket
 from io import BytesIO
 from typing import Any, ClassVar
 
@@ -180,22 +181,24 @@ class _WebserverThread(QtCore.QThread):
 class _WebserverManager:
     _server: ClassVar[werkzeug.serving.BaseWSGIServer | None] = None
     _thread: ClassVar[QtCore.QThread | None] = None
-    host: ClassVar[str] = "127.0.0.1"
-    port: ClassVar[int] = 5000
+    host: ClassVar[str] = ""
+    port: ClassVar[int] = 0
     title: ClassVar[str] = "USDB Syncer Song Collection"
 
     @classmethod
-    def start(cls, port: int | None = None, title: str | None = None) -> None:
+    def start(
+        cls, host: str | None = None, port: int | None = None, title: str | None = None
+    ) -> None:
         if cls._server:
             return
-        if port:
-            cls.port = port
         if title:
             cls.title = title
         app = create_app(cls.title)
+        cls.host = host or get_local_ip()
         cls._server = werkzeug.serving.make_server(
-            cls.host, cls.port, app, request_handler=_CustomRequestHandler
+            cls.host, port or 0, app, request_handler=_CustomRequestHandler
         )
+        cls.port = cls._server.socket.getsockname()[1]
         cls._thread = _WebserverThread(cls._server)
         cls._thread.start()
 
@@ -210,9 +213,11 @@ class _WebserverManager:
             cls._thread = None
 
 
-def start(port: int | None = None, title: str | None = None) -> None:
+def start(
+    host: str | None = None, port: int | None = None, title: str | None = None
+) -> None:
     logging.getLogger("werkzeug").setLevel(logging.DEBUG)
-    _WebserverManager.start(port, title)
+    _WebserverManager.start(host=host, port=port, title=title)
     logger.logger.info(f"Webserver is now running on {address()}")
 
 
@@ -229,3 +234,16 @@ def get_qrcode(data: str) -> bytes:
     buf = BytesIO()
     qrcode.make(data, box_size=5, border=2).save(buf)
     return buf.getvalue()
+
+
+def get_local_ip() -> str:
+    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    sock.settimeout(5)
+    try:
+        sock.connect(("10.255.255.255", 1))
+        ip = sock.getsockname()[0]
+    except OSError:
+        ip = "127.0.0.1"
+    finally:
+        sock.close()
+    return ip
