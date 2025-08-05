@@ -24,6 +24,7 @@
       hx-target="#songs-tbody"
       hx-swap="beforeend"
       hx-indicator="#loading"
+      hx-on::after-request="this.closest('tr').remove()"
     >
       <div class="htmx-indicator">
         <div
