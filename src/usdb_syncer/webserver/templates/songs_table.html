@@ -47,41 +47,6 @@
     </tr>
   </thead>
   <tbody id="songs-tbody">
-    {% for song in songs %}
-    <tr class="hover:bg-gray-800 transition-colors">
-      <td class="px-4 py-2 text-center border border-gray-600">
-        <button
-          class="play-button bg-transparent border-none cursor-pointer p-2 rounded-full text-2xl text-gray-400 hover:text-white hover:bg-white hover:bg-opacity-10 transition-all duration-200 ease-in-out active:scale-95"
-          song_id="{{ song.song_id }}"
-          preview_offset="{{ song.sync_meta.meta_tags.preview if song.sync_meta and song.sync_meta.meta_tags and song.sync_meta.meta_tags.preview else 0 }}"
-          title="Play"
-        >
-          ▶
-        </button>
-      </td>
-      <td class="px-4 py-2 border border-gray-600">{{ song.artist }}</td>
-      <td class="px-4 py-2 border border-gray-600">{{ song.title }}</td>
-      <td class="px-4 py-2 border border-gray-600">{{ song.year }}</td>
-    </tr>
-    {% endfor %}
+    {% include 'songs_rows.html' %}
   </tbody>
 </table>
-
-{% if songs|length >= 100 %}
-<!-- Infinite scroll trigger -->
-<div
-  hx-get="/api/songs?offset={{ offset + songs|length }}&limit=100&search={{ search }}&sort_by={{ sort_by }}&sort_order={{ sort_order }}"
-  hx-trigger="intersect once"
-  hx-target="#songs-tbody"
-  hx-swap="beforeend"
-  hx-indicator="#loading"
-  class="mt-4 text-center"
->
-  <div class="htmx-indicator">
-    <div
-      class="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500 mx-auto"
-    ></div>
-    <span class="text-gray-300 text-sm">Loading more songs ...</span>
-  </div>
-</div>
-{% endif %}
