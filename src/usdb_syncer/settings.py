@@ -288,7 +288,7 @@ class FixTitleCase(Enum):
             case FixTitleCase.DISABLE:
                 return "disable"
             case FixTitleCase.TC:
-                return "Title Case - Capitalize all words"
+                return "Title Case - Capitalize each word"
             case _:
                 return f"{CITATION_STYLES[self.value]['description']}"
 
