@@ -18,6 +18,7 @@ from typing import TYPE_CHECKING, Any, ClassVar, TypeVar, assert_never, cast
 import keyring
 import rookiepy
 from PySide6.QtCore import QByteArray, QSettings
+from title_fix.constants import CITATION_STYLES
 
 from usdb_syncer.constants import Usdb
 from usdb_syncer.logger import logger
@@ -154,6 +155,7 @@ class SettingKey(Enum):
     ENCODING = "downloads/encoding"
     NEWLINE = "downloads/newline"
     FORMAT_VERSION = "downloads/format_version"
+    FIX_TITLE_CASE = "fixes/title_case"
     FIX_LINEBREAKS = "fixes/linebreaks"
     FIX_FIRST_WORDS_CAPITALIZATION = "fixes/firstwordscapitalization"
     FIX_SPACES = "fixes/spaces"
@@ -268,6 +270,27 @@ class FormatVersion(Enum):
         if isinstance(other, FormatVersion):
             return self.value < other.value
         return NotImplemented
+
+
+class FixTitleCase(Enum):
+    """Supported Title Case styles for song txts."""
+
+    DISABLE = None
+    TC = "tc"
+    APA = "apa"
+    CHICAGO = "chicago"
+    AP = "ap"
+    MLA = "mla"
+    NYT = "nyt"
+
+    def __str__(self) -> str:
+        match self:
+            case FixTitleCase.DISABLE:
+                return "disable"
+            case FixTitleCase.TC:
+                return "Title Case - Capitalize each word"
+            case _:
+                return f"{CITATION_STYLES[self.value]['description']}"
 
 
 class FixLinebreaks(Enum):
@@ -856,6 +879,14 @@ def get_txt() -> bool:
 
 def set_txt(value: bool, temp: bool = False) -> None:
     _Settings.set(SettingKey.TXT, value, temp)
+
+
+def get_fix_title_case() -> FixTitleCase:
+    return _Settings.get(SettingKey.FIX_TITLE_CASE, FixTitleCase.DISABLE)
+
+
+def set_fix_title_case(value: FixTitleCase, temp: bool = False) -> None:
+    _Settings.set(SettingKey.FIX_TITLE_CASE, value, temp)
 
 
 def get_fix_linebreaks() -> FixLinebreaks:

@@ -6,11 +6,12 @@ from collections.abc import Callable
 from typing import Any
 
 import attrs
+from title_fix import title_fix
 
 from usdb_syncer import errors
 from usdb_syncer.logger import Logger
 from usdb_syncer.meta_tags import MetaTags
-from usdb_syncer.settings import FormatVersion
+from usdb_syncer.settings import FixTitleCase, FormatVersion
 from usdb_syncer.song_txt.auxiliaries import BeatsPerMinute, replace_false_apostrophes
 from usdb_syncer.song_txt.language_translations import LANGUAGE_TRANSLATIONS
 
@@ -141,6 +142,19 @@ class Headers:
 
     def artist_title_str(self) -> str:
         return f"{self.artist} - {self.title}"
+
+    def fix_title_case(self, style: FixTitleCase, logger: Logger) -> None:
+        if self.language == "English":
+            unfixed_title = self.title
+            if style == FixTitleCase.TC:
+                self.title = self.title.title()
+            else:
+                self.title = title_fix(self.title, style=style.value)["text"]
+            if unfixed_title != self.title:
+                logger.debug(
+                    f"FIX: Title case corrected ({style.name}): '{unfixed_title}' -> "
+                    f"'{self.title}'."
+                )
 
     def fix_apostrophes(self, logger: Logger) -> None:
         apostrophes_and_quotation_marks_fixed = False

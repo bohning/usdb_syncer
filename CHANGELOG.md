@@ -8,6 +8,7 @@
 - Files may be deleted permanently instead of being sent to the trash folder - useful to save disk space or if trashing is not supported on your system.
 - Medley sections are now checked if they start on a line start and end on a line end, otherwise a warning is issued.
 - The song previewer can be launched as a standalone window (`usdb_syncer preview path/to/song.txt`).
+- The title case can now be changed automatically according to various style guides.
 
 ## Fixes
 

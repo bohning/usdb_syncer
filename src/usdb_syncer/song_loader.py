@@ -298,8 +298,8 @@ def _get_usdb_data(
 def _update_song_with_usdb_data(
     song: UsdbSong, details: SongDetails, txt: SongTxt
 ) -> None:
-    song.artist = details.artist
-    song.title = details.title
+    song.artist = txt.headers.artist
+    song.title = txt.headers.title
     song.language = txt.headers.language or ""
     song.edition = txt.headers.edition or ""
     song.golden_notes = details.golden_notes
