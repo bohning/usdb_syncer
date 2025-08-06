@@ -40,6 +40,7 @@ sounddevice = "^0.5.1"
 soundfile = "^0.13.1"
 unidecode = "*"
 yt-dlp = {version = "*", extras = ["default", "curl_cffi"]}
+title-fix = "^0.0.2"
 
 [tool.poetry.group.dev.dependencies]
 tox = "*"

@@ -10,7 +10,7 @@ import attrs
 from usdb_syncer import download_options, errors
 from usdb_syncer.logger import Logger
 from usdb_syncer.meta_tags import MetaTags
-from usdb_syncer.settings import FixLinebreaks, FixSpaces
+from usdb_syncer.settings import FixLinebreaks, FixSpaces, FixTitleCase
 from usdb_syncer.song_txt.headers import Headers
 from usdb_syncer.song_txt.tracks import Tracks
 
@@ -135,6 +135,8 @@ class SongTxt:
         self.headers.fix_videogap(self.meta_tags, self.logger)
         # optional fixes
         if txt_options:
+            if (style := txt_options.fix_title_case) != FixTitleCase.DISABLE:
+                self.headers.fix_title_case(style, self.logger)
             match txt_options.fix_linebreaks:
                 case FixLinebreaks.DISABLE:
                     pass
