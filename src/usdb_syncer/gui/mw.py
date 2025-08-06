@@ -33,6 +33,7 @@ from usdb_syncer.gui.settings_dialog import SettingsDialog
 from usdb_syncer.gui.shortcuts import MainWindowShortcut, SongTableShortcut
 from usdb_syncer.gui.song_table.song_table import SongTable
 from usdb_syncer.gui.usdb_login_dialog import UsdbLoginDialog
+from usdb_syncer.gui.webserver_dialog import WebserverDialog
 from usdb_syncer.logger import logger
 from usdb_syncer.song_loader import DownloadManager
 from usdb_syncer.sync_meta import SyncMeta
@@ -124,6 +125,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
                 MainWindowShortcut.OPEN_PREFERENCES,
             ),
             (self.action_about, lambda: AboutDialog(self).show(), None),
+            (self.action_webserver, lambda: WebserverDialog(self).show(), None),
             (
                 self.action_generate_song_list,
                 lambda: ReportDialog(self, self.table).show(),
@@ -463,6 +465,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         self.action_settings.setIcon(icons.Icon.SETTINGS.icon(key))
         self.action_meta_tags.setIcon(icons.Icon.META_TAGS.icon(key))
         self.action_generate_song_list.setIcon(icons.Icon.REPORT.icon(key))
+        self.action_webserver.setIcon(icons.Icon.SERVER.icon(key))
         self.action_usdb_login.setIcon(icons.Icon.USDB.icon(key))
         self.action_refetch_song_list.setIcon(icons.Icon.CHECK_FOR_UPDATE.icon(key))
         self.action_show_log.setIcon(icons.Icon.LOG.icon(key))

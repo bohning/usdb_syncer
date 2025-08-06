@@ -135,12 +135,6 @@
           event.preventDefault();
         }
       });
-
-      // Handle HTMX after swap events to ensure play buttons work on dynamically loaded content
-      document.body.addEventListener("htmx:afterSwap", function (event) {
-        // The event listeners are already set up via event delegation above
-        console.log("Content swapped, play buttons ready");
-      });
     </script>
   </body>
 </html>

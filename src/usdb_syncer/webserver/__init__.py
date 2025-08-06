@@ -178,12 +178,15 @@ class _WebserverThread(QtCore.QThread):
         self.server.serve_forever()
 
 
+DEFAULT_TITLE = "USDB Syncer Song Collection"
+
+
 class _WebserverManager:
     _server: ClassVar[werkzeug.serving.BaseWSGIServer | None] = None
     _thread: ClassVar[QtCore.QThread | None] = None
     host: ClassVar[str] = ""
     port: ClassVar[int] = 0
-    title: ClassVar[str] = "USDB Syncer Song Collection"
+    title: ClassVar[str] = DEFAULT_TITLE
 
     @classmethod
     def start(
@@ -212,6 +215,10 @@ class _WebserverManager:
             cls._thread.wait()
             cls._thread = None
 
+    @classmethod
+    def is_running(cls) -> bool:
+        return bool(cls._server)
+
 
 def start(
     host: str | None = None, port: int | None = None, title: str | None = None
@@ -223,6 +230,11 @@ def start(
 
 def stop() -> None:
     _WebserverManager.stop()
+    logger.logger.info("Webserver was stopped.")
+
+
+def is_running() -> bool:
+    return _WebserverManager.is_running()
 
 
 def address() -> str:

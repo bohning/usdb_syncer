@@ -213,7 +213,6 @@ def _run_webserver(
             time.sleep(1)
     except KeyboardInterrupt:
         webserver.stop()
-        logger.logger.info("Server stopped.")
 
 
 def _excepthook(

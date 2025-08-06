@@ -210,6 +210,7 @@
     <addaction name="action_settings"/>
     <addaction name="action_meta_tags"/>
     <addaction name="action_generate_song_list"/>
+    <addaction name="action_webserver"/>
    </widget>
    <widget class="QMenu" name="menu_usdb">
     <property name="title">
@@ -856,6 +857,15 @@
   <action name="action_open_song_in_tune_perfect">
    <property name="text">
     <string>Tune Perfect</string>
+   </property>
+  </action>
+  <action name="action_webserver">
+   <property name="icon">
+    <iconset resource="../resources/qt/resources.qrc">
+     <normaloff>:/icons/server-black.svg</normaloff>:/icons/server-black.svg</iconset>
+   </property>
+   <property name="text">
+    <string>Webserver</string>
    </property>
   </action>
  </widget>
