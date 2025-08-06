@@ -8,6 +8,7 @@ from usdb_syncer.settings import (
     Encoding,
     FixLinebreaks,
     FixSpaces,
+    FixTitleCase,
     FormatVersion,
     Newline,
 )
@@ -49,6 +50,7 @@ def test_notes_parser_fixes(resource_dir: str) -> None:
                 encoding=Encoding.UTF_8,
                 newline=Newline.CRLF,
                 format_version=FormatVersion.V1_0_0,
+                fix_title_case=FixTitleCase.DISABLE,
                 fix_linebreaks=FixLinebreaks.USDX_STYLE,
                 fix_first_words_capitalization=True,
                 fix_spaces=FixSpaces.AFTER,
