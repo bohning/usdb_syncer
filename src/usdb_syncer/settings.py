@@ -18,6 +18,7 @@ from typing import TYPE_CHECKING, Any, ClassVar, TypeVar, assert_never, cast
 import keyring
 import rookiepy
 from PySide6.QtCore import QByteArray, QSettings
+from title_fix.constants import CITATION_STYLES
 
 from usdb_syncer.constants import Usdb
 from usdb_syncer.logger import logger
@@ -287,19 +288,9 @@ class FixTitleCase(Enum):
             case FixTitleCase.DISABLE:
                 return "disable"
             case FixTitleCase.TC:
-                return "Title Case (capitalizes all words)"
-            case FixTitleCase.APA:
-                return "APA (capitalizes words with 4+ letters)"
-            case FixTitleCase.CHICAGO:
-                return "Chicago (capitalizes all major words)"
-            case FixTitleCase.AP:
-                return "AP (capitalizes words with 4+ letters)"
-            case FixTitleCase.MLA:
-                return "MLA (capitalizes all principal words)"
-            case FixTitleCase.NYT:
-                return "NYT (capitalizes words with 5+ letters)"
-            case _ as unreachable:
-                assert_never(unreachable)
+                return "Title Case - Capitalize all words"
+            case _:
+                return f"{CITATION_STYLES[self.value]['description']}"
 
 
 class FixLinebreaks(Enum):
