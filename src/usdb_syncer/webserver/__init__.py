@@ -8,7 +8,6 @@ import socket
 from io import BytesIO
 from typing import Any, ClassVar
 
-import attrs
 import flask
 import qrcode
 import werkzeug.serving
@@ -17,29 +16,6 @@ from werkzeug.serving import WSGIRequestHandler
 
 from usdb_syncer import SongId, db, logger, utils
 from usdb_syncer.usdb_song import UsdbSong
-
-
-@attrs.define
-class SongRecord:
-    song_id: SongId
-    artist: str
-    title: str
-    year: int | None
-    preview_offset: float
-
-    @classmethod
-    def from_usdb_song(cls, song: UsdbSong) -> SongRecord:
-        return cls(
-            song_id=song.song_id,
-            artist=song.artist,
-            title=song.title,
-            year=song.year,
-            preview_offset=song.sync_meta.meta_tags.preview
-            if song.sync_meta
-            and song.sync_meta.meta_tags
-            and song.sync_meta.meta_tags.preview
-            else 0.0,
-        )
 
 
 def _get_songs(request: flask.Request) -> list[UsdbSong]:
@@ -70,87 +46,85 @@ def _get_songs(request: flask.Request) -> list[UsdbSong]:
     return songs
 
 
-def create_app(title: str) -> flask.Flask:
-    app = flask.Flask(__name__)
-
-    @app.route("/")
-    def index() -> str:
-        songs = _get_songs(flask.request)
-        search = flask.request.args.get("search", default="")
-        sort_by = flask.request.args.get("sort_by", "artist")
-        sort_order = flask.request.args.get("sort_order", "asc")
-        offset = flask.request.args.get("offset", 0, type=int)
-
-        # Check if this is an HTMX request
-        if "HX-Request" in flask.request.headers:
-            return flask.render_template(
-                "songs_table.html",
-                songs=songs,
-                search=search,
-                sort_by=sort_by,
-                sort_order=sort_order,
-                offset=offset,
-            )
-
+def _index(title: str) -> str:
+    songs = _get_songs(flask.request)
+    search = flask.request.args.get("search", default="")
+    sort_by = flask.request.args.get("sort_by", "artist")
+    sort_order = flask.request.args.get("sort_order", "asc")
+    offset = flask.request.args.get("offset", 0, type=int)
+    if "HX-Request" in flask.request.headers:
         return flask.render_template(
-            "index.html",
-            title=title,
-            qrcode=base64.b64encode(get_qrcode(address())).decode("utf-8"),
+            "songs_table.html",
             songs=songs,
             search=search,
             sort_by=sort_by,
             sort_order=sort_order,
             offset=offset,
         )
+    return flask.render_template(
+        "index.html",
+        title=title,
+        qrcode=base64.b64encode(get_qrcode(address())).decode("utf-8"),
+        songs=songs,
+        search=search,
+        sort_by=sort_by,
+        sort_order=sort_order,
+        offset=offset,
+    )
+
+
+def _api_songs() -> str:
+    songs = _get_songs(flask.request)
+    search = flask.request.args.get("search", default="")
+    sort_by = flask.request.args.get("sort_by", "artist")
+    sort_order = flask.request.args.get("sort_order", "asc")
+    offset = flask.request.args.get("offset", 0, type=int)
+    if offset == 0:
+        return flask.render_template(
+            "songs_table.html",
+            songs=songs,
+            search=search,
+            sort_by=sort_by,
+            sort_order=sort_order,
+            offset=offset,
+        )
+    return flask.render_template(
+        "songs_rows.html",
+        songs=songs,
+        search=search,
+        sort_by=sort_by,
+        sort_order=sort_order,
+        offset=offset,
+    )
+
+
+def _api_mp3() -> flask.Response:
+    song_id = flask.request.args.get("song_id", type=int)
+    if not song_id:
+        return flask.abort(400, "song_id parameter is required")
+    song = UsdbSong.get(SongId(song_id))
+    if not song:
+        return flask.abort(404, "Song not found")
+    audio_path = song.audio_path()
+    if not audio_path or not audio_path.is_file():
+        return flask.abort(404, "Audio file not found for this song")
+    return flask.send_file(audio_path, mimetype="audio/mp3")
+
+
+def _create_app(title: str) -> flask.Flask:
+    app = flask.Flask(__name__)
+
+    @app.route("/")
+    def index() -> str:
+        return _index(title)
 
     @app.route("/api/songs")
-    def api_songs() -> dict | str:
-        songs = _get_songs(flask.request)
-        search = flask.request.args.get("search", default="")
-        sort_by = flask.request.args.get("sort_by", "artist")
-        sort_order = flask.request.args.get("sort_order", "asc")
-        offset = flask.request.args.get("offset", 0, type=int)
-
-        # Check if this is an HTMX request for infinite scroll
-        if "HX-Request" in flask.request.headers:
-            # Use different template based on offset
-            if offset == 0:
-                return flask.render_template(
-                    "songs_table.html",
-                    songs=songs,
-                    search=search,
-                    sort_by=sort_by,
-                    sort_order=sort_order,
-                    offset=offset,
-                )
-            else:
-                return flask.render_template(
-                    "songs_rows.html",
-                    songs=songs,
-                    search=search,
-                    sort_by=sort_by,
-                    sort_order=sort_order,
-                    offset=offset,
-                )
-
-        # Return JSON for regular API requests
-        return {"songs": [attrs.asdict(SongRecord.from_usdb_song(s)) for s in songs]}
+    def api_songs() -> str:
+        return _api_songs()
 
     @app.route("/api/mp3")
-    def api_mp3():
-        song_id = flask.request.args.get("song_id", type=int)
-        if not song_id:
-            return flask.abort(400, "song_id parameter is required")
-
-        song = UsdbSong.get(SongId(song_id))
-        if not song:
-            return flask.abort(404, "Song not found")
-
-        audio_path = song.audio_path()
-        if not audio_path or not audio_path.is_file():
-            return flask.abort(404, "Audio file not found for this song")
-
-        return flask.send_file(audio_path, mimetype="audio/mp3")
+    def api_mp3() -> flask.Response:
+        return _api_mp3()
 
     @app.before_request
     def before_request() -> None:
@@ -196,7 +170,7 @@ class _WebserverManager:
             return
         if title:
             cls.title = title
-        app = create_app(cls.title)
+        app = _create_app(cls.title)
         cls.host = host or get_local_ip()
         cls._server = werkzeug.serving.make_server(
             cls.host, port or 0, app, request_handler=_CustomRequestHandler

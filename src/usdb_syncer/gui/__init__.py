@@ -162,12 +162,13 @@ def main() -> None:
 
 
 def configure_logging(mw: MainWindow | None = None) -> None:
-    handlers = [
+    handlers: list[logging.Handler] = [
         logging.FileHandler(utils.AppPaths.log, encoding="utf-8"),
         logging.StreamHandler(sys.stdout),
-        _TextEditLogger(mw) if mw else None,
     ]
-    logger.configure_logging(*filter(None, handlers))
+    if mw:
+        handlers.append(_TextEditLogger(mw))
+    logger.configure_logging(*handlers)
 
 
 def _run_main() -> None:
