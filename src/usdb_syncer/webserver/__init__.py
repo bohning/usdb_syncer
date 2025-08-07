@@ -79,15 +79,6 @@ def _api_songs() -> str:
     sort_by = flask.request.args.get("sort_by", "artist")
     sort_order = flask.request.args.get("sort_order", "asc")
     offset = flask.request.args.get("offset", 0, type=int)
-    if offset == 0:
-        return flask.render_template(
-            "songs_table.html",
-            songs=songs,
-            search=search,
-            sort_by=sort_by,
-            sort_order=sort_order,
-            offset=offset,
-        )
     return flask.render_template(
         "songs_rows.html",
         songs=songs,
