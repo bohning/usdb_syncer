@@ -68,7 +68,6 @@
       let currentAudio = null;
       let currentPlayingButton = null;
 
-      // Handle play/pause button click event
       document.addEventListener("click", function (event) {
         if (event.target.classList.contains("play-button")) {
           const button = event.target;
@@ -76,53 +75,33 @@
           const previewOffset =
             parseFloat(button.getAttribute("preview_offset")) || 0;
 
-          // If this is the currently playing song, pause it
-          if (
-            currentPlayingButton &&
-            currentPlayingButton.getAttribute("song_id") === songId
-          ) {
-            if (currentAudio) {
-              currentAudio.pause();
-              currentAudio = null;
-            }
-            button.textContent = "▶";
-            button.setAttribute("title", "Play");
-            currentPlayingButton = null;
-            event.preventDefault();
-            return;
-          }
-
-          // Stop any currently playing audio
           if (currentAudio) {
             currentAudio.pause();
             currentAudio = null;
           }
-
-          // Reset the previous playing button
           if (currentPlayingButton) {
             currentPlayingButton.textContent = "▶";
             currentPlayingButton.setAttribute("title", "Play");
+            if (currentPlayingButton.getAttribute("song_id") === songId) {
+              currentPlayingButton = null;
+              event.preventDefault();
+              return;
+            }
           }
 
-          // Create and play new audio
           const audio = new Audio("/api/mp3?song_id=" + songId);
-
-          // Set the preview offset when the audio is loaded
           audio.addEventListener("loadedmetadata", function () {
             if (previewOffset > 0) {
               audio.currentTime = previewOffset;
             }
           });
-
           audio.play();
 
-          // Update current state
           currentAudio = audio;
           currentPlayingButton = button;
           button.textContent = "⏸";
           button.setAttribute("title", "Pause");
 
-          // Handle audio end event
           audio.onended = function () {
             if (currentPlayingButton) {
               currentPlayingButton.textContent = "▶";
