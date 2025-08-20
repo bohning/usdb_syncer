@@ -16,9 +16,9 @@ from typing import ClassVar
 
 import requests
 import send2trash
-from appdirs import AppDirs
 from bs4 import BeautifulSoup, Tag
 from packaging import version
+from platformdirs import PlatformDirs
 from unidecode import unidecode
 
 import usdb_syncer
@@ -26,7 +26,7 @@ from usdb_syncer import constants, errors, settings
 from usdb_syncer.logger import logger
 
 CACHE_LIFETIME = 60 * 60
-_app_dirs = AppDirs("usdb_syncer", "bohning")
+_platform_dirs = PlatformDirs("usdb_syncer", "bohning")
 
 
 # https://pyinstaller.org/en/stable/runtime-information.html#run-time-information
@@ -110,11 +110,11 @@ def get_first_alphanum_upper(text: str) -> str | None:
 class AppPaths:
     """App data paths."""
 
-    log = Path(_app_dirs.user_data_dir, "usdb_syncer.log")
-    db = Path(_app_dirs.user_data_dir, "usdb_syncer.db")
-    addons = Path(_app_dirs.user_data_dir, "addons")
-    song_list = Path(_app_dirs.user_cache_dir, "available_songs.json")
-    profile = Path(_app_dirs.user_cache_dir, "usdb_syncer.prof")
+    log = Path(_platform_dirs.user_data_dir, "usdb_syncer.log")
+    db = Path(_platform_dirs.user_data_dir, "usdb_syncer.db")
+    addons = Path(_platform_dirs.user_data_dir, "addons")
+    song_list = Path(_platform_dirs.user_cache_dir, "available_songs.json")
+    profile = Path(_platform_dirs.user_cache_dir, "usdb_syncer.prof")
     shared = (_root() / "shared") if IS_SOURCE else None
 
     @classmethod
