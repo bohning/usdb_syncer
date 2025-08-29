@@ -1816,14 +1816,14 @@ numpy = "*"
 
 [[package]]
 name = "soupsieve"
-version = "2.7"
+version = "2.8"
 description = "A modern CSS selector implementation for Beautiful Soup."
 optional = false
-python-versions = ">=3.8"
+python-versions = ">=3.9"
 groups = ["main"]
 files = [
-    {file = "soupsieve-2.7-py3-none-any.whl", hash = "sha256:6e60cc5c1ffaf1cebcc12e8188320b72071e922c2e897f737cadce79ad5d30c4"},
-    {file = "soupsieve-2.7.tar.gz", hash = "sha256:ad282f9b6926286d2ead4750552c8a6142bc4c783fd66b0293547c8fe6ae126a"},
+    {file = "soupsieve-2.8-py3-none-any.whl", hash = "sha256:0cc76456a30e20f5d7f2e14a98a4ae2ee4e5abdc7c5ea0aafe795f344bc7984c"},
+    {file = "soupsieve-2.8.tar.gz", hash = "sha256:e2dd4a40a628cb5f28f6d4b0db8800b8f581b65bb380b97de22ba5ca8d72572f"},
 ]
 
 [[package]]
@@ -2098,14 +2098,14 @@ files = [
 
 [[package]]
 name = "yt-dlp"
-version = "2025.8.22"
+version = "2025.8.27"
 description = "A feature-rich command-line audio/video downloader"
 optional = false
 python-versions = ">=3.9"
 groups = ["main"]
 files = [
-    {file = "yt_dlp-2025.8.22-py3-none-any.whl", hash = "sha256:b8c71fe4516170dea60c6e5c54e2d45654693b8dc273cad060f22199476ec979"},
-    {file = "yt_dlp-2025.8.22.tar.gz", hash = "sha256:d1846bbb7edbcd2a0d4a2d76c7a2124868de9ea3b3959a8cb8219e3f7cb5c335"},
+    {file = "yt_dlp-2025.8.27-py3-none-any.whl", hash = "sha256:0b8fd3bb7c54bc2e7ecb5cdac7d64c30e2503ea4d3dd9ae24d4f09e22aaa95f4"},
+    {file = "yt_dlp-2025.8.27.tar.gz", hash = "sha256:ed74768d2a93b29933ab14099da19497ef571637f7aa375140dd3d882b9c1854"},
 ]
 
 [package.dependencies]
