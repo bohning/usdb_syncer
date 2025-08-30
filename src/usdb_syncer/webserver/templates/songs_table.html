@@ -1,0 +1,52 @@
+<table class="w-full border-collaps">
+  <thead class="sticky top-0 z-10">
+    <tr class="bg-blue-950">
+      <th class="px-1 md:px-4 py-2 md:py-3"></th>
+      <th class="px-1 md:px-4 py-2 md:py-3">
+        <button
+          hx-get="/?search={{ search }}&sort_by=artist&sort_order={{ 'desc' if sort_by == 'artist' and sort_order == 'asc' else 'asc' }}"
+          hx-target="#songs-table"
+          hx-indicator="#loading"
+          class="w-full hover:text-blue-300 transition-colors flex items-center justify-between"
+        >
+          ARTIST {% if sort_by == 'artist' %}
+          <span class="text-blue-400"
+            >{{ '↑' if sort_order == 'asc' else '↓' }}</span
+          >
+          {% endif %}
+        </button>
+      </th>
+      <th class="px-1 md:px-4 py-2 md:py-3">
+        <button
+          hx-get="/?search={{ search }}&sort_by=title&sort_order={{ 'desc' if sort_by == 'title' and sort_order == 'asc' else 'asc' }}"
+          hx-target="#songs-table"
+          hx-indicator="#loading"
+          class="w-full hover:text-blue-300 transition-colors flex items-center justify-between"
+        >
+          TITLE {% if sort_by == 'title' %}
+          <span class="text-blue-400"
+            >{{ '↑' if sort_order == 'asc' else '↓' }}</span
+          >
+          {% endif %}
+        </button>
+      </th>
+      <th class="px-1 md:px-4 py-2 md:py-3">
+        <button
+          hx-get="/?search={{ search }}&sort_by=year&sort_order={{ 'desc' if sort_by == 'year' and sort_order == 'asc' else 'asc' }}"
+          hx-target="#songs-table"
+          hx-indicator="#loading"
+          class="w-full hover:text-blue-300 transition-colors flex items-center justify-between"
+        >
+          YEAR {% if sort_by == 'year' %}
+          <span class="text-blue-400"
+            >{{ '↑' if sort_order == 'asc' else '↓' }}</span
+          >
+          {% endif %}
+        </button>
+      </th>
+    </tr>
+  </thead>
+  <tbody id="songs-tbody">
+    {% include 'songs_rows.html' %}
+  </tbody>
+</table>

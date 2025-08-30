@@ -1,0 +1,38 @@
+{% for song in songs %}
+<tr class="hover:bg-blue-800 odd:bg-slate-700 even:bg-slate-800">
+  <td class="px-1 md:px-4 py-1 text-center">
+    <button
+      class="play-button cursor-pointer text-lg md:text-2xl"
+      song_id="{{ song.song_id }}"
+      preview_offset="{{ song.sync_meta.meta_tags.preview if song.sync_meta and song.sync_meta.meta_tags and song.sync_meta.meta_tags.preview else 0 }}"
+      title="Play"
+    >
+      ▶
+    </button>
+  </td>
+  <td class="px-1 md:px-4">{{ song.artist }}</td>
+  <td class="px-1 md:px-4">{{ song.title }}</td>
+  <td class="px-1 md:px-4">{{ song.year if song.year }}</td>
+</tr>
+{% endfor %} {% if songs|length >= 100 %}
+<!-- Infinite scroll trigger -->
+<tr>
+  <td colspan="4" class="px-1 md:px-4 py-1 text-center">
+    <div
+      hx-get="/api/songs?offset={{ offset + songs|length }}&limit=100&search={{ search }}&sort_by={{ sort_by }}&sort_order={{ sort_order }}"
+      hx-trigger="intersect once"
+      hx-target="#songs-tbody"
+      hx-swap="beforeend"
+      hx-indicator="#loading"
+      hx-on::after-request="this.closest('tr').remove()"
+    >
+      <div class="htmx-indicator">
+        <div
+          class="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500 mx-auto"
+        ></div>
+        <span class="text-slate-300 text-sm">Loading more songs ...</span>
+      </div>
+    </div>
+  </td>
+</tr>
+{% endif %}

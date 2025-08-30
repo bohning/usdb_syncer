@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{{ title }}</title>
+    <link
+      href="{{ url_for('static', filename='style.css') }}"
+      rel="stylesheet"
+    />
+    <link
+      rel="shortcut icon"
+      href="{{ url_for('static', filename='favicon.ico') }}"
+    />
+    <script
+      src="https://cdn.jsdelivr.net/npm/htmx.org@2.0.6/dist/htmx.min.js"
+      integrity="sha384-Akqfrbj/HpNVo8k11SXBb6TlBWmXXlYQrCSqEWmyKJe+hDm3Z/B2WVG4smwBkRVm"
+      crossorigin="anonymous"
+    ></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+
+  <body class="bg-slate-900 text-slate-200 text-xs md:text-base">
+    <div class="container mx-auto px-4 py-4 flex flex-col h-screen">
+      <div class="flex flex-row justify-between mb-4 gap-6 md:gap-16">
+        <div class="flex flex-col flex-grow">
+          <h1 class="text-2xl md:text-4xl font-bold mb-2 md:mb-6 text-blue-200">
+            {{ title }}
+          </h1>
+          <form
+            hx-get="/"
+            hx-target="#songs-table"
+            hx-trigger="change, keyup delay:400ms"
+            hx-indicator="#loading"
+          >
+            <input
+              type="text"
+              id="search"
+              name="search"
+              value="{{ search }}"
+              class="w-full px-2 md:px-4 py-1 md:py-2 border border-slate-600 rounded-md bg-slate-800 text-white focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent"
+              placeholder="Search by artist, title, genre ..."
+            />
+          </form>
+        </div>
+        <img
+          class="z-50 w-12 md:w-32 h-12 md:h-32 transition-transform duration-300 hover:scale-[4] origin-top-right active:scale-[4]"
+          src="data:image/png;base64,{{ qrcode }}"
+        />
+      </div>
+
+      <div id="loading" class="htmx-indicator mb-4">
+        <div
+          class="flex items-center justify-center p-4 bg-slate-800 rounded-lg"
+        >
+          <div
+            class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"
+          ></div>
+          <span class="ml-2 text-slate-300">Loading songs ...</span>
+        </div>
+      </div>
+
+      <div id="songs-table" class="flex-1 overflow-y-auto">
+        {% include 'songs_table.html' %}
+      </div>
+    </div>
+
+    <script>
+      let currentAudio = null;
+      let currentPlayingButton = null;
+
+      document.addEventListener("click", function (event) {
+        if (event.target.classList.contains("play-button")) {
+          const button = event.target;
+          const songId = button.getAttribute("song_id");
+          const previewOffset =
+            parseFloat(button.getAttribute("preview_offset")) || 0;
+
+          if (currentAudio) {
+            currentAudio.pause();
+            currentAudio = null;
+          }
+          if (currentPlayingButton) {
+            currentPlayingButton.textContent = "▶";
+            currentPlayingButton.setAttribute("title", "Play");
+            if (currentPlayingButton.getAttribute("song_id") === songId) {
+              currentPlayingButton = null;
+              event.preventDefault();
+              return;
+            }
+          }
+
+          const audio = new Audio("/api/mp3?song_id=" + songId);
+          audio.addEventListener("loadedmetadata", function () {
+            if (previewOffset > 0) {
+              audio.currentTime = previewOffset;
+            }
+          });
+          audio.play();
+
+          currentAudio = audio;
+          currentPlayingButton = button;
+          button.textContent = "⏸";
+          button.setAttribute("title", "Pause");
+
+          audio.onended = function () {
+            if (currentPlayingButton) {
+              currentPlayingButton.textContent = "▶";
+              currentPlayingButton.setAttribute("title", "Play");
+              currentPlayingButton = null;
+            }
+            currentAudio = null;
+          };
+
+          event.preventDefault();
+        }
+      });
+    </script>
+  </body>
+</html>

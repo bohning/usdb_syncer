@@ -6,6 +6,7 @@ import cProfile
 import logging
 import subprocess
 import sys
+import time
 import traceback
 from argparse import ArgumentParser
 from collections.abc import Callable
@@ -18,7 +19,16 @@ from PySide6 import QtCore, QtGui, QtWidgets
 from PySide6.QtCore import Qt
 
 import usdb_syncer
-from usdb_syncer import addons, db, errors, logger, settings, song_routines, utils
+from usdb_syncer import (
+    addons,
+    db,
+    errors,
+    logger,
+    settings,
+    song_routines,
+    utils,
+    webserver,
+)
 from usdb_syncer import sync_meta as sync_meta
 from usdb_syncer import usdb_song as usdb_song
 from usdb_syncer.gui import events, hooks, theme
@@ -40,6 +50,7 @@ class CliArgs:
     """Command line arguments."""
 
     reset_settings: bool = False
+    subcommand: str = ""
 
     # Settings
     songpath: Path | None = None
@@ -49,8 +60,13 @@ class CliArgs:
     skip_pyside: bool = not utils.IS_SOURCE
     trace_sql: bool = False
 
-    # Subcommands
+    # preview
     txt: Path | None = None
+
+    # webserver
+    host: str | None = None
+    port: int | None = None
+    title: str | None = None
 
     @classmethod
     def parse(cls) -> CliArgs:
@@ -86,10 +102,27 @@ class CliArgs:
             )
 
         subcommands = parser.add_subparsers(
-            title="subcommands", description="Subcommands."
+            title="subcommands", description="Subcommands.", dest="subcommand"
         )
         preview = subcommands.add_parser("preview", help="Show preview for song txt.")
         preview.add_argument("txt", type=Path, help="Path to the song txt file.")
+
+        serve = subcommands.add_parser(
+            "serve", help="Launch webserver with local songs."
+        )
+        serve.add_argument(
+            "--host",
+            type=int,
+            help="Host for the webservice. Default is the device's public IP address. "
+            "Use 127.0.0.1 (localhost) to not be accessible by other devies "
+            "on the local network.",
+        )
+        serve.add_argument(
+            "--port",
+            type=int,
+            help="Port the webservice will bind to. Defaults to a random free port.",
+        )
+        serve.add_argument("--title", help="Title displayed at the top of the page.")
 
         return parser.parse_args(namespace=cls())
 
@@ -113,26 +146,36 @@ def main() -> None:
     utils.AppPaths.make_dirs()
     app = _init_app()
     app.setAttribute(Qt.ApplicationAttribute.AA_DontShowIconsInMenus, False)
-    if args.txt:
-        if not _run_preview(args.txt):
+    match args.subcommand:
+        case "preview":
+            if not args.txt or not _run_preview(args.txt):
+                return
+        case "serve":
+            _run_webserver(host=args.host, port=args.port, title=args.title)
             return
-    else:
-        if args.profile:
-            _with_profile(_run_main)
-        else:
-            _run_main()
+        case _:
+            if args.profile:
+                _with_profile(_run_main)
+            else:
+                _run_main()
     app.exec()
+
+
+def configure_logging(mw: MainWindow | None = None) -> None:
+    handlers: list[logging.Handler] = [
+        logging.FileHandler(utils.AppPaths.log, encoding="utf-8"),
+        logging.StreamHandler(sys.stdout),
+    ]
+    if mw:
+        handlers.append(_TextEditLogger(mw))
+    logger.configure_logging(*handlers)
 
 
 def _run_main() -> None:
     from usdb_syncer.gui.mw import MainWindow
 
     mw = MainWindow()
-    logger.configure_logging(
-        logging.FileHandler(utils.AppPaths.log, encoding="utf-8"),
-        logging.StreamHandler(sys.stdout),
-        _TextEditLogger(mw),
-    )
+    configure_logging(mw)
     mw.label_update_hint.setVisible(False)
     if not utils.IS_SOURCE:
         if version := utils.newer_version_available():
@@ -153,10 +196,24 @@ def _run_main() -> None:
 
 
 def _run_preview(txt: Path) -> bool:
+    configure_logging()
     from usdb_syncer.gui.previewer import Previewer
 
     theme.Theme.from_settings().apply()
     return Previewer.load_txt(txt)
+
+
+def _run_webserver(
+    host: str | None = None, port: int | None = None, title: str | None = None
+) -> None:
+    configure_logging()
+    webserver.start(host=host, port=port, title=title)
+    logger.logger.info("Webserver is running in headless mode. Press Ctrl+C to stop.")
+    try:
+        while True:
+            time.sleep(1)
+    except KeyboardInterrupt:
+        webserver.stop()
 
 
 def _excepthook(

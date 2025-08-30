@@ -71,6 +71,7 @@ class Icon(enum.Enum):
     REPORT = "report.png", "notebook-white.svg"
     SAFARI = "safari.png", None
     SAVED_SEARCH = "heart.png", "heart-white.svg"
+    SERVER = "server-black.svg", "server-white.svg"
     SETTINGS = "cog.png", "cog-white.svg"
     SKIP_BACKWARD = "control-double-180.png", "skip-previous-white.svg"
     SKIP_FORWARD = "control-double.png", "skip-next-white.svg"

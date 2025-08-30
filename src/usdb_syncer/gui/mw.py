@@ -7,7 +7,16 @@ from pathlib import Path
 from PySide6 import QtGui
 from PySide6.QtWidgets import QFileDialog, QLabel, QMainWindow
 
-from usdb_syncer import SongId, db, events, settings, song_routines, usdb_id_file, utils
+from usdb_syncer import (
+    SongId,
+    db,
+    events,
+    settings,
+    song_routines,
+    usdb_id_file,
+    utils,
+    webserver,
+)
 from usdb_syncer.constants import Usdb
 from usdb_syncer.gui import events as gui_events
 from usdb_syncer.gui import ffmpeg_dialog, gui_utils, icons, progress, progress_bar
@@ -24,6 +33,7 @@ from usdb_syncer.gui.settings_dialog import SettingsDialog
 from usdb_syncer.gui.shortcuts import MainWindowShortcut, SongTableShortcut
 from usdb_syncer.gui.song_table.song_table import SongTable
 from usdb_syncer.gui.usdb_login_dialog import UsdbLoginDialog
+from usdb_syncer.gui.webserver_dialog import WebserverDialog
 from usdb_syncer.logger import logger
 from usdb_syncer.song_loader import DownloadManager
 from usdb_syncer.sync_meta import SyncMeta
@@ -115,6 +125,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
                 MainWindowShortcut.OPEN_PREFERENCES,
             ),
             (self.action_about, lambda: AboutDialog(self).show(), None),
+            (self.action_webserver, lambda: WebserverDialog(self).show(), None),
             (
                 self.action_generate_song_list,
                 lambda: ReportDialog(self, self.table).show(),
@@ -411,6 +422,10 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         self.menu_open_song_in.popup(pos)
 
     def closeEvent(self, event: QtGui.QCloseEvent) -> None:  # noqa: N802
+        def cleanup() -> None:
+            DownloadManager.quit()
+            webserver.stop()
+
         def on_done(result: progress.Result) -> None:
             result.log_error()
             self.table.save_state()
@@ -425,7 +440,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
             event.accept()
         else:
             logger.debug("Close event deferred, cleaning up ...")
-            run_with_progress("Shutting down ...", DownloadManager.quit, on_done)
+            run_with_progress("Shutting down ...", cleanup, on_done)
             event.ignore()
 
     def _restore_state(self) -> None:
@@ -450,6 +465,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         self.action_settings.setIcon(icons.Icon.SETTINGS.icon(key))
         self.action_meta_tags.setIcon(icons.Icon.META_TAGS.icon(key))
         self.action_generate_song_list.setIcon(icons.Icon.REPORT.icon(key))
+        self.action_webserver.setIcon(icons.Icon.SERVER.icon(key))
         self.action_usdb_login.setIcon(icons.Icon.USDB.icon(key))
         self.action_refetch_song_list.setIcon(icons.Icon.CHECK_FOR_UPDATE.icon(key))
         self.action_show_log.setIcon(icons.Icon.LOG.icon(key))

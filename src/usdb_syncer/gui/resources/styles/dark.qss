@@ -331,7 +331,15 @@ QMenu {{
     background: {surface_08dp};
     border: none;
 }}
-QMenu:disabled {{
+QMenu:disabled,
+QPushButton:disabled,
+QToolButton:disabled,
+QLineEdit:disabled,
+QTextEdit:disabled,
+QSpinBox:disabled,
+QSpinBox:disabled,
+QDoubleSpinBox:disabled,
+QDoubleSpinBox:disabled {{
     color: {text_disabled};
 }}
 QMenu::separator {{
