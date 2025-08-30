@@ -4,6 +4,7 @@
 
 ## Features
 
+- A webserver can be launched to let devices in the local network browse your song collection.
 - Added filters for custom data to the sidebar tree.
 - Files may be deleted permanently instead of being sent to the trash folder - useful to save disk space or if trashing is not supported on your system.
 - Medley sections are now checked if they start on a line start and end on a line end, otherwise a warning is issued.
