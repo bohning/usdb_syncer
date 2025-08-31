@@ -146,19 +146,22 @@ def main() -> None:
     utils.AppPaths.make_dirs()
     app = _init_app()
     app.setAttribute(Qt.ApplicationAttribute.AA_DontShowIconsInMenus, False)
+
+    def run_main() -> None:
+        _run_main()
+        app.exec()
+
     match args.subcommand:
         case "preview":
-            if not args.txt or not _run_preview(args.txt):
-                return
+            if args.txt and _run_preview(args.txt):
+                app.exec()
         case "serve":
             _run_webserver(host=args.host, port=args.port, title=args.title)
-            return
         case _:
             if args.profile:
-                _with_profile(_run_main)
+                _with_profile(run_main)
             else:
-                _run_main()
-    app.exec()
+                run_main()
 
 
 def configure_logging(mw: MainWindow | None = None) -> None:
