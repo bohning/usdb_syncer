@@ -1,5 +1,6 @@
 """Functionality related to the usdb.animux.de web page."""
 
+import html
 import re
 import time
 from collections.abc import Iterator
@@ -260,7 +261,7 @@ def _get_usdb_page_inner(
             assert_never(unreachable)
     response.raise_for_status()
     response.encoding = "utf-8"
-    if UsdbStrings.NOT_LOGGED_IN in (page := normalize(response.text)):
+    if UsdbStrings.NOT_LOGGED_IN in (page := normalize(html.unescape(response.text))):
         raise errors.UsdbLoginError
     if UsdbStrings.DATASET_NOT_FOUND in page:
         raise errors.UsdbNotFoundError

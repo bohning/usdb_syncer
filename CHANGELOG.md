@@ -1,3 +1,13 @@
+<!-- 0.17.0 -->
+
+# Changes
+
+## Features
+
+## Fixes
+
+- Handled HTML escapes in the USDB song list (e.g. `&` instead of `&amp;`).
+
 <!-- 0.16.0 -->
 
 # Changes
