@@ -302,9 +302,16 @@ def format_timestamp(micros: int) -> str:
 
 
 def get_latest_version() -> str | None:
-    response = requests.get(constants.GITHUB_API_LATEST, timeout=5)
-    if response.status_code == 200:
-        return response.json()["tag_name"]
+    try:
+        response = requests.get(constants.GITHUB_API_LATEST, timeout=5)
+        response.raise_for_status()
+        return response.json().get("tag_name")
+    except requests.Timeout:
+        logger.warning(
+            "Failed to retrieve latest version from GitHub, API request timed out."
+        )
+    except requests.RequestException as e:
+        logger.warning(f"Failed to retrieve latest version from GitHub, API error: {e}")
     return None
 
 
