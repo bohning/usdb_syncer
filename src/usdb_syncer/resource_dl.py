@@ -48,6 +48,7 @@ class ResourceDLError(Enum):
     RESOURCE_PARSE_ERROR = "resource parse error"
     RESOURCE_DL_FAILED = "resource download failed"
     RESOURCE_FORBIDDEN = "resource forbidden"
+    RESOURCE_PREMIUM_ONLY = "resource premium only"
 
 
 @dataclass
@@ -209,6 +210,9 @@ def _download_resource(
             if YtErrorMsg.YT_FORBIDDEN in error_message:
                 _handle_forbidden(url, logger)
                 return ResourceDLResult(error=ResourceDLError.RESOURCE_FORBIDDEN)
+            if YtErrorMsg.YT_PREMIUM_ONLY in error_message:
+                _handle_premium_only(url, logger)
+                return ResourceDLResult(error=ResourceDLError.RESOURCE_PREMIUM_ONLY)
             raise
 
 
@@ -246,6 +250,10 @@ def _handle_unavailable(url: str, logger: Logger) -> None:
 
 def _handle_parse_error(url: str, logger: Logger) -> None:
     logger.warning(f"Failed to parse XML for resource '{url}'.")
+
+
+def _handle_premium_only(url: str, logger: Logger) -> None:
+    logger.warning(f"Failed to download resource '{url}'. Resource is premium-only.")
 
 
 def _handle_forbidden(url: str, logger: Logger) -> None:
