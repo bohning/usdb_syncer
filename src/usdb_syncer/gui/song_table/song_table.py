@@ -268,6 +268,7 @@ class SongTable:
             action.setEnabled(song.is_local())
         self.mw.action_pin.setChecked(song.is_pinned())
         self.mw.action_songs_abort.setEnabled(song.status.can_be_aborted())
+        self.mw._update_cover(song)
 
     def _set_app_actions_visible(self) -> None:
         for action, app in (

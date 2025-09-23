@@ -495,6 +495,30 @@
     </layout>
    </widget>
   </widget>
+  <widget class="QDockWidget" name="dock_cover">
+   <property name="windowTitle">
+    <string>Cover</string>
+   </property>
+   <attribute name="dockWidgetArea">
+    <number>1</number>
+   </attribute>
+   <widget class="QWidget" name="cover_widget">
+    <layout class="QVBoxLayout" name="cover_layout">
+     <property name="leftMargin">
+      <number>0</number>
+     </property>
+     <property name="topMargin">
+      <number>0</number>
+     </property>
+     <property name="rightMargin">
+      <number>0</number>
+     </property>
+     <property name="bottomMargin">
+      <number>0</number>
+     </property>
+    </layout>
+   </widget>
+  </widget>
   <action name="action_meta_tags">
    <property name="icon">
     <iconset resource="../resources/qt/resources.qrc">

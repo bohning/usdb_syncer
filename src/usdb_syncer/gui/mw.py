@@ -4,8 +4,10 @@ import webbrowser
 from collections.abc import Callable
 from pathlib import Path
 
+import requests
 from PySide6 import QtGui
-from PySide6.QtWidgets import QFileDialog, QLabel, QMainWindow
+from PySide6.QtCore import Qt
+from PySide6.QtWidgets import QFileDialog, QLabel, QMainWindow, QSizePolicy, QWidget
 
 from usdb_syncer import (
     SongId,
@@ -68,6 +70,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         )
         gui_events.ThemeChanged.subscribe(self._on_theme_changed)
         self._setup_buttons()
+        self._setup_cover_widget()
         self._restore_state()
 
     def _focus_search(self) -> None:
@@ -103,6 +106,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
 
     def _setup_toolbar(self) -> None:
         self.menu_view.addAction(self.dock_search.toggleViewAction())
+        self.menu_view.addAction(self.dock_cover.toggleViewAction())
         self.menu_view.addAction(self.dock_log.toggleViewAction())
         for action, func, shortcut in (
             (
@@ -253,6 +257,37 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         self.button_pause.setShortcut(MainWindowShortcut.PAUSE_DOWNLOAD)
         self.button_pause.clicked.connect(DownloadManager.set_pause)
         self.button_pause.setToolTip(MainWindowShortcut.PAUSE_DOWNLOAD)
+
+    def _setup_cover_widget(self) -> None:
+        self.cover = ScaledCoverLabel(self.cover_widget)
+        self.cover.setObjectName("cover")
+        self.cover_layout.addWidget(self.cover)
+
+    def _update_cover(self, song: UsdbSong) -> None:
+        pixmap = QtGui.QPixmap()
+        has_pixmap = False
+        if song.is_local() and (path := song.cover_path()) and path.exists():
+            has_pixmap = pixmap.load(str(path))
+        else:
+            url = f"{Usdb.COVER_URL}{song.song_id:d}.jpg"
+            fallback_url = f"{Usdb.BASE_URL}images/nocover.png"
+
+            for candidate in (url, fallback_url):
+                try:
+                    resp = requests.get(candidate, timeout=10)
+                    resp.raise_for_status()
+                    if has_pixmap := pixmap.loadFromData(resp.content):
+                        break
+                except requests.RequestException:
+                    continue
+        if has_pixmap:
+            self.cover.set_cover(
+                pixmap.scaled(
+                    self.cover.size(),
+                    Qt.AspectRatioMode.KeepAspectRatio,
+                    Qt.TransformationMode.SmoothTransformation,
+                )
+            )
 
     def _on_log_filter_changed(self) -> None:
         messages = []
@@ -494,3 +529,28 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         self.action_import_usdb_ids.setIcon(icons.Icon.FILE_IMPORT.icon(key))
         self.action_export_usdb_ids.setIcon(icons.Icon.FILE_EXPORT.icon(key))
         self.action_preview.setIcon(icons.Icon.ULTRASTAR_GAME.icon(key))
+
+
+class ScaledCoverLabel(QLabel):
+    def __init__(self, parent: QWidget | None = None) -> None:
+        super().__init__(parent)
+        self.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.setSizePolicy(QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Ignored)
+        self._pixmap: QtGui.QPixmap | None = None
+
+    def set_cover(self, pixmap: QtGui.QPixmap) -> None:
+        self._pixmap = pixmap
+        self._update_scaled_pixmap()
+
+    def resizeEvent(self, event: QtGui.QResizeEvent) -> None:  # noqa: N802
+        super().resizeEvent(event)
+        self._update_scaled_pixmap()
+
+    def _update_scaled_pixmap(self) -> None:
+        if self._pixmap:
+            scaled = self._pixmap.scaled(
+                self.size(),
+                Qt.AspectRatioMode.KeepAspectRatio,
+                Qt.TransformationMode.SmoothTransformation,
+            )
+            self.setPixmap(scaled)
