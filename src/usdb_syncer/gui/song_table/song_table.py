@@ -48,6 +48,9 @@ class SongTable:
         mw.table_view.selectionModel().currentChanged.connect(
             self._on_current_song_changed
         )
+        self.mw.dock_cover.visibilityChanged.connect(
+            self._on_cover_dock_visibility_changed
+        )
         self._set_app_actions_visible()
         events.PreferencesChanged.subscribe(lambda _: self._set_app_actions_visible())
         events.SongChanged.subscribe(self._on_song_changed)
@@ -270,6 +273,12 @@ class SongTable:
         self.mw.action_songs_abort.setEnabled(song.status.can_be_aborted())
         if self.mw.dock_cover.isVisible():
             self.mw._update_cover(song)
+
+    def _on_cover_dock_visibility_changed(self, visible: bool) -> None:
+        if visible:
+            song = self.current_song()
+            if song:
+                self.mw._update_cover(song)
 
     def _set_app_actions_visible(self) -> None:
         for action, app in (
