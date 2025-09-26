@@ -141,3 +141,37 @@ class TrashError(UsdbSyncerError):
             " files be deleted permanently instead."
         )
         self.path = path
+
+
+# webserver
+
+
+class InvalidPortError(UsdbSyncerError):
+    """Raised when the port number is outside the valid range (1-65535)."""
+
+    def __init__(self, port: int) -> None:
+        super().__init__(f"Port {port} is invalid (valid range is 1-65535).")
+        self.port = port
+
+
+class PrivilegedPortError(UsdbSyncerError):
+    """Raised when trying to bind to a privileged port (<1024) without admin rights."""
+
+    def __init__(self, port: int) -> None:
+        super().__init__(
+            f"Port {port} is privileged on this system. "
+            "Please choose a port in the range 1024-65535."
+        )
+        self.port = port
+
+
+class PortInUseError(UsdbSyncerError):
+    """Raised when the chosen port is already in use by another process."""
+
+    def __init__(self, port: int, host: str) -> None:
+        super().__init__(
+            f"Port {port} on host {host} is already in use. "
+            "Please choose a different port."
+        )
+        self.port = port
+        self.host = host

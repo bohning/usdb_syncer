@@ -4,7 +4,9 @@ import base64
 import functools
 import itertools
 import logging
+import os
 import socket
+import sys
 from io import BytesIO
 from typing import Any, ClassVar
 
@@ -14,7 +16,7 @@ import werkzeug.serving
 from PySide6 import QtCore
 from werkzeug.serving import WSGIRequestHandler
 
-from usdb_syncer import SongId, db, logger, utils
+from usdb_syncer import SongId, db, errors, logger, utils
 from usdb_syncer.usdb_song import UsdbSong
 
 
@@ -163,8 +165,9 @@ class _WebserverManager:
             cls.title = title
         app = _create_app(cls.title)
         cls.host = host or get_local_ip()
+        cls._validate_port(port)
         cls._server = werkzeug.serving.make_server(
-            cls.host, port or 0, app, request_handler=_CustomRequestHandler
+            cls.host, cls.port, app, request_handler=_CustomRequestHandler
         )
         cls.port = cls._server.socket.getsockname()[1]
         cls._thread = _WebserverThread(cls._server)
@@ -183,6 +186,37 @@ class _WebserverManager:
     @classmethod
     def is_running(cls) -> bool:
         return bool(cls._server)
+
+    @classmethod
+    def _validate_port(cls, port: int | None) -> None:
+        """
+        Validate and return a usable TCP port.
+
+        - If port is None, return 0 (OS auto-assign).
+        - On Unix-like OS (Linux, macOS), disallow ports <1024 (privileged).
+        - On Windows, all ports >=1 are allowed.
+        - Ensures port <= 65535.
+        - Raises PortInUseError if the chosen port is busy.
+        """
+        if port is None or port == 0:
+            cls.port = 0  # OS auto-assign
+            return
+
+        if not (0 < port < 65536):
+            raise errors.InvalidPortError(port)
+
+        if sys.platform != "win32" and port < 1024:
+            if hasattr(os, "geteuid") and os.geteuid() != 0:
+                raise errors.PrivilegedPortError(port)
+
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+            try:
+                s.bind((cls.host, port))
+            except OSError as e:
+                raise errors.PortInUseError(port, cls.host) from e
+
+        cls.port = port
 
 
 def start(
