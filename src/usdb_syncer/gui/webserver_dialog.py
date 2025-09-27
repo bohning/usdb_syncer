@@ -2,7 +2,7 @@
 
 from PySide6 import QtGui, QtWidgets
 
-from usdb_syncer import webserver
+from usdb_syncer import errors, webserver
 from usdb_syncer.gui.forms.WebserverDialog import Ui_Dialog
 
 
@@ -35,7 +35,10 @@ class WebserverDialog(Ui_Dialog, QtWidgets.QDialog):
         self.label_qrcode.setPixmap(pixmap)
 
     def _start(self) -> None:
-        webserver.start(title=self.edit_title.text(), port=self.box_port.value())
+        try:
+            webserver.start(title=self.edit_title.text(), port=self.box_port.value())
+        except errors.WebserverError as e:
+            QtWidgets.QMessageBox.warning(None, "Failed to start webserver", str(e))
         self._update_ui()
 
     def _stop(self) -> None:

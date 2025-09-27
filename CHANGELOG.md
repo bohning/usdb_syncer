@@ -10,6 +10,7 @@
 
 - Handled HTML escapes in the USDB song list (e.g. `&` instead of `&amp;`).
 - Fixed running the webserver from the bundled app.
+- Check if webserver port is valid and not in use.
 
 <!-- 0.16.0 -->
 
