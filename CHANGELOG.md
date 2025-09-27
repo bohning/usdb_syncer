@@ -4,6 +4,8 @@
 
 ## Features
 
+- A new dock widget displays the cover of the currently selected song.
+
 ## Fixes
 
 - Handled HTML escapes in the USDB song list (e.g. `&` instead of `&amp;`).
