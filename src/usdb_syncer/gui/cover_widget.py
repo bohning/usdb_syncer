@@ -28,6 +28,7 @@ class ScaledCoverLabel(QLabel):
         super().__init__(dock_cover)
         self.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.setSizePolicy(QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Ignored)
+        self.setMinimumSize(50, 50)
         self._timer = QTimer(self)
         self._timer.setSingleShot(True)
         self._timer.setInterval(300)
