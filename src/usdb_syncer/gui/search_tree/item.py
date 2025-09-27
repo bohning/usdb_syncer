@@ -215,7 +215,6 @@ class Filter(TreeItemData, enum.Enum):
     SAVED = 0
     STATUS = enum.auto()
     ARTIST = enum.auto()
-    TITLE = enum.auto()
     EDITION = enum.auto()
     LANGUAGE = enum.auto()
     GOLDEN_NOTES = enum.auto()
@@ -234,8 +233,6 @@ class Filter(TreeItemData, enum.Enum):
                 return "Status"
             case Filter.ARTIST:
                 return "Artist"
-            case Filter.TITLE:
-                return "Title"
             case Filter.EDITION:
                 return "Edition"
             case Filter.LANGUAGE:
@@ -263,8 +260,6 @@ class Filter(TreeItemData, enum.Enum):
                 return SavedSearch.load_all()
             case Filter.ARTIST:
                 return (SongArtistMatch(v, c) for v, c in db.usdb_song_artists())
-            case Filter.TITLE:
-                return (SongTitleMatch(v, c) for v, c in db.usdb_song_titles())
             case Filter.EDITION:
                 return (SongEditionMatch(v, c) for v, c in db.usdb_song_editions())
             case Filter.LANGUAGE:
@@ -296,8 +291,6 @@ class Filter(TreeItemData, enum.Enum):
                 icon = Icon.DOWNLOAD
             case Filter.ARTIST:
                 icon = Icon.ARTIST
-            case Filter.TITLE:
-                icon = Icon.TITLE
             case Filter.EDITION:
                 icon = Icon.EDITION
             case Filter.LANGUAGE:
