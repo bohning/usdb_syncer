@@ -12,6 +12,7 @@ from PySide6.QtCore import QItemSelectionModel, Qt
 from PySide6.QtGui import QAction, QCursor
 
 from usdb_syncer import SongId, db, events, media_player, settings, sync_meta, utils
+from usdb_syncer.custom_data import CustomData
 from usdb_syncer.gui import events as gui_events
 from usdb_syncer.gui import ffmpeg_dialog, previewer
 from usdb_syncer.gui.custom_data_dialog import CustomDataDialog
@@ -187,25 +188,21 @@ class SongTable:
         self.mw.menu_custom_data.clear()
         _add_action("New ...", self.mw.menu_custom_data, run_custom_data_dialog)
         self.mw.menu_custom_data.addSeparator()
-        for key, value in sorted(song.sync_meta.custom_data.items()):
+        for key in sorted(CustomData.key_options()):
+            value = song.sync_meta.custom_data.get(key)
             key_menu = QtWidgets.QMenu(key, self.mw.menu_custom_data)
+            if value is not None:
+                key_menu.menuAction().setCheckable(True)
+                key_menu.menuAction().setChecked(True)
             self.mw.menu_custom_data.addMenu(key_menu)
             _add_action("New ...", key_menu, partial(run_custom_data_dialog, key))
             key_menu.addSeparator()
-            _add_action(
-                value,
-                key_menu,
-                partial(_update_custom_data, selected, key, None),
-                checked=True,
-            )
             for option in sorted(sync_meta.CustomData.value_options(key)):
-                if option != value:
-                    _add_action(
-                        option,
-                        key_menu,
-                        partial(_update_custom_data, selected, key, option),
-                        checked=False,
-                    )
+                checked = option == value
+                slot = partial(
+                    _update_custom_data, selected, key, None if checked else option
+                )
+                _add_action(option, key_menu, slot, checked=checked)
 
     def _on_click(self, index: QtCore.QModelIndex) -> None:
         if index.column() == Column.SAMPLE_URL.value and (
