@@ -24,6 +24,8 @@ class WebserverDialog(Ui_Dialog, QtWidgets.QDialog):
         running = webserver.is_running()
         self.edit_title.setEnabled(not running)
         self.box_port.setEnabled(not running)
+        self.checkBox_only_local_songs.setEnabled(not running)
+        self.checkBox_allow_downloads.setEnabled(not running)
         self.button_start.setEnabled(not running)
         self.button_stop.setEnabled(running)
         address = webserver.address()
@@ -39,7 +41,11 @@ class WebserverDialog(Ui_Dialog, QtWidgets.QDialog):
 
     def _start(self) -> None:
         try:
-            webserver.start(title=self.edit_title.text(), port=self.box_port.value())
+            webserver.start(
+                title=self.edit_title.text(),
+                port=self.box_port.value(),
+                show_nonlocal_songs=not self.checkBox_only_local_songs.isChecked(),
+            )
         except errors.WebserverError as e:
             QtWidgets.QMessageBox.warning(None, "Failed to start webserver", str(e))
         self._update_ui()

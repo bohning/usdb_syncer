@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>348</width>
-    <height>322</height>
+    <height>350</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -26,6 +26,16 @@
    </item>
    <item>
     <layout class="QFormLayout" name="formLayout">
+     <item row="1" column="0">
+      <widget class="QLabel" name="label">
+       <property name="text">
+        <string>Title:</string>
+       </property>
+      </widget>
+     </item>
+     <item row="1" column="1">
+      <widget class="QLineEdit" name="edit_title"/>
+     </item>
      <item row="2" column="0">
       <widget class="QLabel" name="label_2">
        <property name="text">
@@ -49,15 +59,15 @@
        </property>
       </widget>
      </item>
-     <item row="1" column="0">
-      <widget class="QLabel" name="label">
+     <item row="3" column="1">
+      <widget class="QCheckBox" name="checkBox_only_local_songs">
        <property name="text">
-        <string>Title:</string>
+        <string>Only show locally available songs</string>
+       </property>
+       <property name="checked">
+        <bool>true</bool>
        </property>
       </widget>
-     </item>
-     <item row="1" column="1">
-      <widget class="QLineEdit" name="edit_title"/>
      </item>
     </layout>
    </item>

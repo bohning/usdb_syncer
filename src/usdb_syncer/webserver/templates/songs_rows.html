@@ -1,6 +1,7 @@
 {% for song in songs %}
-<tr class="hover:bg-blue-800 odd:bg-slate-700 even:bg-slate-800">
+<tr class="hover:bg-blue-800 odd:bg-slate-700 even:bg-slate-800 h-10">
   <td class="px-1 md:px-4 py-1 text-center">
+    {% if song.sync_meta %}
     <button
       class="play-button cursor-pointer text-lg md:text-2xl"
       song_id="{{ song.song_id }}"
@@ -9,6 +10,7 @@
     >
       ▶
     </button>
+    {% endif %}
   </td>
   <td class="px-1 md:px-4">{{ song.artist }}</td>
   <td class="px-1 md:px-4">{{ song.title }}</td>

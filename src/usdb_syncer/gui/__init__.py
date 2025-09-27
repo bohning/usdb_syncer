@@ -80,6 +80,7 @@ class CliArgs:
     host: str | None = None
     port: int | None = None
     title: str | None = None
+    show_nonlocal: bool = False
 
     @classmethod
     def parse(cls) -> CliArgs:
@@ -145,6 +146,11 @@ class CliArgs:
             help="Port the webservice will bind to. Defaults to a random free port.",
         )
         serve.add_argument("--title", help="Title displayed at the top of the page.")
+        serve.add_argument(
+            "--show-nonlocal",
+            action="store_true",
+            help="Show songs that are not in the local collection.",
+        )
 
         return parser.parse_args(namespace=cls())
 
@@ -185,7 +191,12 @@ def main() -> None:
             if args.txt and _run_preview(args.txt):
                 app.exec()
         case "serve":
-            _run_webserver(host=args.host, port=args.port, title=args.title)
+            _run_webserver(
+                host=args.host,
+                port=args.port,
+                title=args.title,
+                show_nonlocal_songs=args.show_nonlocal,
+            )
         case _:
             if args.profile:
                 _with_profile(run_main)
@@ -235,9 +246,14 @@ def _run_preview(txt: Path) -> bool:
 
 
 def _run_webserver(
-    host: str | None = None, port: int | None = None, title: str | None = None
+    host: str | None = None,
+    port: int | None = None,
+    title: str | None = None,
+    show_nonlocal_songs: bool = False,
 ) -> None:
-    webserver.start(host=host, port=port, title=title)
+    webserver.start(
+        host=host, port=port, title=title, show_nonlocal_songs=show_nonlocal_songs
+    )
     logger.logger.info("Webserver is running in headless mode. Press Ctrl+C to stop.")
     try:
         while True:
