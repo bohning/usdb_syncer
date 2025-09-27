@@ -229,4 +229,4 @@ class PathTemplateCustomPlaceholder(PathTemplateComponentToken):
 
     @classmethod
     def options(cls) -> Iterable[PathTemplateCustomPlaceholder]:
-        return (cls(k) for k in CustomData.key_options())
+        return (cls(k) for k in sorted(CustomData.key_options()))

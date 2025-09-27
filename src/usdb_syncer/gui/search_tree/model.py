@@ -182,7 +182,6 @@ class TreeProxyModel(QSortFilterProxyModel):
         if self._filter:
             self._matches = {
                 Filter.ARTIST: set(db.search_usdb_song_artists(self._filter)),
-                Filter.TITLE: set(db.search_usdb_song_titles(self._filter)),
                 Filter.EDITION: set(db.search_usdb_song_editions(self._filter)),
                 Filter.LANGUAGE: set(db.search_usdb_song_languages(self._filter)),
                 Filter.YEAR: set(db.search_usdb_song_years(self._filter)),
