@@ -4,7 +4,7 @@ from functools import lru_cache
 from pathlib import Path
 
 import requests
-from PySide6.QtCore import QObject, QRunnable, Qt, QThreadPool, Signal
+from PySide6.QtCore import QObject, QRunnable, Qt, QThreadPool, QTimer, Signal
 from PySide6.QtGui import QPixmap, QResizeEvent
 from PySide6.QtWidgets import QDockWidget, QLabel, QSizePolicy
 
@@ -28,6 +28,10 @@ class ScaledCoverLabel(QLabel):
         super().__init__(dock_cover)
         self.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.setSizePolicy(QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Ignored)
+        self._timer = QTimer(self)
+        self._timer.setSingleShot(True)
+        self._timer.setInterval(300)
+        self._timer.timeout.connect(self._set_cover_for_current_song)
         self._signals = CoverLoaderSignals()
         self._signals.finished.connect(self._on_cover_loaded)
         layout = dock_cover.widget().layout()
@@ -57,16 +61,14 @@ class ScaledCoverLabel(QLabel):
 
     def _on_current_song_changed(self, event: gui_events.CurrentSongChanged) -> None:
         self._current_song = event.song
-        self._set_cover_for_current_song()
+        if self._visible:
+            self._timer.start()
 
     def _set_cover_for_current_song(self) -> None:
-        if not self._visible:
-            return
-
+        self._timer.stop()
         if not (song := self._current_song):
-            self.set_cover(QPixmap())
+            self.set_cover(None)
             return
-
         worker = CoverLoader(
             song.song_id,
             self._signals,
@@ -84,7 +86,7 @@ class ScaledCoverLabel(QLabel):
         if visible:
             self._set_cover_for_current_song()
         else:
-            self.set_cover(QPixmap())
+            self.set_cover(None)
 
 
 def load_cover(local_path: Path | None, remote_url: str | None) -> QPixmap:
@@ -92,8 +94,8 @@ def load_cover(local_path: Path | None, remote_url: str | None) -> QPixmap:
         pixmap = QPixmap(str(local_path))
         if not pixmap.isNull():
             return pixmap
-    if remote_url and (pixmap := fetch_remote_cover(remote_url)):
-        return pixmap
+    if remote_url and (remote_pixmap := fetch_remote_cover(remote_url)):
+        return remote_pixmap
     return NO_COVER_PIXMAP
 
 
