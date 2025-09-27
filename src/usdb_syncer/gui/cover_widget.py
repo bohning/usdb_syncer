@@ -8,6 +8,7 @@ from PySide6.QtCore import QObject, QRunnable, Qt, QThreadPool, Signal
 from PySide6.QtGui import QPixmap, QResizeEvent
 from PySide6.QtWidgets import QLabel, QSizePolicy, QWidget
 
+from usdb_syncer import SongId
 from usdb_syncer.constants import Usdb
 from usdb_syncer.usdb_song import UsdbSong
 
@@ -24,6 +25,7 @@ class ScaledCoverLabel(QLabel):
         self.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.setSizePolicy(QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Ignored)
         self._pixmap: QPixmap | None = None
+        self._signals = CoverLoaderSignals()
 
     def set_cover(self, pixmap: QPixmap) -> None:
         self._pixmap = pixmap
@@ -47,6 +49,7 @@ class ScaledCoverLabel(QLabel):
 
         worker = CoverLoader(
             song.song_id,
+            self._signals,
             song.cover_path() if song.is_local() else None,
             None if song.is_local() else f"{Usdb.COVER_URL}{song.song_id:d}.jpg",
         )
@@ -58,40 +61,44 @@ class ScaledCoverLabel(QLabel):
             self.set_cover(pixmap)
 
 
-@lru_cache(maxsize=100)
-def load_cover(
-    song_id: int, local_path: Path | None, remote_url: str | None
-) -> QPixmap:
-    """Load cover for a song (local or remote), cached with LRU."""
-    pixmap = QPixmap()
-
+def load_cover(local_path: Path | None, remote_url: str | None) -> QPixmap:
     if local_path and local_path.exists():
         pixmap = QPixmap(str(local_path))
         if not pixmap.isNull():
             return pixmap
+    if remote_url and (pixmap := fetch_remote_cover(remote_url)):
+        return pixmap
+    return NO_COVER_PIXMAP
 
-    if remote_url:
-        try:
-            resp = requests.get(remote_url, timeout=10)
-            resp.raise_for_status()
+
+@lru_cache(maxsize=32)
+def fetch_remote_cover(remote_url: str) -> QPixmap | None:
+    try:
+        resp = requests.get(remote_url, timeout=10)
+    except requests.RequestException:
+        pass
+    else:
+        if resp.ok:
+            pixmap = QPixmap()
             if pixmap.loadFromData(resp.content):
                 return pixmap
-        except requests.RequestException:
-            pass
-
-    return NO_COVER_PIXMAP
+    return None
 
 
 class CoverLoader(QRunnable):
     def __init__(
-        self, song_id: int, local_path: Path | None, remote_url: str | None
+        self,
+        song_id: SongId,
+        signals: CoverLoaderSignals,
+        local_path: Path | None,
+        remote_url: str | None,
     ) -> None:
         super().__init__()
-        self.signals = CoverLoaderSignals()
+        self.signals = signals
         self.song_id = song_id
         self.local_path = local_path
         self.remote_url = remote_url
 
     def run(self) -> None:
-        pixmap = load_cover(self.song_id, self.local_path, self.remote_url)
+        pixmap = load_cover(self.local_path, self.remote_url)
         self.signals.finished.emit(self.song_id, pixmap)
