@@ -4,7 +4,7 @@ import webbrowser
 from collections.abc import Callable
 from pathlib import Path
 
-from PySide6 import QtGui
+from PySide6.QtGui import QCloseEvent, QPixmap
 from PySide6.QtWidgets import QFileDialog, QLabel, QMainWindow
 
 from usdb_syncer import (
@@ -18,8 +18,15 @@ from usdb_syncer import (
     webserver,
 )
 from usdb_syncer.constants import Usdb
+from usdb_syncer.gui import (
+    cover_widget,
+    ffmpeg_dialog,
+    gui_utils,
+    icons,
+    progress,
+    progress_bar,
+)
 from usdb_syncer.gui import events as gui_events
-from usdb_syncer.gui import ffmpeg_dialog, gui_utils, icons, progress, progress_bar
 from usdb_syncer.gui.about_dialog import AboutDialog
 from usdb_syncer.gui.comment_dialog import CommentDialog
 from usdb_syncer.gui.debug_console import DebugConsole
@@ -40,6 +47,8 @@ from usdb_syncer.sync_meta import SyncMeta
 from usdb_syncer.usdb_scraper import post_song_rating
 from usdb_syncer.usdb_song import UsdbSong
 from usdb_syncer.utils import AppPaths, LinuxEnvCleaner, open_path_or_file
+
+NO_COVER_PIXMAP = QPixmap(":/images/nocover.png")
 
 
 class MainWindow(Ui_MainWindow, QMainWindow):
@@ -67,8 +76,11 @@ class MainWindow(Ui_MainWindow, QMainWindow):
             lambda event: self.lineEdit_search.setText(event.search.text)
         )
         gui_events.ThemeChanged.subscribe(self._on_theme_changed)
+        gui_events.CurrentSongChanged.subscribe(self._on_current_song_changed)
         self._setup_buttons()
+        self.cover = cover_widget.ScaledCoverLabel(self.dock_cover)
         self._restore_state()
+        self._current_song_id: int | None = None
 
     def _focus_search(self) -> None:
         self.lineEdit_search.setFocus()
@@ -103,6 +115,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
 
     def _setup_toolbar(self) -> None:
         self.menu_view.addAction(self.dock_search.toggleViewAction())
+        self.menu_view.addAction(self.dock_cover.toggleViewAction())
         self.menu_view.addAction(self.dock_log.toggleViewAction())
         for action, func, shortcut in (
             (
@@ -421,7 +434,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         pos = self.mapToGlobal(self.rect().center())
         self.menu_open_song_in.popup(pos)
 
-    def closeEvent(self, event: QtGui.QCloseEvent) -> None:  # noqa: N802
+    def closeEvent(self, event: QCloseEvent) -> None:  # noqa: N802
         def cleanup() -> None:
             DownloadManager.quit()
             webserver.stop()
@@ -494,3 +507,28 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         self.action_import_usdb_ids.setIcon(icons.Icon.FILE_IMPORT.icon(key))
         self.action_export_usdb_ids.setIcon(icons.Icon.FILE_EXPORT.icon(key))
         self.action_preview.setIcon(icons.Icon.ULTRASTAR_GAME.icon(key))
+
+    def _on_current_song_changed(self, event: gui_events.CurrentSongChanged) -> None:
+        song = event.song
+        for action in self.menu_songs.actions():
+            action.setEnabled(bool(song))
+        if not song:
+            return
+        for action in (
+            self.action_open_song_folder,
+            self.menu_open_song_in,
+            self.action_open_song_in_karedi,
+            self.action_open_song_in_performous,
+            self.action_open_song_in_tune_perfect,
+            self.action_open_song_in_ultrastar_manager,
+            self.action_open_song_in_usdx,
+            self.action_open_song_in_vocaluxe,
+            self.action_open_song_in_yass_reloaded,
+            self.action_delete,
+            self.action_pin,
+            self.action_preview,
+            self.menu_custom_data,
+        ):
+            action.setEnabled(song.is_local())
+        self.action_pin.setChecked(song.is_pinned())
+        self.action_songs_abort.setEnabled(song.status.can_be_aborted())

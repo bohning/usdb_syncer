@@ -132,6 +132,9 @@
     <file>yass-reloaded.png</file>
     <file>yass.png</file>
   </qresource>
+  <qresource prefix="images">
+    <file>nocover.png</file>
+  </qresource>
   <qresource prefix="app">
     <file>appicon_128x128.png</file>
   </qresource>
