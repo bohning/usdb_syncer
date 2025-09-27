@@ -272,13 +272,13 @@ class SongTable:
         self.mw.action_pin.setChecked(song.is_pinned())
         self.mw.action_songs_abort.setEnabled(song.status.can_be_aborted())
         if self.mw.dock_cover.isVisible():
-            self.mw._update_cover(song)
+            self.mw.cover._update_cover(song)
 
     def _on_cover_dock_visibility_changed(self, visible: bool) -> None:
         if visible:
             song = self.current_song()
             if song:
-                self.mw._update_cover(song)
+                self.mw.cover._update_cover(song)
 
     def _set_app_actions_visible(self) -> None:
         for action, app in (

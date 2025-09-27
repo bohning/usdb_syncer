@@ -2,13 +2,10 @@
 
 import webbrowser
 from collections.abc import Callable
-from functools import lru_cache
 from pathlib import Path
 
-import requests
-from PySide6.QtCore import QObject, QRunnable, Qt, QThreadPool, Signal
-from PySide6.QtGui import QCloseEvent, QPixmap, QResizeEvent
-from PySide6.QtWidgets import QFileDialog, QLabel, QMainWindow, QSizePolicy, QWidget
+from PySide6.QtGui import QCloseEvent, QPixmap
+from PySide6.QtWidgets import QFileDialog, QLabel, QMainWindow
 
 from usdb_syncer import (
     SongId,
@@ -21,8 +18,15 @@ from usdb_syncer import (
     webserver,
 )
 from usdb_syncer.constants import Usdb
+from usdb_syncer.gui import (
+    cover_widget,
+    ffmpeg_dialog,
+    gui_utils,
+    icons,
+    progress,
+    progress_bar,
+)
 from usdb_syncer.gui import events as gui_events
-from usdb_syncer.gui import ffmpeg_dialog, gui_utils, icons, progress, progress_bar
 from usdb_syncer.gui.about_dialog import AboutDialog
 from usdb_syncer.gui.comment_dialog import CommentDialog
 from usdb_syncer.gui.debug_console import DebugConsole
@@ -75,7 +79,6 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         self._setup_buttons()
         self._setup_cover_widget()
         self._restore_state()
-        self.thread_pool = QThreadPool.globalInstance()
         self._current_song_id: int | None = None
 
     def _focus_search(self) -> None:
@@ -264,24 +267,8 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         self.button_pause.setToolTip(MainWindowShortcut.PAUSE_DOWNLOAD)
 
     def _setup_cover_widget(self) -> None:
-        self.cover = ScaledCoverLabel(self.cover_widget)
-        self.cover.setObjectName("cover")
+        self.cover = cover_widget.ScaledCoverLabel(self.cover_widget)
         self.cover_layout.addWidget(self.cover)
-
-    def _update_cover(self, song: UsdbSong) -> None:
-        self._current_song_id = song.song_id
-
-        worker = CoverLoader(
-            song.song_id,
-            song.cover_path() if song.is_local() else None,
-            None if song.is_local() else f"{Usdb.COVER_URL}{song.song_id:d}.jpg",
-        )
-        worker.signals.finished.connect(self._set_cover)
-        self.thread_pool.start(worker)
-
-    def _set_cover(self, song_id: int, pixmap: QPixmap) -> None:
-        if song_id == self._current_song_id:
-            self.cover.set_cover(pixmap)
 
     def _on_log_filter_changed(self) -> None:
         messages = []
@@ -523,71 +510,3 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         self.action_import_usdb_ids.setIcon(icons.Icon.FILE_IMPORT.icon(key))
         self.action_export_usdb_ids.setIcon(icons.Icon.FILE_EXPORT.icon(key))
         self.action_preview.setIcon(icons.Icon.ULTRASTAR_GAME.icon(key))
-
-
-class ScaledCoverLabel(QLabel):
-    def __init__(self, parent: QWidget | None = None) -> None:
-        super().__init__(parent)
-        self.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.setSizePolicy(QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Ignored)
-        self._pixmap: QPixmap | None = None
-
-    def set_cover(self, pixmap: QPixmap) -> None:
-        self._pixmap = pixmap
-        self._update_scaled_pixmap()
-
-    def resizeEvent(self, event: QResizeEvent) -> None:  # noqa: N802
-        super().resizeEvent(event)
-        self._update_scaled_pixmap()
-
-    def _update_scaled_pixmap(self) -> None:
-        if self._pixmap:
-            scaled = self._pixmap.scaled(
-                self.size(),
-                Qt.AspectRatioMode.KeepAspectRatio,
-                Qt.TransformationMode.SmoothTransformation,
-            )
-            self.setPixmap(scaled)
-
-
-@lru_cache(maxsize=100)
-def load_cover(
-    song_id: int, local_path: Path | None, remote_url: str | None
-) -> QPixmap:
-    """Load cover for a song (local or remote), cached with LRU."""
-    pixmap = QPixmap()
-
-    if local_path and local_path.exists():
-        pixmap = QPixmap(str(local_path))
-        if not pixmap.isNull():
-            return pixmap
-
-    if remote_url:
-        try:
-            resp = requests.get(remote_url, timeout=10)
-            resp.raise_for_status()
-            if pixmap.loadFromData(resp.content):
-                return pixmap
-        except requests.RequestException:
-            pass
-
-    return NO_COVER_PIXMAP
-
-
-class CoverLoaderSignals(QObject):
-    finished = Signal(int, QPixmap)
-
-
-class CoverLoader(QRunnable):
-    def __init__(
-        self, song_id: int, local_path: Path | None, remote_url: str | None
-    ) -> None:
-        super().__init__()
-        self.signals = CoverLoaderSignals()
-        self.song_id = song_id
-        self.local_path = local_path
-        self.remote_url = remote_url
-
-    def run(self) -> None:
-        pixmap = load_cover(self.song_id, self.local_path, self.remote_url)
-        self.signals.finished.emit(self.song_id, pixmap)
