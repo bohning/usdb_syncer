@@ -146,7 +146,11 @@ class TrashError(UsdbSyncerError):
 # webserver
 
 
-class InvalidPortError(UsdbSyncerError):
+class WebserverError(UsdbSyncerError):
+    """Base class for webserver errors."""
+
+
+class InvalidPortError(WebserverError):
     """Raised when the port number is outside the valid range (1-65535)."""
 
     def __init__(self, port: int) -> None:
@@ -154,7 +158,7 @@ class InvalidPortError(UsdbSyncerError):
         self.port = port
 
 
-class PrivilegedPortError(UsdbSyncerError):
+class PrivilegedPortError(WebserverError):
     """Raised when trying to bind to a privileged port (<1024) without admin rights."""
 
     def __init__(self, port: int) -> None:
@@ -165,7 +169,7 @@ class PrivilegedPortError(UsdbSyncerError):
         self.port = port
 
 
-class PortInUseError(UsdbSyncerError):
+class PortInUseError(WebserverError):
     """Raised when the chosen port is already in use by another process."""
 
     def __init__(self, port: int, host: str) -> None:

@@ -37,15 +37,8 @@ class WebserverDialog(Ui_Dialog, QtWidgets.QDialog):
     def _start(self) -> None:
         try:
             webserver.start(title=self.edit_title.text(), port=self.box_port.value())
-        except errors.InvalidPortError as e:
-            QtWidgets.QMessageBox.warning(None, "Invalid port", str(e))
-            self.box_port.setValue(e.port)
-        except errors.PrivilegedPortError as e:
-            QtWidgets.QMessageBox.warning(None, "Privileged port", str(e))
-            self.box_port.setValue(e.port)
-        except errors.PortInUseError as e:
-            QtWidgets.QMessageBox.warning(None, "Port in use", str(e))
-            self.box_port.setValue(e.port)
+        except errors.WebserverError as e:
+            QtWidgets.QMessageBox.warning(None, "Failed to start webserver", str(e))
         self._update_ui()
 
     def _stop(self) -> None:
