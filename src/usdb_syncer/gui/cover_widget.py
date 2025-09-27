@@ -6,10 +6,11 @@ from pathlib import Path
 import requests
 from PySide6.QtCore import QObject, QRunnable, Qt, QThreadPool, Signal
 from PySide6.QtGui import QPixmap, QResizeEvent
-from PySide6.QtWidgets import QLabel, QSizePolicy, QWidget
+from PySide6.QtWidgets import QDockWidget, QLabel, QSizePolicy
 
-from usdb_syncer import SongId
+from usdb_syncer import SongId, logger
 from usdb_syncer.constants import Usdb
+from usdb_syncer.gui import events as gui_events
 from usdb_syncer.usdb_song import UsdbSong
 
 NO_COVER_PIXMAP = QPixmap(":/images/nocover.png")
@@ -20,14 +21,23 @@ class CoverLoaderSignals(QObject):
 
 
 class ScaledCoverLabel(QLabel):
-    def __init__(self, parent: QWidget | None = None) -> None:
-        super().__init__(parent)
+    _pixmap: QPixmap | None = None
+    _current_song: UsdbSong | None = None
+
+    def __init__(self, dock_cover: QDockWidget) -> None:
+        super().__init__(dock_cover)
         self.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.setSizePolicy(QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Ignored)
-        self._pixmap: QPixmap | None = None
         self._signals = CoverLoaderSignals()
+        self._signals.finished.connect(self._on_cover_loaded)
+        layout = dock_cover.widget().layout()
+        assert layout
+        layout.addWidget(self)
+        dock_cover.visibilityChanged.connect(self._on_visibility_changed)
+        self._visible = dock_cover.isVisible()
+        gui_events.CurrentSongChanged.subscribe(self._on_current_song_changed)
 
-    def set_cover(self, pixmap: QPixmap) -> None:
+    def set_cover(self, pixmap: QPixmap | None) -> None:
         self._pixmap = pixmap
         self._update_scaled_pixmap()
 
@@ -36,6 +46,7 @@ class ScaledCoverLabel(QLabel):
         self._update_scaled_pixmap()
 
     def _update_scaled_pixmap(self) -> None:
+        self.clear()
         if self._pixmap:
             scaled = self._pixmap.scaled(
                 self.size(),
@@ -44,8 +55,17 @@ class ScaledCoverLabel(QLabel):
             )
             self.setPixmap(scaled)
 
-    def _update_cover(self, song: UsdbSong) -> None:
-        self._current_song_id = song.song_id
+    def _on_current_song_changed(self, event: gui_events.CurrentSongChanged) -> None:
+        self._current_song = event.song
+        self._set_cover_for_current_song()
+
+    def _set_cover_for_current_song(self) -> None:
+        if not self._visible:
+            return
+
+        if not (song := self._current_song):
+            self.set_cover(QPixmap())
+            return
 
         worker = CoverLoader(
             song.song_id,
@@ -53,12 +73,18 @@ class ScaledCoverLabel(QLabel):
             song.cover_path() if song.is_local() else None,
             None if song.is_local() else f"{Usdb.COVER_URL}{song.song_id:d}.jpg",
         )
-        worker.signals.finished.connect(self._set_cover)
         QThreadPool.globalInstance().start(worker)
 
-    def _set_cover(self, song_id: int, pixmap: QPixmap) -> None:
-        if song_id == self._current_song_id:
+    def _on_cover_loaded(self, song_id: SongId, pixmap: QPixmap) -> None:
+        if self._current_song and song_id == self._current_song.song_id:
             self.set_cover(pixmap)
+
+    def _on_visibility_changed(self, visible: bool) -> None:
+        self._visible = visible
+        if visible:
+            self._set_cover_for_current_song()
+        else:
+            self.set_cover(QPixmap())
 
 
 def load_cover(local_path: Path | None, remote_url: str | None) -> QPixmap:
@@ -74,6 +100,7 @@ def load_cover(local_path: Path | None, remote_url: str | None) -> QPixmap:
 @lru_cache(maxsize=32)
 def fetch_remote_cover(remote_url: str) -> QPixmap | None:
     try:
+        logger.logger.debug(f"Fetching remote cover from {remote_url}")
         resp = requests.get(remote_url, timeout=10)
     except requests.RequestException:
         pass

@@ -76,8 +76,9 @@ class MainWindow(Ui_MainWindow, QMainWindow):
             lambda event: self.lineEdit_search.setText(event.search.text)
         )
         gui_events.ThemeChanged.subscribe(self._on_theme_changed)
+        gui_events.CurrentSongChanged.subscribe(self._on_current_song_changed)
         self._setup_buttons()
-        self._setup_cover_widget()
+        self.cover = cover_widget.ScaledCoverLabel(self.dock_cover)
         self._restore_state()
         self._current_song_id: int | None = None
 
@@ -265,10 +266,6 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         self.button_pause.setShortcut(MainWindowShortcut.PAUSE_DOWNLOAD)
         self.button_pause.clicked.connect(DownloadManager.set_pause)
         self.button_pause.setToolTip(MainWindowShortcut.PAUSE_DOWNLOAD)
-
-    def _setup_cover_widget(self) -> None:
-        self.cover = cover_widget.ScaledCoverLabel(self.cover_widget)
-        self.cover_layout.addWidget(self.cover)
 
     def _on_log_filter_changed(self) -> None:
         messages = []
@@ -510,3 +507,28 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         self.action_import_usdb_ids.setIcon(icons.Icon.FILE_IMPORT.icon(key))
         self.action_export_usdb_ids.setIcon(icons.Icon.FILE_EXPORT.icon(key))
         self.action_preview.setIcon(icons.Icon.ULTRASTAR_GAME.icon(key))
+
+    def _on_current_song_changed(self, event: gui_events.CurrentSongChanged) -> None:
+        song = event.song
+        for action in self.menu_songs.actions():
+            action.setEnabled(bool(song))
+        if not song:
+            return
+        for action in (
+            self.action_open_song_folder,
+            self.menu_open_song_in,
+            self.action_open_song_in_karedi,
+            self.action_open_song_in_performous,
+            self.action_open_song_in_tune_perfect,
+            self.action_open_song_in_ultrastar_manager,
+            self.action_open_song_in_usdx,
+            self.action_open_song_in_vocaluxe,
+            self.action_open_song_in_yass_reloaded,
+            self.action_delete,
+            self.action_pin,
+            self.action_preview,
+            self.menu_custom_data,
+        ):
+            action.setEnabled(song.is_local())
+        self.action_pin.setChecked(song.is_pinned())
+        self.action_songs_abort.setEnabled(song.status.can_be_aborted())

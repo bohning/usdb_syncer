@@ -48,9 +48,6 @@ class SongTable:
         mw.table_view.selectionModel().currentChanged.connect(
             self._on_current_song_changed
         )
-        self.mw.dock_cover.visibilityChanged.connect(
-            self._on_cover_dock_visibility_changed
-        )
         self._set_app_actions_visible()
         events.PreferencesChanged.subscribe(lambda _: self._set_app_actions_visible())
         events.SongChanged.subscribe(self._on_song_changed)
@@ -248,37 +245,7 @@ class SongTable:
             self._on_current_song_changed()
 
     def _on_current_song_changed(self) -> None:
-        song = self.current_song()
-        for action in self.mw.menu_songs.actions():
-            action.setEnabled(bool(song))
-        if not song:
-            return
-        for action in (
-            self.mw.action_open_song_folder,
-            self.mw.menu_open_song_in,
-            self.mw.action_open_song_in_karedi,
-            self.mw.action_open_song_in_performous,
-            self.mw.action_open_song_in_tune_perfect,
-            self.mw.action_open_song_in_ultrastar_manager,
-            self.mw.action_open_song_in_usdx,
-            self.mw.action_open_song_in_vocaluxe,
-            self.mw.action_open_song_in_yass_reloaded,
-            self.mw.action_delete,
-            self.mw.action_pin,
-            self.mw.action_preview,
-            self.mw.menu_custom_data,
-        ):
-            action.setEnabled(song.is_local())
-        self.mw.action_pin.setChecked(song.is_pinned())
-        self.mw.action_songs_abort.setEnabled(song.status.can_be_aborted())
-        if self.mw.dock_cover.isVisible():
-            self.mw.cover._update_cover(song)
-
-    def _on_cover_dock_visibility_changed(self, visible: bool) -> None:
-        if visible:
-            song = self.current_song()
-            if song:
-                self.mw.cover._update_cover(song)
+        gui_events.CurrentSongChanged(self.current_song()).post()
 
     def _set_app_actions_visible(self) -> None:
         for action, app in (
