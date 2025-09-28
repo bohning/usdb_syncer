@@ -22,7 +22,7 @@ class CoverLoaderSignals(QObject):
 
 class ScaledCoverLabel(QLabel):
     _pixmap: QPixmap | None = None
-    _current_song: UsdbSong | None = None
+    _current_song_id: SongId | None = None
 
     def __init__(self, dock_cover: QDockWidget) -> None:
         super().__init__(dock_cover)
@@ -61,13 +61,15 @@ class ScaledCoverLabel(QLabel):
             self.setPixmap(scaled)
 
     def _on_current_song_changed(self, event: gui_events.CurrentSongChanged) -> None:
-        self._current_song = event.song
+        self._current_song_id = event.song.song_id if event.song else None
         if self._visible:
             self._timer.start()
 
     def _set_cover_for_current_song(self) -> None:
         self._timer.stop()
-        if not (song := self._current_song):
+        if not self._current_song_id or not (
+            song := UsdbSong.get(self._current_song_id)
+        ):
             self.set_cover(None)
             return
         worker = CoverLoader(
@@ -79,7 +81,7 @@ class ScaledCoverLabel(QLabel):
         QThreadPool.globalInstance().start(worker)
 
     def _on_cover_loaded(self, song_id: SongId, pixmap: QPixmap) -> None:
-        if self._current_song and song_id == self._current_song.song_id:
+        if self._current_song_id == song_id:
             self.set_cover(pixmap)
 
     def _on_visibility_changed(self, visible: bool) -> None:
