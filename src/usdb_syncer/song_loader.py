@@ -67,9 +67,8 @@ class DownloadManager:
             if (job := cls._jobs.get(song)) and shiboken6.isValid(job):
                 if cls._threadpool().tryTake(job):
                     job.logger.info("Download aborted by user request.")
-                    job.song.reset_status()
                     with db.transaction():
-                        job.song.upsert()
+                        job.song.set_status(job.song.get_resetted_status())
                     events.SongChanged(job.song_id).post()
                     events.DownloadFinished(job.song_id).post()
                 else:
@@ -332,10 +331,10 @@ class _SongLoader(QtCore.QRunnable):
                 self.song = self._run_inner()
             except errors.AbortError:
                 self.logger.info("Download aborted by user request.")
-                self.song.reset_status()
+                status = self.song.get_resetted_status()
             except errors.UsdbLoginError:
                 self.logger.error("Aborted; download requires login.")  # noqa: TRY400
-                self.song.status = DownloadStatus.FAILED
+                status = DownloadStatus.FAILED
             except errors.UsdbNotFoundError:
                 self.logger.error("Song has been deleted from USDB.")  # noqa: TRY400
                 with db.transaction():
@@ -352,20 +351,20 @@ class _SongLoader(QtCore.QRunnable):
                     "Failed to finish download due to an unexpected error. "
                     "See debug log for more information."
                 )
-                self.song.status = DownloadStatus.FAILED
+                status = DownloadStatus.FAILED
             else:
-                self.song.status = DownloadStatus.SYNCHRONIZED
+                status = DownloadStatus.SYNCHRONIZED
                 self.logger.info("All done!")
             with db.transaction():
                 self.song.upsert()
+                self.song.set_status(status)
         events.SongChanged(self.song_id).post()
         events.DownloadFinished(self.song_id).post()
 
     def _run_inner(self) -> UsdbSong:
         self._check_flags()
-        self.song.status = DownloadStatus.DOWNLOADING
         with db.transaction():
-            self.song.upsert()
+            self.song.set_status(DownloadStatus.DOWNLOADING)
         events.SongChanged(self.song_id).post()
         with tempfile.TemporaryDirectory() as tempdir:
             ctx = _Context.new(self.song, self.options, Path(tempdir), self.logger)

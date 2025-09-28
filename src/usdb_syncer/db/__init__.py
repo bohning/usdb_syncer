@@ -581,22 +581,26 @@ class UsdbSongParams:
     genre: str
     creator: str
     tags: str
-    status: DownloadStatus | None
-    is_playing: bool
 
 
 def upsert_usdb_song(params: UsdbSongParams) -> None:
     stmt = _SqlCache.get("upsert_usdb_song.sql")
-    _DbState.connection().execute(stmt, params.__dict__)
-    stmt = _SqlCache.get("upsert_session_usdb_song.sql")
     _DbState.connection().execute(stmt, params.__dict__)
 
 
 def upsert_usdb_songs(params: list[UsdbSongParams]) -> None:
     stmt = _SqlCache.get("upsert_usdb_song.sql")
     _DbState.connection().executemany(stmt, (p.__dict__ for p in params))
-    stmt = _SqlCache.get("upsert_session_usdb_song.sql")
-    _DbState.connection().executemany(stmt, (p.__dict__ for p in params))
+
+
+def set_usdb_song_status(song_id: SongId, status: DownloadStatus) -> None:
+    stmt = _SqlCache.get("upsert_usdb_song_status.sql")
+    _DbState.connection().execute(stmt, {"song_id": song_id, "status": status.for_db()})
+
+
+def set_usdb_song_playing(song_id: SongId, is_playing: bool) -> None:
+    stmt = _SqlCache.get("upsert_usdb_song_playing.sql")
+    _DbState.connection().execute(stmt, {"song_id": song_id, "is_playing": is_playing})
 
 
 def usdb_song_count() -> int:

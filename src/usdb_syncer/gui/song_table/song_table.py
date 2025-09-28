@@ -60,22 +60,21 @@ class SongTable:
     def _on_playback_state_changed(
         self, state: QtMultimedia.QMediaPlayer.PlaybackState
     ) -> None:
-        if state == QtMultimedia.QMediaPlayer.PlaybackState.PlayingState:
+        play = state == QtMultimedia.QMediaPlayer.PlaybackState.PlayingState
+        if play:
             assert self._next_playing_song_id is not None
             if not (song := UsdbSong.get(self._next_playing_song_id)):
                 return
             self._playing_song_id = self._next_playing_song_id
             self._next_playing_song_id = None
-            song.is_playing = True
         else:
             assert self._playing_song_id is not None
             if not (song := UsdbSong.get(self._playing_song_id)):
                 self._playing_song_id = None
                 return
             self._playing_song_id = None
-            song.is_playing = False
         with db.transaction():
-            song.upsert()
+            song.set_playing(play)
         events.SongChanged(song.song_id).post()
 
     def _on_playback_error_changed(self) -> None:
@@ -132,9 +131,8 @@ class SongTable:
             if song.status.can_be_downloaded():
                 self.stop_playing_local_song(song)
                 previewer.Previewer.close_song(song.song_id)
-                song.status = DownloadStatus.PENDING
                 with db.transaction():
-                    song.upsert()
+                    song.set_status(DownloadStatus.PENDING)
                 events.SongChanged(song.song_id).post()
                 to_download.append(song)
         if to_download:

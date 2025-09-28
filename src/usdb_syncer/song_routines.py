@@ -87,10 +87,9 @@ def initialize_auto_downloads(updates: set[SongId]) -> None:
     songs = [s for i in download_ids if (s := UsdbSong.get(i))]
     if not songs:
         return
-    for song in songs:
-        song.status = db.DownloadStatus.PENDING
     with db.transaction():
-        UsdbSong.upsert_many(songs)
+        for song in songs:
+            song.set_status(db.DownloadStatus.PENDING)
     events.DownloadsRequested(len(songs)).post()
     DownloadManager.download(songs)
 

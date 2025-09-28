@@ -163,8 +163,6 @@ class UsdbSong:
             genre=self.genre,
             creator=self.creator,
             tags=self.tags,
-            status=self.status.for_db(),
-            is_playing=self.is_playing,
         )
 
     def is_local(self) -> bool:
@@ -207,14 +205,27 @@ class UsdbSong:
             and self.song_id not in last_update.song_ids
         )
 
-    def reset_status(self) -> None:
+    def get_resetted_status(self) -> DownloadStatus:
         if self.sync_meta:
             if self.sync_meta.usdb_mtime < self.usdb_mtime:
-                self.status = DownloadStatus.OUTDATED
+                status = DownloadStatus.OUTDATED
             else:
-                self.status = DownloadStatus.SYNCHRONIZED
+                status = DownloadStatus.SYNCHRONIZED
         else:
-            self.status = DownloadStatus.NONE
+            status = DownloadStatus.NONE
+        return status
+
+    def set_status(self, status: DownloadStatus) -> None:
+        if self.status != status:
+            self.status = status
+            db.set_usdb_song_status(self.song_id, status)
+            _UsdbSongCache.update(self)
+
+    def set_playing(self, is_playing: bool) -> None:
+        if self.is_playing != is_playing:
+            self.is_playing = is_playing
+            db.set_usdb_song_playing(self.song_id, is_playing)
+            _UsdbSongCache.update(self)
 
 
 class UsdbSongEncoder(JSONEncoder):
