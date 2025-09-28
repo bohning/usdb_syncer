@@ -34,8 +34,8 @@ class SongTable:
     """Controller for the song table."""
 
     _search = db.SearchBuilder()
-    _playing_song: UsdbSong | None = None
-    _next_playing_song: UsdbSong | None = None
+    _playing_song_id: SongId | None = None
+    _next_playing_song_id: SongId | None = None
 
     def __init__(self, mw: MainWindow) -> None:
         self.mw = mw
@@ -60,24 +60,27 @@ class SongTable:
     def _on_playback_state_changed(
         self, state: QtMultimedia.QMediaPlayer.PlaybackState
     ) -> None:
-        if state == QtMultimedia.QMediaPlayer.PlaybackState.PlayingState:
-            assert self._next_playing_song
-            self._playing_song = song = self._next_playing_song
-            self._next_playing_song = None
-            song.is_playing = True
+        play = state == QtMultimedia.QMediaPlayer.PlaybackState.PlayingState
+        if play:
+            assert self._next_playing_song_id is not None
+            if not (song := UsdbSong.get(self._next_playing_song_id)):
+                return
+            self._playing_song_id = self._next_playing_song_id
+            self._next_playing_song_id = None
         else:
-            assert self._playing_song
-            song = self._playing_song
-            self._playing_song = None
-            song.is_playing = False
+            assert self._playing_song_id is not None
+            if not (song := UsdbSong.get(self._playing_song_id)):
+                self._playing_song_id = None
+                return
+            self._playing_song_id = None
         with db.transaction():
-            song.upsert()
+            song.set_playing(play)
         events.SongChanged(song.song_id).post()
 
     def _on_playback_error_changed(self) -> None:
-        if not self._media_player.error().value or self._next_playing_song is None:
+        if not self._media_player.error().value or self._next_playing_song_id is None:
             return
-        logger = song_logger(self._next_playing_song.song_id)
+        logger = song_logger(self._next_playing_song_id)
         source = self._media_player.source().url()
         logger.error(f"Failed to play back source: {source}")
         logger.debug(self._media_player.errorString())
@@ -88,8 +91,7 @@ class SongTable:
 
     def stop_playing_local_song(self, song: UsdbSong) -> None:
         if (
-            self._playing_song
-            and song.song_id == self._playing_song.song_id
+            song.song_id == self._playing_song_id
             and song.sync_meta
             and song.sync_meta.audio
         ):
@@ -129,9 +131,8 @@ class SongTable:
             if song.status.can_be_downloaded():
                 self.stop_playing_local_song(song)
                 previewer.Previewer.close_song(song.song_id)
-                song.status = DownloadStatus.PENDING
                 with db.transaction():
-                    song.upsert()
+                    song.set_status(DownloadStatus.PENDING)
                 events.SongChanged(song.song_id).post()
                 to_download.append(song)
         if to_download:
@@ -211,7 +212,7 @@ class SongTable:
             self._play_or_stop_sample(song)
 
     def _play_or_stop_sample(self, song: UsdbSong) -> None:
-        if self._playing_song and song.song_id == self._playing_song.song_id:
+        if self._playing_song_id == song.song_id:
             # second play() in a row is a stop()
             self._media_player.stop()
             return
@@ -225,7 +226,7 @@ class SongTable:
             url = song.sample_url
         else:
             return
-        self._next_playing_song = song
+        self._next_playing_song_id = song.song_id
         self._media_player.setSource(url)
         self._media_player.setPosition(position)
         self._media_player.play()
