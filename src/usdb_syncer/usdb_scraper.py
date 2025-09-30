@@ -388,9 +388,9 @@ def _parse_details_table(
         details_table: BeautifulSoup object of song details table
     """
     editors = []
-    pointer = details_table.find(string=usdb_strings.SONG_EDITED_BY)
+    start = details_table.find(string=usdb_strings.SONG_EDITED_BY)
+    pointer = start.find_next("td") if start else None
     while pointer is not None:
-        pointer = pointer.find_next("td")
         if pointer.a is None:  # type: ignore
             break
         editors.append(pointer.text.strip())  # type: ignore
@@ -437,7 +437,9 @@ def _parse_details_table(
         uploader=_find_text_after(details_table, usdb_strings.UPLOADED_BY),
         editors=editors,
         views=int(_find_text_after(details_table, usdb_strings.VIEWS)),
-        rating=sum("star.png" in s.get("src") for s in stars),
+        rating=sum(
+            1 for s in stars if (src := s.get("src")) is not None and "star.png" in src
+        ),
         votes=int(votes_str.split("(")[1].split(")")[0]),
         audio_sample=audio_sample or None,
     )
