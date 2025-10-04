@@ -171,9 +171,6 @@ class SongTable:
         for song_id in ids:
             song = UsdbSong.get(song_id)
             assert song
-            if song.sync_meta and song.sync_meta.pinned:
-                song_logger(song.song_id).info("Not downloading song as it is pinned.")
-                continue
             if song.status.can_be_downloaded():
                 self.stop_playing_local_song(song)
                 previewer.Previewer.close_song(song.song_id)

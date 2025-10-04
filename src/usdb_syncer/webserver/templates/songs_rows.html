@@ -3,12 +3,20 @@
   <td class="px-1 md:px-4 py-1 text-center">
     {% if song.sync_meta %}
     <button
-      class="play-button cursor-pointer text-lg md:text-2xl"
+      class="play-button text-lg md:text-2xl"
       song_id="{{ song.song_id }}"
       preview_offset="{{ song.sync_meta.meta_tags.preview if song.sync_meta and song.sync_meta.meta_tags and song.sync_meta.meta_tags.preview else 0 }}"
       title="Play"
     >
       ▶
+    </button>
+    {% elif allow_downloading %}
+    <button
+      class="download-button text-lg md:text-2xl"
+      song_id="{{ song.song_id }}"
+      title="Request download"
+    >
+      ⤓
     </button>
     {% endif %}
   </td>

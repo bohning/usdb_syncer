@@ -19,6 +19,7 @@ from PySide6 import QtCore
 from werkzeug.serving import WSGIRequestHandler
 
 from usdb_syncer import SongId, db, errors, logger, utils
+from usdb_syncer.song_loader import DownloadManager
 from usdb_syncer.usdb_song import UsdbSong
 
 
@@ -49,7 +50,7 @@ def _get_songs(request: flask.Request, show_nonlocal_songs: bool) -> list[UsdbSo
     ]
 
 
-def _index(title: str, show_nonlocal_songs: bool) -> str:
+def _index(title: str, show_nonlocal_songs: bool, allow_downloading: bool) -> str:
     songs = _get_songs(flask.request, show_nonlocal_songs)
     search = flask.request.args.get("search", default="")
     sort_by = flask.request.args.get("sort_by", "artist")
@@ -63,6 +64,7 @@ def _index(title: str, show_nonlocal_songs: bool) -> str:
             sort_by=sort_by,
             sort_order=sort_order,
             offset=offset,
+            allow_downloading=allow_downloading,
         )
     return flask.render_template(
         "index.html",
@@ -73,10 +75,11 @@ def _index(title: str, show_nonlocal_songs: bool) -> str:
         sort_by=sort_by,
         sort_order=sort_order,
         offset=offset,
+        allow_downloading=allow_downloading,
     )
 
 
-def _api_songs(show_nonlocal_songs: bool) -> str:
+def _api_songs(show_nonlocal_songs: bool, allow_downloading: bool) -> str:
     songs = _get_songs(flask.request, show_nonlocal_songs)
     search = flask.request.args.get("search", default="")
     sort_by = flask.request.args.get("sort_by", "artist")
@@ -89,6 +92,7 @@ def _api_songs(show_nonlocal_songs: bool) -> str:
         sort_by=sort_by,
         sort_order=sort_order,
         offset=offset,
+        allow_downloading=allow_downloading,
     )
 
 
@@ -105,34 +109,54 @@ def _api_mp3() -> flask.Response:
     return flask.send_file(audio_path, mimetype="audio/mp3")
 
 
-def _create_app(title: str, *, show_nonlocal_songs: bool) -> flask.Flask:
+def _api_download() -> flask.Response:
+    song_id = flask.request.args.get("song_id", type=int)
+    if not song_id:
+        return flask.abort(400, "song_id parameter is required")
+    song = UsdbSong.get(SongId(song_id))
+    if not song:
+        return flask.abort(404, "Song not found")
+    if song.status.can_be_downloaded():
+        DownloadManager.download([song], utils.ProgressProxy(""))
+    return flask.make_response("", 200)
+
+
+def _create_app(
+    title: str, *, show_nonlocal_songs: bool, allow_downloading: bool
+) -> flask.Flask:
     app = flask.Flask(__name__)
 
     @app.route("/")
     def index() -> str:
-        return _index(title, show_nonlocal_songs)
+        return _index(title, show_nonlocal_songs, allow_downloading)
 
     @app.route("/api/songs")
     def api_songs() -> str:
-        return _api_songs(show_nonlocal_songs)
+        return _api_songs(show_nonlocal_songs, allow_downloading)
 
     @app.route("/api/mp3")
     def api_mp3() -> flask.Response:
         return _api_mp3()
+
+    @app.route("/api/download")
+    def api_download() -> flask.Response:
+        if not allow_downloading:
+            return flask.abort(403, "Downloading is not allowed")
+        return _api_download()
 
     @app.before_request
     def before_request() -> None:
         db.connect(utils.AppPaths.db)
 
     @app.teardown_request
-    def teardown_request(exception: Any = None) -> None:
+    def teardown_request(exception: Any = None) -> None:  # noqa: ARG001
         db.close()
 
     return app
 
 
 class _CustomRequestHandler(WSGIRequestHandler):
-    def log(self, type: str, message: str, *args: Any) -> None:  # noqa: A002
+    def log(self, type: str, message: str, *args: Any) -> None:  # noqa: A002, ARG002
         # don't log requests to info level
         super().log("debug", message, *args)
 
@@ -163,12 +187,17 @@ class _WebserverManager:
         port: int | None = None,
         title: str | None = None,
         show_nonlocal_songs: bool = False,
+        allow_downloading: bool = False,
     ) -> None:
         if cls._server:
             return
         if title:
             cls.title = title
-        app = _create_app(cls.title, show_nonlocal_songs=show_nonlocal_songs)
+        app = _create_app(
+            cls.title,
+            show_nonlocal_songs=show_nonlocal_songs,
+            allow_downloading=allow_downloading,
+        )
         cls.host = host or get_local_ip()
         cls._validate_port(port)
         cls._server = werkzeug.serving.make_server(
@@ -228,10 +257,15 @@ def start(
     port: int | None = None,
     title: str | None = None,
     show_nonlocal_songs: bool = False,
+    allow_downloading: bool = False,
 ) -> None:
     logging.getLogger("werkzeug").setLevel(logging.DEBUG)
     _WebserverManager.start(
-        host=host, port=port, title=title, show_nonlocal_songs=show_nonlocal_songs
+        host=host,
+        port=port,
+        title=title,
+        show_nonlocal_songs=show_nonlocal_songs,
+        allow_downloading=allow_downloading,
     )
     logger.logger.info(f"Webserver is now running on {address()}")
 

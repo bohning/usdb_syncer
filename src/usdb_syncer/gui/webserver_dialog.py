@@ -45,6 +45,7 @@ class WebserverDialog(Ui_Dialog, QtWidgets.QDialog):
                 title=self.edit_title.text(),
                 port=self.box_port.value(),
                 show_nonlocal_songs=not self.checkBox_only_local_songs.isChecked(),
+                allow_downloading=self.checkBox_allow_downloads.isChecked(),
             )
         except errors.WebserverError as e:
             QtWidgets.QMessageBox.warning(None, "Failed to start webserver", str(e))
