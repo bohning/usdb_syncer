@@ -30,7 +30,7 @@ The following explains how to set up a development environment.
 ### Prerequisites
 
 - [git](https://www.git-scm.com/downloads)
-- [Python 3.12](https://www.python.org/downloads/) (3.11 should work as well)
+- [Python 3.12](https://www.python.org/downloads/)
 - [Poetry](https://python-poetry.org/docs/#installation)
 
 ### Project Setup

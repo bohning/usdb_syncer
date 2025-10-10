@@ -21,7 +21,7 @@ include = [
 poetry-dynamic-versioning = { version = ">=1.0.0,<2.0.0", extras = ["plugin"] }
 
 [tool.poetry.dependencies]
-python = ">3.10,<3.13"
+python = "3.12"
 attrs = "*"
 beautifulsoup4 = "*"
 ffmpeg-normalize = ">=1.27"
