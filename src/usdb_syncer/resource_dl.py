@@ -187,7 +187,7 @@ def _download_resource(
             logger.debug(f"Failed to download '{url}': {error_message}")
             if any(
                 msg in error_message
-                for msg in (YtErrorMsg.YT_AGE_RESTRICTED, YtErrorMsg.VM_UNAUTHENTICATED)
+                for msg in (YtErrorMsg.YT_AGE_RESTRICTED, YtErrorMsg.VM_UNAUTHENTICATED, YtErrorMsg.YT_CONFIRM_NOT_BOT)
             ):
                 dl_result = _retry_with_cookies(url, options, logger)
                 return ResourceDLResult(extension=dl_result.extension)

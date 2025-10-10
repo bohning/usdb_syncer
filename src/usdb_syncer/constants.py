@@ -113,6 +113,7 @@ class YtErrorMsg:
     YT_FORBIDDEN = "HTTP Error 403: Forbidden"
     YT_PREMIUM_ONLY = "This video is only available to Music Premium members"
     VM_UNAUTHENTICATED = "You're trying to use an unauthenticated request"
+    YT_CONFIRM_NOT_BOT = "Sign in to confirm you’re not a bot."
 
 
 SUPPORTED_VIDEO_SOURCES_REGEX = re.compile(
