@@ -9,6 +9,7 @@ import tempfile
 import time
 from collections.abc import Callable, Iterable, Iterator
 from enum import Enum, auto
+from functools import partial
 from itertools import islice
 from pathlib import Path
 from typing import ClassVar, assert_never
@@ -312,75 +313,6 @@ def _update_song_with_usdb_data(
     song.creator = txt.headers.creator or ""
 
 
-class JobKind(Enum):
-    DOWNLOAD = auto()
-    TAG = auto()
-
-
-class JobResult(Enum):
-    SUCCESS = auto()
-    SKIPPED = auto()
-    FAILED = auto()
-
-
-class Job(Enum):
-    """All jobs in the song download pipeline, in logical order."""
-
-    DOWNLOAD_AUDIO = "_maybe_download_audio"
-    DOWNLOAD_VIDEO = "_maybe_download_video"
-    DOWNLOAD_COVER = "_maybe_download_cover"
-    DOWNLOAD_BACKGROUND = "_maybe_download_background"
-    WRITE_TXT = "_maybe_write_txt"
-    TAG_AUDIO = "_maybe_write_audio_tags"
-    TAG_VIDEO = "_maybe_write_video_tags"
-
-    def func(self) -> Callable[[_Context], JobResult]:
-        return {
-            Job.DOWNLOAD_AUDIO: _maybe_download_audio,
-            Job.DOWNLOAD_VIDEO: _maybe_download_video,
-            Job.DOWNLOAD_COVER: _maybe_download_cover,
-            Job.DOWNLOAD_BACKGROUND: _maybe_download_background,
-            Job.WRITE_TXT: _maybe_write_txt,
-            Job.TAG_AUDIO: _maybe_write_audio_tags,
-            Job.TAG_VIDEO: _maybe_write_video_tags,
-        }[self]
-
-    def depends_on(self) -> tuple[Job, ...]:
-        match self:
-            case Job.TAG_AUDIO:
-                return (
-                    Job.DOWNLOAD_AUDIO,
-                    Job.DOWNLOAD_COVER,
-                    Job.DOWNLOAD_BACKGROUND,
-                    Job.WRITE_TXT,
-                )
-            case Job.TAG_VIDEO:
-                return (
-                    Job.DOWNLOAD_VIDEO,
-                    Job.DOWNLOAD_COVER,
-                    Job.DOWNLOAD_BACKGROUND,
-                    Job.WRITE_TXT,
-                )
-            case _:
-                return ()
-
-    def kind(self) -> str:
-        match self:
-            case (
-                Job.DOWNLOAD_AUDIO
-                | Job.DOWNLOAD_VIDEO
-                | Job.DOWNLOAD_COVER
-                | Job.DOWNLOAD_BACKGROUND
-            ):
-                return "download"
-            case Job.TAG_AUDIO | Job.TAG_VIDEO:
-                return "tag"
-            case Job.WRITE_TXT:
-                return "final"
-            case _:
-                return "unknown"
-
-
 class _SongLoader(QtCore.QRunnable):
     """Runnable to create a complete song folder."""
 
@@ -441,8 +373,8 @@ class _SongLoader(QtCore.QRunnable):
             for job in Job:
                 self._check_flags()
                 self.logger.debug(f"Running job: {job.name}")
-                # Skip tag jobs if none of the relevant files changed.
-                if job.kind == JobKind.TAG and not any(
+                # Skip jobs if none of the relevant files changed.
+                if not any(
                     results.get(dep) is JobResult.SUCCESS for dep in job.depends_on()
                 ):
                     ctx.logger.debug(
@@ -450,7 +382,7 @@ class _SongLoader(QtCore.QRunnable):
                     )
                     continue
 
-                result = job.func()(ctx)
+                result = job(ctx)
                 if isinstance(result, JobResult):
                     results[job] = result
                     ctx.logger.debug(f"Job {job.name} result: {result.name}")
@@ -862,3 +794,49 @@ def _write_sync_meta(ctx: _Context) -> None:
         ctx.locations, temp=False
     )
     ctx.song.sync_meta.synchronize_to_file()
+
+
+class JobResult(Enum):
+    """Result of a job."""
+
+    SUCCESS = auto()
+    SKIPPED = auto()
+    FAILED = auto()
+
+
+class Job(Enum):
+    """All jobs in the song download pipeline, in logical order."""
+
+    AUDIO_DOWNLOAD = partial(_maybe_download_audio)
+    VIDEO_DOWNLOAD = partial(_maybe_download_video)
+    COVER_DOWNLOAD = partial(_maybe_download_cover)
+    BACKGROUND_DOWNLOAD = partial(_maybe_download_background)
+    TXT_WRITTEN = partial(_maybe_write_txt)
+    WRITE_AUDIO_TAGS = partial(_maybe_write_audio_tags)
+    WRITE_VIDEO_TAGS = partial(_maybe_write_video_tags)
+
+    def __call__(self, ctx: _Context) -> JobResult:
+        return self.value(ctx)
+
+    @property
+    def func(self) -> Callable[["_Context"], JobResult]:
+        return self.value
+
+    def depends_on(self) -> tuple["Job", ...]:
+        match self:
+            case Job.WRITE_AUDIO_TAGS:
+                return (
+                    Job.AUDIO_DOWNLOAD,
+                    Job.COVER_DOWNLOAD,
+                    Job.BACKGROUND_DOWNLOAD,
+                    Job.TXT_WRITTEN,
+                )
+            case Job.WRITE_VIDEO_TAGS:
+                return (
+                    Job.VIDEO_DOWNLOAD,
+                    Job.COVER_DOWNLOAD,
+                    Job.BACKGROUND_DOWNLOAD,
+                    Job.TXT_WRITTEN,
+                )
+            case _:
+                return ()
