@@ -197,7 +197,7 @@ class Headers:
             logger.info(
                 "This song (implicitly) uses audio and video from the same source, "
                 "which are, generally, already in sync. Therefore, the #VIDEOGAP "
-                "actually causes audio and video to be asynchronized."
+                "actually causes audio and video to be asynchronized. "
                 "To fix this, the #VIDEOGAP is deleted from the local file. "
                 "If the actual intention of the #VIDEOGAP is to sync audio and video "
                 "from the *same* source, both 'a=' and 'v=' metatags need to be "
