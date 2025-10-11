@@ -16,6 +16,8 @@ from usdb_syncer.constants import (
     QUOTATION_MARKS_TO_REPLACE,
 )
 
+NARROW_NO_BREAK_SPACE = "\u202f"
+
 
 class QuotationMarkReplacementResult(NamedTuple):
     """Named tuple for the result of replace_false_quotation_marks."""
@@ -98,14 +100,14 @@ def replace_false_quotation_marks(
             if opening:
                 new_text.append(opening_quote)
                 if spaced_quotes:
-                    new_text.append(" ")  # narrow no-break space U+202F
+                    new_text.append(NARROW_NO_BREAK_SPACE)
                     if i < len(text) - 1 and text[i + 1].isspace():
                         i += 1  # skip space
             else:
                 if spaced_quotes:
                     if i > 0 and text[i - 1].isspace():
                         new_text.pop()  # remove trailing space
-                    new_text.append(" ")  # narrow no-break space U+202F
+                    new_text.append(NARROW_NO_BREAK_SPACE)
                 new_text.append(closing_quote)
             opening = not opening
         else:
