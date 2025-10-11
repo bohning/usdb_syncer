@@ -348,9 +348,19 @@ class Job(Enum):
     def depends_on(self) -> tuple[Job, ...]:
         match self:
             case Job.TAG_AUDIO:
-                return (Job.DOWNLOAD_AUDIO, Job.DOWNLOAD_COVER, Job.DOWNLOAD_BACKGROUND)
+                return (
+                    Job.DOWNLOAD_AUDIO,
+                    Job.DOWNLOAD_COVER,
+                    Job.DOWNLOAD_BACKGROUND,
+                    Job.WRITE_TXT,
+                )
             case Job.TAG_VIDEO:
-                return (Job.DOWNLOAD_VIDEO, Job.DOWNLOAD_COVER, Job.DOWNLOAD_BACKGROUND)
+                return (
+                    Job.DOWNLOAD_VIDEO,
+                    Job.DOWNLOAD_COVER,
+                    Job.DOWNLOAD_BACKGROUND,
+                    Job.WRITE_TXT,
+                )
             case _:
                 return ()
 
