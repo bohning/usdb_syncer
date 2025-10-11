@@ -8,7 +8,6 @@ import shutil
 import tempfile
 import time
 from collections.abc import Callable, Iterable, Iterator
-from dataclasses import dataclass
 from enum import Enum, auto
 from itertools import islice
 from pathlib import Path
@@ -323,36 +322,53 @@ class JobResult(Enum):
     SKIPPED = auto()
     FAILED = auto()
 
-    @property
-    def ok(self) -> bool:
-        return self is JobResult.SUCCESS
 
+class Job(Enum):
+    """All jobs in the song download pipeline, in logical order."""
 
-@dataclass
-class Job:
-    name: str
-    func: Callable[["_Context"], JobResult | None]
-    kind: JobKind
-    depends_on: tuple[str, ...] = ()
+    DOWNLOAD_AUDIO = "_maybe_download_audio"
+    DOWNLOAD_VIDEO = "_maybe_download_video"
+    DOWNLOAD_COVER = "_maybe_download_cover"
+    DOWNLOAD_BACKGROUND = "_maybe_download_background"
+    WRITE_TXT = "_maybe_write_txt"
+    TAG_AUDIO = "_maybe_write_audio_tags"
+    TAG_VIDEO = "_maybe_write_video_tags"
 
+    def func(self) -> Callable[[_Context], JobResult]:
+        return {
+            Job.DOWNLOAD_AUDIO: _maybe_download_audio,
+            Job.DOWNLOAD_VIDEO: _maybe_download_video,
+            Job.DOWNLOAD_COVER: _maybe_download_cover,
+            Job.DOWNLOAD_BACKGROUND: _maybe_download_background,
+            Job.WRITE_TXT: _maybe_write_txt,
+            Job.TAG_AUDIO: _maybe_write_audio_tags,
+            Job.TAG_VIDEO: _maybe_write_video_tags,
+        }[self]
 
-_JOB_REGISTRY: list[Job] = []
+    def depends_on(self) -> tuple[Job, ...]:
+        match self:
+            case Job.TAG_AUDIO:
+                return (Job.DOWNLOAD_AUDIO, Job.DOWNLOAD_COVER, Job.DOWNLOAD_BACKGROUND)
+            case Job.TAG_VIDEO:
+                return (Job.DOWNLOAD_VIDEO, Job.DOWNLOAD_COVER, Job.DOWNLOAD_BACKGROUND)
+            case _:
+                return ()
 
-
-def register_job(
-    name: str, kind: JobKind, *, depends_on: tuple[str, ...] = ()
-) -> Callable[
-    [Callable[["_Context"], JobResult | None]], Callable[["_Context"], JobResult | None]
-]:
-    """Decorator to register pipeline jobs with dependencies."""
-
-    def decorator(
-        func: Callable[["_Context"], JobResult | None],
-    ) -> Callable[["_Context"], JobResult | None]:
-        _JOB_REGISTRY.append(Job(name, func, kind, depends_on))
-        return func
-
-    return decorator
+    def kind(self) -> str:
+        match self:
+            case (
+                Job.DOWNLOAD_AUDIO
+                | Job.DOWNLOAD_VIDEO
+                | Job.DOWNLOAD_COVER
+                | Job.DOWNLOAD_BACKGROUND
+            ):
+                return "download"
+            case Job.TAG_AUDIO | Job.TAG_VIDEO:
+                return "tag"
+            case Job.WRITE_TXT:
+                return "final"
+            case _:
+                return "unknown"
 
 
 class _SongLoader(QtCore.QRunnable):
@@ -411,28 +427,25 @@ class _SongLoader(QtCore.QRunnable):
         events.SongChanged(self.song_id).post()
         with tempfile.TemporaryDirectory() as tempdir:
             ctx = _Context.new(self.song, self.options, Path(tempdir), self.logger)
-            results: dict[str, JobResult] = {}
-            for job in _JOB_REGISTRY:
+            results: dict[Job, JobResult] = {}
+            for job in Job:
                 self._check_flags()
-                self.logger.debug("Running job: %s", job.name)
+                self.logger.debug(f"Running job: {job.name}")
                 # Skip tag jobs if none of the relevant files changed.
                 if job.kind == JobKind.TAG and not any(
-                    results.get(dep) == JobResult.SUCCESS for dep in job.depends_on
+                    results.get(dep) is JobResult.SUCCESS for dep in job.depends_on()
                 ):
                     ctx.logger.debug(
                         f"Skipping {job.name}: all relevant files unchanged."
                     )
                     continue
 
-                try:
-                    result = job.func(ctx)
-                except Exception:
-                    ctx.logger.exception(f"Job {job.name} failed unexpectedly.")
-                    result = JobResult.FAILED
+                result = job.func()(ctx)
                 if isinstance(result, JobResult):
-                    results[job.name] = result
+                    results[job] = result
                     ctx.logger.debug(f"Job {job.name} result: {result.name}")
 
+            # last chance to abort before irreversible changes
             self._check_flags()
             _cleanup_existing_resources(ctx)
             # only here so filenames in header are up-to-date
@@ -453,7 +466,6 @@ class _SongLoader(QtCore.QRunnable):
                     raise errors.AbortError
 
 
-@register_job("audio_download", kind=JobKind.DOWNLOAD)
 def _maybe_download_audio(ctx: _Context) -> JobResult:
     if not (options := ctx.options.audio_options):
         return JobResult.SKIPPED
@@ -491,7 +503,6 @@ def _maybe_download_audio(ctx: _Context) -> JobResult:
     return JobResult.FAILED
 
 
-@register_job("video_download", kind=JobKind.DOWNLOAD)
 def _maybe_download_video(ctx: _Context) -> JobResult:
     if not (options := ctx.options.video_options):
         return JobResult.SKIPPED
@@ -531,7 +542,6 @@ def _maybe_download_video(ctx: _Context) -> JobResult:
     return JobResult.FAILED
 
 
-@register_job("cover_download", kind=JobKind.DOWNLOAD)
 def _maybe_download_cover(ctx: _Context) -> JobResult:
     if not ctx.options.cover:
         return JobResult.SKIPPED
@@ -555,7 +565,6 @@ def _maybe_download_cover(ctx: _Context) -> JobResult:
                 ctx.logger,
             )
     if ctx.details.cover_url:
-        ctx.logger.warning("Falling back to small USDB cover.")
         result = _download_cover_url(ctx, ctx.details.cover_url, process=False)
         if result is JobResult.SUCCESS:
             ctx.logger.info("Success! Downloaded USDB cover (fallback).")
@@ -595,7 +604,6 @@ def _download_cover_url(ctx: _Context, url: str, process: bool = True) -> JobRes
     return JobResult.FAILED
 
 
-@register_job("background_download", kind=JobKind.DOWNLOAD)
 def _maybe_download_background(ctx: _Context) -> JobResult:
     if not (options := ctx.options.background_options):
         return JobResult.SKIPPED
@@ -641,7 +649,6 @@ def _maybe_download_background(ctx: _Context) -> JobResult:
         return JobResult.FAILED
 
 
-@register_job("txt_written", kind=JobKind.DOWNLOAD)
 def _maybe_write_txt(ctx: _Context) -> JobResult:
     if not (options := ctx.options.txt_options):
         return JobResult.SKIPPED
@@ -727,11 +734,6 @@ def _set_background_headers(ctx: _Context, version: FormatVersion, path: Path) -
         ctx.txt.headers.backgroundurl = url
 
 
-@register_job(
-    "write_audio_tags",
-    kind=JobKind.TAG,
-    depends_on=("audio_download", "cover_download", "background_download"),
-)
 def _maybe_write_audio_tags(ctx: _Context) -> JobResult:
     if not (options := ctx.options.audio_options):
         return JobResult.SKIPPED
@@ -761,11 +763,6 @@ def _maybe_write_audio_tags(ctx: _Context) -> JobResult:
     return JobResult.SUCCESS
 
 
-@register_job(
-    "write_video_tags",
-    kind=JobKind.TAG,
-    depends_on=("video_download", "cover_download", "background_download"),
-)
 def _maybe_write_video_tags(ctx: _Context) -> JobResult:
     if not (options := ctx.options.video_options):
         return JobResult.SKIPPED
