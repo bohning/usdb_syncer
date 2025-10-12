@@ -7,7 +7,7 @@ import filecmp
 import shutil
 import tempfile
 import time
-from collections.abc import Callable, Iterable, Iterator
+from collections.abc import Iterable, Iterator
 from enum import Enum, auto
 from functools import partial
 from itertools import islice
@@ -373,9 +373,9 @@ class _SongLoader(QtCore.QRunnable):
             for job in Job:
                 self._check_flags()
                 self.logger.debug(f"Running job: {job.name}")
-                # Skip jobs if none of the relevant files changed.
-                if not any(
-                    results.get(dep) is JobResult.SUCCESS for dep in job.depends_on()
+                # Skip jobs if dependencies are unchanged (skipped or failed).
+                if (deps := job.depends_on()) and not any(
+                    results.get(dep) is JobResult.SUCCESS for dep in deps
                 ):
                     ctx.logger.debug(
                         f"Skipping {job.name}: all relevant files unchanged."
@@ -807,10 +807,6 @@ class Job(Enum):
 
     def __call__(self, ctx: _Context) -> JobResult:
         return self.value(ctx)
-
-    @property
-    def func(self) -> Callable[[_Context], JobResult]:
-        return self.value
 
     def depends_on(self) -> tuple["Job", ...]:
         match self:
