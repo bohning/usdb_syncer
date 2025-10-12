@@ -382,10 +382,8 @@ class _SongLoader(QtCore.QRunnable):
                     )
                     continue
 
-                result = job(ctx)
-                if isinstance(result, JobResult):
-                    results[job] = result
-                    ctx.logger.debug(f"Job {job.name} result: {result.name}")
+                results[job] = job(ctx)
+                ctx.logger.debug(f"Job {job.name} result: {results[job].name}")
 
             # last chance to abort before irreversible changes
             self._check_flags()
@@ -688,18 +686,14 @@ def _maybe_write_audio_tags(ctx: _Context) -> JobResult:
     background_path_resource = ctx.out.background.path_and_resource(
         ctx.locations, temp=True
     )
-    try:
-        write_audio_tags(
-            txt=ctx.txt,
-            options=options,
-            audio=audio_path_resource,
-            cover=cover_path_resource,
-            background=background_path_resource,
-            logger=ctx.logger,
-        )
-    except Exception:
-        ctx.logger.exception("Failed to write audio tags.")
-        return JobResult.FAILED
+    write_audio_tags(
+        txt=ctx.txt,
+        options=options,
+        audio=audio_path_resource,
+        cover=cover_path_resource,
+        background=background_path_resource,
+        logger=ctx.logger,
+    )
 
     ctx.logger.info("Success! Wrote audio tags.")
     return JobResult.SUCCESS
@@ -717,18 +711,14 @@ def _maybe_write_video_tags(ctx: _Context) -> JobResult:
     background_path_resource = ctx.out.background.path_and_resource(
         ctx.locations, temp=True
     )
-    try:
-        write_video_tags(
-            txt=ctx.txt,
-            options=options,
-            video=video_path_resource,
-            cover=cover_path_resource,
-            background=background_path_resource,
-            logger=ctx.logger,
-        )
-    except Exception:
-        ctx.logger.exception("Failed to write video tags.")
-        return JobResult.FAILED
+    write_video_tags(
+        txt=ctx.txt,
+        options=options,
+        video=video_path_resource,
+        cover=cover_path_resource,
+        background=background_path_resource,
+        logger=ctx.logger,
+    )
     ctx.logger.info("Success! Wrote video tags.")
     return JobResult.SUCCESS
 
@@ -819,21 +809,14 @@ class Job(Enum):
         return self.value(ctx)
 
     @property
-    def func(self) -> Callable[["_Context"], JobResult]:
+    def func(self) -> Callable[[_Context], JobResult]:
         return self.value
 
     def depends_on(self) -> tuple["Job", ...]:
         match self:
-            case Job.WRITE_AUDIO_TAGS:
+            case Job.WRITE_AUDIO_TAGS | Job.WRITE_VIDEO_TAGS:
                 return (
                     Job.AUDIO_DOWNLOAD,
-                    Job.COVER_DOWNLOAD,
-                    Job.BACKGROUND_DOWNLOAD,
-                    Job.TXT_WRITTEN,
-                )
-            case Job.WRITE_VIDEO_TAGS:
-                return (
-                    Job.VIDEO_DOWNLOAD,
                     Job.COVER_DOWNLOAD,
                     Job.BACKGROUND_DOWNLOAD,
                     Job.TXT_WRITTEN,
