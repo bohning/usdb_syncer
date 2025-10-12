@@ -390,7 +390,7 @@ def _parse_details_table(
     editors = []
     pointer = details_table.find(string=usdb_strings.SONG_EDITED_BY)
     while pointer is not None:
-        pointer = pointer.find_next("td")
+        pointer = pointer.find_next("td")  # type: ignore
         if pointer.a is None:  # type: ignore
             break
         editors.append(pointer.text.strip())  # type: ignore
@@ -437,7 +437,7 @@ def _parse_details_table(
         uploader=_find_text_after(details_table, usdb_strings.UPLOADED_BY),
         editors=editors,
         views=int(_find_text_after(details_table, usdb_strings.VIEWS)),
-        rating=sum("star.png" in s.get("src") for s in stars),
+        rating=sum("star.png" in (s.get("src") or "") for s in stars),
         votes=int(votes_str.split("(")[1].split(")")[0]),
         audio_sample=audio_sample or None,
     )
