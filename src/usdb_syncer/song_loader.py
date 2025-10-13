@@ -373,6 +373,8 @@ class _SongLoader(QtCore.QRunnable):
             for job in Job:
                 self._check_flags()
                 self.logger.debug(f"Running job: {job.name}")
+                if job == Job.TXT_WRITTEN:
+                    _cleanup_existing_resources(ctx)
                 # Skip jobs if dependencies are unchanged (skipped or failed).
                 if (deps := job.depends_on()) and not any(
                     results.get(dep) is JobResult.SUCCESS for dep in deps
@@ -385,11 +387,6 @@ class _SongLoader(QtCore.QRunnable):
                 results[job] = job(ctx)
                 ctx.logger.debug(f"Job {job.name} result: {results[job].name}")
 
-            # last chance to abort before irreversible changes
-            self._check_flags()
-            _cleanup_existing_resources(ctx)
-            # only here so filenames in header are up-to-date
-            _maybe_write_txt(ctx)
             ctx.locations.move_to_target_folder()
             _persist_tempfiles(ctx)
         _write_sync_meta(ctx)
