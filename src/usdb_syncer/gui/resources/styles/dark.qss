@@ -190,6 +190,10 @@ QToolButton {{
 QToolButton:checked {{
   border: 1px solid {on_surface};
 }}
+QPushButton:flat {{
+  background-color: transparent;
+  padding: 0;
+}}
 
 
 QRadioButton::indicator {{

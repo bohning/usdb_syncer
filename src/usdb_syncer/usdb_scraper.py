@@ -13,7 +13,7 @@ import requests
 from bs4 import BeautifulSoup, NavigableString, Tag
 from requests import Session
 
-from usdb_syncer import SongId, db, errors, settings
+from usdb_syncer import SongId, db, errors, events, settings
 from usdb_syncer.constants import (
     SUPPORTED_VIDEO_SOURCES_REGEX,
     Usdb,
@@ -51,18 +51,19 @@ def establish_usdb_login(session: Session) -> bool:
     """Tries to log in to USDB if necessary. Returns final login status."""
     if user := get_logged_in_usdb_user(session):
         logger.info(f"Using existing login of USDB user '{user}'.")
-        return True
-    if (auth := settings.get_usdb_auth())[0] and auth[1]:
+    elif (auth := settings.get_usdb_auth())[0] and auth[1]:
         if login_to_usdb(session, *auth):
-            logger.info(f"Successfully logged in to USDB with user '{auth[0]}'.")
-            return True
-        logger.error(f"Login to USDB with user '{auth[0]}' failed!")
+            user = auth[0]
+            logger.info(f"Successfully logged in to USDB with user '{user}'.")
+        else:
+            logger.error(f"Login to USDB with user '{user}' failed!")
     else:
         logger.warning(
             "Not logged in to USDB. Please go to 'Synchronize > USDB Login', then "
             "select the browser you are logged in with and/or enter your credentials."
         )
-    return False
+    events.LoggedInToUSDB(user=user).post()
+    return user is not None
 
 
 def new_session_with_cookies(browser: settings.Browser) -> Session:
