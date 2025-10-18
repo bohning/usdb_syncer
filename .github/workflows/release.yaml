@@ -66,7 +66,7 @@ jobs:
               --add-data 'src/usdb_syncer/gui/resources/audio:usdb_syncer/gui/resources/audio'
               --add-data 'src/usdb_syncer/webserver/static:usdb_syncer/webserver/static'
               --add-data 'src/usdb_syncer/webserver/templates:usdb_syncer/webserver/templates'
-          - os: macos-13
+          - os: macos-15-intel
             TARGET: macOS-x64
             PYINSTALLER_ARGS: >-
               --windowed
@@ -132,6 +132,9 @@ jobs:
         run: python -m pip install "poetry-dynamic-versioning[plugin]"
       - name: Install dependencies
         run: poetry install --without dev
+      - name: Set macOS deployment target (macOS 12+ compatibility)
+        if: startsWith(matrix.os, 'macos')
+        run: echo "MACOSX_DEPLOYMENT_TARGET=12.0" >> $GITHUB_ENV
       - name: Write release version
         shell: bash
         run: |
