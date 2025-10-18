@@ -48,7 +48,7 @@ yt-dlp = {version = "*", extras = ["default", "curl_cffi"]}
 [tool.poetry.group.dev.dependencies]
 tox = "*"
 # lint
-ruff = "0.11.6"
+ruff = "^0.14.1"
 mypy = "*"
 types-requests = "*"
 # test
