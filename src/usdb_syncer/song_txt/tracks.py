@@ -11,6 +11,7 @@ import attrs
 
 from usdb_syncer import errors, settings
 from usdb_syncer.logger import Logger
+from usdb_syncer.meta_tags import MedleyTag
 from usdb_syncer.song_txt.auxiliaries import (
     BeatsPerMinute,
     replace_false_apostrophes,
@@ -483,6 +484,46 @@ class Tracks:
             logger.debug(
                 f"FIX: Capitalization corrected for {lines_capitalized} lines."
             )
+
+    def fix_medley_section(self, medley: MedleyTag, logger: Logger) -> MedleyTag | None:
+        """Ensure that medley sections start/end on line start/end."""
+
+        if not medley or self.track_2:
+            return None  # No medley in duets or empty
+
+        start_line = None
+        end_line = None
+
+        for line in self.track_1:
+            if start_line is None and line.start() <= medley.start <= line.end():
+                start_line = line
+            if end_line is None and line.start() <= medley.end <= line.end():
+                end_line = line
+            if start_line and end_line:
+                break
+
+        if not start_line or not end_line:
+            logger.warning(
+                f"Medley beats ({medley.start}, {medley.end}) do not match any valid "
+                "line. Ignoring medley meta tags."
+            )
+            return None
+
+        corrected_start = start_line.start()
+        corrected_end = end_line.end()
+
+        if corrected_start != medley.start:
+            logger.warning(
+                f"Medley start beat ({medley.start}) is not on a line start. "
+                f"Shifting to {corrected_start}."
+            )
+        if corrected_end != medley.end:
+            logger.warning(
+                f"Medley end beat ({medley.end}) is not on a line end. "
+                f"Shifting to {corrected_end}."
+            )
+
+        return MedleyTag(start=corrected_start, end=corrected_end)
 
 
 def _player_lines(lines: list[str], logger: Logger) -> list[Line]:
