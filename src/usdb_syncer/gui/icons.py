@@ -84,6 +84,7 @@ class Icon(enum.Enum):
     TUNE_PERFECT = "tune-perfect.png", None
     ULTRASTAR_GAME = "ultrastar-game-black.svg", "ultrastar-game-white.svg"
     ULTRASTAR_MANAGER = "ultrastar-manager.png", None
+    UPLOAD = "upload.png", "upload-white.svg"
     USDB = "faviconUSDB.png", "usdb-white.svg"
     USDX = "usdx.png", None
     VIDEO = "video.png", "filmstrip-white.svg"
