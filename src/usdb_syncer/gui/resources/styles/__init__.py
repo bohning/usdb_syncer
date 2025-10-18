@@ -2,4 +2,4 @@
 
 from importlib import resources
 
-DARK_QSS = resources.files() / "dark.qss"
+DARK_QSS = resources.files(__package__) / "dark.qss"

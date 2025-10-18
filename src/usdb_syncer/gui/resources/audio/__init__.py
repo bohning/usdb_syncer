@@ -2,4 +2,4 @@
 
 from importlib import resources
 
-METRONOME_TICK_WAV = resources.files() / "metronome-tick.wav"
+METRONOME_TICK_WAV = resources.files(__package__) / "metronome-tick.wav"
