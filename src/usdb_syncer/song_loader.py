@@ -385,6 +385,7 @@ class _SongLoader(QtCore.QRunnable):
                 results[job] = job(ctx)
                 ctx.logger.debug(f"Job {job.name} result: {results[job].name}")
 
+            # last chance to abort before irreversible changes
             self._check_flags()
             _cleanup_existing_resources(ctx)
             ctx.locations.move_to_target_folder()
@@ -798,6 +799,7 @@ class Job(Enum):
     VIDEO_DOWNLOAD = partial(_maybe_download_video)
     COVER_DOWNLOAD = partial(_maybe_download_cover)
     BACKGROUND_DOWNLOAD = partial(_maybe_download_background)
+    # write txt after all file downloads to include correct filenames
     TXT_WRITTEN = partial(_maybe_write_txt)
     WRITE_AUDIO_TAGS = partial(_maybe_write_audio_tags)
     WRITE_VIDEO_TAGS = partial(_maybe_write_video_tags)
