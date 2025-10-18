@@ -17,7 +17,7 @@ class StatusBar:
         self._statusbar = statusbar
         self._usdb_button = QtWidgets.QPushButton(statusbar)
         self._usdb_button.setFlat(True)
-        self._usdb_button.clicked.connect(lambda: UsdbLoginDialog(statusbar).show())
+        self._usdb_button.clicked.connect(lambda: UsdbLoginDialog.load(statusbar))
         self._usdb_button.setCursor(QtGui.Qt.CursorShape.PointingHandCursor)
         self._set_usdb()
         self._statusbar.addPermanentWidget(self._usdb_button)

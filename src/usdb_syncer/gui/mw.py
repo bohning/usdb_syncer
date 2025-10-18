@@ -119,7 +119,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
             ),
             (self.action_find_local_songs, self._select_local_songs, None),
             (self.action_refetch_song_list, self._refetch_song_list, None),
-            (self.action_usdb_login, lambda: UsdbLoginDialog(self).show(), None),
+            (self.action_usdb_login, lambda: UsdbLoginDialog.load(self), None),
             (self.action_meta_tags, lambda: MetaTagsDialog(self).show(), None),
             (
                 self.action_settings,
