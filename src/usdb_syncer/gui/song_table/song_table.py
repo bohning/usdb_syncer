@@ -49,6 +49,7 @@ class SongTable:
         mw.table_view.selectionModel().currentChanged.connect(
             self._on_current_song_changed
         )
+        self._setup_row_count_change()
         self._set_app_actions_visible()
         events.PreferencesChanged.subscribe(lambda _: self._set_app_actions_visible())
         events.SongChanged.subscribe(self._on_song_changed)
@@ -340,18 +341,19 @@ class SongTable:
 
     # sorting and filtering
 
-    def connect_row_count_changed(self, func: Callable[[int, int], None]) -> None:
-        """Calls `func` with the new table row and selection counts."""
+    def _on_row_counts_changed(self, *_: Any) -> None:
+        gui_events.RowCountChanged(
+            rows=self._model.rowCount(),
+            selected=len(self._view.selectionModel().selectedRows()),
+        ).post()
 
-        def wrapped(*_: Any) -> None:
-            func(
-                self._model.rowCount(), len(self._view.selectionModel().selectedRows())
-            )
-
-        self._model.modelReset.connect(wrapped)
-        self._model.rowsInserted.connect(wrapped)
-        self._model.rowsRemoved.connect(wrapped)
-        self._view.selectionModel().selectionChanged.connect(wrapped)
+    def _setup_row_count_change(self) -> None:
+        self._model.modelReset.connect(self._on_row_counts_changed)
+        self._model.rowsInserted.connect(self._on_row_counts_changed)
+        self._model.rowsRemoved.connect(self._on_row_counts_changed)
+        self._view.selectionModel().selectionChanged.connect(
+            self._on_row_counts_changed
+        )
 
     def _setup_search_timer(self) -> None:
         self._search_timer = QtCore.QTimer(self.mw)
