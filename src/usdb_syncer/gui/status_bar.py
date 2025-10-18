@@ -23,7 +23,7 @@ class StatusBar:
         self._statusbar.addPermanentWidget(self._usdb_button)
         self._selection_label = QtWidgets.QLabel(statusbar)
         self._statusbar.addWidget(self._selection_label)
-
+        gui_events.ThemeChanged.subscribe(self._set_usdb)
         events.LoggedInToUSDB.subscribe(self._on_usdb_login)
         gui_events.RowCountChanged.subscribe(self._on_count_changed)
 
@@ -38,12 +38,13 @@ class StatusBar:
             self._user = event.user
             self._set_usdb()
 
-    def _set_usdb(self) -> None:
+    def _set_usdb(self, event: gui_events.ThemeChanged | None = None) -> None:
+        theme = event.theme.KEY if event else None
         if self._user:
             text = f" Welcome, {self._user}!"
-            icon = icons.Icon.USDB.icon()
+            icon = icons.Icon.USDB.icon(theme)
         else:
             text = " Not logged in to USDB!"
-            icon = icons.Icon.ERROR.icon()
+            icon = icons.Icon.ERROR.icon(theme)
         self._usdb_button.setText(text)
         self._usdb_button.setIcon(icon)
