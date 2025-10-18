@@ -4,6 +4,7 @@ import html
 import re
 import time
 from collections.abc import Iterator
+from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
 from typing import Any, assert_never
@@ -23,8 +24,26 @@ from usdb_syncer.constants import (
     UsdbStringsGerman,
 )
 from usdb_syncer.logger import Logger, logger, song_logger
+from usdb_syncer.song_txt import SongTxt
+from usdb_syncer.sync_meta import SyncMeta
 from usdb_syncer.usdb_song import UsdbSong
 from usdb_syncer.utils import extract_youtube_id, normalize
+
+
+class UserRole(Enum):
+    ADMIN = "admin"
+    MODERATOR = "mod"
+    USER = "user"
+
+    def __str__(self) -> str:
+        return self.value
+
+
+@dataclass(frozen=True)
+class UsdbUser:
+    name: str
+    role: UserRole
+
 
 SONG_LIST_ROW_REGEX = re.compile(
     r'<tr class="list_tr\d"\s+data-songid="(?P<song_id>\d+)"\s+'
@@ -45,24 +64,25 @@ SONG_LIST_ROW_REGEX = re.compile(
 WELCOME_REGEX = re.compile(
     r"<td class='row3' colspan='2'>\s*<span class='gen'>([^<]+) <b>([^<]+)</b>"
 )
+ROLE_REGEX = re.compile(r"images/rank_(\d)\.gif")
 
 
-def establish_usdb_login(session: Session) -> bool:
+def establish_usdb_login(session: Session) -> UsdbUser | None:
     """Tries to log in to USDB if necessary. Returns final login status."""
     if user := get_logged_in_usdb_user(session):
-        logger.info(f"Using existing login of USDB user '{user}'.")
-        return True
+        logger.info(f"Using existing login of USDB user '{user.name} ({user.role})'.")
+        return user
     if (auth := settings.get_usdb_auth())[0] and auth[1]:
         if login_to_usdb(session, *auth):
             logger.info(f"Successfully logged in to USDB with user '{auth[0]}'.")
-            return True
+            return get_logged_in_usdb_user(session)
         logger.error(f"Login to USDB with user '{auth[0]}' failed!")
     else:
         logger.warning(
             "Not logged in to USDB. Please go to 'Synchronize > USDB Login', then "
             "select the browser you are logged in with and/or enter your credentials."
         )
-    return False
+    return None
 
 
 def new_session_with_cookies(browser: settings.Browser) -> Session:
@@ -78,6 +98,7 @@ class SessionManager:
 
     _session: Session | None = None
     _connecting: bool = False
+    _user: UsdbUser | None = None
 
     @classmethod
     def session(cls) -> Session:
@@ -87,7 +108,7 @@ class SessionManager:
             cls._connecting = True
             try:
                 cls._session = new_session_with_cookies(settings.get_browser())
-                establish_usdb_login(cls._session)
+                cls._user = establish_usdb_login(cls._session)
             finally:
                 cls._connecting = False
         return cls._session
@@ -102,13 +123,34 @@ class SessionManager:
     def has_session(cls) -> bool:
         return cls._session is not None
 
+    @classmethod
+    def get_user(cls) -> UsdbUser | None:
+        return cls._user
 
-def get_logged_in_usdb_user(session: Session) -> str | None:
+
+def get_logged_in_usdb_user(session: Session) -> UsdbUser | None:
+    """Return the logged-in USDB user's name and role, or None if not logged in."""
     response = session.get(Usdb.BASE_URL, timeout=10, params={"link": "profil"})
     response.raise_for_status()
-    if match := WELCOME_REGEX.search(response.text):
-        return match.group(2)
-    return None
+
+    html = response.text
+
+    if not (match := WELCOME_REGEX.search(html)):
+        return None
+    username = match.group(2)
+
+    if rank_match := ROLE_REGEX.search(html):
+        rank = int(rank_match.group(1))
+        if rank == 4:
+            role = UserRole.ADMIN
+        elif rank == 3:
+            role = UserRole.MODERATOR
+        else:
+            role = UserRole.USER
+    else:
+        role = UserRole.USER
+
+    return UsdbUser(username, role)
 
 
 def login_to_usdb(session: Session, user: str, password: str) -> bool:
@@ -571,3 +613,50 @@ def post_song_rating(song_id: SongId, stars: int) -> None:
     )
     logger = song_logger(song_id)
     logger.debug(f"{stars}-star rating posted on USDB.")
+
+
+def submit_local_changes(song: UsdbSong) -> None:
+    """Submit local changes of a song to USDB."""
+
+    logger = song_logger(song.song_id)
+
+    if not (sync_meta := song.sync_meta) or not (txt := sync_meta.txt):
+        logger.info("Song does not exist locally, skipping upload.")
+        return
+
+    if not (txt_to_upload := _prepare_txt_for_upload(sync_meta, logger)):
+        logger.warning("Failed to prepare song file, skipping upload.")
+        return
+
+    payload = {
+        "coverinput": "",
+        "sampleinput": song.sample_url,
+        "txt": txt_to_upload,
+        "filename": txt.fname,
+    }
+
+    get_usdb_page(
+        "index.php",
+        RequestMethod.POST,
+        headers={"Content-Type": "application/x-www-form-urlencoded"},
+        params={"link": "editsongsupdate", "id": str(song.song_id)},
+        payload=payload,
+    )
+
+    logger.info("Local changes successfully submitted to USDB.")
+
+
+def _prepare_txt_for_upload(sync_meta: SyncMeta, logger: Logger) -> str | None:
+    """Reinserts metatags and ensures CRLF line endings."""
+
+    txt_path = sync_meta.txt_path()
+    if not txt_path:
+        return None
+    if not (txt := SongTxt.try_from_file(txt_path, logger)):
+        logger.error("Failed to parse local song txt, skipping upload.")
+        return None
+    if txt.notes.track_2 is not None:
+        txt.headers.title += " [DUET]"
+    txt.headers.video = str(sync_meta.meta_tags)  # reinsert meta tags
+
+    return str(txt).replace("\n", "\r\n")  # USDB requires \r\n (CRLF) line endings

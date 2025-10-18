@@ -1,11 +1,11 @@
 """usdb_syncer's GUI"""
 
 import webbrowser
-from collections.abc import Callable
+from collections.abc import Callable, Iterable
 from pathlib import Path
 
 from PySide6.QtGui import QCloseEvent, QPixmap
-from PySide6.QtWidgets import QFileDialog, QLabel, QMainWindow
+from PySide6.QtWidgets import QFileDialog, QLabel, QMainWindow, QMessageBox
 
 from usdb_syncer import (
     SongId,
@@ -44,7 +44,12 @@ from usdb_syncer.gui.webserver_dialog import WebserverDialog
 from usdb_syncer.logger import logger
 from usdb_syncer.song_loader import DownloadManager
 from usdb_syncer.sync_meta import SyncMeta
-from usdb_syncer.usdb_scraper import post_song_rating
+from usdb_syncer.usdb_scraper import (
+    SessionManager,
+    UserRole,
+    post_song_rating,
+    submit_local_changes,
+)
 from usdb_syncer.usdb_song import UsdbSong
 from usdb_syncer.utils import AppPaths, LinuxEnvCleaner, open_path_or_file
 
@@ -158,6 +163,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
             (self.action_rate_3stars, lambda: self._rate_in_usdb(3), None),
             (self.action_rate_4stars, lambda: self._rate_in_usdb(4), None),
             (self.action_rate_5stars, lambda: self._rate_in_usdb(5), None),
+            (self.action_submit_to_usdb, self._submit_to_usdb, None),
             (self.action_open_song_folder, self._open_current_song_folder, None),
             (
                 self.action_open_song_in_karedi,
@@ -409,6 +415,60 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         else:
             logger.debug("Not rating song: no song selected.")
 
+    def _submit_to_usdb(self) -> None:
+        """Submit song changes to USDB.
+
+        Normal users may only submit one song at a time (the currenty selected song).
+        Moderators may submit all selected local songs.
+        """
+
+        if (user := SessionManager.get_user()) and user.role in {
+            UserRole.ADMIN,
+            UserRole.MODERATOR,
+        }:
+            candidates: Iterable[UsdbSong | None] = list(self.table.selected_songs())
+        else:
+            candidates = [self.table.current_song()]
+
+        local_songs = [s for s in candidates if s and s.is_local()]
+        num_songs = len(local_songs)
+
+        if not local_songs:
+            QMessageBox.information(
+                self, "No Local Songs", "No local songs available for submission."
+            )
+            return
+
+        if num_songs == 1:
+            song = local_songs[0]
+            message = f"Submit changes for: {song.artist} - {song.title}?"
+        else:
+            message = f"Submit changes for {num_songs} local songs?"
+
+        reply = QMessageBox.question(
+            self,
+            "Confirm Submission",
+            message,
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+            QMessageBox.StandardButton.No,
+        )
+
+        if reply != QMessageBox.StandardButton.Yes:
+            return
+
+        def task() -> None:
+            for song in local_songs:
+                submit_local_changes(song)
+
+        def on_done(result: progress.Result) -> None:
+            pass
+
+        run_with_progress(
+            f"Submitting {num_songs} song{'s' if num_songs != 1 else ''}…",
+            task,
+            on_done,
+        )
+
     def _open_current_song(self, action: Callable[[Path], None]) -> None:
         if song := self.table.current_song():
             if song.sync_meta:
@@ -492,6 +552,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         self.menu_custom_data.setIcon(icons.Icon.CUSTOM_DATA.icon(key))
         self.action_pin.setIcon(icons.Icon.PIN.icon(key))
         self.action_delete.setIcon(icons.Icon.DELETE.icon(key))
+        self.action_submit_to_usdb.setIcon(icons.Icon.UPLOAD.icon(key))
         self.action_open_song_in_usdx.setIcon(icons.Icon.USDX.icon(key))
         self.action_open_song_in_vocaluxe.setIcon(icons.Icon.VOCALUXE.icon(key))
         self.action_open_song_in_performous.setIcon(icons.Icon.PERFORMOUS.icon(key))
@@ -515,6 +576,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         if not song:
             return
         for action in (
+            self.action_submit_to_usdb,
             self.action_open_song_folder,
             self.menu_open_song_in,
             self.action_open_song_in_karedi,
