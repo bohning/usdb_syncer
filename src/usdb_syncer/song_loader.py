@@ -385,6 +385,7 @@ class _SongLoader(QtCore.QRunnable):
                 results[job] = job(ctx)
                 ctx.logger.debug(f"Job {job.name} result: {results[job].name}")
 
+            self._check_flags()
             _cleanup_existing_resources(ctx)
             ctx.locations.move_to_target_folder()
             _persist_tempfiles(ctx)
