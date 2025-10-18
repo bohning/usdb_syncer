@@ -388,8 +388,6 @@ class _SongLoader(QtCore.QRunnable):
             # last chance to abort before irreversible changes
             self._check_flags()
             _cleanup_existing_resources(ctx)
-            # only here so filenames in header are up-to-date
-            _maybe_write_txt(ctx)
             ctx.locations.move_to_target_folder()
             _persist_tempfiles(ctx)
         _write_sync_meta(ctx)
@@ -801,6 +799,7 @@ class Job(Enum):
     VIDEO_DOWNLOAD = partial(_maybe_download_video)
     COVER_DOWNLOAD = partial(_maybe_download_cover)
     BACKGROUND_DOWNLOAD = partial(_maybe_download_background)
+    # write txt after all file downloads to include correct filenames
     TXT_WRITTEN = partial(_maybe_write_txt)
     WRITE_AUDIO_TAGS = partial(_maybe_write_audio_tags)
     WRITE_VIDEO_TAGS = partial(_maybe_write_video_tags)
