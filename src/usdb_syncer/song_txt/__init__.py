@@ -99,7 +99,9 @@ class SongTxt:
                         f"Medley is unusually short: {duration} seconds."
                     )
                 elif duration > MEDLEY_MAX_DURATION_SECONDS:
-                    self.logger.warning(f"Medley is usually long: {duration} seconds.")
+                    self.logger.warning(
+                        f"Medley is unusually long: {duration} seconds."
+                    )
         if self.meta_tags.tags:
             self.headers.tags = self.meta_tags.tags
 
