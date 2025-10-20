@@ -86,13 +86,12 @@ class SongTxt:
             self.headers.p2 = self.meta_tags.player2 or "P2"
         if self.meta_tags.preview is not None and self.meta_tags.preview != 0.0:
             self.headers.previewstart = self.meta_tags.preview
-        if medley := self.meta_tags.medley:
-            if (medley := self.notes.fix_medley_section(medley, self.logger)) is None:
-                return
-
-            self.meta_tags.medley = medley
-            self.headers.medleystartbeat = medley.start
-            self.headers.medleyendbeat = medley.end
+        if (medley := self.meta_tags.medley) and (
+            fixed_medley := self.notes.fix_medley_section(medley, self.logger)
+        ) is not None:
+            self.meta_tags.medley = fixed_medley
+            self.headers.medleystartbeat = fixed_medley.start
+            self.headers.medleyendbeat = fixed_medley.end
             if (duration := self.medley_duration()) is not None:
                 if duration < MEDLEY_MIN_DURATION_SECONDS:
                     self.logger.warning(
