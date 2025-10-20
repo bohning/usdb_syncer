@@ -485,45 +485,60 @@ class Tracks:
                 f"FIX: Capitalization corrected for {lines_capitalized} lines."
             )
 
-    def fix_medley_section(self, medley: MedleyTag, logger: Logger) -> MedleyTag | None:
+    def fix_medley_section(
+        self, medley: MedleyTag | None, logger: Logger
+    ) -> MedleyTag | None:
         """Ensure that medley sections start/end on line start/end."""
 
         if not medley or self.track_2:
-            return None  # No medley in duets or empty
+            return None
 
-        start_line = None
-        end_line = None
+        corrected_start = self._correct_medley_start(medley.start)
+        corrected_end = self._correct_medley_end(medley.end)
 
-        for line in self.track_1:
-            if start_line is None and line.start() <= medley.start <= line.end():
-                start_line = line
-            if end_line is None and line.start() <= medley.end <= line.end():
-                end_line = line
-            if start_line and end_line:
-                break
-
-        if not start_line or not end_line:
+        if corrected_start is None or corrected_end is None:
             logger.warning(
-                f"Medley beats ({medley.start}, {medley.end}) do not match any valid "
-                "line. Ignoring medley meta tags."
+                f"Medley beats ({medley.start}, {medley.end}) do not align with any "
+                "valid line. Ignoring medley."
             )
             return None
 
-        corrected_start = start_line.start()
-        corrected_end = end_line.end()
-
         if corrected_start != medley.start:
             logger.warning(
-                f"Medley start beat ({medley.start}) is not on a line start. "
-                f"Shifting to {corrected_start}."
+                f"Medley start {medley.start} is not on a line start, "
+                f"shifted to {corrected_start}."
             )
         if corrected_end != medley.end:
             logger.warning(
-                f"Medley end beat ({medley.end}) is not on a line end. "
-                f"Shifting to {corrected_end}."
+                f"Medley end {medley.end} is not on a line end, "
+                f"shifted to {corrected_end}."
             )
 
         return MedleyTag(start=corrected_start, end=corrected_end)
+
+    def _correct_medley_start(self, start: int) -> int | None:
+        """Return the correct medley start (snap to line start or next line)."""
+        for idx, line in enumerate(self.track_1):
+            if line.start() <= start <= line.end():
+                return line.start()
+            if (
+                idx < len(self.track_1) - 1
+                and line.end() < start < self.track_1[idx + 1].start()
+            ):
+                return self.track_1[idx + 1].start()
+        return None
+
+    def _correct_medley_end(self, end: int) -> int | None:
+        """Return the correct medley end (snap to line end or previous line)."""
+        for idx, line in enumerate(self.track_1):
+            if line.start() <= end <= line.end():
+                return line.end()
+            if (
+                idx < len(self.track_1) - 1
+                and line.end() < end < self.track_1[idx + 1].start()
+            ):
+                return line.end()
+        return None
 
 
 def _player_lines(lines: list[str], logger: Logger) -> list[Line]:
