@@ -1,3 +1,15 @@
+<!-- 0.18.0 -->
+
+# Changes
+
+## Features
+
+- Medley sections are auto-corrected to start on the first beat of the first note of a line and to end of the last beat of the last note of a line.
+
+## Fixes
+
+
+
 <!-- 0.17.0 -->
 
 # Changes

@@ -11,6 +11,7 @@ import attrs
 
 from usdb_syncer import errors, settings
 from usdb_syncer.logger import Logger
+from usdb_syncer.meta_tags import MedleyTag
 from usdb_syncer.song_txt.auxiliaries import (
     BeatsPerMinute,
     replace_false_apostrophes,
@@ -483,6 +484,51 @@ class Tracks:
             logger.debug(
                 f"FIX: Capitalization corrected for {lines_capitalized} lines."
             )
+
+    def fix_medley_section(
+        self, medley: MedleyTag | None, logger: Logger
+    ) -> MedleyTag | None:
+        """Ensure that medley sections start/end on line start/end."""
+
+        if not medley or self.track_2:
+            return None
+
+        corrected_start = self._correct_medley_start(medley.start)
+        corrected_end = self._correct_medley_end(medley.end)
+
+        if corrected_start is None or corrected_end is None:
+            logger.warning(
+                f"Medley beats ({medley.start}, {medley.end}) do not align with any "
+                "valid line. Ignoring medley."
+            )
+            return None
+
+        if corrected_start != medley.start:
+            logger.warning(
+                f"Medley start {medley.start} is not on a line start, "
+                f"shifted to {corrected_start}."
+            )
+        if corrected_end != medley.end:
+            logger.warning(
+                f"Medley end {medley.end} is not on a line end, "
+                f"shifted to {corrected_end}."
+            )
+
+        return MedleyTag(start=corrected_start, end=corrected_end)
+
+    def _correct_medley_start(self, start: int) -> int | None:
+        """Return the correct medley start (snap to line start or next line)."""
+        for line in self.track_1:
+            if start <= line.end():
+                return line.start()
+        return None
+
+    def _correct_medley_end(self, end: int) -> int | None:
+        """Return the correct medley end (snap to line end or previous line)."""
+        for line in reversed(self.track_1):
+            if end >= line.start():
+                return line.end()
+        return None
 
 
 def _player_lines(lines: list[str], logger: Logger) -> list[Line]:
