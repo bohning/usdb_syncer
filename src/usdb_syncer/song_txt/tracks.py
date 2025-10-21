@@ -525,13 +525,8 @@ class Tracks:
 
     def _correct_medley_end(self, end: int) -> int | None:
         """Return the correct medley end (snap to line end or previous line)."""
-        for idx, line in enumerate(self.track_1):
-            if line.start() <= end <= line.end():
-                return line.end()
-            if (
-                idx < len(self.track_1) - 1
-                and line.end() < end < self.track_1[idx + 1].start()
-            ):
+        for line in reversed(self.track_1):
+            if end >= line.start():
                 return line.end()
         return None
 
