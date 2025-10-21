@@ -518,14 +518,9 @@ class Tracks:
 
     def _correct_medley_start(self, start: int) -> int | None:
         """Return the correct medley start (snap to line start or next line)."""
-        for idx, line in enumerate(self.track_1):
-            if line.start() <= start <= line.end():
+        for line in self.track_1:
+            if start <= line.end():
                 return line.start()
-            if (
-                idx < len(self.track_1) - 1
-                and line.end() < start < self.track_1[idx + 1].start()
-            ):
-                return self.track_1[idx + 1].start()
         return None
 
     def _correct_medley_end(self, end: int) -> int | None:
