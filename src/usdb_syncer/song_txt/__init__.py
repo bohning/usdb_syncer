@@ -14,6 +14,9 @@ from usdb_syncer.settings import FixLinebreaks, FixSpaces
 from usdb_syncer.song_txt.headers import Headers
 from usdb_syncer.song_txt.tracks import Tracks
 
+MEDLEY_MIN_DURATION_SECONDS = 20
+MEDLEY_MAX_DURATION_SECONDS = 80
+
 
 @attrs.define()
 class SongTxt:
@@ -83,25 +86,21 @@ class SongTxt:
             self.headers.p2 = self.meta_tags.player2 or "P2"
         if self.meta_tags.preview is not None and self.meta_tags.preview != 0.0:
             self.headers.previewstart = self.meta_tags.preview
-        if medley := self.meta_tags.medley:
-            if self.notes.track_2:
-                self.logger.warning(
-                    "Medley tags are not supported for duet songs. Please remove the "
-                    "medley meta tag on USDB."
-                )
-                return
-            if not any(line.start() == medley.start for line in self.notes.track_1):
-                self.logger.warning(
-                    f"Medley start beat ({medley.start}) is not on a line start. Please"
-                    " adjust the medley start in the meta tags on USDB."
-                )
+        if (
+            medley := self.notes.fix_medley_section(self.meta_tags.medley, self.logger)
+        ) is not None:
+            self.meta_tags.medley = medley
             self.headers.medleystartbeat = medley.start
-            if not any(line.end() == medley.end for line in self.notes.track_1):
-                self.logger.warning(
-                    f"Medley end beat ({medley.end}) is not on a line end. Please"
-                    " adjust the medley end in the meta tags on USDB."
-                )
             self.headers.medleyendbeat = medley.end
+            if (duration := self.medley_duration()) is not None:
+                if duration < MEDLEY_MIN_DURATION_SECONDS:
+                    self.logger.warning(
+                        f"Medley is unusually short: {duration} seconds."
+                    )
+                elif duration > MEDLEY_MAX_DURATION_SECONDS:
+                    self.logger.warning(
+                        f"Medley is unusually long: {duration} seconds."
+                    )
         if self.meta_tags.tags:
             self.headers.tags = self.meta_tags.tags
 
@@ -160,6 +159,17 @@ class SongTxt:
         minutes, seconds = divmod(minimum_secs, 60)
 
         return f"{minutes:02d}:{seconds:02d}"
+
+    def medley_duration(self) -> int | None:
+        """Return the medley duration in seconds or None if no medley is set."""
+        if not self.meta_tags.medley:
+            return None
+
+        return round(
+            self.headers.bpm.beats_to_secs(
+                self.meta_tags.medley.end - self.meta_tags.medley.start
+            )
+        )
 
     def fix_relative_songs(self) -> None:
         if not self.headers.relative:

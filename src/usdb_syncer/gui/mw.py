@@ -5,7 +5,7 @@ from collections.abc import Callable, Iterable
 from pathlib import Path
 
 from PySide6.QtGui import QCloseEvent, QPixmap
-from PySide6.QtWidgets import QFileDialog, QLabel, QMainWindow, QMessageBox
+from PySide6.QtWidgets import QFileDialog, QMainWindow, QMessageBox
 
 from usdb_syncer import (
     SongId,
@@ -25,6 +25,7 @@ from usdb_syncer.gui import (
     icons,
     progress,
     progress_bar,
+    status_bar,
 )
 from usdb_syncer.gui import events as gui_events
 from usdb_syncer.gui.about_dialog import AboutDialog
@@ -69,7 +70,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         self.progress_bar = progress_bar.ProgressBar(
             self.bar_download_progress, self.label_download_progress
         )
-        self._setup_statusbar()
+        self._statusbar = status_bar.StatusBar(self.statusbar)
         self._setup_log()
         self._setup_toolbar()
         self._setup_shortcuts()
@@ -94,18 +95,6 @@ class MainWindow(Ui_MainWindow, QMainWindow):
     def _focus_filter_search(self) -> None:
         self.line_edit_search_filters.setFocus()
         self.line_edit_search_filters.selectAll()
-
-    def _setup_statusbar(self) -> None:
-        self._status_label = QLabel(self)
-        self.statusbar.addWidget(self._status_label)
-
-        def on_count_changed(rows: int, selected: int) -> None:
-            total = db.usdb_song_count()
-            self._status_label.setText(
-                f"{rows} out of {total} songs shown, {selected} selected."
-            )
-
-        self.table.connect_row_count_changed(on_count_changed)
 
     def _setup_log(self) -> None:
         self.plainTextEdit.setReadOnly(True)
@@ -135,7 +124,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
             ),
             (self.action_find_local_songs, self._select_local_songs, None),
             (self.action_refetch_song_list, self._refetch_song_list, None),
-            (self.action_usdb_login, lambda: UsdbLoginDialog(self).show(), None),
+            (self.action_usdb_login, lambda: UsdbLoginDialog.load(self), None),
             (self.action_meta_tags, lambda: MetaTagsDialog(self).show(), None),
             (
                 self.action_settings,

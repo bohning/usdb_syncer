@@ -16,6 +16,14 @@ class CurrentSongChanged(events.SubscriptableEvent):
     song: UsdbSong | None
 
 
+@attrs.define(slots=False)
+class RowCountChanged(events.SubscriptableEvent):
+    """Sent when the number of total or selected songs changed."""
+
+    rows: int
+    selected: int
+
+
 # search
 
 

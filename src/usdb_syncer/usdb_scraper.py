@@ -14,7 +14,7 @@ import requests
 from bs4 import BeautifulSoup, NavigableString, Tag
 from requests import Session
 
-from usdb_syncer import SongId, db, errors, settings
+from usdb_syncer import SongId, db, errors, events, settings
 from usdb_syncer.constants import (
     SUPPORTED_VIDEO_SOURCES_REGEX,
     Usdb,
@@ -68,21 +68,39 @@ ROLE_REGEX = re.compile(r"images/rank_(\d)\.gif")
 
 
 def establish_usdb_login(session: Session) -> UsdbUser | None:
-    """Tries to log in to USDB if necessary. Returns final login status."""
-    if user := get_logged_in_usdb_user(session):
+    """Tries to log in to USDB if necessary. Returns user info or None."""
+    user: UsdbUser | None = get_logged_in_usdb_user(session)
+
+    if user:
         logger.info(f"Using existing login of USDB user '{user.name} ({user.role})'.")
-        return user
-    if (auth := settings.get_usdb_auth())[0] and auth[1]:
-        if login_to_usdb(session, *auth):
-            logger.info(f"Successfully logged in to USDB with user '{auth[0]}'.")
-            return get_logged_in_usdb_user(session)
-        logger.error(f"Login to USDB with user '{auth[0]}' failed!")
     else:
-        logger.warning(
-            "Not logged in to USDB. Please go to 'Synchronize > USDB Login', then "
-            "select the browser you are logged in with and/or enter your credentials."
-        )
-    return None
+        auth_user, auth_pass = settings.get_usdb_auth()
+        if auth_user and auth_pass:
+            if login_to_usdb(session, auth_user, auth_pass):
+                user = get_logged_in_usdb_user(session)
+                if user:
+                    logger.info(
+                        "Successfully logged in to USDB with user "
+                        f"'{user.name} ({user.role})'."
+                    )
+                else:
+                    logger.error(
+                        "Login appeared successful, but user info could not be "
+                        "retrieved."
+                    )
+            else:
+                logger.error(f"Login to USDB with user '{auth_user}' failed!")
+        else:
+            logger.warning(
+                "Not logged in to USDB. Please go to 'Synchronize > USDB Login', then "
+                "select the browser you are logged in with and/or enter your "
+                "credentials."
+            )
+
+    if user:
+        events.LoggedInToUSDB(user=user.name).post()
+
+    return user
 
 
 def new_session_with_cookies(browser: settings.Browser) -> Session:
