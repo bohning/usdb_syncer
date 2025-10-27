@@ -25,36 +25,6 @@
      <attribute name="verticalHeaderVisible">
       <bool>true</bool>
      </attribute>
-     <column>
-      <property name="text">
-       <string>ID</string>
-      </property>
-     </column>
-     <column>
-      <property name="text">
-       <string>Artist</string>
-      </property>
-     </column>
-     <column>
-      <property name="text">
-       <string>Title</string>
-      </property>
-     </column>
-     <column>
-      <property name="text">
-       <string>Changes</string>
-      </property>
-     </column>
-     <column>
-      <property name="text">
-       <string>Diff</string>
-      </property>
-     </column>
-     <column>
-      <property name="text">
-       <string>Submit?</string>
-      </property>
-     </column>
     </widget>
    </item>
    <item>
