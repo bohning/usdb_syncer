@@ -667,14 +667,33 @@ def submit_local_changes(song: UsdbSong) -> None:
 def _prepare_txt_for_upload(sync_meta: SyncMeta, logger: Logger) -> str | None:
     """Reinserts metatags and ensures CRLF line endings."""
 
-    txt_path = sync_meta.txt_path()
-    if not txt_path:
+    if not (txt_path := sync_meta.txt_path()):
+        logger.error("Local song txt path not found, skipping upload.")
         return None
-    if not (txt := SongTxt.try_from_file(txt_path, logger)):
+    if not (local := SongTxt.try_from_file(txt_path, logger)):
         logger.error("Failed to parse local song txt, skipping upload.")
         return None
-    if txt.notes.track_2 is not None:
-        txt.headers.title += " [DUET]"
-    txt.headers.video = str(sync_meta.meta_tags)  # reinsert meta tags
+    if not (remote := SongTxt.try_parse(get_notes(sync_meta.song_id, logger), logger)):
+        logger.error("Failed to parse remote song txt, skipping upload.")
+        return None
 
-    return str(txt).replace("\n", "\r\n")  # USDB requires \r\n (CRLF) line endings
+    # remove currently unsupported headers
+    local.headers.strip_unsupported_for_usdb()
+    # ensure duet tag in title
+    if local.notes.track_2 is not None:
+        local.headers.title += " [DUET]"
+    # copy remote mp3 link (local reference may have changed due to illegal chars)
+    local.headers.mp3 = remote.headers.mp3
+    # older songs never have #COVER/#BACKGROUND headers, while newer ones always do
+    if remote.headers.cover:
+        local.headers.cover = remote.headers.cover
+    else:
+        local.headers.cover = None
+    if remote.headers.background:
+        local.headers.background = remote.headers.background
+    else:
+        local.headers.background = None
+    # reinsert meta tags
+    local.headers.video = str(sync_meta.meta_tags)
+
+    return str(local).replace("\n", "\r\n")  # USDB requires \r\n (CRLF) line endings

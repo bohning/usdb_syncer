@@ -14,6 +14,26 @@ from usdb_syncer.settings import FormatVersion
 from usdb_syncer.song_txt.auxiliaries import BeatsPerMinute, replace_false_apostrophes
 from usdb_syncer.song_txt.language_translations import LANGUAGE_TRANSLATIONS
 
+UNSUPPORTED_USDB_HEADERS = {
+    "version",
+    "audio",
+    "audiourl",
+    "vocals",
+    "instrumental",
+    "coverurl",
+    "backgroundurl",
+    "videourl",
+    "previewstart",
+    "medleystartbeat",
+    "medleyendbeat",
+    "p1",
+    "p2",
+    "album",
+    "comment",
+    "providedby",
+    "tags",
+}
+
 
 @attrs.define
 class Headers:
@@ -138,6 +158,11 @@ class Headers:
                 *(f"#{key.upper()}:{val}" for key, val in self.unknown.items()),
             ))
         return out
+
+    def strip_unsupported_for_usdb(self) -> None:
+        for name in UNSUPPORTED_USDB_HEADERS:
+            if hasattr(self, name):
+                setattr(self, name, None)
 
     def artist_title_str(self) -> str:
         return f"{self.artist} - {self.title}"

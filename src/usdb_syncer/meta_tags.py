@@ -113,8 +113,9 @@ class ImageMetaTags:
         return _join_tags(
             _key_value_str(prefix, self.source),
             _key_value_str(f"{prefix}-rotate", self.rotate),
-            self.crop.to_str(prefix) if self.crop else None,
+            self.crop.to_str(prefix) if self.crop and prefix == "co" else None,
             self.resize.to_str(prefix) if self.resize else None,
+            self.crop.to_str(prefix) if self.crop and prefix == "bg" else None,
             _key_value_str(f"{prefix}-contrast", self.contrast),
         )
 
