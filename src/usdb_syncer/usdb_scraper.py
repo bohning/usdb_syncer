@@ -44,6 +44,19 @@ class UsdbUser:
     name: str
     role: UserRole
 
+    @classmethod
+    def from_rank(cls, name: str, rank: int | None) -> "UsdbUser":
+        """Create a UsdbUser from a numeric USDB rank code (0-4)."""
+
+        match rank:
+            case 4:
+                role = UserRole.ADMIN
+            case 3:
+                role = UserRole.MODERATOR
+            case _:
+                role = UserRole.USER
+        return cls(name=name, role=role)
+
 
 SONG_LIST_ROW_REGEX = re.compile(
     r'<tr class="list_tr\d"\s+data-songid="(?P<song_id>\d+)"\s+'
@@ -64,7 +77,7 @@ SONG_LIST_ROW_REGEX = re.compile(
 WELCOME_REGEX = re.compile(
     r"<td class='row3' colspan='2'>\s*<span class='gen'>([^<]+) <b>([^<]+)</b>"
 )
-ROLE_REGEX = re.compile(r"images/rank_(\d)\.gif")
+RANK_REGEX = re.compile(r"images/rank_(\d)\.gif")
 
 
 def establish_usdb_login(session: Session) -> UsdbUser | None:
@@ -72,7 +85,7 @@ def establish_usdb_login(session: Session) -> UsdbUser | None:
     user: UsdbUser | None = get_logged_in_usdb_user(session)
 
     if user:
-        logger.info(f"Using existing login of USDB user '{user.name} ({user.role})'.")
+        logger.info(f"Using existing USDB login of {user.role} '{user.name}'.")
     else:
         auth_user, auth_pass = settings.get_usdb_auth()
         if auth_user and auth_pass:
@@ -80,8 +93,8 @@ def establish_usdb_login(session: Session) -> UsdbUser | None:
                 user = get_logged_in_usdb_user(session)
                 if user:
                     logger.info(
-                        "Successfully logged in to USDB with user "
-                        f"'{user.name} ({user.role})'."
+                        "Successfully logged in to USDB with "
+                        f"{user.role} '{user.name}'."
                     )
                 else:
                     logger.error(
@@ -153,22 +166,14 @@ def get_logged_in_usdb_user(session: Session) -> UsdbUser | None:
 
     html = response.text
 
-    if not (match := WELCOME_REGEX.search(html)):
+    if not (welcome_match := WELCOME_REGEX.search(html)):
         return None
-    username = match.group(2)
+    username = welcome_match.group(2)
 
-    if rank_match := ROLE_REGEX.search(html):
-        rank = int(rank_match.group(1))
-        if rank == 4:
-            role = UserRole.ADMIN
-        elif rank == 3:
-            role = UserRole.MODERATOR
-        else:
-            role = UserRole.USER
-    else:
-        role = UserRole.USER
+    rank_match = RANK_REGEX.search(html)
+    rank = int(rank_match.group(1)) if rank_match else None
 
-    return UsdbUser(username, role)
+    return UsdbUser.from_rank(username, rank)
 
 
 def login_to_usdb(session: Session, user: str, password: str) -> bool:
@@ -642,7 +647,7 @@ def submit_local_changes(song: UsdbSong) -> None:
         logger.info("Song does not exist locally, skipping upload.")
         return
 
-    if not (txt_to_upload := _prepare_txt_for_upload(sync_meta, logger)):
+    if not (txt_to_upload := prepare_txt_for_upload(sync_meta, logger)):
         logger.warning("Failed to prepare song file, skipping upload.")
         return
 
@@ -664,7 +669,7 @@ def submit_local_changes(song: UsdbSong) -> None:
     logger.info("Local changes successfully submitted to USDB.")
 
 
-def _prepare_txt_for_upload(sync_meta: SyncMeta, logger: Logger) -> str | None:
+def prepare_txt_for_upload(sync_meta: SyncMeta, logger: Logger) -> str | None:
     """Reinserts metatags and ensures CRLF line endings."""
 
     if not (txt_path := sync_meta.txt_path()):

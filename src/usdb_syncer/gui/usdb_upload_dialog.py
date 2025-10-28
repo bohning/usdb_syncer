@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from difflib import SequenceMatcher
 from enum import IntEnum, auto
 from html import escape
-from typing import TYPE_CHECKING
+from typing import assert_never
 
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QIcon
@@ -29,13 +29,11 @@ from usdb_syncer.gui.resources import styles
 from usdb_syncer.logger import song_logger
 from usdb_syncer.song_txt import SongTxt
 from usdb_syncer.usdb_scraper import (
-    _prepare_txt_for_upload,
     get_notes,
+    prepare_txt_for_upload,
     submit_local_changes,
 )
-
-if TYPE_CHECKING:
-    from usdb_syncer.usdb_song import UsdbSong
+from usdb_syncer.usdb_song import UsdbSong
 
 
 class Column(IntEnum):
@@ -49,36 +47,54 @@ class Column(IntEnum):
     SUBMIT = auto()
 
     def display_data(self) -> str:
-        """Return the display name for the column."""
-        return {
-            Column.SONG_ID: "ID",
-            Column.ARTIST: "Artist",
-            Column.TITLE: "Title",
-            Column.CHANGES: "Changes",
-            Column.DIFF: "Diff",
-            Column.SUBMIT: "Submit?",
-        }[self]
+        match self:
+            case Column.SONG_ID:
+                return "ID"
+            case Column.ARTIST:
+                return "Artist"
+            case Column.TITLE:
+                return "Title"
+            case Column.CHANGES:
+                return "Changes"
+            case Column.DIFF:
+                return "Diff"
+            case Column.SUBMIT:
+                return "Submit?"
+            case _ as unreachable:
+                assert_never(unreachable)
 
     def decoration_data(self) -> QIcon:
-        """Return the icon for the column header."""
-        icon_map = {
-            Column.SONG_ID: Icon.ID,
-            Column.ARTIST: Icon.ARTIST,
-            Column.TITLE: Icon.TITLE,
-            Column.CHANGES: Icon.CHANGES,
-            Column.DIFF: Icon.DIFF,
-            Column.SUBMIT: Icon.UPLOAD,
-        }
-        return icon_map[self].icon()
+        match self:
+            case Column.SONG_ID:
+                icon = Icon.ID
+            case Column.ARTIST:
+                icon = Icon.ARTIST
+            case Column.TITLE:
+                icon = Icon.TITLE
+            case Column.CHANGES:
+                icon = Icon.CHANGES
+            case Column.DIFF:
+                icon = Icon.DIFF
+            case Column.SUBMIT:
+                icon = Icon.UPLOAD
+            case _ as unreachable:
+                assert_never(unreachable)
+        return icon.icon()
 
     def fixed_size(self) -> int | None:
-        """Return fixed width for column, or None for flexible width."""
-        return {
-            Column.SONG_ID: 60,
-            Column.CHANGES: 90,
-            Column.DIFF: 60,
-            Column.SUBMIT: 80,
-        }.get(self)
+        match self:
+            case Column.SONG_ID:
+                return 60
+            case Column.ARTIST | Column.TITLE:
+                return None
+            case Column.CHANGES:
+                return 90
+            case Column.DIFF:
+                return 60
+            case Column.SUBMIT:
+                return 80
+            case _ as unreachable:
+                assert_never(unreachable)
 
     def stretch(self) -> bool:
         """Return whether the column should stretch to fill available space."""
@@ -118,7 +134,7 @@ def generate_diff_html(original: str, modified: str) -> str:
     matcher = SequenceMatcher(None, original_lines, modified_lines)
 
     css = styles.DIFF_CSS.read_text(encoding="utf-8")
-    html_parts = [css, '<div class="diff-container">']
+    html_parts = [f"<style>{css}</style>", '<div class="diff-container">']
     html_parts.append('<div class="diff-header">Remote File (USDB) → Local File</div>')
     html_parts.append('<table class="diff-table">')
 
@@ -194,7 +210,7 @@ def analyze_song_changes(song: UsdbSong) -> SongChanges:
         return SongChanges(has_changes=False, change_str="not remote")
 
     assert song.sync_meta is not None
-    local_str = _prepare_txt_for_upload(song.sync_meta, logger)
+    local_str = prepare_txt_for_upload(song.sync_meta, logger)
 
     if not local_str:
         return SongChanges(has_changes=False, change_str="invalid local")
