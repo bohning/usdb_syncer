@@ -256,6 +256,7 @@ class UsdbUploadDialog(Ui_Dialog, QDialog):
 
     def _setup_table(self) -> None:
         """Configure table properties and headers."""
+        self.table.setColumnCount(len(Column))
         self.table.setRowCount(len(self.songs))
 
         header = self.table.horizontalHeader()
