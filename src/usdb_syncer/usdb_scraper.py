@@ -82,7 +82,7 @@ RANK_REGEX = re.compile(r"images/rank_(\d)\.gif")
 
 def establish_usdb_login(session: Session) -> UsdbUser | None:
     """Tries to log in to USDB if necessary. Returns user info or None."""
-    user: UsdbUser | None = get_logged_in_usdb_user(session)
+    user = get_logged_in_usdb_user(session)
 
     if user:
         logger.info(f"Using existing USDB login of {user.role} '{user.name}'.")
