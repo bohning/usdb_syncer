@@ -701,4 +701,4 @@ def prepare_txt_for_upload(sync_meta: SyncMeta, logger: Logger) -> str | None:
     # reinsert meta tags
     local.headers.video = str(sync_meta.meta_tags)
 
-    return str(local).replace("\n", "\r\n")  # USDB requires \r\n (CRLF) line endings
+    return local.to_crlf()  # USDB requires Windows (CRLF) line endings

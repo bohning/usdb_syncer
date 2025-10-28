@@ -30,6 +30,9 @@ class SongTxt:
     def __str__(self) -> str:
         return f"{self.headers}\n{self.notes}"
 
+    def to_crlf(self) -> str:
+        return str(self).replace("\n", "\r\n")
+
     def unsynchronized_lyrics(self) -> str:
         track_1 = "\n".join(line.text().rstrip() for line in self.notes.track_1)
         if self.notes.track_2:
