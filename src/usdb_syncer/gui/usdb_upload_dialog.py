@@ -363,14 +363,9 @@ class UsdbUploadDialog(Ui_Dialog, QDialog):
             for song in self.selected_songs:
                 submit_local_changes(song)
 
-        def on_done(result: progress.Result) -> None:
-            pass
-
         num_songs = len(self.selected_songs)
         plural = "s" if num_songs != 1 else ""
-        progress.run_with_progress(
-            f"Submitting {num_songs} song{plural}…", task, on_done
-        )
+        progress.run_with_progress(f"Submitting {num_songs} song{plural}…", task)
         super().accept()
 
     def reject(self) -> None:
