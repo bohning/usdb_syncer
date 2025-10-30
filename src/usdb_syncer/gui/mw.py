@@ -409,14 +409,11 @@ class MainWindow(Ui_MainWindow, QMainWindow):
 
         selected_songs = []
 
-        if (user := SessionManager.get_user()) and user.role in {
-            UserRole.ADMIN,
-            UserRole.MODERATOR,
-        }:
-            selected_songs = list(self.table.selected_songs())
-        else:
+        if (user := SessionManager.get_user()) and (user.role == UserRole.USER):
             if current_song := self.table.current_song():
                 selected_songs.append(current_song)
+        else:
+            selected_songs = list(self.table.selected_songs())
 
         if not selected_songs:
             QMessageBox.information(

@@ -24,8 +24,6 @@ from usdb_syncer.constants import (
     UsdbStringsGerman,
 )
 from usdb_syncer.logger import Logger, logger, song_logger
-from usdb_syncer.song_txt import SongTxt
-from usdb_syncer.sync_meta import SyncMeta
 from usdb_syncer.usdb_song import UsdbSong
 from usdb_syncer.utils import extract_youtube_id, normalize
 
@@ -638,67 +636,24 @@ def post_song_rating(song_id: SongId, stars: int) -> None:
     logger.debug(f"{stars}-star rating posted on USDB.")
 
 
-def submit_local_changes(song: UsdbSong) -> None:
+def submit_local_changes(
+    song_id: SongId, sample_url: str, txt: str, filename: str, logger: Logger
+) -> None:
     """Submit local changes of a song to USDB."""
-
-    logger = song_logger(song.song_id)
-
-    if not (sync_meta := song.sync_meta) or not (txt := sync_meta.txt):
-        logger.info("Song does not exist locally, skipping upload.")
-        return
-
-    if not (txt_to_upload := prepare_txt_for_upload(sync_meta, logger)):
-        logger.warning("Failed to prepare song file, skipping upload.")
-        return
 
     payload = {
         "coverinput": "",
-        "sampleinput": song.sample_url,
-        "txt": txt_to_upload,
-        "filename": txt.fname,
+        "sampleinput": sample_url,
+        "txt": txt,
+        "filename": filename,
     }
 
     get_usdb_page(
         "index.php",
         RequestMethod.POST,
         headers={"Content-Type": "application/x-www-form-urlencoded"},
-        params={"link": "editsongsupdate", "id": str(song.song_id)},
+        params={"link": "editsongsupdate", "id": str(song_id)},
         payload=payload,
     )
 
     logger.info("Local changes successfully submitted to USDB.")
-
-
-def prepare_txt_for_upload(sync_meta: SyncMeta, logger: Logger) -> str | None:
-    """Reinserts metatags and ensures CRLF line endings."""
-
-    if not (txt_path := sync_meta.txt_path()):
-        logger.error("Local song txt path not found, skipping upload.")
-        return None
-    if not (local := SongTxt.try_from_file(txt_path, logger)):
-        logger.error("Failed to parse local song txt, skipping upload.")
-        return None
-    if not (remote := SongTxt.try_parse(get_notes(sync_meta.song_id, logger), logger)):
-        logger.error("Failed to parse remote song txt, skipping upload.")
-        return None
-
-    # remove currently unsupported headers
-    local.headers.strip_unsupported_for_usdb()
-    # ensure duet tag in title
-    if local.notes.track_2 is not None:
-        local.headers.title += " [DUET]"
-    # copy remote mp3 link (local reference may have changed due to illegal chars)
-    local.headers.mp3 = remote.headers.mp3
-    # older songs never have #COVER/#BACKGROUND headers, while newer ones always do
-    if remote.headers.cover:
-        local.headers.cover = remote.headers.cover
-    else:
-        local.headers.cover = None
-    if remote.headers.background:
-        local.headers.background = remote.headers.background
-    else:
-        local.headers.background = None
-    # reinsert meta tags
-    local.headers.video = str(sync_meta.meta_tags)
-
-    return local.to_crlf()  # USDB requires Windows (CRLF) line endings

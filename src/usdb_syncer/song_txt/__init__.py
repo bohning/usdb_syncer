@@ -7,6 +7,7 @@ from typing import assert_never
 
 import attrs
 
+from usdb_syncer import SongId as SongId
 from usdb_syncer import download_options, errors
 from usdb_syncer.logger import Logger
 from usdb_syncer.meta_tags import MetaTags
@@ -30,8 +31,29 @@ class SongTxt:
     def __str__(self) -> str:
         return f"{self.headers}\n{self.notes}"
 
-    def to_crlf(self) -> str:
-        return str(self).replace("\n", "\r\n")
+    def str_for_upload(self, meta_tags: MetaTags, remote_headers: Headers) -> str:
+        """Reinserts metatags and ensures CRLF line endings."""
+
+        # reinsert previously removed duet marker in title
+        if self.notes.track_2 is not None:
+            self.headers.title += " [DUET]"
+        # copy remote mp3 link (local reference may have changed due to illegal chars)
+        self.headers.mp3 = remote_headers.mp3
+        # older songs never have #COVER/#BACKGROUND headers, while newer ones always do
+        if remote_headers.cover:
+            self.headers.cover = remote_headers.cover
+        else:
+            self.headers.cover = None
+        if remote_headers.background:
+            self.headers.background = remote_headers.background
+        else:
+            self.headers.background = None
+        # reinsert meta tags
+        # TODO: give meta tags in local file precedence?
+        # TODO: enable user to adjust metatags
+        self.headers.video = str(meta_tags)
+
+        return f"{self.headers.str_for_usdb()}\n{self.notes}".replace("\n", "\r\n")
 
     def unsynchronized_lyrics(self) -> str:
         track_1 = "\n".join(line.text().rstrip() for line in self.notes.track_1)

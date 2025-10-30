@@ -1,98 +1,50 @@
-/* GitHub Desktop inspired diff styles */
-
-.diff-container {
-    font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
-    font-size: 12px;
-    background-color: #0d1117;
-    color: #c9d1d9;
-    line-height: 1.2;
-}
-
-.diff-header {
-    background-color: #161b22;
-    color: #8b949e;
-    font-weight: 600;
-    padding: 8px 12px;
-    border-bottom: 1px solid #30363d;
-}
-
 .diff-table {
-    width: 100%;
-    border-collapse: collapse;
-    background-color: #0d1117;
+  border-collapse: collapse;
+  width: 100%;
+  font-family: "JetBrains Mono", "Menlo", "Consolas", monospace;
+  font-size: 13px;
+  line-height: 1.4;
 }
 
-.diff-line {
-    display: table-row;
+.lineno {
+  color: #888;
+  text-align: right;
+  padding: 0 8px;
+  width: 3em;
+  border-right: 1px solid #333;
+  user-select: none;
 }
 
-.diff-line:hover .line-number,
-.diff-line:hover .line-content {
-    background-color: #161b22;
+.line {
+  white-space: pre-wrap;
+  padding-left: 4px;
 }
 
-.line-number {
-    width: 40px;
-    padding: 0 8px;
-    text-align: right;
-    color: #6e7681;
-    background-color: #0d1117;
-    user-select: none;
-    vertical-align: top;
-    border-right: 1px solid #21262d;
-    font-variant-numeric: tabular-nums;
+.equal {
+  background-color: #1e1e1e;
+  color: #ddd;
 }
 
-.line-content {
-    padding: 0 8px;
-    white-space: pre-wrap;
-    word-wrap: break-word;
-    background-color: #0d1117;
+.add {
+  background-color: #163216;
+  color: #c6efce;
 }
 
-/* Deleted lines */
-.diff-line.deleted .line-number {
-    background-color: #3f1a1a;
-    color: #f0a7a7;
+.del {
+  background-color: #3b0d0d;
+  color: #fbb;
 }
 
-.diff-line.deleted .line-content {
-    background-color: #3f1a1a;
-    color: #f0a7a7;
+.add-inline {
+  background-color: #295f2b;
+  color: #b5f7b5;
 }
 
-.diff-line.deleted:hover .line-number,
-.diff-line.deleted:hover .line-content {
-    background-color: #4d2020;
+.del-inline {
+  background-color: #6b1e1e;
+  color: #ffc4c4;
 }
 
-/* Added lines */
-.diff-line.added .line-number {
-    background-color: #1b3327;
-    color: #a5d6a7;
-}
-
-.diff-line.added .line-content {
-    background-color: #1b3327;
-    color: #a5d6a7;
-}
-
-.diff-line.added:hover .line-number,
-.diff-line.added:hover .line-content {
-    background-color: #1f3d28;
-}
-
-/* Line prefixes */
-.line-prefix {
-    display: inline-block;
-    width: 20px;
-    font-weight: bold;
-}
-
-.line-prefix.delete {
-    color: #ff7b72;
-}
-
-.line-prefix.add {
-    color: #7ee787;
+.empty {
+  background-color: #1a1a1a;
 }

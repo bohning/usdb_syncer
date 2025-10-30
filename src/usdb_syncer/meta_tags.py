@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from enum import StrEnum
 from typing import Literal
 
 import attrs
@@ -26,6 +27,13 @@ def decode_meta_tag_value(meta_tag: str) -> str:
     for char, escape in META_TAG_ESCAPES:
         meta_tag = meta_tag.replace(escape, char)
     return meta_tag
+
+
+class ImagePrefix(StrEnum):
+    """Prefixes for image-related meta tags."""
+
+    COVER = "co"
+    BACKGROUND = "bg"
 
 
 @attrs.define
@@ -109,13 +117,17 @@ class ImageMetaTags:
         """True if there is data for image processing."""
         return any((self.rotate, self.crop, self.resize, self.contrast))
 
-    def to_str(self, prefix: str) -> str:
+    def to_str(self, prefix: ImagePrefix) -> str:
         return _join_tags(
             _key_value_str(prefix, self.source),
             _key_value_str(f"{prefix}-rotate", self.rotate),
-            self.crop.to_str(prefix) if self.crop and prefix == "co" else None,
+            self.crop.to_str(prefix)
+            if self.crop and prefix == ImagePrefix.COVER
+            else None,
             self.resize.to_str(prefix) if self.resize else None,
-            self.crop.to_str(prefix) if self.crop and prefix == "bg" else None,
+            self.crop.to_str(prefix)
+            if self.crop and prefix == ImagePrefix.BACKGROUND
+            else None,
             _key_value_str(f"{prefix}-contrast", self.contrast),
         )
 
@@ -220,8 +232,8 @@ class MetaTags:
         return _join_tags(
             _key_value_str("a", self.audio),
             _key_value_str("v", self.video),
-            self.cover.to_str("co") if self.cover else None,
-            self.background.to_str("bg") if self.background else None,
+            self.cover.to_str(ImagePrefix.COVER) if self.cover else None,
+            self.background.to_str(ImagePrefix.BACKGROUND) if self.background else None,
             _key_value_str("p1", self.player1),
             _key_value_str("p2", self.player2),
             _key_value_str("preview", self.preview),
