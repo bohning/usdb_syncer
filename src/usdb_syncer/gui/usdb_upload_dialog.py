@@ -2,13 +2,12 @@
 
 from __future__ import annotations
 
-import functools
-
 from PySide6.QtWidgets import QDialog, QWidget
 
-from usdb_syncer.gui import progress
+from usdb_syncer.gui import progress, theme
 from usdb_syncer.gui.forms.UsdbUploadDialog import Ui_Dialog
 from usdb_syncer.gui.resources import styles
+from usdb_syncer.gui.theme import DiffPalette, _rgb_str
 from usdb_syncer.logger import song_logger
 from usdb_syncer.usdb_scraper import submit_local_changes
 from usdb_syncer.usdb_song import SongChanges, UsdbSong
@@ -19,9 +18,30 @@ def _html_prefix(action: str = "", symbol: str = " ") -> str:
     return f'<td class="line-content"><span class="{class_attr}">{symbol}</span>'
 
 
-@functools.lru_cache
 def get_diff_css() -> str:
-    return f"<style>{styles.DIFF_CSS.read_text(encoding='utf-8')}</style>"
+    current_theme = theme.Theme.from_settings()
+    css = generate_diff_css(current_theme.diff_palette())
+    return f"<style>{css}</style>"
+
+
+def generate_diff_css(palette: DiffPalette) -> str:
+    """Generate diff CSS from theme palette."""
+
+    return styles.DIFF_CSS.read_text(encoding="utf-8").format(
+        lineno_text=_rgb_str(palette.lineno_text),
+        lineno_border=_rgb_str(palette.lineno_border),
+        equal_bg=_rgb_str(palette.equal_bg),
+        equal_text=_rgb_str(palette.equal_text),
+        add_bg=_rgb_str(palette.add_bg),
+        add_text=_rgb_str(palette.add_text),
+        del_bg=_rgb_str(palette.del_bg),
+        del_text=_rgb_str(palette.del_text),
+        add_inline_bg=_rgb_str(palette.add_inline_bg),
+        add_inline_text=_rgb_str(palette.add_inline_text),
+        del_inline_bg=_rgb_str(palette.del_inline_bg),
+        del_inline_text=_rgb_str(palette.del_inline_text),
+        empty_bg=_rgb_str(palette.empty_bg),
+    )
 
 
 class UsdbUploadDialog(Ui_Dialog, QDialog):

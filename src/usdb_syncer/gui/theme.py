@@ -81,6 +81,25 @@ class PreviewPalette:
     needle: QColor
 
 
+@attrs.define
+class DiffPalette:
+    """Palette for diff visualization."""
+
+    equal_bg: QColor
+    equal_text: QColor
+    add_bg: QColor
+    add_text: QColor
+    del_bg: QColor
+    del_text: QColor
+    add_inline_bg: QColor
+    add_inline_text: QColor
+    del_inline_bg: QColor
+    del_inline_text: QColor
+    empty_bg: QColor
+    lineno_text: QColor
+    lineno_border: QColor
+
+
 class Theme(abc.ABC):
     """Abstract base class for themes."""
 
@@ -96,6 +115,10 @@ class Theme(abc.ABC):
 
     @abc.abstractmethod
     def preview_palette(self) -> PreviewPalette:
+        pass
+
+    @abc.abstractmethod
+    def diff_palette(self) -> DiffPalette:
         pass
 
     @classmethod
@@ -157,6 +180,29 @@ class SystemTheme(Theme):
             text=palette.text().color(),
             active_text=palette.highlight().color(),
             needle=palette.highlight().color(),
+        )
+
+    def diff_palette(self) -> DiffPalette:
+        palette = self.q_palette()
+        base = palette.base().color()
+        text = palette.text().color()
+
+        gray = Swatch.get(settings.Color.GRAY)
+
+        return DiffPalette(
+            equal_bg=base,
+            equal_text=text,
+            add_bg=palette.highlight().color(),
+            add_text=palette.highlightedText().color(),
+            del_bg=palette.highlight().color(),
+            del_text=palette.highlightedText().color(),
+            add_inline_bg=palette.highlight().color(),
+            add_inline_text=palette.highlightedText().color(),
+            del_inline_bg=palette.highlight().color(),
+            del_inline_text=palette.highlightedText().color(),
+            empty_bg=palette.alternateBase().color(),
+            lineno_text=gray.s_200,
+            lineno_border=gray.s_200,
         )
 
 
@@ -249,6 +295,23 @@ class DarkTheme(Theme):
             text=self.text(_Text.HIGH),
             active_text=self.primary,
             needle=self.primary,
+        )
+
+    def diff_palette(self) -> DiffPalette:
+        return DiffPalette(
+            equal_bg=self.surface(_Surface.DP_01),
+            equal_text=self.text(_Text.HIGH),
+            add_bg=_overlay_colors(self.base_surface, self.primary, 0.3),
+            add_text=self.primary_swatch.s_200,
+            del_bg=_overlay_colors(self.base_surface, self.primary, 0.3),
+            del_text=self.primary_swatch.s_200,
+            add_inline_bg=self.primary_swatch.s_500,
+            add_inline_text=self.primary_swatch.s_100,
+            del_inline_bg=self.primary_swatch.s_500,
+            del_inline_text=self.primary_swatch.s_100,
+            empty_bg=self.base_surface,
+            lineno_text=self.text(_Text.DISABLED),
+            lineno_border=self.surface(_Surface.DP_03),
         )
 
 
