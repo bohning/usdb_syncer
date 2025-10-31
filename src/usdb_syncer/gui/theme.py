@@ -192,9 +192,9 @@ class SystemTheme(Theme):
         return DiffPalette(
             equal_bg=base,
             equal_text=text,
-            add_bg=palette.highlight().color(),
+            add_bg=_overlay_colors(base, palette.highlight().color(), 0.3),
             add_text=palette.highlightedText().color(),
-            del_bg=palette.highlight().color(),
+            del_bg=_overlay_colors(base, palette.highlight().color(), 0.3),
             del_text=palette.highlightedText().color(),
             add_inline_bg=palette.highlight().color(),
             add_inline_text=palette.highlightedText().color(),
