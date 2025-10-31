@@ -6,6 +6,7 @@ from enum import StrEnum
 from typing import Literal
 
 import attrs
+from attr import fields
 
 from usdb_syncer.logger import Logger
 
@@ -240,6 +241,10 @@ class MetaTags:
             str(self.medley) if self.medley else None,
             _key_value_str("tags", self.tags),
         )
+
+    def is_empty(self) -> bool:
+        """Check if all fields are None."""
+        return all(getattr(self, field.name) is None for field in fields(MetaTags))
 
 
 def _key_value_str(key: str, value: str | float | None) -> str | None:

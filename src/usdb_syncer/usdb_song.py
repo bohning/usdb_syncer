@@ -3,15 +3,20 @@
 from __future__ import annotations
 
 from collections.abc import Iterable
+from dataclasses import dataclass
+from html import escape
 from json import JSONEncoder
 from pathlib import Path
-from typing import Any, ClassVar
+from typing import Any, Callable, ClassVar
 
 import attrs
+from diff_match_patch import diff_match_patch
 
 from usdb_syncer import SongId, db
 from usdb_syncer.constants import UsdbStrings
 from usdb_syncer.db import DownloadStatus
+from usdb_syncer.logger import song_logger
+from usdb_syncer.song_txt import SongTxt
 from usdb_syncer.sync_meta import SyncMeta
 
 
@@ -226,6 +231,154 @@ class UsdbSong:
             self.is_playing = is_playing
             db.set_usdb_song_playing(self.song_id, is_playing)
             _UsdbSongCache.update(self)
+
+    def get_changes(self, remote_txt: SongTxt) -> SongChanges | None:
+        """Analyze changes between local and remote versions of a song."""
+
+        logger = song_logger(self.song_id)
+
+        remote_str = remote_txt.str_for_upload()
+
+        # Read local song file and get uploadable string
+        if not (sync_meta := self.sync_meta):
+            return None
+        if not (txt_path := sync_meta.txt_path()):
+            return None
+        if not (txt_path.is_file()):
+            return None
+        if not (local_txt := SongTxt.try_from_file(txt_path, logger)):
+            return None
+        local_str = local_txt.str_for_upload(sync_meta.meta_tags, remote_txt.headers)
+
+        diff_remote, diff_local = generate_remote_vs_local_diffs(remote_str, local_str)
+
+        return SongChanges(local_str, diff_remote, diff_local)
+
+
+def generate_remote_vs_local_diffs(remote: str, local: str) -> tuple[str, str]:
+    """Generate a side-by-side HTML diff with per-character highlights."""
+
+    dmp = diff_match_patch()
+    diffs = dmp.diff_main(remote, local)
+    dmp.diff_cleanupSemantic(diffs)
+
+    def render_inline_diff(chunk: str, op: int) -> str:
+        """Render inline character-level differences."""
+        if not chunk:
+            return ""
+        text = escape(chunk).replace(" ", "&nbsp;")
+        if op == -1:
+            return f"<span class='del-inline'>{text}</span>"
+        elif op == 1:
+            return f"<span class='add-inline'>{text}</span>"
+        return text
+
+    builder = _DiffLineBuilder()
+
+    for op, data in diffs:
+        parts = data.split("\r\n")
+        for i, part in enumerate(parts):
+            builder.add_content(part, op, render_inline_diff)
+            if i < len(parts) - 1:
+                builder.flush_lines()
+
+    builder.flush_lines()  # Flush any remaining content
+
+    return builder.build_html()
+
+
+class _DiffLineBuilder:
+    """Helper class to build diff HTML line by line."""
+
+    def __init__(self) -> None:
+        self.remote_lines: list[str] = []
+        self.local_lines: list[str] = []
+        self.line_num_remote = 1
+        self.line_num_local = 1
+        self.left_line = ""
+        self.right_line = ""
+        self.left_has_change = False
+        self.right_has_change = False
+
+    def add_content(self, part: str, op: int, renderer: Callable) -> None:
+        """Add content to current line buffers."""
+        if op == 0:  # Equal
+            self.left_line += renderer(part, 0)
+            self.right_line += renderer(part, 0)
+        elif op == -1:  # Deletion
+            self.left_line += renderer(part, op)
+            self.left_has_change = True
+        elif op == 1:  # Addition
+            self.right_line += renderer(part, op)
+            self.right_has_change = True
+
+    def flush_lines(self) -> None:
+        """Output current line buffers to both sides."""
+        if not self.left_line and not self.right_line:
+            return
+
+        self._add_left_line()
+        self._add_right_line()
+        self._reset_buffers()
+
+    def _add_left_line(self) -> None:
+        """Add left side line or empty placeholder."""
+        if self.left_line:
+            line_class = "del" if self.left_has_change else "equal"
+            self.remote_lines.append(
+                f"<tr><td class='lineno'>{self.line_num_remote}</td>"
+                f"<td class='line {line_class}'>{self.left_line}</td></tr>"
+            )
+            self.line_num_remote += 1
+        elif self.right_line:
+            self.remote_lines.append(
+                "<tr><td class='lineno'>&nbsp;</td>"
+                "<td class='line empty'>&nbsp;</td></tr>"
+            )
+
+    def _add_right_line(self) -> None:
+        """Add right side line or empty placeholder."""
+        if self.right_line:
+            line_class = "add" if self.right_has_change else "equal"
+            self.local_lines.append(
+                f"<tr><td class='lineno'>{self.line_num_local}</td>"
+                f"<td class='line {line_class}'>{self.right_line}</td></tr>"
+            )
+            self.line_num_local += 1
+        elif self.left_line:
+            self.local_lines.append(
+                "<tr><td class='lineno'>&nbsp;</td>"
+                "<td class='line empty'>&nbsp;</td></tr>"
+            )
+
+    def _reset_buffers(self) -> None:
+        """Reset line buffers for next line."""
+        self.left_line = ""
+        self.right_line = ""
+        self.left_has_change = False
+        self.right_has_change = False
+
+    def build_html(self) -> tuple[str, str]:
+        """Build final HTML tables."""
+        html_remote = (
+            "<table class='diff-table'>" + "".join(self.remote_lines) + "</table>"
+        )
+        html_local = (
+            "<table class='diff-table'>" + "".join(self.local_lines) + "</table>"
+        )
+        return html_remote, html_local
+
+
+@dataclass
+class SongChanges:
+    """Information about changes between local and remote versions."""
+
+    uploadable_str: str
+    diff_remote: str
+    diff_local: str
+
+    def has_changes(self) -> bool:
+        return self.diff_remote != self.diff_local
 
 
 class UsdbSongEncoder(JSONEncoder):

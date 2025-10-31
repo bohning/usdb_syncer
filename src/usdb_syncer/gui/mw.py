@@ -43,11 +43,17 @@ from usdb_syncer.gui.song_table.song_table import SongTable
 from usdb_syncer.gui.usdb_login_dialog import UsdbLoginDialog
 from usdb_syncer.gui.usdb_upload_dialog import UsdbUploadDialog
 from usdb_syncer.gui.webserver_dialog import WebserverDialog
-from usdb_syncer.logger import logger
+from usdb_syncer.logger import logger, song_logger
 from usdb_syncer.song_loader import DownloadManager
+from usdb_syncer.song_txt import SongTxt
 from usdb_syncer.sync_meta import SyncMeta
-from usdb_syncer.usdb_scraper import SessionManager, UserRole, post_song_rating
-from usdb_syncer.usdb_song import UsdbSong
+from usdb_syncer.usdb_scraper import (
+    SessionManager,
+    UserRole,
+    get_notes,
+    post_song_rating,
+)
+from usdb_syncer.usdb_song import SongChanges, UsdbSong
 from usdb_syncer.utils import AppPaths, LinuxEnvCleaner, open_path_or_file
 
 NO_COVER_PIXMAP = QPixmap(":/images/nocover.png")
@@ -421,7 +427,30 @@ class MainWindow(Ui_MainWindow, QMainWindow):
             )
             return
 
-        UsdbUploadDialog(self, selected_songs).show()
+        submittable_songs: list[UsdbSong] = []
+        submittable_song_changes: list[SongChanges] = []
+
+        for song in selected_songs:
+            logger = song_logger(song.song_id)
+            if not (remote_str := get_notes(song.song_id, logger)):
+                continue
+            if not (remote_txt := SongTxt.try_parse(remote_str, logger)):
+                continue
+            if (song_changes := song.get_changes(remote_txt)) and (
+                song_changes.has_changes()
+            ):
+                submittable_song_changes.append(song_changes)
+                submittable_songs.append(song)
+
+        if not submittable_songs:
+            QMessageBox.information(
+                self,
+                "No submittable songs",
+                "No submittable songs (either not local, not remote, or no changes)",
+            )
+            return
+
+        UsdbUploadDialog(self, submittable_songs, submittable_song_changes).show()
 
     def _open_current_song(self, action: Callable[[Path], None]) -> None:
         if song := self.table.current_song():
