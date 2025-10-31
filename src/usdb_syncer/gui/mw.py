@@ -53,7 +53,7 @@ from usdb_syncer.usdb_scraper import (
     get_notes,
     post_song_rating,
 )
-from usdb_syncer.usdb_song import SongChanges, UsdbSong
+from usdb_syncer.usdb_song import DownloadStatus, SongChanges, UsdbSong
 from usdb_syncer.utils import AppPaths, LinuxEnvCleaner, open_path_or_file
 
 NO_COVER_PIXMAP = QPixmap(":/images/nocover.png")
@@ -436,8 +436,10 @@ class MainWindow(Ui_MainWindow, QMainWindow):
                 continue
             if not (remote_txt := SongTxt.try_parse(remote_str, logger)):
                 continue
-            if (song_changes := song.get_changes(remote_txt)) and (
-                song_changes.has_changes()
+            if (
+                (song.status == DownloadStatus.SYNCHRONIZED)
+                and (song_changes := song.get_changes(remote_txt))
+                and (song_changes.has_changes())
             ):
                 submittable_song_changes.append(song_changes)
                 submittable_songs.append(song)
