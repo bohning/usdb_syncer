@@ -220,9 +220,9 @@ class SystemTheme(Theme):
             add_inline_text=palette.highlightedText().color(),
             del_inline_bg=palette.highlight().color(),
             del_inline_text=palette.highlightedText().color(),
-            empty_bg=palette.alternateBase().color(),
-            lineno_text=gray.s_200,
-            lineno_border=gray.s_200,
+            empty_bg=_overlay_colors(base, palette.highlight().color(), 0.3),
+            lineno_text=gray.s_700,
+            lineno_border=gray.s_700,
         )
 
 
@@ -329,7 +329,7 @@ class DarkTheme(Theme):
             add_inline_text=self.primary_swatch.s_100,
             del_inline_bg=self.primary_swatch.s_500,
             del_inline_text=self.primary_swatch.s_100,
-            empty_bg=self.base_surface,
+            empty_bg=_overlay_colors(self.base_surface, self.primary, 0.3),
             lineno_text=self.text(_Text.DISABLED),
             lineno_border=self.surface(_Surface.DP_03),
         )
