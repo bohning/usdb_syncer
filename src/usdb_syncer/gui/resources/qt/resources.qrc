@@ -14,6 +14,8 @@
     <file>calendar-white.svg</file>
     <file>calendar.png</file>
     <file>cards-white.svg</file>
+    <file>changes-white.svg</file>
+    <file>changes.png</file>
     <file>check_for_update.png</file>
     <file>check-white.svg</file>
     <file>chevron-down-white.svg</file>
@@ -39,6 +41,8 @@
     <file>database-white.svg</file>
     <file>database.png</file>
     <file>delete-white.svg</file>
+    <file>diff-white.svg</file>
+    <file>diff.png</file>
     <file>document-export.png</file>
     <file>document-import.png</file>
     <file>download-white.svg</file>
@@ -121,6 +125,8 @@
     <file>ultrastar-game-black.svg</file>
     <file>ultrastar-game-white.svg</file>
     <file>ultrastar-manager.png</file>
+    <file>upload.png</file>
+    <file>upload-white.svg</file>
     <file>usdb-white.svg</file>
     <file>usdx.png</file>
     <file>video.png</file>

@@ -5,6 +5,7 @@
 ## Features
 
 - Medley sections are auto-corrected to start on the first beat of the first note of a line and to end of the last beat of the last note of a line.
+- Local changes can now be submitted to USDB. Please use this feature only for significant adaptations, enhancements and corrections (please use the comment function for small corrections, especially when it only concerns header values such as #GAP or #BPM).
 
 ## Fixes
 

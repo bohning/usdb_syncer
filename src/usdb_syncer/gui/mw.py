@@ -5,7 +5,7 @@ from collections.abc import Callable
 from pathlib import Path
 
 from PySide6.QtGui import QCloseEvent, QPixmap
-from PySide6.QtWidgets import QFileDialog, QMainWindow
+from PySide6.QtWidgets import QFileDialog, QMainWindow, QMessageBox
 
 from usdb_syncer import (
     SongId,
@@ -41,12 +41,19 @@ from usdb_syncer.gui.settings_dialog import SettingsDialog
 from usdb_syncer.gui.shortcuts import MainWindowShortcut, SongTableShortcut
 from usdb_syncer.gui.song_table.song_table import SongTable
 from usdb_syncer.gui.usdb_login_dialog import UsdbLoginDialog
+from usdb_syncer.gui.usdb_upload_dialog import UsdbUploadDialog
 from usdb_syncer.gui.webserver_dialog import WebserverDialog
-from usdb_syncer.logger import logger
+from usdb_syncer.logger import logger, song_logger
 from usdb_syncer.song_loader import DownloadManager
+from usdb_syncer.song_txt import SongTxt
 from usdb_syncer.sync_meta import SyncMeta
-from usdb_syncer.usdb_scraper import post_song_rating
-from usdb_syncer.usdb_song import UsdbSong
+from usdb_syncer.usdb_scraper import (
+    SessionManager,
+    UserRole,
+    get_notes,
+    post_song_rating,
+)
+from usdb_syncer.usdb_song import DownloadStatus, SongChanges, UsdbSong
 from usdb_syncer.utils import AppPaths, LinuxEnvCleaner, open_path_or_file
 
 NO_COVER_PIXMAP = QPixmap(":/images/nocover.png")
@@ -147,6 +154,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
             (self.action_rate_3stars, lambda: self._rate_in_usdb(3), None),
             (self.action_rate_4stars, lambda: self._rate_in_usdb(4), None),
             (self.action_rate_5stars, lambda: self._rate_in_usdb(5), None),
+            (self.action_submit_to_usdb, self._submit_to_usdb, None),
             (self.action_open_song_folder, self._open_current_song_folder, None),
             (
                 self.action_open_song_in_karedi,
@@ -398,6 +406,48 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         else:
             logger.debug("Not rating song: no song selected.")
 
+    def _submit_to_usdb(self) -> None:
+        """Submit song changes to USDB.
+
+        Normal users may only submit one song at a time (the currenty selected song).
+        Moderators may submit all selected songs.
+        """
+
+        selected_songs = []
+
+        if (user := SessionManager.get_user()) and (user.role == UserRole.USER):
+            if current_song := self.table.current_song():
+                selected_songs.append(current_song)
+        else:
+            selected_songs = list(self.table.selected_songs())
+
+        submittable_songs: list[UsdbSong] = []
+        submittable_song_changes: list[SongChanges] = []
+
+        for song in selected_songs:
+            logger = song_logger(song.song_id)
+            if not (remote_str := get_notes(song.song_id, logger)):
+                continue
+            if not (remote_txt := SongTxt.try_parse(remote_str, logger)):
+                continue
+            if (
+                (song.status == DownloadStatus.SYNCHRONIZED)
+                and (song_changes := song.get_changes(remote_txt))
+                and (song_changes.has_changes())
+            ):
+                submittable_song_changes.append(song_changes)
+                submittable_songs.append(song)
+
+        if not submittable_songs:
+            QMessageBox.information(
+                self,
+                "No submittable songs",
+                "No submittable songs (either not local, not remote, or no changes)",
+            )
+            return
+
+        UsdbUploadDialog(self, submittable_songs, submittable_song_changes).show()
+
     def _open_current_song(self, action: Callable[[Path], None]) -> None:
         if song := self.table.current_song():
             if song.sync_meta:
@@ -481,6 +531,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         self.menu_custom_data.setIcon(icons.Icon.CUSTOM_DATA.icon(key))
         self.action_pin.setIcon(icons.Icon.PIN.icon(key))
         self.action_delete.setIcon(icons.Icon.DELETE.icon(key))
+        self.action_submit_to_usdb.setIcon(icons.Icon.UPLOAD.icon(key))
         self.action_open_song_in_usdx.setIcon(icons.Icon.USDX.icon(key))
         self.action_open_song_in_vocaluxe.setIcon(icons.Icon.VOCALUXE.icon(key))
         self.action_open_song_in_performous.setIcon(icons.Icon.PERFORMOUS.icon(key))
@@ -504,6 +555,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         if not song:
             return
         for action in (
+            self.action_submit_to_usdb,
             self.action_open_song_folder,
             self.menu_open_song_in,
             self.action_open_song_in_karedi,

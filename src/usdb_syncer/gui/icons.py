@@ -21,6 +21,7 @@ class Icon(enum.Enum):
     BRAVE = "brave.png", None
     BUG = "bug.png", "bug-white.svg"
     CALENDAR = "calendar.png", "calendar-white.svg"
+    CHANGES = "changes.png", "changes-white.svg"
     CHECK = "tick.png", "check-white.svg"
     CHECK_FOR_UPDATE = "check_for_update.png", "sync-white.svg"
     CHEVRON_DOWN = None, "chevron-down-white.svg"
@@ -35,6 +36,7 @@ class Icon(enum.Enum):
     CUSTOM_DATA = "drawer.png", "dresser-white.svg"
     DATABASE = "database.png", "database-white.svg"
     DELETE = "bin.png", "delete-white.svg"
+    DIFF = "diff.png", "diff-white.svg"
     DOWNLOAD = "status.png", "download-white.svg"
     EDGE = "edge.png", None
     EDITION = "edition.png", "edition-white.svg"
@@ -84,6 +86,7 @@ class Icon(enum.Enum):
     TUNE_PERFECT = "tune-perfect.png", None
     ULTRASTAR_GAME = "ultrastar-game-black.svg", "ultrastar-game-white.svg"
     ULTRASTAR_MANAGER = "ultrastar-manager.png", None
+    UPLOAD = "upload.png", "upload-white.svg"
     USDB = "faviconUSDB.png", "usdb-white.svg"
     USDX = "usdx.png", None
     VIDEO = "video.png", "filmstrip-white.svg"

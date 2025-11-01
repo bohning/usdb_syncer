@@ -1,9 +1,12 @@
 """Functionality related to the usdb.animux.de web page."""
 
+from __future__ import annotations
+
 import html
 import re
 import time
 from collections.abc import Iterator
+from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
 from typing import Any, assert_never
@@ -26,6 +29,35 @@ from usdb_syncer.logger import Logger, logger, song_logger
 from usdb_syncer.usdb_song import UsdbSong
 from usdb_syncer.utils import extract_youtube_id, normalize
 
+
+class UserRole(Enum):
+    ADMIN = "admin"
+    MODERATOR = "mod"
+    USER = "user"
+
+    def __str__(self) -> str:
+        return self.value
+
+
+@dataclass(frozen=True)
+class UsdbUser:
+    name: str
+    role: UserRole
+
+    @classmethod
+    def from_rank(cls, name: str, rank: int | None) -> UsdbUser:
+        """Create a UsdbUser from a numeric USDB rank code (0-4)."""
+
+        match rank:
+            case 4:
+                role = UserRole.ADMIN
+            case 3:
+                role = UserRole.MODERATOR
+            case _:
+                role = UserRole.USER
+        return cls(name=name, role=role)
+
+
 SONG_LIST_ROW_REGEX = re.compile(
     r'<tr class="list_tr\d"\s+data-songid="(?P<song_id>\d+)"\s+'
     r'data-lastchange="(?P<lastchange>\d+)"[^>]*?>\s*'
@@ -45,25 +77,43 @@ SONG_LIST_ROW_REGEX = re.compile(
 WELCOME_REGEX = re.compile(
     r"<td class='row3' colspan='2'>\s*<span class='gen'>([^<]+) <b>([^<]+)</b>"
 )
+RANK_REGEX = re.compile(r"images/rank_(\d)\.gif")
 
 
-def establish_usdb_login(session: Session) -> bool:
-    """Tries to log in to USDB if necessary. Returns final login status."""
-    if user := get_logged_in_usdb_user(session):
-        logger.info(f"Using existing login of USDB user '{user}'.")
-    elif (auth := settings.get_usdb_auth())[0] and auth[1]:
-        if login_to_usdb(session, *auth):
-            user = auth[0]
-            logger.info(f"Successfully logged in to USDB with user '{user}'.")
-        else:
-            logger.error(f"Login to USDB with user '{user}' failed!")
+def establish_usdb_login(session: Session) -> UsdbUser | None:
+    """Tries to log in to USDB if necessary. Returns user info or None."""
+    user = get_logged_in_usdb_user(session)
+
+    if user:
+        logger.info(f"Using existing USDB login of {user.role} '{user.name}'.")
     else:
-        logger.warning(
-            "Not logged in to USDB. Please go to 'Synchronize > USDB Login', then "
-            "select the browser you are logged in with and/or enter your credentials."
-        )
-    events.LoggedInToUSDB(user=user).post()
-    return user is not None
+        auth_user, auth_pass = settings.get_usdb_auth()
+        if auth_user and auth_pass:
+            if login_to_usdb(session, auth_user, auth_pass):
+                user = get_logged_in_usdb_user(session)
+                if user:
+                    logger.info(
+                        "Successfully logged in to USDB with "
+                        f"{user.role} '{user.name}'."
+                    )
+                else:
+                    logger.error(
+                        "Login appeared successful, but user info could not be "
+                        "retrieved."
+                    )
+            else:
+                logger.error(f"Login to USDB with user '{auth_user}' failed!")
+        else:
+            logger.warning(
+                "Not logged in to USDB. Please go to 'Synchronize > USDB Login', then "
+                "select the browser you are logged in with and/or enter your "
+                "credentials."
+            )
+
+    if user:
+        events.LoggedInToUSDB(user=user.name).post()
+
+    return user
 
 
 def new_session_with_cookies(browser: settings.Browser) -> Session:
@@ -79,6 +129,7 @@ class SessionManager:
 
     _session: Session | None = None
     _connecting: bool = False
+    _user: UsdbUser | None = None
 
     @classmethod
     def session(cls) -> Session:
@@ -88,7 +139,7 @@ class SessionManager:
             cls._connecting = True
             try:
                 cls._session = new_session_with_cookies(settings.get_browser())
-                establish_usdb_login(cls._session)
+                cls._user = establish_usdb_login(cls._session)
             finally:
                 cls._connecting = False
         return cls._session
@@ -103,13 +154,26 @@ class SessionManager:
     def has_session(cls) -> bool:
         return cls._session is not None
 
+    @classmethod
+    def get_user(cls) -> UsdbUser | None:
+        return cls._user
 
-def get_logged_in_usdb_user(session: Session) -> str | None:
+
+def get_logged_in_usdb_user(session: Session) -> UsdbUser | None:
+    """Return the logged-in USDB user's name and role, or None if not logged in."""
     response = session.get(Usdb.BASE_URL, timeout=10, params={"link": "profil"})
     response.raise_for_status()
-    if match := WELCOME_REGEX.search(response.text):
-        return match.group(2)
-    return None
+
+    html = response.text
+
+    if not (welcome_match := WELCOME_REGEX.search(html)):
+        return None
+    username = welcome_match.group(2)
+
+    rank_match = RANK_REGEX.search(html)
+    rank = int(rank_match.group(1)) if rank_match else None
+
+    return UsdbUser.from_rank(username, rank)
 
 
 def login_to_usdb(session: Session, user: str, password: str) -> bool:
@@ -572,3 +636,26 @@ def post_song_rating(song_id: SongId, stars: int) -> None:
     )
     logger = song_logger(song_id)
     logger.debug(f"{stars}-star rating posted on USDB.")
+
+
+def submit_local_changes(
+    song_id: SongId, sample_url: str, txt: str, filename: str, logger: Logger
+) -> None:
+    """Submit local changes of a song to USDB."""
+
+    payload = {
+        "coverinput": "",
+        "sampleinput": sample_url,
+        "txt": txt,
+        "filename": filename,
+    }
+
+    get_usdb_page(
+        "index.php",
+        RequestMethod.POST,
+        headers={"Content-Type": "application/x-www-form-urlencoded"},
+        params={"link": "editsongsupdate", "id": str(song_id)},
+        payload=payload,
+    )
+
+    logger.info("Local changes successfully submitted to USDB.")
