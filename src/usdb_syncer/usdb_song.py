@@ -300,7 +300,9 @@ class _DiffLineBuilder:
     left_has_change: bool = False
     right_has_change: bool = False
 
-    def add_content(self, part: str, op: int, renderer: Callable) -> None:
+    def add_content(
+        self, part: str, op: int, renderer: Callable[[str, int], str]
+    ) -> None:
         """Add content to current line buffers."""
         if op == 0:  # Equal
             self.left_line += renderer(part, 0)
