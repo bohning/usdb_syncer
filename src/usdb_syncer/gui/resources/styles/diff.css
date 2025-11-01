@@ -4,20 +4,24 @@
   font-family: "JetBrains Mono", "Menlo", "Consolas", monospace;
   font-size: 13px;
   line-height: 1.4;
+  table-layout: fixed;
 }}
 
 .lineno {{
   color: {lineno_text};
   text-align: right;
   padding: 0 8px;
-  width: 3em;
+  min-width: 3em;
+  white-space: nowrap;
   border-right: 1px solid {lineno_border};
   user-select: none;
 }}
 
 .line {{
-  white-space: pre-wrap;
+  white-space: pre;
   padding-left: 4px;
+  overflow-x: auto;
+  max-width: 100%;
 }}
 
 .equal {{
