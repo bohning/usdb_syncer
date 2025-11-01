@@ -307,10 +307,12 @@ class _DiffLineBuilder:
             self.right_line += renderer(part, 0)
         elif op == -1:  # Deletion
             self.left_line += renderer(part, op)
-            self.left_has_change = True
+            if part:
+                self.left_has_change = True
         elif op == 1:  # Addition
             self.right_line += renderer(part, op)
-            self.right_has_change = True
+            if part:
+                self.right_has_change = True
 
     def flush_lines(self) -> None:
         """Output current line buffers to both sides."""
