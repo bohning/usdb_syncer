@@ -1,5 +1,7 @@
 """Functionality related to the usdb.animux.de web page."""
 
+from __future__ import annotations
+
 import html
 import re
 import time
@@ -43,7 +45,7 @@ class UsdbUser:
     role: UserRole
 
     @classmethod
-    def from_rank(cls, name: str, rank: int | None) -> "UsdbUser":
+    def from_rank(cls, name: str, rank: int | None) -> UsdbUser:
         """Create a UsdbUser from a numeric USDB rank code (0-4)."""
 
         match rank:

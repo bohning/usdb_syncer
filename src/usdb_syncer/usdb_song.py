@@ -287,18 +287,18 @@ def generate_remote_vs_local_diffs(remote: str, local: str) -> tuple[str, str]:
     return builder.build_html()
 
 
+@attrs.define
 class _DiffLineBuilder:
     """Helper class to build diff HTML line by line."""
 
-    def __init__(self) -> None:
-        self.remote_lines: list[str] = []
-        self.local_lines: list[str] = []
-        self.line_num_remote = 1
-        self.line_num_local = 1
-        self.left_line = ""
-        self.right_line = ""
-        self.left_has_change = False
-        self.right_has_change = False
+    remote_lines: list[str] = attrs.field(factory=list)
+    local_lines: list[str] = attrs.field(factory=list)
+    line_num_remote: int = 1
+    line_num_local: int = 1
+    left_line: str = ""
+    right_line: str = ""
+    left_has_change: bool = False
+    right_has_change: bool = False
 
     def add_content(self, part: str, op: int, renderer: Callable) -> None:
         """Add content to current line buffers."""

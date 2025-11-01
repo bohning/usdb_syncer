@@ -421,12 +421,6 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         else:
             selected_songs = list(self.table.selected_songs())
 
-        if not selected_songs:
-            QMessageBox.information(
-                self, "No songs selected", "No songs selected for submission."
-            )
-            return
-
         submittable_songs: list[UsdbSong] = []
         submittable_song_changes: list[SongChanges] = []
 

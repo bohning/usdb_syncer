@@ -66,6 +66,26 @@ def _rgb_str(color: QColor) -> str:
     return f"rgb({color.red()}, {color.green()}, {color.blue()})"
 
 
+def generate_diff_css(palette: DiffPalette) -> str:
+    """Generate diff CSS from theme palette."""
+
+    return styles.DIFF_CSS.read_text(encoding="utf-8").format(
+        lineno_text=_rgb_str(palette.lineno_text),
+        lineno_border=_rgb_str(palette.lineno_border),
+        equal_bg=_rgb_str(palette.equal_bg),
+        equal_text=_rgb_str(palette.equal_text),
+        add_bg=_rgb_str(palette.add_bg),
+        add_text=_rgb_str(palette.add_text),
+        del_bg=_rgb_str(palette.del_bg),
+        del_text=_rgb_str(palette.del_text),
+        add_inline_bg=_rgb_str(palette.add_inline_bg),
+        add_inline_text=_rgb_str(palette.add_inline_text),
+        del_inline_bg=_rgb_str(palette.del_inline_bg),
+        del_inline_text=_rgb_str(palette.del_inline_text),
+        empty_bg=_rgb_str(palette.empty_bg),
+    )
+
+
 @attrs.define
 class PreviewPalette:
     """Palette for the song preview."""
