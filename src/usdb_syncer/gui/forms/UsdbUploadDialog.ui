@@ -27,7 +27,7 @@
        <item>
         <widget class="QLabel" name="label">
          <property name="text">
-          <string>Remote file (USDB)</string>
+          <string>Remote (USDB)</string>
          </property>
          <property name="alignment">
           <set>Qt::AlignmentFlag::AlignCenter</set>
@@ -44,7 +44,7 @@
        <item>
         <widget class="QLabel" name="label_2">
          <property name="text">
-          <string>Local file</string>
+          <string>Local (adapted for upload)</string>
          </property>
          <property name="alignment">
           <set>Qt::AlignmentFlag::AlignCenter</set>
