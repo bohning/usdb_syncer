@@ -10,7 +10,7 @@ import attrs
 from usdb_syncer import SongId as SongId
 from usdb_syncer import download_options, errors
 from usdb_syncer.logger import Logger
-from usdb_syncer.meta_tags import MetaTags
+from usdb_syncer.meta_tags import MedleyTag, MetaTags
 from usdb_syncer.settings import FixLinebreaks, FixSpaces
 from usdb_syncer.song_txt.headers import Headers
 from usdb_syncer.song_txt.tracks import Tracks
@@ -64,6 +64,14 @@ class SongTxt:
         if sync_meta_tags:
             if self.meta_tags.is_empty():
                 # local file contains no meta tags, but we have meta tags from sync_meta
+                # give precendence to medley tags in local file
+                if (start := self.headers.medleystartbeat) and (
+                    end := self.headers.medleyendbeat
+                ):
+                    sync_meta_tags.medley = MedleyTag(start, end)
+                # give precendence to preview tag in local file
+                if preview := self.headers.previewstart:
+                    sync_meta_tags.preview = preview
                 self.headers.video = str(sync_meta_tags)
             else:
                 # give meta tags in local file precedence, as the user must have
