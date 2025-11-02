@@ -38,6 +38,12 @@ class SongTxt:
     ) -> str:
         """Reinserts metatags and ensures CRLF line endings."""
 
+        # ensure canonical format:
+        self.notes.fix_linebreaks_yass_style(self.headers.bpm, self.logger)
+        self.notes.fix_first_words_capitalization(self.logger)
+        self.notes.fix_spaces(FixSpaces.AFTER, self.logger)
+        self.notes.fix_quotation_marks(self.headers.language, self.logger)
+
         # reinsert previously removed duet marker in title
         if self.notes.track_2 is not None:
             self.headers.title += " [DUET]"
