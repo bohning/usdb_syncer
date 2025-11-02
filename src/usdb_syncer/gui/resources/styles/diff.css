@@ -52,3 +52,16 @@
 .empty {{
   background-color: {empty_bg};
 }}
+
+.separator-line {{
+  background-color: {equal_bg};
+  color: {lineno_text};
+  text-align: center;
+  font-style: italic;
+  padding: 4px;
+}}
+
+tr.separator {{
+  border-top: 1px solid {lineno_border};
+  border-bottom: 1px solid {lineno_border};
+}}
