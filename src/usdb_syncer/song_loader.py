@@ -489,12 +489,12 @@ def _maybe_download_cover(ctx: _Context) -> JobResult:
     if cover := ctx.txt.meta_tags.cover:
         url = cover.source_url(ctx.logger)
         result = _download_cover_url(ctx, url)
-        if result == JobResult.SUCCESS:
+        if result is JobResult.SUCCESS:
             ctx.logger.info("Success! Downloaded cover.")
             return result
-        if result == JobResult.SKIPPED:
+        if result is JobResult.SKIPPED:
             return result
-        if result == JobResult.FAILED and ctx.options.notify_discord:
+        if result is JobResult.FAILED and ctx.options.notify_discord:
             notify_discord(
                 ctx.song.song_id,
                 url,
@@ -506,7 +506,7 @@ def _maybe_download_cover(ctx: _Context) -> JobResult:
         result = _download_cover_url(ctx, ctx.details.cover_url, process=False)
         if result is JobResult.SUCCESS:
             ctx.logger.info("Success! Downloaded USDB cover (fallback).")
-            return result
+            return JobResult.FALLBACK
     keep = " Keeping last resource." if ctx.out.cover.resource else ""
     ctx.logger.error(f"Failed to download cover!{keep}")
     return JobResult.FAILED
@@ -789,6 +789,7 @@ class JobResult(Enum):
 
     SUCCESS = auto()
     SKIPPED = auto()
+    FALLBACK = auto()
     FAILED = auto()
 
 
