@@ -197,7 +197,7 @@
      <x>0</x>
      <y>0</y>
      <width>1540</width>
-     <height>22</height>
+     <height>24</height>
     </rect>
    </property>
    <widget class="QMenu" name="menu_tools">
@@ -286,6 +286,7 @@
     <addaction name="action_show_in_usdb"/>
     <addaction name="action_post_comment_in_usdb"/>
     <addaction name="menu_rate_song_on_usdb"/>
+    <addaction name="action_submit_to_usdb"/>
     <addaction name="separator"/>
     <addaction name="menu_open_song_in"/>
     <addaction name="menu_custom_data"/>
@@ -890,6 +891,18 @@
    </property>
    <property name="text">
     <string>Webserver</string>
+   </property>
+  </action>
+  <action name="action_submit_to_usdb">
+   <property name="icon">
+    <iconset resource="../resources/qt/resources.qrc">
+     <normaloff>:/icons/upload.png</normaloff>:/icons/upload.png</iconset>
+   </property>
+   <property name="text">
+    <string>Submit to USDB</string>
+   </property>
+   <property name="toolTip">
+    <string>Submit local changes to USDB</string>
    </property>
   </action>
  </widget>

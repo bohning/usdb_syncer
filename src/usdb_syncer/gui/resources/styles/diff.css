@@ -1,0 +1,67 @@
+.diff-table {{
+  border-collapse: collapse;
+  width: 100%;
+  font-family: "JetBrains Mono", "Menlo", "Consolas", monospace;
+  font-size: 13px;
+  line-height: 1.4;
+  table-layout: fixed;
+}}
+
+.lineno {{
+  color: {lineno_text};
+  text-align: right;
+  padding: 0 8px;
+  min-width: 3em;
+  white-space: nowrap;
+  border-right: 1px solid {lineno_border};
+  user-select: none;
+}}
+
+.line {{
+  white-space: pre;
+  padding-left: 4px;
+  overflow-x: auto;
+  max-width: 100%;
+}}
+
+.equal {{
+  background-color: {equal_bg};
+  color: {equal_text};
+}}
+
+.add {{
+  background-color: {add_bg};
+  color: {add_text};
+}}
+
+.del {{
+  background-color: {del_bg};
+  color: {del_text};
+}}
+
+.add-inline {{
+  background-color: {add_inline_bg};
+  color: {add_inline_text};
+}}
+
+.del-inline {{
+  background-color: {del_inline_bg};
+  color: {del_inline_text};
+}}
+
+.empty {{
+  background-color: {empty_bg};
+}}
+
+.separator-line {{
+  background-color: {equal_bg};
+  color: {lineno_text};
+  text-align: center;
+  font-style: italic;
+  padding: 4px;
+}}
+
+tr.separator {{
+  border-top: 1px solid {lineno_border};
+  border-bottom: 1px solid {lineno_border};
+}}

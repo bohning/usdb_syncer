@@ -7,9 +7,10 @@ from typing import assert_never
 
 import attrs
 
+from usdb_syncer import SongId as SongId
 from usdb_syncer import download_options, errors
 from usdb_syncer.logger import Logger
-from usdb_syncer.meta_tags import MetaTags
+from usdb_syncer.meta_tags import MedleyTag, MetaTags
 from usdb_syncer.settings import FixLinebreaks, FixSpaces
 from usdb_syncer.song_txt.headers import Headers
 from usdb_syncer.song_txt.tracks import Tracks
@@ -29,6 +30,55 @@ class SongTxt:
 
     def __str__(self) -> str:
         return f"{self.headers}\n{self.notes}"
+
+    def str_for_upload(
+        self,
+        sync_meta_tags: MetaTags | None = None,
+        remote_headers: Headers | None = None,
+    ) -> str:
+        """Reinserts metatags and ensures CRLF line endings."""
+
+        # ensure canonical format:
+        self.notes.fix_linebreaks_yass_style(self.headers.bpm, self.logger)
+        self.notes.fix_first_words_capitalization(self.logger)
+        self.notes.fix_spaces(FixSpaces.AFTER, self.logger)
+        self.notes.fix_quotation_marks(self.headers.language, self.logger)
+
+        # reinsert previously removed duet marker in title
+        if self.notes.track_2 is not None:
+            self.headers.title += " [DUET]"
+        if remote_headers:
+            # copy remote mp3 value (pot. changed due to illegal chars)
+            self.headers.mp3 = remote_headers.mp3
+            # older songs never have image headers, while newer ones always do
+            if remote_headers.cover:
+                self.headers.cover = remote_headers.cover
+            else:
+                self.headers.cover = None
+            if remote_headers.background:
+                self.headers.background = remote_headers.background
+            else:
+                self.headers.background = None
+        # reinsert meta tags
+        # TODO: find better way for the user to correct/extend metatags
+        if sync_meta_tags:
+            if self.meta_tags.is_empty():
+                # local file contains no meta tags, but we have meta tags from sync_meta
+                # give precendence to medley tags in local file
+                if (start := self.headers.medleystartbeat) and (
+                    end := self.headers.medleyendbeat
+                ):
+                    sync_meta_tags.medley = MedleyTag(start, end)
+                # give precendence to preview tag in local file
+                if preview := self.headers.previewstart:
+                    sync_meta_tags.preview = preview
+                self.headers.video = str(sync_meta_tags)
+            else:
+                # give meta tags in local file precedence, as the user must have
+                # manually reinserted them for a reason
+                self.headers.video = str(self.meta_tags)
+
+        return f"{self.headers.str_for_usdb()}\n{self.notes}".replace("\n", "\r\n")
 
     def unsynchronized_lyrics(self) -> str:
         track_1 = "\n".join(line.text().rstrip() for line in self.notes.track_1)

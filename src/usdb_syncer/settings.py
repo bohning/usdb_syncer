@@ -201,6 +201,8 @@ class SettingKey(Enum):
     VIEW_THEME = "view/theme"
     VIEW_PRIMARY_COLOR = "view/primary_color"
     VIEW_COLORED_BACKGROUND = "view/colored_background"
+    DIFF_ONLY_CHANGES = "diff/only_changes"
+    DIFF_CONTEXT_LINES = "diff/context_lines"
 
 
 class Encoding(Enum):
@@ -1186,3 +1188,19 @@ def get_trash_files() -> bool:
 
 def set_trash_files(value: bool, temp: bool = False) -> None:
     _Settings.set(SettingKey.TRASH_FILES, value, temp)
+
+
+def get_diff_only_changes() -> bool:
+    return _Settings.get(SettingKey.DIFF_ONLY_CHANGES, False)
+
+
+def set_diff_only_changes(value: bool, temp: bool = False) -> None:
+    _Settings.set(SettingKey.DIFF_ONLY_CHANGES, value, temp)
+
+
+def get_diff_context_lines() -> int:
+    return _Settings.get(SettingKey.DIFF_CONTEXT_LINES, 3)
+
+
+def set_diff_context_lines(lines: int, temp: bool = False) -> None:
+    _Settings.set(SettingKey.DIFF_CONTEXT_LINES, lines, temp)

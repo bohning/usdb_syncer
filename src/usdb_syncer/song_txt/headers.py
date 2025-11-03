@@ -139,6 +139,31 @@ class Headers:
             ))
         return out
 
+    def str_for_usdb(self) -> str:
+        out = "\n".join(
+            f"#{key.upper()}:{val}"
+            for key in (
+                "artist",
+                "title",
+                "mp3",
+                "creator",
+                "edition",
+                "cover",
+                "background",
+                "genre",
+                "year",
+                "language",
+                "bpm",
+                "gap",
+                "video",
+                "videogap",
+                "start",
+                "end",
+            )
+            if (val := getattr(self, key)) is not None
+        )
+        return out
+
     def artist_title_str(self) -> str:
         return f"{self.artist} - {self.title}"
 
