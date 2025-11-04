@@ -264,21 +264,21 @@ def _tooltip_data(song: UsdbSong, column: int) -> str | None:
         case Column.AUDIO:
             if not (song.sync_meta and (audio := song.sync_meta.audio)):
                 return None
-            if audio.status is not JobResult.FALLBACK:
+            if audio.status != JobResult.FALLBACK:
                 return None
             else:
                 tooltip = "Fallback audio, may need GAP/BPM adjustments."
         case Column.VIDEO:
             if not (song.sync_meta and (video := song.sync_meta.video)):
                 return None
-            if video.status is not JobResult.FALLBACK:
+            if video.status != JobResult.FALLBACK:
                 return None
             else:
                 tooltip = "Fallback video, may need GAP/BPM adjustments."
         case Column.COVER:
             if not (song.sync_meta and (cover := song.sync_meta.cover)):
                 return None
-            if cover.status is not JobResult.FALLBACK:
+            if cover.status != JobResult.FALLBACK:
                 return None
             else:
                 tooltip = "Fallback cover from USDB."
