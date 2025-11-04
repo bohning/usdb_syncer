@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 from collections.abc import Iterator
+from enum import StrEnum, auto
 from pathlib import Path
 from typing import Any
 
@@ -34,10 +35,11 @@ class ResourceFile:
     fname: str
     mtime: int
     resource: str
+    status: JobResult
 
     @classmethod
-    def new(cls, path: Path, resource: str) -> ResourceFile:
-        return cls(path.name, utils.get_mtime(path), resource)
+    def new(cls, path: Path, resource: str, status: JobResult) -> ResourceFile:
+        return cls(path.name, utils.get_mtime(path), resource, status)
 
     @classmethod
     def from_nested_dict(cls, dct: Any) -> ResourceFile | None:
@@ -46,17 +48,21 @@ class ResourceFile:
             and isinstance(fname := dct.get("fname"), str)
             and isinstance(mtime := dct.get("mtime"), (int, float))
             and isinstance(resource := dct.get("resource"), str)
+            and isinstance(
+                status := JobResult(dct.get("status", JobResult.SUCCESS)), JobResult
+            )
         ):
-            return cls(fname=fname, mtime=int(mtime), resource=resource)
+            print(status)
+            return cls(fname=fname, mtime=int(mtime), resource=resource, status=status)
         return None
 
     @classmethod
     def from_db_row(
-        cls, row: tuple[str | None, int | None, str | None]
+        cls, row: tuple[str | None, int | None, str | None, JobResult | None]
     ) -> ResourceFile | None:
-        if row[0] is None or row[1] is None or row[2] is None:
+        if row[0] is None or row[1] is None or row[2] is None or row[3] is None:
             return None
-        return cls(fname=row[0], mtime=row[1], resource=row[2])
+        return cls(fname=row[0], mtime=row[1], resource=row[2], status=row[3])
 
     def is_in_sync(self, folder: Path) -> bool:
         """True if this file exists in the given folder and is in sync."""
@@ -76,6 +82,7 @@ class ResourceFile:
             fname=self.fname,
             mtime=self.mtime,
             resource=self.resource,
+            status=self.status,
         )
 
 
@@ -153,7 +160,7 @@ class SyncMeta:
 
     @classmethod
     def from_db_row(cls, row: tuple) -> SyncMeta:
-        assert len(row) == 22
+        assert len(row) == 27
         meta = cls(
             sync_meta_id=SyncMetaId(row[0]),
             song_id=SongId(row[1]),
@@ -163,11 +170,11 @@ class SyncMeta:
             meta_tags=MetaTags.parse(row[5], logger),
             pinned=bool(row[6]),
         )
-        meta.txt = ResourceFile.from_db_row(row[7:10])
-        meta.audio = ResourceFile.from_db_row(row[10:13])
-        meta.video = ResourceFile.from_db_row(row[13:16])
-        meta.cover = ResourceFile.from_db_row(row[16:19])
-        meta.background = ResourceFile.from_db_row(row[19:])
+        meta.txt = ResourceFile.from_db_row(row[7:11])
+        meta.audio = ResourceFile.from_db_row(row[11:15])
+        meta.video = ResourceFile.from_db_row(row[15:19])
+        meta.cover = ResourceFile.from_db_row(row[19:23])
+        meta.background = ResourceFile.from_db_row(row[23:])
         meta.custom_data = CustomData(db.get_custom_data(meta.sync_meta_id))
         return meta
 
@@ -289,3 +296,13 @@ class SyncMetaEncoder(json.JSONEncoder):
         if isinstance(o, CustomData):
             return o.inner()
         return super().default(o)
+
+
+class JobResult(StrEnum):
+    """Result of a job."""
+
+    SUCCESS = auto()
+    UNCHANGED = auto()
+    SKIPPED = auto()  # either disabled by user or no resource
+    FALLBACK = auto()
+    FAILURE = auto()

@@ -16,6 +16,7 @@ from PySide6.QtGui import QIcon
 from usdb_syncer import SongId, events
 from usdb_syncer.gui import icons
 from usdb_syncer.gui.song_table.column import Column
+from usdb_syncer.sync_meta import JobResult
 from usdb_syncer.usdb_song import UsdbSong
 
 QIndex = QModelIndex | QPersistentModelIndex
@@ -96,6 +97,9 @@ class TableModel(QAbstractTableModel):
         if role == Qt.ItemDataRole.DecorationRole:
             if song := self._get_song(index):
                 return _decoration_data(song, index.column())
+        if role == Qt.ItemDataRole.ToolTipRole:
+            if song := self._get_song(index):
+                return _tooltip_data(song, index.column())
         return None
 
     def _get_song(self, index: QIndex) -> UsdbSong | None:
@@ -198,23 +202,53 @@ def _decoration_data(song: UsdbSong, column: int) -> QIcon | None:  # noqa: C901
         case Column.TXT:
             if not (song.sync_meta and song.sync_meta.txt):
                 return None
-            icon = icons.Icon.CHECK
+            icon = icons.Icon.SUCCESS
         case Column.AUDIO:
-            if not (song.sync_meta and song.sync_meta.audio):
+            if not (song.sync_meta and (audio := song.sync_meta.audio)):
                 return None
-            icon = icons.Icon.CHECK
+            match audio.status:
+                case JobResult.SUCCESS:
+                    icon = icons.Icon.SUCCESS
+                case JobResult.FALLBACK:
+                    icon = icons.Icon.FALLBACK
+                case JobResult.FAILURE:
+                    icon = icons.Icon.FAILURE
+                case _:
+                    return None
         case Column.VIDEO:
-            if not (song.sync_meta and song.sync_meta.video):
+            if not (song.sync_meta and (video := song.sync_meta.video)):
                 return None
-            icon = icons.Icon.CHECK
+            match video.status:
+                case JobResult.SUCCESS:
+                    icon = icons.Icon.SUCCESS
+                case JobResult.FALLBACK:
+                    icon = icons.Icon.FALLBACK
+                case JobResult.FAILURE:
+                    icon = icons.Icon.FAILURE
+                case _:
+                    return None
         case Column.COVER:
-            if not (song.sync_meta and song.sync_meta.cover):
+            if not (song.sync_meta and (cover := song.sync_meta.cover)):
                 return None
-            icon = icons.Icon.CHECK
+            match cover.status:
+                case JobResult.SUCCESS:
+                    icon = icons.Icon.SUCCESS
+                case JobResult.FALLBACK:
+                    icon = icons.Icon.FALLBACK
+                case JobResult.FAILURE:
+                    icon = icons.Icon.FAILURE
+                case _:
+                    return None
         case Column.BACKGROUND:
-            if not (song.sync_meta and song.sync_meta.background):
+            if not (song.sync_meta and (background := song.sync_meta.background)):
                 return None
-            icon = icons.Icon.CHECK
+            match background.status:
+                case JobResult.SUCCESS:
+                    icon = icons.Icon.SUCCESS
+                case JobResult.FAILURE:
+                    icon = icons.Icon.FAILURE
+                case _:
+                    return None
         case Column.PINNED:
             if not (song.sync_meta and song.sync_meta.pinned):
                 return None
@@ -222,6 +256,35 @@ def _decoration_data(song: UsdbSong, column: int) -> QIcon | None:  # noqa: C901
         case _ as unreachable:
             assert_never(unreachable)
     return icon.icon()
+
+
+def _tooltip_data(song: UsdbSong, column: int) -> str | None:
+    col = Column(column)
+    match col:
+        case Column.AUDIO:
+            if not (song.sync_meta and (audio := song.sync_meta.audio)):
+                return None
+            if audio.status is not JobResult.FALLBACK:
+                return None
+            else:
+                tooltip = "Fallback audio, may need GAP/BPM adjustments."
+        case Column.VIDEO:
+            if not (song.sync_meta and (video := song.sync_meta.video)):
+                return None
+            if video.status is not JobResult.FALLBACK:
+                return None
+            else:
+                tooltip = "Fallback video, may need GAP/BPM adjustments."
+        case Column.COVER:
+            if not (song.sync_meta and (cover := song.sync_meta.cover)):
+                return None
+            if cover.status is not JobResult.FALLBACK:
+                return None
+            else:
+                tooltip = "Fallback cover from USDB."
+        case _:
+            return None
+    return tooltip
 
 
 @cache

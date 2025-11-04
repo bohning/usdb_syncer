@@ -17,7 +17,6 @@
     <file>changes-white.svg</file>
     <file>changes.png</file>
     <file>check_for_update.png</file>
-    <file>check-white.svg</file>
     <file>chevron-down-white.svg</file>
     <file>chevron-left-white.svg</file>
     <file>chevron-right-white.svg</file>
@@ -52,6 +51,10 @@
     <file>edition-white.svg</file>
     <file>edition.png</file>
     <file>error.png</file>
+    <file>failure-white.svg</file>
+    <file>failure.png</file>
+    <file>fallback-white.svg</file>
+    <file>fallback.png</file>
     <file>faviconUSDB.png</file>
     <file>feather-white.svg</file>
     <file>file-document-white.svg</file>
@@ -114,11 +117,12 @@
     <file>skip-previous-white.svg</file>
     <file>spectrum-absorption.png</file>
     <file>status.png</file>
+    <file>success-white.svg</file>
+    <file>success.png</file>
     <file>sync-white.svg</file>
     <file>tag-hash.png</file>
     <file>tag-white.svg</file>
     <file>text.png</file>
-    <file>tick.png</file>
     <file>title.png</file>
     <file>translate-variant-white.svg</file>
     <file>tune-perfect.png</file>

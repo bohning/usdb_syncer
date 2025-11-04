@@ -19,7 +19,7 @@ from usdb_syncer.meta_tags import MetaTags
 from usdb_syncer.path_template import PathTemplate
 from usdb_syncer.resource_dl import ImageKind, ResourceDLResult
 from usdb_syncer.song_loader import _SongLoader
-from usdb_syncer.sync_meta import MTIME_TOLERANCE_SECS, ResourceFile
+from usdb_syncer.sync_meta import MTIME_TOLERANCE_SECS, JobResult, ResourceFile
 
 
 def _download_and_process_image(
@@ -221,4 +221,6 @@ class SongLoaderTestCase(unittest.TestCase):
 def _mock_resource_file(path: Path, resource: str | None = None) -> ResourceFile:
     path.parent.mkdir(exist_ok=True, parents=True)
     path.touch()
-    return ResourceFile.new(path, resource or f"https://example.com/{path.name}")
+    return ResourceFile.new(
+        path, resource or f"https://example.com/{path.name}", JobResult.SUCCESS
+    )

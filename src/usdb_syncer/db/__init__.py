@@ -22,7 +22,7 @@ from usdb_syncer.logger import logger
 
 from . import sql
 
-SCHEMA_VERSION = 7
+SCHEMA_VERSION = 8
 
 # https://www.sqlite.org/limits.html
 _SQL_VARIABLES_LIMIT = 32766
@@ -272,11 +272,29 @@ class SongOrder(enum.Enum):
             case SongOrder.TXT:
                 return "txt.sync_meta_id IS NULL"
             case SongOrder.AUDIO:
-                return "audio.sync_meta_id IS NULL"
+                return (
+                    "CASE "
+                    "WHEN audio.sync_meta_id IS NULL THEN 0 "
+                    "WHEN audio.status = 'fallback' THEN 1 "
+                    "WHEN audio.status = 'success' THEN 2 "
+                    "ELSE 3 END"
+                )
             case SongOrder.VIDEO:
-                return "video.sync_meta_id IS NULL"
+                return (
+                    "CASE "
+                    "WHEN video.sync_meta_id IS NULL THEN 0 "
+                    "WHEN video.status = 'fallback' THEN 1 "
+                    "WHEN video.status = 'success' THEN 2 "
+                    "ELSE 3 END"
+                )
             case SongOrder.COVER:
-                return "cover.sync_meta_id IS NULL"
+                return (
+                    "CASE "
+                    "WHEN cover.sync_meta_id IS NULL THEN 0 "
+                    "WHEN cover.status = 'fallback' THEN 1 "
+                    "WHEN cover.status = 'success' THEN 2 "
+                    "ELSE 3 END"
+                )
             case SongOrder.BACKGROUND:
                 return "background.sync_meta_id IS NULL"
             case SongOrder.STATUS:
@@ -922,6 +940,7 @@ class ResourceFileParams:
     fname: str
     mtime: int
     resource: str
+    status: str
 
 
 def delete_resource_files(ids: Iterable[tuple[SyncMetaId, ResourceFileKind]]) -> None:

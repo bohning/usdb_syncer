@@ -22,7 +22,6 @@ class Icon(enum.Enum):
     BUG = "bug.png", "bug-white.svg"
     CALENDAR = "calendar.png", "calendar-white.svg"
     CHANGES = "changes.png", "changes-white.svg"
-    CHECK = "tick.png", "check-white.svg"
     CHECK_FOR_UPDATE = "check_for_update.png", "sync-white.svg"
     CHEVRON_DOWN = None, "chevron-down-white.svg"
     CHEVRON_LEFT = None, "chevron-left-white.svg"
@@ -41,6 +40,8 @@ class Icon(enum.Enum):
     EDGE = "edge.png", None
     EDITION = "edition.png", "edition-white.svg"
     ERROR = "error.png", "close-octagon-white.svg"
+    FAILURE = "failure.png", "failure-white.svg"
+    FALLBACK = "fallback.png", "fallback-white.svg"
     FILE_EXPORT = "document-export.png", "file-export-white.svg"
     FILE_IMPORT = "document-import.png", "file-import-white.svg"
     FIREFOX = "firefox.png", None
@@ -80,6 +81,7 @@ class Icon(enum.Enum):
     SKIP_TO_END = "control-skip.png", "skip-forward-white.svg"
     SKIP_TO_START = "control-skip-180.png", "skip-backward-white.svg"
     SONG_FOLDER = "folder_note.png", "folder-music-white.svg"
+    SUCCESS = "success.png", "success-white.svg"
     TAGS = "price-tag.png", "tag-white.svg"
     TEXT = "text.png", "file-document-white.svg"
     TITLE = "title.png", "format-title-white.svg"
