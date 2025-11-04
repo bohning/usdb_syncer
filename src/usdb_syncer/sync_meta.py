@@ -16,6 +16,7 @@ from usdb_syncer.logger import logger
 from usdb_syncer.meta_tags import MetaTags
 
 SYNC_META_VERSION = 1
+SYNC_META_INDENT = 4
 # mtimes may deviate up to 2 seconds on different file systems
 # See https://en.wikipedia.org/wiki/File_Allocation_Table
 MTIME_TOLERANCE_SECS = 2
@@ -261,7 +262,7 @@ class SyncMeta:
     def synchronize_to_file(self) -> None:
         """Rewrite the file on disk and update the mtime."""
         with self.path.open("w", encoding="utf8") as file:
-            json.dump(self, file, cls=SyncMetaEncoder)
+            json.dump(self, file, cls=SyncMetaEncoder, indent=SYNC_META_INDENT)
         self.mtime = utils.get_mtime(self.path)
 
     def resource_files(self) -> Iterator[ResourceFile]:
