@@ -380,7 +380,7 @@ class _SongLoader(QtCore.QRunnable):
                     ctx.logger.debug(
                         f"Skipping {job.name}: all relevant files unchanged."
                     )
-                    ctx.results[job] = JobResult.SKIPPED
+                    ctx.results[job] = JobResult.SKIPPED_UNCHANGED
                     continue
 
                 ctx.results[job] = job(ctx)
@@ -407,11 +407,11 @@ class _SongLoader(QtCore.QRunnable):
 
 def _maybe_download_audio(ctx: _Context) -> JobResult:
     if not (options := ctx.options.audio_options):
-        return JobResult.SKIPPED
+        return JobResult.SKIPPED_DISABLED
     for resource in islice(ctx.all_audio_resources(), 10):
         if ctx.out.audio.resource == resource:
             ctx.logger.info("Audio resource is unchanged, skipping.")
-            return JobResult.UNCHANGED
+            return JobResult.SKIPPED_UNCHANGED
         dl_result = resource_dl.download_audio(
             resource,
             options,
@@ -459,14 +459,14 @@ def _maybe_download_audio(ctx: _Context) -> JobResult:
 
 def _maybe_download_video(ctx: _Context) -> JobResult:
     if not (options := ctx.options.video_options):
-        return JobResult.SKIPPED
+        return JobResult.SKIPPED_DISABLED
     if ctx.txt.meta_tags.is_audio_only():
         ctx.logger.info("Song is audio only, skipping.")
-        return JobResult.SKIPPED
+        return JobResult.SKIPPED_UNAVAILABLE
     for resource in islice(ctx.all_video_resources(), 10):
         if ctx.out.video.resource == resource:
             ctx.logger.info("Video resource is unchanged, skipping.")
-            return JobResult.UNCHANGED
+            return JobResult.SKIPPED_UNCHANGED
         dl_result = resource_dl.download_video(
             resource,
             options,
@@ -507,17 +507,17 @@ def _maybe_download_video(ctx: _Context) -> JobResult:
 
 def _maybe_download_cover(ctx: _Context) -> JobResult:
     if not ctx.options.cover:
-        return JobResult.SKIPPED
+        return JobResult.SKIPPED_DISABLED
     if ctx.txt.meta_tags.cover is None and ctx.details.cover_url is None:
         ctx.logger.warning("No cover resource found.")
-        return JobResult.SKIPPED
+        return JobResult.SKIPPED_UNAVAILABLE
     if cover := ctx.txt.meta_tags.cover:
         url = cover.source_url(ctx.logger)
         result = _download_cover_url(ctx, url)
         if result is JobResult.SUCCESS:
             ctx.logger.info("Success! Downloaded cover.")
             return result
-        if result is JobResult.UNCHANGED:
+        if result is JobResult.SKIPPED_UNCHANGED:
             return result
         if result is JobResult.FAILURE and ctx.options.notify_discord:
             notify_discord(
@@ -532,7 +532,7 @@ def _maybe_download_cover(ctx: _Context) -> JobResult:
         if result is JobResult.SUCCESS:
             ctx.logger.info("Success! Downloaded USDB cover (fallback).")
             return JobResult.FALLBACK
-        if result is JobResult.UNCHANGED:
+        if result is JobResult.SKIPPED_UNCHANGED:
             return JobResult.FALLBACK
     keep = " Keeping last resource." if ctx.out.cover.resource else ""
     ctx.logger.error(f"Failed to download cover!{keep}")
@@ -549,7 +549,7 @@ def _download_cover_url(ctx: _Context, url: str, process: bool = True) -> JobRes
                     "Cover resource and postprocessing parameters are unchanged, "
                     "skipping."
                 )
-                return JobResult.UNCHANGED
+                return JobResult.SKIPPED_UNCHANGED
             ctx.logger.info(
                 "Cover postprocessing parameters have changed, redownloading."
             )
@@ -571,12 +571,12 @@ def _download_cover_url(ctx: _Context, url: str, process: bool = True) -> JobRes
 
 def _maybe_download_background(ctx: _Context) -> JobResult:
     if not (options := ctx.options.background_options):
-        return JobResult.SKIPPED
+        return JobResult.SKIPPED_DISABLED
     if not options.download_background(bool(ctx.out.video.resource)):
-        return JobResult.SKIPPED
+        return JobResult.SKIPPED_DISABLED
     if not (url := ctx.background_url()):
         ctx.logger.warning("No background resource found.")
-        return JobResult.SKIPPED
+        return JobResult.SKIPPED_UNAVAILABLE
     if ctx.out.background.resource == url:
         if sync_meta := ctx.song.sync_meta:
             if sync_meta.meta_tags.background == ctx.txt.meta_tags.background:
@@ -584,7 +584,7 @@ def _maybe_download_background(ctx: _Context) -> JobResult:
                     "Background resource and postprocessing parameters are unchanged, "
                     "skipping."
                 )
-                return JobResult.UNCHANGED
+                return JobResult.SKIPPED_UNCHANGED
             ctx.logger.info(
                 "Background postprocessing parameters have changed, redownloading."
             )
@@ -616,7 +616,7 @@ def _maybe_download_background(ctx: _Context) -> JobResult:
 
 def _maybe_write_txt(ctx: _Context) -> JobResult:
     if not (options := ctx.options.txt_options):
-        return JobResult.SKIPPED
+        return JobResult.SKIPPED_DISABLED
     _write_headers(ctx)
     path = ctx.locations.temp_path(ext="txt")
     ctx.txt.write_to_file(path, options.encoding.value, options.newline.value)
@@ -626,7 +626,7 @@ def _maybe_write_txt(ctx: _Context) -> JobResult:
         and filecmp.cmp(path, old_path, shallow=False)
     ):
         ctx.logger.info("Song txt is unchanged.")
-        return JobResult.UNCHANGED
+        return JobResult.SKIPPED_UNCHANGED
     else:
         ctx.out.txt.new_fname = path.name
         ctx.out.txt.resource = ctx.song.song_id.usdb_gettxt_url()
@@ -701,12 +701,12 @@ def _set_background_headers(ctx: _Context, version: FormatVersion, path: Path) -
 
 def _maybe_write_audio_tags(ctx: _Context) -> JobResult:
     if not (options := ctx.options.audio_options):
-        return JobResult.SKIPPED
+        return JobResult.SKIPPED_DISABLED
     if not (
         audio_path_resource := ctx.out.audio.path_and_resource(ctx.locations, temp=True)
     ):
         ctx.logger.info("No audio file to tag, skipping.")
-        return JobResult.SKIPPED
+        return JobResult.SKIPPED_UNAVAILABLE
     cover_path_resource = ctx.out.cover.path_and_resource(ctx.locations, temp=True)
     background_path_resource = ctx.out.background.path_and_resource(
         ctx.locations, temp=True
@@ -726,12 +726,12 @@ def _maybe_write_audio_tags(ctx: _Context) -> JobResult:
 
 def _maybe_write_video_tags(ctx: _Context) -> JobResult:
     if not (options := ctx.options.video_options):
-        return JobResult.SKIPPED
+        return JobResult.SKIPPED_DISABLED
     if not (
         video_path_resource := ctx.out.video.path_and_resource(ctx.locations, temp=True)
     ):
         ctx.logger.info("No video file to tag, skipping.")
-        return JobResult.SKIPPED
+        return JobResult.SKIPPED_UNAVAILABLE
     cover_path_resource = ctx.out.cover.path_and_resource(ctx.locations, temp=True)
     background_path_resource = ctx.out.background.path_and_resource(
         ctx.locations, temp=True
@@ -815,7 +815,11 @@ def _write_sync_meta(ctx: _Context) -> None:
             old.all_resource_files(),
             strict=True,
         ):
-            if ctx.results[job] in (JobResult.UNCHANGED, JobResult.SKIPPED):
+            if ctx.results[job] in (
+                JobResult.SKIPPED_DISABLED,
+                JobResult.SKIPPED_UNAVAILABLE,
+                JobResult.SKIPPED_UNCHANGED,
+            ):
                 if (resource := old_resource_tuple[0]) and (status := resource.status):
                     ctx.results[job] = status
 

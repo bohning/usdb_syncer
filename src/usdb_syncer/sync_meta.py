@@ -303,7 +303,8 @@ class JobResult(StrEnum):
     """Result of a job."""
 
     SUCCESS = auto()
-    UNCHANGED = auto()
-    SKIPPED = auto()  # either disabled by user or no resource
+    SKIPPED_DISABLED = auto()
+    SKIPPED_UNAVAILABLE = auto()
+    SKIPPED_UNCHANGED = auto()
     FALLBACK = auto()
     FAILURE = auto()
