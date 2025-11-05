@@ -218,7 +218,7 @@ class SongTable:
             self._media_player.stop()
             return
         position = 0
-        if song.sync_meta and song.sync_meta.audio:
+        if song.sync_meta and song.sync_meta.audio and song.sync_meta.audio.fname:
             path = song.sync_meta.path.parent / song.sync_meta.audio.fname
             url = path.absolute().as_posix()
             if song.sync_meta.meta_tags.preview:

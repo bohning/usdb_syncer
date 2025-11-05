@@ -19,6 +19,7 @@ from more_itertools import batched
 
 from usdb_syncer import SongId, SyncMetaId, errors
 from usdb_syncer.logger import logger
+from usdb_syncer.utils import JobResult
 
 from . import sql
 
@@ -270,33 +271,65 @@ class SongOrder(enum.Enum):
             case SongOrder.PINNED:
                 return "sync_meta.pinned"
             case SongOrder.TXT:
-                return "txt.sync_meta_id IS NULL"
+                return (
+                    "CASE "
+                    "WHEN txt.sync_meta_id IS NULL THEN 0 "
+                    "WHEN txt.status = 'skipped_disabled' THEN 1 "
+                    "WHEN txt.status = 'skipped_unavailable' THEN 2 "
+                    "WHEN txt.status = 'failed' THEN 3 "
+                    "WHEN txt.status = 'failed_existing' THEN 4 "
+                    "WHEN txt.status = 'fallback' THEN 5 "
+                    "WHEN txt.status = 'success' THEN 6 "
+                    "ELSE 7 END"
+                )
             case SongOrder.AUDIO:
                 return (
                     "CASE "
                     "WHEN audio.sync_meta_id IS NULL THEN 0 "
-                    "WHEN audio.status = 'fallback' THEN 1 "
-                    "WHEN audio.status = 'success' THEN 2 "
-                    "ELSE 3 END"
+                    "WHEN audio.status = 'skipped_disabled' THEN 1 "
+                    "WHEN audio.status = 'skipped_unavailable' THEN 2 "
+                    "WHEN audio.status = 'failed' THEN 3 "
+                    "WHEN audio.status = 'failed_existing' THEN 4 "
+                    "WHEN audio.status = 'fallback' THEN 5 "
+                    "WHEN audio.status = 'success' THEN 6 "
+                    "ELSE 7 END"
                 )
             case SongOrder.VIDEO:
                 return (
                     "CASE "
                     "WHEN video.sync_meta_id IS NULL THEN 0 "
-                    "WHEN video.status = 'fallback' THEN 1 "
-                    "WHEN video.status = 'success' THEN 2 "
-                    "ELSE 3 END"
+                    "WHEN video.status = 'skipped_disabled' THEN 1 "
+                    "WHEN video.status = 'skipped_unavailable' THEN 2 "
+                    "WHEN video.status = 'failed' THEN 3 "
+                    "WHEN video.status = 'failed_existing' THEN 4 "
+                    "WHEN video.status = 'fallback' THEN 5 "
+                    "WHEN video.status = 'success' THEN 6 "
+                    "ELSE 7 END"
                 )
             case SongOrder.COVER:
                 return (
                     "CASE "
                     "WHEN cover.sync_meta_id IS NULL THEN 0 "
-                    "WHEN cover.status = 'fallback' THEN 1 "
-                    "WHEN cover.status = 'success' THEN 2 "
-                    "ELSE 3 END"
+                    "WHEN cover.status = 'skipped_disabled' THEN 1 "
+                    "WHEN cover.status = 'skipped_unavailable' THEN 2 "
+                    "WHEN cover.status = 'failed' THEN 3 "
+                    "WHEN cover.status = 'failed_existing' THEN 4 "
+                    "WHEN cover.status = 'fallback' THEN 5 "
+                    "WHEN cover.status = 'success' THEN 6 "
+                    "ELSE 7 END"
                 )
             case SongOrder.BACKGROUND:
-                return "background.sync_meta_id IS NULL"
+                return (
+                    "CASE "
+                    "WHEN background.sync_meta_id IS NULL THEN 0 "
+                    "WHEN background.status = 'skipped_disabled' THEN 1 "
+                    "WHEN background.status = 'skipped_unavailable' THEN 2 "
+                    "WHEN background.status = 'failed' THEN 3 "
+                    "WHEN background.status = 'failed_existing' THEN 4 "
+                    "WHEN background.status = 'fallback' THEN 5 "
+                    "WHEN background.status = 'success' THEN 6 "
+                    "ELSE 7 END"
+                )
             case SongOrder.STATUS:
                 return _STATUS_COLUMN
 
@@ -937,10 +970,10 @@ class ResourceFileParams:
 
     sync_meta_id: SyncMetaId
     kind: ResourceFileKind
-    fname: str
-    mtime: int
-    resource: str
-    status: str
+    fname: str | None
+    mtime: int | None
+    resource: str | None
+    status: JobResult
 
 
 def delete_resource_files(ids: Iterable[tuple[SyncMetaId, ResourceFileKind]]) -> None:

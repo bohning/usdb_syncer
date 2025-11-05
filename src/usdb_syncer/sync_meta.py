@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import json
 from collections.abc import Iterator
-from enum import StrEnum, auto
 from pathlib import Path
 from typing import Any
 
@@ -14,6 +13,7 @@ from usdb_syncer import SongId, SyncMetaId, db, settings, utils
 from usdb_syncer.custom_data import CustomData
 from usdb_syncer.logger import logger
 from usdb_syncer.meta_tags import MetaTags
+from usdb_syncer.utils import JobResult
 
 SYNC_META_VERSION = 1
 SYNC_META_INDENT = 4
@@ -33,9 +33,9 @@ class SyncMetaTooNewError(Exception):
 class ResourceFile:
     """Meta data about a local file."""
 
-    fname: str
-    mtime: int
-    resource: str
+    fname: str | None
+    mtime: int | None
+    resource: str | None
     status: JobResult
 
     @classmethod
@@ -43,17 +43,26 @@ class ResourceFile:
         return cls(path.name, utils.get_mtime(path), resource, status)
 
     @classmethod
+    def status_only(cls, status: JobResult) -> ResourceFile:
+        return cls(fname=None, mtime=None, resource=None, status=status)
+
+    @classmethod
     def from_nested_dict(cls, dct: Any) -> ResourceFile | None:
+        if not isinstance(dct, dict):
+            return None
+
+        status = JobResult(dct.get("status", JobResult.SUCCESS))
+        if not isinstance(status, JobResult):
+            return None
+
+        if "fname" not in dct or dct.get("fname") is None:
+            return cls.status_only(status)
+
         if (
-            isinstance(dct, dict)
-            and isinstance(fname := dct.get("fname"), str)
+            isinstance(fname := dct.get("fname"), str)
             and isinstance(mtime := dct.get("mtime"), (int, float))
             and isinstance(resource := dct.get("resource"), str)
-            and isinstance(
-                status := JobResult(dct.get("status", JobResult.SUCCESS)), JobResult
-            )
         ):
-            print(status)
             return cls(fname=fname, mtime=int(mtime), resource=resource, status=status)
         return None
 
@@ -61,12 +70,19 @@ class ResourceFile:
     def from_db_row(
         cls, row: tuple[str | None, int | None, str | None, JobResult | None]
     ) -> ResourceFile | None:
-        if row[0] is None or row[1] is None or row[2] is None or row[3] is None:
+        if row[3] is None:  # status must always be present
+            return None
+        if row[0] is None:
+            return cls.status_only(row[3])
+        if row[1] is None or row[2] is None:
             return None
         return cls(fname=row[0], mtime=row[1], resource=row[2], status=row[3])
 
     def is_in_sync(self, folder: Path) -> bool:
         """True if this file exists in the given folder and is in sync."""
+        if self.fname is None or self.mtime is None:
+            return False
+
         path = folder.joinpath(self.fname)
         return (
             path.exists()
@@ -271,13 +287,19 @@ class SyncMeta:
                 yield meta
 
     def txt_path(self) -> Path | None:
-        return self.path.parent / self.txt.fname if self.txt else None
+        if not self.txt or self.txt.fname is None:
+            return None
+        return self.path.parent / self.txt.fname
 
     def audio_path(self) -> Path | None:
-        return self.path.parent / self.audio.fname if self.audio else None
+        if not self.audio or self.audio.fname is None:
+            return None
+        return self.path.parent / self.audio.fname
 
     def cover_path(self) -> Path | None:
-        return self.path.parent / self.cover.fname if self.cover else None
+        if not self.cover or self.cover.fname is None:
+            return None
+        return self.path.parent / self.cover.fname
 
 
 class SyncMetaEncoder(json.JSONEncoder):
@@ -285,7 +307,10 @@ class SyncMetaEncoder(json.JSONEncoder):
 
     def default(self, o: Any) -> Any:
         if isinstance(o, ResourceFile):
-            return attrs.asdict(o)
+            dct = attrs.asdict(o)
+            if o.fname is None:
+                return {"status": dct["status"]}
+            return dct
         if isinstance(o, MetaTags):
             return str(o)
         if isinstance(o, SyncMeta):
@@ -297,14 +322,3 @@ class SyncMetaEncoder(json.JSONEncoder):
         if isinstance(o, CustomData):
             return o.inner()
         return super().default(o)
-
-
-class JobResult(StrEnum):
-    """Result of a job."""
-
-    SUCCESS = auto()
-    SKIPPED_DISABLED = auto()
-    SKIPPED_UNAVAILABLE = auto()
-    SKIPPED_UNCHANGED = auto()
-    FALLBACK = auto()
-    FAILURE = auto()

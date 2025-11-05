@@ -111,6 +111,10 @@
     <file>sample.png</file>
     <file>server-black.svg</file>
     <file>server-white.svg</file>
+    <file>skipped-disabled-white.svg</file>
+    <file>skipped-disabled.png</file>
+    <file>skipped-unavailable-white.svg</file>
+    <file>skipped-unavailable.png</file>
     <file>skip-backward-white.svg</file>
     <file>skip-forward-white.svg</file>
     <file>skip-next-white.svg</file>

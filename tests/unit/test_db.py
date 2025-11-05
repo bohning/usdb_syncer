@@ -6,8 +6,8 @@ import attrs
 import pytest
 
 from usdb_syncer import SongId, SyncMetaId, db
-from usdb_syncer.sync_meta import JobResult
 from usdb_syncer.usdb_song import UsdbSong
+from usdb_syncer.utils import JobResult
 
 PERFORMANCE_TEST_ITEM_COUNT = 100000
 
@@ -81,7 +81,7 @@ def test_upsert_delete_resource_files_many() -> None:
             fname=str(sync_meta_id),
             mtime=0,
             resource="",
-            status=JobResult.SUCCESS.value,
+            status=JobResult.SUCCESS,
         )
         for sync_meta_id in sync_meta_ids
     ]

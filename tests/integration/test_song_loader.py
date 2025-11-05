@@ -19,7 +19,8 @@ from usdb_syncer.meta_tags import MetaTags
 from usdb_syncer.path_template import PathTemplate
 from usdb_syncer.resource_dl import ImageKind, ResourceDLResult
 from usdb_syncer.song_loader import _SongLoader
-from usdb_syncer.sync_meta import MTIME_TOLERANCE_SECS, JobResult, ResourceFile
+from usdb_syncer.sync_meta import MTIME_TOLERANCE_SECS, ResourceFile
+from usdb_syncer.utils import JobResult
 
 
 def _download_and_process_image(
@@ -129,6 +130,7 @@ class SongLoaderTestCase(unittest.TestCase):
             ):
                 with self.subTest(ext=ext):
                     assert meta
+                    assert meta.fname
                     assert meta.fname == path_stem.name + ext
                     assert meta.mtime == utils.get_mtime(
                         path_stem.with_name(meta.fname)
@@ -208,6 +210,7 @@ class SongLoaderTestCase(unittest.TestCase):
             mp3_path = song.sync_meta.path.parent / "song.mp3"
             song.sync_meta.audio = _mock_resource_file(mp3_path, "audio.com")
             # simulate changed file
+            assert song.sync_meta.audio.mtime
             song.sync_meta.audio.mtime -= MTIME_TOLERANCE_SECS * 1_000_000 + 1
 
             loader = _SongLoader(copy.deepcopy(song), options)

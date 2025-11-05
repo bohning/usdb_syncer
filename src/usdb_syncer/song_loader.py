@@ -39,10 +39,10 @@ from usdb_syncer.postprocessing import write_audio_tags, write_video_tags
 from usdb_syncer.resource_dl import ResourceDLError
 from usdb_syncer.settings import FormatVersion
 from usdb_syncer.song_txt import SongTxt
-from usdb_syncer.sync_meta import JobResult, ResourceFile, SyncMeta
+from usdb_syncer.sync_meta import ResourceFile, SyncMeta
 from usdb_syncer.usdb_scraper import SongDetails
 from usdb_syncer.usdb_song import DownloadStatus, UsdbSong
-from usdb_syncer.utils import video_url_from_resource
+from usdb_syncer.utils import JobResult, video_url_from_resource
 
 
 class DownloadManager:
@@ -199,10 +199,10 @@ class _TempResourceFile:
 
     def to_resource_file(
         self, locations: _Locations, temp: bool, status: JobResult
-    ) -> ResourceFile | None:
+    ) -> ResourceFile:
         if path_resource := self.path_and_resource(locations, temp=temp):
             return ResourceFile.new(*path_resource, status)
-        return None
+        return ResourceFile.status_only(status)
 
 
 @attrs.define
@@ -428,7 +428,10 @@ def _maybe_download_audio(ctx: _Context) -> JobResult:
                 and (resource == ctx.txt.meta_tags.audio)
             ) or (
                 not (ctx.txt.meta_tags.is_audio_only())
-                and (resource == ctx.txt.meta_tags.video)
+                and (
+                    resource == ctx.txt.meta_tags.audio
+                    or resource == ctx.txt.meta_tags.video
+                )
             ):
                 ctx.logger.info("Success! Downloaded audio.")
                 return JobResult.SUCCESS
@@ -451,9 +454,12 @@ def _maybe_download_audio(ctx: _Context) -> JobResult:
                 notify_discord(
                     ctx.song.song_id, url, "Audio", dl_result.error.value, logger
                 )
-    keep = " Keeping last resource." if ctx.out.audio.resource else ""
+    if ctx.out.audio.resource:
+        ctx.logger.error("Failed to download audio. Keeping existing resource.")
+        return JobResult.FAILURE_EXISTING
+
     song_len = ctx.txt.minimum_song_length()
-    ctx.logger.error(f"Failed to download audio (song duration > {song_len})!{keep}")
+    ctx.logger.error(f"Failed to download audio. (song duration > {song_len})!")
     return JobResult.FAILURE
 
 
@@ -500,48 +506,83 @@ def _maybe_download_video(ctx: _Context) -> JobResult:
                 notify_discord(
                     ctx.song.song_id, url, "Video", dl_result.error.value, logger
                 )
-    keep = " Keeping last resource." if ctx.out.video.resource else ""
-    ctx.logger.error(f"Failed to download video!{keep}")
+
+    if ctx.out.video.resource:
+        ctx.logger.error("Failed to download video. Keeping existing resource.")
+        return JobResult.FAILURE_EXISTING
+
+    ctx.logger.error("Failed to download video.")
     return JobResult.FAILURE
 
 
 def _maybe_download_cover(ctx: _Context) -> JobResult:
     if not ctx.options.cover:
         return JobResult.SKIPPED_DISABLED
+
     if ctx.txt.meta_tags.cover is None and ctx.details.cover_url is None:
         ctx.logger.warning("No cover resource found.")
         return JobResult.SKIPPED_UNAVAILABLE
-    if cover := ctx.txt.meta_tags.cover:
-        url = cover.source_url(ctx.logger)
-        result = _download_cover_url(ctx, url)
-        if result is JobResult.SUCCESS:
-            ctx.logger.info("Success! Downloaded cover.")
-            return result
-        if result is JobResult.SKIPPED_UNCHANGED:
-            return result
-        if result is JobResult.FAILURE and ctx.options.notify_discord:
-            notify_discord(
-                ctx.song.song_id,
-                url,
-                "Cover",
-                ResourceDLError.RESOURCE_UNAVAILABLE.value,
-                ctx.logger,
-            )
-    if ctx.details.cover_url:
-        result = _download_cover_url(ctx, ctx.details.cover_url, process=False)
-        if result is JobResult.SUCCESS:
-            ctx.logger.info("Success! Downloaded USDB cover (fallback).")
-            return JobResult.FALLBACK
-        if result is JobResult.SKIPPED_UNCHANGED:
-            return JobResult.FALLBACK
-    keep = " Keeping last resource." if ctx.out.cover.resource else ""
-    ctx.logger.error(f"Failed to download cover!{keep}")
+
+    if meta_result := _try_meta_cover(ctx):
+        return meta_result
+
+    if fallback_result := _try_fallback_cover(ctx):
+        return fallback_result
+
+    if ctx.out.cover.resource:
+        ctx.logger.error("Failed to download cover. Keeping existing resource.")
+        return JobResult.FAILURE_EXISTING
+
+    ctx.logger.error("Failed to download cover.")
     return JobResult.FAILURE
+
+
+def _try_meta_cover(ctx: _Context) -> JobResult | None:
+    """Try to download cover from meta tags. Returns None if no primary source."""
+    if not (cover := ctx.txt.meta_tags.cover):
+        return None
+
+    url = cover.source_url(ctx.logger)
+    result = _download_cover_url(ctx, url)
+
+    if result is JobResult.SUCCESS:
+        ctx.logger.info("Success! Downloaded cover.")
+        return result
+
+    if result is JobResult.SKIPPED_UNCHANGED:
+        return result
+
+    if result is JobResult.FAILURE and ctx.options.notify_discord:
+        notify_discord(
+            ctx.song.song_id,
+            url,
+            "Cover",
+            ResourceDLError.RESOURCE_UNAVAILABLE.value,
+            ctx.logger,
+        )
+
+    return None
+
+
+def _try_fallback_cover(ctx: _Context) -> JobResult | None:
+    """Try to download USDB cover as fallback. Returns None if no fallback."""
+    if not ctx.details.cover_url:
+        return None
+
+    result = _download_cover_url(ctx, ctx.details.cover_url, process=False)
+
+    if result in (JobResult.SUCCESS, JobResult.SKIPPED_UNCHANGED):
+        ctx.logger.info("Success! Downloaded USDB cover (fallback).")
+        return JobResult.FALLBACK
+
+    return None
 
 
 def _download_cover_url(ctx: _Context, url: str, process: bool = True) -> JobResult:
     """Attempt to download and process a cover image."""
     assert ctx.options.cover
+
+    # Check if we can skip because nothing changed
     if ctx.out.cover.resource == url:
         if sync_meta := ctx.song.sync_meta:
             if sync_meta.meta_tags.cover == ctx.txt.meta_tags.cover:
@@ -553,6 +594,7 @@ def _download_cover_url(ctx: _Context, url: str, process: bool = True) -> JobRes
             ctx.logger.info(
                 "Cover postprocessing parameters have changed, redownloading."
             )
+
     if path := resource_dl.download_and_process_image(
         url=url,
         target_stem=ctx.locations.temp_path(),
@@ -564,8 +606,8 @@ def _download_cover_url(ctx: _Context, url: str, process: bool = True) -> JobRes
     ):
         ctx.out.cover.resource = url
         ctx.out.cover.new_fname = path.name
-
         return JobResult.SUCCESS
+
     return JobResult.FAILURE
 
 
@@ -609,8 +651,13 @@ def _maybe_download_background(ctx: _Context) -> JobResult:
                 ResourceDLError.RESOURCE_UNAVAILABLE.value,
                 ctx.logger,
             )
-        keep = " Keeping last resource." if ctx.out.cover.resource else ""
-        ctx.logger.error(f"Failed to download background!{keep}")
+        if ctx.out.background.resource:
+            ctx.logger.error(
+                "Failed to download background. Keeping existing resource."
+            )
+            return JobResult.FAILURE_EXISTING
+
+        ctx.logger.error("Failed to download background.")
         return JobResult.FAILURE
 
 
@@ -757,7 +804,11 @@ def _cleanup_existing_resources(ctx: _Context) -> None:
     for (old, _), out in zip(
         ctx.song.sync_meta.all_resource_files(), ctx.out, strict=False
     ):
-        if not (old and (old_path := ctx.locations.current_path(file=old.fname))):
+        if not (
+            old
+            and old.fname
+            and (old_path := ctx.locations.current_path(file=old.fname))
+        ):
             continue
         if not out.old_fname:
             # out of sync
@@ -802,7 +853,7 @@ def _write_sync_meta(ctx: _Context) -> None:
         custom_data=CustomData(old.custom_data.inner() if old else None),
     )
 
-    # if any resource is unchanged or skipped, keep previous status
+    # if any resource is unchanged, keep previous status
     if old:
         for job, old_resource_tuple in zip(
             [
@@ -815,11 +866,7 @@ def _write_sync_meta(ctx: _Context) -> None:
             old.all_resource_files(),
             strict=True,
         ):
-            if ctx.results[job] in (
-                JobResult.SKIPPED_DISABLED,
-                JobResult.SKIPPED_UNAVAILABLE,
-                JobResult.SKIPPED_UNCHANGED,
-            ):
+            if ctx.results[job] is JobResult.SKIPPED_UNCHANGED:
                 if (resource := old_resource_tuple[0]) and (status := resource.status):
                     ctx.results[job] = status
 

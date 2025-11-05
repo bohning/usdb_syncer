@@ -16,8 +16,9 @@ from PySide6.QtGui import QIcon
 from usdb_syncer import SongId, events
 from usdb_syncer.gui import icons
 from usdb_syncer.gui.song_table.column import Column
-from usdb_syncer.sync_meta import JobResult
+from usdb_syncer.sync_meta import ResourceFile
 from usdb_syncer.usdb_song import UsdbSong
+from usdb_syncer.utils import JobResult
 
 QIndex = QModelIndex | QPersistentModelIndex
 
@@ -200,55 +201,25 @@ def _decoration_data(song: UsdbSong, column: int) -> QIcon | None:  # noqa: C901
             else:
                 return None
         case Column.TXT:
-            if not (song.sync_meta and song.sync_meta.txt):
+            if not (song.sync_meta and (txt := song.sync_meta.txt)):
                 return None
-            icon = icons.Icon.SUCCESS
+            icon = status_icon(txt)
         case Column.AUDIO:
             if not (song.sync_meta and (audio := song.sync_meta.audio)):
                 return None
-            match audio.status:
-                case JobResult.SUCCESS:
-                    icon = icons.Icon.SUCCESS
-                case JobResult.FALLBACK:
-                    icon = icons.Icon.FALLBACK
-                case JobResult.FAILURE:
-                    icon = icons.Icon.FAILURE
-                case _:
-                    return None
+            icon = status_icon(audio)
         case Column.VIDEO:
             if not (song.sync_meta and (video := song.sync_meta.video)):
                 return None
-            match video.status:
-                case JobResult.SUCCESS:
-                    icon = icons.Icon.SUCCESS
-                case JobResult.FALLBACK:
-                    icon = icons.Icon.FALLBACK
-                case JobResult.FAILURE:
-                    icon = icons.Icon.FAILURE
-                case _:
-                    return None
+            icon = status_icon(video)
         case Column.COVER:
             if not (song.sync_meta and (cover := song.sync_meta.cover)):
                 return None
-            match cover.status:
-                case JobResult.SUCCESS:
-                    icon = icons.Icon.SUCCESS
-                case JobResult.FALLBACK:
-                    icon = icons.Icon.FALLBACK
-                case JobResult.FAILURE:
-                    icon = icons.Icon.FAILURE
-                case _:
-                    return None
+            icon = status_icon(cover)
         case Column.BACKGROUND:
             if not (song.sync_meta and (background := song.sync_meta.background)):
                 return None
-            match background.status:
-                case JobResult.SUCCESS:
-                    icon = icons.Icon.SUCCESS
-                case JobResult.FAILURE:
-                    icon = icons.Icon.FAILURE
-                case _:
-                    return None
+            icon = status_icon(background)
         case Column.PINNED:
             if not (song.sync_meta and song.sync_meta.pinned):
                 return None
@@ -258,32 +229,69 @@ def _decoration_data(song: UsdbSong, column: int) -> QIcon | None:  # noqa: C901
     return icon.icon()
 
 
+def status_icon(resource: ResourceFile) -> icons.Icon:
+    match resource.status:
+        case JobResult.SUCCESS:
+            icon = icons.Icon.SUCCESS
+        case JobResult.SKIPPED_DISABLED:
+            icon = icons.Icon.SKIPPED_DISABLED
+        case JobResult.SKIPPED_UNAVAILABLE:
+            icon = icons.Icon.SKIPPED_UNAVAILABLE
+        case JobResult.SKIPPED_UNCHANGED:  # should not be possible -> previous status
+            icon = icons.Icon.BUG
+        case JobResult.FALLBACK:
+            icon = icons.Icon.FALLBACK
+        case JobResult.FAILURE_EXISTING:
+            icon = icons.Icon.FAILURE_EXISTING
+        case JobResult.FAILURE:
+            icon = icons.Icon.FAILURE
+        case _ as unreachable:
+            assert_never(unreachable)
+    return icon
+
+
 def _tooltip_data(song: UsdbSong, column: int) -> str | None:
     col = Column(column)
     match col:
         case Column.AUDIO:
             if not (song.sync_meta and (audio := song.sync_meta.audio)):
                 return None
-            if audio.status != JobResult.FALLBACK:
-                return None
-            else:
-                tooltip = "Fallback audio, may need GAP/BPM adjustments."
+            tooltip = status_tooltip(audio)
         case Column.VIDEO:
             if not (song.sync_meta and (video := song.sync_meta.video)):
                 return None
-            if video.status != JobResult.FALLBACK:
-                return None
-            else:
-                tooltip = "Fallback video, may need GAP/BPM adjustments."
+            tooltip = status_tooltip(video)
         case Column.COVER:
             if not (song.sync_meta and (cover := song.sync_meta.cover)):
                 return None
-            if cover.status != JobResult.FALLBACK:
+            tooltip = status_tooltip(cover)
+        case Column.BACKGROUND:
+            if not (song.sync_meta and (background := song.sync_meta.background)):
                 return None
-            else:
-                tooltip = "Fallback cover from USDB."
+            tooltip = status_tooltip(background)
         case _:
             return None
+    return tooltip
+
+
+def status_tooltip(resource: ResourceFile) -> str:
+    match resource.status:
+        case JobResult.SUCCESS:
+            tooltip = "Resource download successful"
+        case JobResult.SKIPPED_DISABLED:
+            tooltip = "Resource download disabled in the settings"
+        case JobResult.SKIPPED_UNAVAILABLE:
+            tooltip = "No resource available"
+        case JobResult.SKIPPED_UNCHANGED:  # should not be possible -> previous status
+            tooltip = "Resource is unchanged"
+        case JobResult.FALLBACK:
+            tooltip = "Fallback resource (from USDB / comments)"
+        case JobResult.FAILURE_EXISTING:
+            tooltip = "Resource download failed, using existing resource"
+        case JobResult.FAILURE:
+            tooltip = "Resource download failed"
+        case _ as unreachable:
+            assert_never(unreachable)
     return tooltip
 
 
