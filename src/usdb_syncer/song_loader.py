@@ -40,7 +40,7 @@ from usdb_syncer.postprocessing import write_audio_tags, write_video_tags
 from usdb_syncer.resource_dl import ResourceDLError
 from usdb_syncer.settings import FormatVersion
 from usdb_syncer.song_txt import SongTxt
-from usdb_syncer.sync_meta import ResourceFile, SyncMeta
+from usdb_syncer.sync_meta import Resource, ResourceFile, SyncMeta
 from usdb_syncer.usdb_scraper import SongDetails
 from usdb_syncer.usdb_song import DownloadStatus, UsdbSong
 from usdb_syncer.utils import video_url_from_resource
@@ -198,12 +198,13 @@ class _TempResourceFile:
             return locations.current_path(self.old_fname)
         return None
 
-    def to_resource_file(
+    def to_resource(
         self, locations: _Locations, temp: bool, status: JobStatus
-    ) -> ResourceFile:
+    ) -> Resource:
         if path_resource := self.path_and_resource(locations, temp=temp):
-            return ResourceFile.new(*path_resource, status)
-        return ResourceFile.status_only(status)
+            file = ResourceFile.new(*path_resource)
+            return Resource.new(status, file)
+        return Resource.status_only(status)
 
 
 @attrs.define
@@ -244,9 +245,13 @@ class _Context:
                 (self.song.sync_meta.cover, self.out.cover),
                 (self.song.sync_meta.background, self.out.background),
             ):
-                if old and old.is_in_sync(current.parent):
-                    out.resource = old.resource
-                    out.old_fname = old.fname
+                if (
+                    old
+                    and (old_file := old.file)
+                    and old_file.is_in_sync(current.parent)
+                ):
+                    out.resource = old_file.resource
+                    out.old_fname = old_file.fname
 
     @classmethod
     def new(
@@ -802,13 +807,12 @@ def _cleanup_existing_resources(ctx: _Context) -> None:
     """
     if not ctx.song.sync_meta:
         return
-    for (old, _), out in zip(
-        ctx.song.sync_meta.all_resource_files(), ctx.out, strict=False
-    ):
+    for (old, _), out in zip(ctx.song.sync_meta.all_resources(), ctx.out, strict=False):
         if not (
             old
-            and old.fname
-            and (old_path := ctx.locations.current_path(file=old.fname))
+            and (old_file := old.file)
+            and old_file.fname
+            and (old_path := ctx.locations.current_path(file=old_file.fname))
         ):
             continue
         if not out.old_fname:
@@ -820,7 +824,9 @@ def _cleanup_existing_resources(ctx: _Context) -> None:
             utils.trash_or_delete_path(old_path)
             ctx.logger.debug(f"Trashed existing file: '{old_path}'.")
         else:
-            target = ctx.locations.filename(ext=utils.resource_file_ending(old.fname))
+            target = ctx.locations.filename(
+                ext=utils.resource_file_ending(old_file.fname)
+            )
             if out.old_fname != target:
                 # no new file; keep existing one, but ensure correct name
                 path = old_path.with_name(target)
@@ -858,23 +864,23 @@ def _write_sync_meta(ctx: _Context) -> None:
     if old:
         for job, kind in JOB_TO_RESOURCE_KIND.items():
             if ctx.results[job] is JobStatus.SKIPPED_UNCHANGED:
-                resource = old.resource_file(kind)
+                resource = old.resource(kind)
                 if resource and resource.status:
                     ctx.results[job] = resource.status
 
-    ctx.song.sync_meta.txt = ctx.out.txt.to_resource_file(
+    ctx.song.sync_meta.txt = ctx.out.txt.to_resource(
         ctx.locations, temp=False, status=ctx.results[Job.TXT_WRITTEN]
     )
-    ctx.song.sync_meta.audio = ctx.out.audio.to_resource_file(
+    ctx.song.sync_meta.audio = ctx.out.audio.to_resource(
         ctx.locations, temp=False, status=ctx.results[Job.AUDIO_DOWNLOAD]
     )
-    ctx.song.sync_meta.video = ctx.out.video.to_resource_file(
+    ctx.song.sync_meta.video = ctx.out.video.to_resource(
         ctx.locations, temp=False, status=ctx.results[Job.VIDEO_DOWNLOAD]
     )
-    ctx.song.sync_meta.cover = ctx.out.cover.to_resource_file(
+    ctx.song.sync_meta.cover = ctx.out.cover.to_resource(
         ctx.locations, temp=False, status=ctx.results[Job.COVER_DOWNLOAD]
     )
-    ctx.song.sync_meta.background = ctx.out.background.to_resource_file(
+    ctx.song.sync_meta.background = ctx.out.background.to_resource(
         ctx.locations, temp=False, status=ctx.results[Job.BACKGROUND_DOWNLOAD]
     )
     ctx.song.sync_meta.synchronize_to_file()
@@ -908,10 +914,10 @@ class Job(Enum):
                 return ()
 
 
-JOB_TO_RESOURCE_KIND: dict[Job, db.ResourceFileKind] = {
-    Job.TXT_WRITTEN: db.ResourceFileKind.TXT,
-    Job.AUDIO_DOWNLOAD: db.ResourceFileKind.AUDIO,
-    Job.VIDEO_DOWNLOAD: db.ResourceFileKind.VIDEO,
-    Job.COVER_DOWNLOAD: db.ResourceFileKind.COVER,
-    Job.BACKGROUND_DOWNLOAD: db.ResourceFileKind.BACKGROUND,
+JOB_TO_RESOURCE_KIND: dict[Job, db.ResourceKind] = {
+    Job.TXT_WRITTEN: db.ResourceKind.TXT,
+    Job.AUDIO_DOWNLOAD: db.ResourceKind.AUDIO,
+    Job.VIDEO_DOWNLOAD: db.ResourceKind.VIDEO,
+    Job.COVER_DOWNLOAD: db.ResourceKind.COVER,
+    Job.BACKGROUND_DOWNLOAD: db.ResourceKind.BACKGROUND,
 }

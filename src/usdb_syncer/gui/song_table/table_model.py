@@ -17,7 +17,7 @@ from usdb_syncer import SongId, events
 from usdb_syncer.db.sql import JobStatus
 from usdb_syncer.gui import icons
 from usdb_syncer.gui.song_table.column import Column
-from usdb_syncer.sync_meta import ResourceFile
+from usdb_syncer.sync_meta import Resource
 from usdb_syncer.usdb_song import UsdbSong
 
 QIndex = QModelIndex | QPersistentModelIndex
@@ -229,7 +229,7 @@ def _decoration_data(song: UsdbSong, column: int) -> QIcon | None:  # noqa: C901
     return icon.icon()
 
 
-def status_icon(resource: ResourceFile) -> icons.Icon:
+def status_icon(resource: Resource) -> icons.Icon:
     match resource.status:
         case JobStatus.SUCCESS:
             icon = icons.Icon.SUCCESS
@@ -274,7 +274,7 @@ def _tooltip_data(song: UsdbSong, column: int) -> str | None:
     return tooltip
 
 
-def status_tooltip(resource: ResourceFile) -> str:
+def status_tooltip(resource: Resource) -> str:
     match resource.status:
         case JobStatus.SUCCESS:
             tooltip = "Resource download successful"

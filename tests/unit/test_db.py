@@ -71,13 +71,13 @@ def test_upsert_delete_sync_metas_many() -> None:
 
 
 @pytest.mark.slow
-def test_upsert_delete_resource_files_many() -> None:
+def test_upsert_delete_resources_many() -> None:
     """Test inserting and deleting many resource files at once."""
     sync_meta_ids = [SyncMetaId.new() for _ in range(PERFORMANCE_TEST_ITEM_COUNT)]
     resource_file_params = [
-        db.ResourceFileParams(
+        db.ResourceParams(
             sync_meta_id=sync_meta_id,
-            kind=db.ResourceFileKind.AUDIO,
+            kind=db.ResourceKind.AUDIO,
             fname=str(sync_meta_id),
             mtime=0,
             resource="",
@@ -86,9 +86,9 @@ def test_upsert_delete_resource_files_many() -> None:
         for sync_meta_id in sync_meta_ids
     ]
     with db.managed_connection(":memory:"):
-        db.upsert_resource_files(resource_file_params)
-        db.delete_resource_files(
-            (sync_meta_id, db.ResourceFileKind.AUDIO) for sync_meta_id in sync_meta_ids
+        db.upsert_resources(resource_file_params)
+        db.delete_resources(
+            (sync_meta_id, db.ResourceKind.AUDIO) for sync_meta_id in sync_meta_ids
         )
 
 

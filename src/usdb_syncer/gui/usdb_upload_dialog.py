@@ -113,12 +113,13 @@ class UsdbUploadDialog(Ui_Dialog, QDialog):
             for song, changes in zip(self.songs, self.song_changes, strict=True):
                 assert song.sync_meta is not None
                 assert song.sync_meta.txt is not None
-                assert song.sync_meta.txt.fname is not None
+                assert song.sync_meta.txt.file is not None
+                assert song.sync_meta.txt.file.fname is not None
                 submit_local_changes(
                     song.song_id,
                     song.sample_url,
                     changes.uploadable_str,
-                    song.sync_meta.txt.fname,
+                    song.sync_meta.txt.file.fname,
                     song_logger(song.song_id),
                 )
 

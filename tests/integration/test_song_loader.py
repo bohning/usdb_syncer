@@ -14,13 +14,13 @@ from tests.conftest import (
     example_usdb_song,
 )
 from usdb_syncer import download_options, utils
-from usdb_syncer.db import DownloadStatus
+from usdb_syncer.db import DownloadStatus, ResourceKind
 from usdb_syncer.db.sql import JobStatus
 from usdb_syncer.meta_tags import MetaTags
 from usdb_syncer.path_template import PathTemplate
 from usdb_syncer.resource_dl import ImageKind, ResourceDLResult
 from usdb_syncer.song_loader import _SongLoader
-from usdb_syncer.sync_meta import MTIME_TOLERANCE_SECS, ResourceFile
+from usdb_syncer.sync_meta import MTIME_TOLERANCE_SECS, Resource, ResourceFile
 
 
 def _download_and_process_image(
@@ -76,6 +76,7 @@ def _options(
 
 
 _db = mock.MagicMock()
+_db.ResourceKind = ResourceKind
 
 
 @mock.patch("usdb_syncer.song_loader.db", _db)
@@ -130,10 +131,11 @@ class SongLoaderTestCase(unittest.TestCase):
             ):
                 with self.subTest(ext=ext):
                     assert meta
-                    assert meta.fname
-                    assert meta.fname == path_stem.name + ext
-                    assert meta.mtime == utils.get_mtime(
-                        path_stem.with_name(meta.fname)
+                    assert meta.file
+                    assert meta.file.fname
+                    assert meta.file.fname == path_stem.name + ext
+                    assert meta.file.mtime == utils.get_mtime(
+                        path_stem.with_name(meta.file.fname)
                     )
 
     @mock.patch("usdb_syncer.usdb_scraper.get_usdb_details")
@@ -153,7 +155,7 @@ class SongLoaderTestCase(unittest.TestCase):
                 song_dir / song.title / song.sync_meta.sync_meta_id.to_filename()
             )
             mp3_path = song.sync_meta.path.parent / "song.mp3"
-            song.sync_meta.audio = _mock_resource_file(mp3_path, "audio.com")
+            song.sync_meta.audio = _mock_resource(mp3_path, "audio.com")
 
             loader = _SongLoader(copy.deepcopy(song), options)
             loader.run()
@@ -180,7 +182,7 @@ class SongLoaderTestCase(unittest.TestCase):
                 song_dir / song.artist / song.sync_meta.sync_meta_id.to_filename()
             )
             mp3_path = song.sync_meta.path.parent / "_.mp3"
-            song.sync_meta.audio = _mock_resource_file(mp3_path, "audio.com")
+            song.sync_meta.audio = _mock_resource(mp3_path, "audio.com")
 
             loader = _SongLoader(copy.deepcopy(song), options)
             loader.run()
@@ -208,22 +210,24 @@ class SongLoaderTestCase(unittest.TestCase):
                 song_dir / song.title / song.sync_meta.sync_meta_id.to_filename()
             )
             mp3_path = song.sync_meta.path.parent / "song.mp3"
-            song.sync_meta.audio = _mock_resource_file(mp3_path, "audio.com")
+            song.sync_meta.audio = _mock_resource(mp3_path, "audio.com")
             # simulate changed file
-            assert song.sync_meta.audio.mtime
-            song.sync_meta.audio.mtime -= MTIME_TOLERANCE_SECS * 1_000_000 + 1
+            assert song.sync_meta.audio.file
+            assert song.sync_meta.audio.file.mtime
+            song.sync_meta.audio.file.mtime -= MTIME_TOLERANCE_SECS * 1_000_000 + 1
 
             loader = _SongLoader(copy.deepcopy(song), options)
             loader.run()
 
             audio_mock.assert_called_once()
             assert loader.song.status == DownloadStatus.SYNCHRONIZED
-            assert utils.get_mtime(mp3_path) > song.sync_meta.audio.mtime
+            assert utils.get_mtime(mp3_path) > song.sync_meta.audio.file.mtime
 
 
-def _mock_resource_file(path: Path, resource: str | None = None) -> ResourceFile:
+def _mock_resource(path: Path, resource: str | None = None) -> Resource:
     path.parent.mkdir(exist_ok=True, parents=True)
     path.touch()
-    return ResourceFile.new(
-        path, resource or f"https://example.com/{path.name}", JobStatus.SUCCESS
+    return Resource(
+        JobStatus.SUCCESS,
+        ResourceFile.new(path, resource or f"https://example.com/{path.name}"),
     )

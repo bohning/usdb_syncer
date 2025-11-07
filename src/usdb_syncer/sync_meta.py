@@ -33,67 +33,35 @@ class SyncMetaTooNewError(Exception):
 class ResourceFile:
     """Meta data about a local file."""
 
-    fname: str | None
-    mtime: int | None
-    resource: str | None
-    status: JobStatus
+    fname: str
+    mtime: int
+    resource: str
 
     @classmethod
-    def new(cls, path: Path, resource: str, status: JobStatus) -> ResourceFile:
-        return cls(path.name, utils.get_mtime(path), resource, status)
-
-    @classmethod
-    def status_only(cls, status: JobStatus) -> ResourceFile:
-        return cls(fname=None, mtime=None, resource=None, status=status)
+    def new(cls, path: Path, resource: str) -> ResourceFile:
+        return cls(path.name, utils.get_mtime(path), resource)
 
     @classmethod
     def from_nested_dict(cls, dct: Any) -> ResourceFile | None:
-        if not isinstance(dct, dict):
-            return None
-
-        status_str = dct.get("status", JobStatus.SUCCESS)
-        try:
-            status = JobStatus(status_str)
-        except ValueError:
-            return None
-
-        if "fname" not in dct or dct.get("fname") is None:
-            return cls.status_only(status)
-
         if (
-            isinstance(fname := dct.get("fname"), str)
+            isinstance(dct, dict)
+            and isinstance(fname := dct.get("fname"), str)
             and isinstance(mtime := dct.get("mtime"), (int, float))
             and isinstance(resource := dct.get("resource"), str)
         ):
-            return cls(fname=fname, mtime=int(mtime), resource=resource, status=status)
+            return cls(fname=fname, mtime=int(mtime), resource=resource)
         return None
 
     @classmethod
     def from_db_row(
-        cls, row: tuple[str | None, int | None, str | None, str | None]
+        cls, row: tuple[str | None, int | None, str | None]
     ) -> ResourceFile | None:
-        if (status_str := row[3]) is None:
-            return None  # status must always be present
-
-        try:
-            status = JobStatus(status_str)
-        except ValueError:
+        if row[0] is None or row[1] is None or row[2] is None:
             return None
-
-        # Cases for incomplete rows
-        fname, mtime, resource = row[0], row[1], row[2]
-        if fname is None:
-            return cls.status_only(status)
-        if mtime is None or resource is None:
-            return None
-
-        return cls(fname=fname, mtime=mtime, resource=resource, status=status)
+        return cls(fname=row[0], mtime=row[1], resource=row[2])
 
     def is_in_sync(self, folder: Path) -> bool:
         """True if this file exists in the given folder and is in sync."""
-        if self.fname is None or self.mtime is None:
-            return False
-
         path = folder.joinpath(self.fname)
         return (
             path.exists()
@@ -101,15 +69,81 @@ class ResourceFile:
             < MTIME_TOLERANCE_SECS
         )
 
+
+@attrs.define
+class Resource:
+    """Info about the status and the file of a resource."""
+
+    status: JobStatus
+    file: ResourceFile | None
+
+    @classmethod
+    def new(cls, status: JobStatus, file: ResourceFile) -> Resource:
+        """Create a successful status with a file."""
+        assert status in (
+            JobStatus.SUCCESS,
+            JobStatus.FALLBACK,
+            JobStatus.FAILURE_EXISTING,
+        )
+        return cls(status=status, file=file)
+
+    @classmethod
+    def status_only(cls, status: JobStatus) -> Resource:
+        """Create a failed/skipped status without a file."""
+        assert status in (
+            JobStatus.FAILURE,
+            JobStatus.SKIPPED_DISABLED,
+            JobStatus.SKIPPED_UNAVAILABLE,
+        )
+        return cls(status=status, file=None)
+
+    @classmethod
+    def from_nested_dict(cls, dct: Any) -> Resource | None:
+        if not isinstance(dct, dict):
+            return None
+
+        status_value = dct.get("status", JobStatus.SUCCESS)
+        try:
+            status = JobStatus(status_value)
+        except (ValueError, TypeError):
+            return None
+
+        if "fname" in dct and dct.get("fname") is not None:
+            file = ResourceFile.from_nested_dict(dct)
+            if file is None:
+                return None
+            return cls.new(status, file)
+
+        # Status-only entry
+        return cls.status_only(status)
+
+    @classmethod
+    def from_db_row(
+        cls, row: tuple[str | None, int | None, str | None, JobStatus | None]
+    ) -> Resource | None:
+        if row[3] is None:
+            return None
+
+        status = row[3]
+
+        if row[0] is None:
+            return cls.status_only(status)
+
+        file = ResourceFile.from_db_row(row[:3])
+        if file is None:
+            return None
+
+        return cls.new(status, file)
+
     def db_params(
-        self, sync_meta_id: SyncMetaId, kind: db.ResourceFileKind
-    ) -> db.ResourceFileParams:
-        return db.ResourceFileParams(
+        self, sync_meta_id: SyncMetaId, kind: db.ResourceKind
+    ) -> db.ResourceParams:
+        return db.ResourceParams(
             sync_meta_id=sync_meta_id,
             kind=kind,
-            fname=self.fname,
-            mtime=self.mtime,
-            resource=self.resource,
+            fname=self.file.fname if self.file else None,
+            mtime=self.file.mtime if self.file else None,
+            resource=self.file.resource if self.file else None,
             status=self.status,
         )
 
@@ -125,11 +159,11 @@ class SyncMeta:
     mtime: int
     meta_tags: MetaTags
     pinned: bool = False
-    txt: ResourceFile | None = None
-    audio: ResourceFile | None = None
-    video: ResourceFile | None = None
-    cover: ResourceFile | None = None
-    background: ResourceFile | None = None
+    txt: Resource | None = None
+    audio: Resource | None = None
+    video: Resource | None = None
+    cover: Resource | None = None
+    background: Resource | None = None
     custom_data: CustomData = attrs.field(factory=CustomData)
 
     @classmethod
@@ -171,11 +205,11 @@ class SyncMeta:
                 mtime=utils.get_mtime(path),
                 meta_tags=MetaTags.parse(dct["meta_tags"], logger),
                 pinned=bool(dct.get("pinned", False)),
-                txt=ResourceFile.from_nested_dict(dct["txt"]),
-                audio=ResourceFile.from_nested_dict(dct["audio"]),
-                video=ResourceFile.from_nested_dict(dct["video"]),
-                cover=ResourceFile.from_nested_dict(dct["cover"]),
-                background=ResourceFile.from_nested_dict(dct["background"]),
+                txt=Resource.from_nested_dict(dct["txt"]),
+                audio=Resource.from_nested_dict(dct["audio"]),
+                video=Resource.from_nested_dict(dct["video"]),
+                cover=Resource.from_nested_dict(dct["cover"]),
+                background=Resource.from_nested_dict(dct["background"]),
                 custom_data=CustomData(dct.get("custom_data")),
             )
         except (TypeError, KeyError, ValueError):
@@ -198,11 +232,11 @@ class SyncMeta:
             meta_tags=MetaTags.parse(row[5], logger),
             pinned=bool(row[6]),
         )
-        meta.txt = ResourceFile.from_db_row(row[7:11])
-        meta.audio = ResourceFile.from_db_row(row[11:15])
-        meta.video = ResourceFile.from_db_row(row[15:19])
-        meta.cover = ResourceFile.from_db_row(row[19:23])
-        meta.background = ResourceFile.from_db_row(row[23:])
+        meta.txt = Resource.from_db_row(row[7:11])
+        meta.audio = Resource.from_db_row(row[11:15])
+        meta.video = Resource.from_db_row(row[15:19])
+        meta.cover = Resource.from_db_row(row[19:23])
+        meta.background = Resource.from_db_row(row[23:])
         meta.custom_data = CustomData(db.get_custom_data(meta.sync_meta_id))
         return meta
 
@@ -217,12 +251,14 @@ class SyncMeta:
     def upsert(self) -> None:
         db.upsert_sync_meta(self.db_params())
         db.update_active_sync_metas(settings.get_song_dir(), self.song_id)
-        files = self.all_resource_files()
-        db.upsert_resource_files(
-            file.db_params(self.sync_meta_id, kind) for file, kind in files if file
+        resources = self.all_resources()
+        db.upsert_resources(
+            resource.db_params(self.sync_meta_id, kind)
+            for resource, kind in resources
+            if resource
         )
-        db.delete_resource_files(
-            (self.sync_meta_id, kind) for file, kind in files if not file
+        db.delete_resources(
+            (self.sync_meta_id, kind) for resource, kind in resources if not resource
         )
         db.delete_custom_meta_data((self.sync_meta_id,))
         db.upsert_custom_meta_data(
@@ -234,16 +270,16 @@ class SyncMeta:
     def upsert_many(cls, metas: list[SyncMeta]) -> None:
         db.upsert_sync_metas(meta.db_params() for meta in metas)
         db.reset_active_sync_metas(settings.get_song_dir())
-        db.upsert_resource_files(
+        db.upsert_resources(
             file.db_params(meta.sync_meta_id, kind)
             for meta in metas
-            for file, kind in meta.all_resource_files()
+            for file, kind in meta.all_resources()
             if file
         )
-        db.delete_resource_files(
+        db.delete_resources(
             (meta.sync_meta_id, kind)
             for meta in metas
-            for file, kind in meta.all_resource_files()
+            for file, kind in meta.all_resources()
             if not file
         )
         db.delete_custom_meta_data(m.sync_meta_id for m in metas)
@@ -264,18 +300,16 @@ class SyncMeta:
     def delete_many_in_folder(cls, folder: Path, ids: tuple[SyncMetaId, ...]) -> None:
         db.delete_sync_metas_in_folder(folder, ids)
 
-    def resource_file(self, kind: db.ResourceFileKind) -> ResourceFile | None:
-        return next((r for r, k in self.all_resource_files() if k is kind), None)
+    def resource(self, kind: db.ResourceKind) -> Resource | None:
+        return next((r for r, k in self.all_resources() if k == kind), None)
 
-    def all_resource_files(
-        self,
-    ) -> tuple[tuple[ResourceFile | None, db.ResourceFileKind], ...]:
+    def all_resources(self) -> tuple[tuple[Resource | None, db.ResourceKind], ...]:
         return (
-            (self.txt, db.ResourceFileKind.TXT),
-            (self.audio, db.ResourceFileKind.AUDIO),
-            (self.video, db.ResourceFileKind.VIDEO),
-            (self.cover, db.ResourceFileKind.COVER),
-            (self.background, db.ResourceFileKind.BACKGROUND),
+            (self.txt, db.ResourceKind.TXT),
+            (self.audio, db.ResourceKind.AUDIO),
+            (self.video, db.ResourceKind.VIDEO),
+            (self.cover, db.ResourceKind.COVER),
+            (self.background, db.ResourceKind.BACKGROUND),
         )
 
     def db_params(self) -> db.SyncMetaParams:
@@ -296,24 +330,24 @@ class SyncMeta:
         self.mtime = utils.get_mtime(self.path)
 
     def resource_files(self) -> Iterator[ResourceFile]:
-        for meta in (self.txt, self.audio, self.video, self.cover, self.background):
-            if meta:
-                yield meta
+        for resource in (self.txt, self.audio, self.video, self.cover, self.background):
+            if resource and (file := resource.file):
+                yield file
 
     def txt_path(self) -> Path | None:
-        if not self.txt or self.txt.fname is None:
+        if not self.txt or not self.txt.file or self.txt.file.fname is None:
             return None
-        return self.path.parent / self.txt.fname
+        return self.path.parent / self.txt.file.fname
 
     def audio_path(self) -> Path | None:
-        if not self.audio or self.audio.fname is None:
+        if not self.audio or not self.audio.file or self.audio.file.fname is None:
             return None
-        return self.path.parent / self.audio.fname
+        return self.path.parent / self.audio.file.fname
 
     def cover_path(self) -> Path | None:
-        if not self.cover or self.cover.fname is None:
+        if not self.cover or not self.cover.file or self.cover.file.fname is None:
             return None
-        return self.path.parent / self.cover.fname
+        return self.path.parent / self.cover.file.fname
 
 
 class SyncMetaEncoder(json.JSONEncoder):
@@ -321,10 +355,14 @@ class SyncMetaEncoder(json.JSONEncoder):
 
     def default(self, o: Any) -> Any:
         if isinstance(o, ResourceFile):
-            dct = attrs.asdict(o)
-            if o.fname is None:
-                return {"status": dct["status"]}
-            return dct
+            return attrs.asdict(o)
+        if isinstance(o, Resource):
+            if o.file is None:
+                return {"status": o.status.value}
+            else:
+                dct = attrs.asdict(o.file)
+                dct["status"] = o.status.value
+                return dct
         if isinstance(o, MetaTags):
             return str(o)
         if isinstance(o, SyncMeta):

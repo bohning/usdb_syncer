@@ -929,8 +929,8 @@ def get_custom_data_map() -> defaultdict[str, set[str]]:
 # ResourceFile
 
 
-class ResourceFileKind(str, enum.Enum):
-    """Kinds of resource files."""
+class ResourceKind(str, enum.Enum):
+    """Kinds of resources."""
 
     TXT = "txt"
     AUDIO = "audio"
@@ -940,18 +940,18 @@ class ResourceFileKind(str, enum.Enum):
 
 
 @attrs.define(frozen=True, slots=False)
-class ResourceFileParams:
-    """Parameters for inserting or updating a resource file."""
+class ResourceParams:
+    """Parameters for inserting or updating a resource."""
 
     sync_meta_id: SyncMetaId
-    kind: ResourceFileKind
+    kind: ResourceKind
     fname: str | None
     mtime: int | None
     resource: str | None
     status: JobStatus
 
 
-def delete_resource_files(ids: Iterable[tuple[SyncMetaId, ResourceFileKind]]) -> None:
+def delete_resources(ids: Iterable[tuple[SyncMetaId, ResourceKind]]) -> None:
     for batch in batched(ids, _SQL_SMALLER_THAN_EXPRESSION_TREE):
         if not batch:
             continue
@@ -962,8 +962,8 @@ def delete_resource_files(ids: Iterable[tuple[SyncMetaId, ResourceFileKind]]) ->
         )
 
 
-def upsert_resource_files(params: Iterable[ResourceFileParams]) -> None:
-    stmt = _SqlCache.get("upsert_resource_file.sql")
+def upsert_resources(params: Iterable[ResourceParams]) -> None:
+    stmt = _SqlCache.get("upsert_resource.sql")
     _DbState.connection().executemany(stmt, (p.__dict__ for p in params))
 
 
