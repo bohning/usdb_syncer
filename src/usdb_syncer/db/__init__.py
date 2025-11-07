@@ -18,7 +18,7 @@ import attrs
 from more_itertools import batched
 
 from usdb_syncer import SongId, SyncMetaId, errors
-from usdb_syncer.db.sql import JobResult
+from usdb_syncer.db.sql import JobStatus
 from usdb_syncer.logger import logger
 
 from . import sql
@@ -287,12 +287,12 @@ class SongOrder(enum.Enum):
 def _status_case_sql(alias: str) -> str:
     """Return CASE SQL expression for resource_file status sorting."""
     statuses = [
-        JobResult.SKIPPED_DISABLED,
-        JobResult.SKIPPED_UNAVAILABLE,
-        JobResult.FAILURE,
-        JobResult.FAILURE_EXISTING,
-        JobResult.FALLBACK,
-        JobResult.SUCCESS,
+        JobStatus.SKIPPED_DISABLED,
+        JobStatus.SKIPPED_UNAVAILABLE,
+        JobStatus.FAILURE,
+        JobStatus.FAILURE_EXISTING,
+        JobStatus.FALLBACK,
+        JobStatus.SUCCESS,
     ]
 
     when_clauses = [
@@ -948,7 +948,7 @@ class ResourceFileParams:
     fname: str | None
     mtime: int | None
     resource: str | None
-    status: JobResult
+    status: JobStatus
 
 
 def delete_resource_files(ids: Iterable[tuple[SyncMetaId, ResourceFileKind]]) -> None:

@@ -3,8 +3,8 @@
 from enum import StrEnum, auto
 
 
-class JobResult(StrEnum):
-    """Result of a job."""
+class JobStatus(StrEnum):
+    """Status of a job."""
 
     SKIPPED_UNCHANGED = auto()
     SKIPPED_DISABLED = auto()

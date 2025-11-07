@@ -11,7 +11,7 @@ import attrs
 
 from usdb_syncer import SongId, SyncMetaId, db, settings, utils
 from usdb_syncer.custom_data import CustomData
-from usdb_syncer.db.sql import JobResult
+from usdb_syncer.db.sql import JobStatus
 from usdb_syncer.logger import logger
 from usdb_syncer.meta_tags import MetaTags
 
@@ -36,14 +36,14 @@ class ResourceFile:
     fname: str | None
     mtime: int | None
     resource: str | None
-    status: JobResult
+    status: JobStatus
 
     @classmethod
-    def new(cls, path: Path, resource: str, status: JobResult) -> ResourceFile:
+    def new(cls, path: Path, resource: str, status: JobStatus) -> ResourceFile:
         return cls(path.name, utils.get_mtime(path), resource, status)
 
     @classmethod
-    def status_only(cls, status: JobResult) -> ResourceFile:
+    def status_only(cls, status: JobStatus) -> ResourceFile:
         return cls(fname=None, mtime=None, resource=None, status=status)
 
     @classmethod
@@ -51,9 +51,9 @@ class ResourceFile:
         if not isinstance(dct, dict):
             return None
 
-        status_str = dct.get("status", JobResult.SUCCESS)
+        status_str = dct.get("status", JobStatus.SUCCESS)
         try:
-            status = JobResult(status_str)
+            status = JobStatus(status_str)
         except ValueError:
             return None
 
@@ -76,7 +76,7 @@ class ResourceFile:
             return None  # status must always be present
 
         try:
-            status = JobResult(status_str)
+            status = JobStatus(status_str)
         except ValueError:
             return None
 

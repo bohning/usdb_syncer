@@ -15,7 +15,7 @@ from tests.conftest import (
 )
 from usdb_syncer import download_options, utils
 from usdb_syncer.db import DownloadStatus
-from usdb_syncer.db.sql import JobResult
+from usdb_syncer.db.sql import JobStatus
 from usdb_syncer.meta_tags import MetaTags
 from usdb_syncer.path_template import PathTemplate
 from usdb_syncer.resource_dl import ImageKind, ResourceDLResult
@@ -225,5 +225,5 @@ def _mock_resource_file(path: Path, resource: str | None = None) -> ResourceFile
     path.parent.mkdir(exist_ok=True, parents=True)
     path.touch()
     return ResourceFile.new(
-        path, resource or f"https://example.com/{path.name}", JobResult.SUCCESS
+        path, resource or f"https://example.com/{path.name}", JobStatus.SUCCESS
     )

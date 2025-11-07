@@ -14,7 +14,7 @@ from PySide6.QtCore import (
 from PySide6.QtGui import QIcon
 
 from usdb_syncer import SongId, events
-from usdb_syncer.db.sql import JobResult
+from usdb_syncer.db.sql import JobStatus
 from usdb_syncer.gui import icons
 from usdb_syncer.gui.song_table.column import Column
 from usdb_syncer.sync_meta import ResourceFile
@@ -231,19 +231,19 @@ def _decoration_data(song: UsdbSong, column: int) -> QIcon | None:  # noqa: C901
 
 def status_icon(resource: ResourceFile) -> icons.Icon:
     match resource.status:
-        case JobResult.SUCCESS:
+        case JobStatus.SUCCESS:
             icon = icons.Icon.SUCCESS
-        case JobResult.SKIPPED_DISABLED:
+        case JobStatus.SKIPPED_DISABLED:
             icon = icons.Icon.SKIPPED_DISABLED
-        case JobResult.SKIPPED_UNAVAILABLE:
+        case JobStatus.SKIPPED_UNAVAILABLE:
             icon = icons.Icon.SKIPPED_UNAVAILABLE
-        case JobResult.SKIPPED_UNCHANGED:  # should not be possible -> previous status
+        case JobStatus.SKIPPED_UNCHANGED:  # should not be possible -> previous status
             icon = icons.Icon.BUG
-        case JobResult.FALLBACK:
+        case JobStatus.FALLBACK:
             icon = icons.Icon.FALLBACK
-        case JobResult.FAILURE_EXISTING:
+        case JobStatus.FAILURE_EXISTING:
             icon = icons.Icon.FAILURE_EXISTING
-        case JobResult.FAILURE:
+        case JobStatus.FAILURE:
             icon = icons.Icon.FAILURE
         case _ as unreachable:
             assert_never(unreachable)
@@ -276,19 +276,19 @@ def _tooltip_data(song: UsdbSong, column: int) -> str | None:
 
 def status_tooltip(resource: ResourceFile) -> str:
     match resource.status:
-        case JobResult.SUCCESS:
+        case JobStatus.SUCCESS:
             tooltip = "Resource download successful"
-        case JobResult.SKIPPED_DISABLED:
+        case JobStatus.SKIPPED_DISABLED:
             tooltip = "Resource download disabled in the settings"
-        case JobResult.SKIPPED_UNAVAILABLE:
+        case JobStatus.SKIPPED_UNAVAILABLE:
             tooltip = "No resource available"
-        case JobResult.SKIPPED_UNCHANGED:  # should not be possible -> previous status
+        case JobStatus.SKIPPED_UNCHANGED:  # should not be possible -> previous status
             tooltip = "Resource is unchanged"
-        case JobResult.FALLBACK:
+        case JobStatus.FALLBACK:
             tooltip = "Fallback resource (from USDB / comments)"
-        case JobResult.FAILURE_EXISTING:
+        case JobStatus.FAILURE_EXISTING:
             tooltip = "Resource download failed, using existing resource"
-        case JobResult.FAILURE:
+        case JobStatus.FAILURE:
             tooltip = "Resource download failed"
         case _ as unreachable:
             assert_never(unreachable)
