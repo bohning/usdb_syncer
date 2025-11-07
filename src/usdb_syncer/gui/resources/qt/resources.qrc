@@ -53,7 +53,6 @@
     <file>edition-white.svg</file>
     <file>edition.png</file>
     <file>error.png</file>
-    <file>tick-parentheses-white.svg</file>
     <file>faviconUSDB.png</file>
     <file>feather-white.svg</file>
     <file>file-document-white.svg</file>
@@ -110,14 +109,14 @@
     <file>sample.png</file>
     <file>server-black.svg</file>
     <file>server-white.svg</file>
-    <file>skipped-disabled-white.svg</file>
-    <file>skipped-disabled.png</file>
-    <file>skipped-unavailable-white.svg</file>
-    <file>skipped-unavailable.png</file>
     <file>skip-backward-white.svg</file>
     <file>skip-forward-white.svg</file>
     <file>skip-next-white.svg</file>
     <file>skip-previous-white.svg</file>
+    <file>skipped-disabled-white.svg</file>
+    <file>skipped-disabled.png</file>
+    <file>skipped-unavailable-white.svg</file>
+    <file>skipped-unavailable.png</file>
     <file>spectrum-absorption.png</file>
     <file>status.png</file>
     <file>sync-white.svg</file>
@@ -125,6 +124,7 @@
     <file>tag-white.svg</file>
     <file>text.png</file>
     <file>tick-green.png</file>
+    <file>tick-parentheses-white.svg</file>
     <file>tick-white.svg</file>
     <file>tick-yellow.png</file>
     <file>title.png</file>
@@ -133,8 +133,8 @@
     <file>ultrastar-game-black.svg</file>
     <file>ultrastar-game-white.svg</file>
     <file>ultrastar-manager.png</file>
-    <file>upload.png</file>
     <file>upload-white.svg</file>
+    <file>upload.png</file>
     <file>usdb-white.svg</file>
     <file>usdx.png</file>
     <file>video.png</file>
