@@ -14,11 +14,11 @@ from PySide6.QtCore import (
 from PySide6.QtGui import QIcon
 
 from usdb_syncer import SongId, events
+from usdb_syncer.db.sql import JobResult
 from usdb_syncer.gui import icons
 from usdb_syncer.gui.song_table.column import Column
 from usdb_syncer.sync_meta import ResourceFile
 from usdb_syncer.usdb_song import UsdbSong
-from usdb_syncer.utils import JobResult
 
 QIndex = QModelIndex | QPersistentModelIndex
 

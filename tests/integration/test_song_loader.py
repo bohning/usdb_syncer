@@ -15,12 +15,12 @@ from tests.conftest import (
 )
 from usdb_syncer import download_options, utils
 from usdb_syncer.db import DownloadStatus
+from usdb_syncer.db.sql import JobResult
 from usdb_syncer.meta_tags import MetaTags
 from usdb_syncer.path_template import PathTemplate
 from usdb_syncer.resource_dl import ImageKind, ResourceDLResult
 from usdb_syncer.song_loader import _SongLoader
 from usdb_syncer.sync_meta import MTIME_TOLERANCE_SECS, ResourceFile
-from usdb_syncer.utils import JobResult
 
 
 def _download_and_process_image(

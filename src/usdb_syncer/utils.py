@@ -10,7 +10,6 @@ import subprocess
 import sys
 import time
 import unicodedata
-from enum import StrEnum, auto
 from pathlib import Path
 from types import TracebackType
 from typing import ClassVar
@@ -463,15 +462,3 @@ class LinuxEnvCleaner:
 
             os.environ.clear()
             os.environ.update(self.modified_env)
-
-
-class JobResult(StrEnum):
-    """Result of a job."""
-
-    SUCCESS = auto()
-    SKIPPED_DISABLED = auto()
-    SKIPPED_UNAVAILABLE = auto()
-    SKIPPED_UNCHANGED = auto()
-    FALLBACK = auto()
-    FAILURE_EXISTING = auto()
-    FAILURE = auto()

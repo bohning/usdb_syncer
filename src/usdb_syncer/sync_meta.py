@@ -11,9 +11,9 @@ import attrs
 
 from usdb_syncer import SongId, SyncMetaId, db, settings, utils
 from usdb_syncer.custom_data import CustomData
+from usdb_syncer.db.sql import JobResult
 from usdb_syncer.logger import logger
 from usdb_syncer.meta_tags import MetaTags
-from usdb_syncer.utils import JobResult
 
 SYNC_META_VERSION = 1
 SYNC_META_INDENT = 4
@@ -51,8 +51,10 @@ class ResourceFile:
         if not isinstance(dct, dict):
             return None
 
-        status = JobResult(dct.get("status", JobResult.SUCCESS))
-        if not isinstance(status, JobResult):
+        status_str = dct.get("status", JobResult.SUCCESS)
+        try:
+            status = JobResult(status_str)
+        except ValueError:
             return None
 
         if "fname" not in dct or dct.get("fname") is None:
@@ -68,15 +70,24 @@ class ResourceFile:
 
     @classmethod
     def from_db_row(
-        cls, row: tuple[str | None, int | None, str | None, JobResult | None]
+        cls, row: tuple[str | None, int | None, str | None, str | None]
     ) -> ResourceFile | None:
-        if row[3] is None:  # status must always be present
+        if (status_str := row[3]) is None:
+            return None  # status must always be present
+
+        try:
+            status = JobResult(status_str)
+        except ValueError:
             return None
-        if row[0] is None:
-            return cls.status_only(row[3])
-        if row[1] is None or row[2] is None:
+
+        # Cases for incomplete rows
+        fname, mtime, resource = row[0], row[1], row[2]
+        if fname is None:
+            return cls.status_only(status)
+        if mtime is None or resource is None:
             return None
-        return cls(fname=row[0], mtime=row[1], resource=row[2], status=row[3])
+
+        return cls(fname=fname, mtime=mtime, resource=resource, status=status)
 
     def is_in_sync(self, folder: Path) -> bool:
         """True if this file exists in the given folder and is in sync."""
@@ -252,6 +263,9 @@ class SyncMeta:
     @classmethod
     def delete_many_in_folder(cls, folder: Path, ids: tuple[SyncMetaId, ...]) -> None:
         db.delete_sync_metas_in_folder(folder, ids)
+
+    def resource_file(self, kind: db.ResourceFileKind) -> ResourceFile | None:
+        return next((r for r, k in self.all_resource_files() if k is kind), None)
 
     def all_resource_files(
         self,

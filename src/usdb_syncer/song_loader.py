@@ -33,6 +33,7 @@ from usdb_syncer import (
     utils,
 )
 from usdb_syncer.custom_data import CustomData
+from usdb_syncer.db.sql import JobResult
 from usdb_syncer.discord import notify_discord
 from usdb_syncer.logger import Logger, logger, song_logger
 from usdb_syncer.postprocessing import write_audio_tags, write_video_tags
@@ -42,7 +43,7 @@ from usdb_syncer.song_txt import SongTxt
 from usdb_syncer.sync_meta import ResourceFile, SyncMeta
 from usdb_syncer.usdb_scraper import SongDetails
 from usdb_syncer.usdb_song import DownloadStatus, UsdbSong
-from usdb_syncer.utils import JobResult, video_url_from_resource
+from usdb_syncer.utils import video_url_from_resource
 
 
 class DownloadManager:
@@ -855,20 +856,11 @@ def _write_sync_meta(ctx: _Context) -> None:
 
     # if any resource is unchanged, keep previous status
     if old:
-        for job, old_resource_tuple in zip(
-            [
-                Job.TXT_WRITTEN,
-                Job.AUDIO_DOWNLOAD,
-                Job.VIDEO_DOWNLOAD,
-                Job.COVER_DOWNLOAD,
-                Job.BACKGROUND_DOWNLOAD,
-            ],
-            old.all_resource_files(),
-            strict=True,
-        ):
+        for job, kind in JOB_TO_RESOURCE_KIND.items():
             if ctx.results[job] is JobResult.SKIPPED_UNCHANGED:
-                if (resource := old_resource_tuple[0]) and (status := resource.status):
-                    ctx.results[job] = status
+                resource = old.resource_file(kind)
+                if resource and resource.status:
+                    ctx.results[job] = resource.status
 
     ctx.song.sync_meta.txt = ctx.out.txt.to_resource_file(
         ctx.locations, temp=False, status=ctx.results[Job.TXT_WRITTEN]
@@ -914,3 +906,12 @@ class Job(Enum):
                 )
             case _:
                 return ()
+
+
+JOB_TO_RESOURCE_KIND: dict[Job, db.ResourceFileKind] = {
+    Job.TXT_WRITTEN: db.ResourceFileKind.TXT,
+    Job.AUDIO_DOWNLOAD: db.ResourceFileKind.AUDIO,
+    Job.VIDEO_DOWNLOAD: db.ResourceFileKind.VIDEO,
+    Job.COVER_DOWNLOAD: db.ResourceFileKind.COVER,
+    Job.BACKGROUND_DOWNLOAD: db.ResourceFileKind.BACKGROUND,
+}

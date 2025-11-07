@@ -9,11 +9,11 @@ from _pytest.config.argparsing import Parser
 from _pytest.nodes import Item
 
 from usdb_syncer import SongId, SyncMetaId
+from usdb_syncer.db.sql import JobResult
 from usdb_syncer.meta_tags import ImageMetaTags, MetaTags
 from usdb_syncer.sync_meta import ResourceFile, SyncMeta
 from usdb_syncer.usdb_scraper import SongDetails
 from usdb_syncer.usdb_song import UsdbSong
-from usdb_syncer.utils import JobResult
 
 
 # taken from https://docs.pytest.org/en/latest/example/simple.html#control-skipping-of-tests-according-to-command-line-option

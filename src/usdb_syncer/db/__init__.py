@@ -18,8 +18,8 @@ import attrs
 from more_itertools import batched
 
 from usdb_syncer import SongId, SyncMetaId, errors
+from usdb_syncer.db.sql import JobResult
 from usdb_syncer.logger import logger
-from usdb_syncer.utils import JobResult
 
 from . import sql
 
@@ -271,67 +271,42 @@ class SongOrder(enum.Enum):
             case SongOrder.PINNED:
                 return "sync_meta.pinned"
             case SongOrder.TXT:
-                return (
-                    "CASE "
-                    "WHEN txt.sync_meta_id IS NULL THEN 0 "
-                    "WHEN txt.status = 'skipped_disabled' THEN 1 "
-                    "WHEN txt.status = 'skipped_unavailable' THEN 2 "
-                    "WHEN txt.status = 'failed' THEN 3 "
-                    "WHEN txt.status = 'failed_existing' THEN 4 "
-                    "WHEN txt.status = 'fallback' THEN 5 "
-                    "WHEN txt.status = 'success' THEN 6 "
-                    "ELSE 7 END"
-                )
+                return _status_case_sql("txt")
             case SongOrder.AUDIO:
-                return (
-                    "CASE "
-                    "WHEN audio.sync_meta_id IS NULL THEN 0 "
-                    "WHEN audio.status = 'skipped_disabled' THEN 1 "
-                    "WHEN audio.status = 'skipped_unavailable' THEN 2 "
-                    "WHEN audio.status = 'failed' THEN 3 "
-                    "WHEN audio.status = 'failed_existing' THEN 4 "
-                    "WHEN audio.status = 'fallback' THEN 5 "
-                    "WHEN audio.status = 'success' THEN 6 "
-                    "ELSE 7 END"
-                )
+                return _status_case_sql("audio")
             case SongOrder.VIDEO:
-                return (
-                    "CASE "
-                    "WHEN video.sync_meta_id IS NULL THEN 0 "
-                    "WHEN video.status = 'skipped_disabled' THEN 1 "
-                    "WHEN video.status = 'skipped_unavailable' THEN 2 "
-                    "WHEN video.status = 'failed' THEN 3 "
-                    "WHEN video.status = 'failed_existing' THEN 4 "
-                    "WHEN video.status = 'fallback' THEN 5 "
-                    "WHEN video.status = 'success' THEN 6 "
-                    "ELSE 7 END"
-                )
+                return _status_case_sql("video")
             case SongOrder.COVER:
-                return (
-                    "CASE "
-                    "WHEN cover.sync_meta_id IS NULL THEN 0 "
-                    "WHEN cover.status = 'skipped_disabled' THEN 1 "
-                    "WHEN cover.status = 'skipped_unavailable' THEN 2 "
-                    "WHEN cover.status = 'failed' THEN 3 "
-                    "WHEN cover.status = 'failed_existing' THEN 4 "
-                    "WHEN cover.status = 'fallback' THEN 5 "
-                    "WHEN cover.status = 'success' THEN 6 "
-                    "ELSE 7 END"
-                )
+                return _status_case_sql("cover")
             case SongOrder.BACKGROUND:
-                return (
-                    "CASE "
-                    "WHEN background.sync_meta_id IS NULL THEN 0 "
-                    "WHEN background.status = 'skipped_disabled' THEN 1 "
-                    "WHEN background.status = 'skipped_unavailable' THEN 2 "
-                    "WHEN background.status = 'failed' THEN 3 "
-                    "WHEN background.status = 'failed_existing' THEN 4 "
-                    "WHEN background.status = 'fallback' THEN 5 "
-                    "WHEN background.status = 'success' THEN 6 "
-                    "ELSE 7 END"
-                )
+                return _status_case_sql("background")
             case SongOrder.STATUS:
                 return _STATUS_COLUMN
+
+
+def _status_case_sql(alias: str) -> str:
+    """Return CASE SQL expression for resource_file status sorting."""
+    statuses = [
+        JobResult.SKIPPED_DISABLED,
+        JobResult.SKIPPED_UNAVAILABLE,
+        JobResult.FAILURE,
+        JobResult.FAILURE_EXISTING,
+        JobResult.FALLBACK,
+        JobResult.SUCCESS,
+    ]
+
+    when_clauses = [
+        f"WHEN {alias}.status = '{status}' THEN {i + 1}"
+        for i, status in enumerate(statuses)
+    ]
+
+    return (
+        "CASE\n"
+        f"    WHEN {alias}.sync_meta_id IS NULL THEN 0\n"
+        f"    {'\n    '.join(when_clauses)}\n"
+        "    ELSE 7\n"
+        "END"
+    )
 
 
 @attrs.define
