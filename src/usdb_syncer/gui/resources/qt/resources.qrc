@@ -36,6 +36,8 @@
     <file>control-skip-180.png</file>
     <file>control-skip.png</file>
     <file>cover.png</file>
+    <file>cross-white.svg</file>
+    <file>cross.png</file>
     <file>database-marker-white.svg</file>
     <file>database-white.svg</file>
     <file>database.png</file>
@@ -51,10 +53,7 @@
     <file>edition-white.svg</file>
     <file>edition.png</file>
     <file>error.png</file>
-    <file>failure-white.svg</file>
-    <file>failure.png</file>
-    <file>fallback-white.svg</file>
-    <file>fallback.png</file>
+    <file>tick-parentheses-white.svg</file>
     <file>faviconUSDB.png</file>
     <file>feather-white.svg</file>
     <file>file-document-white.svg</file>
@@ -121,12 +120,13 @@
     <file>skip-previous-white.svg</file>
     <file>spectrum-absorption.png</file>
     <file>status.png</file>
-    <file>success-white.svg</file>
-    <file>success.png</file>
     <file>sync-white.svg</file>
     <file>tag-hash.png</file>
     <file>tag-white.svg</file>
     <file>text.png</file>
+    <file>tick-green.png</file>
+    <file>tick-white.svg</file>
+    <file>tick-yellow.png</file>
     <file>title.png</file>
     <file>translate-variant-white.svg</file>
     <file>tune-perfect.png</file>
