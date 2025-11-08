@@ -33,11 +33,14 @@ from usdb_syncer import (
     utils,
 )
 from usdb_syncer.custom_data import CustomData
+from usdb_syncer.db import ResourceKind
 from usdb_syncer.db.sql import JobStatus
 from usdb_syncer.discord import notify_discord
+from usdb_syncer.download_options import AudioOptions, VideoOptions
 from usdb_syncer.logger import Logger, logger, song_logger
+from usdb_syncer.meta_tags import ImageMetaTags
 from usdb_syncer.postprocessing import write_audio_tags, write_video_tags
-from usdb_syncer.resource_dl import ResourceDLError
+from usdb_syncer.resource_dl import ImageKind, ResourceDLError
 from usdb_syncer.settings import FormatVersion
 from usdb_syncer.song_txt import SongTxt
 from usdb_syncer.sync_meta import Resource, ResourceFile, SyncMeta
@@ -271,23 +274,36 @@ class _Context:
             )
         return cls(song, details, options, txt, paths, log)
 
-    def all_audio_resources(self) -> Iterator[str]:
-        if self.txt.meta_tags.audio:
-            yield self.txt.meta_tags.audio
-        if not self.txt.meta_tags.video:
-            self.logger.debug("No valid audio/video meta tag. Looking in comments.")
-        yield from self.all_video_resources()
+    def primary_audio_resource(self) -> str | None:
+        """Return the primary audio resource (from meta tags)."""
+        if self.txt.meta_tags.is_audio_only():
+            return self.txt.meta_tags.audio
+        return self.txt.meta_tags.video
 
-    def all_video_resources(self) -> Iterator[str]:
-        if self.txt.meta_tags.video:
+    def fallback_audio_resources(self) -> Iterator[str]:
+        """Return fallback audio resources (from video meta tag and comments)"""
+        if self.txt.meta_tags.is_audio_only() and self.txt.meta_tags.video:
             yield self.txt.meta_tags.video
+        yield from self.fallback_video_resources()
+
+    def primary_video_resource(self) -> str | None:
+        """Return the primary video resource (from meta tags)."""
+        return self.txt.meta_tags.video
+
+    def fallback_video_resources(self) -> Iterator[str]:
+        """Return fallback video resources (from comments)"""
         yield from self.details.all_comment_videos()
 
-    def background_url(self) -> str | None:
-        url = None
-        if self.txt.meta_tags.background:
-            url = self.txt.meta_tags.background.source_url(self.logger)
-        return url
+    def primary_cover(self) -> ImageMetaTags | None:
+        """Return the primary cover resource (from meta tags)."""
+        return self.txt.meta_tags.cover
+
+    def fallback_cover_resource(self) -> str | None:
+        """Return the fallback USDB cover resource"""
+        return self.details.cover_url
+
+    def primary_background(self) -> ImageMetaTags | None:
+        return self.txt.meta_tags.background
 
 
 def _get_usdb_data(
@@ -413,111 +429,140 @@ class _SongLoader(QtCore.QRunnable):
 
 def _maybe_download_audio(ctx: _Context) -> JobStatus:
     if not (options := ctx.options.audio_options):
+        ctx.logger.info("Audio download is disabled, skipping download.")
         return JobStatus.SKIPPED_DISABLED
-    for resource in islice(ctx.all_audio_resources(), 10):
-        if ctx.out.audio.resource == resource:
-            ctx.logger.info("Audio resource is unchanged, skipping.")
-            return JobStatus.SKIPPED_UNCHANGED
-        dl_result = resource_dl.download_audio(
-            resource,
-            options,
-            ctx.options.browser,
-            ctx.locations.temp_path(),
-            ctx.logger,
-        )
-        if ext := dl_result.extension:
-            ctx.out.audio.resource = resource
-            ctx.out.audio.new_fname = ctx.locations.filename(ext=ext)
-            # check if this is the audio from meta tags and not a fallback from comments
-            if (
-                ctx.txt.meta_tags.is_audio_only()
-                and (resource == ctx.txt.meta_tags.audio)
-            ) or (
-                not (ctx.txt.meta_tags.is_audio_only())
-                and (
-                    resource == ctx.txt.meta_tags.audio
-                    or resource == ctx.txt.meta_tags.video
-                )
-            ):
-                ctx.logger.info("Success! Downloaded audio.")
-                return JobStatus.SUCCESS
+
+    if primary_resource := ctx.primary_audio_resource():
+        if out_resource := ctx.out.audio.resource:
+            if primary_resource == out_resource:
+                ctx.logger.info("Audio resource is unchanged, skipping download.")
+                return JobStatus.SKIPPED_UNCHANGED
             else:
-                ctx.logger.warning(
-                    "Audio download failed; falling back to commented resource "
-                    f"'{video_url_from_resource(resource)}'. "
-                    "This may require adaptations in GAP and/or BPM."
-                )
-                return JobStatus.FALLBACK
-        if dl_result.error in {
-            resource_dl.ResourceDLError.RESOURCE_INVALID,
-            resource_dl.ResourceDLError.RESOURCE_UNSUPPORTED,
-            resource_dl.ResourceDLError.RESOURCE_UNAVAILABLE,
-            resource_dl.ResourceDLError.RESOURCE_PARSE_ERROR,
-        }:
-            if ctx.options.notify_discord and (
-                url := video_url_from_resource(resource)
-            ):
-                notify_discord(
-                    ctx.song.song_id, url, "Audio", dl_result.error.value, logger
-                )
+                ctx.logger.info("Audio resource has changed, redownloading.")
+
+        status = _try_download_audio_or_video(
+            ctx, primary_resource, options, ResourceKind.AUDIO
+        )
+        if status is JobStatus.SUCCESS:
+            ctx.logger.info("Success! Downloaded audio. ")
+            return JobStatus.SUCCESS
+
+    for fallback_resource in islice(ctx.fallback_audio_resources(), 10):
+        status = _try_download_audio_or_video(
+            ctx, fallback_resource, options, ResourceKind.AUDIO
+        )
+        if status is JobStatus.SUCCESS:
+            ctx.logger.warning(
+                f"Downloaded fallback audio '{fallback_resource}'. "
+                "This may require adaptations in GAP and/or BPM."
+            )
+            return JobStatus.FALLBACK
+
+    failure_msg = "Failed to download audio."
     if ctx.out.audio.resource:
-        ctx.logger.error("Failed to download audio. Keeping existing resource.")
+        ctx.logger.error(f"{failure_msg} Keeping existing resource.")
         return JobStatus.FAILURE_EXISTING
 
     song_len = ctx.txt.minimum_song_length()
-    ctx.logger.error(f"Failed to download audio. (song duration > {song_len})!")
+    ctx.logger.error(f"{failure_msg} (song duration > {song_len})!")
     return JobStatus.FAILURE
 
 
 def _maybe_download_video(ctx: _Context) -> JobStatus:
     if not (options := ctx.options.video_options):
+        ctx.logger.info("Video download is disabled, skipping download.")
         return JobStatus.SKIPPED_DISABLED
-    if ctx.txt.meta_tags.is_audio_only():
-        ctx.logger.info("Song is audio only, skipping.")
-        return JobStatus.SKIPPED_UNAVAILABLE
-    for resource in islice(ctx.all_video_resources(), 10):
-        if ctx.out.video.resource == resource:
-            ctx.logger.info("Video resource is unchanged, skipping.")
-            return JobStatus.SKIPPED_UNCHANGED
-        dl_result = resource_dl.download_video(
-            resource,
-            options,
-            ctx.options.browser,
-            ctx.locations.temp_path(),
-            ctx.logger,
-        )
-        if ext := dl_result.extension:
-            ctx.out.video.resource = resource
-            ctx.out.video.new_fname = ctx.locations.filename(ext=ext)
-            # check if this is the audio from meta tags and not a fallback from comments
-            if resource == ctx.txt.meta_tags.video:
-                ctx.logger.info("Success! Downloaded video.")
-                return JobStatus.SUCCESS
-            else:
-                ctx.logger.warning(
-                    "Video download failed; falling back to commented resource "
-                    f"'{video_url_from_resource(resource)}'. "
-                    "This may require adaptations in GAP and/or BPM."
-                )
-                return JobStatus.FALLBACK
-        if dl_result.error in {
-            resource_dl.ResourceDLError.RESOURCE_INVALID,
-            resource_dl.ResourceDLError.RESOURCE_UNSUPPORTED,
-            resource_dl.ResourceDLError.RESOURCE_UNAVAILABLE,
-            resource_dl.ResourceDLError.RESOURCE_PARSE_ERROR,
-        }:
-            if ctx.options.notify_discord and (
-                url := video_url_from_resource(resource)
-            ):
-                notify_discord(
-                    ctx.song.song_id, url, "Video", dl_result.error.value, logger
-                )
 
+    if ctx.txt.meta_tags.is_audio_only():
+        ctx.logger.info("Song is audio only, skipping download.")
+        return JobStatus.SKIPPED_UNAVAILABLE
+
+    if primary := ctx.primary_video_resource():
+        if out_resource := ctx.out.video.resource:
+            if primary == out_resource:
+                ctx.logger.info("Video resource is unchanged, skipping download.")
+                return JobStatus.SKIPPED_UNCHANGED
+            else:
+                ctx.logger.info("Video resource has changed, redownloading.")
+
+        status = _try_download_audio_or_video(ctx, primary, options, ResourceKind.VIDEO)
+        if status is JobStatus.SUCCESS:
+            ctx.logger.info("Success! Downloaded video. ")
+            return JobStatus.SUCCESS
+
+    for fallback in islice(ctx.fallback_audio_resources(), 10):
+        status = _try_download_audio_or_video(
+            ctx, fallback, options, ResourceKind.VIDEO
+        )
+        if status is JobStatus.SUCCESS:
+            ctx.logger.warning(
+                f"Downloaded fallback video '{fallback}'. "
+                "This may require adaptations in GAP and/or BPM."
+            )
+            return JobStatus.FALLBACK
+
+    failure_msg = "Failed to download video."
     if ctx.out.video.resource:
-        ctx.logger.error("Failed to download video. Keeping existing resource.")
+        ctx.logger.error(f"{failure_msg} Keeping existing resource.")
         return JobStatus.FAILURE_EXISTING
 
-    ctx.logger.error("Failed to download video.")
+    ctx.logger.error(failure_msg)
+    return JobStatus.FAILURE
+
+
+def _try_download_audio_or_video(
+    ctx: _Context,
+    resource: str,
+    options: AudioOptions | VideoOptions,
+    kind: ResourceKind,
+) -> JobStatus:
+    match kind:
+        case ResourceKind.AUDIO:
+            assert isinstance(options, AudioOptions)
+            dl_result = resource_dl.download_audio(
+                resource,
+                options,
+                ctx.options.browser,
+                ctx.locations.temp_path(),
+                ctx.logger,
+            )
+        case ResourceKind.VIDEO:
+            assert isinstance(options, VideoOptions)
+            dl_result = resource_dl.download_video(
+                resource,
+                options,
+                ctx.options.browser,
+                ctx.locations.temp_path(),
+                ctx.logger,
+            )
+        case _:
+            return JobStatus.FAILURE
+
+    if ext := dl_result.extension:
+        match kind:
+            case ResourceKind.AUDIO:
+                ctx.out.audio.resource = resource
+                ctx.out.audio.new_fname = ctx.locations.filename(ext=ext)
+            case ResourceKind.VIDEO:
+                ctx.out.video.resource = resource
+                ctx.out.video.new_fname = ctx.locations.filename(ext=ext)
+        return JobStatus.SUCCESS
+
+    if dl_result.error in {
+        resource_dl.ResourceDLError.RESOURCE_INVALID,
+        resource_dl.ResourceDLError.RESOURCE_UNSUPPORTED,
+        resource_dl.ResourceDLError.RESOURCE_UNAVAILABLE,
+        resource_dl.ResourceDLError.RESOURCE_PARSE_ERROR,
+    }:
+        if ctx.options.notify_discord and (url := video_url_from_resource(resource)):
+            notify_discord(
+                ctx.song.song_id,
+                url,
+                kind.capitalize(),
+                dl_result.error.value,
+                ctx.logger,
+            )
+
     return JobStatus.FAILURE
 
 
@@ -525,146 +570,116 @@ def _maybe_download_cover(ctx: _Context) -> JobStatus:
     if not ctx.options.cover:
         return JobStatus.SKIPPED_DISABLED
 
-    if ctx.txt.meta_tags.cover is None and ctx.details.cover_url is None:
-        ctx.logger.warning("No cover resource found.")
-        return JobStatus.SKIPPED_UNAVAILABLE
+    if primary_cover := ctx.primary_cover():
+        if (url := primary_cover.source_url(ctx.logger)) == ctx.out.cover.resource:
+            ctx.logger.info("Cover resource is unchanged, skipping download.")
+            return JobStatus.SKIPPED_UNCHANGED
+        else:
+            ctx.logger.info("Cover resource has changed, redownloading.")
 
-    if meta_result := _try_meta_cover(ctx):
-        return meta_result
-
-    if fallback_result := _try_fallback_cover(ctx):
-        return fallback_result
-
-    if ctx.out.cover.resource:
-        ctx.logger.error("Failed to download cover. Keeping existing resource.")
-        return JobStatus.FAILURE_EXISTING
-
-    ctx.logger.error("Failed to download cover.")
-    return JobStatus.FAILURE
-
-
-def _try_meta_cover(ctx: _Context) -> JobStatus | None:
-    """Try to download cover from meta tags. Returns None if no primary source."""
-    if not (cover := ctx.txt.meta_tags.cover):
-        return None
-
-    url = cover.source_url(ctx.logger)
-    status = _download_cover_url(ctx, url)
-
-    if status is JobStatus.SUCCESS:
-        ctx.logger.info("Success! Downloaded cover.")
-        return status
-
-    if status is JobStatus.SKIPPED_UNCHANGED:
-        return status
-
-    if status is JobStatus.FAILURE and ctx.options.notify_discord:
-        notify_discord(
-            ctx.song.song_id,
-            url,
-            "Cover",
-            ResourceDLError.RESOURCE_UNAVAILABLE.value,
-            ctx.logger,
+        status = _try_download_cover_or_background(
+            ctx, url, ImageKind.COVER, process=True
         )
-
-    return None
-
-
-def _try_fallback_cover(ctx: _Context) -> JobStatus | None:
-    """Try to download USDB cover as fallback. Returns None if no fallback."""
-    if not ctx.details.cover_url:
-        return None
-
-    result = _download_cover_url(ctx, ctx.details.cover_url, process=False)
-
-    if result in (JobStatus.SUCCESS, JobStatus.SKIPPED_UNCHANGED):
-        ctx.logger.info("Success! Downloaded USDB cover (fallback).")
-        return JobStatus.FALLBACK
-
-    return None
-
-
-def _download_cover_url(ctx: _Context, url: str, process: bool = True) -> JobStatus:
-    """Attempt to download and process a cover image."""
-    assert ctx.options.cover
-
-    # Check if we can skip because nothing changed
-    if ctx.out.cover.resource == url:
-        if sync_meta := ctx.song.sync_meta:
-            if sync_meta.meta_tags.cover == ctx.txt.meta_tags.cover:
-                ctx.logger.info(
-                    "Cover resource and postprocessing parameters are unchanged, "
-                    "skipping."
-                )
-                return JobStatus.SKIPPED_UNCHANGED
-            ctx.logger.info(
-                "Cover postprocessing parameters have changed, redownloading."
+        if status is JobStatus.SUCCESS:
+            ctx.logger.info("Success! Downloaded cover. ")
+            return JobStatus.SUCCESS
+        if status is JobStatus.FAILURE and ctx.options.notify_discord:
+            notify_discord(
+                ctx.song.song_id,
+                url,
+                ResourceKind.COVER.capitalize(),
+                ResourceDLError.RESOURCE_UNAVAILABLE.value,
+                ctx.logger,
             )
 
-    if path := resource_dl.download_and_process_image(
-        url=url,
-        target_stem=ctx.locations.temp_path(),
-        meta_tags=ctx.txt.meta_tags.cover,
-        details=ctx.details,
-        kind=resource_dl.ImageKind.COVER,
-        max_width=ctx.options.cover.max_size,
-        process=process,
-    ):
-        ctx.out.cover.resource = url
-        ctx.out.cover.new_fname = path.name
-        return JobStatus.SUCCESS
+    if fallback := ctx.fallback_cover_resource():
+        status = _try_download_cover_or_background(
+            ctx, fallback, ImageKind.COVER, process=False
+        )
+        if status is JobStatus.SUCCESS:
+            ctx.logger.warning("Downloaded fallback cover from USDB.")
+            return JobStatus.FALLBACK
 
+    failure_msg = "Failed to download cover."
+    if ctx.out.cover.resource:
+        ctx.logger.error(f"{failure_msg} Keeping existing resource.")
+        return JobStatus.FAILURE_EXISTING
+
+    ctx.logger.error(failure_msg)
     return JobStatus.FAILURE
 
 
 def _maybe_download_background(ctx: _Context) -> JobStatus:
     if not (options := ctx.options.background_options):
         return JobStatus.SKIPPED_DISABLED
+
     if not options.download_background(bool(ctx.out.video.resource)):
         return JobStatus.SKIPPED_DISABLED
-    if not (url := ctx.background_url()):
+
+    if not (primary := ctx.primary_background()) or not (
+        url := primary.source_url(ctx.logger)
+    ):
         ctx.logger.warning("No background resource found.")
         return JobStatus.SKIPPED_UNAVAILABLE
-    if ctx.out.background.resource == url:
-        if sync_meta := ctx.song.sync_meta:
-            if sync_meta.meta_tags.background == ctx.txt.meta_tags.background:
-                ctx.logger.info(
-                    "Background resource and postprocessing parameters are unchanged, "
-                    "skipping."
-                )
-                return JobStatus.SKIPPED_UNCHANGED
-            ctx.logger.info(
-                "Background postprocessing parameters have changed, redownloading."
-            )
+
+    if url == ctx.out.background.resource:
+        ctx.logger.info("Background resource is unchanged, skipping download.")
+        return JobStatus.SKIPPED_UNCHANGED
+    else:
+        ctx.logger.info("Background resource has changed, redownloading.")
+
+    status = _try_download_cover_or_background(
+        ctx, url, ImageKind.BACKGROUND, process=False
+    )
+    if status is JobStatus.SUCCESS:
+        ctx.logger.info("Success! Downloaded background. ")
+        return JobStatus.SUCCESS
+    if status is JobStatus.FAILURE and ctx.options.notify_discord:
+        notify_discord(
+            ctx.song.song_id,
+            url,
+            ResourceKind.COVER.capitalize(),
+            ResourceDLError.RESOURCE_UNAVAILABLE.value,
+            ctx.logger,
+        )
+
+    failure_msg = "Failed to download background."
+    if ctx.out.background.resource:
+        ctx.logger.error(f"{failure_msg} Keeping existing resource.")
+        return JobStatus.FAILURE_EXISTING
+
+    ctx.logger.error(failure_msg)
+    return JobStatus.FAILURE
+
+
+def _try_download_cover_or_background(
+    ctx: _Context, url: str, kind: ImageKind, process: bool
+) -> JobStatus:
+    assert ctx.options.cover
+
     if path := resource_dl.download_and_process_image(
         url=url,
         target_stem=ctx.locations.temp_path(),
-        meta_tags=ctx.txt.meta_tags.background,
+        meta_tags=ctx.txt.meta_tags.cover
+        if kind == ImageKind.COVER
+        else ctx.txt.meta_tags.background,
         details=ctx.details,
-        kind=resource_dl.ImageKind.BACKGROUND,
-        max_width=None,
+        kind=kind,
+        max_width=ctx.options.cover.max_size,
+        process=process,
     ):
-        ctx.out.background.resource = url
-        ctx.out.background.new_fname = path.name
-        ctx.logger.info("Success! Downloaded background.")
+        match kind:
+            case ImageKind.COVER:
+                ctx.out.cover.resource = url
+                ctx.out.cover.new_fname = path.name
+            case ImageKind.BACKGROUND:
+                ctx.out.background.resource = url
+                ctx.out.background.new_fname = path.name
+            case _ as unreachable:
+                assert_never(unreachable)
         return JobStatus.SUCCESS
-    else:
-        if ctx.options.notify_discord:
-            notify_discord(
-                ctx.song.song_id,
-                url,
-                "Background",
-                ResourceDLError.RESOURCE_UNAVAILABLE.value,
-                ctx.logger,
-            )
-        if ctx.out.background.resource:
-            ctx.logger.error(
-                "Failed to download background. Keeping existing resource."
-            )
-            return JobStatus.FAILURE_EXISTING
 
-        ctx.logger.error("Failed to download background.")
-        return JobStatus.FAILURE
+    return JobStatus.FAILURE
 
 
 def _maybe_write_txt(ctx: _Context) -> JobStatus:
@@ -758,7 +773,7 @@ def _maybe_write_audio_tags(ctx: _Context) -> JobStatus:
     if not (
         audio_path_resource := ctx.out.audio.path_and_resource(ctx.locations, temp=True)
     ):
-        ctx.logger.info("No audio file to tag, skipping.")
+        ctx.logger.info("No audio file to tag, skipping writing audio tags.")
         return JobStatus.SKIPPED_UNAVAILABLE
     cover_path_resource = ctx.out.cover.path_and_resource(ctx.locations, temp=True)
     background_path_resource = ctx.out.background.path_and_resource(
@@ -783,7 +798,7 @@ def _maybe_write_video_tags(ctx: _Context) -> JobStatus:
     if not (
         video_path_resource := ctx.out.video.path_and_resource(ctx.locations, temp=True)
     ):
-        ctx.logger.info("No video file to tag, skipping.")
+        ctx.logger.info("No video file to tag, skipping writing video tags.")
         return JobStatus.SKIPPED_UNAVAILABLE
     cover_path_resource = ctx.out.cover.path_and_resource(ctx.locations, temp=True)
     background_path_resource = ctx.out.background.path_and_resource(
@@ -914,10 +929,10 @@ class Job(Enum):
                 return ()
 
 
-JOB_TO_RESOURCE_KIND: dict[Job, db.ResourceKind] = {
-    Job.TXT_WRITTEN: db.ResourceKind.TXT,
-    Job.AUDIO_DOWNLOAD: db.ResourceKind.AUDIO,
-    Job.VIDEO_DOWNLOAD: db.ResourceKind.VIDEO,
-    Job.COVER_DOWNLOAD: db.ResourceKind.COVER,
-    Job.BACKGROUND_DOWNLOAD: db.ResourceKind.BACKGROUND,
+JOB_TO_RESOURCE_KIND: dict[Job, ResourceKind] = {
+    Job.TXT_WRITTEN: ResourceKind.TXT,
+    Job.AUDIO_DOWNLOAD: ResourceKind.AUDIO,
+    Job.VIDEO_DOWNLOAD: ResourceKind.VIDEO,
+    Job.COVER_DOWNLOAD: ResourceKind.COVER,
+    Job.BACKGROUND_DOWNLOAD: ResourceKind.BACKGROUND,
 }
