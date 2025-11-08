@@ -358,10 +358,10 @@ class SyncMetaEncoder(json.JSONEncoder):
             return attrs.asdict(o)
         if isinstance(o, Resource):
             if o.file is None:
-                return {"status": o.status.value}
+                return {"status": o.status}
             else:
                 dct = attrs.asdict(o.file)
-                dct["status"] = o.status.value
+                dct["status"] = o.status
                 return dct
         if isinstance(o, MetaTags):
             return str(o)
