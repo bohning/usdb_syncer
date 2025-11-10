@@ -276,9 +276,7 @@ class _Context:
 
     def primary_audio_resource(self) -> str | None:
         """Return the primary audio resource (from meta tags)."""
-        if self.txt.meta_tags.is_audio_only():
-            return self.txt.meta_tags.audio
-        return self.txt.meta_tags.video
+        return self.txt.meta_tags.audio or self.txt.meta_tags.video
 
     def fallback_audio_resources(self) -> Iterator[str]:
         """Return fallback audio resources (from video meta tag and comments)"""
@@ -435,6 +433,7 @@ def _maybe_download_audio(ctx: _Context) -> JobStatus:
     if primary_resource := ctx.primary_audio_resource():
         if out_resource := ctx.out.audio.resource:
             if primary_resource == out_resource:
+                # TODO: Filename might need to change because of changes in artist/title
                 ctx.logger.info("Audio resource is unchanged, skipping download.")
                 return JobStatus.SKIPPED_UNCHANGED
             else:
