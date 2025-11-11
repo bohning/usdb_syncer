@@ -313,10 +313,10 @@ def _status_case_sql(alias: str) -> str:
     ]
 
     return (
-        "CASE\n"
-        f"    WHEN {alias}.sync_meta_id IS NULL THEN 0\n"
-        f"    {'\n    '.join(when_clauses)}\n"
-        "    ELSE 7\n"
+        "CASE "
+        f"WHEN {alias}.sync_meta_id IS NULL THEN 0 "
+        f"{' '.join(when_clauses)} "
+        f"ELSE {len(statuses) + 1} "
         "END"
     )
 
