@@ -160,12 +160,12 @@ def set_trace_sql(trace_sql: bool) -> None:
 class JobStatus(StrEnum):
     """Status of a download job."""
 
-    SKIPPED_UNCHANGED = auto()
     SKIPPED_DISABLED = auto()
     SKIPPED_UNAVAILABLE = auto()
     FAILURE = auto()
     FAILURE_EXISTING = auto()
     FALLBACK = auto()
+    SUCCESS_UNCHANGED = auto()
     SUCCESS = auto()
 
 
@@ -303,6 +303,7 @@ class SongOrder(enum.Enum):
             JobStatus.FAILURE,
             JobStatus.FAILURE_EXISTING,
             JobStatus.FALLBACK,
+            JobStatus.SUCCESS_UNCHANGED,
             JobStatus.SUCCESS,
         ]
 

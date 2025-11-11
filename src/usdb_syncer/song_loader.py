@@ -203,10 +203,30 @@ class _TempResourceFile:
     def to_resource(
         self, locations: _Locations, temp: bool, status: JobStatus
     ) -> Resource:
-        if path_resource := self.path_and_resource(locations, temp=temp):
-            file = ResourceFile.new(*path_resource)
-            return Resource.new(status, file)
-        return Resource.status_only(status)
+        path_resource = self.path_and_resource(locations, temp=temp)
+        match status:
+            case (
+                JobStatus.SUCCESS_UNCHANGED
+                | JobStatus.FAILURE_EXISTING
+                | JobStatus.FALLBACK
+                | JobStatus.SUCCESS
+            ):
+                if path_resource:
+                    file = ResourceFile.new(*path_resource)
+                    return Resource.new(status, file)
+                # there should be a file, but for some reason there isn't
+                return Resource.status_only(JobStatus.FAILURE)
+            case (
+                JobStatus.SKIPPED_DISABLED
+                | JobStatus.SKIPPED_UNAVAILABLE
+                | JobStatus.FAILURE
+            ):
+                if path_resource and (path := path_resource[0]).exists():
+                    # delete leftover file (e.g. if "v="" was corrected to "a=")
+                    utils.trash_or_delete_path(path)
+                return Resource.status_only(status)
+            case _ as unreachable:
+                assert_never(unreachable)
 
 
 @attrs.define
@@ -399,7 +419,7 @@ class _SongLoader(QtCore.QRunnable):
                     ctx.logger.debug(
                         f"Skipping {job.name}: all relevant files unchanged."
                     )
-                    ctx.results[job] = JobStatus.SKIPPED_UNCHANGED
+                    ctx.results[job] = JobStatus.SUCCESS_UNCHANGED
                     continue
 
                 ctx.results[job] = job(ctx)
@@ -434,7 +454,7 @@ def _maybe_download_audio(ctx: _Context) -> JobStatus:
             if primary_resource == out_resource:
                 # TODO: Filename might need to change because of changes in artist/title
                 ctx.logger.info("Audio resource is unchanged, skipping download.")
-                return JobStatus.SKIPPED_UNCHANGED
+                return JobStatus.SUCCESS_UNCHANGED
             else:
                 ctx.logger.info("Audio resource has changed, redownloading.")
 
@@ -475,7 +495,7 @@ def _maybe_download_video(ctx: _Context) -> JobStatus:
         if out_resource := ctx.out.video.resource:
             if primary == out_resource:
                 ctx.logger.info("Video resource is unchanged, skipping download.")
-                return JobStatus.SKIPPED_UNCHANGED
+                return JobStatus.SUCCESS_UNCHANGED
             else:
                 ctx.logger.info("Video resource has changed, redownloading.")
 
@@ -549,7 +569,7 @@ def _maybe_download_cover(ctx: _Context) -> JobStatus:
     if primary_cover := ctx.primary_cover():
         if (url := primary_cover.source_url(ctx.logger)) == ctx.out.cover.resource:
             ctx.logger.info("Cover resource is unchanged, skipping download.")
-            return JobStatus.SKIPPED_UNCHANGED
+            return JobStatus.SUCCESS_UNCHANGED
         else:
             ctx.logger.info("Cover resource has changed, redownloading.")
 
@@ -592,7 +612,7 @@ def _maybe_download_background(ctx: _Context) -> JobStatus:
 
     if url == ctx.out.background.resource:
         ctx.logger.info("Background resource is unchanged, skipping download.")
-        return JobStatus.SKIPPED_UNCHANGED
+        return JobStatus.SUCCESS_UNCHANGED
     else:
         ctx.logger.info("Background resource has changed, redownloading.")
 
@@ -663,7 +683,7 @@ def _maybe_write_txt(ctx: _Context) -> JobStatus:
         and filecmp.cmp(path, old_path, shallow=False)
     ):
         ctx.logger.info("Song txt is unchanged.")
-        return JobStatus.SKIPPED_UNCHANGED
+        return JobStatus.SUCCESS_UNCHANGED
     else:
         ctx.out.txt.new_fname = path.name
         ctx.out.txt.resource = ctx.song.song_id.usdb_gettxt_url()
@@ -843,14 +863,6 @@ def _write_sync_meta(ctx: _Context) -> None:
         pinned=old.pinned if old else False,
         custom_data=CustomData(old.custom_data.inner() if old else None),
     )
-
-    # if any resource is unchanged, keep previous status
-    if old:
-        for job, kind in _JOB_TO_RESOURCE_KIND.items():
-            if ctx.results[job] is JobStatus.SKIPPED_UNCHANGED and (
-                resource := old.resource(kind)
-            ):
-                ctx.results[job] = resource.status
 
     ctx.song.sync_meta.txt = ctx.out.txt.to_resource(
         ctx.locations, temp=False, status=ctx.results[Job.TXT_WRITTEN]

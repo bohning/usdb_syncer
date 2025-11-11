@@ -231,14 +231,12 @@ def _decoration_data(song: UsdbSong, column: int) -> QIcon | None:  # noqa: C901
 
 def status_icon(resource: Resource) -> icons.Icon:
     match resource.status:
-        case JobStatus.SUCCESS:
+        case JobStatus.SUCCESS | JobStatus.SUCCESS_UNCHANGED:
             icon = icons.Icon.SUCCESS
         case JobStatus.SKIPPED_DISABLED:
             icon = icons.Icon.SKIPPED_DISABLED
         case JobStatus.SKIPPED_UNAVAILABLE:
             icon = icons.Icon.SKIPPED_UNAVAILABLE
-        case JobStatus.SKIPPED_UNCHANGED:  # should not be possible -> previous status
-            icon = icons.Icon.BUG
         case JobStatus.FALLBACK:
             icon = icons.Icon.FALLBACK
         case JobStatus.FAILURE_EXISTING:
@@ -282,8 +280,8 @@ def status_tooltip(resource: Resource) -> str:
             tooltip = "Resource download disabled in the settings"
         case JobStatus.SKIPPED_UNAVAILABLE:
             tooltip = "No resource available"
-        case JobStatus.SKIPPED_UNCHANGED:  # should not be possible -> previous status
-            tooltip = "Resource is unchanged"
+        case JobStatus.SUCCESS_UNCHANGED:
+            tooltip = "Resource is available (unchanged)"
         case JobStatus.FALLBACK:
             tooltip = "Fallback resource (from USDB / comments)"
         case JobStatus.FAILURE_EXISTING:
