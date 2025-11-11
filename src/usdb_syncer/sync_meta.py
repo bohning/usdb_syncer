@@ -80,21 +80,11 @@ class Resource:
     @classmethod
     def new(cls, status: JobStatus, file: ResourceFile) -> Resource:
         """Create a successful status with a file."""
-        assert status in (
-            JobStatus.SUCCESS,
-            JobStatus.FALLBACK,
-            JobStatus.FAILURE_EXISTING,
-        )
         return cls(status=status, file=file)
 
     @classmethod
     def status_only(cls, status: JobStatus) -> Resource:
         """Create a failed/skipped status without a file."""
-        assert status in (
-            JobStatus.FAILURE,
-            JobStatus.SKIPPED_DISABLED,
-            JobStatus.SKIPPED_UNAVAILABLE,
-        )
         return cls(status=status, file=None)
 
     @classmethod
