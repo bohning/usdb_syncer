@@ -283,42 +283,41 @@ class SongOrder(enum.Enum):
             case SongOrder.PINNED:
                 return "sync_meta.pinned"
             case SongOrder.TXT:
-                return _status_case_sql("txt")
+                return self.order("txt")
             case SongOrder.AUDIO:
-                return _status_case_sql("audio")
+                return self.order("audio")
             case SongOrder.VIDEO:
-                return _status_case_sql("video")
+                return self.order("video")
             case SongOrder.COVER:
-                return _status_case_sql("cover")
+                return self.order("cover")
             case SongOrder.BACKGROUND:
-                return _status_case_sql("background")
+                return self.order("background")
             case SongOrder.STATUS:
                 return _STATUS_COLUMN
 
+    def order(self, alias: str) -> str:
+        """Return CASE SQL expression for resource_file status sorting."""
+        statuses = [
+            JobStatus.SKIPPED_DISABLED,
+            JobStatus.SKIPPED_UNAVAILABLE,
+            JobStatus.FAILURE,
+            JobStatus.FAILURE_EXISTING,
+            JobStatus.FALLBACK,
+            JobStatus.SUCCESS,
+        ]
 
-def _status_case_sql(alias: str) -> str:
-    """Return CASE SQL expression for resource_file status sorting."""
-    statuses = [
-        JobStatus.SKIPPED_DISABLED,
-        JobStatus.SKIPPED_UNAVAILABLE,
-        JobStatus.FAILURE,
-        JobStatus.FAILURE_EXISTING,
-        JobStatus.FALLBACK,
-        JobStatus.SUCCESS,
-    ]
+        when_clauses = [
+            f"WHEN {alias}.status = '{status}' THEN {i + 1}"
+            for i, status in enumerate(statuses)
+        ]
 
-    when_clauses = [
-        f"WHEN {alias}.status = '{status}' THEN {i + 1}"
-        for i, status in enumerate(statuses)
-    ]
-
-    return (
-        "CASE "
-        f"WHEN {alias}.sync_meta_id IS NULL THEN 0 "
-        f"{' '.join(when_clauses)} "
-        f"ELSE {len(statuses) + 1} "
-        "END"
-    )
+        return (
+            "CASE "
+            f"WHEN {alias}.sync_meta_id IS NULL THEN 0 "
+            f"{' '.join(when_clauses)} "
+            f"ELSE {len(statuses) + 1} "
+            "END"
+        )
 
 
 @attrs.define
