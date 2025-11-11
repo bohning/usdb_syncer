@@ -531,20 +531,13 @@ def _try_download_audio_or_video(
         target.new_fname = ctx.locations.filename(ext=ext)
         return JobStatus.SUCCESS
 
-    if dl_result.error in {
-        resource_dl.ResourceDLError.RESOURCE_INVALID,
-        resource_dl.ResourceDLError.RESOURCE_UNSUPPORTED,
-        resource_dl.ResourceDLError.RESOURCE_UNAVAILABLE,
-        resource_dl.ResourceDLError.RESOURCE_PARSE_ERROR,
-    }:
-        if ctx.options.notify_discord and (url := video_url_from_resource(resource)):
-            notify_discord(
-                ctx.song.song_id,
-                url,
-                kind.capitalize(),
-                dl_result.error.value,
-                ctx.logger,
-            )
+    if dl_result.error and ctx.options.notify_discord:
+        dl_result.error.notify_discord(
+            song_id=ctx.song.song_id,
+            url=video_url_from_resource(resource) or "",
+            kind=kind.capitalize(),
+            logger=ctx.logger,
+        )
 
     return JobStatus.FAILURE
 
@@ -566,14 +559,6 @@ def _maybe_download_cover(ctx: _Context) -> JobStatus:
         if status is JobStatus.SUCCESS:
             ctx.logger.info("Success! Downloaded cover. ")
             return JobStatus.SUCCESS
-        if status is JobStatus.FAILURE and ctx.options.notify_discord:
-            notify_discord(
-                ctx.song.song_id,
-                url,
-                ResourceKind.COVER.capitalize(),
-                ResourceDLError.RESOURCE_UNAVAILABLE.value,
-                ctx.logger,
-            )
 
     if fallback := ctx.fallback_cover_resource():
         status = _try_download_cover_or_background(
@@ -617,14 +602,6 @@ def _maybe_download_background(ctx: _Context) -> JobStatus:
     if status is JobStatus.SUCCESS:
         ctx.logger.info("Success! Downloaded background. ")
         return JobStatus.SUCCESS
-    if status is JobStatus.FAILURE and ctx.options.notify_discord:
-        notify_discord(
-            ctx.song.song_id,
-            url,
-            ResourceKind.COVER.capitalize(),
-            ResourceDLError.RESOURCE_UNAVAILABLE.value,
-            ctx.logger,
-        )
 
     failure_msg = "Failed to download background."
     if ctx.out.background.resource:
@@ -661,6 +638,15 @@ def _try_download_cover_or_background(
             case _ as unreachable:
                 assert_never(unreachable)
         return JobStatus.SUCCESS
+
+    if ctx.options.notify_discord:
+        notify_discord(
+            ctx.song.song_id,
+            url,
+            str(kind).capitalize(),
+            ResourceDLError.RESOURCE_UNAVAILABLE.value,
+            ctx.logger,
+        )
 
     return JobStatus.FAILURE
 
