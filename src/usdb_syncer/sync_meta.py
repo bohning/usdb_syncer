@@ -329,11 +329,6 @@ class SyncMeta:
             json.dump(self, file, cls=SyncMetaEncoder, indent=SYNC_META_INDENT)
         self.mtime = utils.get_mtime(self.path)
 
-    def resource_files(self) -> Iterator[ResourceFile]:
-        for resource in (self.txt, self.audio, self.video, self.cover, self.background):
-            if resource and (file := resource.file):
-                yield file
-
     def txt_path(self) -> Path | None:
         if not self.txt or not self.txt.file or self.txt.file.fname is None:
             return None
