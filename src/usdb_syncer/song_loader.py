@@ -33,8 +33,7 @@ from usdb_syncer import (
     utils,
 )
 from usdb_syncer.custom_data import CustomData
-from usdb_syncer.db import ResourceKind
-from usdb_syncer.db.sql import JobStatus
+from usdb_syncer.db import JobStatus, ResourceKind
 from usdb_syncer.discord import notify_discord
 from usdb_syncer.download_options import AudioOptions, VideoOptions
 from usdb_syncer.logger import Logger, logger, song_logger

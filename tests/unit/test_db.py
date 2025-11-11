@@ -6,7 +6,7 @@ import attrs
 import pytest
 
 from usdb_syncer import SongId, SyncMetaId, db
-from usdb_syncer.db.sql import JobStatus
+from usdb_syncer.db import JobStatus
 from usdb_syncer.usdb_song import UsdbSong
 
 PERFORMANCE_TEST_ITEM_COUNT = 100000

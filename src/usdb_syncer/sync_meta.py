@@ -11,7 +11,7 @@ import attrs
 
 from usdb_syncer import SongId, SyncMetaId, db, settings, utils
 from usdb_syncer.custom_data import CustomData
-from usdb_syncer.db.sql import JobStatus
+from usdb_syncer.db import JobStatus
 from usdb_syncer.logger import logger
 from usdb_syncer.meta_tags import MetaTags
 

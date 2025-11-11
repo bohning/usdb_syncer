@@ -10,6 +10,7 @@ import threading
 import time
 from collections import defaultdict
 from collections.abc import Generator, Iterable, Iterator
+from enum import StrEnum, auto
 from importlib import resources
 from pathlib import Path
 from typing import Any, ClassVar, assert_never, cast
@@ -18,7 +19,6 @@ import attrs
 from more_itertools import batched
 
 from usdb_syncer import SongId, SyncMetaId, errors
-from usdb_syncer.db.sql import JobStatus
 from usdb_syncer.logger import logger
 
 from . import sql
@@ -155,6 +155,18 @@ def managed_connection(db_path: Path | str) -> Generator[None, None, None]:
 def set_trace_sql(trace_sql: bool) -> None:
     """Set SQL logging for future connections."""
     _DbState.trace_sql = trace_sql
+
+
+class JobStatus(StrEnum):
+    """Status of a download job."""
+
+    SKIPPED_UNCHANGED = auto()
+    SKIPPED_DISABLED = auto()
+    SKIPPED_UNAVAILABLE = auto()
+    FAILURE = auto()
+    FAILURE_EXISTING = auto()
+    FALLBACK = auto()
+    SUCCESS = auto()
 
 
 class DownloadStatus(enum.IntEnum):

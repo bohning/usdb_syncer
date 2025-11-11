@@ -14,8 +14,7 @@ from tests.conftest import (
     example_usdb_song,
 )
 from usdb_syncer import download_options, utils
-from usdb_syncer.db import DownloadStatus, ResourceKind
-from usdb_syncer.db.sql import JobStatus
+from usdb_syncer.db import DownloadStatus, JobStatus, ResourceKind
 from usdb_syncer.meta_tags import MetaTags
 from usdb_syncer.path_template import PathTemplate
 from usdb_syncer.resource_dl import ImageKind, ResourceDLResult
