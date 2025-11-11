@@ -847,10 +847,10 @@ def _write_sync_meta(ctx: _Context) -> None:
     # if any resource is unchanged, keep previous status
     if old:
         for job, kind in _JOB_TO_RESOURCE_KIND.items():
-            if ctx.results[job] is JobStatus.SKIPPED_UNCHANGED:
-                resource = old.resource(kind)
-                if resource and resource.status:
-                    ctx.results[job] = resource.status
+            if ctx.results[job] is JobStatus.SKIPPED_UNCHANGED and (
+                resource := old.resource(kind)
+            ):
+                ctx.results[job] = resource.status
 
     ctx.song.sync_meta.txt = ctx.out.txt.to_resource(
         ctx.locations, temp=False, status=ctx.results[Job.TXT_WRITTEN]
