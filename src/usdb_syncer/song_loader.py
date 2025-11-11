@@ -860,7 +860,7 @@ def _write_sync_meta(ctx: _Context) -> None:
 
     # if any resource is unchanged, keep previous status
     if old:
-        for job, kind in JOB_TO_RESOURCE_KIND.items():
+        for job, kind in _JOB_TO_RESOURCE_KIND.items():
             if ctx.results[job] is JobStatus.SKIPPED_UNCHANGED:
                 resource = old.resource(kind)
                 if resource and resource.status:
@@ -912,7 +912,7 @@ class Job(Enum):
                 return ()
 
 
-JOB_TO_RESOURCE_KIND: dict[Job, ResourceKind] = {
+_JOB_TO_RESOURCE_KIND: dict[Job, ResourceKind] = {
     Job.TXT_WRITTEN: ResourceKind.TXT,
     Job.AUDIO_DOWNLOAD: ResourceKind.AUDIO,
     Job.VIDEO_DOWNLOAD: ResourceKind.VIDEO,
