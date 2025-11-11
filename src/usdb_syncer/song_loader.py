@@ -438,17 +438,13 @@ def _maybe_download_audio(ctx: _Context) -> JobStatus:
             else:
                 ctx.logger.info("Audio resource has changed, redownloading.")
 
-        status = _try_download_audio_or_video(
-            ctx, primary_resource, options, ResourceKind.AUDIO
-        )
+        status = _try_download_audio_or_video(ctx, primary_resource, options)
         if status is JobStatus.SUCCESS:
             ctx.logger.info("Success! Downloaded audio. ")
             return JobStatus.SUCCESS
 
     for fallback_resource in islice(ctx.fallback_audio_resources(), 10):
-        status = _try_download_audio_or_video(
-            ctx, fallback_resource, options, ResourceKind.AUDIO
-        )
+        status = _try_download_audio_or_video(ctx, fallback_resource, options)
         if status is JobStatus.SUCCESS:
             ctx.logger.warning(
                 f"Downloaded fallback audio '{fallback_resource}'. "
@@ -483,15 +479,13 @@ def _maybe_download_video(ctx: _Context) -> JobStatus:
             else:
                 ctx.logger.info("Video resource has changed, redownloading.")
 
-        status = _try_download_audio_or_video(ctx, primary, options, ResourceKind.VIDEO)
+        status = _try_download_audio_or_video(ctx, primary, options)
         if status is JobStatus.SUCCESS:
             ctx.logger.info("Success! Downloaded video. ")
             return JobStatus.SUCCESS
 
     for fallback in islice(ctx.fallback_audio_resources(), 10):
-        status = _try_download_audio_or_video(
-            ctx, fallback, options, ResourceKind.VIDEO
-        )
+        status = _try_download_audio_or_video(ctx, fallback, options)
         if status is JobStatus.SUCCESS:
             ctx.logger.warning(
                 f"Downloaded fallback video '{fallback}'. "
@@ -509,41 +503,32 @@ def _maybe_download_video(ctx: _Context) -> JobStatus:
 
 
 def _try_download_audio_or_video(
-    ctx: _Context,
-    resource: str,
-    options: AudioOptions | VideoOptions,
-    kind: ResourceKind,
+    ctx: _Context, resource: str, options: AudioOptions | VideoOptions
 ) -> JobStatus:
-    match kind:
-        case ResourceKind.AUDIO:
-            assert isinstance(options, AudioOptions)
-            dl_result = resource_dl.download_audio(
-                resource,
-                options,
-                ctx.options.browser,
-                ctx.locations.temp_path(),
-                ctx.logger,
-            )
-        case ResourceKind.VIDEO:
-            assert isinstance(options, VideoOptions)
-            dl_result = resource_dl.download_video(
-                resource,
-                options,
-                ctx.options.browser,
-                ctx.locations.temp_path(),
-                ctx.logger,
-            )
-        case _:
-            return JobStatus.FAILURE
+    if isinstance(options, AudioOptions):
+        kind = ResourceKind.AUDIO
+        target = ctx.out.audio
+        dl_result = resource_dl.download_audio(
+            resource,
+            options,
+            ctx.options.browser,
+            ctx.locations.temp_path(),
+            ctx.logger,
+        )
+    elif isinstance(options, VideoOptions):
+        kind = ResourceKind.VIDEO
+        target = ctx.out.video
+        dl_result = resource_dl.download_video(
+            resource,
+            options,
+            ctx.options.browser,
+            ctx.locations.temp_path(),
+            ctx.logger,
+        )
 
     if ext := dl_result.extension:
-        match kind:
-            case ResourceKind.AUDIO:
-                ctx.out.audio.resource = resource
-                ctx.out.audio.new_fname = ctx.locations.filename(ext=ext)
-            case ResourceKind.VIDEO:
-                ctx.out.video.resource = resource
-                ctx.out.video.new_fname = ctx.locations.filename(ext=ext)
+        target.resource = resource
+        target.new_fname = ctx.locations.filename(ext=ext)
         return JobStatus.SUCCESS
 
     if dl_result.error in {
