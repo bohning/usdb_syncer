@@ -449,21 +449,26 @@ def _maybe_download_audio(ctx: _Context) -> JobStatus:
         ctx.logger.info("Audio download is disabled, skipping download.")
         return JobStatus.SKIPPED_DISABLED
 
-    if primary_resource := ctx.primary_audio_resource():
+    primary_resource = ctx.primary_audio_resource()
+    fallback_resources = list(islice(ctx.fallback_audio_resources(), 10))
+
+    if not primary_resource and not fallback_resources:
+        ctx.logger.warning("No audio resource found (neither primary nor fallback).")
+        return JobStatus.SKIPPED_UNAVAILABLE
+
+    if primary_resource:
         if out_resource := ctx.out.audio.resource:
             if primary_resource == out_resource:
-                # TODO: Filename might need to change because of changes in artist/title
                 ctx.logger.info("Audio resource is unchanged, skipping download.")
                 return JobStatus.SUCCESS_UNCHANGED
-            else:
-                ctx.logger.info("Audio resource has changed, redownloading.")
+            ctx.logger.info("Audio resource has changed, redownloading.")
 
         status = _try_download_audio_or_video(ctx, primary_resource, options)
         if status is JobStatus.SUCCESS:
-            ctx.logger.info("Success! Downloaded audio. ")
+            ctx.logger.info("Success! Downloaded audio.")
             return JobStatus.SUCCESS
 
-    for fallback_resource in islice(ctx.fallback_audio_resources(), 10):
+    for fallback_resource in fallback_resources:
         status = _try_download_audio_or_video(ctx, fallback_resource, options)
         if status is JobStatus.SUCCESS:
             ctx.logger.warning(
@@ -472,6 +477,10 @@ def _maybe_download_audio(ctx: _Context) -> JobStatus:
             )
             return JobStatus.FALLBACK
 
+    return _handle_audio_failure(ctx)
+
+
+def _handle_audio_failure(ctx: _Context) -> JobStatus:
     failure_msg = "Failed to download audio."
     if ctx.out.audio.resource:
         ctx.logger.error(f"{failure_msg} Keeping existing resource.")
@@ -491,34 +500,44 @@ def _maybe_download_video(ctx: _Context) -> JobStatus:
         ctx.logger.info("Song is audio only, skipping download.")
         return JobStatus.SKIPPED_UNAVAILABLE
 
-    if primary := ctx.primary_video_resource():
+    primary_resource = ctx.primary_video_resource()
+    fallback_resources = list(islice(ctx.fallback_video_resources(), 10))
+
+    if not primary_resource and not fallback_resources:
+        ctx.logger.warning("No video resource found (neither primary nor fallback).")
+        return JobStatus.SKIPPED_UNAVAILABLE
+
+    if primary_resource:
         if out_resource := ctx.out.video.resource:
-            if primary == out_resource:
+            if primary_resource == out_resource:
                 ctx.logger.info("Video resource is unchanged, skipping download.")
                 return JobStatus.SUCCESS_UNCHANGED
-            else:
-                ctx.logger.info("Video resource has changed, redownloading.")
+            ctx.logger.info("Video resource has changed, redownloading.")
 
-        status = _try_download_audio_or_video(ctx, primary, options)
+        status = _try_download_audio_or_video(ctx, primary_resource, options)
         if status is JobStatus.SUCCESS:
-            ctx.logger.info("Success! Downloaded video. ")
+            ctx.logger.info("Success! Downloaded video.")
             return JobStatus.SUCCESS
 
-    for fallback in islice(ctx.fallback_audio_resources(), 10):
-        status = _try_download_audio_or_video(ctx, fallback, options)
+    for fallback_resource in fallback_resources:
+        status = _try_download_audio_or_video(ctx, fallback_resource, options)
         if status is JobStatus.SUCCESS:
             ctx.logger.warning(
-                f"Downloaded fallback video '{fallback}'. "
+                f"Downloaded fallback video '{fallback_resource}'. "
                 "This may require adaptations in GAP and/or BPM."
             )
             return JobStatus.FALLBACK
 
+    return _handle_video_failure(ctx)
+
+
+def _handle_video_failure(ctx: _Context) -> JobStatus:
     failure_msg = "Failed to download video."
     if ctx.out.video.resource:
         ctx.logger.error(f"{failure_msg} Keeping existing resource.")
         return JobStatus.FAILURE_EXISTING
 
-    ctx.logger.error(failure_msg)
+    ctx.logger.error(f"{failure_msg}.")
     return JobStatus.FAILURE
 
 
