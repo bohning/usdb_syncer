@@ -14,7 +14,7 @@ from PySide6.QtCore import (
 from PySide6.QtGui import QIcon
 
 from usdb_syncer import SongId, events
-from usdb_syncer.db import JobStatus
+from usdb_syncer.db import JobStatus, ResourceKind
 from usdb_syncer.gui import icons
 from usdb_syncer.gui.song_table.column import Column
 from usdb_syncer.sync_meta import Resource
@@ -189,7 +189,9 @@ def _decoration_data(song: UsdbSong, column: int) -> QIcon | None:  # noqa: C901
         ):
             return None
         case Column.SAMPLE_URL:
-            local = bool(song.sync_meta and song.sync_meta.audio)
+            local = bool(
+                song.sync_meta and song.sync_meta.resource_is_local(ResourceKind.AUDIO)
+            )
             if song.is_playing and local:
                 icon = icons.Icon.PAUSE_LOCAL
             elif song.is_playing:

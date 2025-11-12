@@ -238,6 +238,14 @@ class SyncMeta:
     def reset_active(cls, folder: Path) -> None:
         db.reset_active_sync_metas(folder)
 
+    def resource_is_local(self, kind: db.ResourceKind) -> bool:
+        resource = self.resource(kind)
+        if not resource or not resource.file or not resource.file.fname:
+            return False
+
+        file_path = self.path.parent / resource.file.fname
+        return file_path.exists()
+
     def upsert(self) -> None:
         db.upsert_sync_meta(self.db_params())
         db.update_active_sync_metas(settings.get_song_dir(), self.song_id)
