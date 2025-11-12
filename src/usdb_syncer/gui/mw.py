@@ -20,7 +20,7 @@ from usdb_syncer import (
 from usdb_syncer.constants import Usdb
 from usdb_syncer.gui import (
     cover_widget,
-    ffmpeg_dialog,
+    external_deps_dialog,
     gui_utils,
     icons,
     progress,
@@ -397,7 +397,9 @@ class MainWindow(Ui_MainWindow, QMainWindow):
     def _show_preview_dialog(self) -> None:
         song = self.table.current_song()
         if song:
-            ffmpeg_dialog.check_ffmpeg(self, lambda: Previewer.load_song(song))
+            external_deps_dialog.check_external_deps(
+                self, lambda: Previewer.load_song(song)
+            )
 
     def _rate_in_usdb(self, stars: int) -> None:
         song = self.table.current_song()

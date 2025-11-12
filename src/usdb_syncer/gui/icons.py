@@ -35,6 +35,7 @@ class Icon(enum.Enum):
     CUSTOM_DATA = "drawer.png", "dresser-white.svg"
     DATABASE = "database.png", "database-white.svg"
     DELETE = "bin.png", "delete-white.svg"
+    DENO = "deno.svg", None
     DIFF = "diff.png", "diff-white.svg"
     DOWNLOAD = "status.png", "download-white.svg"
     EDGE = "edge.png", None
@@ -43,6 +44,7 @@ class Icon(enum.Enum):
     FAILURE = "cross.png", "cross-white.svg"
     FAILURE_EXISTING = "tick-yellow.png", "tick-parentheses-white.svg"
     FALLBACK = "tick-yellow.png", "tick-parentheses-white.svg"
+    FFMPEG = "ffmpeg.svg", None
     FILE_EXPORT = "document-export.png", "file-export-white.svg"
     FILE_IMPORT = "document-import.png", "file-import-white.svg"
     FIREFOX = "firefox.png", None

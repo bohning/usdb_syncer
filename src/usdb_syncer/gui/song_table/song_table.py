@@ -14,7 +14,7 @@ from PySide6.QtGui import QAction, QCursor
 from usdb_syncer import SongId, db, events, media_player, settings, sync_meta, utils
 from usdb_syncer.custom_data import CustomData
 from usdb_syncer.gui import events as gui_events
-from usdb_syncer.gui import ffmpeg_dialog, previewer
+from usdb_syncer.gui import external_deps_dialog, previewer
 from usdb_syncer.gui.custom_data_dialog import CustomDataDialog
 from usdb_syncer.gui.progress import run_with_progress
 from usdb_syncer.gui.song_table.column import MINIMUM_COLUMN_WIDTH, Column
@@ -114,7 +114,7 @@ class SongTable:
         self._download(self._selected_rows())
 
     def _download(self, rows: Iterable[int]) -> None:
-        ffmpeg_dialog.check_ffmpeg(
+        external_deps_dialog.check_external_deps(
             self.mw,
             lambda: run_with_progress(
                 "Initializing downloads ...", partial(self._download_inner, rows)

@@ -372,6 +372,17 @@ def ffmpeg_is_available() -> bool:
     return False
 
 
+def deno_is_available() -> bool:
+    if shutil.which("deno"):
+        return True
+    if (path := settings.get_deno_dir()) and path not in os.environ["PATH"]:
+        # first run; restore path from settings
+        add_to_system_path(path)
+        if shutil.which("deno"):
+            return True
+    return False
+
+
 def open_external_app(app: settings.SupportedApps, path: Path) -> None:
     logger.debug(f"Starting {app} with '{path}'.")
     executable = settings.get_app_path(app)
