@@ -586,11 +586,17 @@ def _maybe_download_cover(ctx: _Context) -> JobStatus:
         return JobStatus.SKIPPED_DISABLED
 
     if primary_cover := ctx.primary_cover():
-        if (url := primary_cover.source_url(ctx.logger)) == ctx.out.cover.resource:
-            ctx.logger.info("Cover resource is unchanged, skipping download.")
-            return JobStatus.SUCCESS_UNCHANGED
-        else:
-            ctx.logger.info("Cover resource has changed, redownloading.")
+        url = primary_cover.source_url(ctx.logger)
+        if url == ctx.out.cover.resource:
+            if _cover_params_unchanged(ctx):
+                ctx.logger.info(
+                    "Cover resource and parameters are unchanged, skipping download."
+                )
+                return JobStatus.SUCCESS_UNCHANGED
+            else:
+                ctx.logger.info(
+                    "Cover processing parameters have changed, redownloading."
+                )
 
         status = _try_download_cover_or_background(
             ctx, url, ImageKind.COVER, process=True
@@ -616,6 +622,12 @@ def _maybe_download_cover(ctx: _Context) -> JobStatus:
     return JobStatus.FAILURE
 
 
+def _cover_params_unchanged(ctx: _Context) -> bool:
+    if not (sync_meta := ctx.song.sync_meta):
+        return False
+    return sync_meta.meta_tags.cover == ctx.txt.meta_tags.cover
+
+
 def _maybe_download_background(ctx: _Context) -> JobStatus:
     if not (options := ctx.options.background_options):
         return JobStatus.SKIPPED_DISABLED
@@ -630,10 +642,15 @@ def _maybe_download_background(ctx: _Context) -> JobStatus:
         return JobStatus.SKIPPED_UNAVAILABLE
 
     if url == ctx.out.background.resource:
-        ctx.logger.info("Background resource is unchanged, skipping download.")
-        return JobStatus.SUCCESS_UNCHANGED
-    else:
-        ctx.logger.info("Background resource has changed, redownloading.")
+        if _background_params_unchanged(ctx):
+            ctx.logger.info(
+                "Background resource and parameters are unchanged, skipping download."
+            )
+            return JobStatus.SUCCESS_UNCHANGED
+        else:
+            ctx.logger.info(
+                "Background processing parameters have changed, redownloading."
+            )
 
     status = _try_download_cover_or_background(
         ctx, url, ImageKind.BACKGROUND, process=False
@@ -649,6 +666,12 @@ def _maybe_download_background(ctx: _Context) -> JobStatus:
 
     ctx.logger.error(failure_msg)
     return JobStatus.FAILURE
+
+
+def _background_params_unchanged(ctx: _Context) -> bool:
+    if not (sync_meta := ctx.song.sync_meta):
+        return False
+    return sync_meta.meta_tags.background == ctx.txt.meta_tags.background
 
 
 def _try_download_cover_or_background(
