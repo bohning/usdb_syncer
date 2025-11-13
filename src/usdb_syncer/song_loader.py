@@ -213,9 +213,9 @@ class _TempResourceFile:
             ):
                 if path_resource:
                     file = ResourceFile.new(*path_resource)
-                    return Resource.new(status, file)
+                    return Resource(status, file)
                 # there should be a file, but for some reason there isn't
-                return Resource.status_only(JobStatus.FAILURE)
+                return Resource(JobStatus.FAILURE)
             case (
                 JobStatus.SKIPPED_DISABLED
                 | JobStatus.SKIPPED_UNAVAILABLE
@@ -224,7 +224,7 @@ class _TempResourceFile:
                 if path_resource and (path := path_resource[0]).exists():
                     # delete leftover file (e.g. if "v="" was corrected to "a=")
                     utils.trash_or_delete_path(path)
-                return Resource.status_only(status)
+                return Resource(status)
             case _ as unreachable:
                 assert_never(unreachable)
 

@@ -75,17 +75,7 @@ class Resource:
     """Info about the status and the file of a resource."""
 
     status: JobStatus
-    file: ResourceFile | None
-
-    @classmethod
-    def new(cls, status: JobStatus, file: ResourceFile) -> Resource:
-        """Create a successful status with a file."""
-        return cls(status=status, file=file)
-
-    @classmethod
-    def status_only(cls, status: JobStatus) -> Resource:
-        """Create a failed/skipped status without a file."""
-        return cls(status=status, file=None)
+    file: ResourceFile | None = None
 
     @classmethod
     def from_nested_dict(cls, dct: Any) -> Resource | None:
@@ -98,32 +88,22 @@ class Resource:
         except (ValueError, TypeError):
             return None
 
+        file = None
         if "fname" in dct and dct.get("fname") is not None:
             file = ResourceFile.from_nested_dict(dct)
-            if file is None:
-                return None
-            return cls.new(status, file)
 
-        # Status-only entry
-        return cls.status_only(status)
+        return cls(status, file)
 
     @classmethod
     def from_db_row(
         cls, row: tuple[str | None, int | None, str | None, JobStatus | None]
     ) -> Resource | None:
-        if row[3] is None:
+        if (status := row[3]) is None:
             return None
-
-        status = row[3]
-
-        if row[0] is None:
-            return cls.status_only(status)
 
         file = ResourceFile.from_db_row(row[:3])
-        if file is None:
-            return None
 
-        return cls.new(status, file)
+        return cls(status, file)
 
     def db_params(
         self, sync_meta_id: SyncMetaId, kind: db.ResourceKind
