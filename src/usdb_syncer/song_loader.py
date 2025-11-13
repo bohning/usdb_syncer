@@ -734,15 +734,16 @@ def _write_headers(ctx: _Context) -> None:
 
 
 def _set_audio_headers(ctx: _Context, version: FormatVersion, path: Path) -> None:
+    fname = ctx.locations.filename(ext=utils.resource_file_ending(path.name))
     match version:
         case FormatVersion.V1_0_0:
-            ctx.txt.headers.mp3 = path.name
+            ctx.txt.headers.mp3 = fname
         case FormatVersion.V1_1_0:
             # write both #MP3 and #AUDIO to maximize compatibility
-            ctx.txt.headers.mp3 = path.name
-            ctx.txt.headers.audio = path.name
+            ctx.txt.headers.mp3 = fname
+            ctx.txt.headers.audio = fname
         case FormatVersion.V1_2_0:
-            ctx.txt.headers.audio = path.name
+            ctx.txt.headers.audio = fname
             if resource := ctx.txt.meta_tags.audio or ctx.txt.meta_tags.video:
                 ctx.txt.headers.audiourl = video_url_from_resource(resource)
         case _ as unreachable:
@@ -750,13 +751,15 @@ def _set_audio_headers(ctx: _Context, version: FormatVersion, path: Path) -> Non
 
 
 def _set_video_headers(ctx: _Context, version: FormatVersion, path: Path) -> None:
-    ctx.txt.headers.video = path.name
+    fname = ctx.locations.filename(ext=utils.resource_file_ending(path.name))
+    ctx.txt.headers.video = fname
     if version >= FormatVersion.V1_2_0 and (resource := ctx.txt.meta_tags.video):
         ctx.txt.headers.videourl = video_url_from_resource(resource)
 
 
 def _set_cover_headers(ctx: _Context, version: FormatVersion, path: Path) -> None:
-    ctx.txt.headers.cover = path.name
+    fname = ctx.locations.filename(ext=utils.resource_file_ending(path.name))
+    ctx.txt.headers.cover = fname
     if (
         version >= FormatVersion.V1_2_0
         and ctx.txt.meta_tags.cover
@@ -766,7 +769,8 @@ def _set_cover_headers(ctx: _Context, version: FormatVersion, path: Path) -> Non
 
 
 def _set_background_headers(ctx: _Context, version: FormatVersion, path: Path) -> None:
-    ctx.txt.headers.background = path.name
+    fname = ctx.locations.filename(ext=utils.resource_file_ending(path.name))
+    ctx.txt.headers.background = fname
     if (
         version >= FormatVersion.V1_2_0
         and ctx.txt.meta_tags.background
