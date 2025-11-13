@@ -1,6 +1,8 @@
 <!-- 0.18.0 -->
 
 # Changes
+- yt-dlp has been updated to latest available version 2025.11.12, solving latest download issues. This introduces Deno Javascript Runtime as new external dependency.
+The Syncer will inform you about this missing dependency and will give hints on how to install Deno on your OS.
 
 ## Features
 
