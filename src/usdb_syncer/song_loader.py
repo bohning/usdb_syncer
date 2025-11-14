@@ -745,15 +745,28 @@ def _write_headers(ctx: _Context) -> None:
 
     if path := ctx.out.audio.path(ctx.locations, temp=True):
         _set_audio_headers(ctx, version, path)
+    else:
+        ctx.txt.headers.mp3 = None
+        ctx.txt.headers.audio = None
+        ctx.txt.headers.audiourl = None
 
     if path := ctx.out.video.path(ctx.locations, temp=True):
         _set_video_headers(ctx, version, path)
+    else:
+        ctx.txt.headers.video = None
+        ctx.txt.headers.videourl = None
 
     if path := ctx.out.cover.path(ctx.locations, temp=True):
         _set_cover_headers(ctx, version, path)
+    else:
+        ctx.txt.headers.cover = None
+        ctx.txt.headers.coverurl = None
 
     if path := ctx.out.background.path(ctx.locations, temp=True):
         _set_background_headers(ctx, version, path)
+    else:
+        ctx.txt.headers.background = None
+        ctx.txt.headers.backgroundurl = None
 
 
 def _set_audio_headers(ctx: _Context, version: FormatVersion, path: Path) -> None:
