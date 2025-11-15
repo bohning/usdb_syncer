@@ -743,34 +743,23 @@ def _write_headers(ctx: _Context) -> None:
     if version >= FormatVersion.V1_1_0:
         ctx.txt.headers.providedby = constants.Usdb.BASE_URL
 
-    if path := ctx.out.audio.path(ctx.locations, temp=True):
-        _set_audio_headers(ctx, version, path)
-    else:
+    _set_audio_headers(ctx, version)
+    _set_video_headers(ctx, version)
+    _set_cover_headers(ctx, version)
+    _set_background_headers(ctx, version)
+
+
+def _set_audio_headers(ctx: _Context, version: FormatVersion) -> None:
+    path = ctx.out.audio.path(ctx.locations, temp=True)
+
+    if not path:
         ctx.txt.headers.mp3 = None
         ctx.txt.headers.audio = None
         ctx.txt.headers.audiourl = None
+        return
 
-    if path := ctx.out.video.path(ctx.locations, temp=True):
-        _set_video_headers(ctx, version, path)
-    else:
-        ctx.txt.headers.video = None
-        ctx.txt.headers.videourl = None
-
-    if path := ctx.out.cover.path(ctx.locations, temp=True):
-        _set_cover_headers(ctx, version, path)
-    else:
-        ctx.txt.headers.cover = None
-        ctx.txt.headers.coverurl = None
-
-    if path := ctx.out.background.path(ctx.locations, temp=True):
-        _set_background_headers(ctx, version, path)
-    else:
-        ctx.txt.headers.background = None
-        ctx.txt.headers.backgroundurl = None
-
-
-def _set_audio_headers(ctx: _Context, version: FormatVersion, path: Path) -> None:
     fname = ctx.locations.filename(ext=utils.resource_file_ending(path.name))
+
     match version:
         case FormatVersion.V1_0_0:
             ctx.txt.headers.mp3 = fname
@@ -786,16 +775,32 @@ def _set_audio_headers(ctx: _Context, version: FormatVersion, path: Path) -> Non
             assert_never(unreachable)
 
 
-def _set_video_headers(ctx: _Context, version: FormatVersion, path: Path) -> None:
+def _set_video_headers(ctx: _Context, version: FormatVersion) -> None:
+    path = ctx.out.video.path(ctx.locations, temp=True)
+
+    if not path:
+        ctx.txt.headers.video = None
+        ctx.txt.headers.videourl = None
+        return
+
     fname = ctx.locations.filename(ext=utils.resource_file_ending(path.name))
     ctx.txt.headers.video = fname
+
     if version >= FormatVersion.V1_2_0 and (resource := ctx.txt.meta_tags.video):
         ctx.txt.headers.videourl = video_url_from_resource(resource)
 
 
-def _set_cover_headers(ctx: _Context, version: FormatVersion, path: Path) -> None:
+def _set_cover_headers(ctx: _Context, version: FormatVersion) -> None:
+    path = ctx.out.cover.path(ctx.locations, temp=True)
+
+    if not path:
+        ctx.txt.headers.cover = None
+        ctx.txt.headers.coverurl = None
+        return
+
     fname = ctx.locations.filename(ext=utils.resource_file_ending(path.name))
     ctx.txt.headers.cover = fname
+
     if (
         version >= FormatVersion.V1_2_0
         and ctx.txt.meta_tags.cover
@@ -804,9 +809,17 @@ def _set_cover_headers(ctx: _Context, version: FormatVersion, path: Path) -> Non
         ctx.txt.headers.coverurl = url
 
 
-def _set_background_headers(ctx: _Context, version: FormatVersion, path: Path) -> None:
+def _set_background_headers(ctx: _Context, version: FormatVersion) -> None:
+    path = ctx.out.background.path(ctx.locations, temp=True)
+
+    if not path:
+        ctx.txt.headers.background = None
+        ctx.txt.headers.backgroundurl = None
+        return
+
     fname = ctx.locations.filename(ext=utils.resource_file_ending(path.name))
     ctx.txt.headers.background = fname
+
     if (
         version >= FormatVersion.V1_2_0
         and ctx.txt.meta_tags.background
