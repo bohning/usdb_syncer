@@ -148,6 +148,7 @@ class SettingKey(Enum):
 
     SONG_DIR = "song_dir"
     FFMPEG_DIR = "ffmpeg_dir"
+    DENO_DIR = "deno_dir"
     AUTO_UPDATE = "downloads/auto_update"
     BROWSER = "downloads/browser"
     TXT = "downloads/txt"
@@ -1010,6 +1011,14 @@ def get_ffmpeg_dir() -> str:
 
 def set_ffmpeg_dir(value: str, temp: bool = False) -> None:
     _Settings.set(SettingKey.FFMPEG_DIR, value, temp)
+
+
+def get_deno_dir() -> str:
+    return _Settings.get(SettingKey.DENO_DIR, "")
+
+
+def set_deno_dir(value: str, temp: bool = False) -> None:
+    _Settings.set(SettingKey.DENO_DIR, value, temp)
 
 
 def get_geometry_main_window() -> QByteArray:

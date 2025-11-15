@@ -9,8 +9,9 @@ from _pytest.config.argparsing import Parser
 from _pytest.nodes import Item
 
 from usdb_syncer import SongId, SyncMetaId
+from usdb_syncer.db import JobStatus
 from usdb_syncer.meta_tags import ImageMetaTags, MetaTags
-from usdb_syncer.sync_meta import ResourceFile, SyncMeta
+from usdb_syncer.sync_meta import Resource, ResourceFile, SyncMeta
 from usdb_syncer.usdb_scraper import SongDetails
 from usdb_syncer.usdb_song import UsdbSong
 
@@ -78,7 +79,10 @@ def example_usdb_song() -> UsdbSong:
             path=Path(f"C:/{sync_meta_id.to_filename()}"),
             mtime=0,
             meta_tags=MetaTags(),
-            audio=ResourceFile("song.mp3", 1, "example.org/song.mp3"),
+            audio=Resource(
+                status=JobStatus.SUCCESS,
+                file=ResourceFile("song.mp3", 1, "example.org/song.mp3"),
+            ),
         ),
     )
 

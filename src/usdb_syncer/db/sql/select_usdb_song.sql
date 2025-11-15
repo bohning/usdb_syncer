@@ -33,18 +33,23 @@ SELECT
     txt.fname,
     txt.mtime,
     txt.resource,
+    txt.status,
     audio.fname,
     audio.mtime,
     audio.resource,
+    audio.status,
     video.fname,
     video.mtime,
     video.resource,
+    video.status,
     cover.fname,
     cover.mtime,
     cover.resource,
+    cover.status,
     background.fname,
     background.mtime,
-    background.resource
+    background.resource,
+    background.status
 FROM
     usdb_song
     LEFT JOIN session_usdb_song ON usdb_song.song_id = session_usdb_song.song_id

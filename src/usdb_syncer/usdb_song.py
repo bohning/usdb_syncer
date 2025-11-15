@@ -86,7 +86,7 @@ class UsdbSong:
 
     @classmethod
     def from_db_row(cls, song_id: SongId, row: tuple) -> UsdbSong:
-        assert len(row) == 38
+        assert len(row) == 43
         return cls(
             song_id=song_id,
             usdb_mtime=row[1],

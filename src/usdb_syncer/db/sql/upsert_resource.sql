@@ -4,6 +4,7 @@ INSERT INTO
         kind,
         fname,
         mtime,
+        status,
         resource
     )
 VALUES
@@ -12,6 +13,7 @@ VALUES
         :kind,
         :fname,
         :mtime,
+        :status,
         :resource
     ) ON CONFLICT (sync_meta_id, kind) DO
 UPDATE

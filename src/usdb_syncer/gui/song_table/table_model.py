@@ -14,8 +14,10 @@ from PySide6.QtCore import (
 from PySide6.QtGui import QIcon
 
 from usdb_syncer import SongId, events
+from usdb_syncer.db import JobStatus, ResourceKind
 from usdb_syncer.gui import icons
 from usdb_syncer.gui.song_table.column import Column
+from usdb_syncer.sync_meta import Resource
 from usdb_syncer.usdb_song import UsdbSong
 
 QIndex = QModelIndex | QPersistentModelIndex
@@ -96,6 +98,9 @@ class TableModel(QAbstractTableModel):
         if role == Qt.ItemDataRole.DecorationRole:
             if song := self._get_song(index):
                 return _decoration_data(song, index.column())
+        if role == Qt.ItemDataRole.ToolTipRole:
+            if song := self._get_song(index):
+                return _tooltip_data(song, index.column())
         return None
 
     def _get_song(self, index: QIndex) -> UsdbSong | None:
@@ -184,7 +189,9 @@ def _decoration_data(song: UsdbSong, column: int) -> QIcon | None:  # noqa: C901
         ):
             return None
         case Column.SAMPLE_URL:
-            local = bool(song.sync_meta and song.sync_meta.audio)
+            local = bool(
+                song.sync_meta and song.sync_meta.resource_is_local(ResourceKind.AUDIO)
+            )
             if song.is_playing and local:
                 icon = icons.Icon.PAUSE_LOCAL
             elif song.is_playing:
@@ -196,25 +203,25 @@ def _decoration_data(song: UsdbSong, column: int) -> QIcon | None:  # noqa: C901
             else:
                 return None
         case Column.TXT:
-            if not (song.sync_meta and song.sync_meta.txt):
+            if not (song.sync_meta and (txt := song.sync_meta.txt)):
                 return None
-            icon = icons.Icon.CHECK
+            icon = status_icon(txt)
         case Column.AUDIO:
-            if not (song.sync_meta and song.sync_meta.audio):
+            if not (song.sync_meta and (audio := song.sync_meta.audio)):
                 return None
-            icon = icons.Icon.CHECK
+            icon = status_icon(audio)
         case Column.VIDEO:
-            if not (song.sync_meta and song.sync_meta.video):
+            if not (song.sync_meta and (video := song.sync_meta.video)):
                 return None
-            icon = icons.Icon.CHECK
+            icon = status_icon(video)
         case Column.COVER:
-            if not (song.sync_meta and song.sync_meta.cover):
+            if not (song.sync_meta and (cover := song.sync_meta.cover)):
                 return None
-            icon = icons.Icon.CHECK
+            icon = status_icon(cover)
         case Column.BACKGROUND:
-            if not (song.sync_meta and song.sync_meta.background):
+            if not (song.sync_meta and (background := song.sync_meta.background)):
                 return None
-            icon = icons.Icon.CHECK
+            icon = status_icon(background)
         case Column.PINNED:
             if not (song.sync_meta and song.sync_meta.pinned):
                 return None
@@ -222,6 +229,70 @@ def _decoration_data(song: UsdbSong, column: int) -> QIcon | None:  # noqa: C901
         case _ as unreachable:
             assert_never(unreachable)
     return icon.icon()
+
+
+def status_icon(resource: Resource) -> icons.Icon:
+    match resource.status:
+        case JobStatus.SUCCESS | JobStatus.SUCCESS_UNCHANGED:
+            icon = icons.Icon.SUCCESS
+        case JobStatus.SKIPPED_DISABLED:
+            icon = icons.Icon.SKIPPED_DISABLED
+        case JobStatus.SKIPPED_UNAVAILABLE:
+            icon = icons.Icon.SKIPPED_UNAVAILABLE
+        case JobStatus.FALLBACK:
+            icon = icons.Icon.FALLBACK
+        case JobStatus.FAILURE_EXISTING:
+            icon = icons.Icon.FAILURE_EXISTING
+        case JobStatus.FAILURE:
+            icon = icons.Icon.FAILURE
+        case _ as unreachable:
+            assert_never(unreachable)
+    return icon
+
+
+def _tooltip_data(song: UsdbSong, column: int) -> str | None:
+    col = Column(column)
+    match col:
+        case Column.AUDIO:
+            if not (song.sync_meta and (audio := song.sync_meta.audio)):
+                return None
+            tooltip = status_tooltip(audio)
+        case Column.VIDEO:
+            if not (song.sync_meta and (video := song.sync_meta.video)):
+                return None
+            tooltip = status_tooltip(video)
+        case Column.COVER:
+            if not (song.sync_meta and (cover := song.sync_meta.cover)):
+                return None
+            tooltip = status_tooltip(cover)
+        case Column.BACKGROUND:
+            if not (song.sync_meta and (background := song.sync_meta.background)):
+                return None
+            tooltip = status_tooltip(background)
+        case _:
+            return None
+    return tooltip
+
+
+def status_tooltip(resource: Resource) -> str:
+    match resource.status:
+        case JobStatus.SUCCESS:
+            tooltip = "Resource download successful"
+        case JobStatus.SKIPPED_DISABLED:
+            tooltip = "Resource download disabled in the settings"
+        case JobStatus.SKIPPED_UNAVAILABLE:
+            tooltip = "No resource available"
+        case JobStatus.SUCCESS_UNCHANGED:
+            tooltip = "Resource is available (unchanged)"
+        case JobStatus.FALLBACK:
+            tooltip = "Fallback resource (from USDB / comments)"
+        case JobStatus.FAILURE_EXISTING:
+            tooltip = "Resource download failed, using existing resource"
+        case JobStatus.FAILURE:
+            tooltip = "Resource download failed"
+        case _ as unreachable:
+            assert_never(unreachable)
+    return tooltip
 
 
 @cache

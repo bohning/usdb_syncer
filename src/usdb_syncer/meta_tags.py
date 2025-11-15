@@ -192,8 +192,8 @@ class MetaTags:
         match key:
             case "v":
                 self.video = value
-            case "v-trim" | "v-crop" | "co-protocol" | "bg-protocol":
-                logger.debug(f"Unused meta tag found: {key}={value}")
+            case "v-trim" | "v-crop":
+                logger.debug(f"Unsupported meta tag found: {key}={value}")
             case "a":
                 self.audio = value
             case "co":

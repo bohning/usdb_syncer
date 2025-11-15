@@ -10,6 +10,7 @@ import threading
 import time
 from collections import defaultdict
 from collections.abc import Generator, Iterable, Iterator
+from enum import StrEnum, auto
 from importlib import resources
 from pathlib import Path
 from typing import Any, ClassVar, assert_never, cast
@@ -22,7 +23,7 @@ from usdb_syncer.logger import logger
 
 from . import sql
 
-SCHEMA_VERSION = 7
+SCHEMA_VERSION = 8
 
 # https://www.sqlite.org/limits.html
 _SQL_VARIABLES_LIMIT = 32766
@@ -156,6 +157,18 @@ def set_trace_sql(trace_sql: bool) -> None:
     _DbState.trace_sql = trace_sql
 
 
+class JobStatus(StrEnum):
+    """Status of a download job."""
+
+    SKIPPED_DISABLED = auto()
+    SKIPPED_UNAVAILABLE = auto()
+    FAILURE = auto()
+    FAILURE_EXISTING = auto()
+    FALLBACK = auto()
+    SUCCESS_UNCHANGED = auto()
+    SUCCESS = auto()
+
+
 class DownloadStatus(enum.IntEnum):
     """Status of song in download queue."""
 
@@ -270,17 +283,42 @@ class SongOrder(enum.Enum):
             case SongOrder.PINNED:
                 return "sync_meta.pinned"
             case SongOrder.TXT:
-                return "txt.sync_meta_id IS NULL"
+                return self.order("txt")
             case SongOrder.AUDIO:
-                return "audio.sync_meta_id IS NULL"
+                return self.order("audio")
             case SongOrder.VIDEO:
-                return "video.sync_meta_id IS NULL"
+                return self.order("video")
             case SongOrder.COVER:
-                return "cover.sync_meta_id IS NULL"
+                return self.order("cover")
             case SongOrder.BACKGROUND:
-                return "background.sync_meta_id IS NULL"
+                return self.order("background")
             case SongOrder.STATUS:
                 return _STATUS_COLUMN
+
+    def order(self, alias: str) -> str:
+        """Return CASE SQL expression for resource_file status sorting."""
+        statuses = [
+            JobStatus.SKIPPED_DISABLED,
+            JobStatus.SKIPPED_UNAVAILABLE,
+            JobStatus.FAILURE,
+            JobStatus.FAILURE_EXISTING,
+            JobStatus.FALLBACK,
+            JobStatus.SUCCESS_UNCHANGED,
+            JobStatus.SUCCESS,
+        ]
+
+        when_clauses = [
+            f"WHEN {alias}.status = '{status}' THEN {i + 1}"
+            for i, status in enumerate(statuses)
+        ]
+
+        return (
+            "CASE "
+            f"WHEN {alias}.sync_meta_id IS NULL THEN 0 "
+            f"{' '.join(when_clauses)} "
+            f"ELSE {len(statuses) + 1} "
+            "END"
+        )
 
 
 @attrs.define
@@ -903,8 +941,8 @@ def get_custom_data_map() -> defaultdict[str, set[str]]:
 # ResourceFile
 
 
-class ResourceFileKind(str, enum.Enum):
-    """Kinds of resource files."""
+class ResourceKind(str, enum.Enum):
+    """Kinds of resources."""
 
     TXT = "txt"
     AUDIO = "audio"
@@ -914,17 +952,18 @@ class ResourceFileKind(str, enum.Enum):
 
 
 @attrs.define(frozen=True, slots=False)
-class ResourceFileParams:
-    """Parameters for inserting or updating a resource file."""
+class ResourceParams:
+    """Parameters for inserting or updating a resource."""
 
     sync_meta_id: SyncMetaId
-    kind: ResourceFileKind
-    fname: str
-    mtime: int
-    resource: str
+    kind: ResourceKind
+    fname: str | None
+    mtime: int | None
+    resource: str | None
+    status: JobStatus
 
 
-def delete_resource_files(ids: Iterable[tuple[SyncMetaId, ResourceFileKind]]) -> None:
+def delete_resources(ids: Iterable[tuple[SyncMetaId, ResourceKind]]) -> None:
     for batch in batched(ids, _SQL_SMALLER_THAN_EXPRESSION_TREE):
         if not batch:
             continue
@@ -935,8 +974,8 @@ def delete_resource_files(ids: Iterable[tuple[SyncMetaId, ResourceFileKind]]) ->
         )
 
 
-def upsert_resource_files(params: Iterable[ResourceFileParams]) -> None:
-    stmt = _SqlCache.get("upsert_resource_file.sql")
+def upsert_resources(params: Iterable[ResourceParams]) -> None:
+    stmt = _SqlCache.get("upsert_resource.sql")
     _DbState.connection().executemany(stmt, (p.__dict__ for p in params))
 
 

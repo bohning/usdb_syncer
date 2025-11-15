@@ -1,11 +1,14 @@
 <!-- 0.18.0 -->
 
 # Changes
+- yt-dlp has been updated to latest available version 2025.11.12, solving latest download issues. This introduces Deno Javascript Runtime as new external dependency.
+The Syncer will inform you about this missing dependency and will give hints on how to install Deno on your OS.
 
 ## Features
 
 - Medley sections are auto-corrected to start on the first beat of the first note of a line and to end of the last beat of the last note of a line.
 - Local changes can now be submitted to USDB. Please use this feature only for significant adaptations, enhancements and corrections (please use the comment function for small corrections, especially when it only concerns header values such as #GAP or #BPM).
+- The statuses of the resources (success/unchanged, fallback resource, unavailable/disabled, failed) is now indicated in the respective columns.
 
 ## Fixes
 

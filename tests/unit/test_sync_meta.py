@@ -24,6 +24,7 @@ def test_pre_pin_v1_meta_file_roundtrip(resource_dir: Path) -> None:
         .replace(', "pinned": false', "")
         .replace(', "custom_data": {}', "")
         .replace(', "usdb_mtime": 0', "")
+        .replace(', "status": "success"', "")
     )
     with path.open(encoding="utf-8") as file:
         assert file.read() == meta_json
