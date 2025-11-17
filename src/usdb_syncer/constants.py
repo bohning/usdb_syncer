@@ -2,7 +2,7 @@
 
 import re
 
-MINIMUM_BPM = 200.0
+BPM_THRESHOLD = 200.0
 GITHUB_API_LATEST = "https://api.github.com/repos/bohning/usdb_syncer/releases/latest"
 GITHUB_DL_LATEST = "https://github.com/bohning/usdb_syncer/releases/latest"
 GITHUB_SHARED_CONTENT = (

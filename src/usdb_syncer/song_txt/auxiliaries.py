@@ -10,8 +10,8 @@ from typing import NamedTuple
 import attrs
 
 from usdb_syncer.constants import (
+    BPM_THRESHOLD,
     LANGUAGES_WITH_SPACED_QUOTES,
-    MINIMUM_BPM,
     QUOTATION_MARKS,
     QUOTATION_MARKS_TO_REPLACE,
 )
@@ -50,13 +50,13 @@ class BeatsPerMinute:
         return self.beats_to_secs(beats) * 1000
 
     def is_too_low(self) -> bool:
-        return self.value < MINIMUM_BPM
+        return self.value <= BPM_THRESHOLD
 
     def make_large_enough(self) -> int:
         """Double BPM (if necessary, multiple times) until it is above MINIMUM_BPM
         and returns the required multiplication factor."""
         # how often to double bpm until it is larger or equal to the threshold
-        exp = math.ceil(math.log2(MINIMUM_BPM / self.value))
+        exp = math.ceil(math.log2(BPM_THRESHOLD / self.value))
         factor = 2**exp
         self.value = self.value * factor
         return factor
