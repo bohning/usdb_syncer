@@ -20,7 +20,7 @@ jobs:
       - name: Add uv to PATH
         run: echo "$HOME/.cargo/bin" >> $GITHUB_PATH
       - name: Install dependencies
-        run: uv sync --no-dev --group=!bundle
+        run: uv sync --no-dev --no-group bundle
       - name: Scrape USDB song list to ship with the bundle
         run: >
           uv run python -m tools.generate_song_list_json
