@@ -44,7 +44,7 @@ build-backend = "hatchling.build"
 [dependency-groups]
 dev = [
     "tox",
-    "ruff=^0.14.1",
+    "ruff~=0.14.1",
     "mypy",
     "types-requests",
     "pytest",
