@@ -15,15 +15,15 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - name: Install poetry
-        run: |
-          python -m pip install poetry
+      - name: Install uv
+        run: curl -LsSf https://astral.sh/uv/install.sh | sh
+      - name: Add uv to PATH
+        run: echo "$HOME/.cargo/bin" >> $GITHUB_PATH
       - name: Install dependencies
-        run: |
-          poetry install --without dev --without bundle
+        run: uv sync --no-dev --group=!bundle
       - name: Scrape USDB song list to ship with the bundle
         run: >
-          poetry run python -m tools.generate_song_list_json
+          uv run python -m tools.generate_song_list_json
           -t 'song_list.json'
           -u '${{ secrets.USDB_USER }}'
           -p '${{ secrets.USDB_PASSWORD }}'
@@ -125,13 +125,12 @@ jobs:
           ln -sf /usr/local/bin/pip3.12 /usr/bin/pip
           python --version
           python -m pip install --upgrade pip
-      - name: Install poetry
-        run: python -m pip install poetry
-      - name: Workaround Poetry issue https://github.com/python-poetry/poetry/issues/10028
-        if: contains(matrix.TARGET, 'windows')
-        run: python -m pip install "poetry-dynamic-versioning[plugin]"
+      - name: Install uv
+        run: curl -LsSf https://astral.sh/uv/install.sh | sh
+      - name: Add uv to PATH
+        run: echo "$HOME/.cargo/bin" >> $GITHUB_PATH
       - name: Install dependencies
-        run: poetry install --without dev
+        run: uv sync --no-dev
       - name: Set macOS deployment target (macOS 12+ compatibility)
         if: startsWith(matrix.os, 'macos')
         run: echo "MACOSX_DEPLOYMENT_TARGET=12.0" >> $GITHUB_ENV
@@ -139,14 +138,13 @@ jobs:
         shell: bash
         run: |
           set -e
-          version=$(poetry run dunamai from git)
+          version=$(uv run dunamai from git)
           echo "__version__ = '${version}'" > src/usdb_syncer/_version.py
       - name: Generate GUI elements
-        run: poetry run python -m tools.generate_pyside_files
+        run: uv run python -m tools.generate_pyside_files
       - name: Bundle with pyinstaller for ${{matrix.os}}
-        # _tkinter hook is run erroneously?
         run: >
-          poetry run pyinstaller
+          uv run pyinstaller
           -n 'USDB_Syncer-${{github.ref_name}}-${{matrix.TARGET}}'
           --exclude-module _tkinter
           ${{matrix.PYINSTALLER_ARGS}}
@@ -218,16 +216,18 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - name: Install poetry
-        run: python -m pip install poetry
+      - name: Install uv
+        run: curl -LsSf https://astral.sh/uv/install.sh | sh
+      - name: Add uv to PATH
+        run: echo "$HOME/.cargo/bin" >> $GITHUB_PATH
       - name: Install dependencies
-        run: poetry install --only build
+        run: uv sync --group build
       - name: Write release version
-        run: echo "__version__ = '$(poetry run dunamai from git)'" > src/usdb_syncer/_version.py
+        run: echo "__version__ = '$(uv run dunamai from git)'" > src/usdb_syncer/_version.py
       - name: Generate GUI elements
-        run: poetry run python -m tools.generate_pyside_files
+        run: uv run python -m tools.generate_pyside_files
       - name: Build package
-        run: poetry build
+        run: uv build
       - name: Publish package distributions to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
