@@ -82,6 +82,7 @@ include = [
 ]
 
 [tool.hatch.build.targets.wheel]
+packages = ["src/usdb_syncer"]
 include = [
     "src/usdb_syncer/gui/forms/*.py",
     "src/usdb_syncer/gui/resources/qt/*.py",
