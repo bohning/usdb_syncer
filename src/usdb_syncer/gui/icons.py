@@ -56,6 +56,7 @@ class Icon(enum.Enum):
     INFO = "info.png", "information-white.svg"
     KAREDI = "karedi.png", None
     LANGUAGE = "language.png", "translate-variant-white.svg"
+    LAST_CHANGE = "calendar.png", "calendar-white.svg"
     LIBREWOLF = "librewolf.png", None
     LOG = "log.png", "receipt-text-white.svg"
     MENU_DOWN = None, "menu-down-white.svg"

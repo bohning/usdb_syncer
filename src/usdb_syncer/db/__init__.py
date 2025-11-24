@@ -244,6 +244,7 @@ class SongOrder(enum.Enum):
     VIDEO = enum.auto()
     COVER = enum.auto()
     BACKGROUND = enum.auto()
+    LAST_CHANGE = enum.auto()
     STATUS = enum.auto()
 
     def sql(self) -> str | None:  # noqa: C901
@@ -292,6 +293,8 @@ class SongOrder(enum.Enum):
                 return self.order("cover")
             case SongOrder.BACKGROUND:
                 return self.order("background")
+            case SongOrder.LAST_CHANGE:
+                return "usdb_song.usdb_mtime"
             case SongOrder.STATUS:
                 return _STATUS_COLUMN
 
