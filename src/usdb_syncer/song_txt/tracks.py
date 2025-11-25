@@ -313,10 +313,11 @@ class Tracks:
             else:
                 last_line.line_break.previous_line_out_time = last_line.end() + 2
 
-        self._fix_linebreaks(fix)
-        logger.debug("FIX: Linebreaks corrected (USDX style).")
+        linebreaks_fixed = self._fix_linebreaks(fix)
+        if linebreaks_fixed > 0:
+            logger.debug(f"FIX: {linebreaks_fixed} linebreaks corrected (USDX style).")
 
-    def fix_linebreaks_yass_style(self, bpm: BeatsPerMinute, logger: Logger) -> None:
+    def fix_linebreaks_yass_style(self, bpm: BeatsPerMinute, logger: Logger) -> None:  # noqa: C901
         def fix(last_line: Line, line: Line, gap: int) -> None:
             # match YASS implementation
             # https://github.com/DoubleDee73/Yass/blob/1a70340016fba9430fd8f0bf49797839fc44456d/src/yass/YassAutoCorrect.java#L168
@@ -342,22 +343,37 @@ class Tracks:
             elif gap > 16:
                 last_line.line_break.previous_line_out_time = last_line.end() + 10
 
-        self._fix_linebreaks(fix)
-        logger.debug("FIX: Linebreaks corrected (YASS style).")
+        linebreaks_fixed = self._fix_linebreaks(fix)
+        if linebreaks_fixed > 0:
+            logger.debug(f"FIX: {linebreaks_fixed} linebreaks corrected (YASS style).")
 
-    def _fix_linebreaks(self, fix: Callable[[Line, Line, int], None]) -> None:
+    def _fix_linebreaks(self, fix: Callable[[Line, Line, int], None]) -> int:
+        linebreaks_fixed = 0
+
         for track in self.all_tracks():
             last_line = None
             for line in track:
                 if last_line and last_line.line_break:
+                    linebreak = last_line.line_break
+
+                    old_out_time = linebreak.previous_line_out_time
+                    old_in_time = linebreak.next_line_in_time
+
                     # remove end (not needed/used)
-                    last_line.line_break.next_line_in_time = None
+                    linebreak.next_line_in_time = None
 
                     gap = line.start() - last_line.end()
                     fix(last_line, line, gap)
 
+                    if linebreak.previous_line_out_time != old_out_time:
+                        linebreaks_fixed += 1
+                    if linebreak.next_line_in_time != old_in_time:
+                        linebreaks_fixed += 1
+
                 # update last_line
                 last_line = line
+
+        return linebreaks_fixed
 
     def consecutive_notes(self) -> Iterator[tuple[Note, Note]]:
         for track in self.all_tracks():
@@ -424,41 +440,55 @@ class Tracks:
 
     def fix_spaces(self, fix_style: settings.FixSpaces, logger: Logger) -> None:
         """Ensures that inter-word spaces are either always after or before words"""
+        spaces_fixed = 0
         for line in self.all_lines():
             match fix_style:
                 case settings.FixSpaces.AFTER:
-                    line.notes[0].left_trim_text()
-
-                    # if current syllable starts with a space shift it to the end of the
-                    # previous syllable
-                    for idx in range(1, len(line.notes)):
-                        if line.notes[idx].text.startswith(" "):
-                            line.notes[idx - 1].right_trim_text_and_add_space()
-                            line.notes[idx].left_trim_text()
-                        if line.notes[idx].text.endswith(" "):
-                            line.notes[idx].right_trim_text_and_add_space()
-
-                    # last syllable should end with a space, otherwise syllable
-                    # highlighting used to be incomplete in USDX, and it allows simple
-                    # text concatenation
-                    line.notes[-1].right_trim_text_and_add_space()
+                    spaces_fixed += self._fix_spaces_after(line)
                 case settings.FixSpaces.BEFORE:
-                    # first syllable should start with a space to allow simple text
-                    # concatenation
-                    line.notes[0].left_trim_text_and_add_space()
+                    spaces_fixed += self._fix_spaces_before(line)
+        if spaces_fixed > 0:
+            logger.debug(f"FIX: {spaces_fixed} inter-word spaces corrected.")
 
-                    # if current syllable ends with a space, shift it to the beginning
-                    #  of the next syllable
-                    for idx in range(0, len(line.notes) - 1):
-                        if line.notes[idx].text.endswith(" "):
-                            line.notes[idx + 1].left_trim_text_and_add_space()
-                            line.notes[idx].right_trim_text()
-                        if line.notes[idx].text.startswith(" "):
-                            line.notes[idx].left_trim_text_and_add_space()
+    def _fix_spaces_after(self, line: Line) -> int:
+        spaces_fixed = 0
+        line.notes[0].left_trim_text()
 
-                    # last syllable should not end with a space
-                    line.notes[-1].right_trim_text()
-        logger.debug("FIX: Inter-word spaces corrected.")
+        # if current syllable starts with a space, shift it to the end of the previous
+        # syllable
+        for idx in range(1, len(line.notes)):
+            if line.notes[idx].text.startswith(" "):
+                line.notes[idx - 1].right_trim_text_and_add_space()
+                line.notes[idx].left_trim_text()
+                spaces_fixed += 1
+            if line.notes[idx].text.endswith(" "):
+                line.notes[idx].right_trim_text_and_add_space()
+
+                # last syllable should end with a space, otherwise syllable highlighting
+                # used to be incomplete in USDX, and it allows simple text concatenation
+        line.notes[-1].right_trim_text_and_add_space()
+
+        return spaces_fixed
+
+    def _fix_spaces_before(self, line: Line) -> int:
+        spaces_fixed = 0
+        # first syllable should start with a space to allow simple text concatenation
+        line.notes[0].left_trim_text_and_add_space()
+
+        # if current syllable ends with a space, shift it to the beginning of the next
+        # syllable
+        for idx in range(0, len(line.notes) - 1):
+            if line.notes[idx].text.endswith(" "):
+                line.notes[idx + 1].left_trim_text_and_add_space()
+                line.notes[idx].right_trim_text()
+                spaces_fixed += 1
+            if line.notes[idx].text.startswith(" "):
+                line.notes[idx].left_trim_text_and_add_space()
+
+        # last syllable should not end with a space
+        line.notes[-1].right_trim_text()
+
+        return spaces_fixed
 
     def fix_all_caps(self, logger: Logger) -> None:
         if self.is_all_caps():

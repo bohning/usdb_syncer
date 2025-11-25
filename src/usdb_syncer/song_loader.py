@@ -453,14 +453,18 @@ def _maybe_download_audio(ctx: _Context) -> JobStatus:
     fallback_resources = list(islice(ctx.fallback_audio_resources(), 10))
 
     if not primary_resource and not fallback_resources:
-        ctx.logger.warning("No audio resource found (neither primary nor fallback).")
+        ctx.logger.warning(
+            "No audio resource found (neither in meta tags nor in comments)."
+        )
         return JobStatus.SKIPPED_UNAVAILABLE
 
     if primary_resource:
-        if out_resource := ctx.out.audio.resource:
-            if primary_resource == out_resource:
-                ctx.logger.info("Audio resource is unchanged, skipping download.")
-                return JobStatus.SUCCESS_UNCHANGED
+        if primary_resource not in fallback_resources:
+            ctx.logger.info("Audio resource is not commented.")
+        if primary_resource == ctx.out.audio.resource:
+            ctx.logger.info("Audio resource is unchanged, skipping download.")
+            return JobStatus.SUCCESS_UNCHANGED
+        if ctx.song.is_local():
             ctx.logger.info("Audio resource has changed, redownloading.")
 
         status = _try_download_audio_or_video(ctx, primary_resource, options)
@@ -491,7 +495,7 @@ def _handle_audio_failure(ctx: _Context) -> JobStatus:
     return JobStatus.FAILURE
 
 
-def _maybe_download_video(ctx: _Context) -> JobStatus:
+def _maybe_download_video(ctx: _Context) -> JobStatus:  # noqa: C901
     if not (options := ctx.options.video_options):
         ctx.logger.info("Video download is disabled, skipping download.")
         return JobStatus.SKIPPED_DISABLED
@@ -504,14 +508,18 @@ def _maybe_download_video(ctx: _Context) -> JobStatus:
     fallback_resources = list(islice(ctx.fallback_video_resources(), 10))
 
     if not primary_resource and not fallback_resources:
-        ctx.logger.warning("No video resource found (neither primary nor fallback).")
+        ctx.logger.warning(
+            "No video resource found (neither in meta tags nor in comments)."
+        )
         return JobStatus.SKIPPED_UNAVAILABLE
 
     if primary_resource:
-        if out_resource := ctx.out.video.resource:
-            if primary_resource == out_resource:
-                ctx.logger.info("Video resource is unchanged, skipping download.")
-                return JobStatus.SUCCESS_UNCHANGED
+        if primary_resource and primary_resource not in fallback_resources:
+            ctx.logger.info("Video resource is not commented.")
+        if primary_resource == ctx.out.video.resource:
+            ctx.logger.info("Video resource is unchanged, skipping download.")
+            return JobStatus.SUCCESS_UNCHANGED
+        if ctx.song.is_local():
             ctx.logger.info("Video resource has changed, redownloading.")
 
         status = _try_download_audio_or_video(ctx, primary_resource, options)

@@ -7,9 +7,10 @@ from collections.abc import Callable, Iterable, Iterator
 from functools import partial
 from typing import TYPE_CHECKING, Any
 
-from PySide6 import QtCore, QtMultimedia, QtWidgets
-from PySide6.QtCore import QItemSelectionModel, Qt
+from PySide6 import QtCore, QtWidgets
+from PySide6.QtCore import QItemSelectionModel, Qt, QUrl
 from PySide6.QtGui import QAction, QCursor
+from PySide6.QtMultimedia import QMediaPlayer
 
 from usdb_syncer import SongId, db, events, media_player, settings, sync_meta, utils
 from usdb_syncer.custom_data import CustomData
@@ -21,6 +22,7 @@ from usdb_syncer.gui.song_table.column import MINIMUM_COLUMN_WIDTH, Column
 from usdb_syncer.gui.song_table.table_model import TableModel
 from usdb_syncer.logger import song_logger
 from usdb_syncer.song_loader import DownloadManager
+from usdb_syncer.song_txt import SongTxt
 from usdb_syncer.usdb_song import DownloadStatus, UsdbSong
 
 if TYPE_CHECKING:
@@ -58,10 +60,8 @@ class SongTable:
         gui_events.TextFilterChanged.subscribe(self._on_text_filter_changed)
         gui_events.SavedSearchRestored.subscribe(self._on_saved_search_restored)
 
-    def _on_playback_state_changed(
-        self, state: QtMultimedia.QMediaPlayer.PlaybackState
-    ) -> None:
-        play = state == QtMultimedia.QMediaPlayer.PlaybackState.PlayingState
+    def _on_playback_state_changed(self, state: QMediaPlayer.PlaybackState) -> None:
+        play = state == QMediaPlayer.PlaybackState.PlayingState
         if play:
             assert self._next_playing_song_id is not None
             if not (song := UsdbSong.get(self._next_playing_song_id)):
@@ -165,7 +165,7 @@ class SongTable:
                 self._search.descending = bool(header.sortIndicatorOrder().value)
 
         header.setSectionsMovable(True)
-        header.setStretchLastSection(False)
+        header.setStretchLastSection(True)
         header.setMinimumSectionSize(MINIMUM_COLUMN_WIDTH)
         header.setSectionResizeMode(QtWidgets.QHeaderView.ResizeMode.Interactive)
         header.setHighlightSections(False)
@@ -219,17 +219,43 @@ class SongTable:
             return
         position = 0
         if (sync_meta := song.sync_meta) and (path := sync_meta.audio_path()):
-            url = path.absolute().as_posix()
-            if song.sync_meta.meta_tags.preview:
-                position = int(song.sync_meta.meta_tags.preview * 1000)
+            url = QUrl.fromLocalFile(str(path.absolute()))
+            if sync_meta.meta_tags.preview:
+                position = int(sync_meta.meta_tags.preview * 1000)
+            elif (txt_path := sync_meta.txt_path()) and (
+                txt := SongTxt.try_from_file(txt_path, song_logger(song.song_id))
+            ):
+                if medley_start := txt.headers.medleystartbeat:
+                    position = int(
+                        txt.headers.gap + txt.headers.bpm.beats_to_ms(medley_start)
+                    )
+                elif start := txt.headers.start:
+                    position = int(start * 1000)
         elif song.sample_url:
-            url = song.sample_url
+            url = QUrl(song.sample_url)
         else:
             return
+
         self._next_playing_song_id = song.song_id
+
+        self._media_player.mediaStatusChanged.connect(
+            lambda status: self._on_media_loaded(status, position)
+        )
+
         self._media_player.setSource(url)
-        self._media_player.setPosition(position)
         self._media_player.play()
+
+    def _on_media_loaded(self, status: QMediaPlayer.MediaStatus, position: int) -> None:
+        """Called when media status changes. Sets position once media is loaded."""
+        if status in [
+            QMediaPlayer.MediaStatus.LoadedMedia,
+            QMediaPlayer.MediaStatus.BufferedMedia,
+        ]:
+            self._media_player.setPosition(position)
+            try:
+                self._media_player.mediaStatusChanged.disconnect()
+            except RuntimeError:
+                pass
 
     def save_state(self) -> None:
         settings.set_table_view_header_state(

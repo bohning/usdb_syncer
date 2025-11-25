@@ -56,7 +56,7 @@ QTreeView::indicator:indeterminate,
 QListView::indicator:checked,
 QGroupBox::indicator:checked,
 QCheckBox::indicator:checked {{
-    image: url(":/icons/check-white.svg");
+    image: url(":/icons/tick-white.svg");
 }}
 QGroupBox::indicator {{
     margin-top: 1px;

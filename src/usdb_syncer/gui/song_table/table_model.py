@@ -1,6 +1,7 @@
 """Table model for song data."""
 
 from collections.abc import Iterable
+from datetime import datetime
 from functools import cache
 from typing import Any, assert_never
 
@@ -153,6 +154,8 @@ def _display_data(song: UsdbSong, column: int) -> str | None:  # noqa: C901
             return song.creator
         case Column.TAGS:
             return song.tags
+        case Column.LAST_CHANGE:
+            return str(datetime.fromtimestamp(song.usdb_mtime))
         case Column.DOWNLOAD_STATUS:
             return str(song.status)
         case (
@@ -186,6 +189,7 @@ def _decoration_data(song: UsdbSong, column: int) -> QIcon | None:  # noqa: C901
             | Column.GENRE
             | Column.CREATOR
             | Column.TAGS
+            | Column.LAST_CHANGE
         ):
             return None
         case Column.SAMPLE_URL:

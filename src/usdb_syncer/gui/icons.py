@@ -36,6 +36,7 @@ class Icon(enum.Enum):
     DATABASE = "database.png", "database-white.svg"
     DELETE = "bin.png", "delete-white.svg"
     DENO = "deno.svg", None
+    DENO_UNAVAILABLE = "deno-unavailable.svg", None
     DIFF = "diff.png", "diff-white.svg"
     DOWNLOAD = "status.png", "download-white.svg"
     EDGE = "edge.png", None
@@ -45,6 +46,7 @@ class Icon(enum.Enum):
     FAILURE_EXISTING = "tick-yellow.png", "tick-parentheses-white.svg"
     FALLBACK = "tick-yellow.png", "tick-parentheses-white.svg"
     FFMPEG = "ffmpeg.svg", None
+    FFMPEG_UNAVAILABLE = "ffmpeg-unavailable.svg", None
     FILE_EXPORT = "document-export.png", "file-export-white.svg"
     FILE_IMPORT = "document-import.png", "file-import-white.svg"
     FIREFOX = "firefox.png", None
@@ -54,6 +56,7 @@ class Icon(enum.Enum):
     INFO = "info.png", "information-white.svg"
     KAREDI = "karedi.png", None
     LANGUAGE = "language.png", "translate-variant-white.svg"
+    LAST_CHANGE = "calendar.png", "calendar-white.svg"
     LIBREWOLF = "librewolf.png", None
     LOG = "log.png", "receipt-text-white.svg"
     MENU_DOWN = None, "menu-down-white.svg"

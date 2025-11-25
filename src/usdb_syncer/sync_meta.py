@@ -317,6 +317,11 @@ class SyncMeta:
             return None
         return self.path.parent / self.audio.file.fname
 
+    def video_path(self) -> Path | None:
+        if not self.video or not self.video.file or self.video.file.fname is None:
+            return None
+        return self.path.parent / self.video.file.fname
+
     def cover_path(self) -> Path | None:
         if not self.cover or not self.cover.file or self.cover.file.fname is None:
             return None
