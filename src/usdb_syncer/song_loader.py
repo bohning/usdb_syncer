@@ -464,7 +464,8 @@ def _maybe_download_audio(ctx: _Context) -> JobStatus:
         if primary_resource == ctx.out.audio.resource:
             ctx.logger.info("Audio resource is unchanged, skipping download.")
             return JobStatus.SUCCESS_UNCHANGED
-        ctx.logger.info("Audio resource has changed, redownloading.")
+        if ctx.song.is_local():
+            ctx.logger.info("Audio resource has changed, redownloading.")
 
         status = _try_download_audio_or_video(ctx, primary_resource, options)
         if status is JobStatus.SUCCESS:
@@ -494,7 +495,7 @@ def _handle_audio_failure(ctx: _Context) -> JobStatus:
     return JobStatus.FAILURE
 
 
-def _maybe_download_video(ctx: _Context) -> JobStatus:
+def _maybe_download_video(ctx: _Context) -> JobStatus:  # noqa: C901
     if not (options := ctx.options.video_options):
         ctx.logger.info("Video download is disabled, skipping download.")
         return JobStatus.SKIPPED_DISABLED
@@ -518,7 +519,8 @@ def _maybe_download_video(ctx: _Context) -> JobStatus:
         if primary_resource == ctx.out.video.resource:
             ctx.logger.info("Video resource is unchanged, skipping download.")
             return JobStatus.SUCCESS_UNCHANGED
-        ctx.logger.info("Video resource has changed, redownloading.")
+        if ctx.song.is_local():
+            ctx.logger.info("Video resource has changed, redownloading.")
 
         status = _try_download_audio_or_video(ctx, primary_resource, options)
         if status is JobStatus.SUCCESS:
