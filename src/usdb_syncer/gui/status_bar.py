@@ -1,6 +1,7 @@
 """Manager of the main window's status bar."""
 
-from PySide6 import QtGui, QtWidgets
+from PySide6.QtGui import Qt
+from PySide6.QtWidgets import QLabel, QPushButton, QStatusBar
 
 from usdb_syncer import db, events, utils
 from usdb_syncer.gui import events as gui_events
@@ -14,39 +15,47 @@ class StatusBar:
 
     _user: str | None = None
 
-    def __init__(self, statusbar: QtWidgets.QStatusBar) -> None:
+    def __init__(self, statusbar: QStatusBar) -> None:
         self._statusbar = statusbar
-        # USDB login status
-        self._usdb_button = QtWidgets.QPushButton(statusbar)
-        self._usdb_button.setFlat(True)
-        self._usdb_button.clicked.connect(lambda: UsdbLoginDialog.load(statusbar))
-        self._usdb_button.setCursor(QtGui.Qt.CursorShape.PointingHandCursor)
-        self._set_usdb()
-        self._statusbar.addPermanentWidget(self._usdb_button)
-        # ffmpeg status
-        self._ffmpeg_button = QtWidgets.QPushButton(statusbar)
-        self._ffmpeg_button.setFlat(True)
-        self._ffmpeg_button.clicked.connect(
-            lambda: check_external_deps(statusbar, lambda: None)
-        )
-        self._ffmpeg_button.setCursor(QtGui.Qt.CursorShape.PointingHandCursor)
-        self._set_ffmpeg()
-        self._statusbar.addPermanentWidget(self._ffmpeg_button)
-        # deno status
-        self._deno_button = QtWidgets.QPushButton(statusbar)
-        self._deno_button.setFlat(True)
-        self._deno_button.clicked.connect(
-            lambda: check_external_deps(statusbar, lambda: None)
-        )
-        self._deno_button.setCursor(QtGui.Qt.CursorShape.PointingHandCursor)
-        self._set_deno()
-        self._statusbar.addPermanentWidget(self._deno_button)
-        # selection status
-        self._selection_label = QtWidgets.QLabel(statusbar)
-        self._statusbar.addWidget(self._selection_label)
+        self.set_usdb_login_status()
+        self.set_ffmpeg_status()
+        self.set_deno_status()
+        self.set_selection_status()
         gui_events.ThemeChanged.subscribe(self._set_usdb)
         events.LoggedInToUSDB.subscribe(self._on_usdb_login)
         gui_events.RowCountChanged.subscribe(self._on_count_changed)
+
+    def set_usdb_login_status(self) -> None:
+        self._usdb_button = QPushButton(self._statusbar)
+        self._usdb_button.setFlat(True)
+        self._usdb_button.clicked.connect(lambda: UsdbLoginDialog.load(self._statusbar))
+        self._usdb_button.setCursor(Qt.CursorShape.PointingHandCursor)
+        self._set_usdb()
+        self._statusbar.addPermanentWidget(self._usdb_button)
+
+    def set_ffmpeg_status(self) -> None:
+        self._ffmpeg_button = QPushButton(self._statusbar)
+        self._ffmpeg_button.setFlat(True)
+        self._ffmpeg_button.clicked.connect(
+            lambda: check_external_deps(self._statusbar, lambda: None)
+        )
+        self._ffmpeg_button.setCursor(Qt.CursorShape.PointingHandCursor)
+        self._set_ffmpeg()
+        self._statusbar.addPermanentWidget(self._ffmpeg_button)
+
+    def set_deno_status(self) -> None:
+        self._deno_button = QPushButton(self._statusbar)
+        self._deno_button.setFlat(True)
+        self._deno_button.clicked.connect(
+            lambda: check_external_deps(self._statusbar, lambda: None)
+        )
+        self._deno_button.setCursor(Qt.CursorShape.PointingHandCursor)
+        self._set_deno()
+        self._statusbar.addPermanentWidget(self._deno_button)
+
+    def set_selection_status(self) -> None:
+        self._selection_label = QLabel(self._statusbar)
+        self._statusbar.addWidget(self._selection_label)
 
     def _on_count_changed(self, event: gui_events.RowCountChanged) -> None:
         total = db.usdb_song_count()
