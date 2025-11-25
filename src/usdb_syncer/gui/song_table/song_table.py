@@ -165,7 +165,7 @@ class SongTable:
                 self._search.descending = bool(header.sortIndicatorOrder().value)
 
         header.setSectionsMovable(True)
-        header.setStretchLastSection(False)
+        header.setStretchLastSection(True)
         header.setMinimumSectionSize(MINIMUM_COLUMN_WIDTH)
         header.setSectionResizeMode(QtWidgets.QHeaderView.ResizeMode.Interactive)
         header.setHighlightSections(False)
