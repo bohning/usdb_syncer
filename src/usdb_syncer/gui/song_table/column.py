@@ -31,12 +31,12 @@ class Column(IntEnum):
     CREATOR = enum.auto()
     TAGS = enum.auto()
     PINNED = enum.auto()
+    LAST_CHANGE = enum.auto()
     TXT = enum.auto()
     AUDIO = enum.auto()
     VIDEO = enum.auto()
     COVER = enum.auto()
     BACKGROUND = enum.auto()
-    LAST_CHANGE = enum.auto()
     DOWNLOAD_STATUS = enum.auto()
 
     def display_data(self) -> str | None:  # noqa: C901
