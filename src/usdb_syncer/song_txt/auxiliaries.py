@@ -4,7 +4,6 @@
 # we disable the rule file-wide.
 # ruff: noqa: RUF001, RUF003
 
-import math
 from typing import NamedTuple
 
 import attrs
@@ -55,10 +54,10 @@ class BeatsPerMinute:
     def make_large_enough(self) -> int:
         """Double BPM (if necessary, multiple times) until it is above MINIMUM_BPM
         and returns the required multiplication factor."""
-        # how often to double bpm until it is larger or equal to the threshold
-        exp = math.ceil(math.log2(BPM_THRESHOLD / self.value))
-        factor = 2**exp
-        self.value = self.value * factor
+        factor = 1
+        while self.value * factor <= BPM_THRESHOLD:
+            factor *= 2
+        self.value *= factor
         return factor
 
 
