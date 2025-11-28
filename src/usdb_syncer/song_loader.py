@@ -535,6 +535,10 @@ def _maybe_download_video(ctx: _Context) -> JobStatus:  # noqa: C901
             return JobStatus.SUCCESS
 
     for fallback_resource in fallback_resources:
+        if resource_dl.fallback_resource_is_audio_only(
+            options, fallback_resource, ctx.logger
+        ):
+            return JobStatus.SKIPPED_UNAVAILABLE
         status = _try_download_audio_or_video(ctx, fallback_resource, options)
         if status is JobStatus.SUCCESS:
             ctx.logger.warning(

@@ -1,6 +1,9 @@
 """Functions for downloading and processing media."""
 
 import io
+import re
+import subprocess
+import tempfile
 from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
@@ -162,6 +165,86 @@ def download_video(
         options.ytdl_format(), browser, path_stem, options.rate_limit
     )
     return _download_resource(resource, ydl_opts, logger)
+
+
+def fallback_resource_is_audio_only(
+    options: VideoOptions, url: str, logger: Logger
+) -> bool:
+    """Check if a video is audio-only (static image) using freezedetect."""
+
+    start_time = 0  # duration to skip from beginning [seconds]
+    duration = 15  # duration to analyze [seconds]
+    freeze_threshold = 0.5  # 50 % frozen = static image / audio-only
+
+    with tempfile.NamedTemporaryFile(suffix=".mp4", delete=False) as tmp:
+        temp_path = Path(tmp.name)
+
+    try:
+        ydl_opts = _ytdl_options(
+            options.ytdl_format(), Browser.BRAVE, temp_path, YtdlpRateLimit.DISABLE
+        )
+        ydl_opts["download_ranges"] = yt_dlp.utils.download_range_func(
+            [], [[start_time, duration]]
+        )
+        ydl_opts["force_keyframes_at_cuts"] = True
+        ydl_opts["outtmpl"] = str(temp_path)
+        ydl_opts["quiet"] = True
+        ydl_opts["no_warnings"] = True
+
+        _download_resource(url, ydl_opts, logger)
+
+        if not temp_path.exists():
+            return False
+
+        result = subprocess.run(
+            [
+                "ffmpeg",
+                "-i",
+                str(temp_path),
+                "-vf",
+                "freezedetect=noise=-80dB:duration=1",  # video filter to detect freezes
+                "-an",  # disable audio
+                "-f",
+                "null",  # no output file
+                "-",  # output to stdout
+            ],
+            capture_output=True,
+            text=True,
+            timeout=60,
+        )
+
+        freeze_durations = [
+            float(duration)
+            for duration in re.findall(r"freeze_duration: ([\d.]+)", result.stderr)
+        ]
+
+        if not freeze_durations:
+            logger.debug(f"Commented resource '{url}' is a video, no freezes detected.")
+            return False
+
+        freeze_ratio = sum(freeze_durations) / duration
+        if freeze_ratio >= freeze_threshold:
+            logger.debug(
+                f"Commented resource '{url}' is most likely audio-only: "
+                f"{freeze_ratio:.2%} freeze detected."
+            )
+        else:
+            logger.debug(
+                f"Commented resource '{url}' is most likely a video: "
+                f"only {freeze_ratio:.2%} freeze detected."
+            )
+
+    except (subprocess.SubprocessError, OSError, ValueError):
+        logger.debug(
+            f"Failed to analyze commented resource '{url}' for audio-only content."
+        )
+        return False
+    else:
+        return freeze_ratio >= freeze_threshold
+    finally:
+        # Clean up temp file
+        if temp_path.exists():
+            temp_path.unlink()
 
 
 def _ytdl_options(
