@@ -266,7 +266,7 @@ def _ytdl_options(
     return options
 
 
-def _download_resource(
+def _download_resource(  # noqa: C901
     resource: str, options: YtdlOptions, logger: Logger
 ) -> ResourceDLResult:
     if (url := video_url_from_resource(resource)) is None:
@@ -313,6 +313,13 @@ def _download_resource(
             if YtErrorMsg.YT_PREMIUM_ONLY in error_message:
                 _handle_premium_only(url, logger)
                 return ResourceDLResult(error=ResourceDLError.RESOURCE_PREMIUM_ONLY)
+            if YtErrorMsg.YT_CONFIRM_NOT_BOT in error_message:
+                logger.warning(
+                    "Download failed because YouTube suspects bot activity. "
+                    "Reconnect to your ISP / reboot your router to get a new external "
+                    "IP address and try again."
+                )
+                return ResourceDLResult(error=ResourceDLError.RESOURCE_DL_FAILED)
             raise
 
 
