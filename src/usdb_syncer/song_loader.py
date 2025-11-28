@@ -454,7 +454,8 @@ def _maybe_download_audio(ctx: _Context) -> JobStatus:
 
     if not primary_resource and not fallback_resources:
         ctx.logger.warning(
-            "No audio resource found (neither in meta tags nor in comments)."
+            "No audio resource found (neither in meta tags nor in comments), skipping "
+            "download."
         )
         return JobStatus.SKIPPED_UNAVAILABLE
 
@@ -476,7 +477,7 @@ def _maybe_download_audio(ctx: _Context) -> JobStatus:
         status = _try_download_audio_or_video(ctx, fallback_resource, options)
         if status is JobStatus.SUCCESS:
             ctx.logger.warning(
-                f"Downloaded fallback audio '{fallback_resource}'. "
+                f"Downloaded commented audio '{fallback_resource}'. "
                 "This may require adaptations in GAP and/or BPM."
             )
             return JobStatus.FALLBACK
@@ -500,7 +501,12 @@ def _maybe_download_video(ctx: _Context) -> JobStatus:  # noqa: C901
         ctx.logger.info("Video download is disabled, skipping download.")
         return JobStatus.SKIPPED_DISABLED
 
-    if ctx.txt.meta_tags.is_audio_only():
+    # Song can only be considered audio-only if audio download from meta tags succeeded
+    if (
+        ctx.results[Job.AUDIO_DOWNLOAD]
+        in [JobStatus.SUCCESS, JobStatus.SUCCESS_UNCHANGED]
+        and ctx.txt.meta_tags.is_audio_only()
+    ):
         ctx.logger.info("Song is audio only, skipping download.")
         return JobStatus.SKIPPED_UNAVAILABLE
 
@@ -509,12 +515,13 @@ def _maybe_download_video(ctx: _Context) -> JobStatus:  # noqa: C901
 
     if not primary_resource and not fallback_resources:
         ctx.logger.warning(
-            "No video resource found (neither in meta tags nor in comments)."
+            "No video resource found (neither in meta tags nor in comments), skipping "
+            "download."
         )
         return JobStatus.SKIPPED_UNAVAILABLE
 
     if primary_resource:
-        if primary_resource and primary_resource not in fallback_resources:
+        if primary_resource not in fallback_resources:
             ctx.logger.info("Video resource is not commented.")
         if primary_resource == ctx.out.video.resource:
             ctx.logger.info("Video resource is unchanged, skipping download.")
@@ -531,7 +538,7 @@ def _maybe_download_video(ctx: _Context) -> JobStatus:  # noqa: C901
         status = _try_download_audio_or_video(ctx, fallback_resource, options)
         if status is JobStatus.SUCCESS:
             ctx.logger.warning(
-                f"Downloaded fallback video '{fallback_resource}'. "
+                f"Downloaded commented video '{fallback_resource}'. "
                 "This may require adaptations in GAP and/or BPM."
             )
             return JobStatus.FALLBACK
@@ -598,12 +605,14 @@ def _maybe_download_cover(ctx: _Context) -> JobStatus:
         if url == ctx.out.cover.resource:
             if _cover_params_unchanged(ctx):
                 ctx.logger.info(
-                    "Cover resource and parameters are unchanged, skipping download."
+                    "Cover resource and processing parameters are unchanged, skipping "
+                    "download."
                 )
                 return JobStatus.SUCCESS_UNCHANGED
             else:
                 ctx.logger.info(
-                    "Cover processing parameters have changed, redownloading."
+                    "Cover resource and/or processing parameters have changed, "
+                    "redownloading."
                 )
 
         status = _try_download_cover_or_background(
@@ -652,12 +661,14 @@ def _maybe_download_background(ctx: _Context) -> JobStatus:
     if url == ctx.out.background.resource:
         if _background_params_unchanged(ctx):
             ctx.logger.info(
-                "Background resource and parameters are unchanged, skipping download."
+                "Background resource and processing parameters are unchanged, skipping "
+                "download."
             )
             return JobStatus.SUCCESS_UNCHANGED
         else:
             ctx.logger.info(
-                "Background processing parameters have changed, redownloading."
+                "Background resource and/or processing parameters have changed, "
+                "redownloading."
             )
 
     status = _try_download_cover_or_background(
