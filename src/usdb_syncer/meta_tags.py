@@ -180,7 +180,9 @@ class MetaTags:
             if "=" not in pair:
                 logger.warning(f"missing key or value for meta tag: '{pair}'")
                 continue
-            key, value = pair.split("=", maxsplit=1)
+            if (stripped_pair := pair.lstrip()) != pair:
+                logger.debug("Stripped leading spaces from meta tag.")
+            key, value = stripped_pair.split("=", maxsplit=1)
             meta_tags._parse_key_value_pair(key, value, logger)
         return meta_tags
 
