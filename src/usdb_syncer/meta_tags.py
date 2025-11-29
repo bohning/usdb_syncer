@@ -191,11 +191,11 @@ class MetaTags:
         value = decode_meta_tag_value(value)
         match key:
             case "v":
-                self.video = value
+                self.video = self.remove_url_params(value, logger)
             case "v-trim" | "v-crop":
                 logger.debug(f"Unsupported meta tag found: {key}={value}")
             case "a":
-                self.audio = value
+                self.audio = self.remove_url_params(value, logger)
             case "co":
                 self.cover = ImageMetaTags(source=value)
             case "co-rotate" if self.cover:
@@ -224,6 +224,12 @@ class MetaTags:
                 self.tags = value
             case _:
                 logger.warning(f"unknown key for meta tag: '{key}={value}'")
+
+    def remove_url_params(self, value: str, logger: Logger) -> str:
+        url_base, _, url_params = value.partition("&")
+        if url_params:
+            logger.debug("Stripped superfluous URL parameters from url.")
+        return url_base
 
     def is_audio_only(self) -> bool:
         """True if a resource is explicitly set for audio only."""
