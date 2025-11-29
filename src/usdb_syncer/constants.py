@@ -126,10 +126,22 @@ SUPPORTED_VIDEO_SOURCES_REGEX = re.compile(
                 | youtube-nocookie\.com
                 | youtu\.be
                 | vimeo\.com
-                | web\.archive\.org
-                | fb\.watch
-                | universal-music\.de
+                | player\.vimeo\.com
                 | dailymotion\.com
+                | soundcloud\.com
+                | facebook\.com
+                | fb\.watch
+                | archive\.org
+                | web\.archive\.org
+                | v\.animethemes\.moe
+                | (?:[^./]+\.)*bandcamp\.com
+                | bilibili\.com
+                | cda\.pl
+                | drive\.google\.com
+                | nicovideo\.jp
+                | ok\.ru
+                | rumble\.com
+                | universal-music\.de
             )
             /\S+
         )
