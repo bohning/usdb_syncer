@@ -465,7 +465,7 @@ def _maybe_download_audio(ctx: _Context) -> JobStatus:
         if primary_resource == ctx.out.audio.resource:
             ctx.logger.info("Audio resource is unchanged, skipping download.")
             return JobStatus.SUCCESS_UNCHANGED
-        if ctx.song.is_local():
+        if ctx.song.audio_path():
             ctx.logger.info("Audio resource has changed, redownloading.")
 
         status = _try_download_audio_or_video(ctx, primary_resource, options)
@@ -501,10 +501,9 @@ def _maybe_download_video(ctx: _Context) -> JobStatus:  # noqa: C901
         ctx.logger.info("Video download is disabled, skipping download.")
         return JobStatus.SKIPPED_DISABLED
 
-    # Song can only be considered audio-only if audio download from meta tags succeeded
+    # Song can only be considered audio-only if audio download did not use a fallback
     if (
-        ctx.results[Job.AUDIO_DOWNLOAD]
-        in [JobStatus.SUCCESS, JobStatus.SUCCESS_UNCHANGED]
+        ctx.results[Job.AUDIO_DOWNLOAD] is not JobStatus.FALLBACK
         and ctx.txt.meta_tags.is_audio_only()
     ):
         ctx.logger.info("Song is audio only, skipping download.")
@@ -526,7 +525,7 @@ def _maybe_download_video(ctx: _Context) -> JobStatus:  # noqa: C901
         if primary_resource == ctx.out.video.resource:
             ctx.logger.info("Video resource is unchanged, skipping download.")
             return JobStatus.SUCCESS_UNCHANGED
-        if ctx.song.is_local():
+        if ctx.song.video_path():
             ctx.logger.info("Video resource has changed, redownloading.")
 
         status = _try_download_audio_or_video(ctx, primary_resource, options)
