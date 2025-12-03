@@ -327,6 +327,15 @@ class SyncMeta:
             return None
         return self.path.parent / self.cover.file.fname
 
+    def background_path(self) -> Path | None:
+        if (
+            not self.background
+            or not self.background.file
+            or self.background.file.fname is None
+        ):
+            return None
+        return self.path.parent / self.background.file.fname
+
 
 class SyncMetaEncoder(json.JSONEncoder):
     """Custom JSON encoder"""

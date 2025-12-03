@@ -5,6 +5,7 @@ from __future__ import annotations
 import time
 from collections.abc import Callable, Iterable, Iterator
 from functools import partial
+from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 from PySide6 import QtCore, QtWidgets
@@ -110,6 +111,38 @@ class SongTable:
     def end_reset(self) -> None:
         self._model.endResetModel()
 
+    def _on_double_click(self, idx: QtCore.QModelIndex) -> None:
+        if not (song_id := self._model.ids_for_indices([idx])) or not (
+            song := UsdbSong.get(song_id[0])
+        ):
+            return
+
+        if not song.is_local() or (sync_meta := song.sync_meta) is None:
+            self._download([idx.row()])
+            return
+
+        column = Column(idx.column())
+        if (file_path := self.file_path(sync_meta, column)) and file_path.is_file():
+            utils.open_path_or_file(file_path)
+            return
+
+        self._download([idx.row()])
+
+    def file_path(self, sync_meta: sync_meta.SyncMeta, column: Column) -> Path | None:
+        match column:
+            case Column.TXT:
+                return sync_meta.txt_path()
+            case Column.AUDIO:
+                return sync_meta.audio_path()
+            case Column.VIDEO:
+                return sync_meta.video_path()
+            case Column.COVER:
+                return sync_meta.cover_path()
+            case Column.BACKGROUND:
+                return sync_meta.background_path()
+            case _:
+                return None
+
     def download_selection(self) -> None:
         self._download(self._selected_rows())
 
@@ -151,7 +184,7 @@ class SongTable:
         self._view.customContextMenuRequested.connect(
             lambda: self.mw.menu_songs.exec(QCursor.pos())
         )
-        self._view.doubleClicked.connect(lambda idx: self._download([idx.row()]))
+        self._view.doubleClicked.connect(lambda idx: self._on_double_click(idx))
         self._view.clicked.connect(self._on_click)
         header = self._header()
         existing_state = False
