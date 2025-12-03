@@ -11,7 +11,7 @@ from usdb_syncer import SongId as SongId
 from usdb_syncer import download_options, errors
 from usdb_syncer.logger import Logger
 from usdb_syncer.meta_tags import MedleyTag, MetaTags
-from usdb_syncer.settings import FixLinebreaks, FixSpaces
+from usdb_syncer.settings import Encoding, FixLinebreaks, FixSpaces
 from usdb_syncer.song_txt.headers import Headers
 from usdb_syncer.song_txt.tracks import Tracks
 
@@ -118,12 +118,22 @@ class SongTxt:
     def try_from_file(cls, path: Path, logger: Logger) -> SongTxt | None:
         if not path.is_file():
             return None
-        try:
-            txt = path.read_text(encoding="utf-8")
-        except UnicodeDecodeError:
-            logger.exception(None)
-            return None
-        return cls.try_parse(txt, logger)
+
+        # UTF-8-BOM (utf-8-sig) handles both UTF-8 with or without BOM transparently,
+        # CP1252 is the only legacy codec still in use for UltraStar txt files (CMD)
+        for enc in [Encoding.UTF_8_BOM, Encoding.CP1252]:
+            try:
+                txt = path.read_text(encoding=enc.value, errors="strict")
+                logger.debug(f"Read '{path.name}' using encoding: {enc}")
+                return cls.try_parse(txt, logger)
+            except UnicodeDecodeError:
+                logger.debug(f"Failed decoding '{path.name}' as {enc}")
+            except Exception:
+                logger.exception(f"Error reading '{path}'")
+                return None
+
+        logger.error(f"Unable to decode '{path}' using any known encoding")
+        return None
 
     def maybe_split_duet_notes(self) -> None:
         if self.headers.relative and self.headers.relative.lower() == "yes":
