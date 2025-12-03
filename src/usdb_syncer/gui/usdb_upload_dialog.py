@@ -27,7 +27,7 @@ class UsdbUploadDialog(Ui_Dialog, QDialog):
     _instance: ClassVar[UsdbUploadDialog | None] = None
 
     def __init__(
-        self, parent: QWidget, songs: list[UsdbSong], song_changes: list[SongChanges]
+        self, parent: QWidget, submittable: list[tuple[UsdbSong, SongChanges]]
     ) -> None:
         super().__init__(parent=parent)
         self.setupUi(self)
@@ -35,8 +35,7 @@ class UsdbUploadDialog(Ui_Dialog, QDialog):
         if ok_button := self.buttonBox.button(self.buttonBox.StandardButton.Ok):
             ok_button.setText("Submit")
 
-        self.songs = songs
-        self.song_changes = song_changes
+        self.submittable = submittable
         self._load_settings()
 
         self.comboBox_songs.currentIndexChanged.connect(self._on_song_changed)
@@ -54,21 +53,20 @@ class UsdbUploadDialog(Ui_Dialog, QDialog):
             )
         )
 
-        for song in self.songs:
+        for song, _ in self.submittable:
             self.comboBox_songs.addItem(
-                f"{song.song_id}: {song.artist} - {song.title} "
+                f"{song.song_id}: {song.artist_title_str()} - {song.title} "
             )
 
     @classmethod
     def load(
-        cls, parent: QWidget, songs: list[UsdbSong], song_changes: list[SongChanges]
+        cls, parent: QWidget, submittable: list[tuple[UsdbSong, SongChanges]]
     ) -> None:
         if cls._instance:
-            cls._instance.songs = songs
-            cls._instance.song_changes = song_changes
+            cls._instance.submittable = submittable
             cls._instance.raise_()
         else:
-            cls._instance = cls(parent, songs, song_changes)
+            cls._instance = cls(parent, submittable)
             cls._instance.show()
 
     def _on_song_changed(self, index: int) -> None:
@@ -80,15 +78,15 @@ class UsdbUploadDialog(Ui_Dialog, QDialog):
         if index < 0:
             return
 
-        song_change = self.song_changes[index]
+        _, changes = self.submittable[index]
 
         if self.checkBox_show_only_changes.isChecked():
             context = self.spinBox_context_lines.value()
-            diff_remote, diff_local = song_change.builder.build_filtered_html(
-                context, song_change.builder.changed_line_numbers
+            diff_remote, diff_local = changes.builder.build_filtered_html(
+                context, changes.builder.changed_line_numbers
             )
         else:
-            diff_remote, diff_local = song_change.builder.build_html()
+            diff_remote, diff_local = changes.builder.build_html()
 
         css_block = get_diff_css()
 
@@ -110,7 +108,7 @@ class UsdbUploadDialog(Ui_Dialog, QDialog):
         """Submit selected songs and close dialog."""
 
         def task() -> None:
-            for song, changes in zip(self.songs, self.song_changes, strict=True):
+            for song, changes in self.submittable:
                 assert song.sync_meta is not None
                 assert song.sync_meta.txt is not None
                 assert song.sync_meta.txt.file is not None
@@ -123,7 +121,7 @@ class UsdbUploadDialog(Ui_Dialog, QDialog):
                     song_logger(song.song_id),
                 )
 
-        num_songs = len(self.songs)
+        num_songs = len(self.submittable)
         plural = "s" if num_songs != 1 else ""
         progress.run_with_progress(f"Submitting {num_songs} song{plural}…", task)
         UsdbUploadDialog._instance = None
