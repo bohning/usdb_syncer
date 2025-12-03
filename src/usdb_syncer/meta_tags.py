@@ -227,10 +227,10 @@ class MetaTags:
             case _:
                 logger.warning(f"unknown key for meta tag: '{key}={value}'")
 
-    def remove_url_params(self, value: str, logger: Logger) -> str:
-        url_base, _, url_params = value.partition("&")
+    def remove_url_params(self, url: str, logger: Logger) -> str:
+        url_base, _, url_params = url.partition("&")
         if url_params:
-            logger.debug("Stripped superfluous URL parameters from url.")
+            logger.debug(f"Stripped superfluous query parameters from '{url}'.")
         return url_base
 
     def is_audio_only(self) -> bool:
