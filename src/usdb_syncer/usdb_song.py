@@ -176,6 +176,9 @@ class UsdbSong:
     def is_pinned(self) -> bool:
         return self.sync_meta is not None and self.sync_meta.pinned
 
+    def artist_title_str(self) -> str:
+        return f"{self.artist} - {self.title}"
+
     def languages(self) -> Iterable[str]:
         return (s for lang in self.language.split(",") if (s := lang.strip()))
 

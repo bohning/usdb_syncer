@@ -32,7 +32,7 @@ def notify_discord(
         embed = {
             "color": DISCORD_COLOR_RED,
             "author": {
-                "name": f"{song_id}: {song.artist} - {song.title}",
+                "name": f"{song_id}: {song.artist_title_str()}",
                 "url": song_id.usdb_detail_url(),
                 "icon_url": f"{Usdb.COVER_URL}{song_id:d}.jpg",
             },
