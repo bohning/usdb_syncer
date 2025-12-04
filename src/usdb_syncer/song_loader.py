@@ -461,16 +461,19 @@ def _maybe_download_audio(ctx: _Context) -> JobStatus:
 
     if primary_resource:
         if not any(primary_resource in resource for resource in fallback_resources):
-            ctx.logger.info("Audio resource is not commented.")
+            ctx.logger.info(f"Audio resource '{primary_resource}' is not commented.")
         if primary_resource == ctx.out.audio.resource:
             ctx.logger.info("Audio resource is unchanged, skipping download.")
             return JobStatus.SUCCESS_UNCHANGED
         if ctx.song.audio_path():
-            ctx.logger.info("Audio resource has changed, redownloading.")
+            ctx.logger.info(
+                f"Audio resource has changed ('{ctx.out.audio.resource}' -> "
+                f"'{primary_resource}'), redownloading."
+            )
 
         status = _try_download_audio_or_video(ctx, primary_resource, options)
         if status is JobStatus.SUCCESS:
-            ctx.logger.info("Success! Downloaded audio.")
+            ctx.logger.info(f"Success! Downloaded audio '{primary_resource}'.")
             return JobStatus.SUCCESS
 
     for fallback_resource in fallback_resources:
@@ -521,16 +524,19 @@ def _maybe_download_video(ctx: _Context) -> JobStatus:  # noqa: C901
 
     if primary_resource:
         if not any(primary_resource in resource for resource in fallback_resources):
-            ctx.logger.info("Video resource is not commented.")
+            ctx.logger.info(f"Video resource '{primary_resource}' is not commented.")
         if primary_resource == ctx.out.video.resource:
             ctx.logger.info("Video resource is unchanged, skipping download.")
             return JobStatus.SUCCESS_UNCHANGED
         if ctx.song.video_path():
-            ctx.logger.info("Video resource has changed, redownloading.")
+            ctx.logger.info(
+                f"Video resource has changed ('{ctx.out.video.resource}' -> "
+                f"'{primary_resource}'), redownloading."
+            )
 
         status = _try_download_audio_or_video(ctx, primary_resource, options)
         if status is JobStatus.SUCCESS:
-            ctx.logger.info("Success! Downloaded video.")
+            ctx.logger.info(f"Success! Downloaded video '{primary_resource}'.")
             return JobStatus.SUCCESS
 
     for fallback_resource in fallback_resources:
