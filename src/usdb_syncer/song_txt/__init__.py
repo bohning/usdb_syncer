@@ -35,14 +35,16 @@ class SongTxt:
         self,
         sync_meta_tags: MetaTags | None = None,
         remote_headers: Headers | None = None,
+        ensure_canonical: bool = True,
     ) -> str:
         """Reinserts metatags and ensures CRLF line endings."""
 
-        # ensure canonical format:
-        self.notes.fix_linebreaks_yass_style(self.headers.bpm, self.logger)
-        self.notes.fix_first_words_capitalization(self.logger)
-        self.notes.fix_spaces(FixSpaces.AFTER, self.logger)
-        self.notes.fix_quotation_marks(self.headers.language, self.logger)
+        # ensure canonical format (applied to local file before upload)
+        if ensure_canonical:
+            self.notes.fix_linebreaks_yass_style(self.headers.bpm, self.logger)
+            self.notes.fix_first_words_capitalization(self.logger)
+            self.notes.fix_spaces(FixSpaces.AFTER, self.logger)
+            self.notes.fix_quotation_marks(self.headers.language, self.logger)
 
         # reinsert previously removed duet marker in title
         if self.notes.track_2 is not None:

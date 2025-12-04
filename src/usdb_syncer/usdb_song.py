@@ -245,7 +245,7 @@ class UsdbSong:
 
         logger = song_logger(self.song_id)
 
-        remote_str = remote_txt.str_for_upload()
+        remote_str = remote_txt.str_for_upload(ensure_canonical=False)
 
         # Read local song file and get uploadable string
         if not (sync_meta := self.sync_meta):
