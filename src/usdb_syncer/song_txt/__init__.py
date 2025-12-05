@@ -121,9 +121,7 @@ class SongTxt:
         if not path.is_file():
             return None
 
-        # UTF-8-BOM (utf-8-sig) handles both UTF-8 with or without BOM transparently,
-        # CP1252 is the only legacy codec still in use for UltraStar txt files (CMD)
-        for enc in [Encoding.UTF_8_BOM, Encoding.CP1252]:
+        for enc in Encoding:
             try:
                 txt = path.read_text(encoding=enc.value, errors="strict")
                 logger.debug(f"Read '{path.name}' using encoding: {enc}")
