@@ -255,43 +255,40 @@ def status_icon(resource: Resource) -> icons.Icon:
 
 
 def _tooltip_data(song: UsdbSong, column: int) -> str | None:
+    if not song.sync_meta:
+        return None
+
+    # Map columns to resource getters
+    resource_map = {
+        Column.TXT: song.sync_meta.txt,
+        Column.AUDIO: song.sync_meta.audio,
+        Column.VIDEO: song.sync_meta.video,
+        Column.COVER: song.sync_meta.cover,
+        Column.BACKGROUND: song.sync_meta.background,
+    }
+
     col = Column(column)
-    match col:
-        case Column.AUDIO:
-            if not (song.sync_meta and (audio := song.sync_meta.audio)):
-                return None
-            tooltip = status_tooltip(audio)
-        case Column.VIDEO:
-            if not (song.sync_meta and (video := song.sync_meta.video)):
-                return None
-            tooltip = status_tooltip(video)
-        case Column.COVER:
-            if not (song.sync_meta and (cover := song.sync_meta.cover)):
-                return None
-            tooltip = status_tooltip(cover)
-        case Column.BACKGROUND:
-            if not (song.sync_meta and (background := song.sync_meta.background)):
-                return None
-            tooltip = status_tooltip(background)
-        case _:
-            return None
-    return tooltip
+    if resource := resource_map.get(col):
+        return status_tooltip(resource)
+
+    return None
 
 
 def status_tooltip(resource: Resource) -> str:
     match resource.status:
-        case JobStatus.SUCCESS:
-            tooltip = "Resource download successful"
+        case JobStatus.SUCCESS | JobStatus.SUCCESS_UNCHANGED:
+            assert resource.file is not None
+            tooltip = resource.file.fname
         case JobStatus.SKIPPED_DISABLED:
             tooltip = "Resource download disabled in the settings"
         case JobStatus.SKIPPED_UNAVAILABLE:
             tooltip = "No resource available"
-        case JobStatus.SUCCESS_UNCHANGED:
-            tooltip = "Resource is available (unchanged)"
         case JobStatus.FALLBACK:
-            tooltip = "Fallback resource (from USDB / comments)"
+            assert resource.file is not None
+            tooltip = f"{resource.file.fname} (fallback to commented/USDB resource)"
         case JobStatus.FAILURE_EXISTING:
-            tooltip = "Resource download failed, using existing resource"
+            assert resource.file is not None
+            tooltip = f"{resource.file.fname} (fallback to existing resource)"
         case JobStatus.FAILURE:
             tooltip = "Resource download failed"
         case _ as unreachable:
