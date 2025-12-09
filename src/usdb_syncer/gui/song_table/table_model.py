@@ -3,6 +3,7 @@
 from collections.abc import Iterable
 from datetime import datetime
 from functools import cache
+from pathlib import Path
 from typing import Any, assert_never
 
 from PySide6.QtCore import (
@@ -209,23 +210,23 @@ def _decoration_data(song: UsdbSong, column: int) -> QIcon | None:  # noqa: C901
         case Column.TXT:
             if not (song.sync_meta and (txt := song.sync_meta.txt)):
                 return None
-            icon = status_icon(txt)
+            icon = status_icon(txt, song.sync_meta.path.parent)
         case Column.AUDIO:
             if not (song.sync_meta and (audio := song.sync_meta.audio)):
                 return None
-            icon = status_icon(audio)
+            icon = status_icon(audio, song.sync_meta.path.parent)
         case Column.VIDEO:
             if not (song.sync_meta and (video := song.sync_meta.video)):
                 return None
-            icon = status_icon(video)
+            icon = status_icon(video, song.sync_meta.path.parent)
         case Column.COVER:
             if not (song.sync_meta and (cover := song.sync_meta.cover)):
                 return None
-            icon = status_icon(cover)
+            icon = status_icon(cover, song.sync_meta.path.parent)
         case Column.BACKGROUND:
             if not (song.sync_meta and (background := song.sync_meta.background)):
                 return None
-            icon = status_icon(background)
+            icon = status_icon(background, song.sync_meta.path.parent)
         case Column.PINNED:
             if not (song.sync_meta and song.sync_meta.pinned):
                 return None
@@ -235,18 +236,25 @@ def _decoration_data(song: UsdbSong, column: int) -> QIcon | None:  # noqa: C901
     return icon.icon()
 
 
-def status_icon(resource: Resource) -> icons.Icon:
+def status_icon(resource: Resource, folder: Path) -> icons.Icon:
+    file_in_sync = True
+    if (file := resource.file) and not file.is_in_sync(folder):
+        file_in_sync = False
     match resource.status:
         case JobStatus.SUCCESS | JobStatus.SUCCESS_UNCHANGED:
-            icon = icons.Icon.SUCCESS
+            icon = icons.Icon.SUCCESS if file_in_sync else icons.Icon.SUCCESS_CHANGES
         case JobStatus.SKIPPED_DISABLED:
             icon = icons.Icon.SKIPPED_DISABLED
         case JobStatus.SKIPPED_UNAVAILABLE:
             icon = icons.Icon.SKIPPED_UNAVAILABLE
         case JobStatus.FALLBACK:
-            icon = icons.Icon.FALLBACK
+            icon = icons.Icon.FALLBACK if file_in_sync else icons.Icon.FALLBACK_CHANGES
         case JobStatus.FAILURE_EXISTING:
-            icon = icons.Icon.FAILURE_EXISTING
+            icon = (
+                icons.Icon.FAILURE_EXISTING
+                if file_in_sync
+                else icons.Icon.FAILURE_EXISTING_CHANGES
+            )
         case JobStatus.FAILURE:
             icon = icons.Icon.FAILURE
         case _ as unreachable:

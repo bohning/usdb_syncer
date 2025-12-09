@@ -44,7 +44,15 @@ class Icon(enum.Enum):
     ERROR = "error.png", "close-octagon-white.svg"
     FAILURE = "cross.png", "cross-white.svg"
     FAILURE_EXISTING = "tick-yellow.png", "tick-parentheses-white.svg"
+    FAILURE_EXISTING_CHANGES = (
+        "tick-yellow-exclamation.png",
+        "tick-parentheses-exclamation-white.svg",
+    )
     FALLBACK = "tick-yellow.png", "tick-parentheses-white.svg"
+    FALLBACK_CHANGES = (
+        "tick-yellow-exclamation.png",
+        "tick-parentheses-exclamation-white.svg",
+    )
     FFMPEG = "ffmpeg.svg", None
     FFMPEG_UNAVAILABLE = "ffmpeg-unavailable.svg", None
     FILE_EXPORT = "document-export.png", "file-export-white.svg"
@@ -90,6 +98,7 @@ class Icon(enum.Enum):
     SKIP_TO_START = "control-skip-180.png", "skip-backward-white.svg"
     SONG_FOLDER = "folder_note.png", "folder-music-white.svg"
     SUCCESS = "tick-green.png", "tick-white.svg"
+    SUCCESS_CHANGES = "tick-green-exclamation.png", "tick-exclamation-white.svg"
     TAGS = "price-tag.png", "tag-white.svg"
     TEXT = "text.png", "file-document-white.svg"
     TITLE = "title.png", "format-title-white.svg"
