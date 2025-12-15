@@ -1,6 +1,6 @@
 # Based on: https://docs.github.com/en/packages/managing-github-packages-using-github-actions-workflows/publishing-and-installing-a-package-with-github-actions#upgrading-a-workflow-that-accesses-a-registry-using-a-personal-access-token
 # See container/README.md for motivation and details.
-name: Build Docker Image for Linux Builds
+name: Create docker image for linux builds
 
 on:
   workflow_dispatch:
