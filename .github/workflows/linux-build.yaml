@@ -1,0 +1,36 @@
+name: Linux Build
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build the bundle
+    runs-on: ubuntu-latest
+    container: docker.io/limitlessgeology/manylinux_python_buildimage
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
+      - run: poetry install --without dev
+      - shell: bash
+        run: |
+          set -e
+          version=$(poetry run dunamai from git)
+          echo "__version__ = '${version}'" > src/usdb_syncer/_version.py
+      - run: >
+          poetry run pyinstaller -n 'USDB_Syncer_LinuxTestBuild-${{github.ref_name}}-${{github.run_number}}'
+          --exclude-module _tkinter
+          --onefile
+          --add-data 'src/usdb_syncer/db/sql:usdb_syncer/db/sql'
+          --add-data 'src/usdb_syncer/gui/resources/fonts:usdb_syncer/gui/resources/fonts'
+          --add-data 'src/usdb_syncer/gui/resources/styles:usdb_syncer/gui/resources/styles'
+          --add-data 'src/usdb_syncer/gui/resources/audio:usdb_syncer/gui/resources/audio'
+          --add-data 'src/usdb_syncer/webserver/static:usdb_syncer/webserver/static'
+          --add-data 'src/usdb_syncer/webserver/templates:usdb_syncer/webserver/templates'
+          src/usdb_syncer/gui/__init__.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: linux-build-artifact
+          path: dist/USDB_Syncer_LinuxTestBuild*
