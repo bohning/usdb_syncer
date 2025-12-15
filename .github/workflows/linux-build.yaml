@@ -19,6 +19,7 @@ jobs:
           set -e
           version=$(poetry run dunamai from git)
           echo "__version__ = '${version}'" > src/usdb_syncer/_version.py
+      - run: poetry run python -m tools.generate_pyside_files
       - run: >
           poetry run pyinstaller -n 'USDB_Syncer_LinuxTestBuild-${{github.ref_name}}-${{github.run_number}}'
           --exclude-module _tkinter
@@ -34,3 +35,6 @@ jobs:
         with:
           name: linux-build-artifact
           path: dist/USDB_Syncer_LinuxTestBuild*
+          compression-level: 0
+          if-no-files-found: error
+          retention-days: 3
