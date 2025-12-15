@@ -7,9 +7,9 @@ jobs:
   build:
     name: Build the bundle
     runs-on: ubuntu-latest
-    container: docker.io/limitlessgeology/manylinux_python_buildimage
+    container: ghcr.io/bohning/syncer_linux_builder_image:latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0
       - run: git config --global --add safe.directory "$GITHUB_WORKSPACE"

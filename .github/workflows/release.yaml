@@ -43,7 +43,7 @@ jobs:
       matrix:
         include:
           - os: ubuntu-latest
-            image: docker.io/limitlessgeology/manylinux_python_buildimage
+            image: ghcr.io/bohning/syncer_linux_builder_image:latest
             TARGET: Linux
             PYINSTALLER_ARGS: >-
               --onefile
