@@ -2,9 +2,11 @@ name: Linux Build
 
 on:
   workflow_dispatch:
+  push:
 
 jobs:
   build:
+    if: false
     name: Build the bundle
     runs-on: ubuntu-latest
     container: docker.io/limitlessgeology/manylinux_python_buildimage
