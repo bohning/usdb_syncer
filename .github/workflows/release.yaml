@@ -43,7 +43,7 @@ jobs:
       matrix:
         include:
           - os: ubuntu-latest
-            image: quay.io/pypa/manylinux_2_34_x86_64
+            image: docker.io/limitlessgeology/manylinux_python_buildimage
             TARGET: Linux
             PYINSTALLER_ARGS: >-
               --onefile
@@ -98,34 +98,13 @@ jobs:
       - name: Mark Git directory as safe
         if: contains(matrix.os, 'ubuntu')
         run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
-      - name: On macOS and windows, install python normally
+      - name: On macOS and windows, install python normally (linux container has python preinstalled)
         if: contains(matrix.os, 'macos') || contains(matrix.os, 'windows')
         uses: actions/setup-python@v5
         with:
           python-version: "3.12.9"
-      - name: Build Python 3.12.9 on linux
-        if: contains(matrix.os, 'ubuntu')
-        run: |
-          yum update -y
-          yum groupinstall 'Development Tools' -y
-          yum install libxcb libxkbcommon libxkbcommon-x11 xcb-util xcb-util-image xcb-util-keysyms xcb-util-renderutil xcb-util-wm xcb-util-cursor libva mesa-libGLU libX11 libXext libXrender mesa-libGL openssl-devel bzip2-devel libffi-devel sqlite-devel wget -y
-          wget https://www.python.org/ftp/python/3.12.9/Python-3.12.9.tgz
-          tar xvf Python-3.12.9.tgz
-          cd Python-3.12.9
-          ./configure --enable-optimizations --enable-shared
-          make
-          make install
-          ldconfig /usr/local/lib
-
-          ln -sf /usr/local/bin/python3.12 /usr/bin/python3.12
-          ln -sf /usr/local/bin/pip3.12 /usr/bin/pip3.12
-          ln -sf /usr/local/bin/python3.12 /usr/bin/python3
-          ln -sf /usr/local/bin/pip3.12 /usr/bin/pip3
-          ln -sf /usr/local/bin/python3.12 /usr/bin/python
-          ln -sf /usr/local/bin/pip3.12 /usr/bin/pip
-          python --version
-          python -m pip install --upgrade pip
-      - name: Install poetry
+      - name: Install poetry (linux container has poetry preinstalled)
+        if: contains(matrix.os, 'macos') || contains(matrix.os, 'windows')
         run: python -m pip install poetry
       - name: Workaround Poetry issue https://github.com/python-poetry/poetry/issues/10028
         if: contains(matrix.TARGET, 'windows')
