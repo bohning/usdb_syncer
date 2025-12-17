@@ -22,10 +22,8 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - name: Install uv
-        run: curl -LsSf https://astral.sh/uv/install.sh | sh
-      - name: Add uv to PATH
-        run: echo "$HOME/.cargo/bin" >> $GITHUB_PATH
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v7
       - name: Install dependencies
         run: uv sync --no-dev --no-group bundle
       - name: Scrape USDB song list to ship with the bundle
@@ -133,18 +131,12 @@ jobs:
           python --version
           python -m pip install --upgrade pip
       - name: Set up uv
-        uses: astral-sh/setup-uv@v4
+        uses: astral-sh/setup-uv@v7
       - name: Install dependencies
         run: uv sync --no-dev --group bundle --group build
       - name: Set macOS deployment target (macOS 12+ compatibility)
         if: startsWith(matrix.os, 'macos')
         run: echo "MACOSX_DEPLOYMENT_TARGET=12.0" >> $GITHUB_ENV
-      - name: Write release version
-        shell: bash
-        run: |
-          set -e
-          version=$(uv run dunamai from git)
-          echo "__version__ = '${version}'" > src/usdb_syncer/_version.py
       - name: Generate GUI elements
         run: uv run python -m tools.generate_pyside_files
       - name: Bundle with pyinstaller for ${{matrix.os}}
@@ -222,14 +214,10 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - name: Install uv
-        run: curl -LsSf https://astral.sh/uv/install.sh | sh
-      - name: Add uv to PATH
-        run: echo "$HOME/.cargo/bin" >> $GITHUB_PATH
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v7
       - name: Install dependencies
         run: uv sync --group build
-      - name: Write release version
-        run: echo "__version__ = '$(uv run dunamai from git)'" > src/usdb_syncer/_version.py
       - name: Generate GUI elements
         run: uv run python -m tools.generate_pyside_files
       - name: Build package
