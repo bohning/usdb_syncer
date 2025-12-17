@@ -4,6 +4,13 @@ on:
   push:
     tags:
       - "v[0-9]+.[0-9]+.[0-9]+" # Only create releases on matching tags following semver X.Y.Z
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Dry run (no release, publish to TestPyPI)'
+        required: true
+        default: true
+        type: boolean
 
 jobs:
   scrape-song-list:
@@ -176,6 +183,7 @@ jobs:
             dist/*.exe
 
   release:
+    if: ${{ github.event_name == 'push' || github.event.inputs.dry_run == 'false' }}
     name: Create release
     permissions:
       contents: write
@@ -200,11 +208,11 @@ jobs:
 
   publish:
     name: Build and publish release to PyPI
-    needs: release
+    needs: bundle
     runs-on: ubuntu-latest
     environment:
-      name: pypi
-      url: https://pypi.org/p/usdb_syncer
+      name: ${{ github.event.inputs.dry_run == 'true' && 'testpypi' || 'pypi' }}
+      url: ${{ github.event.inputs.dry_run == 'true' && 'https://test.pypi.org/p/usdb_syncer' || 'https://pypi.org/p/usdb_syncer' }}
     permissions:
       id-token: write # IMPORTANT: this permission is mandatory for trusted publishing
     steps:
@@ -229,6 +237,13 @@ jobs:
       - name: Build package
         run: uv build
       - name: Publish package distributions to PyPI
+        if: ${{ github.event.inputs.dry_run != 'true' }}
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
+          verbose: true
+      - name: Publish package distributions to TestPyPI
+        if: ${{ github.event.inputs.dry_run == 'true' }}
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          repository-url: https://test.pypi.org/legacy/
           verbose: true
