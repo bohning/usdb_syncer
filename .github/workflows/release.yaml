@@ -132,12 +132,10 @@ jobs:
           ln -sf /usr/local/bin/pip3.12 /usr/bin/pip
           python --version
           python -m pip install --upgrade pip
-      - name: Install uv
-        run: curl -LsSf https://astral.sh/uv/install.sh | sh
-      - name: Add uv to PATH
-        run: echo "$HOME/.cargo/bin" >> $GITHUB_PATH
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v4
       - name: Install dependencies
-        run: uv sync --no-dev
+        run: uv sync --no-dev --group bundle --group build
       - name: Set macOS deployment target (macOS 12+ compatibility)
         if: startsWith(matrix.os, 'macos')
         run: echo "MACOSX_DEPLOYMENT_TARGET=12.0" >> $GITHUB_ENV
