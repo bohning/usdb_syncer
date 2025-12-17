@@ -7,6 +7,12 @@ name = "usdb_syncer"
 version = "0.0.0"  # will be replaced by current git tag via poetry-dynamic-versioning
 authors = ["Markus Böhning <markus.boehning@gmail.com>"]
 description = "A download manager for USDB songs."
+license = "GPL-3.0-only"
+license-files = [
+    "LICENSE",
+    "bundle/NOTICE.txt",
+    "bundle/licenses/*"
+]
 readme = ["README.md"]
 repository = "https://github.com/bohning/usdb_syncer"
 include = [
@@ -58,6 +64,7 @@ pytest = "*"
 snakeviz = "*"
 # tools
 defusedxml = "^0.7.1"
+pip-licenses = "^5.5.0"
 
 [tool.poetry.group.build.dependencies]
 PySide6 = "*"  # for file generation
@@ -141,7 +148,7 @@ fixable = ["ALL"]
 unfixable = []
 
 [tool.ruff.lint.isort]
-# For consistency with the formatter, see https://docs.astral.sh/ruff/settings/#lint_isort_split-on-trailing-comma 
+# For consistency with the formatter, see https://docs.astral.sh/ruff/settings/#lint_isort_split-on-trailing-comma
 split-on-trailing-comma = false
 
 [tool.mypy]
