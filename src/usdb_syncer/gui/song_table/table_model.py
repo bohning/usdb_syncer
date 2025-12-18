@@ -277,26 +277,34 @@ def _tooltip_data(song: UsdbSong, column: int) -> str | None:
 
     col = Column(column)
     if resource := resource_map.get(col):
-        return status_tooltip(resource)
+        return status_tooltip(resource, song.sync_meta.path.parent)
 
     return None
 
 
-def status_tooltip(resource: Resource) -> str:
+def status_tooltip(resource: Resource, folder: Path) -> str:
+    local_changes = ""
+    if (file := resource.file) and not file.is_in_sync(folder):
+        local_changes = " (has local changes)"
     match resource.status:
         case JobStatus.SUCCESS | JobStatus.SUCCESS_UNCHANGED:
             assert resource.file is not None
-            tooltip = resource.file.fname
+            tooltip = f"{resource.file.fname}{local_changes}"
         case JobStatus.SKIPPED_DISABLED:
             tooltip = "Resource download disabled in the settings"
         case JobStatus.SKIPPED_UNAVAILABLE:
             tooltip = "No resource available"
         case JobStatus.FALLBACK:
             assert resource.file is not None
-            tooltip = f"{resource.file.fname} (fallback to commented/USDB resource)"
+            tooltip = (
+                f"{resource.file.fname} (fallback to commented/USDB resource)"
+                f"{local_changes}"
+            )
         case JobStatus.FAILURE_EXISTING:
             assert resource.file is not None
-            tooltip = f"{resource.file.fname} (fallback to existing resource)"
+            tooltip = (
+                f"{resource.file.fname} (fallback to existing resource){local_changes}"
+            )
         case JobStatus.FAILURE:
             tooltip = "Resource download failed"
         case _ as unreachable:
