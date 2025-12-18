@@ -1,9 +1,9 @@
 # USDB Syncer
 
 [![PyPI](https://img.shields.io/pypi/v/usdb_syncer)](https://pypi.org/project/usdb-syncer/)
-[![Poetry](https://img.shields.io/endpoint?url=https://python-poetry.org/badge/v0.json)](https://python-poetry.org/)
+[![uv](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/uv/main/assets/badge/v0.json)](https://github.com/astral-sh/uv)
 [![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![License: GPL](https://img.shields.io/badge/License-GPL-yellow.svg)](https://https://www.gnu.org/licenses/gpl-3.0.en.html)
 [![Release](https://github.com/bohning/usdb_syncer/actions/workflows/release.yaml/badge.svg)](https://github.com/bohning/usdb_syncer/actions/workflows/release.yaml)
 [![tox](https://github.com/bohning/usdb_syncer/actions/workflows/tox.yaml/badge.svg)](https://github.com/bohning/usdb_syncer/actions/workflows/tox.yaml)
 
@@ -24,42 +24,43 @@ There are three ways to run USDB Syncer:
 
 ## Development
 
-**USDB Syncer** is written in Python, and uses Poetry to manage its dependencies.
+**USDB Syncer** is written in Python, and uses uv to manage its dependencies.
 The following explains how to set up a development environment.
 
 ### Prerequisites
 
 - [git](https://www.git-scm.com/downloads)
 - [Python 3.12](https://www.python.org/downloads/) (3.11 should work as well)
-- [Poetry](https://python-poetry.org/docs/#installation)
+- [uv](https://docs.astral.sh/uv/getting-started/installation/)
 
 ### Project Setup
 
 Clone the project:
-
 ```bash
 git clone https://github.com/bohning/usdb_syncer.git
 cd usdb_syncer
 ```
 
-Now make sure the Python 3.12 environment you installed Poetry to is activated and run:
-
+Install dependencies:
 ```bash
-poetry install
+uv sync
 ```
 
 ### Run usdb_syncer
 
-The package has a defined entry point for the GUI. Simply type in `poetry run usdb_syncer` in your terminal.
+The package has a defined entry point for the GUI. Simply run:
+```bash
+uv run usdb_syncer
+```
 
 ### Run tests
 
 [tox](https://github.com/tox-dev/tox) makes it easy to run the full CI pipeline on your local machine, i.e., if the pipeline passes on your machine there is a good chance it will also pass on the build server.
 
-Run `poetry run tox` to execute the test pipeline. The tox pipelines are configured in the tox.ini file.
+Run `uv run tox` to execute the test pipeline. The tox pipelines are configured in the tox.ini file.
 Configurations for specific tools in the pipeline are maintained in the `pyproject.toml` file.
 Tox is configured to create its own virtual environments, install test dependencies and the package you are developing, and run all tests.
-If you changed the test requirements or want to perform a clean run for some reason, you can run `poetry run tox -r` to recreate tox's virtual environment.
+If you changed the test requirements or want to perform a clean run for some reason, you can run `uv run tox -r` to recreate tox's virtual environment.
 
 The following tools are part of the test pipeline:
 
@@ -72,7 +73,7 @@ The following tools are part of the test pipeline:
 - [unittest](https://docs.python.org/3/library/unittest.html): A built-in objective unittest framework
   with extensive support for mocking.
 
-If you don’t want to run the whole test pipeline, you can also use single commands from the pipeline, e.g., `poetry run pytest`. The tools will automatically pick up the correct configuration from the `pyproject.toml` file.
+If you don't want to run the whole test pipeline, you can also use single commands from the pipeline, e.g., `uv run pytest`. The tools will automatically pick up the correct configuration from the `pyproject.toml` file.
 
 ## Versioning
 
