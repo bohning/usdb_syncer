@@ -8,16 +8,17 @@ version = "0.0.0"  # will be replaced by current git tag via poetry-dynamic-vers
 authors = ["Markus Böhning <markus.boehning@gmail.com>"]
 description = "A download manager for USDB songs."
 license = "GPL-3.0-only"
-license-files = [
-    "LICENSE",
-    "bundle/NOTICE.txt",
-    "bundle/licenses/*"
-]
+#license-files = [
+#    "LICENSE",
+#    "bundle/NOTICE.txt",
+#    "bundle/licenses/*"
+#]
 readme = ["README.md"]
 repository = "https://github.com/bohning/usdb_syncer"
 include = [
     { path = "src/usdb_syncer/gui/forms/*.py", format = ["sdist", "wheel"] },
     { path = "src/usdb_syncer/gui/resources/qt/*.py", format = ["sdist", "wheel"] },
+    { path = "src/usdb_syncer/data/NOTICE.txt", format = ["sdist", "wheel"] },
     { path = "src/usdb_syncer/data/*.json", format = ["sdist", "wheel"] },
     { path = "src/usdb_syncer/webserver/static/*", format = ["sdist", "wheel"] },
     { path = "src/usdb_syncer/webserver/templates/*", format = ["sdist", "wheel"] },

@@ -6,10 +6,10 @@ usdb_syncer includes third-party components with separate copyright
 notices and license terms. Your use of these components is subject to
 the terms and conditions of the respective licenses.
 
-The full text of each license can be found in the 'licenses' folder
+The full text of applicable licenses can be found in the 'licenses' folder
 distributed with usdb_syncer.
 
-Generated on: 2025-12-17
+Generated on: 2025-12-18
 
 ------------------------------------------------------------------------------
 altgraph
@@ -1529,7 +1529,7 @@ means.
 LICENSE FILES
 ==============================================================================
 
-The following license files are included in the 'licenses' folder:
+The following license files should be included with the distribution:
 
   - LICENSE.APACHE
   - LICENSE.GPL2

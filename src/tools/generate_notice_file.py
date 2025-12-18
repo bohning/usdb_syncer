@@ -1,8 +1,8 @@
 """Generate NOTICE.txt file from licenses.json.
 
 This script reads dependency license information from licenses.json and generates
-a legally compliant NOTICE.txt file that lists all third-party dependencies with
-their copyright notices and license information.
+a (hopefully) legally compliant NOTICE.txt file that lists all third-party dependencies
+with their copyright notices and license information.
 
 The full license texts are bundled in a separate 'licenses' folder alongside
 NOTICE.txt.
@@ -16,7 +16,10 @@ from pathlib import Path
 from typing import Required, TypedDict
 
 BUNDLE_DIR = (Path(__file__).parent.parent.parent / "bundle").resolve()
-NOTICE_FILE = BUNDLE_DIR / "NOTICE.txt"
+NOTICE_FILE_ROOT = Path("NOTICE.txt")
+NOTICE_FILE_DATA = (
+    Path(__file__).parent.parent / "usdb_syncer" / "gui" / "resources" / "text" / "NOTICE"
+)  # This file is bundled with the syncer so that we can display it in the GUI.
 LICENSE_JSON = BUNDLE_DIR / "resources" / "licenses.json"
 LICENSES_DIR = BUNDLE_DIR / "licenses"
 TEXTS_DIR = BUNDLE_DIR / "resources" / "texts"
@@ -55,16 +58,19 @@ def generate_notice_content(licenses: list[LicenseEntry]) -> str:
     """Generate the content for NOTICE.txt."""
     lines: list[str] = []
 
-    # Header
     lines.append("=" * 78)
     lines.append("THIRD-PARTY SOFTWARE NOTICES AND INFORMATION")
     lines.append("=" * 78)
     lines.append("")
     lines.append("usdb_syncer includes third-party components with separate copyright")
-    lines.append("notices and license terms. Your use of these components is subject to")
+    lines.append(
+        "notices and license terms. Your use of these components is subject to"
+    )
     lines.append("the terms and conditions of the respective licenses.")
     lines.append("")
-    lines.append("The full text of each license can be found in the 'licenses' folder")
+    lines.append(
+        "The full text of applicable licenses can be found in the 'licenses' folder"
+    )
     lines.append("distributed with usdb_syncer.")
     lines.append("")
     lines.append(f"Generated on: {datetime.now(timezone.utc).strftime('%Y-%m-%d')}")
@@ -105,11 +111,13 @@ def generate_notice_content(licenses: list[LicenseEntry]) -> str:
     lines.append("LICENSE FILES")
     lines.append("=" * 78)
     lines.append("")
-    lines.append("The following license files are included in the 'licenses' folder:")
+    lines.append("The following license files should be included with the distribution:")
     lines.append("")
 
     if LICENSES_DIR.exists():
-        license_files_on_disk = sorted(f.name for f in LICENSES_DIR.iterdir() if f.is_file())
+        license_files_on_disk = sorted(
+            f.name for f in LICENSES_DIR.iterdir() if f.is_file()
+        )
         for license_file in license_files_on_disk:
             lines.append(f"  - {license_file}")
     lines.append("")
@@ -126,7 +134,11 @@ def main() -> None:
     print("Generating NOTICE.txt content...")
     content = generate_notice_content(licenses)
 
-    NOTICE_FILE.write_text(content, encoding="utf-8")
+    NOTICE_FILE_DATA.write_text(content, encoding="utf-8")
+
+    content = "This file is generated automatically. Do not edit.\n\n" + content
+
+    NOTICE_FILE_ROOT.write_text(content, encoding="utf-8")
 
     print(f"Sucess! Total dependencies: {len(licenses)}")
 

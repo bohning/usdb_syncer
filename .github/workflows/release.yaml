@@ -48,6 +48,7 @@ jobs:
             PYINSTALLER_ARGS: >-
               --onefile
               --add-data 'artifacts/song_list.json:usdb_syncer/data'
+              --add-data 'src/usdb_syncer/data/NOTICE:usdb_syncer/data'
               --add-data 'src/usdb_syncer/db/sql:usdb_syncer/db/sql'
               --add-data 'src/usdb_syncer/gui/resources/fonts:usdb_syncer/gui/resources/fonts'
               --add-data 'src/usdb_syncer/gui/resources/styles:usdb_syncer/gui/resources/styles'
@@ -60,6 +61,7 @@ jobs:
               --windowed
               --icon src/usdb_syncer/gui/resources/qt/appicon_128x128.png
               --add-data 'artifacts/song_list.json:usdb_syncer/data'
+              --add-data 'src/usdb_syncer/data/NOTICE:usdb_syncer/data'
               --add-data 'src/usdb_syncer/db/sql:usdb_syncer/db/sql'
               --add-data 'src/usdb_syncer/gui/resources/fonts:usdb_syncer/gui/resources/fonts'
               --add-data 'src/usdb_syncer/gui/resources/styles:usdb_syncer/gui/resources/styles'
@@ -72,6 +74,7 @@ jobs:
               --windowed
               --icon src/usdb_syncer/gui/resources/qt/appicon_128x128.png
               --add-data 'artifacts/song_list.json:usdb_syncer/data'
+              --add-data 'src/usdb_syncer/data/NOTICE:usdb_syncer/data'
               --add-data 'src/usdb_syncer/db/sql:usdb_syncer/db/sql'
               --add-data 'src/usdb_syncer/gui/resources/fonts:usdb_syncer/gui/resources/fonts'
               --add-data 'src/usdb_syncer/gui/resources/styles:usdb_syncer/gui/resources/styles'
@@ -84,6 +87,7 @@ jobs:
               --onefile
               --icon src/usdb_syncer/gui/resources/qt/appicon_128x128.png
               --add-data 'artifacts/song_list.json;usdb_syncer/data'
+              --add-data 'src/usdb_syncer/data/NOTICE;usdb_syncer/data'
               --add-data 'src/usdb_syncer/db/sql;usdb_syncer/db/sql'
               --add-data 'src/usdb_syncer/gui/resources/fonts;usdb_syncer/gui/resources/fonts'
               --add-data 'src/usdb_syncer/gui/resources/styles;usdb_syncer/gui/resources/styles'
