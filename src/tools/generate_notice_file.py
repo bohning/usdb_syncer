@@ -15,14 +15,15 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Required, TypedDict
 
-BUNDLE_DIR = (Path(__file__).parent.parent.parent / "bundle").resolve()
-NOTICE_FILE_ROOT = Path("NOTICE.txt")
+PROJECT_ROOT = Path(__file__).parent.parent.parent.resolve()
+NOTICE_FILE_ROOT = PROJECT_ROOT / "NOTICE.txt"
 NOTICE_FILE_DATA = (
-    Path(__file__).parent.parent / "usdb_syncer" / "gui" / "resources" / "text" / "NOTICE"
+    PROJECT_ROOT / "src" / "usdb_syncer" / "gui" / "resources" / "text" / "NOTICE"
 )  # This file is bundled with the syncer so that we can display it in the GUI.
-LICENSE_JSON = BUNDLE_DIR / "resources" / "licenses.json"
-LICENSES_DIR = BUNDLE_DIR / "licenses"
+LICENSES_DIR = PROJECT_ROOT / "licenses"
+BUNDLE_DIR = PROJECT_ROOT / "bundle"
 TEXTS_DIR = BUNDLE_DIR / "resources" / "texts"
+LICENSE_JSON = BUNDLE_DIR / "resources" / "licenses.json"
 
 
 class LicenseEntry(TypedDict, total=False):

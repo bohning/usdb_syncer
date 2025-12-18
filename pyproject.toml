@@ -4,7 +4,7 @@ dynamic = ["version"]
 description = "A download manager for USDB songs."
 authors = [{ name = "Markus Böhning", email = "markus.boehning@gmail.com" }]
 license = "GPL-3.0-only"
-license-files = ["LICENSE", "NOTICE.txt", "bundle/licenses/*"]
+license-files = ["LICENSE", "NOTICE.txt", "licenses/*"]
 requires-python = ">=3.11,<3.13"
 readme = "README.md"
 dependencies = [
