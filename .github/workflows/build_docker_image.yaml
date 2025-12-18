@@ -23,7 +23,7 @@ jobs:
       - name: Build image
         run: docker build . --file container/Dockerfile --tag $IMAGE_NAME --label "runnumber=${GITHUB_RUN_ID}"
       - name: Log in to registry
-        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin # Using GITHUB_TOKEN adds the container to the repository's packages
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.repository_owner }} --password-stdin # Using GITHUB_TOKEN adds the container to the repository's packages
       - name: Push image
         run: |
           IMAGE_ID=ghcr.io/${{ github.repository_owner }}/${IMAGE_NAME}
