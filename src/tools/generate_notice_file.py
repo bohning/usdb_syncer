@@ -21,9 +21,8 @@ NOTICE_FILE_DATA = (
     PROJECT_ROOT / "src" / "usdb_syncer" / "gui" / "resources" / "text" / "NOTICE"
 )  # This file is bundled with the syncer so that we can display it in the GUI.
 LICENSES_DIR = PROJECT_ROOT / "licenses"
-BUNDLE_DIR = PROJECT_ROOT / "bundle"
-TEXTS_DIR = BUNDLE_DIR / "resources" / "texts"
-LICENSE_JSON = BUNDLE_DIR / "resources" / "licenses.json"
+TEXTS_DIR = PROJECT_ROOT / "src" / "tools" / "resources" / "texts"
+LICENSE_JSON = PROJECT_ROOT / "src" / "tools" / "resources" / "licenses.json"
 
 
 class LicenseEntry(TypedDict, total=False):
