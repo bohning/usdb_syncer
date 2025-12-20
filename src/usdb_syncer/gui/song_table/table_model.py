@@ -175,6 +175,7 @@ def _display_data(song: UsdbSong, column: int) -> str | None:  # noqa: C901
 
 def _decoration_data(song: UsdbSong, column: int) -> QIcon | None:  # noqa: C901
     col = Column(column)
+    sync_meta = song.sync_meta
     match col:
         case (
             Column.SONG_ID
@@ -208,27 +209,27 @@ def _decoration_data(song: UsdbSong, column: int) -> QIcon | None:  # noqa: C901
             else:
                 return None
         case Column.TXT:
-            if not (song.sync_meta and (txt := song.sync_meta.txt)):
+            if not (sync_meta and (txt := sync_meta.txt)):
                 return None
-            icon = status_icon(txt, song.sync_meta.path.parent)
+            icon = status_icon(txt, sync_meta.path.parent)
         case Column.AUDIO:
-            if not (song.sync_meta and (audio := song.sync_meta.audio)):
+            if not (sync_meta and (audio := sync_meta.audio)):
                 return None
-            icon = status_icon(audio, song.sync_meta.path.parent)
+            icon = status_icon(audio, sync_meta.path.parent)
         case Column.VIDEO:
-            if not (song.sync_meta and (video := song.sync_meta.video)):
+            if not (sync_meta and (video := sync_meta.video)):
                 return None
-            icon = status_icon(video, song.sync_meta.path.parent)
+            icon = status_icon(video, sync_meta.path.parent)
         case Column.COVER:
-            if not (song.sync_meta and (cover := song.sync_meta.cover)):
+            if not (sync_meta and (cover := sync_meta.cover)):
                 return None
-            icon = status_icon(cover, song.sync_meta.path.parent)
+            icon = status_icon(cover, sync_meta.path.parent)
         case Column.BACKGROUND:
-            if not (song.sync_meta and (background := song.sync_meta.background)):
+            if not (sync_meta and (background := sync_meta.background)):
                 return None
-            icon = status_icon(background, song.sync_meta.path.parent)
+            icon = status_icon(background, sync_meta.path.parent)
         case Column.PINNED:
-            if not (song.sync_meta and song.sync_meta.pinned):
+            if not (sync_meta and sync_meta.pinned):
                 return None
             icon = icons.Icon.PIN
         case _ as unreachable:
@@ -263,21 +264,21 @@ def status_icon(resource: Resource, folder: Path) -> icons.Icon:
 
 
 def _tooltip_data(song: UsdbSong, column: int) -> str | None:
-    if not song.sync_meta:
+    if not (sync_meta := song.sync_meta):
         return None
 
     # Map columns to resource getters
     resource_map = {
-        Column.TXT: song.sync_meta.txt,
-        Column.AUDIO: song.sync_meta.audio,
-        Column.VIDEO: song.sync_meta.video,
-        Column.COVER: song.sync_meta.cover,
-        Column.BACKGROUND: song.sync_meta.background,
+        Column.TXT: sync_meta.txt,
+        Column.AUDIO: sync_meta.audio,
+        Column.VIDEO: sync_meta.video,
+        Column.COVER: sync_meta.cover,
+        Column.BACKGROUND: sync_meta.background,
     }
 
     col = Column(column)
     if resource := resource_map.get(col):
-        return status_tooltip(resource, song.sync_meta.path.parent)
+        return status_tooltip(resource, sync_meta.path.parent)
 
     return None
 
