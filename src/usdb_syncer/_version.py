@@ -1,5 +1,9 @@
 """For builds and bundles, this is replaced with the hardcoded release version."""
 
-import dunamai as _dunamai
+from importlib.metadata import PackageNotFoundError, version
 
-__version__ = _dunamai.Version.from_git().serialize()
+try:
+    __version__ = version("usdb_syncer")
+except PackageNotFoundError:
+    # syncer is not installed in the environment for some reason
+    __version__ = "0.unknown"

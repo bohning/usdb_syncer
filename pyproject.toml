@@ -1,82 +1,90 @@
-[build-system]
-requires = ["poetry-core>=1.0.0", "poetry-dynamic-versioning>=1.0.0,<2.0.0"]
-build-backend = "poetry_dynamic_versioning.backend"
-
-[tool.poetry]
+[project]
 name = "usdb_syncer"
-version = "0.0.0"  # will be replaced by current git tag via poetry-dynamic-versioning
-authors = ["Markus Böhning <markus.boehning@gmail.com>"]
+dynamic = ["version"]
 description = "A download manager for USDB songs."
-readme = ["README.md"]
-repository = "https://github.com/bohning/usdb_syncer"
-include = [
-    { path = "src/usdb_syncer/gui/forms/*.py", format = ["sdist", "wheel"] },
-    { path = "src/usdb_syncer/gui/resources/qt/*.py", format = ["sdist", "wheel"] },
-    { path = "src/usdb_syncer/data/*.json", format = ["sdist", "wheel"] },
-    { path = "src/usdb_syncer/webserver/static/*", format = ["sdist", "wheel"] },
-    { path = "src/usdb_syncer/webserver/templates/*", format = ["sdist", "wheel"] },
+authors = [{ name = "Markus Böhning", email = "markus.boehning@gmail.com" }]
+requires-python = ">=3.11,<3.13"
+readme = "README.md"
+dependencies = [
+    "attrs",
+    "beautifulsoup4",
+    "diff-match-patch",
+    "ffmpeg-normalize>=1.27",
+    "filetype",
+    "flask>=3.1.1,<4",
+    "keyring",
+    "lxml",
+    "mutagen",
+    "numpy>=2.2.5,<3",
+    "packaging",
+    "pillow>=10",
+    "platformdirs",
+    "PySide6",
+    "qrcode[pil]~=8.2",
+    "reportlab",
+    "requests",
+    "rookiepy>=0.5.3,<0.6",
+    "send2trash",
+    "sounddevice>=0.5.1,<0.6",
+    "soundfile>=0.13.1,<0.14",
+    "unidecode",
+    "yt-dlp[curl_cffi, default]",
 ]
 
-[tool.poetry.requires-plugins]
-poetry-dynamic-versioning = { version = ">=1.0.0,<2.0.0", extras = ["plugin"] }
+[project.urls]
+Repository = "https://github.com/bohning/usdb_syncer"
 
-[tool.poetry.dependencies]
-python = ">3.10,<3.13"
-attrs = "*"
-beautifulsoup4 = "*"
-ffmpeg-normalize = ">=1.27"
-filetype = "*"
-flask = "^3.1.1"
-keyring = "*"
-lxml = "*"
-mutagen = "*"
-numpy = "^2.2.5"
-packaging = "*"
-pillow = ">=10"
-platformdirs = "*"
-PySide6 = "*"
-qrcode = {extras = ["pil"], version = "^8.2"}
-reportlab = "*"
-requests = "*"
-rookiepy = "^0.5.3"
-send2trash = "*"
-sounddevice = "^0.5.1"
-soundfile = "^0.13.1"
-unidecode = "*"
-yt-dlp = {version = "*", extras = ["default", "curl_cffi"]}
-diff-match-patch = "^20241021"
-
-[tool.poetry.group.dev.dependencies]
-tox = "*"
-# lint
-ruff = "^0.14.1"
-mypy = "*"
-types-requests = "*"
-# test
-pytest = "*"
-# benchmark
-snakeviz = "*"
-# tools
-defusedxml = "^0.7.1"
-
-[tool.poetry.group.build.dependencies]
-PySide6 = "*"  # for file generation
-dunamai = "*"
-
-[tool.poetry.group.bundle.dependencies]
-pyinstaller = "*"
-pyinstaller-hooks-contrib = "*"
-# specifically required for pyinstaller (Note: darwin -> macos)
-altgraph = "*"
-macholib = {version = "*", markers="sys_platform == 'darwin'"}
-pywin32-ctypes = {version = "*", markers="sys_platform == 'win32'"}
-
-[tool.poetry.scripts]
+[project.scripts]
 usdb_syncer = "usdb_syncer.gui:main"
 
-[tool.poetry-dynamic-versioning]
-enable = true
-substitution.files = []
+[build-system]
+requires = ["hatchling", "hatch-vcs"]
+build-backend = "hatchling.build"
+
+[dependency-groups]
+dev = [
+    "tox",
+    "ruff~=0.14.1",
+    "mypy",
+    "types-requests",
+    "pytest",
+    "snakeviz",
+    "defusedxml>=0.7.1,<0.8",
+]
+bundle = [
+    "pyinstaller",
+    "pyinstaller-hooks-contrib",
+    "altgraph",
+    "macholib ; sys_platform == 'darwin'",
+    "pywin32-ctypes ; sys_platform == 'win32'",
+]
+
+[tool.uv]
+default-groups = [
+    "dev",
+]
+
+[tool.hatch.version]
+source = "vcs"
+
+[tool.hatch.build.targets.sdist]
+include = [
+    "src/usdb_syncer/gui/forms/*.py",
+    "src/usdb_syncer/gui/resources/qt/*.py",
+    "src/usdb_syncer/data/*.json",
+    "src/usdb_syncer/webserver/static/*",
+    "src/usdb_syncer/webserver/templates/*",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/usdb_syncer"]
+include = [
+    "src/usdb_syncer/gui/forms/*.py",
+    "src/usdb_syncer/gui/resources/qt/*.py",
+    "src/usdb_syncer/data/*.json",
+    "src/usdb_syncer/webserver/static/*",
+    "src/usdb_syncer/webserver/templates/*",
+]
 
 [tool.ruff]
 extend-exclude = [
