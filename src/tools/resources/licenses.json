@@ -1,5 +1,11 @@
 [
   {
+    "name": "Python",
+    "license": "PSF-2.0",
+    "copyright": "Copyright (c) 2001-2023 Python Software Foundation",
+    "notice_text": "python"
+  },
+  {
     "name": "Flask",
     "license": "BSD-3-Clause",
     "copyright": "Copyright (c) 2010 Pallets",
@@ -340,7 +346,7 @@
     "name": "typing_extensions",
     "license": "PSF-2.0",
     "copyright": "Copyright (c) 2001-2023 Python Software Foundation",
-    "notice_text": "mit_standard"
+    "notice_text": "python"
   },
   {
     "name": "urllib3",
