@@ -134,7 +134,7 @@ SUPPORTED_VIDEO_SOURCES_REGEX = re.compile(
                 | archive\.org
                 | web\.archive\.org
                 | v\.animethemes\.moe
-                | (?:[^./]+\.)*bandcamp\.com
+                | (?:[A-Za-z0-9-]+\.)?bandcamp\.com
                 | bilibili\.com
                 | cda\.pl
                 | drive\.google\.com

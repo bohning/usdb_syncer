@@ -117,12 +117,12 @@ class SongTable:
         ):
             return
 
-        if not song.is_local() or (sync_meta := song.sync_meta) is None:
-            self._download([idx.row()])
-            return
-
         column = Column(idx.column())
-        if (file_path := self.file_path(sync_meta, column)) and file_path.is_file():
+        if (
+            (sync_meta := song.sync_meta)
+            and (file_path := self.file_path(sync_meta, column))
+            and file_path.is_file()
+        ):
             utils.open_path_or_file(file_path)
             return
 

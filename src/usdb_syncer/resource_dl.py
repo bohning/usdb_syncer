@@ -7,13 +7,14 @@ import tempfile
 from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
-from typing import assert_never
+from typing import Final, assert_never
 
 import filetype
 import requests
 import yt_dlp
 from PIL import Image, ImageEnhance, ImageOps
 from PIL.Image import Resampling
+from yt_dlp.utils import UnsupportedError, YoutubeDLError, download_range_func
 
 from usdb_syncer import SongId, utils
 from usdb_syncer.constants import YtErrorMsg
@@ -37,8 +38,12 @@ IMAGE_DOWNLOAD_HEADERS = {
         "(KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36"
     )
 }
+START_TIME_SECONDS: Final[int] = 0
+DURATION_SECONDS: Final[int] = 15
+FREEZE_RATIO_THRESHOLD: Final[float] = 0.5
+FFMPEG_TIMEOUT_SECONDS: Final[int] = 60
 
-YtdlOptions = dict[str, str | bool | tuple | list | int]
+YtdlOptions = dict[str, str | bool | tuple | list | int | download_range_func]
 
 
 class ResourceDLError(Enum):
@@ -168,87 +173,93 @@ def download_video(
 
 
 def fallback_resource_is_audio_only(
-    options: VideoOptions, url: str, logger: Logger
+    options: VideoOptions, url: str, browser: Browser, logger: Logger
 ) -> bool:
-    """Check if a video is audio-only (static image) using freezedetect."""
-
-    start_time = 0  # duration to skip from beginning [seconds]
-    duration = 15  # duration to analyze [seconds]
-    freeze_threshold = 0.5  # 50 % frozen = static image / audio-only
+    """Check if a video is audio-only using ffmpeg's freezedetect filter."""
 
     with tempfile.NamedTemporaryFile(suffix=".mp4", delete=False) as tmp:
-        temp_path = Path(tmp.name)
+        temp_video_file = Path(tmp.name)
 
     try:
         ydl_opts = _ytdl_options(
-            options.ytdl_format(), Browser.BRAVE, temp_path, YtdlpRateLimit.DISABLE
+            options.ytdl_format(),
+            browser,
+            temp_video_file,
+            options.rate_limit,
+            segment_only=True,
         )
-        ydl_opts["download_ranges"] = yt_dlp.utils.download_range_func(
-            [], [[start_time, duration]]
-        )
-        ydl_opts["force_keyframes_at_cuts"] = True
-        ydl_opts["outtmpl"] = str(temp_path)
-        ydl_opts["quiet"] = True
-        ydl_opts["no_warnings"] = True
 
-        _download_resource(url, ydl_opts, logger)
-
-        if not temp_path.exists():
+        dl_result = _download_resource(url, ydl_opts, logger)
+        if not dl_result.extension:
             return False
 
-        result = subprocess.run(
-            [
-                "ffmpeg",
-                "-i",
-                str(temp_path),
-                "-vf",
-                "freezedetect=noise=-80dB:duration=1",  # video filter to detect freezes
-                "-an",  # disable audio
-                "-f",
-                "null",  # no output file
-                "-",  # output to stdout
-            ],
-            capture_output=True,
-            text=True,
-            timeout=60,
-        )
-
-        freeze_durations = [
-            float(duration)
-            for duration in re.findall(r"freeze_duration: ([\d.]+)", result.stderr)
-        ]
-
-        if not freeze_durations:
-            logger.debug(f"Commented resource '{url}' is a video, no freezes detected.")
-            return False
-
-        freeze_ratio = sum(freeze_durations) / duration
-        if freeze_ratio >= freeze_threshold:
-            logger.debug(
-                f"Commented resource '{url}' is most likely audio-only: "
-                f"{freeze_ratio:.2%} freeze detected."
-            )
-        else:
-            logger.debug(
-                f"Commented resource '{url}' is most likely a video: "
-                f"only {freeze_ratio:.2%} freeze detected."
-            )
+        freeze_durations = run_freezedetect(temp_video_file)
+        return freeze_ratio_larger_threshold(url, freeze_durations, logger)
 
     except (subprocess.SubprocessError, OSError, ValueError):
         logger.debug(
             f"Failed to analyze commented resource '{url}' for audio-only content."
         )
         return False
-    else:
-        return freeze_ratio >= freeze_threshold
+
     finally:
-        # Clean up temp file
-        if temp_path.exists():
-            temp_path.unlink()
+        if temp_video_file.exists():
+            temp_video_file.unlink()
+
+
+def run_freezedetect(video_path: Path) -> list[float]:
+    result = subprocess.run(
+        [
+            "ffmpeg",
+            "-i",
+            str(video_path),
+            "-vf",
+            "freezedetect=noise=-80dB:duration=1",
+            "-an",
+            "-f",
+            "null",
+            "-",
+        ],
+        capture_output=True,
+        text=True,
+        timeout=FFMPEG_TIMEOUT_SECONDS,
+    )
+
+    return [
+        float(duration)
+        for duration in re.findall(r"freeze_duration: ([\d.]+)", result.stderr)
+    ]
+
+
+def freeze_ratio_larger_threshold(
+    url: str, freeze_durations: list[float], logger: Logger
+) -> bool:
+    if not freeze_durations:
+        logger.debug(f"Commented resource '{url}' is a video, no freezes detected.")
+        return False
+
+    freeze_ratio = sum(freeze_durations) / DURATION_SECONDS
+
+    if freeze_ratio >= FREEZE_RATIO_THRESHOLD:
+        logger.debug(
+            f"Commented resource '{url}' is most likely audio-only: "
+            f"{freeze_ratio:.2%} freeze detected."
+        )
+    else:
+        logger.debug(
+            f"Commented resource '{url}' is most likely a video: "
+            f"only {freeze_ratio:.2%} freeze detected."
+        )
+
+    return freeze_ratio >= FREEZE_RATIO_THRESHOLD
 
 
 def _ytdl_options(
-    format_: str, browser: Browser, target_stem: Path, ratelimit: YtdlpRateLimit
+    format_: str,
+    browser: Browser,
+    target_stem: Path,
+    ratelimit: YtdlpRateLimit,
+    segment_only: bool = False,
 ) -> YtdlOptions:
     options: YtdlOptions = {
         "format": format_,
@@ -263,10 +274,18 @@ def _ytdl_options(
         options["ratelimit"] = ratelimit.value
     if browser:
         options["cookiesfrombrowser"] = (browser.value, None, None, None)
+    if segment_only:
+        options["outtmpl"] = f"{target_stem}"  # includes extension of temp file
+        options["download_ranges"] = download_range_func(
+            [], [(START_TIME_SECONDS, DURATION_SECONDS)]
+        )
+        options["force_keyframes_at_cuts"] = True
+        options["quiet"] = True
+        options["no_warnings"] = True
     return options
 
 
-def _download_resource(  # noqa: C901
+def _download_resource(
     resource: str, options: YtdlOptions, logger: Logger
 ) -> ResourceDLResult:
     if (url := video_url_from_resource(resource)) is None:
@@ -275,64 +294,79 @@ def _download_resource(  # noqa: C901
     options_without_cookies = options.copy()
     options_without_cookies.pop("cookiesfrombrowser", None)
 
-    with yt_dlp.YoutubeDL(options_without_cookies) as ydl:
+    with yt_dlp.YoutubeDL(options_without_cookies) as ydl:  # type: ignore[arg-type]
         try:
             filename = ydl.prepare_filename(ydl.extract_info(url))
             ext = Path(filename).suffix[1:]
             return ResourceDLResult(extension=ext)
-        except yt_dlp.utils.UnsupportedError:
+        except UnsupportedError:
             return ResourceDLResult(error=ResourceDLError.RESOURCE_UNSUPPORTED)
-        except yt_dlp.utils.YoutubeDLError as e:
+        except YoutubeDLError as e:
             error_message = utils.remove_ansi_codes(str(e))
             logger.debug(f"Failed to download '{url}': {error_message}")
-            if any(
-                msg in error_message
-                for msg in (YtErrorMsg.YT_AGE_RESTRICTED, YtErrorMsg.VM_UNAUTHENTICATED)
-            ):
-                dl_result = _retry_with_cookies(url, options, logger)
-                return ResourceDLResult(extension=dl_result.extension)
-            if any(
-                msg in error_message
-                for msg in (
-                    YtErrorMsg.YT_GEO_RESTRICTED_1,
-                    YtErrorMsg.YT_GEO_RESTRICTED_2,
-                    YtErrorMsg.YT_GEO_RESTRICTED_3,
-                )
-            ):
-                _handle_geo_restriction(url, resource, logger)
-                return ResourceDLResult(error=ResourceDLError.RESOURCE_GEO_RESTRICTED)
-            if YtErrorMsg.YT_UNAVAILABLE in error_message:
-                _handle_unavailable(url, logger)
-                return ResourceDLResult(error=ResourceDLError.RESOURCE_UNAVAILABLE)
-            if YtErrorMsg.YT_PARSE_ERROR in error_message:
-                _handle_parse_error(url, logger)
-                return ResourceDLResult(error=ResourceDLError.RESOURCE_PARSE_ERROR)
-            if YtErrorMsg.YT_FORBIDDEN in error_message:
-                _handle_forbidden(url, logger)
-                return ResourceDLResult(error=ResourceDLError.RESOURCE_FORBIDDEN)
-            if YtErrorMsg.YT_PREMIUM_ONLY in error_message:
-                _handle_premium_only(url, logger)
-                return ResourceDLResult(error=ResourceDLError.RESOURCE_PREMIUM_ONLY)
-            if YtErrorMsg.YT_CONFIRM_NOT_BOT in error_message:
-                logger.warning(
-                    "Download failed because YouTube suspects bot activity. "
-                    "Reconnect to your ISP / reboot your router to get a new external "
-                    "IP address and try again."
-                )
-                return ResourceDLResult(error=ResourceDLError.RESOURCE_DL_FAILED)
-            raise
+            return _handle_youtube_error(url, resource, error_message, options, logger)
+
+
+def _handle_youtube_error(
+    url: str, resource: str, error_message: str, options: YtdlOptions, logger: Logger
+) -> ResourceDLResult:
+    """Handle different YouTube error types."""
+
+    if any(
+        msg in error_message
+        for msg in (YtErrorMsg.YT_AGE_RESTRICTED, YtErrorMsg.VM_UNAUTHENTICATED)
+    ):
+        dl_result = _retry_with_cookies(url, options, logger)
+        return ResourceDLResult(extension=dl_result.extension)
+
+    if any(
+        msg in error_message
+        for msg in (
+            YtErrorMsg.YT_GEO_RESTRICTED_1,
+            YtErrorMsg.YT_GEO_RESTRICTED_2,
+            YtErrorMsg.YT_GEO_RESTRICTED_3,
+        )
+    ):
+        _handle_geo_restriction(url, resource, logger)
+        return ResourceDLResult(error=ResourceDLError.RESOURCE_GEO_RESTRICTED)
+
+    if YtErrorMsg.YT_UNAVAILABLE in error_message:
+        _handle_unavailable(url, logger)
+        return ResourceDLResult(error=ResourceDLError.RESOURCE_UNAVAILABLE)
+
+    if YtErrorMsg.YT_PARSE_ERROR in error_message:
+        _handle_parse_error(url, logger)
+        return ResourceDLResult(error=ResourceDLError.RESOURCE_PARSE_ERROR)
+
+    if YtErrorMsg.YT_FORBIDDEN in error_message:
+        _handle_forbidden(url, logger)
+        return ResourceDLResult(error=ResourceDLError.RESOURCE_FORBIDDEN)
+
+    if YtErrorMsg.YT_PREMIUM_ONLY in error_message:
+        _handle_premium_only(url, logger)
+        return ResourceDLResult(error=ResourceDLError.RESOURCE_PREMIUM_ONLY)
+
+    if YtErrorMsg.YT_CONFIRM_NOT_BOT in error_message:
+        logger.warning(
+            "Download failed because YouTube suspects bot activity. "
+            "Reconnect to your ISP / reboot your router to get a new external "
+            "IP address and try again."
+        )
+        return ResourceDLResult(error=ResourceDLError.RESOURCE_DL_FAILED)
+
+    raise
 
 
 def _retry_with_cookies(
     url: str, options: YtdlOptions, logger: Logger
 ) -> ResourceDLResult:
     logger.warning("Age-restricted resource. Retrying with cookies ...")
-    with yt_dlp.YoutubeDL(options) as ydl:
+    with yt_dlp.YoutubeDL(options) as ydl:  # type: ignore[arg-type]
         try:
             filename = ydl.prepare_filename(ydl.extract_info(url))
             ext = Path(filename).suffix[1:]
             return ResourceDLResult(extension=ext)
-        except yt_dlp.utils.YoutubeDLError as re:
+        except YoutubeDLError as re:
             msg = f"Retry failed: {utils.remove_ansi_codes(str(re))}"
             logger.error(msg)  # noqa: TRY400
             raise

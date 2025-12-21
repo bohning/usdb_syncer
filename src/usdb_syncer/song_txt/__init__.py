@@ -124,13 +124,15 @@ class SongTxt:
         for enc in Encoding:
             try:
                 txt = path.read_text(encoding=enc.value, errors="strict")
-                logger.debug(f"Read '{path.name}' using encoding: {enc}")
-                return cls.try_parse(txt, logger)
             except UnicodeDecodeError:
                 logger.debug(f"Failed decoding '{path.name}' as {enc}")
+                continue  # Try next encoding
             except Exception:
                 logger.exception(f"Error reading '{path}'")
                 return None
+            else:
+                logger.debug(f"Read '{path.name}' using encoding: {enc}")
+                return cls.try_parse(txt, logger)
 
         logger.error(f"Unable to decode '{path}' using any known encoding")
         return None

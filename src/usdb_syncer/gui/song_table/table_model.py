@@ -267,17 +267,8 @@ def _tooltip_data(song: UsdbSong, column: int) -> str | None:
     if not (sync_meta := song.sync_meta):
         return None
 
-    # Map columns to resource getters
-    resource_map = {
-        Column.TXT: sync_meta.txt,
-        Column.AUDIO: sync_meta.audio,
-        Column.VIDEO: sync_meta.video,
-        Column.COVER: sync_meta.cover,
-        Column.BACKGROUND: sync_meta.background,
-    }
-
     col = Column(column)
-    if resource := resource_map.get(col):
+    if resource := col.get_resource_for_column(sync_meta):
         return status_tooltip(resource, sync_meta.path.parent)
 
     return None
@@ -289,22 +280,22 @@ def status_tooltip(resource: Resource, folder: Path) -> str:
         local_changes = " (has local changes)"
     match resource.status:
         case JobStatus.SUCCESS | JobStatus.SUCCESS_UNCHANGED:
-            assert resource.file is not None
-            tooltip = f"{resource.file.fname}{local_changes}"
+            tooltip = f"{file.fname}{local_changes}" if file else "missing file"
         case JobStatus.SKIPPED_DISABLED:
             tooltip = "Resource download disabled in the settings"
         case JobStatus.SKIPPED_UNAVAILABLE:
             tooltip = "No resource available"
         case JobStatus.FALLBACK:
-            assert resource.file is not None
             tooltip = (
-                f"{resource.file.fname} (fallback to commented/USDB resource)"
-                f"{local_changes}"
+                (f"{file.fname} (fallback to commented/USDB resource){local_changes}")
+                if file
+                else "missing file"
             )
         case JobStatus.FAILURE_EXISTING:
-            assert resource.file is not None
             tooltip = (
-                f"{resource.file.fname} (fallback to existing resource){local_changes}"
+                (f"{file.fname} (fallback to existing resource){local_changes}")
+                if file
+                else "missing file"
             )
         case JobStatus.FAILURE:
             tooltip = "Resource download failed"

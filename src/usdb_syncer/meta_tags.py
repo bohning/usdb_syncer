@@ -9,6 +9,7 @@ import attrs
 from attr import fields
 
 from usdb_syncer.logger import Logger
+from usdb_syncer.utils import remove_url_params
 
 # Characters that have special meaning for the meta tag syntax and therefore
 # must be escaped. Escaping is done with percent encoding.
@@ -193,11 +194,11 @@ class MetaTags:
         value = decode_meta_tag_value(value)
         match key:
             case "v":
-                self.video = self.remove_url_params(value, logger)
+                self.video = remove_url_params(value, logger)
             case "v-trim" | "v-crop":
                 logger.debug(f"Unsupported meta tag found: {key}={value}")
             case "a":
-                self.audio = self.remove_url_params(value, logger)
+                self.audio = remove_url_params(value, logger)
             case "co":
                 self.cover = ImageMetaTags(source=value)
             case "co-rotate" if self.cover:
@@ -226,12 +227,6 @@ class MetaTags:
                 self.tags = value
             case _:
                 logger.warning(f"unknown key for meta tag: '{key}={value}'")
-
-    def remove_url_params(self, url: str, logger: Logger) -> str:
-        url_base, _, url_params = url.partition("&")
-        if url_params:
-            logger.debug(f"Stripped superfluous query parameters from '{url}'.")
-        return url_base
 
     def is_audio_only(self) -> bool:
         """True if a resource is explicitly set for audio only."""

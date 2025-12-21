@@ -10,6 +10,7 @@ from PySide6.QtGui import QIcon
 
 from usdb_syncer import db
 from usdb_syncer.gui.icons import Icon
+from usdb_syncer.sync_meta import Resource, SyncMeta
 
 MINIMUM_COLUMN_WIDTH = 24
 
@@ -253,3 +254,18 @@ class Column(IntEnum):
                 return Column.DOWNLOAD_STATUS
             case unreachable:
                 assert_never(unreachable)
+
+    def get_resource_for_column(self, sync_meta: SyncMeta) -> Resource | None:
+        match self:
+            case Column.TXT:
+                return sync_meta.txt
+            case Column.AUDIO:
+                return sync_meta.audio
+            case Column.VIDEO:
+                return sync_meta.video
+            case Column.COVER:
+                return sync_meta.cover
+            case Column.BACKGROUND:
+                return sync_meta.background
+            case _:
+                return None
