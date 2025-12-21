@@ -238,24 +238,17 @@ def _decoration_data(song: UsdbSong, column: int) -> QIcon | None:  # noqa: C901
 
 
 def status_icon(resource: Resource, folder: Path) -> icons.Icon:
-    file_in_sync = True
-    if (file := resource.file) and not file.is_in_sync(folder):
-        file_in_sync = False
     match resource.status:
         case JobStatus.SUCCESS | JobStatus.SUCCESS_UNCHANGED:
-            icon = icons.Icon.SUCCESS if file_in_sync else icons.Icon.SUCCESS_CHANGES
+            icon = icons.Icon.SUCCESS
         case JobStatus.SKIPPED_DISABLED:
             icon = icons.Icon.SKIPPED_DISABLED
         case JobStatus.SKIPPED_UNAVAILABLE:
             icon = icons.Icon.SKIPPED_UNAVAILABLE
         case JobStatus.FALLBACK:
-            icon = icons.Icon.FALLBACK if file_in_sync else icons.Icon.FALLBACK_CHANGES
+            icon = icons.Icon.FALLBACK
         case JobStatus.FAILURE_EXISTING:
-            icon = (
-                icons.Icon.FAILURE_EXISTING
-                if file_in_sync
-                else icons.Icon.FAILURE_EXISTING_CHANGES
-            )
+            icon = icons.Icon.FAILURE_EXISTING
         case JobStatus.FAILURE:
             icon = icons.Icon.FAILURE
         case _ as unreachable:
@@ -275,27 +268,25 @@ def _tooltip_data(song: UsdbSong, column: int) -> str | None:
 
 
 def status_tooltip(resource: Resource, folder: Path) -> str:
-    local_changes = ""
-    if (file := resource.file) and not file.is_in_sync(folder):
-        local_changes = " (has local changes)"
+    file = resource.file
     match resource.status:
         case JobStatus.SUCCESS | JobStatus.SUCCESS_UNCHANGED:
-            tooltip = f"{file.fname}{local_changes}" if file else "missing file"
+            tooltip = file.fname if file else "local file missing"
         case JobStatus.SKIPPED_DISABLED:
             tooltip = "Resource download disabled in the settings"
         case JobStatus.SKIPPED_UNAVAILABLE:
             tooltip = "No resource available"
         case JobStatus.FALLBACK:
             tooltip = (
-                (f"{file.fname} (fallback to commented/USDB resource){local_changes}")
+                (f"{file.fname} (fallback to commented/USDB resource)")
                 if file
-                else "missing file"
+                else "local file missing"
             )
         case JobStatus.FAILURE_EXISTING:
             tooltip = (
-                (f"{file.fname} (fallback to existing resource){local_changes}")
+                (f"{file.fname} (fallback to existing resource)")
                 if file
-                else "missing file"
+                else "local file missing"
             )
         case JobStatus.FAILURE:
             tooltip = "Resource download failed"
