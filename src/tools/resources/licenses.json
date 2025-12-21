@@ -132,12 +132,6 @@
     "license_files": ["LICENSE.APACHE"]
   },
   {
-    "name": "dunamai",
-    "license": "MIT",
-    "copyright": "Copyright (c) 2019 Matthew T. Kennerly",
-    "notice_text": "mit_standard"
-  },
-  {
     "name": "ffmpeg-normalize",
     "license": "MIT",
     "copyright": "Copyright (c) Werner Robitza",

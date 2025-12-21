@@ -184,10 +184,18 @@ jobs:
     needs: bundle
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: actions/download-artifact@v4
         with:
           path: artifacts
           merge-multiple: true
+      - name: Zip USDB_SYNCER* binaries
+        run: |
+          for file in artifacts/USDB_Syncer*; do
+            zip -0 -r "${file}.zip" "$file" licenses LICENSE NOTICE.txt
+          done
       - name: Extract Release Notes
         id: extract_notes
         run: >
@@ -197,7 +205,7 @@ jobs:
         shell: bash
       - uses: ncipollo/release-action@v1
         with:
-          artifacts: "artifacts/USDB_Syncer*"
+          artifacts: "artifacts/USDB_Syncer*.zip"
           bodyFile: "CHANGELOG.md"
 
   publish:
