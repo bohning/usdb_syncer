@@ -1,3 +1,16 @@
+<!-- 0.19.0 -->
+
+# Changes
+
+## Features
+
+## Fixes
+
+## Developer notes
+
+- The build process was migrated to uv. Poetry is no longer used.
+  See the README for instructions.
+
 <!-- 0.18.0 -->
 
 # Changes
