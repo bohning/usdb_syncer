@@ -111,7 +111,9 @@ def generate_notice_content(licenses: list[LicenseEntry]) -> str:
     lines.append("LICENSE FILES")
     lines.append("=" * 78)
     lines.append("")
-    lines.append("The following license files should be included with the distribution:")
+    lines.append(
+        "The following license files should be included with the distribution:"
+    )
     lines.append("")
 
     if LICENSES_DIR.exists():
