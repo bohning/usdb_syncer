@@ -53,10 +53,6 @@ dev = [
     "snakeviz",
     "defusedxml>=0.7.1,<0.8",
 ]
-build = [
-    "PySide6",
-    "dunamai",
-]
 bundle = [
     "pyinstaller",
     "pyinstaller-hooks-contrib",
@@ -68,7 +64,6 @@ bundle = [
 [tool.uv]
 default-groups = [
     "dev",
-    "build",
 ]
 
 [tool.hatch.version]
