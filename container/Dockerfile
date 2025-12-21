@@ -2,7 +2,7 @@ FROM quay.io/pypa/manylinux_2_34_x86_64:latest
 
 LABEL maintainer="usdb_syncer developers"
 LABEL org.opencontainers.image.base.name="quay.io/pypa/manylinux_2_34_x86_64:latest"
-LABEL org.opencontainers.image.source="https://github.com/randompersona1/some_actions_testing"
+LABEL org.opencontainers.image.source="https://github.com/bohning/usdb_syncer"
 LABEL org.opencontainers.image.description="A container to build linux binaries that work on most linux distributions."
 LABEL org.opencontainers.image.licenses="MIT"
 
