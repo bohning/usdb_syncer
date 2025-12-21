@@ -1,0 +1,33 @@
+# Based on: https://docs.github.com/en/packages/managing-github-packages-using-github-actions-workflows/publishing-and-installing-a-package-with-github-actions#upgrading-a-workflow-that-accesses-a-registry-using-a-personal-access-token
+# See container/README.md for motivation and details.
+name: Create docker image for linux builds
+
+on:
+  workflow_dispatch:
+
+env:
+  IMAGE_NAME: syncer_linux_builder_image # This name needs to be synced with usage in other workflows
+
+jobs:
+  build_docker_image:
+    name: Build and Push Docker Image
+    runs-on: ubuntu-latest
+    permissions:
+      packages: write
+      contents: read
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      - run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
+      - name: Build image
+        run: docker build . --file container/Dockerfile --tag $IMAGE_NAME --label "runnumber=${GITHUB_RUN_ID}"
+      - name: Log in to registry
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.repository_owner }} --password-stdin # Using GITHUB_TOKEN adds the container to the repository's packages
+      - name: Push image
+        run: |
+          IMAGE_ID=ghcr.io/${{ github.repository_owner }}/${IMAGE_NAME}
+          IMAGE_ID=$(echo $IMAGE_ID | tr '[A-Z]' '[a-z]')
+          docker tag $IMAGE_NAME $IMAGE_ID:latest
+          docker push $IMAGE_ID:latest
+        # Versioning is not required; we only need one authoritative image. So just push 'latest'.
