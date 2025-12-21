@@ -1,5 +1,7 @@
 FROM quay.io/pypa/manylinux_2_34_x86_64:latest
 
+RUN rm -rf /opt/python
+
 LABEL maintainer="usdb_syncer developers"
 LABEL org.opencontainers.image.base.name="quay.io/pypa/manylinux_2_34_x86_64:latest"
 LABEL org.opencontainers.image.source="https://github.com/bohning/usdb_syncer"
