@@ -38,8 +38,12 @@ IMAGE_DOWNLOAD_HEADERS = {
         "(KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36"
     )
 }
+
+# Constants for freezedetect analysis
 START_TIME_SECONDS: Final[int] = 0
 DURATION_SECONDS: Final[int] = 15
+FREEZE_NOISE_DB: Final[int] = -80
+FREEZE_DURATION_SECONDS: Final[int] = 1
 FREEZE_RATIO_THRESHOLD: Final[float] = 0.5
 FFMPEG_TIMEOUT_SECONDS: Final[int] = 60
 
@@ -208,22 +212,24 @@ def fallback_resource_is_audio_only(
 
 
 def run_freezedetect(video_path: Path) -> list[float]:
-    result = subprocess.run(
-        [
-            "ffmpeg",
-            "-i",
-            str(video_path),
-            "-vf",
-            "freezedetect=noise=-80dB:duration=1",
-            "-an",
-            "-f",
-            "null",
-            "-",
-        ],
-        capture_output=True,
-        text=True,
-        timeout=FFMPEG_TIMEOUT_SECONDS,
-    )
+    with utils.LinuxEnvCleaner():
+        result = subprocess.run(
+            [
+                "ffmpeg",
+                "-i",
+                str(video_path),
+                "-vf",
+                f"freezedetect=noise={FREEZE_NOISE_DB}dB:"
+                f"duration={FREEZE_DURATION_SECONDS}",
+                "-an",
+                "-f",
+                "null",
+                "-",
+            ],
+            capture_output=True,
+            text=True,
+            timeout=FFMPEG_TIMEOUT_SECONDS,
+        )
 
     return [
         float(duration)
