@@ -25,24 +25,24 @@
   },
   {
     "name": "PySide6",
-    "license": "LGPLv3-only",
+    "license": "GPLv3-only",
     "copyright": "Copyright (c) 2024 The Qt Company Ltd.",
     "notice_text": "pyside6",
-    "license_files": ["LICENSE.LGPL3", "LICENSE.GPL3"]
+    "license_files": ["LICENSE.GPL3"]
   },
   {
     "name": "PySide6_Addons",
-    "license": "LGPLv3-only",
+    "license": "GPLv3-only",
     "copyright": "Copyright (c) 2024 The Qt Company Ltd.",
     "notice_text": "pyside6",
-    "license_files": ["LICENSE.LGPL3", "LICENSE.GPL3"]
+    "license_files": ["LICENSE.GPL3"]
   },
   {
     "name": "PySide6-Essentials",
-    "license": "LGPLv3-only",
+    "license": "GPLv3-only",
     "copyright": "Copyright (c) 2024 The Qt Company Ltd.",
     "notice_text": "pyside6",
-    "license_files": ["LICENSE.LGPL3", "LICENSE.GPL3"]
+    "license_files": ["LICENSE.GPL3"]
   },
   {
     "name": "Send2Trash",

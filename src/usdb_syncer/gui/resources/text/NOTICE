@@ -9,7 +9,7 @@ the terms and conditions of the respective licenses.
 The full text of applicable licenses can be found in the 'licenses' folder
 distributed with usdb_syncer.
 
-Generated on: 2025-12-21
+Generated on: 2026-01-06
 
 ------------------------------------------------------------------------------
 altgraph
@@ -946,46 +946,46 @@ View the full license text: LICENSE.GPL2
 PySide6
 ------------------------------------------------------------------------------
 
-License: LGPLv3-only
+License: GPLv3-only
 Copyright (c) 2024 The Qt Company Ltd.
 
-This library is free software; you can redistribute it and/or modify it under the terms of the GNU Lesser General Public License version 3 as published by the Free Software Foundation.
+This library is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License version 3 as published by the Free Software Foundation.
 
 This library is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY.
 
-You should have received a copy of the GNU Lesser General Public License along with this library (see files LICENSE.LGPL3 and LICENSE.GPL3). If not, see https://www.gnu.org/licenses/.
+You should have received a copy of the GNU General Public License along with this library (see files and LICENSE.GPL3). If not, see https://www.gnu.org/licenses/.
 
-View the full license text: LICENSE.LGPL3, LICENSE.GPL3
+View the full license text: LICENSE.GPL3
 
 ------------------------------------------------------------------------------
 PySide6-Essentials
 ------------------------------------------------------------------------------
 
-License: LGPLv3-only
+License: GPLv3-only
 Copyright (c) 2024 The Qt Company Ltd.
 
-This library is free software; you can redistribute it and/or modify it under the terms of the GNU Lesser General Public License version 3 as published by the Free Software Foundation.
+This library is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License version 3 as published by the Free Software Foundation.
 
 This library is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY.
 
-You should have received a copy of the GNU Lesser General Public License along with this library (see files LICENSE.LGPL3 and LICENSE.GPL3). If not, see https://www.gnu.org/licenses/.
+You should have received a copy of the GNU General Public License along with this library (see files and LICENSE.GPL3). If not, see https://www.gnu.org/licenses/.
 
-View the full license text: LICENSE.LGPL3, LICENSE.GPL3
+View the full license text: LICENSE.GPL3
 
 ------------------------------------------------------------------------------
 PySide6_Addons
 ------------------------------------------------------------------------------
 
-License: LGPLv3-only
+License: GPLv3-only
 Copyright (c) 2024 The Qt Company Ltd.
 
-This library is free software; you can redistribute it and/or modify it under the terms of the GNU Lesser General Public License version 3 as published by the Free Software Foundation.
+This library is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License version 3 as published by the Free Software Foundation.
 
 This library is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY.
 
-You should have received a copy of the GNU Lesser General Public License along with this library (see files LICENSE.LGPL3 and LICENSE.GPL3). If not, see https://www.gnu.org/licenses/.
+You should have received a copy of the GNU General Public License along with this library (see files and LICENSE.GPL3). If not, see https://www.gnu.org/licenses/.
 
-View the full license text: LICENSE.LGPL3, LICENSE.GPL3
+View the full license text: LICENSE.GPL3
 
 ------------------------------------------------------------------------------
 Python
@@ -1211,11 +1211,11 @@ shiboken6
 License: LGPLv3-only
 Copyright (c) 2024 The Qt Company Ltd.
 
-This library is free software; you can redistribute it and/or modify it under the terms of the GNU Lesser General Public License version 3 as published by the Free Software Foundation.
+This library is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License version 3 as published by the Free Software Foundation.
 
 This library is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY.
 
-You should have received a copy of the GNU Lesser General Public License along with this library (see files LICENSE.LGPL3 and LICENSE.GPL3). If not, see https://www.gnu.org/licenses/.
+You should have received a copy of the GNU General Public License along with this library (see files and LICENSE.GPL3). If not, see https://www.gnu.org/licenses/.
 
 View the full license text: LICENSE.LGPL3, LICENSE.GPL3
 
