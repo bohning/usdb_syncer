@@ -13,6 +13,10 @@ distributed with usdb_syncer.
 
 Generated on: 2026-01-06
 
+==============================================================================
+CODE DEPENDENCIES
+==============================================================================
+
 ------------------------------------------------------------------------------
 altgraph
 ------------------------------------------------------------------------------
@@ -1573,13 +1577,38 @@ distribute this software, either in source code form or as a compiled
 binary, for any purpose, commercial or non-commercial, and by any
 means.
 
-==============================================================================
-LICENSE FILES
-==============================================================================
+------------------------------------------------------------------------------
+LICENSE FILES (Code Dependencies)
+------------------------------------------------------------------------------
 
-The following license files should be included with the distribution:
+The following license files apply to the code dependencies above:
 
   - LICENSE.APACHE
   - LICENSE.GPL2
   - LICENSE.GPL3
   - LICENSE.MPL2
+
+
+==============================================================================
+ASSET DEPENDENCIES
+==============================================================================
+
+------------------------------------------------------------------------------
+Icons
+------------------------------------------------------------------------------
+
+License: CC-BY-3.0
+Yusuke Kamiyamane
+
+Some icons by Yusuke Kamiyamane. Licensed under a Creative Commons Attribution 3.0 License.
+Icons are available at: https://p.yusukekamiyamane.com/
+
+View the full license text: LICENSE.CCBY3
+
+------------------------------------------------------------------------------
+LICENSE FILES (Asset Dependencies)
+------------------------------------------------------------------------------
+
+The following license files apply to the asset dependencies above:
+
+  - LICENSE.CCBY3

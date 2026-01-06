@@ -35,7 +35,7 @@ class LicenseEntry(TypedDict, total=False):
     license_files: list[str]
 
 
-def load_licenses() -> list[LicenseEntry]:
+def load_licenses() -> dict[str, list[LicenseEntry]]:
     """Load license data from licenses.json."""
     with LICENSE_JSON.open("r", encoding="utf-8") as f:
         return json.load(f)
@@ -54,10 +54,9 @@ def get_license_file_references(entry: LicenseEntry) -> list[str]:
     return entry.get("license_files", [])
 
 
-def generate_notice_content(licenses: list[LicenseEntry]) -> str:
-    """Generate the content for NOTICE.txt."""
+def generate_header() -> list[str]:
+    """Generate the header for NOTICE.txt."""
     lines: list[str] = []
-
     lines.append("=" * 78)
     lines.append("THIRD-PARTY SOFTWARE NOTICES AND INFORMATION")
     lines.append("=" * 78)
@@ -75,10 +74,21 @@ def generate_notice_content(licenses: list[LicenseEntry]) -> str:
     lines.append("")
     lines.append(f"Generated on: {datetime.now(timezone.utc).strftime('%Y-%m-%d')}")
     lines.append("")
+    return lines
+
+
+def generate_notice_content(licenses: list[LicenseEntry], section_name: str) -> str:
+    """Generate the content for a section of NOTICE.txt."""
+    lines: list[str] = []
+
+    lines.append("=" * 78)
+    lines.append(f"{section_name.upper()}")
+    lines.append("=" * 78)
+    lines.append("")
 
     referenced_licenses: set[str] = set()
 
-    sorted_licenses = sorted(licenses, key=lambda x: x["name"].lower())  # Sort by name
+    sorted_licenses = sorted(licenses, key=lambda x: x["name"].lower())
     full_license_files_on_disk = sorted(
         f.name for f in LICENSES_DIR.iterdir() if f.is_file()
     )
@@ -117,18 +127,19 @@ def generate_notice_content(licenses: list[LicenseEntry]) -> str:
             lines.append(f"View the full license text: {', '.join(license_files)}")
             lines.append("")
 
-    lines.append("=" * 78)
-    lines.append("LICENSE FILES")
-    lines.append("=" * 78)
-    lines.append("")
-    lines.append(
-        "The following license files should be included with the distribution:"
-    )
-    lines.append("")
-
-    for license_file in full_license_files_on_disk:
-        lines.append(f"  - {license_file}")
-    lines.append("")
+    # Add license files section for this category
+    if referenced_licenses:
+        lines.append("-" * 78)
+        lines.append(f"LICENSE FILES ({section_name})")
+        lines.append("-" * 78)
+        lines.append("")
+        lines.append(
+            f"The following license files apply to the {section_name.lower()} above:"
+        )
+        lines.append("")
+        for license_file in sorted(referenced_licenses):
+            lines.append(f"  - {license_file}")
+        lines.append("")
 
     return "\n".join(lines)
 
@@ -137,10 +148,13 @@ def main() -> None:
     """Generate NOTICE.txt file."""
     print(f"Loading licenses from {LICENSE_JSON}")
     licenses = load_licenses()
-    print(f"Found {len(licenses)} license entries")
+    header = "\n".join(generate_header())
+    code_content = generate_notice_content(licenses["code"], "Code Dependencies")
+    print(f"{len(licenses['code'])} code dependencies processed.")
+    assets_content = generate_notice_content(licenses["assets"], "Asset Dependencies")
+    print(f"{len(licenses['assets'])} asset dependencies processed.")
 
-    print("Generating NOTICE.txt content...")
-    content = generate_notice_content(licenses)
+    content = header + "\n" + code_content + "\n\n" + assets_content
 
     NOTICE_FILE_DATA.write_text(content, encoding="utf-8")
 
@@ -148,7 +162,8 @@ def main() -> None:
 
     NOTICE_FILE_ROOT.write_text(content, encoding="utf-8")
 
-    print(f"Sucess! Total dependencies: {len(licenses)}")
+    total_deps = len(licenses.get("code", [])) + len(licenses.get("assets", []))
+    print(f"Success! Total dependencies: {total_deps}")
 
 
 if __name__ == "__main__":

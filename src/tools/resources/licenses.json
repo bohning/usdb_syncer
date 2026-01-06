@@ -1,375 +1,386 @@
-[
-  {
-    "name": "Python",
-    "license": "PSF-2.0",
-    "copyright": "Copyright (c) 2001-2023 Python Software Foundation",
-    "notice_text": "python"
-  },
-  {
-    "name": "Flask",
-    "license": "BSD-3-Clause",
-    "copyright": "Copyright (c) 2010 Pallets",
-    "notice_text": "pypa"
-  },
-  {
-    "name": "Jinja2",
-    "license": "BSD-3-Clause",
-    "copyright": "Copyright (c) 2007 Pallets",
-    "notice_text": "pypa"
-  },
-  {
-    "name": "MarkupSafe",
-    "license": "BSD-3-Clause",
-    "copyright": "Copyright (c) 2010 Pallets",
-    "notice_text": "pypa"
-  },
-  {
-    "name": "PySide6",
-    "license": "GPLv3-only",
-    "copyright": "Copyright (c) 2024 The Qt Company Ltd.",
-    "notice_text": "pyside6",
-    "license_files": ["LICENSE.GPL3"]
-  },
-  {
-    "name": "PySide6_Addons",
-    "license": "GPLv3-only",
-    "copyright": "Copyright (c) 2024 The Qt Company Ltd.",
-    "notice_text": "pyside6",
-    "license_files": ["LICENSE.GPL3"]
-  },
-  {
-    "name": "PySide6-Essentials",
-    "license": "GPLv3-only",
-    "copyright": "Copyright (c) 2024 The Qt Company Ltd.",
-    "notice_text": "pyside6",
-    "license_files": ["LICENSE.GPL3"]
-  },
-  {
-    "name": "Send2Trash",
-    "license": "BSD-3-Clause",
-    "copyright": "Copyright (c) 2017, Virgil Dupras",
-    "notice_text": "send2trash"
-  },
-  {
-    "name": "Unidecode",
-    "license": "GPL-2.0-or-later",
-    "copyright": "Copyright (c) Tomaz Solc",
-    "notice_text": "unidecode",
-    "license_files": ["LICENSE.GPL2"]
-  },
-  {
-    "name": "Werkzeug",
-    "license": "BSD-3-Clause",
-    "copyright": "Copyright (c) 2007 Pallets",
-    "notice_text": "pypa"
-  },
-  {
-    "name": "altgraph",
-    "license": "MIT",
-    "copyright": "Copyright (c) 2004 Istvan Albert, 2006-2010 Bob Ippolito, 2010-2020 Ronald Oussoren",
-    "notice_text": "mit_standard"
-  },
-  {
-    "name": "attrs",
-    "license": "MIT",
-    "copyright": "Copyright (c) 2015 Hynek Schlawack and the attrs contributors",
-    "notice_text": "mit_standard"
-  },
-  {
-    "name": "beautifulsoup4",
-    "license": "MIT",
-    "copyright": "Copyright (c) Leonard Richardson",
-    "notice_text": "mit_standard"
-  },
-  {
-    "name": "blinker",
-    "license": "MIT",
-    "copyright": "Copyright (c) 2010 Jason Kirtland",
-    "notice_text": "mit_standard"
-  },
-  {
-    "name": "brotli",
-    "license": "MIT",
-    "copyright": "Copyright (c) 2009, 2010, 2013-2016 by the Brotli Authors",
-    "notice_text": "mit_standard"
-  },
-  {
-    "name": "certifi",
-    "license": "MPL-2.0",
-    "copyright": "Copyright (c) Kenneth Reitz",
-    "notice_text": "mit_standard",
-    "license_files": ["LICENSE.MPL2"]
-  },
-  {
-    "name": "cffi",
-    "license": "MIT",
-    "copyright": "Copyright (c) Armin Rigo, Maciej Fijalkowski",
-    "notice_text": "mit_standard"
-  },
-  {
-    "name": "charset-normalizer",
-    "license": "MIT",
-    "copyright": "Copyright (c) 2025 TAHRI Ahmed R.",
-    "notice_text": "mit_standard"
-  },
-  {
-    "name": "click",
-    "license": "BSD-3-Clause",
-    "copyright": "Copyright (c) 2014 Pallets",
-    "notice_text": "click"
-  },
-  {
-    "name": "colorama",
-    "license": "BSD-3-Clause",
-    "copyright": "Copyright (c) 2010 Jonathan Hartley",
-    "notice_text": "colorama"
-  },
-  {
-    "name": "colorlog",
-    "license": "MIT",
-    "copyright": "Copyright (c) 2012-2021 Sam Clements",
-    "notice_text": "mit_standard"
-  },
-  {
-    "name": "diff-match-patch",
-    "license": "Apache-2.0",
-    "copyright": "Copyright (c) Neil Fraser",
-    "notice_text": "apache_standard",
-    "license_files": ["LICENSE.APACHE"]
-  },
-  {
-    "name": "ffmpeg-normalize",
-    "license": "MIT",
-    "copyright": "Copyright (c) Werner Robitza",
-    "notice_text": "mit_standard"
-  },
-  {
-    "name": "ffmpeg-progress-yield",
-    "license": "MIT",
-    "copyright": "Copyright (c) Werner Robitza",
-    "notice_text": "mit_standard"
-  },
-  {
-    "name": "filetype",
-    "license": "MIT",
-    "copyright": "Copyright (c) 2016 Tomás Aparicio",
-    "notice_text": "mit_standard"
-  },
-  {
-    "name": "idna",
-    "license": "BSD-3-Clause",
-    "copyright": "Copyright (c) 2013-2025, Kim Davies and contributors",
-    "notice_text": "bsd3_standard"
-  },
-  {
-    "name": "itsdangerous",
-    "license": "BSD-3-Clause",
-    "copyright": "Copyright (c) 2011 Pallets",
-    "notice_text": "bsd3_standard"
-  },
-  {
-    "name": "jaraco.classes",
-    "license": "MIT",
-    "copyright": "Copyright (c) Jason R. Coombs",
-    "notice_text": "mit_standard"
-  },
-  {
-    "name": "jaraco.context",
-    "license": "MIT",
-    "copyright": "Copyright (c) Jason R. Coombs",
-    "notice_text": "mit_standard"
-  },
-  {
-    "name": "jaraco.functools",
-    "license": "MIT",
-    "copyright": "Copyright (c) 2025",
-    "notice_text": "mit_standard"
-  },
-  {
-    "name": "keyring",
-    "license": "MIT",
-    "copyright": "Copyright (c) Kang Zhang",
-    "notice_text": "mit_standard"
-  },
-  {
-    "name": "lxml",
-    "license": "BSD-3-Clause",
-    "copyright": "Copyright (c) 2004 Infrae",
-    "notice_text": "bsd3_standard"
-  },
-  {
-    "name": "more-itertools",
-    "license": "MIT",
-    "copyright": "Copyright (c) 2012 Erik Rose",
-    "notice_text": "mit_standard"
-  },
-  {
-    "name": "mutagen",
-    "license": "GPL-2.0-or-later",
-    "copyright": "Copyright (c) Christoph Reiter",
-    "notice_text": "unidecode",
-    "license_files": ["LICENSE.GPL2"]
-  },
-  {
-    "name": "numpy",
-    "license": "BSD-3-Clause",
-    "copyright": "Copyright (c) 2006, University of Georgia and Pierre G.F. Gerard-Marchant",
-    "notice_text": "bsd3_standard"
-  },
-  {
-    "name": "packaging",
-    "license": "Apache-2.0 OR BSD-2-Clause",
-    "copyright": "Copyright (c) Donald Stufft",
-    "notice_text": "apache_standard",
-    "license_files": ["LICENSE.APACHE"]
-  },
-  {
-    "name": "pefile",
-    "license": "MIT",
-    "copyright": "Copyright (c) 2004-2023 Ero Carrera",
-    "notice_text": "mit_standard"
-  },
-  {
-    "name": "pillow",
-    "license": "MIT-CMU",
-    "copyright": "Copyright (c) 1997-2011 by Secret Labs AB, 1995-2011 by Fredrik Lundh and contributors, 2010 by Jeffrey A. Clark and contributors",
-    "notice_text": "pillow"
-  },
-  {
-    "name": "platformdirs",
-    "license": "MIT",
-    "copyright": "Copyright (c) 2010-202x The platformdirs developers",
-    "notice_text": "mit_standard"
-  },
-  {
-    "name": "pycparser",
-    "license": "BSD-3-Clause",
-    "copyright": "Copyright (c) 2008-2022, Eli Bendersky",
-    "notice_text": "bsd3_standard"
-  },
-  {
-    "name": "pycryptodomex",
-    "license": "BSD-2-Clause",
-    "copyright": "Copyright (c) Helder Eijs",
-    "notice_text": "mit_standard"
-  },
-  {
-    "name": "pyinstaller",
-    "license": "GPL-2.0-or-later",
-    "copyright": "Copyright (c) 2010-2023, PyInstaller Development Team",
-    "notice_text": "pyinstaller",
-    "license_files": ["LICENSE.GPL2"]
-  },
-  {
-    "name": "pyinstaller-hooks-contrib",
-    "license": "GPL-2.0-or-later",
-    "copyright": "Copyright (c) PyInstaller Community Hooks contributors",
-    "notice_text": "pyinstaller",
-    "license_files": ["LICENSE.GPL2"]
-  },
-  {
-    "name": "pywin32-ctypes",
-    "license": "BSD-3-Clause",
-    "copyright": "Copyright (c) 2014, Enthought, Inc.",
-    "notice_text": "bsd3_standard"
-  },
-  {
-    "name": "qrcode",
-    "license": "BSD-3-Clause",
-    "copyright": "Copyright (c) 2011, Lincoln Loop",
-    "notice_text": "bsd3_standard"
-  },
-  {
-    "name": "reportlab",
-    "license": "BSD-3-Clause",
-    "copyright": "Copyright (c) 2000-2024, ReportLab Inc.",
-    "notice_text": "bsd3_standard"
-  },
-  {
-    "name": "requests",
-    "license": "Apache-2.0",
-    "copyright": "Copyright (c) Kenneth Reitz",
-    "notice_text": "apache_standard",
-    "license_files": ["LICENSE.APACHE"]
-  },
-  {
-    "name": "rookiepy",
-    "license": "MIT",
-    "copyright": "Copyright (c) thewh1teagle",
-    "notice_text": "mit_standard"
-  },
-  {
-    "name": "shiboken6",
-    "license": "GPLv3-only",
-    "copyright": "Copyright (c) 2024 The Qt Company Ltd.",
-    "notice_text": "pyside6",
-    "license_files": ["LICENSE.GPL3"]
-  },
-  {
-    "name": "sounddevice",
-    "license": "MIT",
-    "copyright": "Copyright (c) 2015-2025 Matthias Geier",
-    "notice_text": "mit_standard"
-  },
-  {
-    "name": "soundfile",
-    "license": "BSD-3-Clause",
-    "copyright": "Copyright (c) Bastian Bechtold",
-    "notice_text": "bsd3_standard"
-  },
-  {
-    "name": "soupsieve",
-    "license": "MIT",
-    "copyright": "Copyright (c) 2018-2025 Isaac Muse",
-    "notice_text": "mit_standard"
-  },
-  {
-    "name": "torchaudio",
-    "license": "BSD-3-Clause",
-    "copyright": "Copyright (c) Soumith Chintala, David Pollack, Sean Naren, Peter Goldsborough, Moto Hira, Caroline Chen, Jeff Hwang, Zhaoheng Ni, Xiaohui Zhang",
-    "notice_text": "bsd3_standard"
-  },
-  {
-    "name": "tox",
-    "license": "MIT",
-    "copyright": "Copyright (c) Bernát Gábor",
-    "notice_text": "mit_standard"
-  },
-  {
-    "name": "tqdm",
-    "license": "MPL-2.0 OR MIT",
-    "copyright": "Copyright (c) 2013 noamraph, 2015-2024 Casper da Costa-Luis",
-    "notice_text": "mit_standard",
-    "license_files": ["LICENSE.MPL2"]
-  },
-  {
-    "name": "typing_extensions",
-    "license": "PSF-2.0",
-    "copyright": "Copyright (c) 2001-2023 Python Software Foundation",
-    "notice_text": "python"
-  },
-  {
-    "name": "urllib3",
-    "license": "MIT",
-    "copyright": "Copyright (c) 2008-2020 Andrey Petrov and contributors",
-    "notice_text": "mit_standard"
-  },
-  {
-    "name": "websockets",
-    "license": "BSD-3-Clause",
-    "copyright": "Copyright (c) Aymeric Augustin and contributors",
-    "notice_text": "bsd3_standard"
-  },
-  {
-    "name": "yt-dlp",
-    "license": "Unlicense",
-    "copyright": "Public Domain",
-    "notice_text": "yt_dlp"
-  },
-  {
-    "name": "yt-dlp-ejs",
-    "license": "Unlicense",
-    "copyright": "Public Domain",
-    "notice_text": "yt_dlp"
-  }
-]
+{
+  "code": [
+    {
+      "name": "Python",
+      "license": "PSF-2.0",
+      "copyright": "Copyright (c) 2001-2023 Python Software Foundation",
+      "notice_text": "python"
+    },
+    {
+      "name": "Flask",
+      "license": "BSD-3-Clause",
+      "copyright": "Copyright (c) 2010 Pallets",
+      "notice_text": "pypa"
+    },
+    {
+      "name": "Jinja2",
+      "license": "BSD-3-Clause",
+      "copyright": "Copyright (c) 2007 Pallets",
+      "notice_text": "pypa"
+    },
+    {
+      "name": "MarkupSafe",
+      "license": "BSD-3-Clause",
+      "copyright": "Copyright (c) 2010 Pallets",
+      "notice_text": "pypa"
+    },
+    {
+      "name": "PySide6",
+      "license": "GPLv3-only",
+      "copyright": "Copyright (c) 2024 The Qt Company Ltd.",
+      "notice_text": "pyside6",
+      "license_files": ["LICENSE.GPL3"]
+    },
+    {
+      "name": "PySide6_Addons",
+      "license": "GPLv3-only",
+      "copyright": "Copyright (c) 2024 The Qt Company Ltd.",
+      "notice_text": "pyside6",
+      "license_files": ["LICENSE.GPL3"]
+    },
+    {
+      "name": "PySide6-Essentials",
+      "license": "GPLv3-only",
+      "copyright": "Copyright (c) 2024 The Qt Company Ltd.",
+      "notice_text": "pyside6",
+      "license_files": ["LICENSE.GPL3"]
+    },
+    {
+      "name": "Send2Trash",
+      "license": "BSD-3-Clause",
+      "copyright": "Copyright (c) 2017, Virgil Dupras",
+      "notice_text": "send2trash"
+    },
+    {
+      "name": "Unidecode",
+      "license": "GPL-2.0-or-later",
+      "copyright": "Copyright (c) Tomaz Solc",
+      "notice_text": "unidecode",
+      "license_files": ["LICENSE.GPL2"]
+    },
+    {
+      "name": "Werkzeug",
+      "license": "BSD-3-Clause",
+      "copyright": "Copyright (c) 2007 Pallets",
+      "notice_text": "pypa"
+    },
+    {
+      "name": "altgraph",
+      "license": "MIT",
+      "copyright": "Copyright (c) 2004 Istvan Albert, 2006-2010 Bob Ippolito, 2010-2020 Ronald Oussoren",
+      "notice_text": "mit_standard"
+    },
+    {
+      "name": "attrs",
+      "license": "MIT",
+      "copyright": "Copyright (c) 2015 Hynek Schlawack and the attrs contributors",
+      "notice_text": "mit_standard"
+    },
+    {
+      "name": "beautifulsoup4",
+      "license": "MIT",
+      "copyright": "Copyright (c) Leonard Richardson",
+      "notice_text": "mit_standard"
+    },
+    {
+      "name": "blinker",
+      "license": "MIT",
+      "copyright": "Copyright (c) 2010 Jason Kirtland",
+      "notice_text": "mit_standard"
+    },
+    {
+      "name": "brotli",
+      "license": "MIT",
+      "copyright": "Copyright (c) 2009, 2010, 2013-2016 by the Brotli Authors",
+      "notice_text": "mit_standard"
+    },
+    {
+      "name": "certifi",
+      "license": "MPL-2.0",
+      "copyright": "Copyright (c) Kenneth Reitz",
+      "notice_text": "mit_standard",
+      "license_files": ["LICENSE.MPL2"]
+    },
+    {
+      "name": "cffi",
+      "license": "MIT",
+      "copyright": "Copyright (c) Armin Rigo, Maciej Fijalkowski",
+      "notice_text": "mit_standard"
+    },
+    {
+      "name": "charset-normalizer",
+      "license": "MIT",
+      "copyright": "Copyright (c) 2025 TAHRI Ahmed R.",
+      "notice_text": "mit_standard"
+    },
+    {
+      "name": "click",
+      "license": "BSD-3-Clause",
+      "copyright": "Copyright (c) 2014 Pallets",
+      "notice_text": "click"
+    },
+    {
+      "name": "colorama",
+      "license": "BSD-3-Clause",
+      "copyright": "Copyright (c) 2010 Jonathan Hartley",
+      "notice_text": "colorama"
+    },
+    {
+      "name": "colorlog",
+      "license": "MIT",
+      "copyright": "Copyright (c) 2012-2021 Sam Clements",
+      "notice_text": "mit_standard"
+    },
+    {
+      "name": "diff-match-patch",
+      "license": "Apache-2.0",
+      "copyright": "Copyright (c) Neil Fraser",
+      "notice_text": "apache_standard",
+      "license_files": ["LICENSE.APACHE"]
+    },
+    {
+      "name": "ffmpeg-normalize",
+      "license": "MIT",
+      "copyright": "Copyright (c) Werner Robitza",
+      "notice_text": "mit_standard"
+    },
+    {
+      "name": "ffmpeg-progress-yield",
+      "license": "MIT",
+      "copyright": "Copyright (c) Werner Robitza",
+      "notice_text": "mit_standard"
+    },
+    {
+      "name": "filetype",
+      "license": "MIT",
+      "copyright": "Copyright (c) 2016 Tomás Aparicio",
+      "notice_text": "mit_standard"
+    },
+    {
+      "name": "idna",
+      "license": "BSD-3-Clause",
+      "copyright": "Copyright (c) 2013-2025, Kim Davies and contributors",
+      "notice_text": "bsd3_standard"
+    },
+    {
+      "name": "itsdangerous",
+      "license": "BSD-3-Clause",
+      "copyright": "Copyright (c) 2011 Pallets",
+      "notice_text": "bsd3_standard"
+    },
+    {
+      "name": "jaraco.classes",
+      "license": "MIT",
+      "copyright": "Copyright (c) Jason R. Coombs",
+      "notice_text": "mit_standard"
+    },
+    {
+      "name": "jaraco.context",
+      "license": "MIT",
+      "copyright": "Copyright (c) Jason R. Coombs",
+      "notice_text": "mit_standard"
+    },
+    {
+      "name": "jaraco.functools",
+      "license": "MIT",
+      "copyright": "Copyright (c) 2025",
+      "notice_text": "mit_standard"
+    },
+    {
+      "name": "keyring",
+      "license": "MIT",
+      "copyright": "Copyright (c) Kang Zhang",
+      "notice_text": "mit_standard"
+    },
+    {
+      "name": "lxml",
+      "license": "BSD-3-Clause",
+      "copyright": "Copyright (c) 2004 Infrae",
+      "notice_text": "bsd3_standard"
+    },
+    {
+      "name": "more-itertools",
+      "license": "MIT",
+      "copyright": "Copyright (c) 2012 Erik Rose",
+      "notice_text": "mit_standard"
+    },
+    {
+      "name": "mutagen",
+      "license": "GPL-2.0-or-later",
+      "copyright": "Copyright (c) Christoph Reiter",
+      "notice_text": "unidecode",
+      "license_files": ["LICENSE.GPL2"]
+    },
+    {
+      "name": "numpy",
+      "license": "BSD-3-Clause",
+      "copyright": "Copyright (c) 2006, University of Georgia and Pierre G.F. Gerard-Marchant",
+      "notice_text": "bsd3_standard"
+    },
+    {
+      "name": "packaging",
+      "license": "Apache-2.0 OR BSD-2-Clause",
+      "copyright": "Copyright (c) Donald Stufft",
+      "notice_text": "apache_standard",
+      "license_files": ["LICENSE.APACHE"]
+    },
+    {
+      "name": "pefile",
+      "license": "MIT",
+      "copyright": "Copyright (c) 2004-2023 Ero Carrera",
+      "notice_text": "mit_standard"
+    },
+    {
+      "name": "pillow",
+      "license": "MIT-CMU",
+      "copyright": "Copyright (c) 1997-2011 by Secret Labs AB, 1995-2011 by Fredrik Lundh and contributors, 2010 by Jeffrey A. Clark and contributors",
+      "notice_text": "pillow"
+    },
+    {
+      "name": "platformdirs",
+      "license": "MIT",
+      "copyright": "Copyright (c) 2010-202x The platformdirs developers",
+      "notice_text": "mit_standard"
+    },
+    {
+      "name": "pycparser",
+      "license": "BSD-3-Clause",
+      "copyright": "Copyright (c) 2008-2022, Eli Bendersky",
+      "notice_text": "bsd3_standard"
+    },
+    {
+      "name": "pycryptodomex",
+      "license": "BSD-2-Clause",
+      "copyright": "Copyright (c) Helder Eijs",
+      "notice_text": "mit_standard"
+    },
+    {
+      "name": "pyinstaller",
+      "license": "GPL-2.0-or-later",
+      "copyright": "Copyright (c) 2010-2023, PyInstaller Development Team",
+      "notice_text": "pyinstaller",
+      "license_files": ["LICENSE.GPL2"]
+    },
+    {
+      "name": "pyinstaller-hooks-contrib",
+      "license": "GPL-2.0-or-later",
+      "copyright": "Copyright (c) PyInstaller Community Hooks contributors",
+      "notice_text": "pyinstaller",
+      "license_files": ["LICENSE.GPL2"]
+    },
+    {
+      "name": "pywin32-ctypes",
+      "license": "BSD-3-Clause",
+      "copyright": "Copyright (c) 2014, Enthought, Inc.",
+      "notice_text": "bsd3_standard"
+    },
+    {
+      "name": "qrcode",
+      "license": "BSD-3-Clause",
+      "copyright": "Copyright (c) 2011, Lincoln Loop",
+      "notice_text": "bsd3_standard"
+    },
+    {
+      "name": "reportlab",
+      "license": "BSD-3-Clause",
+      "copyright": "Copyright (c) 2000-2024, ReportLab Inc.",
+      "notice_text": "bsd3_standard"
+    },
+    {
+      "name": "requests",
+      "license": "Apache-2.0",
+      "copyright": "Copyright (c) Kenneth Reitz",
+      "notice_text": "apache_standard",
+      "license_files": ["LICENSE.APACHE"]
+    },
+    {
+      "name": "rookiepy",
+      "license": "MIT",
+      "copyright": "Copyright (c) thewh1teagle",
+      "notice_text": "mit_standard"
+    },
+    {
+      "name": "shiboken6",
+      "license": "GPLv3-only",
+      "copyright": "Copyright (c) 2024 The Qt Company Ltd.",
+      "notice_text": "pyside6",
+      "license_files": ["LICENSE.GPL3"]
+    },
+    {
+      "name": "sounddevice",
+      "license": "MIT",
+      "copyright": "Copyright (c) 2015-2025 Matthias Geier",
+      "notice_text": "mit_standard"
+    },
+    {
+      "name": "soundfile",
+      "license": "BSD-3-Clause",
+      "copyright": "Copyright (c) Bastian Bechtold",
+      "notice_text": "bsd3_standard"
+    },
+    {
+      "name": "soupsieve",
+      "license": "MIT",
+      "copyright": "Copyright (c) 2018-2025 Isaac Muse",
+      "notice_text": "mit_standard"
+    },
+    {
+      "name": "torchaudio",
+      "license": "BSD-3-Clause",
+      "copyright": "Copyright (c) Soumith Chintala, David Pollack, Sean Naren, Peter Goldsborough, Moto Hira, Caroline Chen, Jeff Hwang, Zhaoheng Ni, Xiaohui Zhang",
+      "notice_text": "bsd3_standard"
+    },
+    {
+      "name": "tox",
+      "license": "MIT",
+      "copyright": "Copyright (c) Bernát Gábor",
+      "notice_text": "mit_standard"
+    },
+    {
+      "name": "tqdm",
+      "license": "MPL-2.0 OR MIT",
+      "copyright": "Copyright (c) 2013 noamraph, 2015-2024 Casper da Costa-Luis",
+      "notice_text": "mit_standard",
+      "license_files": ["LICENSE.MPL2"]
+    },
+    {
+      "name": "typing_extensions",
+      "license": "PSF-2.0",
+      "copyright": "Copyright (c) 2001-2023 Python Software Foundation",
+      "notice_text": "python"
+    },
+    {
+      "name": "urllib3",
+      "license": "MIT",
+      "copyright": "Copyright (c) 2008-2020 Andrey Petrov and contributors",
+      "notice_text": "mit_standard"
+    },
+    {
+      "name": "websockets",
+      "license": "BSD-3-Clause",
+      "copyright": "Copyright (c) Aymeric Augustin and contributors",
+      "notice_text": "bsd3_standard"
+    },
+    {
+      "name": "yt-dlp",
+      "license": "Unlicense",
+      "copyright": "Public Domain",
+      "notice_text": "yt_dlp"
+    },
+    {
+      "name": "yt-dlp-ejs",
+      "license": "Unlicense",
+      "copyright": "Public Domain",
+      "notice_text": "yt_dlp"
+    }
+  ],
+  "assets": [
+    {
+      "name": "Icons",
+      "copyright": "Yusuke Kamiyamane",
+      "license": "CC-BY-3.0",
+      "notice_text": "icons_ccby",
+      "license_files": ["LICENSE.CCBY3"]
+    }
+  ]
+}
