@@ -9,7 +9,6 @@ NOTICE.txt.
 """
 
 from __future__ import annotations
-from blinker.base import F
 
 import json
 from datetime import datetime, timezone
@@ -46,7 +45,7 @@ def load_notice_text(notice_text_name: str) -> str:
     """Load notice text from the texts directory."""
     text_file = TEXTS_DIR / notice_text_name
     if not text_file.exists():
-        raise FileNotFoundError(f"Notice text file not found: {text_file}")
+        raise FileNotFoundError(f"Notice text file not found: {text_file}")  # noqa: TRY003
     return text_file.read_text(encoding="utf-8").strip()
 
 
@@ -110,8 +109,9 @@ def generate_notice_content(licenses: list[LicenseEntry]) -> str:
         if license_files:
             for license_file in license_files:
                 if license_file not in full_license_files_on_disk:
-                    raise FileNotFoundError(
-                        f"Referenced license file '{license_file}' for '{name}' not found in licenses directory."
+                    raise FileNotFoundError(  # noqa: TRY003
+                        f"Referenced license file '{license_file}' for '{name}' not "
+                        "found in licenses directory."
                     )
 
             lines.append(f"View the full license text: {', '.join(license_files)}")

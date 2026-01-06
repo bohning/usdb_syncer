@@ -907,6 +907,10 @@
    </property>
   </action>
   <action name="action_licenses">
+   <property name="icon">
+    <iconset resource="../resources/qt/resources.qrc">
+     <normaloff>:/icons/puzzle.png</normaloff>:/icons/puzzle.png</iconset>
+   </property>
    <property name="text">
     <string>Third-Party Licenses</string>
    </property>
