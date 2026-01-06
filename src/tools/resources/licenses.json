@@ -9,19 +9,19 @@
     "name": "Flask",
     "license": "BSD-3-Clause",
     "copyright": "Copyright (c) 2010 Pallets",
-    "notice_text": "flask"
+    "notice_text": "pypa"
   },
   {
     "name": "Jinja2",
     "license": "BSD-3-Clause",
     "copyright": "Copyright (c) 2007 Pallets",
-    "notice_text": "jinja2"
+    "notice_text": "pypa"
   },
   {
     "name": "MarkupSafe",
     "license": "BSD-3-Clause",
     "copyright": "Copyright (c) 2010 Pallets",
-    "notice_text": "markupsafe"
+    "notice_text": "pypa"
   },
   {
     "name": "PySide6",
@@ -61,7 +61,7 @@
     "name": "Werkzeug",
     "license": "BSD-3-Clause",
     "copyright": "Copyright (c) 2007 Pallets",
-    "notice_text": "werkzeug"
+    "notice_text": "pypa"
   },
   {
     "name": "altgraph",
@@ -300,10 +300,10 @@
   },
   {
     "name": "shiboken6",
-    "license": "LGPLv3-only",
+    "license": "GPLv3-only",
     "copyright": "Copyright (c) 2024 The Qt Company Ltd.",
     "notice_text": "pyside6",
-    "license_files": ["LICENSE.LGPL3", "LICENSE.GPL3"]
+    "license_files": ["LICENSE.GPL3"]
   },
   {
     "name": "sounddevice",

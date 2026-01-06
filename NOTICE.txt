@@ -955,7 +955,7 @@ This library is free software; you can redistribute it and/or modify it under th
 
 This library is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY.
 
-You should have received a copy of the GNU General Public License along with this library (see files and LICENSE.GPL3). If not, see https://www.gnu.org/licenses/.
+You should have received a copy of the GNU General Public License along with this library. If not, see https://www.gnu.org/licenses/.
 
 View the full license text: LICENSE.GPL3
 
@@ -970,7 +970,7 @@ This library is free software; you can redistribute it and/or modify it under th
 
 This library is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY.
 
-You should have received a copy of the GNU General Public License along with this library (see files and LICENSE.GPL3). If not, see https://www.gnu.org/licenses/.
+You should have received a copy of the GNU General Public License along with this library. If not, see https://www.gnu.org/licenses/.
 
 View the full license text: LICENSE.GPL3
 
@@ -985,7 +985,7 @@ This library is free software; you can redistribute it and/or modify it under th
 
 This library is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY.
 
-You should have received a copy of the GNU General Public License along with this library (see files and LICENSE.GPL3). If not, see https://www.gnu.org/licenses/.
+You should have received a copy of the GNU General Public License along with this library. If not, see https://www.gnu.org/licenses/.
 
 View the full license text: LICENSE.GPL3
 
@@ -1210,16 +1210,16 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 shiboken6
 ------------------------------------------------------------------------------
 
-License: LGPLv3-only
+License: GPLv3-only
 Copyright (c) 2024 The Qt Company Ltd.
 
 This library is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License version 3 as published by the Free Software Foundation.
 
 This library is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY.
 
-You should have received a copy of the GNU General Public License along with this library (see files and LICENSE.GPL3). If not, see https://www.gnu.org/licenses/.
+You should have received a copy of the GNU General Public License along with this library. If not, see https://www.gnu.org/licenses/.
 
-View the full license text: LICENSE.LGPL3, LICENSE.GPL3
+View the full license text: LICENSE.GPL3
 
 ------------------------------------------------------------------------------
 sounddevice
@@ -1582,5 +1582,4 @@ The following license files should be included with the distribution:
   - LICENSE.APACHE
   - LICENSE.GPL2
   - LICENSE.GPL3
-  - LICENSE.LGPL3
   - LICENSE.MPL2
