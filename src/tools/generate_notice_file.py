@@ -9,6 +9,7 @@ NOTICE.txt.
 """
 
 from __future__ import annotations
+from blinker.base import F
 
 import json
 from datetime import datetime, timezone
@@ -44,9 +45,9 @@ def load_licenses() -> list[LicenseEntry]:
 def load_notice_text(notice_text_name: str) -> str:
     """Load notice text from the texts directory."""
     text_file = TEXTS_DIR / notice_text_name
-    if text_file.exists():
-        return text_file.read_text(encoding="utf-8").strip()
-    return ""
+    if not text_file.exists():
+        raise FileNotFoundError(f"Notice text file not found: {text_file}")
+    return text_file.read_text(encoding="utf-8").strip()
 
 
 def get_license_file_references(entry: LicenseEntry) -> list[str]:
@@ -79,6 +80,9 @@ def generate_notice_content(licenses: list[LicenseEntry]) -> str:
     referenced_licenses: set[str] = set()
 
     sorted_licenses = sorted(licenses, key=lambda x: x["name"].lower())  # Sort by name
+    full_license_files_on_disk = sorted(
+        f.name for f in LICENSES_DIR.iterdir() if f.is_file()
+    )
 
     for entry in sorted_licenses:
         name = entry["name"]
@@ -104,6 +108,12 @@ def generate_notice_content(licenses: list[LicenseEntry]) -> str:
                 lines.append("")
 
         if license_files:
+            for license_file in license_files:
+                if license_file not in full_license_files_on_disk:
+                    raise FileNotFoundError(
+                        f"Referenced license file '{license_file}' for '{name}' not found in licenses directory."
+                    )
+
             lines.append(f"View the full license text: {', '.join(license_files)}")
             lines.append("")
 
@@ -116,12 +126,8 @@ def generate_notice_content(licenses: list[LicenseEntry]) -> str:
     )
     lines.append("")
 
-    if LICENSES_DIR.exists():
-        license_files_on_disk = sorted(
-            f.name for f in LICENSES_DIR.iterdir() if f.is_file()
-        )
-        for license_file in license_files_on_disk:
-            lines.append(f"  - {license_file}")
+    for license_file in full_license_files_on_disk:
+        lines.append(f"  - {license_file}")
     lines.append("")
 
     return "\n".join(lines)

@@ -1,3 +1,4 @@
+"""Check or save the hash of the current license information of installed packages. This allows detecting when license information changes (for example, when a new dependency is added)."""
 import argparse
 import hashlib
 import subprocess
