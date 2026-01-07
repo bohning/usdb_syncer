@@ -146,8 +146,8 @@ def main(mode: OperationMode) -> None:
                 return
 
             print(
-                "Change in license information detected. Only save the hash if you have "
-                "reviewed the changes and updated the NOTICE as needed."
+                "Change in license information detected. Only save the hash if you have"
+                " reviewed the changes and updated the NOTICE as needed."
             )
             i = input("Proceed? [y/n]: ").strip().lower()
             if i != "y":
