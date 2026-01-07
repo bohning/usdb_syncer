@@ -12,7 +12,8 @@ from pathlib import Path
 
 PIP_LICENSES_CMD = [
     "pip-licenses",
-    "--format json",
+    "--format",
+    "json",
     "--with-authors",
     "--with-license-file",
     "--no-license-path",
@@ -30,7 +31,12 @@ class OperationMode(Enum):
 
 
 def main(mode: OperationMode) -> None:
-    result = subprocess.run(PIP_LICENSES_CMD, capture_output=True, text=True)
+    result = subprocess.run(
+        PIP_LICENSES_CMD, capture_output=True, text=True, check=False
+    )
+    if result.returncode != 0:
+        print(f"Error running pip-licenses:\n{result.stderr}")
+        exit(1)
     licenses = result.stdout
 
     license_hash = hashlib.sha256(licenses.encode("utf-8")).hexdigest()
