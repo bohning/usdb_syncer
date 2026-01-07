@@ -26,21 +26,21 @@
     },
     {
       "name": "PySide6",
-      "license": "GPLv3-only",
+      "license": "GPL-3.0-only",
       "copyright": "Copyright (c) 2024 The Qt Company Ltd.",
       "notice_text": "pyside6",
       "license_files": ["LICENSE.GPL3"]
     },
     {
       "name": "PySide6_Addons",
-      "license": "GPLv3-only",
+      "license": "GPL-3.0-only",
       "copyright": "Copyright (c) 2024 The Qt Company Ltd.",
       "notice_text": "pyside6",
       "license_files": ["LICENSE.GPL3"]
     },
     {
       "name": "PySide6-Essentials",
-      "license": "GPLv3-only",
+      "license": "GPL-3.0-only",
       "copyright": "Copyright (c) 2024 The Qt Company Ltd.",
       "notice_text": "pyside6",
       "license_files": ["LICENSE.GPL3"]
@@ -301,7 +301,7 @@
     },
     {
       "name": "shiboken6",
-      "license": "GPLv3-only",
+      "license": "GPL-3.0-only",
       "copyright": "Copyright (c) 2024 The Qt Company Ltd.",
       "notice_text": "pyside6",
       "license_files": ["LICENSE.GPL3"]

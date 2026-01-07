@@ -21,6 +21,7 @@ import requests
 
 HASH_FILE = Path(__file__).parent / "resources/license-hash"
 UV_LOCK_FILE = Path(__file__).parents[2] / "uv.lock"
+UV_LOCK_EXCLUDE_GROUPS = ["dev"]
 PYPI_JSON_URL = "https://pypi.org/pypi/{name}/{version}/json"
 MAX_WORKERS = 50
 
@@ -56,10 +57,29 @@ def parse_uv_lock(lock_file: Path) -> list[tuple[str, str]]:
     with lock_file.open("rb") as f:
         lock_data = tomllib.load(f)
 
+    # This is a mess, but I don't know how else to do it. We are excluding dev
+    # dependencies here, since they are not packaged/bundled.
+    syncer_dependency = next(
+        (item for item in lock_data["package"] if item["name"] == "usdb-syncer"), None
+    )  # this part gives us the [[package]] table for usdb-syncer
+
+    if not syncer_dependency:
+        print("Error: 'usdb-syncer' package not found in uv.lock")
+        sys.exit(1)
+    syncer_dependency_groups = syncer_dependency["dev-dependencies"]
+
+    exclude_packages = set()
+    for group in UV_LOCK_EXCLUDE_GROUPS:
+        dep: list[dict[str, str]] = syncer_dependency_groups[group]
+        for d in dep:
+            exclude_packages.add(d["name"])
+
     packages: list[tuple[str, str]] = []
     for package in lock_data.get("package", []):
         name = package.get("name")
         version = package.get("version")
+        if name in exclude_packages:
+            continue
         if name and version:
             packages.append((name, version))
 

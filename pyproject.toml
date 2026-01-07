@@ -64,6 +64,7 @@ bundle = [
 [tool.uv]
 default-groups = [
     "dev",
+    "bundle",
 ]
 
 [tool.hatch.version]
