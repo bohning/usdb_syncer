@@ -19,7 +19,6 @@ PIP_LICENSES_CMD = [
     "--no-license-path",
     "--no-version",
     "--with-notice-file",
-    "--with-system",
     "--from=mixed",
 ]
 HASH_FILE = Path(__file__).parent / "resources/license-hash"
@@ -37,7 +36,7 @@ def main(mode: OperationMode) -> None:
     if result.returncode != 0:
         print(f"Error running pip-licenses:\n{result.stderr}")
         exit(1)
-    licenses = result.stdout
+    licenses = result.stdout.replace("\r\n", "\n")
 
     license_hash = hashlib.sha256(licenses.encode("utf-8")).hexdigest()
     print(license_hash)
