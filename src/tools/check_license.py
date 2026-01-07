@@ -15,7 +15,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
 from enum import Enum, auto
 from pathlib import Path
-from typing import Any
+from typing import Any, assert_never
 
 import requests
 
@@ -28,6 +28,7 @@ MAX_WORKERS = 50
 class OperationMode(Enum):
     CHECK = auto()
     SAVE = auto()
+    SAVE_OVERRIDE = auto()
 
 
 @dataclass
@@ -93,7 +94,7 @@ def collect_license_info(packages: list[tuple[str, str]]) -> list[dict[str, Any]
         info = fetch_pypi_info(name, version)
         if info:
             return (pkg, info.to_dict())
-        # Include minimal info even if fetch fails, to detect changes
+        # Include minimal info even if fetch fails to detect changes
         return (
             pkg,
             {
@@ -110,7 +111,6 @@ def collect_license_info(packages: list[tuple[str, str]]) -> list[dict[str, Any]
             pkg, data = future.result()
             results[pkg] = data
 
-    # Return in sorted order (same order as input packages)
     return [results[pkg] for pkg in packages]
 
 
@@ -122,6 +122,7 @@ def compute_hash(license_info: list[dict[str, Any]]) -> str:
 
 
 def main(mode: OperationMode) -> None:
+    HASH_FILE.touch(exist_ok=True)
     packages = parse_uv_lock(UV_LOCK_FILE)
     print(f"Found {len(packages)} packages in uv.lock")
 
@@ -130,21 +131,36 @@ def main(mode: OperationMode) -> None:
 
     print(f"\nHash: {license_hash}")
 
+    saved_hash = HASH_FILE.read_text(encoding="utf-8").strip()
+
     match mode:
         case OperationMode.CHECK:
-            if HASH_FILE.exists():
-                saved_hash = HASH_FILE.read_text().strip()
-                if saved_hash != license_hash:
-                    print("License information changed!")
-                    sys.exit(1)
-                else:
-                    print("License information is up to date.")
-            else:
-                print("License hash file not found.")
+            if saved_hash != license_hash:
+                print("License information changed!")
                 sys.exit(1)
+            else:
+                print("License information is up to date.")
         case OperationMode.SAVE:
+            if saved_hash == license_hash:
+                print("License information hash is already up to date.")
+                return
+
+            print(
+                "Change in license information detected. Only save the hash if you have "
+                "reviewed the changes and updated the NOTICE as needed."
+            )
+            i = input("Proceed? [y/n]: ").strip().lower()
+            if i != "y":
+                print("Aborting.")
+                return
+
             HASH_FILE.write_text(license_hash)
             print("License hash saved.")
+        case OperationMode.SAVE_OVERRIDE:
+            HASH_FILE.write_text(license_hash)
+            print("License hash saved (override).")
+        case _:
+            assert_never(mode)
 
 
 def cli_entry() -> None:
@@ -158,8 +174,15 @@ def cli_entry() -> None:
         default="check",
         help="Operation mode: 'check' to verify hash, 'save' to store current hash.",
     )
+    parser.add_argument(
+        "--override",
+        action="store_true",
+        help="If set with --mode save, saves the hash without confirmation.",
+    )
     args = parser.parse_args()
     mode = OperationMode.CHECK if args.mode == "check" else OperationMode.SAVE
+    if args.override and mode == OperationMode.SAVE:
+        mode = OperationMode.SAVE_OVERRIDE
     main(mode)
 
 
