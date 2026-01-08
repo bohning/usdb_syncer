@@ -1,7 +1,7 @@
 import argparse
 import subprocess
 from enum import Enum
-from typing import assert_never, cast
+from typing import assert_never
 
 
 class OS(Enum):
@@ -13,47 +13,37 @@ class OS(Enum):
 
 def bundle(platform: OS, name: str, with_songlist: bool = False) -> None:
     print("Bundling the project...")
-    default_args: list[str] = [
-        "--exclude-module",
-        "_tkinter",
-        "--add-data",
-        "licenses:usdb_syncer/data/licenses",
-        "--add-data",
-        "src/usdb_syncer/db/sql:usdb_syncer/db/sql",
-        "--add-data",
-        "src/usdb_syncer/gui/resources/fonts:usdb_syncer/gui/resources/fonts",
-        "--add-data",
-        "src/usdb_syncer/gui/resources/styles:usdb_syncer/gui/resources/styles",
-        "--add-data",
-        "src/usdb_syncer/gui/resources/audio:usdb_syncer/gui/resources/audio",
-        "--add-data",
-        "src/usdb_syncer/gui/resources/text:usdb_syncer/gui/resources/text",
-        "--add-data",
-        "src/usdb_syncer/webserver/static:usdb_syncer/webserver/static",
-        "--add-data",
-        "src/usdb_syncer/webserver/templates:usdb_syncer/webserver/templates",
+    # fmt: off
+    args: list[str] = [
+        "--exclude-module", "_tkinter",
+        "--add-data", "licenses:usdb_syncer/data/licenses",
+        "--add-data", "src/usdb_syncer/db/sql:usdb_syncer/db/sql",
+        "--add-data", "src/usdb_syncer/gui/resources/fonts:usdb_syncer/gui/resources/fonts",  # noqa: E501
+        "--add-data", "src/usdb_syncer/gui/resources/styles:usdb_syncer/gui/resources/styles",  # noqa: E501
+        "--add-data", "src/usdb_syncer/gui/resources/audio:usdb_syncer/gui/resources/audio",  # noqa: E501
+        "--add-data", "src/usdb_syncer/gui/resources/text:usdb_syncer/gui/resources/text",  # noqa: E501
+        "--add-data", "src/usdb_syncer/webserver/static:usdb_syncer/webserver/static",
+        "--add-data", "src/usdb_syncer/webserver/templates:usdb_syncer/webserver/templates",  # noqa: E501
     ]
+    # fmt: on
     if with_songlist:
-        default_args.extend(["--add-data", "artifacts/song_list.json:usdb_syncer/data"])
+        args.extend(["--add-data", "artifacts/song_list.json:usdb_syncer/data"])
 
     match platform:
         case OS.WINDOWS:
-            args = cast(list[str], [arg.replace(":", ";") for arg in default_args])
-            args.append("--onefile")
             args.extend([
+                "--onefile",
                 "--icon",
                 "src/usdb_syncer/gui/resources/qt/appicon_128x128.png",
             ])
         case OS.MACOS_ARM64 | OS.MACOS_X64:
-            args = default_args
-            args.append("--windowed")
             args.extend([
+                "--windowed",
                 "--icon",
                 "src/usdb_syncer/gui/resources/qt/appicon_128x128.png",
             ])
         case OS.LINUX:
-            args = default_args
-            args.append("--onefile")
+            args.extend(["--onefile"])
         case _:
             assert_never(platform)
     try:
@@ -78,7 +68,8 @@ def cli_entry() -> None:
         "platform",
         type=str,
         choices=[os.value for os in OS],
-        help="Target platform for bundling.",
+        help="Target platform for bundling. Note that this will not cross-compile. It "
+        "should be set to the current platform.",
     )
     parser.add_argument(
         "--name",

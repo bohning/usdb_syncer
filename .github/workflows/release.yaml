@@ -80,7 +80,7 @@ jobs:
         run: uv run --no-dev --group bundle python -m tools.generate_pyside_files
       - name: Bundle with pyinstaller for ${{matrix.os}}
         run: >
-          uv run --no-dev --group bundle invoke bundle ${{matrix.TARGET}} ${{github.ref_name}} --songlist
+          uv run --no-dev --group bundle python -m tools.bundle ${{matrix.TARGET}} --name ${{github.ref_name}} --with-songlist
       - name: Create DMG
         if: contains(matrix.TARGET, 'macOS')
         run: |
