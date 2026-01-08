@@ -52,7 +52,6 @@ dev = [
     "pytest",
     "snakeviz",
     "defusedxml>=0.7.1,<0.8",
-    "invoke>=2.2.1",
 ]
 bundle = [
     "pyinstaller",
@@ -103,7 +102,6 @@ preview = true
 skip-magic-trailing-comma = true
 
 [tool.ruff.lint]
-preview = true
 select = [
     "A",
     "B",
