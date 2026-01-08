@@ -52,6 +52,7 @@ jobs:
             TARGET: Linux
             PYINSTALLER_ARGS: >-
               --onefile
+              --add-data 'licenses:licenses'
               --add-data 'artifacts/song_list.json:usdb_syncer/data'
               --add-data 'src/usdb_syncer/db/sql:usdb_syncer/db/sql'
               --add-data 'src/usdb_syncer/gui/resources/fonts:usdb_syncer/gui/resources/fonts'
@@ -65,6 +66,7 @@ jobs:
             PYINSTALLER_ARGS: >-
               --windowed
               --icon src/usdb_syncer/gui/resources/qt/appicon_128x128.png
+              --add-data 'licenses:licenses'
               --add-data 'artifacts/song_list.json:usdb_syncer/data'
               --add-data 'src/usdb_syncer/db/sql:usdb_syncer/db/sql'
               --add-data 'src/usdb_syncer/gui/resources/fonts:usdb_syncer/gui/resources/fonts'
@@ -78,6 +80,7 @@ jobs:
             PYINSTALLER_ARGS: >-
               --windowed
               --icon src/usdb_syncer/gui/resources/qt/appicon_128x128.png
+              --add-data 'licenses:licenses'
               --add-data 'artifacts/song_list.json:usdb_syncer/data'
               --add-data 'src/usdb_syncer/db/sql:usdb_syncer/db/sql'
               --add-data 'src/usdb_syncer/gui/resources/fonts:usdb_syncer/gui/resources/fonts'
@@ -91,6 +94,7 @@ jobs:
             PYINSTALLER_ARGS: >-
               --onefile
               --icon src/usdb_syncer/gui/resources/qt/appicon_128x128.png
+              --add-data 'licenses;licenses'
               --add-data 'artifacts/song_list.json;usdb_syncer/data'
               --add-data 'src/usdb_syncer/db/sql;usdb_syncer/db/sql'
               --add-data 'src/usdb_syncer/gui/resources/fonts;usdb_syncer/gui/resources/fonts'
@@ -120,10 +124,10 @@ jobs:
         if: startsWith(matrix.os, 'macos')
         run: echo "MACOSX_DEPLOYMENT_TARGET=12.0" >> $GITHUB_ENV
       - name: Generate GUI elements
-        run: uv run python -m tools.generate_pyside_files
+        run: uv run --group bundle python -m tools.generate_pyside_files
       - name: Bundle with pyinstaller for ${{matrix.os}}
         run: >
-          uv run pyinstaller
+          uv run --group bundle pyinstaller
           -n 'USDB_Syncer-${{github.ref_name}}-${{matrix.TARGET}}'
           --exclude-module _tkinter
           ${{matrix.PYINSTALLER_ARGS}}
@@ -169,11 +173,6 @@ jobs:
         with:
           path: artifacts
           merge-multiple: true
-      - name: Zip USDB_SYNCER* binaries
-        run: |
-          for file in artifacts/USDB_Syncer*; do
-            zip -0 -r "${file}.zip" "$file" licenses LICENSE NOTICE.txt
-          done
       - name: Extract Release Notes
         id: extract_notes
         run: >
@@ -183,7 +182,7 @@ jobs:
         shell: bash
       - uses: ncipollo/release-action@v1
         with:
-          artifacts: "artifacts/USDB_Syncer*.zip"
+          artifacts: "artifacts/USDB_Syncer*"
           bodyFile: "CHANGELOG.md"
 
   publish:

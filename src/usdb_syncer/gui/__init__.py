@@ -4,12 +4,14 @@ from __future__ import annotations
 
 import cProfile
 import logging
+import shutil
 import subprocess
 import sys
 import time
 import traceback
 from argparse import ArgumentParser
 from collections.abc import Callable
+from importlib import resources
 from pathlib import Path
 from types import TracebackType
 from typing import TYPE_CHECKING, Any
@@ -21,6 +23,7 @@ from PySide6.QtCore import Qt
 import usdb_syncer
 from usdb_syncer import (
     addons,
+    data,
     db,
     errors,
     logger,
@@ -194,6 +197,12 @@ def _run_main() -> None:
     except errors.UnknownSchemaError:
         QtWidgets.QMessageBox.critical(mw, "Version conflict", SCHEMA_ERROR_MESSAGE)
         return
+    if utils.IS_BUNDLE:
+        shutil.copytree(
+            str(resources.files(data) / "licenses"),
+            utils.AppPaths.licenses,
+            dirs_exist_ok=True,
+        )
     addons.load_all()
     hooks.MainWindowDidLoad.call(mw)
 

@@ -6,10 +6,9 @@ usdb_syncer includes third-party components with separate copyright
 notices and license terms. Your use of these components is subject to
 the terms and conditions of the respective licenses.
 
-The full text of applicable licenses can be found in the 'licenses' folder
-distributed with usdb_syncer.
+The full text of applicable licenses can be found here: $license_dir$
 
-Generated on: 2026-01-06
+Generated on: 2026-01-08
 
 ==============================================================================
 CODE DEPENDENCIES
@@ -950,7 +949,7 @@ View the full license text: LICENSE.GPL2
 PySide6
 ------------------------------------------------------------------------------
 
-License: GPLv3-only
+License: GPL-3.0-only
 Copyright (c) 2024 The Qt Company Ltd.
 
 This library is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License version 3 as published by the Free Software Foundation.
@@ -965,7 +964,7 @@ View the full license text: LICENSE.GPL3
 PySide6-Essentials
 ------------------------------------------------------------------------------
 
-License: GPLv3-only
+License: GPL-3.0-only
 Copyright (c) 2024 The Qt Company Ltd.
 
 This library is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License version 3 as published by the Free Software Foundation.
@@ -980,7 +979,7 @@ View the full license text: LICENSE.GPL3
 PySide6_Addons
 ------------------------------------------------------------------------------
 
-License: GPLv3-only
+License: GPL-3.0-only
 Copyright (c) 2024 The Qt Company Ltd.
 
 This library is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License version 3 as published by the Free Software Foundation.
@@ -1212,7 +1211,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 shiboken6
 ------------------------------------------------------------------------------
 
-License: GPLv3-only
+License: GPL-3.0-only
 Copyright (c) 2024 The Qt Company Ltd.
 
 This library is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License version 3 as published by the Free Software Foundation.
@@ -1581,10 +1580,10 @@ LICENSE FILES (Code Dependencies)
 
 The following license files apply to the code dependencies above:
 
-  - LICENSE.APACHE
-  - LICENSE.GPL2
-  - LICENSE.GPL3
-  - LICENSE.MPL2
+  - $license_dir$LICENSE.APACHE
+  - $license_dir$LICENSE.GPL2
+  - $license_dir$LICENSE.GPL3
+  - $license_dir$LICENSE.MPL2
 
 
 ==============================================================================
@@ -1609,4 +1608,4 @@ LICENSE FILES (Asset Dependencies)
 
 The following license files apply to the asset dependencies above:
 
-  - LICENSE.CCBY3
+  - $license_dir$LICENSE.CCBY3

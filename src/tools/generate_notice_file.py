@@ -61,16 +61,15 @@ def generate_header() -> list[str]:
     lines.append("THIRD-PARTY SOFTWARE NOTICES AND INFORMATION")
     lines.append("=" * 78)
     lines.append("")
-    lines.append("usdb_syncer includes third-party components with separate copyright")
+    lines.append("USDB Syncer includes third-party components with separate copyright")
     lines.append(
         "notices and license terms. Your use of these components is subject to"
     )
     lines.append("the terms and conditions of the respective licenses.")
     lines.append("")
     lines.append(
-        "The full text of applicable licenses can be found in the 'licenses' folder"
+        "The full text of applicable licenses can be found here: $license_dir$"
     )
-    lines.append("distributed with usdb_syncer.")
     lines.append("")
     lines.append(f"Generated on: {datetime.now(timezone.utc).strftime('%Y-%m-%d')}")
     lines.append("")
@@ -138,7 +137,7 @@ def generate_notice_content(licenses: list[LicenseEntry], section_name: str) -> 
         )
         lines.append("")
         for license_file in sorted(referenced_licenses):
-            lines.append(f"  - {license_file}")
+            lines.append(f"  - $license_dir${license_file}")
         lines.append("")
 
     return "\n".join(lines)
@@ -159,6 +158,7 @@ def main() -> None:
     NOTICE_FILE_DATA.write_text(content, encoding="utf-8")
 
     content = "This file is generated automatically. Do not edit.\n\n" + content
+    content = content.replace("$license_dir$", "licenses/")
 
     NOTICE_FILE_ROOT.write_text(content, encoding="utf-8")
 
