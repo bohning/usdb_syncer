@@ -52,6 +52,7 @@ jobs:
             TARGET: Linux
             PYINSTALLER_ARGS: >-
               --onefile
+              --add-data 'tools/resources/license-hash:usdb_syncer/data'
               --add-data 'licenses:usdb_syncer/data/licenses'
               --add-data 'artifacts/song_list.json:usdb_syncer/data'
               --add-data 'src/usdb_syncer/db/sql:usdb_syncer/db/sql'
@@ -66,6 +67,7 @@ jobs:
             PYINSTALLER_ARGS: >-
               --windowed
               --icon src/usdb_syncer/gui/resources/qt/appicon_128x128.png
+              --add-data 'tools/resources/license-hash:usdb_syncer/data'
               --add-data 'licenses:usdb_syncer/data/licenses'
               --add-data 'artifacts/song_list.json:usdb_syncer/data'
               --add-data 'src/usdb_syncer/db/sql:usdb_syncer/db/sql'
@@ -80,6 +82,7 @@ jobs:
             PYINSTALLER_ARGS: >-
               --windowed
               --icon src/usdb_syncer/gui/resources/qt/appicon_128x128.png
+              --add-data 'tools/resources/license-hash:usdb_syncer/data'
               --add-data 'licenses:usdb_syncer/data/licenses'
               --add-data 'artifacts/song_list.json:usdb_syncer/data'
               --add-data 'src/usdb_syncer/db/sql:usdb_syncer/db/sql'
@@ -94,6 +97,7 @@ jobs:
             PYINSTALLER_ARGS: >-
               --onefile
               --icon src/usdb_syncer/gui/resources/qt/appicon_128x128.png
+              --add-data 'tools/resources/license-hash;usdb_syncer/data'
               --add-data 'licenses;usdb_syncer/data/licenses'
               --add-data 'artifacts/song_list.json;usdb_syncer/data'
               --add-data 'src/usdb_syncer/db/sql;usdb_syncer/db/sql'
