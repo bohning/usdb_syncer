@@ -157,7 +157,6 @@ def main() -> None:
 
     NOTICE_FILE_DATA.write_text(content, encoding="utf-8")
 
-    content = "This file is generated automatically. Do not edit.\n\n" + content
     content = content.replace("$license_dir$", "licenses/")
 
     NOTICE_FILE_ROOT.write_text(content, encoding="utf-8")

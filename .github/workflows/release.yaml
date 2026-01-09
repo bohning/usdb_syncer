@@ -55,7 +55,9 @@ jobs:
           - os: macos-15-intel
             TARGET: macOS-x64
           - os: windows-latest
-            TARGET: Windows
+            TARGET: Windows-portable
+          - os: windows-latest
+            TARGET: Windows-install
     steps:
       - uses: actions/checkout@v4
         with:
@@ -78,7 +80,7 @@ jobs:
         run: echo "MACOSX_DEPLOYMENT_TARGET=12.0" >> $GITHUB_ENV
       - name: Generate GUI elements
         run: uv run --no-dev --group bundle python -m tools.generate_pyside_files
-      - name: Bundle with pyinstaller for ${{matrix.os}}
+      - name: Bundle with pyinstaller for ${{matrix.TARGET}}
         run: >
           uv run --no-dev --group bundle python -m tools.bundle ${{matrix.TARGET}} --name ${{github.ref_name}} --with-songlist
       - name: Create DMG
@@ -101,11 +103,12 @@ jobs:
             "dist/USDB_Syncer-${{github.ref_name}}-${{matrix.TARGET}}.app"
       - uses: actions/upload-artifact@v4
         with:
-          name: ${{ matrix.os }}-artifacts
+          name: ${{ matrix.TARGET }}-artifacts
           path: |
             dist/*Linux
             dist/*.dmg
             dist/*.exe
+            installer/Output/*.exe
 
   release:
     if: ${{ github.event_name == 'push' || github.event.inputs.dry_run == 'false' }}

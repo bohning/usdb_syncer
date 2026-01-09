@@ -2,13 +2,13 @@
 THIRD-PARTY SOFTWARE NOTICES AND INFORMATION
 ==============================================================================
 
-usdb_syncer includes third-party components with separate copyright
+USDB Syncer includes third-party components with separate copyright
 notices and license terms. Your use of these components is subject to
 the terms and conditions of the respective licenses.
 
 The full text of applicable licenses can be found here: $license_dir$
 
-Generated on: 2026-01-08
+Generated on: 2026-01-09
 
 ==============================================================================
 CODE DEPENDENCIES

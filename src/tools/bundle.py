@@ -1,17 +1,19 @@
 import argparse
 import subprocess
 from enum import Enum
+from pathlib import Path
 from typing import assert_never
 
 
 class OS(Enum):
-    WINDOWS = "Windows"
+    WINDOWS_PORTABLE = "Windows-portable"
+    WINDOWS_INSTALL = "Windows-install"
     LINUX = "Linux"
     MACOS_ARM64 = "macOS-arm64"
     MACOS_X64 = "macOS-x64"
 
 
-def bundle(platform: OS, name: str, with_songlist: bool = False) -> None:
+def bundle(platform: OS, version: str, with_songlist: bool = False) -> None:
     print("Bundling the project...")
     # fmt: off
     args: list[str] = [
@@ -30,9 +32,14 @@ def bundle(platform: OS, name: str, with_songlist: bool = False) -> None:
         args.extend(["--add-data", "artifacts/song_list.json:usdb_syncer/data"])
 
     match platform:
-        case OS.WINDOWS:
+        case OS.WINDOWS_PORTABLE:
             args.extend([
                 "--onefile",
+                "--icon",
+                "src/usdb_syncer/gui/resources/qt/appicon_128x128.png",
+            ])
+        case OS.WINDOWS_INSTALL:
+            args.extend([
                 "--icon",
                 "src/usdb_syncer/gui/resources/qt/appicon_128x128.png",
             ])
@@ -51,7 +58,7 @@ def bundle(platform: OS, name: str, with_songlist: bool = False) -> None:
             [
                 "pyinstaller",
                 "-n",
-                f"USDB_Syncer-{name}-{platform.value}",
+                f"USDB_Syncer-{version}-{platform.value}",
                 *args,
                 "src/usdb_syncer/gui/__init__.py",
             ],
@@ -61,9 +68,38 @@ def bundle(platform: OS, name: str, with_songlist: bool = False) -> None:
         e.add_note("hint: make sure pyinstaller is available")
         raise
 
+    if platform == OS.WINDOWS_INSTALL:
+        build_installer(version)
+
+
+def build_installer(version: str) -> None:
+    """Build the Windows installer using Inno Setup.
+
+    Args:
+        version: Version string to embed in the installer.
+        source_dir: Root directory of the project. Defaults to current directory.
+    """
+    source_dir = Path.cwd()
+    iss_file = source_dir / "installer" / "wininstaller.iss"
+    try:
+        subprocess.run(
+            [
+                "iscc",
+                f"/DVersion={version}",
+                f"/DSourceDir={source_dir}",
+                str(iss_file),
+            ],
+            check=True,
+        )
+    except FileNotFoundError as e:
+        e.add_note("hint: make sure Inno Setup Compiler (iscc) is available")
+        raise
+    print("Installer built successfully!")
+
 
 def cli_entry() -> None:
     parser = argparse.ArgumentParser(description="Bundle the project.")
+
     parser.add_argument(
         "platform",
         type=str,
@@ -72,11 +108,11 @@ def cli_entry() -> None:
         "should be set to the current platform.",
     )
     parser.add_argument(
-        "--name",
-        "-n",
+        "--version",
+        "-v",
         type=str,
         required=True,
-        help="Name of the bundle (could be a version)",
+        help="Version",
     )
     parser.add_argument(
         "--with-songlist",
@@ -84,9 +120,9 @@ def cli_entry() -> None:
         default=False,
         help="Include the song list in the bundle.",
     )
+
     args = parser.parse_args()
-    platform = OS(args.platform)
-    bundle(platform, args.name, args.with_songlist)
+    bundle(OS(args.platform), args.version, args.with_songlist)
 
 
 if __name__ == "__main__":
