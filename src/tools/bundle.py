@@ -4,6 +4,8 @@ from enum import Enum
 from pathlib import Path
 from typing import assert_never
 
+import usdb_syncer
+
 
 class OS(Enum):
     WINDOWS_PORTABLE = "Windows-portable"
@@ -150,8 +152,8 @@ def cli_entry() -> None:
         "--version",
         "-v",
         type=str,
-        required=True,
-        help="Version embed (can be any string). No check for to actual version.",
+        required=False,
+        help="Version string. If not set, uses syncer's current version.",
     )
     parser.add_argument(
         "--with-songlist",
@@ -161,6 +163,8 @@ def cli_entry() -> None:
     )
 
     args = parser.parse_args()
+    if not args.version:
+        args.version = usdb_syncer.__version__
     bundle(OS(args.platform), args.version, args.with_songlist)
 
 

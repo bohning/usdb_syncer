@@ -86,7 +86,7 @@ jobs:
           brew install create-dmg
       - name: Bundle with pyinstaller for ${{matrix.TARGET}}
         run: >
-          uv run --no-dev --group bundle python -m tools.bundle ${{matrix.TARGET}} --name ${{github.ref_name}} --with-songlist
+          uv run --no-dev --group bundle python -m tools.bundle ${{matrix.TARGET}} --with-songlist
       - uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.TARGET }}-artifacts
