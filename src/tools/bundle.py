@@ -1,4 +1,5 @@
 import argparse
+import shutil
 import subprocess
 from enum import Enum
 from pathlib import Path
@@ -69,6 +70,8 @@ def bundle(platform: OS, version: str, with_songlist: bool = False) -> None:
     except FileNotFoundError as e:
         e.add_note("hint: make sure pyinstaller is available")
         raise
+    print("Executable(s) built successfully!")
+    print("Starting platform-specific bundling...")
 
     match platform:
         case OS.WINDOWS_INSTALL:
@@ -89,14 +92,14 @@ def build_win_installer(version: str) -> None:
         version: Version string to embed in the installer.
         source_dir: Root directory of the project. Defaults to current directory.
     """
-    source_dir = Path.cwd()
-    iss_file = source_dir / "installer" / "wininstaller.iss"
+    root_dir = Path.cwd()
+    iss_file = root_dir / "installer" / "wininstaller.iss"
     try:
         subprocess.run(
             [
                 "iscc",
                 f"/DVersion={version}",
-                f"/DSourceDir={source_dir}",
+                f"/DSourceDir={root_dir}",
                 str(iss_file),
             ],
             check=True,
@@ -104,7 +107,11 @@ def build_win_installer(version: str) -> None:
     except FileNotFoundError as e:
         e.add_note("hint: make sure Inno Setup Compiler (iscc) is available")
         raise
-    print("Installer built successfully!")
+    shutil.move(
+        root_dir / "installer" / "Output" / f"USDB_Syncer-{version}-Windows-Setup.exe",
+        root_dir / "dist" / f"USDB_Syncer-{version}-Windows-Setup.exe",
+    )
+    print("Windows installer built successfully!")
 
 
 def build_mac_pkg(version: str, target: OS) -> None:
