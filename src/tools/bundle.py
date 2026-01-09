@@ -5,8 +5,6 @@ from enum import Enum
 from pathlib import Path
 from typing import assert_never
 
-import usdb_syncer
-
 
 class OS(Enum):
     WINDOWS_PORTABLE = "Windows-portable"
@@ -17,6 +15,7 @@ class OS(Enum):
 
 
 def bundle(platform: OS, version: str, with_songlist: bool = False) -> None:
+    """Bundle the project for the given platform."""
     print("Bundling the project...")
     # fmt: off
     args: list[str] = [
@@ -86,12 +85,7 @@ def bundle(platform: OS, version: str, with_songlist: bool = False) -> None:
 
 
 def build_win_installer(version: str) -> None:
-    """Build the Windows installer using Inno Setup.
-
-    Args:
-        version: Version string to embed in the installer.
-        source_dir: Root directory of the project. Defaults to current directory.
-    """
+    """Build the Windows installer using Inno Setup."""
     root_dir = Path.cwd()
     iss_file = root_dir / "installer" / "wininstaller.iss"
     try:
@@ -142,7 +136,6 @@ def build_mac_pkg(version: str, target: OS) -> None:
 
 def cli_entry() -> None:
     parser = argparse.ArgumentParser(description="Bundle the project.")
-
     parser.add_argument(
         "platform",
         type=str,
@@ -163,9 +156,10 @@ def cli_entry() -> None:
         default=False,
         help="Include the song list in the bundle.",
     )
-
     args = parser.parse_args()
     if not args.version:
+        import usdb_syncer
+
         args.version = usdb_syncer.__version__
     bundle(OS(args.platform), args.version, args.with_songlist)
 
