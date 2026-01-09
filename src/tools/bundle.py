@@ -68,11 +68,19 @@ def bundle(platform: OS, version: str, with_songlist: bool = False) -> None:
         e.add_note("hint: make sure pyinstaller is available")
         raise
 
-    if platform == OS.WINDOWS_INSTALL:
-        build_installer(version)
+    match platform:
+        case OS.WINDOWS_INSTALL:
+            build_win_installer(version)
+        case OS.MACOS_ARM64 | OS.MACOS_X64:
+            build_mac_pkg(version, platform)
+        case OS.WINDOWS_PORTABLE | OS.LINUX:
+            pass
+        case _:
+            assert_never(platform)
+    print("Bundling completed!")
 
 
-def build_installer(version: str) -> None:
+def build_win_installer(version: str) -> None:
     """Build the Windows installer using Inno Setup.
 
     Args:
@@ -97,6 +105,37 @@ def build_installer(version: str) -> None:
     print("Installer built successfully!")
 
 
+def build_mac_pkg(version: str, target: OS) -> None:
+    """Build macOS dmg using create-dmg (must be installed)."""
+    assert target in {OS.MACOS_ARM64, OS.MACOS_X64}
+    name = f"USDB_Syncer-{version}-{target.value}"
+    try:
+        # fmt: off
+        subprocess.run(
+            [
+            "create-dmg",
+            "--volname", "USDB Syncer",
+            "--volicon", "src/usdb_syncer/gui/resources/qt/appicon_128x128.png",
+            "--window-pos", "200", "120",
+            "--window-size", "600", "300",
+            "--icon-size", "128",
+            "--text-size", "14",
+            "--icon", f"{name}.app", "175", "120",
+            "--hide-extension", f"{name}.app",
+            "--app-drop-link", "425", "120",
+            "--hdiutil-quiet",
+            "--no-internet-enable",
+            f"dist/{name}.dmg",
+            f"dist/{name}.app",
+            ],
+            check=True)
+        # fmt: on
+    except FileNotFoundError as e:
+        e.add_note("hint: make sure create-dmg is available")
+        raise
+    print("DMG built successfully!")
+
+
 def cli_entry() -> None:
     parser = argparse.ArgumentParser(description="Bundle the project.")
 
@@ -112,7 +151,7 @@ def cli_entry() -> None:
         "-v",
         type=str,
         required=True,
-        help="Version",
+        help="Version embed (can be any string). No check for to actual version.",
     )
     parser.add_argument(
         "--with-songlist",

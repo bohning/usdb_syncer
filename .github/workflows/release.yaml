@@ -80,27 +80,13 @@ jobs:
         run: echo "MACOSX_DEPLOYMENT_TARGET=12.0" >> $GITHUB_ENV
       - name: Generate GUI elements
         run: uv run --no-dev --group bundle python -m tools.generate_pyside_files
-      - name: Bundle with pyinstaller for ${{matrix.TARGET}}
-        run: >
-          uv run --no-dev --group bundle python -m tools.bundle ${{matrix.TARGET}} --name ${{github.ref_name}} --with-songlist
-      - name: Create DMG
+      - name: Install create-dmg on macOS
         if: contains(matrix.TARGET, 'macOS')
         run: |
           brew install create-dmg
-          create-dmg \
-            --volname "USDB Syncer" \
-            --volicon "src/usdb_syncer/gui/resources/qt/appicon_128x128.png" \
-            --window-pos 200 120 \
-            --window-size 600 300 \
-            --icon-size 128 \
-            --text-size 14 \
-            --icon "USDB_Syncer-${{github.ref_name}}-${{matrix.TARGET}}.app" 175 120 \
-            --hide-extension "USDB_Syncer-${{github.ref_name}}-${{matrix.TARGET}}.app" \
-            --app-drop-link 425 120 \
-            --hdiutil-quiet \
-            --no-internet-enable \
-            "dist/USDB_Syncer-${{github.ref_name}}-${{matrix.TARGET}}.dmg" \
-            "dist/USDB_Syncer-${{github.ref_name}}-${{matrix.TARGET}}.app"
+      - name: Bundle with pyinstaller for ${{matrix.TARGET}}
+        run: >
+          uv run --no-dev --group bundle python -m tools.bundle ${{matrix.TARGET}} --name ${{github.ref_name}} --with-songlist
       - uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.TARGET }}-artifacts

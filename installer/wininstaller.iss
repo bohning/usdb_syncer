@@ -51,7 +51,7 @@ Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{
 [Files]
 Source: "{#SourceDir}\dist\{#BundleName}\{#BundleName}.exe"; DestDir: "{app}"; Flags: ignoreversion
 Source: "{#SourceDir}\dist\{#BundleName}\_internal\*"; DestDir: "{app}\_internal"; Flags: ignoreversion recursesubdirs createallsubdirs
-Source: "{#SourceDir}\dist\{#BundleName}\licenses\*"; DestDir: "{app}\licenses"; Flags: ignoreversion recursesubdirs createallsubdirs 
+Source: "{#SourceDir}\licenses\*"; DestDir: "{app}\licenses"; Flags: ignoreversion recursesubdirs createallsubdirs
 ; NOTE: Don't use "Flags: ignoreversion" on any shared system files
 
 [Icons]
@@ -68,8 +68,8 @@ var
 function InitializeUninstall(): Boolean;
 begin
   Result := True; // Proceed with uninstall even if they say No to deleting data
-  
-  if MsgBox('Do you also want to permanently delete your saved settings and preferences?', 
+
+  if MsgBox('Do you also want to permanently delete your saved settings and preferences?',
      mbConfirmation, MB_YESNO) = IDYES then
   begin
     RemoveSettings := True;
