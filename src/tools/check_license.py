@@ -12,7 +12,7 @@ import json
 import sys
 import tomllib
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
 from enum import Enum, auto
 from pathlib import Path
 from typing import Any, assert_never
@@ -40,13 +40,6 @@ class PackageInfo:
     license: str | None
     license_expression: str | None
 
-    def to_dict(self) -> dict[str, Any]:
-        return {
-            "name": self.name,
-            "license": self.license,
-            "license_expression": self.license_expression,
-        }
-
 
 def parse_uv_lock(lock_file: Path) -> list[tuple[str, str]]:
     """Parse uv.lock file and return list of (name, version) tuples."""
@@ -58,7 +51,9 @@ def parse_uv_lock(lock_file: Path) -> list[tuple[str, str]]:
         lock_data = tomllib.load(f)
 
     # This is a mess, but I don't know how else to do it. We are excluding dev
-    # dependencies here, since they are not packaged/bundled.
+    # dependencies here, since they are not packaged/bundled. Transitive dev
+    # dependencies are not excluded, since parsing the entire dependency tree seemed
+    # too complex for now.
     syncer_dependency = next(
         (item for item in lock_data["package"] if item["name"] == "usdb-syncer"), None
     )  # this part gives us the [[package]] table for usdb-syncer
@@ -86,44 +81,28 @@ def parse_uv_lock(lock_file: Path) -> list[tuple[str, str]]:
     return sorted(packages, key=lambda x: x[0].lower())
 
 
-def fetch_pypi_info(name: str, version: str) -> PackageInfo | None:
+def fetch_pypi_info(name: str, version: str) -> PackageInfo:
     """Fetch license information from PyPI for a specific package version."""
     url = PYPI_JSON_URL.format(name=name, version=version)
-    try:
-        response = requests.get(url, timeout=30)
-        response.raise_for_status()
-        data = response.json()
-        info = data.get("info", {})
+    response = requests.get(url, timeout=30)
+    response.raise_for_status()
+    data = response.json()
+    info = data.get("info")
 
-        return PackageInfo(
-            name=name,
-            license=info.get("license"),
-            license_expression=info.get("license_expression"),
-        )
-    except requests.RequestException as e:
-        print(f"Warning: Failed to fetch info for {name}=={version}: {e}")
-        return None
+    return PackageInfo(
+        name=name,
+        license=info.get("license"),
+        license_expression=info.get("license_expression"),
+    )
 
 
 def collect_license_info(packages: list[tuple[str, str]]) -> list[dict[str, Any]]:
     """Collect license information for all packages concurrently."""
-    results: dict[tuple[str, str], dict[str, Any]] = {}
+    results: dict[tuple[str, str], PackageInfo] = {}
 
-    def fetch_and_store(pkg: tuple[str, str]) -> tuple[tuple[str, str], dict[str, Any]]:
+    def fetch_and_store(pkg: tuple[str, str]) -> tuple[tuple[str, str], PackageInfo]:
         name, version = pkg
-        info = fetch_pypi_info(name, version)
-        if info:
-            return (pkg, info.to_dict())
-        # Include minimal info even if fetch fails to detect changes
-        return (
-            pkg,
-            {
-                "name": name,
-                "license": None,
-                "license_expression": None,
-                "fetch_failed": True,
-            },
-        )
+        return pkg, fetch_pypi_info(name, version)
 
     with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
         futures = {executor.submit(fetch_and_store, pkg): pkg for pkg in packages}
@@ -131,7 +110,7 @@ def collect_license_info(packages: list[tuple[str, str]]) -> list[dict[str, Any]
             pkg, data = future.result()
             results[pkg] = data
 
-    return [results[pkg] for pkg in packages]
+    return [asdict(results[pkg]) for pkg in packages]
 
 
 def compute_hash(license_info: list[dict[str, Any]]) -> str:
