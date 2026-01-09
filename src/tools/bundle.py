@@ -96,12 +96,7 @@ def build_win_installer(version: str) -> None:
     iss_file = root_dir / "installer" / "wininstaller.iss"
     try:
         subprocess.run(
-            [
-                "iscc",
-                f"/DVersion={version}",
-                f"/DSourceDir={root_dir}",
-                str(iss_file),
-            ],
+            ["iscc", f"/DVersion={version}", f"/DSourceDir={root_dir}", str(iss_file)],
             check=True,
         )
     except FileNotFoundError as e:
