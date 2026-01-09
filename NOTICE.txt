@@ -777,7 +777,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 packaging
 ------------------------------------------------------------------------------
 
-License: Apache-2.0 OR BSD-2-Clause
+License: Apache-2.0
 Copyright (c) Donald Stufft
 
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -1365,7 +1365,7 @@ SOFTWARE.
 tqdm
 ------------------------------------------------------------------------------
 
-License: MPL-2.0 OR MIT
+License: MIT
 Copyright (c) 2013 noamraph, 2015-2024 Casper da Costa-Luis
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -1385,8 +1385,6 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
-
-View the full license text: LICENSE.MPL2
 
 ------------------------------------------------------------------------------
 typing_extensions
@@ -1591,7 +1589,7 @@ ASSET DEPENDENCIES
 ==============================================================================
 
 ------------------------------------------------------------------------------
-Icons
+Default Icons
 ------------------------------------------------------------------------------
 
 License: CC-BY-3.0
@@ -1603,9 +1601,33 @@ Icons are available at: https://p.yusukekamiyamane.com/
 View the full license text: LICENSE.CCBY3
 
 ------------------------------------------------------------------------------
+Material Design Icons
+------------------------------------------------------------------------------
+
+License: Apache-2.0
+Pictogrammers
+
+Pictogrammers Free License
+--------------------------
+
+Last Updated: February 1st, 2023
+
+This package is released as free, open-source, and GPL friendly by
+the [Pictogrammers](https://pictogrammers.com/). You may use it
+for commercial projects, open-source projects, or anything really.
+
+Icons: Apache 2.0 (https://www.apache.org/licenses/LICENSE-2.0)
+Some of the icons are redistributed under the Apache 2.0 license. All other
+icons are either redistributed under their respective licenses or are
+distributed under the Apache 2.0 license.
+
+View the full license text: LICENSE.APACHE
+
+------------------------------------------------------------------------------
 LICENSE FILES (Asset Dependencies)
 ------------------------------------------------------------------------------
 
 The following license files apply to the asset dependencies above:
 
+  - licenses/LICENSE.APACHE
   - licenses/LICENSE.CCBY3

@@ -551,6 +551,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         self.action_import_usdb_ids.setIcon(icons.Icon.FILE_IMPORT.icon(key))
         self.action_export_usdb_ids.setIcon(icons.Icon.FILE_EXPORT.icon(key))
         self.action_preview.setIcon(icons.Icon.ULTRASTAR_GAME.icon(key))
+        self.action_licenses.setIcon(icons.Icon.PUZZLE.icon(key))
 
     def _on_current_song_changed(self, event: gui_events.CurrentSongChanged) -> None:
         song = event.song

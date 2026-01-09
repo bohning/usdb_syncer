@@ -219,7 +219,7 @@
     },
     {
       "name": "packaging",
-      "license": "Apache-2.0 OR BSD-2-Clause",
+      "license": "Apache-2.0",
       "copyright": "Copyright (c) Donald Stufft",
       "notice_text": "apache_standard",
       "license_files": ["LICENSE.APACHE"]
@@ -338,10 +338,9 @@
     },
     {
       "name": "tqdm",
-      "license": "MPL-2.0 OR MIT",
+      "license": "MIT",
       "copyright": "Copyright (c) 2013 noamraph, 2015-2024 Casper da Costa-Luis",
-      "notice_text": "mit_standard",
-      "license_files": ["LICENSE.MPL2"]
+      "notice_text": "mit_standard"
     },
     {
       "name": "typing_extensions",
@@ -376,11 +375,18 @@
   ],
   "assets": [
     {
-      "name": "Icons",
+      "name": "Default Icons",
       "copyright": "Yusuke Kamiyamane",
       "license": "CC-BY-3.0",
       "notice_text": "icons_ccby",
       "license_files": ["LICENSE.CCBY3"]
+    },
+    {
+      "name": "Material Design Icons",
+      "copyright": "Pictogrammers",
+      "license": "Apache-2.0",
+      "notice_text": "pictogrammers",
+      "license_files": ["LICENSE.APACHE"]
     }
   ]
 }
