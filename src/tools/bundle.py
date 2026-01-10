@@ -22,6 +22,7 @@ def bundle(platform: OS, version: str, with_songlist: bool = False) -> None:
         "--workpath", "pyinstaller_build",
         "--exclude-module", "_tkinter",
         "--add-data", "licenses:usdb_syncer/data/licenses",
+        "--add-data", "src/tools/resources/license-hash:usdb_syncer/data",
         "--add-data", "src/usdb_syncer/db/sql:usdb_syncer/db/sql",
         "--add-data", "src/usdb_syncer/gui/resources/fonts:usdb_syncer/gui/resources/fonts",  # noqa: E501
         "--add-data", "src/usdb_syncer/gui/resources/styles:usdb_syncer/gui/resources/styles",  # noqa: E501
@@ -70,8 +71,8 @@ def bundle(platform: OS, version: str, with_songlist: bool = False) -> None:
     except FileNotFoundError as e:
         e.add_note("hint: make sure pyinstaller is available")
         raise
-    finally:
-        next(Path.cwd().glob("USDB_Syncer-*.spec")).unlink(missing_ok=True)
+    next(Path.cwd().glob("USDB_Syncer-*.spec")).unlink(missing_ok=True)
+
     print("Executable(s) built successfully!")
     print("Starting platform-specific bundling...")
 
