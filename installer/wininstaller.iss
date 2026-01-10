@@ -60,26 +60,3 @@ Name: "{autodesktop}\USDB Syncer"; Filename: "{app}\{#BundleName}.exe"; Tasks: d
 
 [Run]
 Filename: "{app}\{#BundleName}.exe"; Description: "{cm:LaunchProgram,USDB Syncer}"; Flags: nowait postinstall skipifsilent
-
-[Code]
-var
-  RemoveSettings: Boolean;
-
-function InitializeUninstall(): Boolean;
-begin
-  Result := True; // Proceed with uninstall even if they say No to deleting data
-
-  if MsgBox('Do you also want to permanently delete your saved settings and preferences?',
-     mbConfirmation, MB_YESNO) = IDYES then
-  begin
-    RemoveSettings := True;
-  end;
-end;
-
-procedure CurUninstallStepChanged(CurUninstallStep: TUninstallStep);
-begin
-  if (CurUninstallStep = usPostUninstall) and RemoveSettings then
-  begin
-    RegDeleteKeyIncludingSubkeys(HKEY_CURRENT_USER, 'Software\bohning\usdb_syncer');
-  end;
-end;

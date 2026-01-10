@@ -19,6 +19,7 @@ def bundle(platform: OS, version: str, with_songlist: bool = False) -> None:
     print("Bundling the project...")
     # fmt: off
     args: list[str] = [
+        "--workpath", "pyinstaller_build",
         "--exclude-module", "_tkinter",
         "--add-data", "licenses:usdb_syncer/data/licenses",
         "--add-data", "src/usdb_syncer/db/sql:usdb_syncer/db/sql",
@@ -69,6 +70,8 @@ def bundle(platform: OS, version: str, with_songlist: bool = False) -> None:
     except FileNotFoundError as e:
         e.add_note("hint: make sure pyinstaller is available")
         raise
+    finally:
+        next(Path.cwd().glob("USDB_Syncer-*.spec")).unlink(missing_ok=True)
     print("Executable(s) built successfully!")
     print("Starting platform-specific bundling...")
 
@@ -135,7 +138,9 @@ def build_mac_pkg(version: str, target: OS) -> None:
 
 
 def cli_entry() -> None:
-    parser = argparse.ArgumentParser(description="Bundle the project.")
+    parser = argparse.ArgumentParser(
+        description="Bundle the project. Must be run from the repo root."
+    )
     parser.add_argument(
         "platform",
         type=str,
