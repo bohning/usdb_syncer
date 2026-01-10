@@ -2,17 +2,30 @@
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 from typing import ClassVar
 
-from PySide6.QtWidgets import QDialog, QWidget
+from PySide6.QtGui import Qt
+from PySide6.QtWidgets import QDialog, QMessageBox, QWidget
 
 from usdb_syncer import settings
 from usdb_syncer.gui import progress, theme
 from usdb_syncer.gui.forms.UsdbUploadDialog import Ui_Dialog
 from usdb_syncer.gui.theme import generate_diff_css
 from usdb_syncer.logger import song_logger
-from usdb_syncer.usdb_scraper import submit_local_changes
-from usdb_syncer.usdb_song import SongChanges, UsdbSong
+from usdb_syncer.song_txt import SongTxt
+from usdb_syncer.usdb_scraper import get_notes, submit_local_changes
+from usdb_syncer.usdb_song import DownloadStatus, SongChanges, UsdbSong
+
+
+@dataclass
+class ValidationSuccess:
+    changes: SongChanges
+
+
+@dataclass
+class ValidationFailure:
+    reason: str
 
 
 def get_diff_css() -> str:
@@ -27,7 +40,7 @@ class UsdbUploadDialog(Ui_Dialog, QDialog):
     _instance: ClassVar[UsdbUploadDialog | None] = None
 
     def __init__(
-        self, parent: QWidget, submittable: list[tuple[UsdbSong, SongChanges]]
+        self, parent: QWidget | None, submittable: list[tuple[UsdbSong, SongChanges]]
     ) -> None:
         super().__init__(parent=parent)
         self.setupUi(self)
@@ -133,3 +146,91 @@ class UsdbUploadDialog(Ui_Dialog, QDialog):
         self._save_settings()
         UsdbUploadDialog._instance = None
         super().reject()
+
+
+def submit_or_reject_selected(selected: list[UsdbSong]) -> None:
+    submittable: list[tuple[UsdbSong, SongChanges]] = []
+    rejected: list[tuple[UsdbSong, str]] = []
+
+    for song in selected:
+        result = _validate_song_for_submission(song)
+        if isinstance(result, ValidationSuccess):
+            submittable.append((song, result.changes))
+        elif isinstance(result, ValidationFailure):
+            rejected.append((song, result.reason))
+
+    if rejected:
+        _show_rejection_message(rejected)
+
+    if submittable:
+        UsdbUploadDialog(None, submittable).show()
+
+
+def _validate_song_for_submission(
+    song: UsdbSong,
+) -> ValidationFailure | ValidationSuccess:
+    logger = song_logger(song.song_id)
+
+    remote_str = get_notes(song.song_id, logger)
+    if not remote_str:
+        logger.info("Cannot submit: song is not remote.")
+        return ValidationFailure("not remote")
+
+    remote_txt = SongTxt.try_parse(remote_str, logger)
+    if not remote_txt:
+        logger.info("Cannot submit: remote song parsing failed.")
+        return ValidationFailure("remote parsing failed")
+
+    sync_meta = song.sync_meta
+    if not sync_meta or not sync_meta.path.exists():
+        logger.info("Cannot submit: song is not local.")
+        return ValidationFailure("not local")
+
+    if song.status is not DownloadStatus.SYNCHRONIZED:
+        logger.info("Cannot submit: song is not synchronized.")
+        return ValidationFailure("not synchronized")
+
+    song_changes = song.get_changes(remote_txt)
+    if not song_changes or not song_changes.has_changes():
+        logger.info("Cannot submit: song has no local changes.")
+        return ValidationFailure("no local changes")
+
+    return ValidationSuccess(song_changes)
+
+
+def _show_rejection_message(rejected_songs: list[tuple[UsdbSong, str]]) -> None:
+    """Show a message listing why songs cannot be submitted."""
+    if not rejected_songs:
+        return
+
+    if len(rejected_songs) == 1:
+        song, reason = rejected_songs[0]
+        html = (
+            f"<p>The song <b>{song.song_id}: {song.artist_title_str()}</b> cannot "
+            f"be submitted:</p><p style='color: #888;'>{reason}</p>"
+        )
+    else:
+        rows = []
+        for song, reason in rejected_songs:
+            rows.append(
+                f"<tr>"
+                f"<td style='padding-right: 10px;'><b>{song.song_id}</b></td>"
+                f"<td style='padding-right: 10px;'>{song.artist_title_str()}</td>"
+                f"<td style='color: #888;'>{reason}</td>"
+                f"</tr>"
+            )
+
+        html = (
+            "<p>The following songs cannot be submitted:</p>"
+            "<table cellspacing='0' cellpadding='5'>" + "".join(rows) + "</table>"
+        )
+
+    msg_box = QMessageBox(None)
+    msg_box.setIcon(QMessageBox.Icon.Information)
+    msg_box.setWindowTitle("Not Submittable")
+    msg_box.setTextFormat(Qt.TextFormat.RichText)
+    msg_box.setText(html)
+    msg_box.setStandardButtons(QMessageBox.StandardButton.Ok)
+    msg_box.resize(msg_box.sizeHint())
+
+    msg_box.exec()

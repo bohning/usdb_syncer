@@ -2,11 +2,10 @@
 
 import webbrowser
 from collections.abc import Callable
-from dataclasses import dataclass
 from pathlib import Path
 
-from PySide6.QtGui import QCloseEvent, QPixmap, Qt
-from PySide6.QtWidgets import QFileDialog, QMainWindow, QMessageBox
+from PySide6.QtGui import QCloseEvent, QPixmap
+from PySide6.QtWidgets import QFileDialog, QMainWindow
 
 from usdb_syncer import (
     SongId,
@@ -42,32 +41,16 @@ from usdb_syncer.gui.settings_dialog import SettingsDialog
 from usdb_syncer.gui.shortcuts import MainWindowShortcut, SongTableShortcut
 from usdb_syncer.gui.song_table.song_table import SongTable
 from usdb_syncer.gui.usdb_login_dialog import UsdbLoginDialog
-from usdb_syncer.gui.usdb_upload_dialog import UsdbUploadDialog
+from usdb_syncer.gui.usdb_upload_dialog import submit_or_reject_selected
 from usdb_syncer.gui.webserver_dialog import WebserverDialog
-from usdb_syncer.logger import logger, song_logger
+from usdb_syncer.logger import logger
 from usdb_syncer.song_loader import DownloadManager
-from usdb_syncer.song_txt import SongTxt
 from usdb_syncer.sync_meta import SyncMeta
-from usdb_syncer.usdb_scraper import (
-    SessionManager,
-    UserRole,
-    get_notes,
-    post_song_rating,
-)
-from usdb_syncer.usdb_song import DownloadStatus, SongChanges, UsdbSong
+from usdb_syncer.usdb_scraper import SessionManager, UserRole, post_song_rating
+from usdb_syncer.usdb_song import UsdbSong
 from usdb_syncer.utils import AppPaths, LinuxEnvCleaner, open_path_or_file
 
 NO_COVER_PIXMAP = QPixmap(":/images/nocover.png")
-
-
-@dataclass
-class ValidationSuccess:
-    changes: SongChanges
-
-
-@dataclass
-class ValidationFailure:
-    reason: str
 
 
 class MainWindow(Ui_MainWindow, QMainWindow):
@@ -431,91 +414,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         else:
             selected = list(self.table.selected_songs())
 
-        submittable: list[tuple[UsdbSong, SongChanges]] = []
-        rejected: list[tuple[UsdbSong, str]] = []
-
-        for song in selected:
-            result = self._validate_song_for_submission(song)
-            if isinstance(result, ValidationSuccess):
-                submittable.append((song, result.changes))
-            elif isinstance(result, ValidationFailure):
-                rejected.append((song, result.reason))
-
-        if rejected:
-            self._show_rejection_message(rejected)
-
-        if submittable:
-            UsdbUploadDialog(self, submittable).show()
-
-    def _validate_song_for_submission(
-        self, song: UsdbSong
-    ) -> ValidationFailure | ValidationSuccess:
-        logger = song_logger(song.song_id)
-
-        remote_str = get_notes(song.song_id, logger)
-        if not remote_str:
-            logger.info("Cannot submit: song is not remote.")
-            return ValidationFailure("not remote")
-
-        remote_txt = SongTxt.try_parse(remote_str, logger)
-        if not remote_txt:
-            logger.info("Cannot submit: remote song parsing failed.")
-            return ValidationFailure("remote parsing failed")
-
-        sync_meta = song.sync_meta
-        if not sync_meta or not sync_meta.path.exists():
-            logger.info("Cannot submit: song is not local.")
-            return ValidationFailure("not local")
-
-        if song.status is not DownloadStatus.SYNCHRONIZED:
-            logger.info("Cannot submit: song is not synchronized.")
-            return ValidationFailure("not synchronized")
-
-        song_changes = song.get_changes(remote_txt)
-        if not song_changes or not song_changes.has_changes():
-            logger.info("Cannot submit: song has no local changes.")
-            return ValidationFailure("no local changes")
-
-        return ValidationSuccess(song_changes)
-
-    def _show_rejection_message(
-        self, rejected_songs: list[tuple[UsdbSong, str]]
-    ) -> None:
-        """Show a message listing why songs cannot be submitted."""
-        if not rejected_songs:
-            return
-
-        if len(rejected_songs) == 1:
-            song, reason = rejected_songs[0]
-            html = (
-                f"<p>The song <b>{song.song_id}: {song.artist_title_str()}</b> cannot "
-                f"be submitted:</p><p style='color: #888;'>{reason}</p>"
-            )
-        else:
-            rows = []
-            for song, reason in rejected_songs:
-                rows.append(
-                    f"<tr>"
-                    f"<td style='padding-right: 10px;'><b>{song.song_id}</b></td>"
-                    f"<td style='padding-right: 10px;'>{song.artist_title_str()}</td>"
-                    f"<td style='color: #888;'>{reason}</td>"
-                    f"</tr>"
-                )
-
-            html = (
-                "<p>The following songs cannot be submitted:</p>"
-                "<table cellspacing='0' cellpadding='5'>" + "".join(rows) + "</table>"
-            )
-
-        msg_box = QMessageBox(self)
-        msg_box.setIcon(QMessageBox.Icon.Information)
-        msg_box.setWindowTitle("Not Submittable")
-        msg_box.setTextFormat(Qt.TextFormat.RichText)
-        msg_box.setText(html)
-        msg_box.setStandardButtons(QMessageBox.StandardButton.Ok)
-        msg_box.resize(msg_box.sizeHint())
-
-        msg_box.exec()
+        submit_or_reject_selected(selected)
 
     def _open_current_song(self, action: Callable[[Path], None]) -> None:
         if song := self.table.current_song():
