@@ -17,10 +17,12 @@ reports
 **__pycache__
 **.egg-info
 
-# pyinstaller
+# builds and bundling
+pyinstaller_build
 build
 dist
 *.spec
+installer/Output
 
 # profiling
 usdb_syncer.prof
