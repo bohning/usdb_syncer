@@ -4,12 +4,14 @@ from __future__ import annotations
 
 import cProfile
 import logging
+import shutil
 import subprocess
 import sys
 import time
 import traceback
 from argparse import ArgumentParser
 from collections.abc import Callable
+from importlib import resources as importlib_resources
 from pathlib import Path
 from types import TracebackType
 from typing import TYPE_CHECKING, Any
@@ -21,6 +23,7 @@ from PySide6.QtCore import Qt
 import usdb_syncer
 from usdb_syncer import (
     addons,
+    data,
     db,
     errors,
     logger,
@@ -194,6 +197,7 @@ def _run_main() -> None:
     except errors.UnknownSchemaError:
         QtWidgets.QMessageBox.critical(mw, "Version conflict", SCHEMA_ERROR_MESSAGE)
         return
+    _maybe_copy_licenses()
     addons.load_all()
     hooks.MainWindowDidLoad.call(mw)
 
@@ -285,6 +289,34 @@ def _init_app() -> QtWidgets.QApplication:
     app.setApplicationName("usdb_syncer")
     app.setWindowIcon(QtGui.QIcon(":/app/appicon_128x128.png"))
     return app
+
+
+def _maybe_copy_licenses() -> None:
+    if not utils.IS_BUNDLE:
+        return
+
+    license_hash = (
+        (importlib_resources.files(data) / "license-hash")
+        .read_text(encoding="utf-8")
+        .strip()
+    )
+    if utils.AppPaths.license_hash.exists():
+        existing_hash = utils.AppPaths.license_hash.read_text(encoding="utf-8").strip()
+        if existing_hash == license_hash:
+            return
+    logger.logger.debug("Copying license files because hash changed.")
+    utils.AppPaths.license_hash.write_text(license_hash, encoding="utf-8")
+
+    for child in utils.AppPaths.licenses.iterdir():
+        if child.is_dir():
+            shutil.rmtree(child, ignore_errors=True)
+        else:
+            child.unlink(missing_ok=True)
+    shutil.copytree(
+        str(importlib_resources.files(data) / "licenses/"),
+        utils.AppPaths.licenses,
+        dirs_exist_ok=True,
+    )
 
 
 class _LogSignal(QtCore.QObject):

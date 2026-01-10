@@ -74,6 +74,7 @@ class Icon(enum.Enum):
     PIN = "pin.png", "pin-white.svg"
     PLAY_LOCAL = "control-play-local.png", "play-white.svg"
     PLAY_REMOTE = "control-play.png", "play-network-white.svg"
+    PUZZLE = "puzzle.png", "puzzle-white.svg"
     RADIOBOX_BLANK = None, "radiobox-blank-white.svg"
     RADIOBOX_MARKED = None, "radiobox-marked-white.svg"
     RATING = "rating.png", "podium-white.svg"

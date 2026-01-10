@@ -113,6 +113,8 @@ class AppPaths:
     log = Path(_platform_dirs.user_data_dir, "usdb_syncer.log")
     db = Path(_platform_dirs.user_data_dir, "usdb_syncer.db")
     addons = Path(_platform_dirs.user_data_dir, "addons")
+    licenses = Path(_platform_dirs.user_data_dir, "licenses")
+    license_hash = Path(_platform_dirs.user_data_dir, "license_hash.txt")
     song_list = Path(_platform_dirs.user_cache_dir, "available_songs.json")
     profile = Path(_platform_dirs.user_cache_dir, "usdb_syncer.prof")
     shared = (_root() / "shared") if IS_SOURCE else None
@@ -120,6 +122,7 @@ class AppPaths:
     @classmethod
     def make_dirs(cls) -> None:
         cls.addons.mkdir(parents=True, exist_ok=True)
+        cls.licenses.mkdir(parents=True, exist_ok=True)
         cls.song_list.parent.mkdir(parents=True, exist_ok=True)
 
 

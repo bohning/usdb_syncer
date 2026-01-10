@@ -3,6 +3,8 @@ name = "usdb_syncer"
 dynamic = ["version"]
 description = "A download manager for USDB songs."
 authors = [{ name = "Markus Böhning", email = "markus.boehning@gmail.com" }]
+license = "GPL-3.0-only"
+license-files = ["LICENSE", "NOTICE.txt", "licenses/*"]
 requires-python = ">=3.11,<3.13"
 readme = "README.md"
 dependencies = [
@@ -71,6 +73,7 @@ source = "vcs"
 include = [
     "src/usdb_syncer/gui/forms/*.py",
     "src/usdb_syncer/gui/resources/qt/*.py",
+    "src/usdb_syncer/gui/resources/text/*",
     "src/usdb_syncer/data/*.json",
     "src/usdb_syncer/webserver/static/*",
     "src/usdb_syncer/webserver/templates/*",
@@ -81,6 +84,7 @@ packages = ["src/usdb_syncer"]
 include = [
     "src/usdb_syncer/gui/forms/*.py",
     "src/usdb_syncer/gui/resources/qt/*.py",
+    "src/usdb_syncer/gui/resources/text/*",
     "src/usdb_syncer/data/*.json",
     "src/usdb_syncer/webserver/static/*",
     "src/usdb_syncer/webserver/templates/*",
@@ -149,7 +153,7 @@ fixable = ["ALL"]
 unfixable = []
 
 [tool.ruff.lint.isort]
-# For consistency with the formatter, see https://docs.astral.sh/ruff/settings/#lint_isort_split-on-trailing-comma 
+# For consistency with the formatter, see https://docs.astral.sh/ruff/settings/#lint_isort_split-on-trailing-comma
 split-on-trailing-comma = false
 
 [tool.mypy]

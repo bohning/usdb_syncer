@@ -197,7 +197,7 @@
      <x>0</x>
      <y>0</y>
      <width>1540</width>
-     <height>24</height>
+     <height>33</height>
     </rect>
    </property>
    <widget class="QMenu" name="menu_tools">
@@ -231,6 +231,7 @@
     </property>
     <addaction name="action_show_log"/>
     <addaction name="action_about"/>
+    <addaction name="action_licenses"/>
    </widget>
    <widget class="QMenu" name="menu_songs">
     <property name="title">
@@ -903,6 +904,15 @@
    </property>
    <property name="toolTip">
     <string>Submit local changes to USDB</string>
+   </property>
+  </action>
+  <action name="action_licenses">
+   <property name="icon">
+    <iconset resource="../resources/qt/resources.qrc">
+     <normaloff>:/icons/puzzle.png</normaloff>:/icons/puzzle.png</iconset>
+   </property>
+   <property name="text">
+    <string>Third-Party Licenses</string>
    </property>
   </action>
  </widget>
