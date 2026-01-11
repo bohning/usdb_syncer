@@ -34,12 +34,11 @@ from usdb_syncer import (
 )
 from usdb_syncer.custom_data import CustomData
 from usdb_syncer.db import JobStatus, ResourceKind
-from usdb_syncer.discord import notify_discord
 from usdb_syncer.download_options import AudioOptions, VideoOptions
 from usdb_syncer.logger import Logger, logger, song_logger
 from usdb_syncer.meta_tags import ImageMetaTags
 from usdb_syncer.postprocessing import write_audio_tags, write_video_tags
-from usdb_syncer.resource_dl import ImageKind, ResourceDLError
+from usdb_syncer.resource_dl import ImageKind
 from usdb_syncer.settings import FormatVersion
 from usdb_syncer.song_txt import SongTxt
 from usdb_syncer.sync_meta import Resource, ResourceFile, SyncMeta
@@ -589,7 +588,7 @@ def _try_download_audio_or_video(
             ctx.logger,
         )
 
-    if ext := dl_result.extension:
+    if ext := dl_result.content:
         target.resource = resource
         target.new_fname = ctx.locations.filename(ext=ext)
         return JobStatus.SUCCESS
@@ -717,6 +716,7 @@ def _try_download_cover_or_background(
         kind=kind,
         max_width=ctx.options.cover.max_size,
         process=process,
+        notify_discord=ctx.options.notify_discord,
     ):
         match kind:
             case ImageKind.COVER:
@@ -728,16 +728,6 @@ def _try_download_cover_or_background(
             case _ as unreachable:
                 assert_never(unreachable)
         return JobStatus.SUCCESS
-
-    if ctx.options.notify_discord:
-        notify_discord(
-            ctx.song.song_id,
-            url,
-            str(kind).capitalize(),
-            ResourceDLError.RESOURCE_UNAVAILABLE.value,
-            ctx.logger,
-        )
-
     return JobStatus.FAILURE
 
 

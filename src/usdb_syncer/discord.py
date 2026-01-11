@@ -11,9 +11,15 @@ DISCORD_COLOR_RED = 0xED4245  # equivalent to discord.Color.red()
 
 
 def notify_discord(
-    song_id: SongId, url: str, kind: str, error_str: str, logger: Logger
+    song_id: SongId,
+    url: str,
+    kind: str,
+    error_str: str,
+    return_code: int | None,
+    logger: Logger,
 ) -> None:
     """Notify unavailable resources on Discord (without using the discord package)."""
+    code = str(return_code) if return_code is not None else ""
     if not (song := UsdbSong.get(song_id)):
         logger.debug("Song id does not exist.")
         return
@@ -36,7 +42,9 @@ def notify_discord(
                 "url": song_id.usdb_detail_url(),
                 "icon_url": f"{Usdb.COVER_URL}{song_id:d}.jpg",
             },
-            "fields": [{"name": f"{kind} {error_str}:", "value": url, "inline": False}],
+            "fields": [
+                {"name": f"{kind} {error_str}: {code}", "value": url, "inline": False}
+            ],
             "footer": {"text": f"USDB Syncer {__version__}"},
         }
 
