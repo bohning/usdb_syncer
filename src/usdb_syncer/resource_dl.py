@@ -39,7 +39,7 @@ IMAGE_DOWNLOAD_HEADERS = {
     )
 }
 
-# Constants for freezedetect analysis
+# Constants for ffmpeg's freezedetect analysis
 START_TIME_SECONDS: Final[int] = 0
 DURATION_SECONDS: Final[int] = 15
 FREEZE_NOISE_DB: Final[int] = -80
