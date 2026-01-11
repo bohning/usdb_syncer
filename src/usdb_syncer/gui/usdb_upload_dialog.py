@@ -148,7 +148,7 @@ class UsdbUploadDialog(Ui_Dialog, QDialog):
         super().reject()
 
 
-def submit_or_reject_selected(selected: list[UsdbSong]) -> None:
+def submit_or_reject_selected(parent: QWidget, selected: list[UsdbSong]) -> None:
     submittable: list[tuple[UsdbSong, SongChanges]] = []
     rejected: list[tuple[UsdbSong, str]] = []
 
@@ -160,10 +160,10 @@ def submit_or_reject_selected(selected: list[UsdbSong]) -> None:
             rejected.append((song, result.reason))
 
     if rejected:
-        _show_rejection_message(rejected)
+        _show_rejection_message(parent, rejected)
 
     if submittable:
-        UsdbUploadDialog(None, submittable).show()
+        UsdbUploadDialog(parent, submittable).show()
 
 
 def _validate_song_for_submission(
@@ -198,7 +198,9 @@ def _validate_song_for_submission(
     return ValidationSuccess(song_changes)
 
 
-def _show_rejection_message(rejected_songs: list[tuple[UsdbSong, str]]) -> None:
+def _show_rejection_message(
+    parent: QWidget, rejected_songs: list[tuple[UsdbSong, str]]
+) -> None:
     """Show a message listing why songs cannot be submitted."""
     if not rejected_songs:
         return
@@ -225,7 +227,7 @@ def _show_rejection_message(rejected_songs: list[tuple[UsdbSong, str]]) -> None:
             "<table cellspacing='0' cellpadding='5'>" + "".join(rows) + "</table>"
         )
 
-    msg_box = QMessageBox(None)
+    msg_box = QMessageBox(parent)
     msg_box.setIcon(QMessageBox.Icon.Information)
     msg_box.setWindowTitle("Not Submittable")
     msg_box.setTextFormat(Qt.TextFormat.RichText)

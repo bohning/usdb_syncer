@@ -414,7 +414,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         else:
             selected = list(self.table.selected_songs())
 
-        submit_or_reject_selected(selected)
+        submit_or_reject_selected(self, selected)
 
     def _open_current_song(self, action: Callable[[Path], None]) -> None:
         if song := self.table.current_song():
