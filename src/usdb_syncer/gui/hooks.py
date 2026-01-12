@@ -7,12 +7,8 @@ from typing import TYPE_CHECKING
 from usdb_syncer import hooks
 
 if TYPE_CHECKING:
-    from usdb_syncer.gui.mw import MainWindow
+    from usdb_syncer.gui.mw import MainWindow  # noqa: F401
 
 
-class MainWindowDidLoad(hooks._Hook):
+class MainWindowDidLoad(hooks._Hook[["MainWindow"], None]):
     """Called after the main window has loaded."""
-
-    @classmethod
-    def call(cls, main_window: MainWindow) -> None:
-        super().call(main_window)

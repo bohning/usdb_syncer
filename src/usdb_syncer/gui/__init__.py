@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import collections
 import cProfile
 import logging
 import shutil
@@ -199,7 +200,7 @@ def _run_main() -> None:
         return
     _maybe_copy_licenses()
     addons.load_all()
-    hooks.MainWindowDidLoad.call(mw)
+    collections.deque(hooks.MainWindowDidLoad.call(mw), maxlen=0)
 
 
 def _run_preview(txt: Path) -> bool:
