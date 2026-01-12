@@ -16,7 +16,7 @@ import requests
 from bs4 import BeautifulSoup, NavigableString, Tag
 from requests import Session
 
-from usdb_syncer import SongId, db, errors, events, settings
+from usdb_syncer import SongId, db, errors, events, hooks, settings
 from usdb_syncer.constants import (
     SUPPORTED_VIDEO_SOURCES_REGEX,
     Usdb,
@@ -82,6 +82,10 @@ RANK_REGEX = re.compile(r"images/rank_(\d)\.gif")
 
 def establish_usdb_login(session: Session) -> UsdbUser | None:
     """Tries to log in to USDB if necessary. Returns user info or None."""
+    if jar := next(hooks.GetUsdbCookies.call(), None):
+        logger.debug("Using custom USDB cookies from hook.")
+        for cookie in jar:
+            session.cookies.set_cookie(cookie)
     user = get_logged_in_usdb_user(session)
 
     if user:

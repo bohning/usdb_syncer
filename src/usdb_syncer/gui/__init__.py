@@ -193,13 +193,13 @@ def _run_main() -> None:
             mw.label_update_hint.setOpenExternalLinks(True)
     else:
         logger.logger.info("Running in dev mode, skipping update check.")
+    addons.load_all()
     try:
         _load_main_window(mw)
     except errors.UnknownSchemaError:
         QtWidgets.QMessageBox.critical(mw, "Version conflict", SCHEMA_ERROR_MESSAGE)
         return
     _maybe_copy_licenses()
-    addons.load_all()
     collections.deque(hooks.MainWindowDidLoad.call(mw), maxlen=0)
 
 
