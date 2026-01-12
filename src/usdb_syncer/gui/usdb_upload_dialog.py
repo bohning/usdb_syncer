@@ -67,9 +67,7 @@ class UsdbUploadDialog(Ui_Dialog, QDialog):
         )
 
         for song, _ in self.submittable:
-            self.comboBox_songs.addItem(
-                f"{song.song_id}: {song.artist_title_str()} - {song.title} "
-            )
+            self.comboBox_songs.addItem(f"{song.song_id}: {song.artist_title_str()}")
 
     @classmethod
     def load(
