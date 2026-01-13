@@ -319,7 +319,7 @@ def _download_resource(
     options_without_cookies = options.copy()
     options_without_cookies.pop("cookiesfrombrowser", None)
 
-    with yt_dlp.YoutubeDL(options_without_cookies) as ydl:  # type: ignore[arg-type]
+    with yt_dlp.YoutubeDL(options_without_cookies) as ydl:  # pyright: ignore[reportArgumentType]  # yt-dlp expects dynamic params
         try:
             filename = ydl.prepare_filename(ydl.extract_info(url))
             ext = Path(filename).suffix[1:]
@@ -384,7 +384,7 @@ def _retry_with_cookies(
     url: str, options: YtdlOptions, logger: Logger
 ) -> ResourceDLResult:
     logger.warning("Age-restricted resource. Retrying with cookies ...")
-    with yt_dlp.YoutubeDL(options) as ydl:  # type: ignore[arg-type]
+    with yt_dlp.YoutubeDL(options) as ydl:  # pyright: ignore[reportArgumentType]  # yt-dlp expects dynamic params
         try:
             filename = ydl.prepare_filename(ydl.extract_info(url))
             ext = Path(filename).suffix[1:]
