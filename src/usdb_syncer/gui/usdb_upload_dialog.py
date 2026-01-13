@@ -151,11 +151,11 @@ def submit_or_reject_selected(parent: QWidget, selected: list[UsdbSong]) -> None
     rejected: list[tuple[UsdbSong, str]] = []
 
     for song in selected:
-        result = _validate_song_for_submission(song)
-        if isinstance(result, ValidationSuccess):
-            submittable.append((song, result.changes))
-        elif isinstance(result, ValidationFailure):
-            rejected.append((song, result.reason))
+        match _validate_song_for_submission(song):
+            case ValidationSuccess(changes):
+                submittable.append((song, changes))
+            case ValidationFailure(reason):
+                rejected.append((song, reason))
 
     if rejected:
         _show_rejection_message(parent, rejected)
