@@ -235,6 +235,8 @@ def run_freezedetect(video_path: Path) -> list[float]:
         result = subprocess.run(
             [
                 "ffmpeg",
+                "-loglevel",
+                "info",
                 "-i",
                 str(video_path),
                 "-vf",
@@ -250,6 +252,8 @@ def run_freezedetect(video_path: Path) -> list[float]:
             timeout=FFMPEG_TIMEOUT_SECONDS,
         )
 
+    # ffmpeg's freezedetect filter emits results only as log messages, so we
+    # intentionally parse freeze_duration from the output.
     return [
         float(duration)
         for duration in re.findall(r"freeze_duration: ([\d.]+)", result.stderr)
