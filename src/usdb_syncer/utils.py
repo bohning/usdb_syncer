@@ -301,9 +301,9 @@ def format_timestamp(micros: int) -> str:
     )
 
 
-def remove_url_params(url: str, logger: Logger) -> str:
+def remove_url_params(url: str, logger: Logger | None = None) -> str:
     url_base, _, url_params = url.partition("&")
-    if url_params:
+    if url_params and logger:
         logger.debug(f"Stripped superfluous query parameters from '{url}'.")
     return url_base
 
