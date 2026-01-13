@@ -3,7 +3,6 @@
 from collections.abc import Iterable
 from datetime import datetime
 from functools import cache
-from pathlib import Path
 from typing import Any, assert_never
 
 from PySide6.QtCore import (
@@ -211,23 +210,23 @@ def _decoration_data(song: UsdbSong, column: int) -> QIcon | None:  # noqa: C901
         case Column.TXT:
             if not (sync_meta and (txt := sync_meta.txt)):
                 return None
-            icon = status_icon(txt, sync_meta.path.parent)
+            icon = status_icon(txt)
         case Column.AUDIO:
             if not (sync_meta and (audio := sync_meta.audio)):
                 return None
-            icon = status_icon(audio, sync_meta.path.parent)
+            icon = status_icon(audio)
         case Column.VIDEO:
             if not (sync_meta and (video := sync_meta.video)):
                 return None
-            icon = status_icon(video, sync_meta.path.parent)
+            icon = status_icon(video)
         case Column.COVER:
             if not (sync_meta and (cover := sync_meta.cover)):
                 return None
-            icon = status_icon(cover, sync_meta.path.parent)
+            icon = status_icon(cover)
         case Column.BACKGROUND:
             if not (sync_meta and (background := sync_meta.background)):
                 return None
-            icon = status_icon(background, sync_meta.path.parent)
+            icon = status_icon(background)
         case Column.PINNED:
             if not (sync_meta and sync_meta.pinned):
                 return None
@@ -237,7 +236,7 @@ def _decoration_data(song: UsdbSong, column: int) -> QIcon | None:  # noqa: C901
     return icon.icon()
 
 
-def status_icon(resource: Resource, folder: Path) -> icons.Icon:
+def status_icon(resource: Resource) -> icons.Icon:
     match resource.status:
         case JobStatus.SUCCESS | JobStatus.SUCCESS_UNCHANGED:
             icon = icons.Icon.SUCCESS
@@ -262,12 +261,12 @@ def _tooltip_data(song: UsdbSong, column: int) -> str | None:
 
     col = Column(column)
     if resource := col.get_resource_for_column(sync_meta):
-        return status_tooltip(resource, sync_meta.path.parent)
+        return status_tooltip(resource)
 
     return None
 
 
-def status_tooltip(resource: Resource, folder: Path) -> str:
+def status_tooltip(resource: Resource) -> str:
     file = resource.file
     match resource.status:
         case JobStatus.SUCCESS | JobStatus.SUCCESS_UNCHANGED:
