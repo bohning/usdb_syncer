@@ -409,7 +409,11 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         Moderators may submit all selected songs.
         """
 
-        if (user := SessionManager.get_user()) and (user.role == UserRole.USER):
+        if not (user := SessionManager.get_user()):
+            logger.info("Not logged in, skipping song submission.")
+            return
+
+        if user.role == UserRole.USER:
             selected = [s] if (s := self.table.current_song()) else []
         else:
             selected = list(self.table.selected_songs())
