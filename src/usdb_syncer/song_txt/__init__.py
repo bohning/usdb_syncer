@@ -121,7 +121,7 @@ class SongTxt:
         if not path.is_file():
             return None
 
-        for enc in Encoding:
+        for enc in (Encoding.UTF_8_BOM, Encoding.CP1252):  # UTF_8_BOM reads UTF-8 too
             try:
                 txt = path.read_text(encoding=enc.value, errors="strict")
             except UnicodeDecodeError:
