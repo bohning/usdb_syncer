@@ -36,7 +36,7 @@ IMAGE_DOWNLOAD_HEADERS = {
     )
 }
 
-YtdlOptions = dict[str, str | bool | tuple | list | int | CookieJar]
+YtdlOptions = dict[str, str | bool | tuple | list | int]
 
 
 class ResourceDLError(Enum):

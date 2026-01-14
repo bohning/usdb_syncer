@@ -39,8 +39,6 @@ class _Hook(Generic[P, R]):
 
     @classmethod
     def call(cls, *args: P.args, **kwargs: P.kwargs) -> Iterator[R]:
-        if not cls._subscribers:
-            logger.debug(f"Hook {cls.__name__} called with no subscribers.")
         for func in cls._subscribers:
             try:
                 yield func(*args, **kwargs)
@@ -50,28 +48,13 @@ class _Hook(Generic[P, R]):
                 )
 
 
-class _SingleSubscriberHook(Generic[P, R], _Hook[P, R]):
-    """Base class for hooks that only allow a single subscriber."""
-
-    @classmethod
-    def subscribe(cls, func: Callable[P, R]) -> bool:
-        if len(cls._subscribers) >= 1:
-            logger.exception(
-                f"Hook {cls.__name__} only allows a single subscriber, "
-                "but tried to add another."
-            )
-            return False
-        super().subscribe(func)
-        return True
-
-
 class SongLoaderDidFinish(_Hook[["usdb_song.UsdbSong"], None]):
     """Called after downloading a song."""
 
 
-class GetYtCookies(_SingleSubscriberHook[[], "CookieJar"]):
+class GetYtCookies(_Hook[[], "CookieJar"]):
     """Called to get YouTube cookies for downloading videos."""
 
 
-class GetUsdbCookies(_SingleSubscriberHook[[], "CookieJar"]):
+class GetUsdbCookies(_Hook[[], "CookieJar"]):
     """Called to get USDB cookies for downloading resources."""
