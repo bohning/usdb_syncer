@@ -3,7 +3,6 @@
 import io
 from dataclasses import dataclass
 from enum import Enum
-from http.cookiejar import CookieJar
 from pathlib import Path
 from typing import assert_never
 
