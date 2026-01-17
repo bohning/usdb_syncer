@@ -14,7 +14,7 @@ from mutagen.oggopus import OggOpus
 from mutagen.oggvorbis import OggVorbis
 from PIL import Image
 
-from usdb_syncer import settings
+from usdb_syncer import settings, utils
 from usdb_syncer.constants import ISO_639_2B_LANGUAGE_CODES
 from usdb_syncer.download_options import AudioOptions, VideoOptions
 from usdb_syncer.logger import Logger
@@ -32,17 +32,18 @@ Image.init()
 def normalize_audio(
     options: AudioOptions, path_stem: Path, input_ext: str, logger: Logger
 ) -> None:
-    normalizer = _create_normalizer(options)
-    input_file = f"{path_stem}.{input_ext}"
-    output_file = f"{path_stem}.{options.format.value}"
-    if options.normalization == AudioNormalization.REPLAYGAIN:
-        # audio file is already in target format from postprocessor
-        input_file = f"{path_stem}.{options.format.value}"
-        # we do not want to actually rewrite the file, so we use 'null'
-        output_file = devnull
+    with utils.LinuxEnvCleaner():
+        normalizer = _create_normalizer(options)
+        input_file = f"{path_stem}.{input_ext}"
+        output_file = f"{path_stem}.{options.format.value}"
+        if options.normalization == AudioNormalization.REPLAYGAIN:
+            # audio file is already in target format from postprocessor
+            input_file = f"{path_stem}.{options.format.value}"
+            # we do not want to actually rewrite the file, so we use 'null'
+            output_file = devnull
 
-    normalizer.add_media_file(input_file, output_file)
-    normalizer.run_normalization()
+        normalizer.add_media_file(input_file, output_file)
+        normalizer.run_normalization()
 
 
 def _create_normalizer(options: AudioOptions) -> FFmpegNormalize:

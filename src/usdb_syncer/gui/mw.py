@@ -32,6 +32,7 @@ from usdb_syncer.gui.about_dialog import AboutDialog
 from usdb_syncer.gui.comment_dialog import CommentDialog
 from usdb_syncer.gui.debug_console import DebugConsole
 from usdb_syncer.gui.forms.MainWindow import Ui_MainWindow
+from usdb_syncer.gui.licenses_dialog import LicensesDialog
 from usdb_syncer.gui.meta_tags_dialog import MetaTagsDialog
 from usdb_syncer.gui.previewer import Previewer
 from usdb_syncer.gui.progress import run_with_progress
@@ -128,6 +129,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
                 MainWindowShortcut.OPEN_PREFERENCES,
             ),
             (self.action_about, lambda: AboutDialog(self).show(), None),
+            (self.action_licenses, lambda: LicensesDialog(self).show(), None),
             (self.action_webserver, lambda: WebserverDialog(self).show(), None),
             (
                 self.action_generate_song_list,
@@ -519,6 +521,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         self.action_import_usdb_ids.setIcon(icons.Icon.FILE_IMPORT.icon(key))
         self.action_export_usdb_ids.setIcon(icons.Icon.FILE_EXPORT.icon(key))
         self.action_preview.setIcon(icons.Icon.ULTRASTAR_GAME.icon(key))
+        self.action_licenses.setIcon(icons.Icon.PUZZLE.icon(key))
 
     def _on_current_song_changed(self, event: gui_events.CurrentSongChanged) -> None:
         song = event.song
