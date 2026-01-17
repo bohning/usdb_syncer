@@ -10,6 +10,8 @@
 
 - The build process was migrated to uv. Poetry is no longer used.
   See the README for instructions.
+- Addons are loaded earlier in the startup process than before. This means code executed at addon import time may behave differently. Hooks are unchanged.
+- Two new hooks regarding cookies have been introduced. See the new wiki page for details and usage. 
 
 <!-- 0.18.0 -->
 
