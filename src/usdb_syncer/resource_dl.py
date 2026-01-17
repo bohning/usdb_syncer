@@ -237,6 +237,8 @@ def run_freezedetect(video_path: Path) -> list[float]:
                 "ffmpeg",
                 "-loglevel",
                 "info",
+                "-hide_banner",
+                "-nostats",
                 "-i",
                 str(video_path),
                 "-vf",
