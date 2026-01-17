@@ -83,10 +83,6 @@ RANK_REGEX = re.compile(r"images/rank_(\d)\.gif")
 
 def establish_usdb_login(session: Session) -> UsdbUser | None:
     """Tries to log in to USDB if necessary. Returns user info or None."""
-    jar = CookieJar()
-    hooks.GetUsdbCookies.call(jar)
-    for cookie in jar:
-        session.cookies.set_cookie(cookie)
 
     user = get_logged_in_usdb_user(session)
 
@@ -127,6 +123,10 @@ def new_session_with_cookies(browser: settings.Browser) -> Session:
     if cookies := browser.cookies():
         for cookie in cookies:
             session.cookies.set_cookie(cookie)
+    addon_jar = CookieJar()
+    hooks.GetUsdbCookies.call(addon_jar)
+    for cookie in addon_jar:
+        session.cookies.set_cookie(cookie)
     return session
 
 
