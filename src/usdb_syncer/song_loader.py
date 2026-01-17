@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import collections
 import copy
 import filecmp
 import shutil
@@ -432,7 +431,7 @@ class _SongLoader(QtCore.QRunnable):
             ctx.locations.move_to_target_folder()
             _persist_tempfiles(ctx)
         _write_sync_meta(ctx)
-        collections.deque(hooks.SongLoaderDidFinish.call(ctx.song), maxlen=0)
+        hooks.SongLoaderDidFinish.call(ctx.song)
         return ctx.song
 
     def _check_flags(self) -> None:

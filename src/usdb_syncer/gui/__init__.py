@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import collections
 import cProfile
 import logging
 import shutil
@@ -147,6 +146,7 @@ def main() -> None:
     sys.excepthook = _excepthook
     args = CliArgs.parse()
     args.apply()
+    addons.load_all()
     utils.AppPaths.make_dirs()
     app = _init_app()
     app.setAttribute(Qt.ApplicationAttribute.AA_DontShowIconsInMenus, False)
@@ -193,14 +193,13 @@ def _run_main() -> None:
             mw.label_update_hint.setOpenExternalLinks(True)
     else:
         logger.logger.info("Running in dev mode, skipping update check.")
-    addons.load_all()
     try:
         _load_main_window(mw)
     except errors.UnknownSchemaError:
         QtWidgets.QMessageBox.critical(mw, "Version conflict", SCHEMA_ERROR_MESSAGE)
         return
     _maybe_copy_licenses()
-    collections.deque(hooks.MainWindowDidLoad.call(mw), maxlen=0)
+    hooks.MainWindowDidLoad.call(mw)
 
 
 def _run_preview(txt: Path) -> bool:

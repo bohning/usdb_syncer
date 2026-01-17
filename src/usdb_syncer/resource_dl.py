@@ -3,6 +3,7 @@
 import io
 from dataclasses import dataclass
 from enum import Enum
+from http.cookiejar import CookieJar
 from pathlib import Path
 from typing import assert_never
 
@@ -239,9 +240,11 @@ def _retry_with_cookies(
 ) -> ResourceDLResult:
     logger.warning("Age-restricted resource. Retrying with cookies ...")
     with yt_dlp.YoutubeDL(options) as ydl:
-        if jar := next(hooks.GetYtCookies.call(), None):
-            for cookie in jar:
-                ydl.cookiejar.set_cookie(cookie)
+        jar = CookieJar()
+        hooks.GetYtCookies.call(jar)
+        for cookie in jar:
+            ydl.cookiejar.set_cookie(cookie)
+
         try:
             filename = ydl.prepare_filename(ydl.extract_info(url))
             ext = Path(filename).suffix[1:]

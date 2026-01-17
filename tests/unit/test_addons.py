@@ -13,14 +13,13 @@ from usdb_syncer import hooks
 
 def func(arg1, arg2):
     hooks.SampleHook.unsubscribe(func)
-    return 42
 
 hooks.SampleHook.subscribe(func)
 """
 
 
-class SampleHook(hooks._Hook[[str, str], int]):
-    ""
+class SampleHook(hooks._Hook[str, str]):
+    pass
 
 
 hooks.SampleHook = SampleHook  # type: ignore[attr-defined]
@@ -40,6 +39,5 @@ def test_loading_add_on_package(file: Path) -> None:
         file.write_text(ADD_ON, encoding="utf-8")
         addons.load_all()
         assert len(SampleHook._subscribers) == 1  # type: ignore[misc]
-        ret = list(SampleHook.call("arg1", "arg2"))
-        assert ret == [42]
+        SampleHook.call("arg1", "arg2")
         assert len(SampleHook._subscribers) == 0  # type: ignore[misc]

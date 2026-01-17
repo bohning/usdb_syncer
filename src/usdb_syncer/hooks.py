@@ -2,59 +2,57 @@
 
 from __future__ import annotations
 
-from collections.abc import Callable, Iterator
-from typing import TYPE_CHECKING, Generic, ParamSpec, TypeVar
+from collections.abc import Callable
+from typing import TYPE_CHECKING, Generic, ParamSpec
 
 import attrs
 
 from usdb_syncer.logger import logger
 
 if TYPE_CHECKING:
-    # I don't know why ruff is stupid here, but whatever
     from http.cookiejar import CookieJar  # noqa: F401
 
     from usdb_syncer import usdb_song  # noqa: F401
 
-P = ParamSpec("P")  # hook arg types
-R = TypeVar("R")  # hook return type
+P = ParamSpec("P")
 
 
 @attrs.define(slots=False)
-class _Hook(Generic[P, R]):
+class _Hook(Generic[P]):
     """Base class for hooks."""
 
-    _subscribers: list[Callable[P, R]]
+    _subscribers: list[Callable[P, None]]
 
     def __init_subclass__(cls) -> None:
         cls._subscribers = []
 
     @classmethod
-    def subscribe(cls, func: Callable[P, R]) -> bool:
+    def subscribe(cls, func: Callable[P, None]) -> bool:
         cls._subscribers.append(func)
         return True
 
     @classmethod
-    def unsubscribe(cls, func: Callable[P, R]) -> None:
+    def unsubscribe(cls, func: Callable[P, None]) -> None:
         cls._subscribers.remove(func)
 
     @classmethod
-    def call(cls, *args: P.args, **kwargs: P.kwargs) -> Iterator[R]:
+    def call(cls, *args: P.args, **kwargs: P.kwargs) -> None:
         for func in cls._subscribers:
             try:
-                yield func(*args, **kwargs)
+                func(*args, **kwargs)
             except Exception as e:  # noqa: BLE001
                 logger.exception(
                     f"Plugin error in {func.__name__}: {type(e).__name__}: {e}"
                 )
 
 
-class SongLoaderDidFinish(_Hook[["usdb_song.UsdbSong"], None]):
+class SongLoaderDidFinish(_Hook["usdb_song.UsdbSong"]):
     """Called after downloading a song."""
 
 
-class GetYtCookies(_Hook[[], "CookieJar"]):
+class GetYtCookies(_Hook["CookieJar"]):
     """Called to get YouTube cookies for downloading videos."""
 
 
-class GetUsdbCookies(_Hook[[], "CookieJar"]):
+class GetUsdbCookies(_Hook["CookieJar"]):
     """Called to get USDB cookies for downloading resources."""

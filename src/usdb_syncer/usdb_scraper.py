@@ -9,6 +9,7 @@ from collections.abc import Iterator
 from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
+from http.cookiejar import CookieJar
 from typing import Any, assert_never
 
 import attrs
@@ -82,10 +83,11 @@ RANK_REGEX = re.compile(r"images/rank_(\d)\.gif")
 
 def establish_usdb_login(session: Session) -> UsdbUser | None:
     """Tries to log in to USDB if necessary. Returns user info or None."""
-    if jar := next(hooks.GetUsdbCookies.call(), None):
-        logger.debug("Using custom USDB cookies from hook.")
-        for cookie in jar:
-            session.cookies.set_cookie(cookie)
+    jar = CookieJar()
+    hooks.GetUsdbCookies.call(jar)
+    for cookie in jar:
+        session.cookies.set_cookie(cookie)
+
     user = get_logged_in_usdb_user(session)
 
     if user:

@@ -10,5 +10,5 @@ if TYPE_CHECKING:
     from usdb_syncer.gui.mw import MainWindow  # noqa: F401
 
 
-class MainWindowDidLoad(hooks._Hook[["MainWindow"], None]):
+class MainWindowDidLoad(hooks._Hook["MainWindow"]):
     """Called after the main window has loaded."""
