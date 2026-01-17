@@ -566,6 +566,14 @@ def _all_urls_in_comment(contents: Tag, text: str, logger: Logger) -> Iterator[s
         if src := _extract_supported_video_source(embed, "src"):
             logger.debug("Video embed found. Consider embedding as iframe.")
             yield src
+    for script in contents.find_all("script"):
+        if (
+            isinstance(script, Tag)
+            and isinstance(script_src := script.get("src"), str)
+            and ("dailymotion" in script_src)
+            and isinstance(dailymotion_id := script.get("data-video"), str)
+        ):
+            yield f"https://www.dailymotion.com/video/{dailymotion_id}"
     for iframe in contents.find_all("iframe"):
         if src := _extract_supported_video_source(iframe, "src"):
             yield src

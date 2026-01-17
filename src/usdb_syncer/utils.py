@@ -23,7 +23,7 @@ from unidecode import unidecode
 
 import usdb_syncer
 from usdb_syncer import constants, errors, settings
-from usdb_syncer.logger import logger
+from usdb_syncer.logger import Logger, logger
 
 CACHE_LIFETIME = 60 * 60
 _platform_dirs = PlatformDirs("usdb_syncer", "bohning")
@@ -302,6 +302,13 @@ def format_timestamp(micros: int) -> str:
     return datetime.datetime.fromtimestamp(micros / 1_000_000).strftime(
         "%Y-%m-%d %H:%M:%S"
     )
+
+
+def remove_url_params(url: str, logger: Logger | None = None) -> str:
+    url_base, _, url_params = url.partition("&")
+    if url_params and logger:
+        logger.debug(f"Stripped superfluous query parameters from '{url}'.")
+    return url_base
 
 
 def get_latest_version() -> str | None:

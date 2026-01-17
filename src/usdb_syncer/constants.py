@@ -113,6 +113,7 @@ class YtErrorMsg:
     YT_FORBIDDEN = "HTTP Error 403: Forbidden"
     YT_PREMIUM_ONLY = "This video is only available to Music Premium members"
     VM_UNAUTHENTICATED = "You're trying to use an unauthenticated request"
+    YT_CONFIRM_NOT_BOT = "Sign in to confirm you’re not a bot."  # noqa: RUF001
 
 
 SUPPORTED_VIDEO_SOURCES_REGEX = re.compile(
@@ -125,10 +126,22 @@ SUPPORTED_VIDEO_SOURCES_REGEX = re.compile(
                 | youtube-nocookie\.com
                 | youtu\.be
                 | vimeo\.com
-                | web\.archive\.org
-                | fb\.watch
-                | universal-music\.de
+                | player\.vimeo\.com
                 | dailymotion\.com
+                | soundcloud\.com
+                | facebook\.com
+                | fb\.watch
+                | archive\.org
+                | web\.archive\.org
+                | v\.animethemes\.moe
+                | (?:[A-Za-z0-9-]+\.)?bandcamp\.com
+                | bilibili\.com
+                | cda\.pl
+                | drive\.google\.com
+                | nicovideo\.jp
+                | ok\.ru
+                | rumble\.com
+                | universal-music\.de
             )
             /\S+
         )

@@ -34,12 +34,11 @@ from usdb_syncer import (
 )
 from usdb_syncer.custom_data import CustomData
 from usdb_syncer.db import JobStatus, ResourceKind
-from usdb_syncer.discord import notify_discord
 from usdb_syncer.download_options import AudioOptions, VideoOptions
 from usdb_syncer.logger import Logger, logger, song_logger
 from usdb_syncer.meta_tags import ImageMetaTags
 from usdb_syncer.postprocessing import write_audio_tags, write_video_tags
-from usdb_syncer.resource_dl import ImageKind, ResourceDLError
+from usdb_syncer.resource_dl import ImageKind
 from usdb_syncer.settings import FormatVersion
 from usdb_syncer.song_txt import SongTxt
 from usdb_syncer.sync_meta import Resource, ResourceFile, SyncMeta
@@ -454,29 +453,33 @@ def _maybe_download_audio(ctx: _Context) -> JobStatus:
 
     if not primary_resource and not fallback_resources:
         ctx.logger.warning(
-            "No audio resource found (neither in meta tags nor in comments)."
+            "No audio resource found (neither in meta tags nor in comments), skipping "
+            "download."
         )
         return JobStatus.SKIPPED_UNAVAILABLE
 
     if primary_resource:
-        if primary_resource not in fallback_resources:
-            ctx.logger.info("Audio resource is not commented.")
+        if video_url_from_resource(primary_resource) not in fallback_resources:
+            ctx.logger.info(f"Audio resource '{primary_resource}' is not commented.")
         if primary_resource == ctx.out.audio.resource:
             ctx.logger.info("Audio resource is unchanged, skipping download.")
             return JobStatus.SUCCESS_UNCHANGED
-        if ctx.song.is_local():
-            ctx.logger.info("Audio resource has changed, redownloading.")
+        if ctx.song.audio_path():
+            ctx.logger.info(
+                f"Audio resource has changed ('{ctx.out.audio.resource}' -> "
+                f"'{primary_resource}'), redownloading."
+            )
 
         status = _try_download_audio_or_video(ctx, primary_resource, options)
         if status is JobStatus.SUCCESS:
-            ctx.logger.info("Success! Downloaded audio.")
+            ctx.logger.info(f"Success! Downloaded audio '{primary_resource}'.")
             return JobStatus.SUCCESS
 
     for fallback_resource in fallback_resources:
         status = _try_download_audio_or_video(ctx, fallback_resource, options)
         if status is JobStatus.SUCCESS:
             ctx.logger.warning(
-                f"Downloaded fallback audio '{fallback_resource}'. "
+                f"Downloaded commented audio '{fallback_resource}'. "
                 "This may require adaptations in GAP and/or BPM."
             )
             return JobStatus.FALLBACK
@@ -500,7 +503,11 @@ def _maybe_download_video(ctx: _Context) -> JobStatus:  # noqa: C901
         ctx.logger.info("Video download is disabled, skipping download.")
         return JobStatus.SKIPPED_DISABLED
 
-    if ctx.txt.meta_tags.is_audio_only():
+    # Song can only be considered audio-only if audio download did not use a fallback
+    if (
+        ctx.results[Job.AUDIO_DOWNLOAD] is not JobStatus.FALLBACK
+        and ctx.txt.meta_tags.is_audio_only()
+    ):
         ctx.logger.info("Song is audio only, skipping download.")
         return JobStatus.SKIPPED_UNAVAILABLE
 
@@ -509,29 +516,37 @@ def _maybe_download_video(ctx: _Context) -> JobStatus:  # noqa: C901
 
     if not primary_resource and not fallback_resources:
         ctx.logger.warning(
-            "No video resource found (neither in meta tags nor in comments)."
+            "No video resource found (neither in meta tags nor in comments), skipping "
+            "download."
         )
         return JobStatus.SKIPPED_UNAVAILABLE
 
     if primary_resource:
-        if primary_resource and primary_resource not in fallback_resources:
-            ctx.logger.info("Video resource is not commented.")
+        if not any(primary_resource in resource for resource in fallback_resources):
+            ctx.logger.info(f"Video resource '{primary_resource}' is not commented.")
         if primary_resource == ctx.out.video.resource:
             ctx.logger.info("Video resource is unchanged, skipping download.")
             return JobStatus.SUCCESS_UNCHANGED
-        if ctx.song.is_local():
-            ctx.logger.info("Video resource has changed, redownloading.")
+        if ctx.song.video_path():
+            ctx.logger.info(
+                f"Video resource has changed ('{ctx.out.video.resource}' -> "
+                f"'{primary_resource}'), redownloading."
+            )
 
         status = _try_download_audio_or_video(ctx, primary_resource, options)
         if status is JobStatus.SUCCESS:
-            ctx.logger.info("Success! Downloaded video.")
+            ctx.logger.info(f"Success! Downloaded video '{primary_resource}'.")
             return JobStatus.SUCCESS
 
     for fallback_resource in fallback_resources:
+        if resource_dl.fallback_resource_is_audio_only(
+            options, fallback_resource, ctx.options.browser, ctx.logger
+        ):
+            return JobStatus.SKIPPED_UNAVAILABLE
         status = _try_download_audio_or_video(ctx, fallback_resource, options)
         if status is JobStatus.SUCCESS:
             ctx.logger.warning(
-                f"Downloaded fallback video '{fallback_resource}'. "
+                f"Downloaded commented video '{fallback_resource}'. "
                 "This may require adaptations in GAP and/or BPM."
             )
             return JobStatus.FALLBACK
@@ -573,7 +588,7 @@ def _try_download_audio_or_video(
             ctx.logger,
         )
 
-    if ext := dl_result.extension:
+    if ext := dl_result.content:
         target.resource = resource
         target.new_fname = ctx.locations.filename(ext=ext)
         return JobStatus.SUCCESS
@@ -598,12 +613,14 @@ def _maybe_download_cover(ctx: _Context) -> JobStatus:
         if url == ctx.out.cover.resource:
             if _cover_params_unchanged(ctx):
                 ctx.logger.info(
-                    "Cover resource and parameters are unchanged, skipping download."
+                    "Cover resource and processing parameters are unchanged, skipping "
+                    "download."
                 )
                 return JobStatus.SUCCESS_UNCHANGED
             else:
                 ctx.logger.info(
-                    "Cover processing parameters have changed, redownloading."
+                    "Cover resource and/or processing parameters have changed, "
+                    "redownloading."
                 )
 
         status = _try_download_cover_or_background(
@@ -652,12 +669,14 @@ def _maybe_download_background(ctx: _Context) -> JobStatus:
     if url == ctx.out.background.resource:
         if _background_params_unchanged(ctx):
             ctx.logger.info(
-                "Background resource and parameters are unchanged, skipping download."
+                "Background resource and processing parameters are unchanged, skipping "
+                "download."
             )
             return JobStatus.SUCCESS_UNCHANGED
         else:
             ctx.logger.info(
-                "Background processing parameters have changed, redownloading."
+                "Background resource and/or processing parameters have changed, "
+                "redownloading."
             )
 
     status = _try_download_cover_or_background(
@@ -697,6 +716,7 @@ def _try_download_cover_or_background(
         kind=kind,
         max_width=ctx.options.cover.max_size,
         process=process,
+        notify_discord=ctx.options.notify_discord,
     ):
         match kind:
             case ImageKind.COVER:
@@ -708,16 +728,6 @@ def _try_download_cover_or_background(
             case _ as unreachable:
                 assert_never(unreachable)
         return JobStatus.SUCCESS
-
-    if ctx.options.notify_discord:
-        notify_discord(
-            ctx.song.song_id,
-            url,
-            str(kind).capitalize(),
-            ResourceDLError.RESOURCE_UNAVAILABLE.value,
-            ctx.logger,
-        )
-
     return JobStatus.FAILURE
 
 

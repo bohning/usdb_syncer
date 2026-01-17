@@ -9,6 +9,7 @@ import attrs
 from attr import fields
 
 from usdb_syncer.logger import Logger
+from usdb_syncer.utils import remove_url_params
 
 # Characters that have special meaning for the meta tag syntax and therefore
 # must be escaped. Escaping is done with percent encoding.
@@ -180,7 +181,9 @@ class MetaTags:
             if "=" not in pair:
                 logger.warning(f"missing key or value for meta tag: '{pair}'")
                 continue
-            key, value = pair.split("=", maxsplit=1)
+            if (stripped_pair := pair.lstrip()) != pair:
+                logger.debug("Stripped leading spaces from meta tag.")
+            key, value = stripped_pair.split("=", maxsplit=1)
             meta_tags._parse_key_value_pair(key, value, logger)
         return meta_tags
 
@@ -191,11 +194,11 @@ class MetaTags:
         value = decode_meta_tag_value(value)
         match key:
             case "v":
-                self.video = value
+                self.video = remove_url_params(value, logger)
             case "v-trim" | "v-crop":
                 logger.debug(f"Unsupported meta tag found: {key}={value}")
             case "a":
-                self.audio = value
+                self.audio = remove_url_params(value, logger)
             case "co":
                 self.cover = ImageMetaTags(source=value)
             case "co-rotate" if self.cover:

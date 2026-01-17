@@ -176,6 +176,9 @@ class UsdbSong:
     def is_pinned(self) -> bool:
         return self.sync_meta is not None and self.sync_meta.pinned
 
+    def artist_title_str(self) -> str:
+        return f"{self.artist} - {self.title}"
+
     def languages(self) -> Iterable[str]:
         return (s for lang in self.language.split(",") if (s := lang.strip()))
 
@@ -195,10 +198,20 @@ class UsdbSong:
             return None
         return self.sync_meta.audio_path()
 
+    def video_path(self) -> Path | None:
+        if not self.sync_meta:
+            return None
+        return self.sync_meta.video_path()
+
     def cover_path(self) -> Path | None:
         if not self.sync_meta:
             return None
         return self.sync_meta.cover_path()
+
+    def background_path(self) -> Path | None:
+        if not self.sync_meta:
+            return None
+        return self.sync_meta.background_path()
 
     @classmethod
     def clear_cache(cls) -> None:
@@ -237,7 +250,7 @@ class UsdbSong:
 
         logger = song_logger(self.song_id)
 
-        remote_str = remote_txt.str_for_upload()
+        remote_str = remote_txt.str_for_upload(ensure_canonical=False)
 
         # Read local song file and get uploadable string
         if not (sync_meta := self.sync_meta):

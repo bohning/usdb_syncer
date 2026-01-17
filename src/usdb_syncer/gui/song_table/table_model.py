@@ -174,6 +174,7 @@ def _display_data(song: UsdbSong, column: int) -> str | None:  # noqa: C901
 
 def _decoration_data(song: UsdbSong, column: int) -> QIcon | None:  # noqa: C901
     col = Column(column)
+    sync_meta = song.sync_meta
     match col:
         case (
             Column.SONG_ID
@@ -207,27 +208,27 @@ def _decoration_data(song: UsdbSong, column: int) -> QIcon | None:  # noqa: C901
             else:
                 return None
         case Column.TXT:
-            if not (song.sync_meta and (txt := song.sync_meta.txt)):
+            if not (sync_meta and (txt := sync_meta.txt)):
                 return None
             icon = status_icon(txt)
         case Column.AUDIO:
-            if not (song.sync_meta and (audio := song.sync_meta.audio)):
+            if not (sync_meta and (audio := sync_meta.audio)):
                 return None
             icon = status_icon(audio)
         case Column.VIDEO:
-            if not (song.sync_meta and (video := song.sync_meta.video)):
+            if not (sync_meta and (video := sync_meta.video)):
                 return None
             icon = status_icon(video)
         case Column.COVER:
-            if not (song.sync_meta and (cover := song.sync_meta.cover)):
+            if not (sync_meta and (cover := sync_meta.cover)):
                 return None
             icon = status_icon(cover)
         case Column.BACKGROUND:
-            if not (song.sync_meta and (background := song.sync_meta.background)):
+            if not (sync_meta and (background := sync_meta.background)):
                 return None
             icon = status_icon(background)
         case Column.PINNED:
-            if not (song.sync_meta and song.sync_meta.pinned):
+            if not (sync_meta and sync_meta.pinned):
                 return None
             icon = icons.Icon.PIN
         case _ as unreachable:
@@ -255,43 +256,37 @@ def status_icon(resource: Resource) -> icons.Icon:
 
 
 def _tooltip_data(song: UsdbSong, column: int) -> str | None:
+    if not (sync_meta := song.sync_meta):
+        return None
+
     col = Column(column)
-    match col:
-        case Column.AUDIO:
-            if not (song.sync_meta and (audio := song.sync_meta.audio)):
-                return None
-            tooltip = status_tooltip(audio)
-        case Column.VIDEO:
-            if not (song.sync_meta and (video := song.sync_meta.video)):
-                return None
-            tooltip = status_tooltip(video)
-        case Column.COVER:
-            if not (song.sync_meta and (cover := song.sync_meta.cover)):
-                return None
-            tooltip = status_tooltip(cover)
-        case Column.BACKGROUND:
-            if not (song.sync_meta and (background := song.sync_meta.background)):
-                return None
-            tooltip = status_tooltip(background)
-        case _:
-            return None
-    return tooltip
+    if resource := col.get_resource_for_column(sync_meta):
+        return status_tooltip(resource)
+
+    return None
 
 
 def status_tooltip(resource: Resource) -> str:
+    file = resource.file
     match resource.status:
-        case JobStatus.SUCCESS:
-            tooltip = "Resource download successful"
+        case JobStatus.SUCCESS | JobStatus.SUCCESS_UNCHANGED:
+            tooltip = file.fname if file else "local file missing"
         case JobStatus.SKIPPED_DISABLED:
             tooltip = "Resource download disabled in the settings"
         case JobStatus.SKIPPED_UNAVAILABLE:
             tooltip = "No resource available"
-        case JobStatus.SUCCESS_UNCHANGED:
-            tooltip = "Resource is available (unchanged)"
         case JobStatus.FALLBACK:
-            tooltip = "Fallback resource (from USDB / comments)"
+            tooltip = (
+                (f"{file.fname} (fallback to commented/USDB resource)")
+                if file
+                else "local file missing"
+            )
         case JobStatus.FAILURE_EXISTING:
-            tooltip = "Resource download failed, using existing resource"
+            tooltip = (
+                (f"{file.fname} (fallback to existing resource)")
+                if file
+                else "local file missing"
+            )
         case JobStatus.FAILURE:
             tooltip = "Resource download failed"
         case _ as unreachable:
