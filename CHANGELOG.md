@@ -4,7 +4,19 @@
 
 ## Features
 
+- FFmpeg's freezefilter is used to determine if a commented (fallback) resource is audio-only or not
+- Commented resources from dailymotion, vimeo, facebook and soundcloud are now parsed
+- Added a dialog that shows the reason why a song was not submitted to USDB
+- You can now open local files by double-clicking in the respective resource column icon
+
 ## Fixes
+
+- A BPM of exactly 200 is now correctly doubled to 400
+- URL params from a/v meta tags are now stripped and a log message is issued
+- Status of updated files is now correctly written to the db
+- add dialog that displays non-submittable song(s) + reason(s)
+- Reading song files from legacy encodings (namely CP1252) is fixed
+- Determining local changes for submission is fixed (no canonical fixes for remote txt)
 
 ## Developer notes
 

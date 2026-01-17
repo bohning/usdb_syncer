@@ -425,7 +425,7 @@ class SearchBuilder:
         return f"{select_from}{where}{order_by}"
 
     def to_json(self) -> str:
-        return json.dumps(self, cls=_SearchEnoder)
+        return json.dumps(self, cls=_SearchEncoder)
 
     @classmethod
     def from_json(cls, json_str: str) -> SearchBuilder | None:
@@ -449,7 +449,7 @@ class SearchBuilder:
         return None
 
 
-class _SearchEnoder(json.JSONEncoder):
+class _SearchEncoder(json.JSONEncoder):
     """Custom encoder for a search."""
 
     def default(self, o: Any) -> Any:

@@ -11,7 +11,7 @@ from usdb_syncer import SongId as SongId
 from usdb_syncer import download_options, errors
 from usdb_syncer.logger import Logger
 from usdb_syncer.meta_tags import MedleyTag, MetaTags
-from usdb_syncer.settings import FixLinebreaks, FixSpaces
+from usdb_syncer.settings import Encoding, FixLinebreaks, FixSpaces
 from usdb_syncer.song_txt.headers import Headers
 from usdb_syncer.song_txt.tracks import Tracks
 
@@ -35,14 +35,16 @@ class SongTxt:
         self,
         sync_meta_tags: MetaTags | None = None,
         remote_headers: Headers | None = None,
+        ensure_canonical: bool = True,
     ) -> str:
         """Reinserts metatags and ensures CRLF line endings."""
 
-        # ensure canonical format:
-        self.notes.fix_linebreaks_yass_style(self.headers.bpm, self.logger)
-        self.notes.fix_first_words_capitalization(self.logger)
-        self.notes.fix_spaces(FixSpaces.AFTER, self.logger)
-        self.notes.fix_quotation_marks(self.headers.language, self.logger)
+        # ensure canonical format (applied to local file before upload)
+        if ensure_canonical:
+            self.notes.fix_linebreaks_yass_style(self.headers.bpm, self.logger)
+            self.notes.fix_first_words_capitalization(self.logger)
+            self.notes.fix_spaces(FixSpaces.AFTER, self.logger)
+            self.notes.fix_quotation_marks(self.headers.language, self.logger)
 
         # reinsert previously removed duet marker in title
         if self.notes.track_2 is not None:
@@ -118,12 +120,22 @@ class SongTxt:
     def try_from_file(cls, path: Path, logger: Logger) -> SongTxt | None:
         if not path.is_file():
             return None
-        try:
-            txt = path.read_text(encoding="utf-8")
-        except UnicodeDecodeError:
-            logger.exception(None)
-            return None
-        return cls.try_parse(txt, logger)
+
+        for enc in (Encoding.UTF_8_BOM, Encoding.CP1252):  # UTF_8_BOM reads UTF-8 too
+            try:
+                txt = path.read_text(encoding=enc.value, errors="strict")
+            except UnicodeDecodeError:
+                logger.debug(f"Failed decoding '{path.name}' as {enc}")
+                continue  # Try next encoding
+            except Exception:
+                logger.exception(f"Error reading '{path}'")
+                return None
+            else:
+                logger.debug(f"Read '{path.name}' using encoding: {enc}")
+                return cls.try_parse(txt, logger)
+
+        logger.error(f"Unable to decode '{path}' using any known encoding")
+        return None
 
     def maybe_split_duet_notes(self) -> None:
         if self.headers.relative and self.headers.relative.lower() == "yes":

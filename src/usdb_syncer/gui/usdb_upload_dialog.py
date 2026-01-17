@@ -2,17 +2,30 @@
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 from typing import ClassVar
 
-from PySide6.QtWidgets import QDialog, QWidget
+from PySide6.QtGui import Qt
+from PySide6.QtWidgets import QDialog, QMessageBox, QWidget
 
 from usdb_syncer import settings
 from usdb_syncer.gui import progress, theme
 from usdb_syncer.gui.forms.UsdbUploadDialog import Ui_Dialog
 from usdb_syncer.gui.theme import generate_diff_css
 from usdb_syncer.logger import song_logger
-from usdb_syncer.usdb_scraper import submit_local_changes
-from usdb_syncer.usdb_song import SongChanges, UsdbSong
+from usdb_syncer.song_txt import SongTxt
+from usdb_syncer.usdb_scraper import get_notes, submit_local_changes
+from usdb_syncer.usdb_song import DownloadStatus, SongChanges, UsdbSong
+
+
+@dataclass
+class ValidationSuccess:
+    changes: SongChanges
+
+
+@dataclass
+class ValidationFailure:
+    reason: str
 
 
 def get_diff_css() -> str:
@@ -27,7 +40,7 @@ class UsdbUploadDialog(Ui_Dialog, QDialog):
     _instance: ClassVar[UsdbUploadDialog | None] = None
 
     def __init__(
-        self, parent: QWidget, songs: list[UsdbSong], song_changes: list[SongChanges]
+        self, parent: QWidget | None, submittable: list[tuple[UsdbSong, SongChanges]]
     ) -> None:
         super().__init__(parent=parent)
         self.setupUi(self)
@@ -35,8 +48,7 @@ class UsdbUploadDialog(Ui_Dialog, QDialog):
         if ok_button := self.buttonBox.button(self.buttonBox.StandardButton.Ok):
             ok_button.setText("Submit")
 
-        self.songs = songs
-        self.song_changes = song_changes
+        self.submittable = submittable
         self._load_settings()
 
         self.comboBox_songs.currentIndexChanged.connect(self._on_song_changed)
@@ -54,21 +66,18 @@ class UsdbUploadDialog(Ui_Dialog, QDialog):
             )
         )
 
-        for song in self.songs:
-            self.comboBox_songs.addItem(
-                f"{song.song_id}: {song.artist} - {song.title} "
-            )
+        for song, _ in self.submittable:
+            self.comboBox_songs.addItem(f"{song.song_id}: {song.artist_title_str()}")
 
     @classmethod
     def load(
-        cls, parent: QWidget, songs: list[UsdbSong], song_changes: list[SongChanges]
+        cls, parent: QWidget, submittable: list[tuple[UsdbSong, SongChanges]]
     ) -> None:
         if cls._instance:
-            cls._instance.songs = songs
-            cls._instance.song_changes = song_changes
+            cls._instance.submittable = submittable
             cls._instance.raise_()
         else:
-            cls._instance = cls(parent, songs, song_changes)
+            cls._instance = cls(parent, submittable)
             cls._instance.show()
 
     def _on_song_changed(self, index: int) -> None:
@@ -80,15 +89,15 @@ class UsdbUploadDialog(Ui_Dialog, QDialog):
         if index < 0:
             return
 
-        song_change = self.song_changes[index]
+        _, changes = self.submittable[index]
 
         if self.checkBox_show_only_changes.isChecked():
             context = self.spinBox_context_lines.value()
-            diff_remote, diff_local = song_change.builder.build_filtered_html(
-                context, song_change.builder.changed_line_numbers
+            diff_remote, diff_local = changes.builder.build_filtered_html(
+                context, changes.builder.changed_line_numbers
             )
         else:
-            diff_remote, diff_local = song_change.builder.build_html()
+            diff_remote, diff_local = changes.builder.build_html()
 
         css_block = get_diff_css()
 
@@ -110,7 +119,7 @@ class UsdbUploadDialog(Ui_Dialog, QDialog):
         """Submit selected songs and close dialog."""
 
         def task() -> None:
-            for song, changes in zip(self.songs, self.song_changes, strict=True):
+            for song, changes in self.submittable:
                 assert song.sync_meta is not None
                 assert song.sync_meta.txt is not None
                 assert song.sync_meta.txt.file is not None
@@ -123,7 +132,7 @@ class UsdbUploadDialog(Ui_Dialog, QDialog):
                     song_logger(song.song_id),
                 )
 
-        num_songs = len(self.songs)
+        num_songs = len(self.submittable)
         plural = "s" if num_songs != 1 else ""
         progress.run_with_progress(f"Submitting {num_songs} song{plural}…", task)
         UsdbUploadDialog._instance = None
@@ -135,3 +144,93 @@ class UsdbUploadDialog(Ui_Dialog, QDialog):
         self._save_settings()
         UsdbUploadDialog._instance = None
         super().reject()
+
+
+def submit_or_reject_selected(parent: QWidget, selected: list[UsdbSong]) -> None:
+    submittable: list[tuple[UsdbSong, SongChanges]] = []
+    rejected: list[tuple[UsdbSong, str]] = []
+
+    for song in selected:
+        match _validate_song_for_submission(song):
+            case ValidationSuccess(changes):
+                submittable.append((song, changes))
+            case ValidationFailure(reason):
+                rejected.append((song, reason))
+
+    if rejected:
+        _show_rejection_message(parent, rejected)
+
+    if submittable:
+        UsdbUploadDialog(parent, submittable).show()
+
+
+def _validate_song_for_submission(
+    song: UsdbSong,
+) -> ValidationFailure | ValidationSuccess:
+    logger = song_logger(song.song_id)
+
+    remote_str = get_notes(song.song_id, logger)
+    if not remote_str:
+        logger.info("Cannot submit: song is not remote.")
+        return ValidationFailure("not remote")
+
+    remote_txt = SongTxt.try_parse(remote_str, logger)
+    if not remote_txt:
+        logger.info("Cannot submit: remote song parsing failed.")
+        return ValidationFailure("remote parsing failed")
+
+    sync_meta = song.sync_meta
+    if not sync_meta or not sync_meta.path.exists():
+        logger.info("Cannot submit: song is not local.")
+        return ValidationFailure("not local")
+
+    if song.status is not DownloadStatus.SYNCHRONIZED:
+        logger.info("Cannot submit: song is not synchronized.")
+        return ValidationFailure("not synchronized")
+
+    song_changes = song.get_changes(remote_txt)
+    if not song_changes or not song_changes.has_changes():
+        logger.info("Cannot submit: song has no local changes.")
+        return ValidationFailure("no local changes")
+
+    return ValidationSuccess(song_changes)
+
+
+def _show_rejection_message(
+    parent: QWidget, rejected_songs: list[tuple[UsdbSong, str]]
+) -> None:
+    """Show a message listing why songs cannot be submitted."""
+    if not rejected_songs:
+        return
+
+    if len(rejected_songs) == 1:
+        song, reason = rejected_songs[0]
+        html = (
+            f"<p>The song <b>{song.song_id}: {song.artist_title_str()}</b> cannot "
+            f"be submitted:</p><p style='color: #888;'>{reason}</p>"
+        )
+    else:
+        rows = []
+        for song, reason in rejected_songs:
+            rows.append(
+                f"<tr>"
+                f"<td style='padding-right: 10px;'><b>{song.song_id}</b></td>"
+                f"<td style='padding-right: 10px;'>{song.artist_title_str()}</td>"
+                f"<td style='color: #888;'>{reason}</td>"
+                f"</tr>"
+            )
+
+        html = (
+            "<p>The following songs cannot be submitted:</p>"
+            "<table cellspacing='0' cellpadding='5'>" + "".join(rows) + "</table>"
+        )
+
+    msg_box = QMessageBox(parent)
+    msg_box.setIcon(QMessageBox.Icon.Information)
+    msg_box.setWindowTitle("Not Submittable")
+    msg_box.setTextFormat(Qt.TextFormat.RichText)
+    msg_box.setText(html)
+    msg_box.setStandardButtons(QMessageBox.StandardButton.Ok)
+    msg_box.resize(msg_box.sizeHint())
+
+    msg_box.exec()

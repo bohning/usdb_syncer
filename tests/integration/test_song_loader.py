@@ -31,6 +31,7 @@ def _download_and_process_image(
     kind: ImageKind,
     max_width: Any,
     process: bool = True,
+    notify_discord: bool = False,
 ) -> Path | None:
     path = target_stem.with_name(f"{target_stem.name} [{kind.value}].jpg")
     path.touch()
@@ -41,14 +42,14 @@ def _download_audio(
     resource: Any, options: Any, browser: Any, path_stem: Path, logger: Any
 ) -> ResourceDLResult:
     path_stem.with_suffix(".mp3").touch()
-    return ResourceDLResult(extension="mp3")
+    return ResourceDLResult[str](content="mp3")
 
 
 def _download_video(
     resource: Any, options: Any, browser: Any, path_stem: Path, logger: Any
 ) -> ResourceDLResult:
     path_stem.with_suffix(".mp4").touch()
-    return ResourceDLResult(extension="mp4")
+    return ResourceDLResult[str](content="mp4")
 
 
 def _options(

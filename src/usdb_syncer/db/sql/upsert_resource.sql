@@ -20,4 +20,5 @@ UPDATE
 SET
     fname = :fname,
     mtime = :mtime,
+    status = :status,
     resource = :resource
