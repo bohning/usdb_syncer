@@ -27,9 +27,8 @@ class _Hook(Generic[P]):
         cls._subscribers = []
 
     @classmethod
-    def subscribe(cls, func: Callable[P, None]) -> bool:
+    def subscribe(cls, func: Callable[P, None]) -> None:
         cls._subscribers.append(func)
-        return True
 
     @classmethod
     def unsubscribe(cls, func: Callable[P, None]) -> None:
