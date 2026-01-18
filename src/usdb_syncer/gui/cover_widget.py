@@ -1,6 +1,6 @@
 """Widget to display the cover of the currently selected song."""
 
-from functools import lru_cache
+from functools import cache, lru_cache
 from pathlib import Path
 
 import requests
@@ -12,8 +12,6 @@ from usdb_syncer import SongId, logger
 from usdb_syncer.constants import Usdb
 from usdb_syncer.gui import events as gui_events
 from usdb_syncer.usdb_song import UsdbSong
-
-NO_COVER_PIXMAP = QPixmap(":/images/nocover.png")
 
 
 class CoverLoaderSignals(QObject):
@@ -92,6 +90,11 @@ class ScaledCoverLabel(QLabel):
             self.set_cover(None)
 
 
+@cache
+def _no_cover() -> QPixmap:
+    return QPixmap(":/images/nocover.png")
+
+
 def load_cover(local_path: Path | None, remote_url: str | None) -> QPixmap:
     if local_path and local_path.exists():
         pixmap = QPixmap(str(local_path))
@@ -99,7 +102,7 @@ def load_cover(local_path: Path | None, remote_url: str | None) -> QPixmap:
             return pixmap
     if remote_url and (remote_pixmap := fetch_remote_cover(remote_url)):
         return remote_pixmap
-    return NO_COVER_PIXMAP
+    return _no_cover()
 
 
 @lru_cache(maxsize=32)
