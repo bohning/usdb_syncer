@@ -23,7 +23,7 @@ class _Error:
 
 
 @attrs.define
-class Result(Generic[T]):
+class Result(Generic[T]):  # noqa: UP046 python3.12 feature
     """The result of an operation, either a value or an error."""
 
     _result: T | _Error

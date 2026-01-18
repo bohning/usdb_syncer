@@ -10,7 +10,7 @@ from dataclasses import dataclass
 from enum import Enum
 from http.cookiejar import CookieJar
 from pathlib import Path
-from typing import Final, Generic, TypeVar, assert_never
+from typing import TYPE_CHECKING, Final, Generic, TypeVar, assert_never
 
 import filetype
 import requests
@@ -22,9 +22,7 @@ from yt_dlp.utils import UnsupportedError, YoutubeDLError, download_range_func
 from usdb_syncer import SongId, hooks, utils
 from usdb_syncer.constants import YtErrorMsg
 from usdb_syncer.discord import notify_discord
-from usdb_syncer.download_options import AudioOptions, VideoOptions
 from usdb_syncer.logger import Logger, song_logger
-from usdb_syncer.meta_tags import ImageMetaTags
 from usdb_syncer.postprocessing import normalize_audio
 from usdb_syncer.settings import (
     AudioNormalization,
@@ -32,8 +30,13 @@ from usdb_syncer.settings import (
     CoverMaxSize,
     YtdlpRateLimit,
 )
-from usdb_syncer.usdb_scraper import SongDetails
 from usdb_syncer.utils import video_url_from_resource
+
+if TYPE_CHECKING:
+    from usdb_syncer.download_options import AudioOptions, VideoOptions
+    from usdb_syncer.meta_tags import ImageMetaTags
+    from usdb_syncer.usdb_scraper import SongDetails
+
 
 IMAGE_DOWNLOAD_HEADERS = {
     "User-Agent": (
@@ -101,7 +104,7 @@ T = TypeVar("T", covariant=True)
 
 
 @dataclass
-class ResourceDLResult(Generic[T]):
+class ResourceDLResult(Generic[T]):  # noqa: UP046 python3.12 feature
     """The result of a download operation."""
 
     content: T | None = None
@@ -164,7 +167,7 @@ def download_audio(
     if not dl_result.content:
         return dl_result
     if options.normalization is not AudioNormalization.DISABLE:
-        normalize_audio(options, path_stem, dl_result.content, logger)
+        normalize_audio(options, path_stem, dl_result.content)
 
     # either way, the resulting file is in target format, so we have to correct the
     # extension before returning dl_result
@@ -243,8 +246,10 @@ def run_freezedetect(video_path: Path) -> list[float]:
                 "-i",
                 str(video_path),
                 "-vf",
-                f"freezedetect=noise={FREEZE_NOISE_DB}dB:"
-                f"duration={FREEZE_DURATION_SECONDS}",
+                (
+                    f"freezedetect=noise={FREEZE_NOISE_DB}dB:"
+                    f"duration={FREEZE_DURATION_SECONDS}"
+                ),
                 "-an",
                 "-f",
                 "null",

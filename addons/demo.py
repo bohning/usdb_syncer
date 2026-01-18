@@ -1,3 +1,4 @@
+# ruff: noqa: INP001
 """Demo add-on"""
 
 from usdb_syncer import gui, hooks, logger, usdb_song

@@ -66,7 +66,8 @@ def replace_false_apostrophes(value: str) -> str:
     # grave (`) and acute accent (´), prime symbol (′), left single quotation mark (‘)
     # and upright apostrophe (') by typographer’s apostrophe (’)
     return (
-        value.replace("''", '"')
+        value
+        .replace("''", '"')
         .replace("`", "’")
         .replace("´", "’")
         .replace("′", "’")

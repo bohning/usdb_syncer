@@ -3,20 +3,23 @@
 from __future__ import annotations
 
 import re
-from collections.abc import Callable, Iterator
 from enum import Enum
-from typing import assert_never
+from typing import TYPE_CHECKING, assert_never
 
 import attrs
 
 from usdb_syncer import errors, settings
-from usdb_syncer.logger import Logger
 from usdb_syncer.meta_tags import MedleyTag
 from usdb_syncer.song_txt.auxiliaries import (
     BeatsPerMinute,
     replace_false_apostrophes,
     replace_false_quotation_marks,
 )
+
+if TYPE_CHECKING:
+    from collections.abc import Callable, Iterator
+
+    from usdb_syncer.logger import Logger
 
 
 class NoteKind(Enum):
@@ -70,9 +73,8 @@ class Note:
             pitch = int(match.group(4))
         except ValueError as err:
             raise errors.InvalidNoteError(value) from err
-        if kind != NoteKind.FREESTYLE:
-            if not text.strip():
-                text = "~" + text
+        if kind != NoteKind.FREESTYLE and not text.strip():
+            text = "~" + text
         if duration == 0:
             logger.warning(f"zero-length note: '{value}'")
         if text.strip() == "-":
@@ -261,7 +263,7 @@ class Tracks:
         for idx, line in enumerate(self.track_1):
             if not (line_break := line.line_break):
                 return
-            if line_break.previous_line_out_time < last_out_time:
+            if line_break.previous_line_out_time < last_out_time:  # noqa: SIM102 (would be harder to read)
                 # line break has earlier start beat than previous one
                 if parts := _split_duet_line(line, line_break.previous_line_out_time):
                     # line has notes starting earlier than previous notes
@@ -477,7 +479,7 @@ class Tracks:
 
         # if current syllable ends with a space, shift it to the beginning of the next
         # syllable
-        for idx in range(0, len(line.notes) - 1):
+        for idx in range(len(line.notes) - 1):
             if line.notes[idx].text.endswith(" "):
                 line.notes[idx + 1].left_trim_text_and_add_space()
                 line.notes[idx].right_trim_text()

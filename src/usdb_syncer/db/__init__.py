@@ -9,11 +9,9 @@ import sqlite3
 import threading
 import time
 from collections import defaultdict
-from collections.abc import Generator, Iterable, Iterator
 from enum import StrEnum, auto
 from importlib import resources
-from pathlib import Path
-from typing import Any, ClassVar, assert_never, cast
+from typing import TYPE_CHECKING, Any, ClassVar, assert_never, cast
 
 import attrs
 from more_itertools import batched
@@ -22,6 +20,11 @@ from usdb_syncer import SongId, SyncMetaId, errors
 from usdb_syncer.logger import logger
 
 from . import sql
+
+if TYPE_CHECKING:
+    from collections.abc import Generator, Iterable, Iterator
+    from pathlib import Path
+
 
 SCHEMA_VERSION = 8
 
@@ -361,7 +364,7 @@ class SearchBuilder:
             (self.statuses, _STATUS_COLUMN),
         ):
             if vals:
-                yield _in_values_clause(col, cast(list, vals))
+                yield _in_values_clause(col, cast("list", vals))
         if self.languages:
             yield (
                 "usdb_song.song_id IN (SELECT song_id FROM usdb_song_language WHERE"
@@ -471,7 +474,8 @@ class SavedSearch:
 
     def insert(self) -> None:
         self.name = (
-            _DbState.connection()
+            _DbState
+            .connection()
             .execute(
                 _SqlCache.get("insert_saved_search.sql"),
                 {
@@ -513,7 +517,8 @@ class SavedSearch:
 
     def update(self, new_name: str | None = None) -> None:
         self.name = (
-            _DbState.connection()
+            _DbState
+            .connection()
             .execute(
                 _SqlCache.get("update_saved_search.sql"),
                 {
@@ -663,7 +668,8 @@ class LastUsdbUpdate:
     @classmethod
     def get(cls) -> LastUsdbUpdate:
         rows = (
-            _DbState.connection()
+            _DbState
+            .connection()
             .execute(
                 "SELECT usdb_mtime, song_id FROM usdb_song WHERE usdb_mtime = "
                 "(SELECT max(usdb_mtime) FROM usdb_song)"
@@ -944,7 +950,7 @@ def get_custom_data_map() -> defaultdict[str, set[str]]:
 # ResourceFile
 
 
-class ResourceKind(str, enum.Enum):
+class ResourceKind(enum.StrEnum):
     """Kinds of resources."""
 
     TXT = "txt"

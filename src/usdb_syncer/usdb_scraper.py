@@ -5,12 +5,11 @@ from __future__ import annotations
 import html
 import re
 import time
-from collections.abc import Iterator
 from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
 from http.cookiejar import CookieJar
-from typing import Any, assert_never
+from typing import TYPE_CHECKING, Any, assert_never
 
 import attrs
 import requests
@@ -29,6 +28,9 @@ from usdb_syncer.constants import (
 from usdb_syncer.logger import Logger, logger, song_logger
 from usdb_syncer.usdb_song import UsdbSong
 from usdb_syncer.utils import extract_youtube_id, normalize
+
+if TYPE_CHECKING:
+    from collections.abc import Iterator
 
 
 class UserRole(Enum):
@@ -515,9 +517,10 @@ def _parse_details_table(
 
 
 def _find_text_after(details_table: Tag, label: str) -> str:
-    if isinstance((tag := details_table.find(string=label)), NavigableString):
-        if isinstance(tag.next, Tag):
-            return tag.next.text.strip()
+    if isinstance(
+        (tag := details_table.find(string=label)), NavigableString
+    ) and isinstance(tag.next, Tag):
+        return tag.next.text.strip()
     raise errors.UsdbParseError(f"Text after {label} not found.")  # noqa: TRY003
 
 

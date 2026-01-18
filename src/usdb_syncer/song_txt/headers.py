@@ -2,17 +2,20 @@
 
 from __future__ import annotations
 
-from collections.abc import Callable
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import attrs
 
 from usdb_syncer import errors
-from usdb_syncer.logger import Logger
-from usdb_syncer.meta_tags import MetaTags
-from usdb_syncer.settings import FormatVersion
 from usdb_syncer.song_txt.auxiliaries import BeatsPerMinute, replace_false_apostrophes
 from usdb_syncer.song_txt.language_translations import LANGUAGE_TRANSLATIONS
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    from usdb_syncer.logger import Logger
+    from usdb_syncer.meta_tags import MetaTags
+    from usdb_syncer.settings import FormatVersion
 
 
 @attrs.define
@@ -140,7 +143,7 @@ class Headers:
         return out
 
     def str_for_usdb(self) -> str:
-        out = "\n".join(
+        return "\n".join(
             f"#{key.upper()}:{val}"
             for key in (
                 "artist",
@@ -162,7 +165,6 @@ class Headers:
             )
             if (val := getattr(self, key)) is not None
         )
-        return out
 
     def artist_title_str(self) -> str:
         return f"{self.artist} - {self.title}"
@@ -190,7 +192,8 @@ class Headers:
         if old_language := self.language:
             languages = [
                 language.strip()
-                for language in self.language.replace(";", ",")
+                for language in self.language
+                .replace(";", ",")
                 .replace("/", ",")
                 .replace("|", ",")
                 .split(",")

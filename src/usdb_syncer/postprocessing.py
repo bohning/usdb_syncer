@@ -29,9 +29,7 @@ DEFAULT_TARGET_LEVEL_R128_DB = -23.0
 Image.init()
 
 
-def normalize_audio(
-    options: AudioOptions, path_stem: Path, input_ext: str, logger: Logger
-) -> None:
+def normalize_audio(options: AudioOptions, path_stem: Path, input_ext: str) -> None:
     with utils.LinuxEnvCleaner():
         normalizer = _create_normalizer(options)
         input_file = f"{path_stem}.{input_ext}"
@@ -52,7 +50,7 @@ def _create_normalizer(options: AudioOptions) -> FFmpegNormalize:
         if options.format == settings.AudioFormat.OPUS
         else DEFAULT_TARGET_LEVEL_RG_DB
     )
-    normalizer = FFmpegNormalize(
+    return FFmpegNormalize(
         normalization_type="ebu",
         target_level=target_level,
         keep_loudness_range_target=True,
@@ -62,8 +60,6 @@ def _create_normalizer(options: AudioOptions) -> FFmpegNormalize:
         progress=True,
         replaygain=(options.normalization == AudioNormalization.REPLAYGAIN),
     )
-
-    return normalizer
 
 
 def write_audio_tags(

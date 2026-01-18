@@ -2,10 +2,9 @@
 
 from __future__ import annotations
 
+import contextlib
 import time
-from collections.abc import Callable, Iterable, Iterator
 from functools import partial
-from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 from PySide6 import QtCore, QtWidgets
@@ -27,6 +26,9 @@ from usdb_syncer.song_txt import SongTxt
 from usdb_syncer.usdb_song import DownloadStatus, UsdbSong
 
 if TYPE_CHECKING:
+    from collections.abc import Callable, Iterable, Iterator
+    from pathlib import Path
+
     from usdb_syncer.gui.mw import MainWindow
 
 
@@ -285,10 +287,8 @@ class SongTable:
             QMediaPlayer.MediaStatus.BufferedMedia,
         ]:
             self._media_player.setPosition(position)
-            try:
+            with contextlib.suppress(RuntimeError):
                 self._media_player.mediaStatusChanged.disconnect()
-            except RuntimeError:
-                pass
 
     def save_state(self) -> None:
         settings.set_table_view_header_state(
@@ -364,9 +364,10 @@ class SongTable:
     # selection model
 
     def current_song_id(self) -> SongId | None:
-        if (idx := self._view.selectionModel().currentIndex()).isValid():
-            if ids := self._model.ids_for_indices([idx]):
-                return ids[0]
+        if (idx := self._view.selectionModel().currentIndex()).isValid() and (
+            ids := self._model.ids_for_indices([idx])
+        ):
+            return ids[0]
         return None
 
     def current_song(self) -> UsdbSong | None:

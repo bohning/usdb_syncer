@@ -4,10 +4,9 @@ from __future__ import annotations
 
 import json
 import os
-from collections.abc import Generator
 from importlib import resources
-from importlib.resources.abc import Traversable
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 import attrs
 import requests
@@ -30,6 +29,10 @@ from usdb_syncer.sync_meta import SyncMeta
 from usdb_syncer.usdb_scraper import get_updated_songs_from_usdb
 from usdb_syncer.usdb_song import UsdbSong, UsdbSongEncoder
 from usdb_syncer.utils import AppPaths
+
+if TYPE_CHECKING:
+    from collections.abc import Generator
+    from importlib.resources.abc import Traversable
 
 
 def load_available_songs_and_sync_meta(folder: Path, force_reload: bool) -> None:
@@ -60,7 +63,7 @@ def load_available_songs(
         UsdbSong.delete_all()
     elif (last := db.LastUsdbUpdate.get()).is_zero() and (songs := load_cached_songs()):
         UsdbSong.upsert_many(songs)
-        result.new_songs.update((s.song_id for s in songs))
+        result.new_songs.update(s.song_id for s in songs)
         last = db.LastUsdbUpdate.get()
     try:
         songs = get_updated_songs_from_usdb(last, session=session)
@@ -73,7 +76,7 @@ def load_available_songs(
         result.synced_with_usdb = True
         if songs:
             UsdbSong.upsert_many(songs)
-            result.new_songs.update((s.song_id for s in songs))
+            result.new_songs.update(s.song_id for s in songs)
     return result
 
 

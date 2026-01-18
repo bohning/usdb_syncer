@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 import pytest
 
@@ -12,7 +13,9 @@ from usdb_syncer.path_template import (
     NotEnoughComponentsError,
     PathTemplate,
 )
-from usdb_syncer.usdb_song import UsdbSong
+
+if TYPE_CHECKING:
+    from usdb_syncer.usdb_song import UsdbSong
 
 
 def test_parse_path_template(song: UsdbSong) -> None:

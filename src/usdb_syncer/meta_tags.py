@@ -3,13 +3,16 @@
 from __future__ import annotations
 
 from enum import StrEnum
-from typing import Literal
+from typing import TYPE_CHECKING, Literal
 
 import attrs
 from attr import fields
 
-from usdb_syncer.logger import Logger
 from usdb_syncer.utils import remove_url_params
+
+if TYPE_CHECKING:
+    from usdb_syncer.logger import Logger
+
 
 # Characters that have special meaning for the meta tag syntax and therefore
 # must be escaped. Escaping is done with percent encoding.

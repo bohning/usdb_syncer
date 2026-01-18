@@ -3,9 +3,8 @@
 from __future__ import annotations
 
 import json
-from collections.abc import Iterator
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import attrs
 
@@ -14,6 +13,10 @@ from usdb_syncer.custom_data import CustomData
 from usdb_syncer.db import JobStatus
 from usdb_syncer.logger import logger
 from usdb_syncer.meta_tags import MetaTags
+
+if TYPE_CHECKING:
+    from collections.abc import Iterator
+
 
 SYNC_META_VERSION = 1
 SYNC_META_INDENT = 4
@@ -346,10 +349,9 @@ class SyncMetaEncoder(json.JSONEncoder):
         if isinstance(o, Resource):
             if o.file is None:
                 return {"status": o.status}
-            else:
-                dct = attrs.asdict(o.file)
-                dct["status"] = o.status
-                return dct
+            dct = attrs.asdict(o.file)
+            dct["status"] = o.status
+            return dct
         if isinstance(o, MetaTags):
             return str(o)
         if isinstance(o, SyncMeta):

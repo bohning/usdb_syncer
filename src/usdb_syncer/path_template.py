@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import enum
-from collections.abc import Iterable
 from pathlib import Path
 from typing import TYPE_CHECKING, assert_never
 
@@ -13,6 +12,8 @@ from usdb_syncer import errors, settings, utils
 from usdb_syncer.custom_data import CustomData
 
 if TYPE_CHECKING:
+    from collections.abc import Iterable
+
     from usdb_syncer.usdb_song import UsdbSong
 
 FORBIDDEN_CHARACTERS = '?"<>|*.'

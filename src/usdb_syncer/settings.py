@@ -11,7 +11,6 @@ import functools
 import os
 import threading
 from enum import Enum, StrEnum, auto
-from http.cookiejar import CookieJar
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, ClassVar, TypeVar, assert_never, cast
 
@@ -23,6 +22,8 @@ from usdb_syncer.constants import Usdb
 from usdb_syncer.logger import logger
 
 if TYPE_CHECKING:
+    from http.cookiejar import CookieJar
+
     from usdb_syncer import path_template
 
 SYSTEM_USDB = "USDB Syncer/USDB"
@@ -125,14 +126,14 @@ class _Settings:
                 return value
             if isinstance(default, bool) and isinstance(value, int):
                 # we store bools as ints because Qt doesn't store raw bools
-                return cast(T, bool(value))
+                return cast("T", bool(value))
             if isinstance(value, str) and ret_type in (int, float, bool):
                 # in INI files (default on Linux) numeric values are stored as strings
                 try:
                     if ret_type is bool:
                         value = int(value)
                     # MyPy doesn't understand any of this, but it should be safe
-                    return cast(T, ret_type(value))  # type: ignore[call-arg]
+                    return cast("T", ret_type(value))  # type: ignore[call-arg]
                 except (ValueError, TypeError):
                     pass
             return default

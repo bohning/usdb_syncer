@@ -2,22 +2,25 @@
 
 from __future__ import annotations
 
-from collections.abc import Iterable
 from dataclasses import dataclass
 from html import escape
 from json import JSONEncoder
-from pathlib import Path
-from typing import Any, Callable, ClassVar
+from typing import TYPE_CHECKING, Any, ClassVar
 
 import attrs
 from diff_match_patch import diff_match_patch
 
 from usdb_syncer import SongId, db
-from usdb_syncer.constants import UsdbStrings
 from usdb_syncer.db import DownloadStatus
 from usdb_syncer.logger import song_logger
 from usdb_syncer.song_txt import SongTxt
 from usdb_syncer.sync_meta import SyncMeta
+
+if TYPE_CHECKING:
+    from collections.abc import Callable, Iterable
+    from pathlib import Path
+
+    from usdb_syncer.constants import UsdbStrings
 
 
 @attrs.define(kw_only=True)
@@ -290,7 +293,7 @@ def generate_remote_vs_local_diffs(
         text = escape(chunk).replace(" ", "&nbsp;")
         if op == -1:
             return f"<span class='del-inline'>{text}</span>"
-        elif op == 1:
+        if op == 1:
             return f"<span class='add-inline'>{text}</span>"
         return text
 
@@ -507,8 +510,7 @@ class UsdbSongEncoder(JSONEncoder):
             filt = attrs.filters.exclude(
                 fields.status, fields.sync_meta, fields.is_playing
             )
-            dct = attrs.asdict(o, recurse=False, filter=filt)
-            return dct
+            return attrs.asdict(o, recurse=False, filter=filt)
         return super().default(o)
 
 

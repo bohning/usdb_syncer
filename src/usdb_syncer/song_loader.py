@@ -7,12 +7,11 @@ import filecmp
 import shutil
 import tempfile
 import time
-from collections.abc import Iterable, Iterator
 from enum import Enum
 from functools import partial
 from itertools import islice
 from pathlib import Path
-from typing import ClassVar, assert_never
+from typing import TYPE_CHECKING, ClassVar, assert_never
 
 import attrs
 import shiboken6
@@ -42,9 +41,15 @@ from usdb_syncer.resource_dl import ImageKind
 from usdb_syncer.settings import FormatVersion
 from usdb_syncer.song_txt import SongTxt
 from usdb_syncer.sync_meta import Resource, ResourceFile, SyncMeta
-from usdb_syncer.usdb_scraper import SongDetails
 from usdb_syncer.usdb_song import DownloadStatus, UsdbSong
 from usdb_syncer.utils import video_url_from_resource
+
+if TYPE_CHECKING:
+    from collections.abc import Iterable, Iterator
+
+    from usdb_syncer.logger import Logger
+    from usdb_syncer.meta_tags import ImageMetaTags
+    from usdb_syncer.usdb_scraper import SongDetails
 
 
 class DownloadManager:
@@ -617,11 +622,10 @@ def _maybe_download_cover(ctx: _Context) -> JobStatus:
                     "download."
                 )
                 return JobStatus.SUCCESS_UNCHANGED
-            else:
-                ctx.logger.info(
-                    "Cover resource and/or processing parameters have changed, "
-                    "redownloading."
-                )
+            ctx.logger.info(
+                "Cover resource and/or processing parameters have changed, "
+                "redownloading."
+            )
 
         status = _try_download_cover_or_background(
             ctx, url, ImageKind.COVER, process=True
@@ -673,11 +677,10 @@ def _maybe_download_background(ctx: _Context) -> JobStatus:
                 "download."
             )
             return JobStatus.SUCCESS_UNCHANGED
-        else:
-            ctx.logger.info(
-                "Background resource and/or processing parameters have changed, "
-                "redownloading."
-            )
+        ctx.logger.info(
+            "Background resource and/or processing parameters have changed, "
+            "redownloading."
+        )
 
     status = _try_download_cover_or_background(
         ctx, url, ImageKind.BACKGROUND, process=False
@@ -744,11 +747,10 @@ def _maybe_write_txt(ctx: _Context) -> JobStatus:
     ):
         ctx.logger.info("Song txt is unchanged.")
         return JobStatus.SUCCESS_UNCHANGED
-    else:
-        ctx.out.txt.new_fname = path.name
-        ctx.out.txt.resource = ctx.song.song_id.usdb_gettxt_url()
-        ctx.logger.info("Success! Created song txt.")
-        return JobStatus.SUCCESS
+    ctx.out.txt.new_fname = path.name
+    ctx.out.txt.resource = ctx.song.song_id.usdb_gettxt_url()
+    ctx.logger.info("Success! Created song txt.")
+    return JobStatus.SUCCESS
 
 
 def _write_headers(ctx: _Context) -> None:
@@ -987,7 +989,7 @@ class Job(Enum):
     def __call__(self, ctx: _Context) -> JobStatus:
         return self.value(ctx)
 
-    def depends_on(self) -> tuple["Job", ...]:
+    def depends_on(self) -> tuple[Job, ...]:
         match self:
             case Job.WRITE_AUDIO_TAGS | Job.WRITE_VIDEO_TAGS:
                 return (

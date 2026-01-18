@@ -3,16 +3,19 @@
 from __future__ import annotations
 
 import enum
-from collections.abc import Iterable
-from typing import Generic, TypeVar, assert_never
+from typing import TYPE_CHECKING, Generic, TypeVar, assert_never
 
 import attrs
 from PySide6.QtCore import Qt
-from PySide6.QtGui import QIcon
 
 from usdb_syncer import db
 from usdb_syncer.custom_data import CustomData
 from usdb_syncer.gui.icons import Icon
+
+if TYPE_CHECKING:
+    from collections.abc import Iterable
+
+    from PySide6.QtGui import QIcon
 
 
 # not an ABC so enums can inherit it (otherwise there's a metaclass conflict)
@@ -50,7 +53,7 @@ class RootItemData(TreeItemData):
     def decoration(self) -> QIcon | None:
         return None
 
-    def is_checkable(self, has_checked_children: bool) -> bool:
+    def is_checkable(self, has_checked_children: bool) -> bool:  # noqa: ARG002
         return False
 
     def is_editable(self) -> bool:
@@ -65,7 +68,7 @@ class RootItemData(TreeItemData):
     def build_search(self, search: db.SearchBuilder) -> None:
         pass
 
-    def is_in_search(self, search: db.SearchBuilder) -> bool:
+    def is_in_search(self, search: db.SearchBuilder) -> bool:  # noqa: ARG002
         return True
 
     def child_data(self) -> Iterable[TreeItemData]:
@@ -328,7 +331,7 @@ class Filter(TreeItemData, enum.Enum):
     def build_search(self, search: db.SearchBuilder) -> None:
         pass
 
-    def is_in_search(self, search: db.SearchBuilder) -> bool:
+    def is_in_search(self, search: db.SearchBuilder) -> bool:  # noqa: ARG002
         return True
 
 
@@ -338,7 +341,7 @@ class NodeItemData(TreeItemData):
     def decoration(self) -> QIcon | None:
         return None
 
-    def is_checkable(self, has_checked_children: bool) -> bool:
+    def is_checkable(self, has_checked_children: bool) -> bool:  # noqa: ARG002
         return True
 
     def is_editable(self) -> bool:
@@ -358,7 +361,7 @@ T = TypeVar("T")
 
 
 @attrs.define
-class SongValueMatch(NodeItemData, Generic[T]):
+class SongValueMatch(NodeItemData, Generic[T]):  # noqa: UP046 python3.12 feature
     """str that can be matched against a specific attribute of a song."""
 
     val: T
@@ -535,10 +538,10 @@ class SavedSearch(NodeItemData, db.SavedSearch):
     def __str__(self) -> str:
         return self.name
 
-    def is_in_search(self, search: db.SearchBuilder) -> bool:
+    def is_in_search(self, search: db.SearchBuilder) -> bool:  # noqa: ARG002
         return False
 
-    def is_checkable(self, has_checked_children: bool) -> bool:
+    def is_checkable(self, has_checked_children: bool) -> bool:  # noqa: ARG002
         return False
 
     def is_editable(self) -> bool:
@@ -557,10 +560,10 @@ class CustomDataKeyMatch(NodeItemData):
     def build_search(self, search: db.SearchBuilder) -> None:
         pass
 
-    def is_in_search(self, search: db.SearchBuilder) -> bool:
+    def is_in_search(self, search: db.SearchBuilder) -> bool:  # noqa: ARG002
         return True
 
-    def is_accepted(self, matches: set[str | int]) -> bool:
+    def is_accepted(self, matches: set[str | int]) -> bool:  # noqa: ARG002
         return True
 
     def child_data(self) -> Iterable[TreeItemData]:

@@ -11,7 +11,7 @@ NOTICE.txt.
 from __future__ import annotations
 
 import json
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Required, TypedDict
 
@@ -71,7 +71,7 @@ def generate_header() -> list[str]:
         "The full text of applicable licenses can be found here: $license_dir$"
     )
     lines.append("")
-    lines.append(f"Generated on: {datetime.now(timezone.utc).strftime('%Y-%m-%d')}")
+    lines.append(f"Generated on: {datetime.now(UTC).strftime('%Y-%m-%d')}")
     lines.append("")
     return lines
 
@@ -136,8 +136,10 @@ def generate_notice_content(licenses: list[LicenseEntry], section_name: str) -> 
             f"The following license files apply to the {section_name.lower()} above:"
         )
         lines.append("")
-        for license_file in sorted(referenced_licenses):
-            lines.append(f"  - $license_dir${license_file}")
+        lines.extend([
+            f"  - $license_dir${license_file}"
+            for license_file in sorted(referenced_licenses)
+        ])
         lines.append("")
 
     return "\n".join(lines)

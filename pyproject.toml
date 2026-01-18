@@ -114,7 +114,6 @@ select = [
     "FA",
     "FLY",
     "I",
-    "INT",
     "ISC",
     "INP",
     "LOG",

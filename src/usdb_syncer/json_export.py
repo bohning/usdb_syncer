@@ -4,10 +4,8 @@ from __future__ import annotations
 
 import datetime
 import json
-from collections.abc import Iterable
 from json import JSONEncoder
-from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import attrs
 
@@ -16,6 +14,13 @@ from usdb_syncer.logger import logger
 from usdb_syncer.meta_tags import ImagePrefix
 from usdb_syncer.usdb_song import UsdbSong
 from usdb_syncer.utils import video_url_from_resource
+
+if TYPE_CHECKING:
+    from collections.abc import Iterable
+    from pathlib import Path
+
+    from usdb_syncer import SongId
+
 
 JSON_EXPORT_VERSION = 1
 
@@ -108,8 +113,7 @@ class JsonSongListEncoder(JSONEncoder):
 
     def default(self, o: Any) -> Any:
         if isinstance(o, JsonSongList):
-            dct = attrs.asdict(o, recurse=True)
-            return dct
+            return attrs.asdict(o, recurse=True)
         return super().default(o)
 
 

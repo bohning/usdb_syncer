@@ -93,15 +93,15 @@ class TableModel(QAbstractTableModel):
         return 0 if parent.isValid() else len(self._ids)
 
     def data(self, index: QIndex, role: int = Qt.ItemDataRole.DisplayRole) -> Any:
+        song = self._get_song(index)
+        if not song:
+            return None
         if role == Qt.ItemDataRole.DisplayRole:
-            if song := self._get_song(index):
-                return _display_data(song, index.column())
+            return _display_data(song, index.column())
         if role == Qt.ItemDataRole.DecorationRole:
-            if song := self._get_song(index):
-                return _decoration_data(song, index.column())
+            return _decoration_data(song, index.column())
         if role == Qt.ItemDataRole.ToolTipRole:
-            if song := self._get_song(index):
-                return _tooltip_data(song, index.column())
+            return _tooltip_data(song, index.column())
         return None
 
     def _get_song(self, index: QIndex) -> UsdbSong | None:

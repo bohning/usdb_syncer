@@ -2,8 +2,9 @@
 
 from PySide6 import QtGui, QtWidgets
 
-from usdb_syncer import errors, webserver
+from usdb_syncer import errors
 from usdb_syncer.gui.forms.WebserverDialog import Ui_Dialog
+from usdb_syncer.webserver import webserver
 
 
 class WebserverDialog(Ui_Dialog, QtWidgets.QDialog):

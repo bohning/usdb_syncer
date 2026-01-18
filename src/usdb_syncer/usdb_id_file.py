@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import configparser
 import json
-from collections.abc import Iterable
 from pathlib import Path
+from typing import TYPE_CHECKING
 from urllib.parse import parse_qs, urlparse
 
 import attrs
@@ -15,6 +15,9 @@ from bs4 import BeautifulSoup
 from usdb_syncer import SongId, errors
 from usdb_syncer.logger import logger
 from usdb_syncer.usdb_song import UsdbSong
+
+if TYPE_CHECKING:
+    from collections.abc import Iterable
 
 
 @attrs.define

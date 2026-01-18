@@ -4,13 +4,18 @@ from __future__ import annotations
 
 import enum
 from enum import IntEnum
-from typing import assert_never
+from typing import TYPE_CHECKING, assert_never
 
 from PySide6.QtGui import QIcon
 
 from usdb_syncer import db
 from usdb_syncer.gui.icons import Icon
-from usdb_syncer.sync_meta import Resource, SyncMeta
+
+if TYPE_CHECKING:
+    from PySide6.QtGui import QIcon
+
+    from usdb_syncer.sync_meta import Resource, SyncMeta
+
 
 MINIMUM_COLUMN_WIDTH = 24
 

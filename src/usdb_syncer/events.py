@@ -48,11 +48,11 @@ class SubscriptableEvent(QtCore.QEvent):
     @classmethod
     def subscribe(cls, callback: Callable[[Self], Any]) -> None:
         # mypy seems to have a lot of trouble with the Self type
-        cast(list[Callable[[Self], Any]], cls._subscribers).append(callback)
+        cast("list[Callable[[Self], Any]]", cls._subscribers).append(callback)
 
     @classmethod
     def unsubscribe(cls, callback: Callable[[Self], Any]) -> None:
-        cast(list[Callable[[Self], Any]], cls._subscribers).remove(callback)
+        cast("list[Callable[[Self], Any]]", cls._subscribers).remove(callback)
 
     def post(self) -> None:
         QtCore.QCoreApplication.postEvent(_EventProcessorManager.processor(), self)
