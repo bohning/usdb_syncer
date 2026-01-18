@@ -157,6 +157,13 @@ ignore = [
     "S607",
     # This flags _all_ dynamic SQL constructions, so it's pointless.
     "S608",
+    # Since we don't have a public api, we don't require docstrings for functions.
+    "D102",
+    "D103",
+    "D105",
+    "D107",
+    # D415 is handled by D400 already, so we skip it to avoid double warnings.
+    "D415",
     # D203 and D211 are incompatible. We prefer D211.
     "D203",
     # D212 and D213 are incompatible. We prefer D212.
