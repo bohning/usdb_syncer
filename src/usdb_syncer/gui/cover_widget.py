@@ -13,8 +13,6 @@ from usdb_syncer.constants import Usdb
 from usdb_syncer.gui import events as gui_events
 from usdb_syncer.usdb_song import UsdbSong
 
-NO_COVER_PIXMAP = QPixmap(":/images/nocover.png")
-
 
 class CoverLoaderSignals(QObject):
     finished = Signal(int, QPixmap)
@@ -99,7 +97,7 @@ def load_cover(local_path: Path | None, remote_url: str | None) -> QPixmap:
             return pixmap
     if remote_url and (remote_pixmap := fetch_remote_cover(remote_url)):
         return remote_pixmap
-    return NO_COVER_PIXMAP
+    return QPixmap(":/images/nocover.png")
 
 
 @lru_cache(maxsize=32)
