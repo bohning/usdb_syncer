@@ -109,6 +109,7 @@ select = [
     "C4",
     "C90",
     "COM",
+    "D",
     "E",
     "F",
     "FA",
@@ -156,6 +157,10 @@ ignore = [
     "S607",
     # This flags _all_ dynamic SQL constructions, so it's pointless.
     "S608",
+    # D203 and D211 are incompatible. We prefer D211.
+    "D203",
+    # D212 and D213 are incompatible. We prefer D212.
+    "D213",
 ]
 
 # Allow fix for all enabled rules (when `--fix`) is provided.
@@ -167,7 +172,7 @@ unfixable = []
 split-on-trailing-comma = false
 
 [tool.ruff.lint.per-file-ignores]
-"tests/**" = ["ARG001"]
+"tests/**" = ["ARG001", "D"]
 
 [tool.mypy]
 ignore_missing_imports = true
