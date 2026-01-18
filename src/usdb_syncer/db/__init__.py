@@ -11,9 +11,8 @@ import time
 from collections import defaultdict
 from collections.abc import Generator, Iterable, Iterator
 from enum import StrEnum, auto
-from importlib import resources
 from pathlib import Path
-from typing import Any, ClassVar, assert_never, cast
+from typing import Any, assert_never, cast
 
 import attrs
 from more_itertools import batched
@@ -21,7 +20,7 @@ from more_itertools import batched
 from usdb_syncer import SongId, SyncMetaId, errors
 from usdb_syncer.logger import logger
 
-from . import sql
+from .sql import Sql
 
 SCHEMA_VERSION = 8
 
@@ -43,18 +42,6 @@ _STATUS_COLUMN = """coalesce(
         ELSE 0
     END
 )"""
-
-
-class _SqlCache:
-    _cache: ClassVar[dict[str, str]] = {}
-
-    @classmethod
-    def get(cls, name: str, cache: bool = True) -> str:
-        if (stmt := cls._cache.get(name)) is None:
-            stmt = resources.files(sql).joinpath(name).read_text("utf8")
-            if cache:
-                cls._cache[name] = stmt
-        return stmt
 
 
 class _LocalConnection(threading.local):
@@ -124,7 +111,7 @@ def _validate_schema(connection: sqlite3.Connection) -> None:
             raise errors.UnknownSchemaError
         version = row[0]
     for ver in range(version + 1, SCHEMA_VERSION + 1):
-        connection.executescript(_SqlCache.get(f"{ver}_migration.sql", cache=False))
+        connection.executescript(Sql.migration_text(ver))
         logger.debug(f"Database migrated to version {ver}.")
     if version < SCHEMA_VERSION:
         connection.execute(
@@ -132,7 +119,7 @@ def _validate_schema(connection: sqlite3.Connection) -> None:
             "ON CONFLICT (id) DO UPDATE SET version = :version",
             {"version": SCHEMA_VERSION, "ctime": int(time.time() * 1_000_000)},
         )
-    connection.executescript(_SqlCache.get("setup_session_script.sql", cache=False))
+    connection.executescript(Sql.SETUP_SESSION_SCRIPT.text_uncached())
 
 
 def connect(db_path: Path | str) -> None:
@@ -419,7 +406,7 @@ class SearchBuilder:
             yield self.golden_notes
 
     def statement(self) -> str:
-        select_from = _SqlCache.get("select_song_id.sql")
+        select_from = Sql.SELECT_SONG_ID.text()
         where = self._where_clause()
         order_by = self._order_by_clause()
         return f"{select_from}{where}{order_by}"
@@ -470,19 +457,17 @@ class SavedSearch:
     subscribed: bool = False
 
     def insert(self) -> None:
-        self.name = (
-            _DbState.connection()
-            .execute(
-                _SqlCache.get("insert_saved_search.sql"),
-                {
-                    "name": self.name,
-                    "search": self.search.to_json(),
-                    "is_default": self.is_default,
-                    "subscribed": self.subscribed,
-                },
-            )
-            .fetchone()
-        )[0]
+        conn = _DbState.connection()
+        name = conn.execute(
+            Sql.SELECT_UNIQUE_SEARCH_NAME.text(),
+            {"new_name": self.name, "old_name": ""},
+        ).fetchone()[0]
+        conn.execute(
+            "INSERT INTO saved_search (name, search, is_default, subscribed)"
+            " VALUES (?, ?, ?, ?)",
+            (name, self.search.to_json(), self.is_default, self.subscribed),
+        )
+        self.name = name
 
     def delete(self) -> None:
         _DbState.connection().execute(
@@ -512,20 +497,19 @@ class SavedSearch:
         return None
 
     def update(self, new_name: str | None = None) -> None:
-        self.name = (
-            _DbState.connection()
-            .execute(
-                _SqlCache.get("update_saved_search.sql"),
-                {
-                    "old_name": self.name,
-                    "new_name": new_name or self.name,
-                    "search": self.search.to_json(),
-                    "is_default": self.is_default,
-                    "subscribed": self.subscribed,
-                },
-            )
-            .fetchone()
-        )[0]
+        conn = _DbState.connection()
+        name = self.name
+        if new_name:
+            name = conn.execute(
+                Sql.SELECT_UNIQUE_SEARCH_NAME.text(),
+                {"new_name": new_name, "old_name": self.name},
+            ).fetchone()[0]
+        conn.execute(
+            "UPDATE saved_search SET name = ?, search = ?, is_default = ?,"
+            " subscribed = ? WHERE name = ?",
+            (name, self.search.to_json(), self.is_default, self.subscribed, self.name),
+        )
+        self.name = name
 
     @classmethod
     def load_saved_searches(
@@ -596,7 +580,7 @@ def _fts5_start_phrase(text: str) -> str:
 
 
 def get_usdb_song(song_id: SongId) -> tuple | None:
-    stmt = f"{_SqlCache.get('select_usdb_song.sql')} WHERE usdb_song.song_id = ?"
+    stmt = f"{Sql.SELECT_USDB_SONG.text()} WHERE usdb_song.song_id = ?"
     return _DbState.connection().execute(stmt, (song_id,)).fetchone()
 
 
@@ -625,22 +609,22 @@ class UsdbSongParams:
 
 
 def upsert_usdb_song(params: UsdbSongParams) -> None:
-    stmt = _SqlCache.get("upsert_usdb_song.sql")
+    stmt = Sql.UPSERT_USDB_SONG.text()
     _DbState.connection().execute(stmt, params.__dict__)
 
 
 def upsert_usdb_songs(params: list[UsdbSongParams]) -> None:
-    stmt = _SqlCache.get("upsert_usdb_song.sql")
+    stmt = Sql.UPSERT_USDB_SONG.text()
     _DbState.connection().executemany(stmt, (p.__dict__ for p in params))
 
 
 def set_usdb_song_status(song_id: SongId, status: DownloadStatus) -> None:
-    stmt = _SqlCache.get("upsert_usdb_song_status.sql")
+    stmt = Sql.UPSERT_USDB_SONG_STATUS.text()
     _DbState.connection().execute(stmt, {"song_id": song_id, "status": status.for_db()})
 
 
 def set_usdb_song_playing(song_id: SongId, is_playing: bool) -> None:
-    stmt = _SqlCache.get("upsert_usdb_song_playing.sql")
+    stmt = Sql.UPSERT_USDB_SONG_PLAYING.text()
     _DbState.connection().execute(stmt, {"song_id": song_id, "is_playing": is_playing})
 
 
@@ -835,14 +819,14 @@ def search_usdb_song_creators(search: str) -> set[str]:
 
 
 def get_in_folder(folder: Path) -> list[tuple]:
-    stmt = f"{_SqlCache.get('select_sync_meta.sql')} WHERE path GLOB ? || '/*'"
+    stmt = f"{Sql.SELECT_SYNC_META.text()} WHERE path GLOB ? || '/*'"
     return _DbState.connection().execute(stmt, (folder.as_posix(),)).fetchall()
 
 
 def reset_active_sync_metas(folder: Path) -> None:
     _DbState.connection().execute("DELETE FROM active_sync_meta")
     params = {"folder": folder.as_posix()}
-    _DbState.connection().execute(_SqlCache.get("insert_active_sync_metas.sql"), params)
+    _DbState.connection().execute(Sql.INSERT_ACTIVE_SYNC_METAS.text(), params)
 
 
 def update_active_sync_metas(folder: Path, song_id: SongId) -> None:
@@ -850,7 +834,7 @@ def update_active_sync_metas(folder: Path, song_id: SongId) -> None:
         "DELETE FROM active_sync_meta WHERE song_id = ?", (song_id,)
     )
     params = {"folder": folder.as_posix(), "song_id": song_id}
-    _DbState.connection().execute(_SqlCache.get("insert_active_sync_meta.sql"), params)
+    _DbState.connection().execute(Sql.INSERT_ACTIVE_SYNC_META.text(), params)
 
 
 @attrs.define(frozen=True, slots=False)
@@ -867,12 +851,12 @@ class SyncMetaParams:
 
 
 def upsert_sync_meta(params: SyncMetaParams) -> None:
-    stmt = _SqlCache.get("upsert_sync_meta.sql")
+    stmt = Sql.UPSERT_SYNC_META.text()
     _DbState.connection().execute(stmt, params.__dict__)
 
 
 def upsert_sync_metas(params: Iterable[SyncMetaParams]) -> None:
-    stmt = _SqlCache.get("upsert_sync_meta.sql")
+    stmt = Sql.UPSERT_SYNC_META.text()
     _DbState.connection().executemany(stmt, (p.__dict__ for p in params))
 
 
@@ -911,7 +895,7 @@ class CustomMetaDataParams:
 
 
 def upsert_custom_meta_data(params: Iterable[CustomMetaDataParams]) -> None:
-    stmt = _SqlCache.get("upsert_custom_meta_data.sql")
+    stmt = Sql.UPSERT_CUSTOM_META_DATA.text()
     _DbState.connection().executemany(stmt, (p.__dict__ for p in params))
 
 
@@ -978,7 +962,7 @@ def delete_resources(ids: Iterable[tuple[SyncMetaId, ResourceKind]]) -> None:
 
 
 def upsert_resources(params: Iterable[ResourceParams]) -> None:
-    stmt = _SqlCache.get("upsert_resource.sql")
+    stmt = Sql.UPSERT_RESOURCE.text()
     _DbState.connection().executemany(stmt, (p.__dict__ for p in params))
 
 
