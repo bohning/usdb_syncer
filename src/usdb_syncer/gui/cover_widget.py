@@ -1,6 +1,6 @@
 """Widget to display the cover of the currently selected song."""
 
-from functools import lru_cache
+from functools import cache, lru_cache
 from pathlib import Path
 
 import requests
@@ -90,6 +90,11 @@ class ScaledCoverLabel(QLabel):
             self.set_cover(None)
 
 
+@cache
+def _no_cover() -> QPixmap:
+    return QPixmap(":/images/nocover.png")
+
+
 def load_cover(local_path: Path | None, remote_url: str | None) -> QPixmap:
     if local_path and local_path.exists():
         pixmap = QPixmap(str(local_path))
@@ -97,7 +102,7 @@ def load_cover(local_path: Path | None, remote_url: str | None) -> QPixmap:
             return pixmap
     if remote_url and (remote_pixmap := fetch_remote_cover(remote_url)):
         return remote_pixmap
-    return QPixmap(":/images/nocover.png")
+    return _no_cover()
 
 
 @lru_cache(maxsize=32)
