@@ -470,19 +470,17 @@ class SavedSearch:
     subscribed: bool = False
 
     def insert(self) -> None:
-        self.name = (
-            _DbState.connection()
-            .execute(
-                _SqlCache.get("insert_saved_search.sql"),
-                {
-                    "name": self.name,
-                    "search": self.search.to_json(),
-                    "is_default": self.is_default,
-                    "subscribed": self.subscribed,
-                },
-            )
-            .fetchone()
-        )[0]
+        conn = _DbState.connection()
+        name = conn.execute(
+            _SqlCache.get("select_unique_search_name.sql"),
+            {"new_name": self.name, "old_name": ""},
+        ).fetchone()[0]
+        conn.execute(
+            "INSERT INTO saved_search (name, search, is_default, subscribed)"
+            " VALUES (?, ?, ?, ?)",
+            (name, self.search.to_json(), self.is_default, self.subscribed),
+        )
+        self.name = name
 
     def delete(self) -> None:
         _DbState.connection().execute(
@@ -512,20 +510,19 @@ class SavedSearch:
         return None
 
     def update(self, new_name: str | None = None) -> None:
-        self.name = (
-            _DbState.connection()
-            .execute(
-                _SqlCache.get("update_saved_search.sql"),
-                {
-                    "old_name": self.name,
-                    "new_name": new_name or self.name,
-                    "search": self.search.to_json(),
-                    "is_default": self.is_default,
-                    "subscribed": self.subscribed,
-                },
-            )
-            .fetchone()
-        )[0]
+        conn = _DbState.connection()
+        name = self.name
+        if new_name:
+            name = conn.execute(
+                _SqlCache.get("select_unique_search_name.sql"),
+                {"new_name": new_name, "old_name": self.name},
+            ).fetchone()[0]
+        conn.execute(
+            "UPDATE saved_search SET name = ?, search = ?, is_default = ?,"
+            " subscribed = ? WHERE name = ?",
+            (name, self.search.to_json(), self.is_default, self.subscribed, self.name),
+        )
+        self.name = name
 
     @classmethod
     def load_saved_searches(
