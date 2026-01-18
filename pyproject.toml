@@ -46,7 +46,7 @@ build-backend = "hatchling.build"
 [dependency-groups]
 dev = [
     "tox",
-    "ruff~=0.14.1",
+    "ruff==0.14.13",
     "mypy",
     "types-requests",
     "pytest",
@@ -96,7 +96,6 @@ extend-exclude = [
     "qt",
 ]
 target-version = "py312"
-preview = true
 
 [tool.ruff.format]
 skip-magic-trailing-comma = true
@@ -104,6 +103,7 @@ skip-magic-trailing-comma = true
 [tool.ruff.lint]
 select = [
     "A",
+    "ARG",
     "B",
     "BLE",
     "C4",
@@ -111,14 +111,25 @@ select = [
     "COM",
     "E",
     "F",
+    "FA",
+    "FLY",
     "I",
+    "INT",
+    "ISC",
+    "INP",
     "LOG",
     "N",
+    "PERF",
+    "PIE",
     "PTH",
     "Q",
+    "RET",
     "RUF",
     "S",
+    "SIM",
+    "TC",
     "TRY",
+    "UP",
     "W",
 ]
 ignore = [
@@ -155,6 +166,9 @@ unfixable = []
 [tool.ruff.lint.isort]
 # For consistency with the formatter, see https://docs.astral.sh/ruff/settings/#lint_isort_split-on-trailing-comma
 split-on-trailing-comma = false
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["ARG001"]
 
 [tool.mypy]
 ignore_missing_imports = true
