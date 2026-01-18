@@ -27,7 +27,7 @@ JSON_EXPORT_VERSION = 1
 
 @attrs.define(kw_only=True)
 class SongExportData:
-    """Meta Data describing a song from USDB including specific meta tag data"""
+    """Metadata describing a song from USDB including specific meta tag data."""
 
     id: SongId
     artist: str
@@ -89,7 +89,7 @@ class SongExportData:
 
 @attrs.define(kw_only=True)
 class JsonSongList:
-    """defines fields in JSON songlist export"""
+    """Defines fields in JSON songlist export."""
 
     songs: list[SongExportData]
     date: str
@@ -109,7 +109,7 @@ class JsonSongList:
 
 
 class JsonSongListEncoder(JSONEncoder):
-    """Custom JSON encoder for SongExportData"""
+    """Custom JSON encoder for SongExportData."""
 
     def default(self, o: Any) -> Any:
         if isinstance(o, JsonSongList):

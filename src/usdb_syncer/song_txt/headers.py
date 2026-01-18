@@ -7,8 +7,9 @@ from typing import TYPE_CHECKING, Any
 import attrs
 
 from usdb_syncer import errors
-from usdb_syncer.song_txt.auxiliaries import BeatsPerMinute, replace_false_apostrophes
-from usdb_syncer.song_txt.language_translations import LANGUAGE_TRANSLATIONS
+
+from .auxiliaries import BeatsPerMinute, replace_false_apostrophes
+from .language_translations import LANGUAGE_TRANSLATIONS
 
 if TYPE_CHECKING:
     from collections.abc import Callable

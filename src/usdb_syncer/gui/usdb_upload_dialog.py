@@ -20,11 +20,15 @@ from usdb_syncer.usdb_song import DownloadStatus, SongChanges, UsdbSong
 
 @dataclass
 class ValidationSuccess:
+    """Song is valid for submission."""
+
     changes: SongChanges
 
 
 @dataclass
 class ValidationFailure:
+    """Song is not valid for submission."""
+
     reason: str
 
 

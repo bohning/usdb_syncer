@@ -570,12 +570,12 @@ def _in_ranges_clause(attribute: str, values: list[tuple[int, int | None]]) -> s
 
 
 def _fts5_phrases(text: str) -> str:
-    """Turns each whitespace-separated word into an FTS5 prefix phrase."""
+    """Turn each whitespace-separated word into an FTS5 prefix phrase."""
     return " ".join(f'"{s}"*' for s in text.replace('"', "").split(" ") if s)
 
 
 def _fts5_start_phrase(text: str) -> str:
-    """Turns the entire string into an FTS5 initial phrase."""
+    """Turn the entire string into an FTS5 initial phrase."""
     return f'''^ "{text.replace('"', "")}"'''
 
 
@@ -973,7 +973,10 @@ def upsert_resources(params: Iterable[ResourceParams]) -> None:
 
 
 def maybe_insert_discord_notification(song_id: SongId, resource: str) -> bool:
-    """Does nothing if already present. Otherwise returns True."""
+    """Look to insert a discord notification into the database.
+
+    Does nothing if already present. Otherwise returns True.
+    """
     stmt = (
         "INSERT OR IGNORE INTO discord_notification (song_id, resource) VALUES (?, ?)"
     )

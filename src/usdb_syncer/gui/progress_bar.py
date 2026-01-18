@@ -1,6 +1,4 @@
-"""Controller for a progress bar to show the numbers of requested and finished
-downloads.
-"""
+"""Controller for a progress bar to show the numbers of downloads."""
 
 import attrs
 from PySide6 import QtWidgets

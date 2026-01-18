@@ -28,7 +28,6 @@ def encode_meta_tag_value(meta_tag: str) -> str:
 
 def decode_meta_tag_value(meta_tag: str) -> str:
     """Unescape special characters inside the value part of a meta tag."""
-
     for char, escape in META_TAG_ESCAPES:
         meta_tag = meta_tag.replace(escape, char)
     return meta_tag
@@ -119,7 +118,7 @@ class ImageMetaTags:
         return f"https://assets.fanart.tv/fanart/{self.source}"
 
     def image_processing(self) -> bool:
-        """True if there is data for image processing."""
+        """Check if there is data for image processing."""
         return any((self.rotate, self.crop, self.resize, self.contrast))
 
     def to_str(self, prefix: ImagePrefix) -> str:
@@ -159,8 +158,9 @@ class MedleyTag:
 
 @attrs.define
 class MetaTags:
-    """Additional resource parameters from an overloaded video tag. Such an overloaded
-    tag could look like:
+    """Additional resource parameters from an overloaded video tag.
+
+    Such an overloaded tag could look like:
     #VIDEO:a=example,co=foobar.jpg,bg=background.jpg
     """
 
@@ -232,7 +232,7 @@ class MetaTags:
                 logger.warning(f"unknown key for meta tag: '{key}={value}'")
 
     def is_audio_only(self) -> bool:
-        """True if a resource is explicitly set for audio only."""
+        """Check if a resource is explicitly set for audio only."""
         return bool(self.audio and not self.video)
 
     def __str__(self) -> str:

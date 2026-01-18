@@ -64,7 +64,7 @@ class ResourceFile:
         return cls(fname=row[0], mtime=row[1], resource=row[2])
 
     def is_in_sync(self, folder: Path) -> bool:
-        """True if this file exists in the given folder and is in sync."""
+        """Check file exists in the given folder and is in sync."""
         path = folder.joinpath(self.fname)
         return (
             path.exists()
@@ -341,7 +341,7 @@ class SyncMeta:
 
 
 class SyncMetaEncoder(json.JSONEncoder):
-    """Custom JSON encoder"""
+    """Custom JSON encoder."""
 
     def default(self, o: Any) -> Any:
         if isinstance(o, ResourceFile):

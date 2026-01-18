@@ -56,7 +56,10 @@ class LoadSongsResult:
 def load_available_songs(
     force_reload: bool, session: Session | None = None
 ) -> LoadSongsResult:
-    """True if USDB was queried successfully."""
+    """Load songs from USDB.
+
+    Return true if USDB was queried successfully.
+    """
     result = LoadSongsResult()
     if force_reload:
         last = db.LastUsdbUpdate.zero()

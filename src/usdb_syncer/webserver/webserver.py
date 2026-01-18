@@ -1,3 +1,5 @@
+"""General webserver functions."""
+
 from __future__ import annotations
 
 import base64
@@ -187,8 +189,7 @@ class _WebserverManager:
 
     @classmethod
     def _validate_port(cls, port: int | None) -> None:
-        """
-        Validate and return a usable TCP port.
+        """Validate and return a usable TCP port.
 
         - If port is None, return 0 (OS auto-assign).
         - On Unix-like OS (Linux, macOS), disallow ports <1024 (privileged).

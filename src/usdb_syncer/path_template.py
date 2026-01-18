@@ -54,7 +54,9 @@ class NotEnoughComponentsError(PathTemplateError):
 
 @attrs.define
 class PathTemplate:
-    """A path with optional placeholder names, which can be resolved by passing a
+    """A path with optional placeholder names.
+
+    Placeholders can be resolved by passing a
     UsdbSong object. The syntax for placeholders is `:name:`.
     See `PathTemplatePlaceholder` for valid names.
     """
@@ -72,7 +74,9 @@ class PathTemplate:
         return cls([PathTemplateComponent.parse(part) for part in parts])
 
     def evaluate(self, song: UsdbSong, parent: Path = Path()) -> Path:
-        """Returns a valid path relative to `parent` with placeholders replaced with
+        """Evaluate the template.
+
+        Returns a valid path relative to `parent` with placeholders replaced with
         the values from `song`. The final component is the filename stem.
         """
         return Path(
@@ -94,8 +98,9 @@ class PathTemplate:
 
 @attrs.define
 class PathTemplateComponent:
-    """A component of a template path, i.e. a file or directory name supporting the
-    template syntax.
+    """A component of a template path.
+
+    Could be a file or directory name supporting the template syntax.
     """
 
     _tokens: list[PathTemplateComponentToken]

@@ -68,7 +68,6 @@ def _rgb_str(color: QColor) -> str:
 
 def generate_diff_css(palette: DiffPalette) -> str:
     """Generate diff CSS from theme palette."""
-
     return styles.DIFF_CSS.read_text(encoding="utf-8").format(
         lineno_text=_rgb_str(palette.lineno_text),
         lineno_border=_rgb_str(palette.lineno_border),

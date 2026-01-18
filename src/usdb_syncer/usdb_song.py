@@ -250,7 +250,6 @@ class UsdbSong:
 
     def get_changes(self, remote_txt: SongTxt) -> SongChanges | None:
         """Analyze changes between local and remote versions of a song."""
-
         logger = song_logger(self.song_id)
 
         remote_str = remote_txt.str_for_upload(ensure_canonical=False)
@@ -280,8 +279,8 @@ def generate_remote_vs_local_diffs(
 
     Returns:
         Tuple of (remote_html, local_html, builder)
-    """
 
+    """
     dmp = diff_match_patch()
     diffs = dmp.diff_main(remote, local)
     dmp.diff_cleanupSemantic(diffs)
@@ -502,7 +501,7 @@ class SongChanges:
 
 
 class UsdbSongEncoder(JSONEncoder):
-    """Custom JSON encoder"""
+    """Custom JSON encoder."""
 
     def default(self, o: Any) -> Any:
         if isinstance(o, UsdbSong):

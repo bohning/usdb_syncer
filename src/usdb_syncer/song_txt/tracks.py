@@ -10,7 +10,8 @@ import attrs
 
 from usdb_syncer import errors, settings
 from usdb_syncer.meta_tags import MedleyTag
-from usdb_syncer.song_txt.auxiliaries import (
+
+from .auxiliaries import (
     BeatsPerMinute,
     replace_false_apostrophes,
     replace_false_quotation_marks,
@@ -87,11 +88,11 @@ class Note:
         )
 
     def end(self) -> int:
-        """Start beat + duration (NOT last beat of the note)"""
+        """Start beat + duration (NOT last beat of the note)."""
         return self.start + self.duration
 
     def shift_start(self, beats: int) -> None:
-        """Shift note start and shorten duration accordingly"""
+        """Shift note start and shorten duration accordingly."""
         self.start += beats
         self.duration = max(self.duration - beats, 1)
 
@@ -115,18 +116,20 @@ class Note:
         self.text = self.text.rstrip() + " "
 
     def gap(self, other: Note) -> int:
-        """Returns the number of empty beats between two notes"""
+        """Get the number of empty beats between two notes."""
         return other.start - self.end()
 
     def swap_timings(self, other: Note) -> None:
-        """Swap start and duration of two notes"""
+        """Swap start and duration of two notes."""
         self.start, other.start = other.start, self.start
         self.duration, other.duration = other.duration, self.duration
 
 
 @attrs.define
 class LineBreak:
-    """Line breaks consist of a single value or two values for the previous line end and
+    """Line breaks between lines.
+
+    Line breaks consist of a single value or two values for the previous line end and
     the next line start.
     """
 
@@ -135,7 +138,9 @@ class LineBreak:
 
     @classmethod
     def parse(cls, value: str) -> tuple[LineBreak, str | None]:
-        """Some line breaks aren't terminated by a line break. If this is the case, the
+        """Parse a line break from a string.
+
+        Some line breaks aren't terminated by a line break. If this is the case, the
         rest of the line is returned.
         """
         regex = re.compile(r"- *(-?\d+) *(-?\d+)? *(.+)?")
@@ -196,7 +201,7 @@ class Line:
         return cls(notes, line_break)
 
     def is_last(self) -> bool:
-        """True if this Line is the last line for any player."""
+        """Check if this Line is the last line for any player."""
         return self.line_break is None
 
     def __str__(self) -> str:
@@ -441,7 +446,7 @@ class Tracks:
             )
 
     def fix_spaces(self, fix_style: settings.FixSpaces, logger: Logger) -> None:
-        """Ensures that inter-word spaces are either always after or before words"""
+        """Ensure that inter-word spaces are either always after or before words."""
         spaces_fixed = 0
         for line in self.all_lines():
             match fix_style:
@@ -521,7 +526,6 @@ class Tracks:
         self, medley: MedleyTag | None, logger: Logger
     ) -> MedleyTag | None:
         """Ensure that medley sections start/end on line start/end."""
-
         if not medley or self.track_2:
             return None
 
@@ -581,8 +585,10 @@ def _player_lines(lines: list[str], logger: Logger) -> list[Line]:
 
 
 def _split_duet_line(line: Line, cutoff: int) -> tuple[Line, Line] | None:
-    """Split a line into two, where the first part contains the first notes starting
-    _after_ cutoff and the second part contains the rest.
+    """Split a line into two.
+
+    Splits so that the first part contains the first notes starting
+    after cutoff and the second part contains the rest.
     None if either part would be empty.
     """
     mid = next((i for i, note in enumerate(line.notes) if note.start < cutoff), 0)

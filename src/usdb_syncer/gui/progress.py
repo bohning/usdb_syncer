@@ -29,8 +29,10 @@ class Result(Generic[T]):  # noqa: UP046 python3.12 feature
     _result: T | _Error
 
     def result(self) -> T:
-        """If the operation was successful, returns its result, and raises the original
-        error otherwise.
+        """Check if the operation was successful.
+
+        If the operation was successful, returns its result
+        Raises the original error otherwise.
         """
         if isinstance(self._result, _Error):
             raise self._result.error
@@ -63,7 +65,7 @@ def run_with_progress(
     task: Callable[[], T],
     on_done: Callable[[Result[T]], Any] = lambda res: res.result(),
 ) -> None:
-    """Runs a task on a background thread while a modal progress dialog is shown."""
+    """Run a task on a background thread while a modal progress dialog is shown."""
     dialog = ProgressDialog(parent=None, labelText=label, minimum=0, maximum=0)
     dialog.setCancelButton(None)  # type: ignore
     dialog.setWindowModality(QtCore.Qt.WindowModality.ApplicationModal)

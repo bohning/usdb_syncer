@@ -10,7 +10,7 @@ from pathlib import Path
 
 RESOURCE_DIR = Path(__file__, "../../usdb_syncer/gui/resources").resolve()
 
-_FILE_HEADER = f'''"""This file was generated using `{Path(__file__).name}`."""
+_FILE_HEADER = f'''"""File was generated using `{Path(__file__).name}`."""
 
 from importlib import resources
 

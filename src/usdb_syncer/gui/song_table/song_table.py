@@ -281,7 +281,10 @@ class SongTable:
         self._media_player.play()
 
     def _on_media_loaded(self, status: QMediaPlayer.MediaStatus, position: int) -> None:
-        """Called when media status changes. Sets position once media is loaded."""
+        """Call when media status changes.
+
+        Sets position once media is loaded.
+        """
         if status in [
             QMediaPlayer.MediaStatus.LoadedMedia,
             QMediaPlayer.MediaStatus.BufferedMedia,

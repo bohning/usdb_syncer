@@ -1,4 +1,4 @@
-"""This file was generated using `write_resource_files.py`."""
+"""File was generated using `write_resource_files.py`."""
 
 from importlib import resources
 

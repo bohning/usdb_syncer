@@ -134,19 +134,7 @@ def download_audio(
     path_stem: Path,
     logger: Logger,
 ) -> ResourceDLResult[str]:
-    """Download audio from resource to path and process it according to options.
-
-    Parameters:
-        resource: URL or YouTube id
-        options: parameters for downloading and processing
-        browser: browser to use cookies from
-        path_stem: the target on the file system *without* an extension
-        logger: logger
-
-    Returns:
-        DownloadResult with the extension of the (postprocessed, possibly normalized)
-        audio file, if successful
-    """
+    """Download audio from resource to path and process it according to options."""
     ydl_opts = _ytdl_options(
         options.ytdl_format(), browser, path_stem, options.rate_limit
     )
@@ -182,17 +170,7 @@ def download_video(
     path_stem: Path,
     logger: Logger,
 ) -> ResourceDLResult[str]:
-    """Download video from resource to path and process it according to options.
-
-    Parameters:
-        resource: URL or YouTube id
-        options: parameters for downloading and processing
-        browser: browser to use cookies from
-        path_stem: the target on the file system *without* an extension
-
-    Returns:
-        DownloadResult with the extension of the downloaded file if successful
-    """
+    """Download video from resource to path and process it according to options."""
     ydl_opts = _ytdl_options(
         options.ytdl_format(), browser, path_stem, options.rate_limit
     )
@@ -203,7 +181,6 @@ def fallback_resource_is_audio_only(
     options: VideoOptions, url: str, browser: Browser, logger: Logger
 ) -> bool:
     """Check if a video is audio-only using ffmpeg's freezedetect filter."""
-
     with tempfile.NamedTemporaryFile(suffix=".mp4", delete=False) as tmp:
         temp_video_file = Path(tmp.name)
 
@@ -348,7 +325,6 @@ def _handle_youtube_error(
     url: str, resource: str, error_message: str, options: YtdlOptions, logger: Logger
 ) -> ResourceDLResult:
     """Handle different YouTube error types."""
-
     if any(
         msg in error_message
         for msg in (YtErrorMsg.YT_AGE_RESTRICTED, YtErrorMsg.VM_UNAUTHENTICATED)

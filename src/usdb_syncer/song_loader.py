@@ -136,6 +136,7 @@ class _Locations:
 
     def current_path(self, file: str = "", ext: str = "") -> Path | None:
         """Path to file in the current download directory if it exists.
+
         The final path component is the generic name or the provided file, optionally
         with the provided extension joined with a '.' unless one is already present.
         """
@@ -143,6 +144,7 @@ class _Locations:
 
     def temp_path(self, file: str = "", ext: str = "") -> Path:
         """Path to file in the temporary download directory.
+
         The final path component is the generic name or the provided file, optionally
         with the provided extension joined with a '.' unless one is already present.
         """
@@ -150,6 +152,7 @@ class _Locations:
 
     def target_path(self, file: str = "", ext: str = "") -> Path:
         """Path to file in the final download directory.
+
         The final path component is the generic name or the provided file, optionally
         with the provided extension joined with a '.' unless one is already present.
         """
@@ -167,7 +170,9 @@ class _Locations:
         return self._target.name
 
     def move_to_target_folder(self) -> None:
-        """Rename the path of the song folder if it does not match the template, and
+        """Move temporary folder to target folder.
+
+        Rename the path of the song folder if it does not match the template, and
         ensure the target directory exists.
         """
         if self._current and self._current != self._target:
@@ -180,7 +185,9 @@ class _Locations:
 
 @attrs.define
 class _TempResourceFile:
-    """Interim resource file in the temporary folder, or in the old folder if the
+    """Resource file that may be kept.
+
+    Interim resource file in the temporary folder, or in the old folder if the
     resource is potentially kept.
     """
 
@@ -302,7 +309,7 @@ class _Context:
         return self.txt.meta_tags.audio or self.txt.meta_tags.video
 
     def fallback_audio_resources(self) -> Iterator[str]:
-        """Return fallback audio resources (from video meta tag and comments)"""
+        """Return fallback audio resources (from video meta tag and comments)."""
         if self.txt.meta_tags.is_audio_only() and self.txt.meta_tags.video:
             yield self.txt.meta_tags.video
         yield from self.fallback_video_resources()
@@ -312,7 +319,7 @@ class _Context:
         return self.txt.meta_tags.video
 
     def fallback_video_resources(self) -> Iterator[str]:
-        """Return fallback video resources (from comments)"""
+        """Return fallback video resources (from comments)."""
         yield from self.details.all_comment_videos()
 
     def primary_cover(self) -> ImageMetaTags | None:
@@ -320,7 +327,7 @@ class _Context:
         return self.txt.meta_tags.cover
 
     def fallback_cover_resource(self) -> str | None:
-        """Return the fallback USDB cover resource"""
+        """Return the fallback USDB cover resource."""
         return self.details.cover_url
 
     def primary_background(self) -> ImageMetaTags | None:
@@ -898,8 +905,10 @@ def _maybe_write_video_tags(ctx: _Context) -> JobStatus:
 
 
 def _cleanup_existing_resources(ctx: _Context) -> None:
-    """Delete resources that are either out of sync or will be replaced with a new one,
-    and ensure kept ones are correctly named.
+    """Delete unneeded resources.
+
+    Resources that are out of sync or will be replaced with new ones,
+    kept ones are checked for correct naming.
     """
     if not ctx.song.sync_meta:
         return

@@ -111,7 +111,9 @@ class SongDirChanged(SubscriptableEvent):
 
 @attrs.define(slots=False)
 class LoggedInToUSDB(SubscriptableEvent):
-    """Sent after log-in to USDB was attempted. Contains the logged in user if
+    """Sent after log-in to USDB was attempted.
+
+    Contains the logged in user if
     successfull.
     """
 

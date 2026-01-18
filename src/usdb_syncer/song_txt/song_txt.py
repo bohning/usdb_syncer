@@ -10,8 +10,9 @@ from usdb_syncer import SongId as SongId
 from usdb_syncer import download_options, errors
 from usdb_syncer.meta_tags import MedleyTag, MetaTags
 from usdb_syncer.settings import Encoding, FixLinebreaks, FixSpaces
-from usdb_syncer.song_txt.headers import Headers
-from usdb_syncer.song_txt.tracks import Tracks
+
+from .headers import Headers
+from .tracks import Tracks
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -41,7 +42,6 @@ class SongTxt:
         ensure_canonical: bool = True,
     ) -> str:
         """Reinserts metatags and ensures CRLF line endings."""
-
         # ensure canonical format (applied to local file before upload)
         if ensure_canonical:
             self.notes.fix_linebreaks_yass_style(self.headers.bpm, self.logger)
@@ -218,7 +218,7 @@ class SongTxt:
                 )
 
     def minimum_song_length(self) -> str:
-        """Return the minimum song length based on last beat, BPM and GAP"""
+        """Return the minimum song length based on last beat, BPM and GAP."""
         beats_secs = self.headers.bpm.beats_to_secs(self.notes.end())
         minimum_secs = round(beats_secs + self.headers.gap / 1000)
         minutes, seconds = divmod(minimum_secs, 60)
@@ -261,8 +261,10 @@ class SongTxt:
         self.logger.debug("FIX: Changed relative to absolute timings.")
 
     def fix_first_timestamp(self) -> None:
-        """Shifts all notes such that the first note starts at beat zero and adjusts
-        GAP accordingly
+        """Fix timestamps relative to beats and GAP.
+
+        Shift all notes such that the first note starts at beat zero and adjusts
+        GAP accordingly.
         """
         if (offset := self.notes.start()) == 0:
             # round GAP to nearest 10 ms
@@ -280,9 +282,11 @@ class SongTxt:
         )
 
     def fix_low_bpm(self) -> None:
-        """(repeatedly) doubles BPM value and all note timings
-        until the BPM is above MINIMUM_BPM"""
+        """Raise BPM to a sensible value.
 
+        (repeatedly) doubles BPM value and all note timings
+        until the BPM is above MINIMUM_BPM
+        """
         if not self.headers.bpm.is_too_low():
             return
 

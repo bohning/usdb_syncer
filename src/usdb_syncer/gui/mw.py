@@ -1,4 +1,4 @@
-"""usdb_syncer's GUI"""
+"""usdb_syncer's GUI."""
 
 import webbrowser
 from collections.abc import Callable
@@ -400,7 +400,6 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         Normal users may only submit one song at a time (the currently selected song).
         Moderators may submit all selected songs.
         """
-
         if not (user := SessionManager.get_user()):
             logger.info("Not logged in, skipping song submission.")
             return

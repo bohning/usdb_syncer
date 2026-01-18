@@ -1,3 +1,5 @@
+"""Bundle the project for distribution."""
+
 import argparse
 import shutil
 import subprocess
@@ -7,6 +9,8 @@ from typing import assert_never
 
 
 class OS(Enum):
+    """Target platforms for bundling."""
+
     WINDOWS_PORTABLE = "Windows-portable"
     WINDOWS_INSTALL = "Windows-install"
     LINUX = "Linux"
