@@ -136,10 +136,12 @@ def generate_notice_content(licenses: list[LicenseEntry], section_name: str) -> 
             f"The following license files apply to the {section_name.lower()} above:"
         )
         lines.append("")
-        lines.extend([
-            f"  - $license_dir${license_file}"
-            for license_file in sorted(referenced_licenses)
-        ])
+        lines.extend(
+            [
+                f"  - $license_dir${license_file}"
+                for license_file in sorted(referenced_licenses)
+            ]
+        )
         lines.append("")
 
     return "\n".join(lines)

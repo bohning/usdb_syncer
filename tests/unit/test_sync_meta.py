@@ -20,8 +20,7 @@ def test_pre_pin_v1_meta_file_roundtrip(resource_dir: Path) -> None:
     meta = SyncMeta.try_from_file(path)
     assert meta
     meta_json = (
-        json
-        .dumps(meta, cls=SyncMetaEncoder)
+        json.dumps(meta, cls=SyncMetaEncoder)
         .replace(', "pinned": false', "")
         .replace(', "custom_data": {}', "")
         .replace(', "usdb_mtime": 0', "")

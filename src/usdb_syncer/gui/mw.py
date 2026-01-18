@@ -4,7 +4,7 @@ import webbrowser
 from collections.abc import Callable
 from pathlib import Path
 
-from PySide6.QtGui import QCloseEvent, QPixmap
+from PySide6.QtGui import QCloseEvent
 from PySide6.QtWidgets import QFileDialog, QMainWindow
 
 from usdb_syncer import SongId, db, events, settings, song_routines, usdb_id_file, utils
@@ -42,8 +42,6 @@ from usdb_syncer.usdb_scraper import SessionManager, UserRole, post_song_rating
 from usdb_syncer.usdb_song import UsdbSong
 from usdb_syncer.utils import AppPaths, LinuxEnvCleaner, open_path_or_file
 from usdb_syncer.webserver import webserver
-
-NO_COVER_PIXMAP = QPixmap(":/images/nocover.png")
 
 
 class MainWindow(Ui_MainWindow, QMainWindow):

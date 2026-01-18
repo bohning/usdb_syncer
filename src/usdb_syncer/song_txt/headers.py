@@ -136,10 +136,9 @@ class Headers:
             if (val := getattr(self, key)) is not None
         )
         if self.unknown:
-            out = "\n".join((
-                out,
-                *(f"#{key.upper()}:{val}" for key, val in self.unknown.items()),
-            ))
+            out = "\n".join(
+                (out, *(f"#{key.upper()}:{val}" for key, val in self.unknown.items()))
+            )
         return out
 
     def str_for_usdb(self) -> str:
@@ -192,8 +191,7 @@ class Headers:
         if old_language := self.language:
             languages = [
                 language.strip()
-                for language in self.language
-                .replace(";", ",")
+                for language in self.language.replace(";", ",")
                 .replace("/", ",")
                 .replace("|", ",")
                 .split(",")
