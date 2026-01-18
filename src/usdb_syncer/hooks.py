@@ -10,8 +10,9 @@ import attrs
 from usdb_syncer.logger import logger
 
 if TYPE_CHECKING:
-    from usdb_syncer import usdb_song
+    from http.cookiejar import CookieJar  # noqa: F401
 
+    from usdb_syncer import usdb_song  # noqa: F401
 
 P = ParamSpec("P")
 
@@ -44,9 +45,13 @@ class _Hook(Generic[P]):
                 )
 
 
-class SongLoaderDidFinish(_Hook):
+class SongLoaderDidFinish(_Hook["usdb_song.UsdbSong"]):
     """Called after downloading a song."""
 
-    @classmethod
-    def call(cls, song: usdb_song.UsdbSong) -> None:
-        super().call(song)
+
+class GetYtCookies(_Hook["CookieJar"]):
+    """Called to get YouTube cookies for downloading videos."""
+
+
+class GetUsdbCookies(_Hook["CookieJar"]):
+    """Called to get USDB cookies for downloading resources."""

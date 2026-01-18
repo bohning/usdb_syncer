@@ -146,6 +146,7 @@ def main() -> None:
     sys.excepthook = _excepthook
     args = CliArgs.parse()
     args.apply()
+    addons.load_all()
     utils.AppPaths.make_dirs()
     app = _init_app()
     app.setAttribute(Qt.ApplicationAttribute.AA_DontShowIconsInMenus, False)
@@ -198,7 +199,6 @@ def _run_main() -> None:
         QtWidgets.QMessageBox.critical(mw, "Version conflict", SCHEMA_ERROR_MESSAGE)
         return
     _maybe_copy_licenses()
-    addons.load_all()
     hooks.MainWindowDidLoad.call(mw)
 
 

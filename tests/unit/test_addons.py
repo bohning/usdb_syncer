@@ -11,11 +11,18 @@ from usdb_syncer import addons, hooks, utils
 ADD_ON = """
 from usdb_syncer import hooks
 
-def func(song):
-    hooks.SongLoaderDidFinish.unsubscribe(func)
+def func(arg1, arg2):
+    hooks.SampleHook.unsubscribe(func)
 
-hooks.SongLoaderDidFinish.subscribe(func)
+hooks.SampleHook.subscribe(func)
 """
+
+
+class SampleHook(hooks._Hook[str, str]):
+    pass
+
+
+hooks.SampleHook = SampleHook  # type: ignore[attr-defined]
 
 
 @pytest.mark.parametrize(
@@ -24,12 +31,13 @@ hooks.SongLoaderDidFinish.subscribe(func)
 def test_loading_add_on_package(file: Path) -> None:
     if "test_addon" in sys.modules:
         del sys.modules["test_addon"]
+    SampleHook._subscribers.clear()  # type: ignore[misc]
     with tempfile.TemporaryDirectory() as tempdir:
         utils.AppPaths.addons = Path(tempdir, "addons")
         file = utils.AppPaths.addons / file
         file.parent.mkdir(parents=True)
         file.write_text(ADD_ON, encoding="utf-8")
         addons.load_all()
-        assert len(hooks.SongLoaderDidFinish._subscribers) == 1
-        hooks.SongLoaderDidFinish.call({})  # type:ignore
-        assert len(hooks.SongLoaderDidFinish._subscribers) == 0
+        assert len(SampleHook._subscribers) == 1  # type: ignore[misc]
+        SampleHook.call("arg1", "arg2")
+        assert len(SampleHook._subscribers) == 0  # type: ignore[misc]

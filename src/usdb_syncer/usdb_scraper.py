@@ -9,6 +9,7 @@ from collections.abc import Iterator
 from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
+from http.cookiejar import CookieJar
 from typing import Any, assert_never
 
 import attrs
@@ -16,7 +17,7 @@ import requests
 from bs4 import BeautifulSoup, NavigableString, Tag
 from requests import Session
 
-from usdb_syncer import SongId, db, errors, events, settings
+from usdb_syncer import SongId, db, errors, events, hooks, settings
 from usdb_syncer.constants import (
     SUPPORTED_VIDEO_SOURCES_REGEX,
     Usdb,
@@ -82,6 +83,7 @@ RANK_REGEX = re.compile(r"images/rank_(\d)\.gif")
 
 def establish_usdb_login(session: Session) -> UsdbUser | None:
     """Tries to log in to USDB if necessary. Returns user info or None."""
+
     user = get_logged_in_usdb_user(session)
 
     if user:
@@ -121,6 +123,10 @@ def new_session_with_cookies(browser: settings.Browser) -> Session:
     if cookies := browser.cookies():
         for cookie in cookies:
             session.cookies.set_cookie(cookie)
+    addon_jar = CookieJar()
+    hooks.GetUsdbCookies.call(addon_jar)
+    for cookie in addon_jar:
+        session.cookies.set_cookie(cookie)
     return session
 
 

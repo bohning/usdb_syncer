@@ -8,6 +8,7 @@ import subprocess
 import tempfile
 from dataclasses import dataclass
 from enum import Enum
+from http.cookiejar import CookieJar
 from pathlib import Path
 from typing import Final, Generic, TypeVar, assert_never
 
@@ -18,7 +19,7 @@ from PIL import Image, ImageEnhance, ImageOps
 from PIL.Image import Resampling
 from yt_dlp.utils import UnsupportedError, YoutubeDLError, download_range_func
 
-from usdb_syncer import SongId, utils
+from usdb_syncer import SongId, hooks, utils
 from usdb_syncer.constants import YtErrorMsg
 from usdb_syncer.discord import notify_discord
 from usdb_syncer.download_options import AudioOptions, VideoOptions
@@ -303,7 +304,7 @@ def _ytdl_options(
     }
     if ratelimit.value is not None:
         options["ratelimit"] = ratelimit.value
-    if browser:
+    if browser and browser.value:
         options["cookiesfrombrowser"] = (browser.value, None, None, None)
     if segment_only:
         options["outtmpl"] = f"{target_stem}"  # includes extension of temp file
@@ -391,6 +392,11 @@ def _retry_with_cookies(
 ) -> ResourceDLResult:
     logger.warning("Age-restricted resource. Retrying with cookies ...")
     with yt_dlp.YoutubeDL(options) as ydl:  # pyright: ignore[reportArgumentType]  # yt-dlp expects dynamic params
+        jar = CookieJar()
+        hooks.GetYtCookies.call(jar)
+        for cookie in jar:
+            ydl.cookiejar.set_cookie(cookie)
+
         try:
             filename = ydl.prepare_filename(ydl.extract_info(url))
             ext = Path(filename).suffix[1:]
