@@ -2,6 +2,8 @@
 
 # Changes
 
+- The syncer is now licensed with the GPLv3. We consider this a correction of the previous invalid license condition and not a change.
+
 ## Features
 
 - FFmpeg's freezefilter is used to determine if a commented (fallback) resource is audio-only or not
@@ -11,6 +13,7 @@
 
 ## Fixes
 
+- Resolved crash when using replaygain on linux with the bundles (#495)
 - A BPM of exactly 200 is now correctly doubled to 400
 - URL params from a/v meta tags are now stripped and a log message is issued
 - Status of updated files is now correctly written to the db
@@ -22,6 +25,7 @@
 
 - The build process was migrated to uv. Poetry is no longer used.
   See the README for instructions.
+- A new build script (`tools/bundle.py`) makes bundling outside of github actions possible.
 - Addons are loaded earlier in the startup process than before. This means code executed at addon import time may behave differently. Hooks are unchanged.
 - Two new hooks regarding cookies have been introduced. See the new wiki page for details and usage. 
 
