@@ -20,6 +20,7 @@
 - add dialog that displays non-submittable song(s) + reason(s)
 - Reading song files from legacy encodings (namely CP1252) is fixed
 - Determining local changes for submission is fixed (no canonical fixes for remote txt)
+- Saving searches now works in the Linux bundle again.
 
 ## Developer notes
 
@@ -27,13 +28,14 @@
   See the README for instructions.
 - A new build script (`tools/bundle.py`) makes bundling outside of github actions possible.
 - Addons are loaded earlier in the startup process than before. This means code executed at addon import time may behave differently. Hooks are unchanged.
-- Two new hooks regarding cookies have been introduced. See the new wiki page for details and usage. 
+- Two new hooks regarding cookies have been introduced. See the new wiki page for details and usage.
 
 <!-- 0.18.0 -->
 
 # Changes
+
 - yt-dlp has been updated to latest available version 2025.11.12, solving latest download issues. This introduces Deno Javascript Runtime as new external dependency.
-The Syncer will inform you about this missing dependency and will give hints on how to install Deno on your OS.
+  The Syncer will inform you about this missing dependency and will give hints on how to install Deno on your OS.
 
 ## Features
 
@@ -42,8 +44,6 @@ The Syncer will inform you about this missing dependency and will give hints on 
 - The statuses of the resources (success/unchanged, fallback resource, unavailable/disabled, failed) is now indicated in the respective columns.
 
 ## Fixes
-
-
 
 <!-- 0.17.0 -->
 

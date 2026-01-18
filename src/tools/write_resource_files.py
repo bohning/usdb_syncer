@@ -15,7 +15,7 @@ _FILE_HEADER = f'''"""This file was generated using `{Path(__file__).name}`."""
 from importlib import resources
 
 '''
-_LINE_TEMPLATE = '{var} = resources.files() / "{fname}"\n'
+_LINE_TEMPLATE = '{var} = resources.files(__package__) / "{fname}"\n'
 
 
 def main() -> None:
@@ -23,7 +23,7 @@ def main() -> None:
     for dir_ in dirs:
         files = [f.name for f in dir_.iterdir() if f.is_file() and f.suffix != ".py"]
         out_path = dir_ / "__init__.py"
-        with (out_path).open("w", encoding="utf-8") as out:
+        with (out_path).open("w", encoding="utf-8", newline="\n") as out:
             out.write(_FILE_HEADER)
             out.writelines(
                 _LINE_TEMPLATE.format(var=_var_name(f), fname=f) for f in files
