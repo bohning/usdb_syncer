@@ -4,10 +4,8 @@ from __future__ import annotations
 
 import datetime
 import json
-from collections.abc import Iterable
 from json import JSONEncoder
-from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import attrs
 
@@ -17,12 +15,19 @@ from usdb_syncer.meta_tags import ImagePrefix
 from usdb_syncer.usdb_song import UsdbSong
 from usdb_syncer.utils import video_url_from_resource
 
+if TYPE_CHECKING:
+    from collections.abc import Iterable
+    from pathlib import Path
+
+    from usdb_syncer import SongId
+
+
 JSON_EXPORT_VERSION = 1
 
 
 @attrs.define(kw_only=True)
 class SongExportData:
-    """Meta Data describing a song from USDB including specific meta tag data"""
+    """Metadata describing a song from USDB including specific meta tag data."""
 
     id: SongId
     artist: str
@@ -84,7 +89,7 @@ class SongExportData:
 
 @attrs.define(kw_only=True)
 class JsonSongList:
-    """defines fields in JSON songlist export"""
+    """Defines fields in JSON songlist export."""
 
     songs: list[SongExportData]
     date: str
@@ -104,12 +109,11 @@ class JsonSongList:
 
 
 class JsonSongListEncoder(JSONEncoder):
-    """Custom JSON encoder for SongExportData"""
+    """Custom JSON encoder for SongExportData."""
 
     def default(self, o: Any) -> Any:
         if isinstance(o, JsonSongList):
-            dct = attrs.asdict(o, recurse=True)
-            return dct
+            return attrs.asdict(o, recurse=True)
         return super().default(o)
 
 

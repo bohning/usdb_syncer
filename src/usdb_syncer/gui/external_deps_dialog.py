@@ -12,8 +12,10 @@ from usdb_syncer.gui.forms.ExternalDepsDialog import Ui_Dialog
 
 
 def check_external_deps(parent: QWidget, on_success: Callable[[], Any]) -> None:
-    """If expternal dependencies (currently: ffmpeg, deno) are available, can be
-    restored from the settings or are provided by the user, executes `on_sucess`.
+    """Check if external dependencies are available.
+
+    If external dependencies (currently: ffmpeg, deno) are available, can be
+    restored from the settings or are provided by the user, executes `on_success`.
     """
     ffmpeg_available = utils.ffmpeg_is_available()
     deno_available = utils.deno_is_available()

@@ -10,10 +10,8 @@ import sys
 import time
 import traceback
 from argparse import ArgumentParser
-from collections.abc import Callable
 from importlib import resources as importlib_resources
 from pathlib import Path
-from types import TracebackType
 from typing import TYPE_CHECKING, Any
 
 import attrs
@@ -21,22 +19,16 @@ from PySide6 import QtCore, QtGui, QtWidgets
 from PySide6.QtCore import Qt
 
 import usdb_syncer
-from usdb_syncer import (
-    addons,
-    data,
-    db,
-    errors,
-    logger,
-    settings,
-    song_routines,
-    utils,
-    webserver,
-)
+from usdb_syncer import addons, data, db, errors, logger, settings, song_routines, utils
 from usdb_syncer import sync_meta as sync_meta
 from usdb_syncer import usdb_song as usdb_song
 from usdb_syncer.gui import events, hooks, theme
+from usdb_syncer.webserver import webserver
 
 if TYPE_CHECKING:
+    from collections.abc import Callable
+    from types import TracebackType
+
     # only import from gui after pyside file generation
     from usdb_syncer.gui.mw import MainWindow
 

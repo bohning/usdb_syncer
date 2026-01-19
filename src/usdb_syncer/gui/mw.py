@@ -1,4 +1,4 @@
-"""usdb_syncer's GUI"""
+"""usdb_syncer's GUI."""
 
 import webbrowser
 from collections.abc import Callable
@@ -7,16 +7,7 @@ from pathlib import Path
 from PySide6.QtGui import QCloseEvent
 from PySide6.QtWidgets import QFileDialog, QMainWindow
 
-from usdb_syncer import (
-    SongId,
-    db,
-    events,
-    settings,
-    song_routines,
-    usdb_id_file,
-    utils,
-    webserver,
-)
+from usdb_syncer import SongId, db, events, settings, song_routines, usdb_id_file, utils
 from usdb_syncer.constants import Usdb
 from usdb_syncer.gui import (
     cover_widget,
@@ -50,6 +41,7 @@ from usdb_syncer.sync_meta import SyncMeta
 from usdb_syncer.usdb_scraper import SessionManager, UserRole, post_song_rating
 from usdb_syncer.usdb_song import UsdbSong
 from usdb_syncer.utils import AppPaths, LinuxEnvCleaner, open_path_or_file
+from usdb_syncer.webserver import webserver
 
 
 class MainWindow(Ui_MainWindow, QMainWindow):
@@ -408,7 +400,6 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         Normal users may only submit one song at a time (the currently selected song).
         Moderators may submit all selected songs.
         """
-
         if not (user := SessionManager.get_user()):
             logger.info("Not logged in, skipping song submission.")
             return

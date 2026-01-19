@@ -164,12 +164,12 @@ class MetaTagsDialog(Ui_Dialog, QDialog):
 
 
 def _sanitize_video_url(url: str) -> str:
-    """Returns a YouTube id, Vimeo id or sanitized URL."""
+    """Return a YouTube id, Vimeo id or sanitized URL."""
     return extract_youtube_id(url) or extract_vimeo_id(url) or url
 
 
 def _sanitize_image_url(url: str) -> str:
-    """Returns a fanart id or sanitized URL and whether it uses HTTP."""
+    """Return a fanart id or sanitized URL and whether it uses HTTP."""
     if "fanart.tv" in url:
         return url.removeprefix("https://images.fanart.tv/fanart/")
     if "m.media-amazon.com" in url:

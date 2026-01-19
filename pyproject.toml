@@ -46,7 +46,7 @@ build-backend = "hatchling.build"
 [dependency-groups]
 dev = [
     "tox",
-    "ruff~=0.14.1",
+    "ruff==0.14.13",
     "mypy",
     "types-requests",
     "pytest",
@@ -96,7 +96,6 @@ extend-exclude = [
     "qt",
 ]
 target-version = "py312"
-preview = true
 
 [tool.ruff.format]
 skip-magic-trailing-comma = true
@@ -104,21 +103,33 @@ skip-magic-trailing-comma = true
 [tool.ruff.lint]
 select = [
     "A",
+    "ARG",
     "B",
     "BLE",
     "C4",
     "C90",
     "COM",
+    "D",
     "E",
     "F",
+    "FA",
+    "FLY",
     "I",
+    "ISC",
+    "INP",
     "LOG",
     "N",
+    "PERF",
+    "PIE",
     "PTH",
     "Q",
+    "RET",
     "RUF",
     "S",
+    "SIM",
+    "TC",
     "TRY",
+    "UP",
     "W",
 ]
 ignore = [
@@ -146,6 +157,17 @@ ignore = [
     "S607",
     # This flags _all_ dynamic SQL constructions, so it's pointless.
     "S608",
+    # Since we don't have a public api, we don't require docstrings for functions.
+    "D102",
+    "D103",
+    "D105",
+    "D107",
+    # D415 is handled by D400 already, so we skip it to avoid double warnings.
+    "D415",
+    # D203 and D211 are incompatible. We prefer D211.
+    "D203",
+    # D212 and D213 are incompatible. We prefer D212.
+    "D213",
 ]
 
 # Allow fix for all enabled rules (when `--fix`) is provided.
@@ -155,6 +177,9 @@ unfixable = []
 [tool.ruff.lint.isort]
 # For consistency with the formatter, see https://docs.astral.sh/ruff/settings/#lint_isort_split-on-trailing-comma
 split-on-trailing-comma = false
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["ARG001", "D"]
 
 [tool.mypy]
 ignore_missing_imports = true

@@ -1,4 +1,4 @@
-"""Constants"""
+"""Constants."""
 
 import re
 
@@ -12,7 +12,7 @@ DISCORD_WEBHOOK_API = "https://discordapp.com/api/webhooks"
 
 
 class UsdbStrings:
-    """Relevant strings from USDB"""
+    """Relevant strings from USDB."""
 
     WELCOME: str
     SONG_LANGUAGE: str
@@ -33,7 +33,7 @@ class UsdbStrings:
 
 
 class UsdbStringsEnglish(UsdbStrings):
-    """Relevant strings from USDB"""
+    """Relevant strings from USDB."""
 
     WELCOME = "Welcome"
     SONG_LANGUAGE = "Language"
@@ -50,7 +50,7 @@ class UsdbStringsEnglish(UsdbStrings):
 
 
 class UsdbStringsGerman(UsdbStrings):
-    """Relevant strings from USDB"""
+    """Relevant strings from USDB."""
 
     WELCOME = "Willkommen"
     SONG_LANGUAGE = "Sprache"
@@ -67,7 +67,7 @@ class UsdbStringsGerman(UsdbStrings):
 
 
 class UsdbStringsFrench(UsdbStrings):
-    """Relevant strings from USDB"""
+    """Relevant strings from USDB."""
 
     WELCOME = "Bienvenue"
     SONG_LANGUAGE = "Langue"
@@ -98,7 +98,7 @@ class Usdb:
 
 
 class YtErrorMsg:
-    """Strings returned by yt-dlp when download fails"""
+    """Strings returned by yt-dlp when download fails."""
 
     YT_AGE_RESTRICTED = (
         "Sign in to confirm your age. This video may be inappropriate for some users."

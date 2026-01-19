@@ -20,7 +20,7 @@ def discord_webhook_url() -> str | None:
         and isinstance(channel := dct.get("channel"), str)
         and isinstance(hash_ := dct.get("hash"), str)
     ):
-        return "/".join((constants.DISCORD_WEBHOOK_API, channel, hash_))
+        return f"{constants.DISCORD_WEBHOOK_API}/{channel}/{hash_}"
     logger.debug("Failed to retrieve Discord webhook URL.")
     return None
 

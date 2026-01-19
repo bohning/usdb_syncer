@@ -5,12 +5,11 @@ from __future__ import annotations
 import html
 import re
 import time
-from collections.abc import Iterator
 from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
 from http.cookiejar import CookieJar
-from typing import Any, assert_never
+from typing import TYPE_CHECKING, Any, assert_never
 
 import attrs
 import requests
@@ -30,8 +29,13 @@ from usdb_syncer.logger import Logger, logger, song_logger
 from usdb_syncer.usdb_song import UsdbSong
 from usdb_syncer.utils import extract_youtube_id, normalize
 
+if TYPE_CHECKING:
+    from collections.abc import Iterator
+
 
 class UserRole(Enum):
+    """A USDB user role."""
+
     ADMIN = "admin"
     MODERATOR = "mod"
     USER = "user"
@@ -42,13 +46,14 @@ class UserRole(Enum):
 
 @dataclass(frozen=True)
 class UsdbUser:
+    """A USDB user with a name and role."""
+
     name: str
     role: UserRole
 
     @classmethod
     def from_rank(cls, name: str, rank: int | None) -> UsdbUser:
         """Create a UsdbUser from a numeric USDB rank code (0-4)."""
-
         match rank:
             case 4:
                 role = UserRole.ADMIN
@@ -82,8 +87,7 @@ RANK_REGEX = re.compile(r"images/rank_(\d)\.gif")
 
 
 def establish_usdb_login(session: Session) -> UsdbUser | None:
-    """Tries to log in to USDB if necessary. Returns user info or None."""
-
+    """Try to log in to USDB if necessary. Returns user info or None."""
     user = get_logged_in_usdb_user(session)
 
     if user:
@@ -183,7 +187,7 @@ def get_logged_in_usdb_user(session: Session) -> UsdbUser | None:
 
 
 def login_to_usdb(session: Session, user: str, password: str) -> bool:
-    """True if success."""
+    """Return True if login was successful."""
     response = session.post(
         Usdb.BASE_URL,
         timeout=10,
@@ -230,8 +234,11 @@ class SongComment:
 
 @attrs.define
 class SongDetails:
-    """Details about a song that USDB shows on a song's page, or are specified in the
-    comment section."""
+    """Details about a song.
+
+    Includes details that USDB shows on a song's page or are specified in the
+    comment section.
+    """
 
     song_id: SongId
     artist: str
@@ -255,8 +262,9 @@ class SongDetails:
     comments: list[SongComment] = attrs.field(factory=list)
 
     def all_comment_videos(self) -> Iterator[str]:
-        """Yields all parsed URLs and YouTube ids. Order is latest to earliest, then ids
-        before URLs.
+        """Yield all parsed URLs and YouTube ids.
+
+        Order is latest to earliest, then ids before URLs.
         """
         for comment in self.comments:
             yield from comment.contents.youtube_ids
@@ -272,16 +280,7 @@ def get_usdb_page(
     params: dict[str, str] | None = None,
     session: Session | None = None,
 ) -> str:
-    """Retrieve HTML subpage from USDB.
-
-    Parameters:
-        rel_url: relative url of page to retrieve
-        method: GET or POST
-        headers: dict of headers to send with request
-        payload: dict of data to send with request
-        params: dict of params to send with request
-        session: Session to use instead of the global one
-    """
+    """Retrieve HTML subpage from USDB."""
     existing_session = SessionManager.has_session()
 
     def page() -> str:
@@ -340,11 +339,7 @@ def _get_usdb_page_inner(
 
 
 def get_usdb_details(song_id: SongId) -> SongDetails:
-    """Retrieve song details from usdb webpage, if song exists.
-
-    Parameters:
-        song_id: id of song to retrieve details for
-    """
+    """Retrieve song details from usdb webpage, if song exists."""
     html = get_usdb_page(
         "index.php", params={"id": str(int(song_id)), "link": "detail"}
     )
@@ -390,12 +385,7 @@ def get_updated_songs_from_usdb(
     content_filter: dict[str, str] | None = None,
     session: Session | None = None,
 ) -> list[UsdbSong]:
-    """Return a list of all songs that were updated (or added) since `last_update`.
-
-    Parameters:
-        last_update: only fetch updates newer than this
-        content_filter: filters response (e.g. {'artist': 'The Beatles'})
-    """
+    """Return a list of all songs that were updated (or added) since `last_update`."""
     available_songs: dict[SongId, UsdbSong] = {}
     payload = {
         "order": "lastchange",
@@ -452,12 +442,7 @@ def _parse_songs_from_songlist(html: str) -> Iterator[UsdbSong]:
 def _parse_details_table(
     details_table: Tag, song_id: SongId, usdb_strings: type[UsdbStrings], logger: Logger
 ) -> SongDetails:
-    """Parse song attributes from usdb page.
-
-    Parameters:
-        details: dict of song attributes
-        details_table: BeautifulSoup object of song details table
-    """
+    """Parse song attributes from usdb page."""
     editors = []
     pointer = details_table.find(string=usdb_strings.SONG_EDITED_BY)
     while pointer is not None:
@@ -515,15 +500,17 @@ def _parse_details_table(
 
 
 def _find_text_after(details_table: Tag, label: str) -> str:
-    if isinstance((tag := details_table.find(string=label)), NavigableString):
-        if isinstance(tag.next, Tag):
-            return tag.next.text.strip()
+    if isinstance(
+        (tag := details_table.find(string=label)), NavigableString
+    ) and isinstance(tag.next, Tag):
+        return tag.next.text.strip()
     raise errors.UsdbParseError(f"Text after {label} not found.")  # noqa: TRY003
 
 
 def _parse_comments_table(comments_table: Tag, logger: Logger) -> list[SongComment]:
-    """Parse the table into individual comments, extracting potential video links,
-    GAP and BPM values.
+    """Parse the table into individual comments.
+
+    Extracts potential video links, GAP and BPM values.
     """
     comments = []
     # last entry is the field to enter a new comment, so this one is ignored
@@ -638,7 +625,6 @@ def post_song_comment(song_id: SongId, text: str, rating: str) -> None:
 
 def post_song_rating(song_id: SongId, stars: int) -> None:
     """Post a song rating to USDB."""
-
     payload = {"stars": str(stars), "text": "onlyvoting"}
 
     get_usdb_page(
@@ -656,7 +642,6 @@ def submit_local_changes(
     song_id: SongId, sample_url: str, txt: str, filename: str, logger: Logger
 ) -> None:
     """Submit local changes of a song to USDB."""
-
     payload = {
         "coverinput": "",
         "sampleinput": sample_url,

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from collections.abc import Iterable
+from typing import TYPE_CHECKING
 
 import attrs
 
@@ -13,6 +13,9 @@ from usdb_syncer.gui.search_tree.item import (
     SongYearMatch,
     TreeItem,
 )
+
+if TYPE_CHECKING:
+    from collections.abc import Iterable
 
 
 @attrs.define(kw_only=True)
@@ -100,7 +103,7 @@ class _TestCustomDataTree:
             key = str(getattr(self, attr).data)
             info[key] = (checked, info[key][1])
         expected = write_checked_tree(**info)
-        return "\n".join(("Expected tree:", expected, "Actual tree:", actual))
+        return f"Expected tree:\n{expected}\nActual tree:\n{actual}"
 
 
 def write_checked_tree(**kwargs: tuple[bool | None, int]) -> str:

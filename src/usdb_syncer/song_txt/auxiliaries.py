@@ -1,4 +1,4 @@
-"""Helper classes and functions related to the song text file"""
+"""Helper classes and functions related to the song text file."""
 
 # Since this file deals with a bunch of ambiguous unicode characters,
 # we disable the rule file-wide.
@@ -52,8 +52,11 @@ class BeatsPerMinute:
         return self.value <= BPM_THRESHOLD
 
     def make_large_enough(self) -> int:
-        """Double BPM (if necessary, multiple times) until it is above MINIMUM_BPM
-        and returns the required multiplication factor."""
+        """Raise the BPM to a sensible value.
+
+        Double BPM (if necessary, multiple times) until it is above MINIMUM_BPM
+        and returns the required multiplication factor.
+        """
         factor = 1
         while self.value * factor <= BPM_THRESHOLD:
             factor *= 2

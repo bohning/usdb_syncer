@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import configparser
 import json
-from collections.abc import Iterable
 from pathlib import Path
+from typing import TYPE_CHECKING
 from urllib.parse import parse_qs, urlparse
 
 import attrs
@@ -16,15 +16,18 @@ from usdb_syncer import SongId, errors
 from usdb_syncer.logger import logger
 from usdb_syncer.usdb_song import UsdbSong
 
+if TYPE_CHECKING:
+    from collections.abc import Iterable
+
 
 @attrs.define
 class UsdbIdFileError(errors.UsdbSyncerError):
-    """USDB File Parser root exception"""
+    """USDB File Parser root exception."""
 
 
 @attrs.define
 class UsdbIdFileUnsupportedExtensionError(UsdbIdFileError):
-    """file extension is not supported for parsing"""
+    """file extension is not supported for parsing."""
 
     def __str__(self) -> str:
         return "file extension is not supported"
@@ -32,7 +35,7 @@ class UsdbIdFileUnsupportedExtensionError(UsdbIdFileError):
 
 @attrs.define
 class UnexpectedUsdbIdFileError(UsdbIdFileError):
-    """Unknown cause while reading file"""
+    """Unknown cause while reading file."""
 
     def __str__(self) -> str:
         return "Unexpected error reading file"
@@ -40,7 +43,7 @@ class UnexpectedUsdbIdFileError(UsdbIdFileError):
 
 @attrs.define
 class UsdbIdFileReadError(UsdbIdFileError):
-    """Error reading file from file system"""
+    """Error reading file from file system."""
 
     def __str__(self) -> str:
         return "failed to read file"
@@ -48,7 +51,7 @@ class UsdbIdFileReadError(UsdbIdFileError):
 
 @attrs.define
 class UsdbIdFileInvalidFormatError(UsdbIdFileError):
-    """Invalid file format"""
+    """Invalid file format."""
 
     def __str__(self) -> str:
         return "invalid file format"
@@ -56,7 +59,7 @@ class UsdbIdFileInvalidFormatError(UsdbIdFileError):
 
 @attrs.define
 class UsdbIdFileMissingSectionHeaderFormatError(UsdbIdFileInvalidFormatError):
-    """Invalid file format with missing section header"""
+    """Invalid file format with missing section header."""
 
     def __str__(self) -> str:
         return f"{super().__str__()}: missing a section header"
@@ -64,7 +67,7 @@ class UsdbIdFileMissingSectionHeaderFormatError(UsdbIdFileInvalidFormatError):
 
 @attrs.define
 class UsdbIdFileMissingOrDuplicateOptionFormatError(UsdbIdFileInvalidFormatError):
-    """Invalid file format with missing or duplicate option"""
+    """Invalid file format with missing or duplicate option."""
 
     def __str__(self) -> str:
         return f"{super().__str__()}: missing or duplicate option"
@@ -72,7 +75,7 @@ class UsdbIdFileMissingOrDuplicateOptionFormatError(UsdbIdFileInvalidFormatError
 
 @attrs.define
 class UsdbIdFileMultipleUrlsFormatError(UsdbIdFileInvalidFormatError):
-    """Invalid file format with multiple URLs"""
+    """Invalid file format with multiple URLs."""
 
     def __str__(self) -> str:
         return f"{super().__str__()}: file contains multiple URLs"
@@ -80,7 +83,7 @@ class UsdbIdFileMultipleUrlsFormatError(UsdbIdFileInvalidFormatError):
 
 @attrs.define
 class UsdbIdFileMissingKeyFormatError(UsdbIdFileInvalidFormatError):
-    """Invalid file format with missing key in file"""
+    """Invalid file format with missing key in file."""
 
     missing_key: str
 
@@ -90,7 +93,7 @@ class UsdbIdFileMissingKeyFormatError(UsdbIdFileInvalidFormatError):
 
 @attrs.define
 class UsdbIdFileMissingSectionFormatError(UsdbIdFileInvalidFormatError):
-    """Invalid file format with missing section in file"""
+    """Invalid file format with missing section in file."""
 
     missing_section: str
 
@@ -100,7 +103,7 @@ class UsdbIdFileMissingSectionFormatError(UsdbIdFileInvalidFormatError):
 
 @attrs.define
 class UsdbIdFileMissingTagFormatError(UsdbIdFileInvalidFormatError):
-    """Invalid file format with missing tag in file"""
+    """Invalid file format with missing tag in file."""
 
     missing_tag: str
 
@@ -110,7 +113,7 @@ class UsdbIdFileMissingTagFormatError(UsdbIdFileInvalidFormatError):
 
 @attrs.define
 class UsdbIdFileMultipleTagsFormatError(UsdbIdFileInvalidFormatError):
-    """Invalid file format with a tag occurring multiple times instead of just once"""
+    """Invalid file format with a tag occurring multiple times instead of just once."""
 
     multiple_tag: str
 
@@ -120,7 +123,7 @@ class UsdbIdFileMultipleTagsFormatError(UsdbIdFileInvalidFormatError):
 
 @attrs.define
 class UsdbIdFileMissingUrlTagFormatError(UsdbIdFileInvalidFormatError):
-    """Invalid file format with missing tag for URL in file"""
+    """Invalid file format with missing tag for URL in file."""
 
     missing_tag: str
 
@@ -130,7 +133,7 @@ class UsdbIdFileMissingUrlTagFormatError(UsdbIdFileInvalidFormatError):
 
 @attrs.define
 class UsdbIdFileMalformedUrlFormatError(UsdbIdFileInvalidFormatError):
-    """Invalid file format with URL in bad format"""
+    """Invalid file format with URL in bad format."""
 
     bad_url: str
 
@@ -140,7 +143,7 @@ class UsdbIdFileMalformedUrlFormatError(UsdbIdFileInvalidFormatError):
 
 @attrs.define
 class UsdbIdFileInvalidDomainMalformedUrlFormatError(UsdbIdFileMalformedUrlFormatError):
-    """Invalid file format with URL containing bad domain"""
+    """Invalid file format with URL containing bad domain."""
 
     bad_domain: str
 
@@ -150,7 +153,7 @@ class UsdbIdFileInvalidDomainMalformedUrlFormatError(UsdbIdFileMalformedUrlForma
 
 @attrs.define
 class UsdbIdFileNoParametersMalformedUrlFormatError(UsdbIdFileMalformedUrlFormatError):
-    """Invalid file format with URL having no query parameters"""
+    """Invalid file format with URL having no query parameters."""
 
     def __str__(self) -> str:
         return f"{super().__str__()}: has no query parameters"
@@ -160,7 +163,7 @@ class UsdbIdFileNoParametersMalformedUrlFormatError(UsdbIdFileMalformedUrlFormat
 class UsdbIdFileMissingQueryParameterMalformedUrlFormatError(
     UsdbIdFileMalformedUrlFormatError
 ):
-    """Invalid file format with URL missing a specific query parameter"""
+    """Invalid file format with URL missing a specific query parameter."""
 
     missing_parameter: str
 
@@ -174,7 +177,7 @@ class UsdbIdFileMissingQueryParameterMalformedUrlFormatError(
 class UsdbIdFileRepeatedQueryParameterMalformedUrlFormatError(
     UsdbIdFileMalformedUrlFormatError
 ):
-    """Invalid file format with URL specific query parameter occurring multiple times"""
+    """Invalid file format with URL query parameter occurring multiple times."""
 
     repeated_parameter: str
 
@@ -188,7 +191,7 @@ class UsdbIdFileRepeatedQueryParameterMalformedUrlFormatError(
 class UsdbIdFileInvalidQueryParameterMalformedUrlFormatError(
     UsdbIdFileMalformedUrlFormatError
 ):
-    """Invalid file format with URL having an invalid query parameter"""
+    """Invalid file format with URL having an invalid query parameter."""
 
     invalid_parameter: str
 
@@ -202,7 +205,7 @@ class UsdbIdFileInvalidQueryParameterMalformedUrlFormatError(
 class UsdbIdFileUnparsableQueryParameterMalformedUrlFormatError(
     UsdbIdFileMalformedUrlFormatError
 ):
-    """Invalid file format with URL having a query parameter that cannot be parsed"""
+    """Invalid file format with URL having a query parameter that cannot be parsed."""
 
     unparsable_parameter: str
 
@@ -215,7 +218,7 @@ class UsdbIdFileUnparsableQueryParameterMalformedUrlFormatError(
 
 @attrs.define
 class UsdbIdFileEmptyFileError(UsdbIdFileError):
-    """Files do not contain any USDB ID but were selected for import"""
+    """Files do not contain any USDB ID but were selected for import."""
 
     def __str__(self) -> str:
         return "empty file"
@@ -223,7 +226,7 @@ class UsdbIdFileEmptyFileError(UsdbIdFileError):
 
 @attrs.define
 class UsdbIdFileInvalidJsonError(UsdbIdFileError):
-    """failed to interpret file content as JSON"""
+    """failed to interpret file content as JSON."""
 
     def __str__(self) -> str:
         return "invalid JSON format"
@@ -231,7 +234,7 @@ class UsdbIdFileInvalidJsonError(UsdbIdFileError):
 
 @attrs.define
 class UsdbIdFileEmptySongsArrayError(UsdbIdFileError):
-    """songs array is empty"""
+    """songs array is empty."""
 
     songs_key: str
 
@@ -241,7 +244,7 @@ class UsdbIdFileEmptySongsArrayError(UsdbIdFileError):
 
 @attrs.define
 class UsdbIdFileWrongJsonSongsFormatError(UsdbIdFileError):
-    """songs value is not an array"""
+    """songs value is not an array."""
 
     songs_key: str
 
@@ -251,7 +254,7 @@ class UsdbIdFileWrongJsonSongsFormatError(UsdbIdFileError):
 
 @attrs.define
 class UsdbIdFileInvalidUsdbIdError(UsdbIdFileError):
-    """expected USDB ID string cannot be converted correctly"""
+    """expected USDB ID string cannot be converted correctly."""
 
     def __str__(self) -> str:
         return "invalid USDB ID in file"
@@ -259,7 +262,7 @@ class UsdbIdFileInvalidUsdbIdError(UsdbIdFileError):
 
 @attrs.define
 class UnexpectedUsdbIdFileInvalidUsdbIdError(UsdbIdFileInvalidUsdbIdError):
-    """some unknown error around parsing an USDB ID string"""
+    """some unknown error around parsing an USDB ID string."""
 
     def __str__(self) -> str:
         return "unexpected error when parsing USDB ID(s)"
@@ -267,7 +270,7 @@ class UnexpectedUsdbIdFileInvalidUsdbIdError(UsdbIdFileInvalidUsdbIdError):
 
 @attrs.define
 class UsdbIdFileNoUrlFoundError(UsdbIdFileError):
-    """parser could not find an URL in file content"""
+    """parser could not find an URL in file content."""
 
     def __str__(self) -> str:
         return "no URL found"
@@ -479,7 +482,7 @@ def _parse_url(url: str | None) -> SongId:
 
 
 def parse_usdb_id_file(filepath: Path) -> list[SongId]:
-    """parses files for USDB IDs"""
+    """Parse files for USDB IDs."""
     song_ids: list[SongId] = []
     if filepath.suffix == ".json":
         song_ids = _parse_json_file(filepath)

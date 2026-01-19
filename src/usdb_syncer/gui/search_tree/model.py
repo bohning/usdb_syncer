@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any, cast, overload
+from typing import TYPE_CHECKING, Any, cast, overload
 
 from PySide6.QtCore import (
     QAbstractItemModel,
@@ -13,11 +13,13 @@ from PySide6.QtCore import (
     Qt,
     QTimer,
 )
-from PySide6.QtWidgets import QWidget
 
 from usdb_syncer import db
 
 from .item import Filter, SavedSearch, TreeItem
+
+if TYPE_CHECKING:
+    from PySide6.QtWidgets import QWidget
 
 QIndex = QModelIndex | QPersistentModelIndex
 
@@ -32,7 +34,7 @@ class TreeModel(QAbstractItemModel):
 
     def item_for_index(self, idx: QIndex) -> TreeItem | None:
         if idx.isValid():
-            return cast(TreeItem, idx.internalPointer())
+            return cast("TreeItem", idx.internalPointer())
         return None
 
     def index_for_item(self, item: TreeItem) -> QModelIndex:
@@ -84,10 +86,10 @@ class TreeModel(QAbstractItemModel):
             parent = QModelIndex()
         if not parent.isValid():
             return len(self.root.children)
-        item = cast(TreeItem, parent.internalPointer())
+        item = cast("TreeItem", parent.internalPointer())
         return len(item.children)
 
-    def columnCount(self, parent: QIndex | None = None) -> int:  # noqa: N802
+    def columnCount(self, parent: QIndex | None = None) -> int:  # noqa: N802 ARG002
         return 1
 
     def index(self, row: int, column: int, parent: QIndex | None = None) -> QModelIndex:
@@ -96,7 +98,7 @@ class TreeModel(QAbstractItemModel):
         if not self.hasIndex(row, column, parent):
             return QModelIndex()
         if parent.isValid():
-            parent_item = cast(TreeItem, parent.internalPointer())
+            parent_item = cast("TreeItem", parent.internalPointer())
         else:
             parent_item = self.root
         item = parent_item.children[row]
@@ -113,7 +115,7 @@ class TreeModel(QAbstractItemModel):
             return super().parent()
         if not child.isValid():
             return QModelIndex()
-        child_item = cast(TreeItem, child.internalPointer())
+        child_item = cast("TreeItem", child.internalPointer())
         parent_item = child_item.parent
         if parent_item is None or parent_item is self.root:
             return QModelIndex()

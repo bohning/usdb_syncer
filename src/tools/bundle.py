@@ -1,3 +1,5 @@
+"""Bundle the project for distribution."""
+
 import argparse
 import shutil
 import subprocess
@@ -7,6 +9,8 @@ from typing import assert_never
 
 
 class OS(Enum):
+    """Target platforms for bundling."""
+
     WINDOWS_PORTABLE = "Windows-portable"
     WINDOWS_INSTALL = "Windows-install"
     LINUX = "Linux"
@@ -37,22 +41,25 @@ def bundle(platform: OS, version: str, with_songlist: bool = False) -> None:
 
     match platform:
         case OS.WINDOWS_PORTABLE:
-            args.extend([
-                "--onefile",
-                "--icon",
-                "src/usdb_syncer/gui/resources/qt/appicon_128x128.png",
-            ])
+            args.extend(
+                [
+                    "--onefile",
+                    "--icon",
+                    "src/usdb_syncer/gui/resources/qt/appicon_128x128.png",
+                ]
+            )
         case OS.WINDOWS_INSTALL:
-            args.extend([
-                "--icon",
-                "src/usdb_syncer/gui/resources/qt/appicon_128x128.png",
-            ])
+            args.extend(
+                ["--icon", "src/usdb_syncer/gui/resources/qt/appicon_128x128.png"]
+            )
         case OS.MACOS_ARM64 | OS.MACOS_X64:
-            args.extend([
-                "--windowed",
-                "--icon",
-                "src/usdb_syncer/gui/resources/qt/appicon_128x128.png",
-            ])
+            args.extend(
+                [
+                    "--windowed",
+                    "--icon",
+                    "src/usdb_syncer/gui/resources/qt/appicon_128x128.png",
+                ]
+            )
         case OS.LINUX:
             args.extend(["--onefile"])
         case _:

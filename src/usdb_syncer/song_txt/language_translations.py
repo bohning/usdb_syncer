@@ -1,4 +1,4 @@
-"""Dictionary of language names and their English translations"""
+"""Dictionary of language names and their English translations."""
 
 LANGUAGE_TRANSLATIONS = {
     # Arabic

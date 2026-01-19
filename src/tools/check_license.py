@@ -1,5 +1,4 @@
-"""
-Check or save the hash of the current license information of dependencies.
+"""Check or save the hash of the current license information of dependencies.
 
 This script parses uv.lock to get all dependencies, then queries PyPI for
 license information. This allows detecting when license information changes
@@ -27,6 +26,8 @@ MAX_WORKERS = 50
 
 
 class OperationMode(Enum):
+    """Mode of operation for the script."""
+
     CHECK = auto()
     SAVE = auto()
     SAVE_OVERRIDE = auto()

@@ -44,7 +44,7 @@ class Icon(enum.Enum):
     ERROR = "error.png", "close-octagon-white.svg"
     FAILURE = "cross.png", "cross-white.svg"
     FAILURE_EXISTING = "tick-yellow.png", "tick-parentheses-white.svg"
-    FALLBACK = "tick-yellow.png", "tick-parentheses-white.svg"
+    FALLBACK = "tick-yellow.png", "tick-parentheses-white.svg"  # noqa: PIE796
     FFMPEG = "ffmpeg.svg", None
     FFMPEG_UNAVAILABLE = "ffmpeg-unavailable.svg", None
     FILE_EXPORT = "document-export.png", "file-export-white.svg"
@@ -56,7 +56,7 @@ class Icon(enum.Enum):
     INFO = "info.png", "information-white.svg"
     KAREDI = "karedi.png", None
     LANGUAGE = "language.png", "translate-variant-white.svg"
-    LAST_CHANGE = "calendar.png", "calendar-white.svg"
+    LAST_CHANGE = "calendar.png", "calendar-white.svg"  # noqa: PIE796
     LIBREWOLF = "librewolf.png", None
     LOG = "log.png", "receipt-text-white.svg"
     MENU_DOWN = None, "menu-down-white.svg"

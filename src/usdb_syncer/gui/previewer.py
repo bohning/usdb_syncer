@@ -4,8 +4,6 @@ from __future__ import annotations
 
 import functools
 import subprocess
-from collections.abc import Callable, Generator
-from pathlib import Path
 from typing import TYPE_CHECKING, Any, ClassVar, NewType, TypeVar
 
 import attrs
@@ -21,11 +19,15 @@ from usdb_syncer.gui.resources.audio import METRONOME_TICK_WAV
 from usdb_syncer.logger import logger as _logger
 from usdb_syncer.logger import song_logger
 from usdb_syncer.song_txt import SongTxt, tracks
-from usdb_syncer.song_txt.auxiliaries import BeatsPerMinute
-from usdb_syncer.usdb_song import UsdbSong
 
 if TYPE_CHECKING:
+    from collections.abc import Callable, Generator
+    from pathlib import Path
+
     import sounddevice
+
+    from usdb_syncer.song_txt.auxiliaries import BeatsPerMinute
+    from usdb_syncer.usdb_song import UsdbSong
 else:
     try:
         import sounddevice
@@ -572,7 +574,7 @@ class _SongView(QtWidgets.QWidget):
         self.setMaximumHeight(self._MAX_HEIGHT)
         self.setCursor(Qt.CursorShape.OpenHandCursor)
 
-    def paintEvent(self, event: QtGui.QPaintEvent) -> None:  # noqa: N802
+    def paintEvent(self, event: QtGui.QPaintEvent) -> None:  # noqa: N802 ARG002
         height = self.height()
         width = self.width()
         with QtGui.QPainter(self) as painter:
@@ -665,7 +667,7 @@ class _LineView(QtWidgets.QWidget):
         self.setMinimumSize(*self._MIN_SIZE)
         self.setMaximumHeight(self._MAX_HEIGHT)
 
-    def paintEvent(self, event: QtGui.QPaintEvent) -> None:  # noqa: N802
+    def paintEvent(self, event: QtGui.QPaintEvent) -> None:  # noqa: N802 ARG002
         with QtGui.QPainter(self) as painter:
             ctx = _LinePaintContext.new(self)
             self._draw_grid(painter, ctx)
@@ -830,8 +832,8 @@ class _AudioPlayer:
         self,
         outdata: np.ndarray,
         samples: Sample,
-        time: Any,
-        status: sounddevice.CallbackFlags,
+        time: Any,  # noqa: ARG002
+        status: sounddevice.CallbackFlags,  # noqa: ARG002
     ) -> None:
         if (
             not (self._process and self._process.stdout and self._stream)

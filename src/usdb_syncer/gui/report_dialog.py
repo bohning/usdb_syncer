@@ -1,8 +1,8 @@
 """Dialog to create a report."""
 
 import datetime
-from collections.abc import Iterable
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
@@ -32,6 +32,9 @@ optional_columns = [
     Column.CREATOR,
     Column.SONG_ID,
 ]
+
+if TYPE_CHECKING:
+    from collections.abc import Iterable
 
 
 class ReportDialog(Ui_Dialog, QDialog):
@@ -93,12 +96,14 @@ class ReportDialog(Ui_Dialog, QDialog):
 
     def accept(self) -> None:
         self._save_settings()
-        if self.tabWidget_report_type.currentIndex() == 0:
-            if self._generate_report_pdf():
-                super().accept()
-        elif self.tabWidget_report_type.currentIndex() == 1:
-            if self._generate_report_json():
-                super().accept()
+        if (
+            self.tabWidget_report_type.currentIndex() == 0
+            and self._generate_report_pdf()
+        ) or (
+            self.tabWidget_report_type.currentIndex() == 1
+            and self._generate_report_json()
+        ):
+            super().accept()
 
     def reject(self) -> None:
         self._save_settings()

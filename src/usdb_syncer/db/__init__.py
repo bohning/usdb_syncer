@@ -9,10 +9,8 @@ import sqlite3
 import threading
 import time
 from collections import defaultdict
-from collections.abc import Generator, Iterable, Iterator
 from enum import StrEnum, auto
-from pathlib import Path
-from typing import Any, assert_never, cast
+from typing import TYPE_CHECKING, Any, assert_never, cast
 
 import attrs
 from more_itertools import batched
@@ -21,6 +19,11 @@ from usdb_syncer import SongId, SyncMetaId, errors
 from usdb_syncer.logger import logger
 
 from .sql import Sql
+
+if TYPE_CHECKING:
+    from collections.abc import Generator, Iterable, Iterator
+    from pathlib import Path
+
 
 SCHEMA_VERSION = 8
 
@@ -348,7 +351,7 @@ class SearchBuilder:
             (self.statuses, _STATUS_COLUMN),
         ):
             if vals:
-                yield _in_values_clause(col, cast(list, vals))
+                yield _in_values_clause(col, cast("list", vals))
         if self.languages:
             yield (
                 "usdb_song.song_id IN (SELECT song_id FROM usdb_song_language WHERE"
@@ -567,12 +570,12 @@ def _in_ranges_clause(attribute: str, values: list[tuple[int, int | None]]) -> s
 
 
 def _fts5_phrases(text: str) -> str:
-    """Turns each whitespace-separated word into an FTS5 prefix phrase."""
+    """Turn each whitespace-separated word into an FTS5 prefix phrase."""
     return " ".join(f'"{s}"*' for s in text.replace('"', "").split(" ") if s)
 
 
 def _fts5_start_phrase(text: str) -> str:
-    """Turns the entire string into an FTS5 initial phrase."""
+    """Turn the entire string into an FTS5 initial phrase."""
     return f'''^ "{text.replace('"', "")}"'''
 
 
@@ -928,7 +931,7 @@ def get_custom_data_map() -> defaultdict[str, set[str]]:
 # ResourceFile
 
 
-class ResourceKind(str, enum.Enum):
+class ResourceKind(enum.StrEnum):
     """Kinds of resources."""
 
     TXT = "txt"
@@ -970,7 +973,10 @@ def upsert_resources(params: Iterable[ResourceParams]) -> None:
 
 
 def maybe_insert_discord_notification(song_id: SongId, resource: str) -> bool:
-    """Does nothing if already present. Otherwise returns True."""
+    """Look to insert a discord notification into the database.
+
+    Does nothing if already present. Otherwise returns True.
+    """
     stmt = (
         "INSERT OR IGNORE INTO discord_notification (song_id, resource) VALUES (?, ?)"
     )

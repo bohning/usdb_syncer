@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import copy
-from collections.abc import Callable
 from typing import TYPE_CHECKING
 
 from PySide6 import QtCore, QtGui, QtWidgets
@@ -17,6 +16,8 @@ from .item import Filter, SavedSearch
 from .model import TreeModel, TreeProxyModel
 
 if TYPE_CHECKING:
+    from collections.abc import Callable
+
     from usdb_syncer.gui.mw import MainWindow
 
 

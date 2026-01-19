@@ -20,11 +20,15 @@ from usdb_syncer.usdb_song import DownloadStatus, SongChanges, UsdbSong
 
 @dataclass
 class ValidationSuccess:
+    """Song is valid for submission."""
+
     changes: SongChanges
 
 
 @dataclass
 class ValidationFailure:
+    """Song is not valid for submission."""
+
     reason: str
 
 
@@ -80,7 +84,7 @@ class UsdbUploadDialog(Ui_Dialog, QDialog):
             cls._instance = cls(parent, submittable)
             cls._instance.show()
 
-    def _on_song_changed(self, index: int) -> None:
+    def _on_song_changed(self) -> None:
         self._update_diff_view()
 
     def _update_diff_view(self) -> None:

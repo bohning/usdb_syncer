@@ -15,10 +15,14 @@ from usdb_syncer.usdb_song import UsdbSong
 
 
 class CoverLoaderSignals(QObject):
+    """Utility class to define signals for the CoverLoader."""
+
     finished = Signal(int, QPixmap)
 
 
 class ScaledCoverLabel(QLabel):
+    """Label that displays the cover of the currently selected song."""
+
     _pixmap: QPixmap | None = None
     _current_song_id: SongId | None = None
 
@@ -121,6 +125,8 @@ def fetch_remote_cover(remote_url: str) -> QPixmap | None:
 
 
 class CoverLoader(QRunnable):
+    """Loader for cover images."""
+
     def __init__(
         self,
         song_id: SongId,

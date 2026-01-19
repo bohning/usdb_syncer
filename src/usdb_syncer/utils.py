@@ -36,7 +36,7 @@ IS_SOURCE = not IS_BUNDLE and not IS_INSTALLED
 
 
 def _root() -> Path:
-    """Returns source root folder or temprory bundle folder if running as such."""
+    """Return source root folder or temporary bundle folder if running as such."""
     if getattr(sys, "frozen", False) and (bundle := getattr(sys, "_MEIPASS", None)):
         return Path(bundle)
     return Path(__file__).parent.parent.parent.absolute()
@@ -57,8 +57,7 @@ def video_url_from_resource(resource: str) -> str | None:
 
 
 def _parse_polsy_html(html: str) -> list[str] | None:
-    """Parses the HTML from polsy.org.uk and returns a list of allowed countries."""
-
+    """Parse the HTML from polsy.org.uk and return a list of allowed countries."""
     soup = BeautifulSoup(html, "lxml")
     allowed_countries = []
 
@@ -81,8 +80,7 @@ def _parse_polsy_html(html: str) -> list[str] | None:
 
 
 def get_allowed_countries(resource: str) -> list[str] | None:
-    """Fetches YouTube video availability information from polsy.org.uk."""
-
+    """Fetch YouTube video availability information from polsy.org.uk."""
     url = f"https://polsy.org.uk/stuff/ytrestrict.cgi?agreed=on&ytid={resource}"
     response = requests.get(url, timeout=5)
 
@@ -93,14 +91,13 @@ def get_allowed_countries(resource: str) -> list[str] | None:
 
 
 def remove_ansi_codes(text: str) -> str:
-    """Removes ANSI escape codes from a string."""
-
+    """Remove ANSI escape codes from a string."""
     ansi_escape = re.compile(r"\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])")
     return ansi_escape.sub("", text)
 
 
 def get_first_alphanum_upper(text: str) -> str | None:
-    """Returns the first uppercase alphanumeric character in a string."""
+    """Return the first uppercase alphanumeric character in a string."""
     for char in text:
         if char.isalnum():
             return unidecode(char)[0].upper()
@@ -137,7 +134,7 @@ class DirectoryCache:
 
     @classmethod
     def insert(cls, path: Path) -> bool:
-        """True if path was not in the cache (or the entry had expired)."""
+        """Return True if path was not in the cache (or the entry had expired)."""
         now = time.time()
         if cls._cache.get(path, 0) + CACHE_LIFETIME < now:
             cls._cache[path] = now
@@ -146,11 +143,10 @@ class DirectoryCache:
 
 
 def extract_youtube_id(url: str) -> str | None:
-    """Extracts the YouTube id from a variety of URLs.
+    """Extract the YouTube id from a variety of URLs.
 
     Partially taken from `https://regexr.com/531i0`.
     """
-
     pattern = r"""
         (?:https?://)?
         (?:www\.)?
@@ -174,8 +170,7 @@ def extract_youtube_id(url: str) -> str | None:
 
 
 def extract_vimeo_id(url: str) -> str | None:
-    """Extracts the Vimeo id from a variety of URLs."""
-
+    """Extract the Vimeo id from a variety of URLs."""
     pattern = r"""
         (?:https?://)?
         (?:
@@ -197,7 +192,9 @@ def extract_vimeo_id(url: str) -> str | None:
 def read_file_head(
     path: Path, length: int, encoding: str | None = None
 ) -> list[str] | None:
-    """Return the first `length` lines of `path`. If `encoding` is None, try UTF-8 (with
+    """Return the first `length` lines of `path`.
+
+    If `encoding` is None, try UTF-8 (with
     BOM) first, then cp1252.
     """
     for enc in [encoding] if encoding else ["utf-8-sig", "cp1252"]:
@@ -223,7 +220,7 @@ def sanitize_filename(fname: str) -> str:
 
 
 def next_unique_directory(path: Path) -> Path:
-    """Ensures directory name is unique by adding a suffix if necessary."""
+    """Ensure directory name is unique by adding a suffix if necessary."""
     out_path = path
     suffix = 0
     while not DirectoryCache.insert(out_path) or out_path.exists():
@@ -233,7 +230,7 @@ def next_unique_directory(path: Path) -> Path:
 
 
 def is_name_maybe_with_suffix(text: str, name: str) -> bool:
-    "True if `text` is 'name' or 'name (n)' for the provided `name` and some number n."
+    """Check if `text` is `name` or `name (n)`."""
     if not text.startswith(name):
         return False
     tail = text.removeprefix(name)
@@ -241,7 +238,9 @@ def is_name_maybe_with_suffix(text: str, name: str) -> bool:
 
 
 def path_matches_maybe_with_suffix(path: Path, search: Path) -> bool:
-    """True if `path` matches `search`, with an optional suffix ` (n)` for some
+    """Check if `path` matches `search` with an optional suffix.
+
+    Return True if `path` matches `search` with an optional suffix ` (n)` for some
     number n.
     """
     path = normalize_path(path)
@@ -276,7 +275,9 @@ def normalize_path(path: Path) -> Path:
 
 
 def compare_unicode_paths(lhs: Path, rhs: Path) -> bool:
-    """Checks two paths for equality, taking into account implicit Unicode normalization
+    """Check two paths for equality.
+
+    Takes into account implicit Unicode normalization
     on macOS.
     """
     if sys.platform == "darwin":
@@ -293,7 +294,7 @@ def resource_file_ending(name: str) -> str:
 
 
 def get_mtime(path: Path) -> int:
-    """Helper for mtime in microseconds so it can be stored in db losslessly."""
+    """Get mtime of path in microseconds."""
     return int(path.stat().st_mtime * 1_000_000)
 
 
@@ -428,7 +429,9 @@ def trash_or_delete_path(path: Path) -> None:
 
 
 class LinuxEnvCleaner:
-    """Context manager to clean an environment. Specifically, it removes paths starting
+    """Context manager to clean an environment.
+
+    Specifically, it removes paths starting
     with /tmp/_MEI and some specific Qt-related paths from the environment.
 
     This is needed when running applications bundled with PyInstaller, as it links some

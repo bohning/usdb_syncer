@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from collections.abc import Callable
 from typing import TYPE_CHECKING, Generic, ParamSpec
 
 import attrs
@@ -10,6 +9,7 @@ import attrs
 from usdb_syncer.logger import logger
 
 if TYPE_CHECKING:
+    from collections.abc import Callable
     from http.cookiejar import CookieJar  # noqa: F401
 
     from usdb_syncer import usdb_song  # noqa: F401
@@ -18,7 +18,7 @@ P = ParamSpec("P")
 
 
 @attrs.define(slots=False)
-class _Hook(Generic[P]):
+class _Hook(Generic[P]):  # noqa: UP046 python3.12 feature
     """Base class for hooks."""
 
     _subscribers: list[Callable[P, None]]

@@ -25,7 +25,7 @@ class Sql(enum.Enum):
     UPSERT_USDB_SONG_STATUS = "upsert_usdb_song_status.sql"
 
     # size is limited by number of enum variants, so lru checks are redundant
-    @functools.lru_cache(maxsize=None)
+    @functools.cache
     def text(self) -> str:
         return self.text_uncached()
 
