@@ -3,6 +3,7 @@
 # Changes
 
 - The syncer is now licensed with the GPLv3. We consider this a correction of the previous invalid license condition and not a change.
+- Removed support for cookies from Arc, Librewolf, Octo Browser, and Opera GX. This was due to an internal change. If you used one of those browsers, you may be interested in creating/using an addon, which can now natively supply the syncer with cookies. 
 
 ## Features
 
