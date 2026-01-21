@@ -452,15 +452,14 @@ class Browser(Enum):
         return self.value.capitalize()
 
     def cookies(self) -> CookieJar | None:
-        if self == Browser.NONE:
+        if self is Browser.NONE:
             return None
-        logger.debug(f"Retrieving cookies from {self.value} with yt-dlp")
+        logger.debug(f"Retrieving cookies from {self!s} with yt-dlp.")
         try:
             return yt_dlp.cookies.extract_cookies_from_browser(self.value)
         except Exception:  # noqa: BLE001
-            logger.exception(None)
-        logger.warning(f"Failed to retrieve {self!s} cookies.")
-        return None
+            logger.exception(f"Failed to retrieve {self!s} cookies.")
+            return None
 
 
 class VideoContainer(Enum):
