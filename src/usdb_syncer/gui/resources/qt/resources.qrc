@@ -1,7 +1,6 @@
 <RCC>
   <qresource prefix="icons">
     <file>alert-white.svg</file>
-    <file>arc.png</file>
     <file>artist-white.svg</file>
     <file>artist.png</file>
     <file>audio.png</file>
@@ -79,7 +78,6 @@
     <file>information-white.svg</file>
     <file>karedi.png</file>
     <file>language.png</file>
-    <file>librewolf.png</file>
     <file>log.png</file>
     <file>menu-down-white.svg</file>
     <file>menu-left-white.svg</file>
@@ -91,8 +89,6 @@
     <file>music-note-white.svg</file>
     <file>music-white.svg</file>
     <file>notebook-white.svg</file>
-    <file>octo_browser.png</file>
-    <file>opera_gx.png</file>
     <file>opera.png</file>
     <file>pause-white.svg</file>
     <file>performous.png</file>
