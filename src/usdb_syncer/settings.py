@@ -15,10 +15,9 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any, ClassVar, TypeVar, assert_never, cast
 
 import keyring
-import rookiepy
+import yt_dlp.cookies
 from PySide6.QtCore import QByteArray, QSettings
 
-from usdb_syncer.constants import Usdb
 from usdb_syncer.logger import logger
 
 if TYPE_CHECKING:
@@ -438,16 +437,12 @@ class Browser(Enum):
     """Browsers to use cookies from."""
 
     NONE = None
-    ARC = "arc"
     BRAVE = "brave"
     CHROME = "chrome"
     CHROMIUM = "chromium"
     EDGE = "edge"
     FIREFOX = "firefox"
-    LIBREWOLF = "librewolf"
-    OCTO_BROWSER = "octo browser"
     OPERA = "opera"
-    OPERA_GX = "opera gx"
     SAFARI = "safari"
     VIVALDI = "vivaldi"
 
@@ -456,38 +451,12 @@ class Browser(Enum):
             return "None"
         return self.value.capitalize()
 
-    def cookies(self) -> CookieJar | None:  # noqa: C901
-        match self:
-            case Browser.NONE:
-                return None
-            case Browser.ARC:
-                function = rookiepy.arc
-            case Browser.BRAVE:
-                function = rookiepy.brave
-            case Browser.CHROME:
-                function = rookiepy.chrome
-            case Browser.CHROMIUM:
-                function = rookiepy.chromium
-            case Browser.EDGE:
-                function = rookiepy.edge
-            case Browser.FIREFOX:
-                function = rookiepy.firefox
-            case Browser.LIBREWOLF:
-                function = rookiepy.librewolf
-            case Browser.OCTO_BROWSER:
-                function = rookiepy.octo_browser
-            case Browser.OPERA:
-                function = rookiepy.opera
-            case Browser.OPERA_GX:
-                function = rookiepy.opera_gx
-            case Browser.SAFARI:
-                function = rookiepy.safari
-            case Browser.VIVALDI:
-                function = rookiepy.vivaldi
-            case _ as unreachable:
-                assert_never(unreachable)
+    def cookies(self) -> CookieJar | None:
+        if self == Browser.NONE:
+            return None
+        logger.debug(f"Retrieving cookies from {self.value} with yt-dlp")
         try:
-            return rookiepy.to_cookiejar(function([Usdb.DOMAIN]))
+            return yt_dlp.cookies.extract_cookies_from_browser(self.value)
         except Exception:  # noqa: BLE001
             logger.exception(None)
         logger.warning(f"Failed to retrieve {self!s} cookies.")
@@ -911,7 +880,7 @@ def set_cover_max_size(value: CoverMaxSize, temp: bool = False) -> None:
 
 
 def get_browser() -> Browser:
-    return _Settings.get(SettingKey.BROWSER, Browser.CHROME)
+    return _Settings.get(SettingKey.BROWSER, Browser.NONE)
 
 
 def set_browser(value: Browser, temp: bool = False) -> None:

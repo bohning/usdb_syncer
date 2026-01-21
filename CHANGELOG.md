@@ -29,6 +29,7 @@
 - A new build script (`tools/bundle.py`) makes bundling outside of github actions possible.
 - Addons are loaded earlier in the startup process than before. This means code executed at addon import time may behave differently. Hooks are unchanged.
 - Two new hooks regarding cookies have been introduced. See the new wiki page for details and usage.
+- Cookies for USDB are now pulled using yt-dlp instead of rookiepy. 
 
 <!-- 0.18.0 -->
 

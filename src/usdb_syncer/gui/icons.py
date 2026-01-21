@@ -13,7 +13,6 @@ class Icon(enum.Enum):
     """Available icons with auto-theming."""
 
     ABORT = "minus-circle.png", "minus-circle-white.svg"
-    ARC = "arc.png", None
     ARTIST = "artist.png", "artist-white.svg"
     AUDIO = "audio.png", "music-white.svg"
     AUDIO_SAMPLE = "sample.png", "music-note-white.svg"
@@ -57,17 +56,14 @@ class Icon(enum.Enum):
     KAREDI = "karedi.png", None
     LANGUAGE = "language.png", "translate-variant-white.svg"
     LAST_CHANGE = "calendar.png", "calendar-white.svg"  # noqa: PIE796
-    LIBREWOLF = "librewolf.png", None
     LOG = "log.png", "receipt-text-white.svg"
     MENU_DOWN = None, "menu-down-white.svg"
     MENU_LEFT = None, "menu-left-white.svg"
     MENU_RIGHT = None, "menu-right-white.svg"
     MENU_UP = None, "menu-up-white.svg"
     META_TAGS = "tag-hash.png", "pound-box-white.svg"
-    OCTO_BROWSER = "octo_browser.png", None
     OPEN_SONG_WITH = "music--arrow.png", "folder-play-white.svg"
     OPERA = "opera.png", None
-    OPERA_GX = "opera_gx.png", None
     PAUSE_LOCAL = "control-pause-local.png", "pause-white.svg"
     PAUSE_REMOTE = "control-pause.png", "pause-white.svg"
     PERFORMOUS = "performous.png", None
@@ -123,12 +119,10 @@ class Icon(enum.Enum):
         return _icon(self.colored_name if colored else self.white_name)
 
 
-def browser_icon(browser: settings.Browser) -> QIcon | None:  # noqa: C901
+def browser_icon(browser: settings.Browser) -> QIcon | None:
     match browser:
         case settings.Browser.NONE:
             return None
-        case settings.Browser.ARC:
-            icon = Icon.ARC
         case settings.Browser.BRAVE:
             icon = Icon.BRAVE
         case settings.Browser.CHROME:
@@ -139,14 +133,8 @@ def browser_icon(browser: settings.Browser) -> QIcon | None:  # noqa: C901
             icon = Icon.EDGE
         case settings.Browser.FIREFOX:
             icon = Icon.FIREFOX
-        case settings.Browser.LIBREWOLF:
-            icon = Icon.LIBREWOLF
-        case settings.Browser.OCTO_BROWSER:
-            icon = Icon.OCTO_BROWSER
         case settings.Browser.OPERA:
             icon = Icon.OPERA
-        case settings.Browser.OPERA_GX:
-            icon = Icon.OPERA_GX
         case settings.Browser.SAFARI:
             icon = Icon.SAFARI
         case settings.Browser.VIVALDI:

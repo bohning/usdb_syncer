@@ -294,12 +294,6 @@
       "license_files": ["LICENSE.APACHE"]
     },
     {
-      "name": "rookiepy",
-      "license": "MIT",
-      "copyright": "Copyright (c) thewh1teagle",
-      "notice_text": "mit_standard"
-    },
-    {
       "name": "shiboken6",
       "license": "GPL-3.0-only",
       "copyright": "Copyright (c) 2024 The Qt Company Ltd.",
