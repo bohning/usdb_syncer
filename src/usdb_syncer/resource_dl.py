@@ -8,7 +8,6 @@ import subprocess
 import tempfile
 from dataclasses import dataclass
 from enum import Enum
-from http.cookiejar import CookieJar
 from pathlib import Path
 from typing import TYPE_CHECKING, Final, Generic, TypeVar, assert_never
 
@@ -325,10 +324,10 @@ def _handle_youtube_error(
     url: str, resource: str, error_message: str, options: YtdlOptions, logger: Logger
 ) -> ResourceDLResult:
     """Handle different YouTube error types."""
-    if any(
-        msg in error_message
-        for msg in (YtErrorMsg.YT_AGE_RESTRICTED, YtErrorMsg.VM_UNAUTHENTICATED)
-    ):
+    retry_on = {YtErrorMsg.YT_AGE_RESTRICTED, YtErrorMsg.VM_UNAUTHENTICATED}
+    hooks.DangerouslyUseYtCookies.call(retry_on)
+
+    if any(msg in error_message for msg in retry_on):
         dl_result = _retry_with_cookies(url, options, logger)
         return ResourceDLResult[str](content=dl_result.content)
 
@@ -365,7 +364,8 @@ def _handle_youtube_error(
         )
         return ResourceDLResult(error=ResourceDLError(type=DLErrType.DL_FAILED))
 
-    raise
+    logger.warning("Download failed unexpectedly.")
+    return ResourceDLResult(error=ResourceDLError(type=DLErrType.DL_FAILED))
 
 
 def _retry_with_cookies(
@@ -373,11 +373,7 @@ def _retry_with_cookies(
 ) -> ResourceDLResult:
     logger.warning("Age-restricted resource. Retrying with cookies ...")
     with yt_dlp.YoutubeDL(options) as ydl:  # pyright: ignore[reportArgumentType]  # yt-dlp expects dynamic params
-        jar = CookieJar()
-        hooks.GetYtCookies.call(jar)
-        for cookie in jar:
-            ydl.cookiejar.set_cookie(cookie)
-
+        hooks.GetYtCookies.call(ydl.cookiejar)
         try:
             filename = ydl.prepare_filename(ydl.extract_info(url))
             ext = Path(filename).suffix[1:]
