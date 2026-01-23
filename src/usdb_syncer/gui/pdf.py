@@ -23,7 +23,7 @@ from usdb_syncer.usdb_song import UsdbSong
 for font in (
     fonts.NOTOSANS_BLACK_TTF,
     fonts.NOTOSANS_BOLD_TTF,
-    fonts.NOTOSANS_REGULAR_TTF,
+    fonts.NOTOSANS_WITH_SYMBOLS2_REGULAR_TTF,
 ):
     pdfmetrics.registerFont(TTFont(font.name, font))
 
@@ -134,7 +134,7 @@ def _create_paragraph_styles(base_font_size: int) -> ParagraphStyles:
         ),
         entry=ParagraphStyle(
             "Entry",
-            fontName=fonts.NOTOSANS_REGULAR_TTF.name,
+            fontName=fonts.NOTOSANS_WITH_SYMBOLS2_REGULAR_TTF.name,
             fontSize=base_font_size,
             leftIndent=base_font_size,
             leading=base_font_size * 1.4,
@@ -208,7 +208,7 @@ def _format_song_entry(  # noqa: C901
 def _add_page_number(canvas: Canvas, doc: BaseDocTemplate) -> None:
     canvas.saveState()
     page_num: str = str(doc.page)
-    canvas.setFont(fonts.NOTOSANS_REGULAR_TTF.name, 8)
+    canvas.setFont(fonts.NOTOSANS_WITH_SYMBOLS2_REGULAR_TTF.name, 8)
     canvas.setFillColor(colors.grey)
     canvas.drawCentredString(doc.pagesize[0] / 2, doc.bottomMargin * 0.5, page_num)
     canvas.restoreState()

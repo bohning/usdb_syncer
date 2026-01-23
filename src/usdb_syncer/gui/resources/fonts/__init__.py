@@ -2,9 +2,8 @@
 
 from importlib import resources
 
-NOTOSANS_REGULAR_TTF = resources.files(__package__) / "NotoSans-Regular.ttf"
 NOTOSANS_BLACK_TTF = resources.files(__package__) / "NotoSans-Black.ttf"
 NOTOSANS_BOLD_TTF = resources.files(__package__) / "NotoSans-Bold.ttf"
-NOTOSANSSYMBOLS2_REGULAR_TTF = (
-    resources.files(__package__) / "NotoSansSymbols2-Regular.ttf"
+NOTOSANS_WITH_SYMBOLS2_REGULAR_TTF = (
+    resources.files(__package__) / "NotoSans-with-Symbols2-Regular.ttf"
 )
