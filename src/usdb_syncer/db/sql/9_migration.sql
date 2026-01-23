@@ -18,6 +18,8 @@ CREATE TABLE usdb_song (
     genre TEXT NOT NULL,
     creator TEXT NOT NULL,
     tags TEXT NOT NULL,
+    sample_url TEXT NOT NULL DEFAULT '',
+    usdb_mtime INTEGER NOT NULL,
     PRIMARY KEY (song_id)
 );
 
@@ -34,7 +36,9 @@ SELECT
     year,
     genre,
     creator,
-    tags
+    tags,
+    sample_url,
+    usdb_mtime
 FROM usdb_song_old;
 
 DROP TABLE usdb_song_old;
