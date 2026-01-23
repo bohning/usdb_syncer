@@ -25,7 +25,7 @@ if TYPE_CHECKING:
     from pathlib import Path
 
 
-SCHEMA_VERSION = 8
+SCHEMA_VERSION = 9
 
 # https://www.sqlite.org/limits.html
 _SQL_VARIABLES_LIMIT = 32766
