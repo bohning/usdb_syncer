@@ -17,7 +17,7 @@ from PySide6.QtGui import QFont, QIcon
 from usdb_syncer import SongId, events
 from usdb_syncer.db import JobStatus, ResourceKind
 from usdb_syncer.gui import icons
-from usdb_syncer.gui.resources.fonts import get_rating_font
+from usdb_syncer.gui.fonts import get_rating_font
 from usdb_syncer.gui.song_table.column import Column
 from usdb_syncer.sync_meta import Resource
 from usdb_syncer.usdb_song import UsdbSong

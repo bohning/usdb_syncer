@@ -15,7 +15,7 @@ from PySide6.QtCore import (
 )
 
 from usdb_syncer import db
-from usdb_syncer.gui.resources.fonts import get_rating_font
+from usdb_syncer.gui.fonts import get_rating_font
 from usdb_syncer.gui.search_tree.item import (
     Filter,
     RatingVariant,
