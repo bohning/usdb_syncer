@@ -15,8 +15,13 @@ from PySide6.QtCore import (
 )
 
 from usdb_syncer import db
-
-from .item import Filter, SavedSearch, TreeItem
+from usdb_syncer.gui.resources.fonts import get_rating_font
+from usdb_syncer.gui.search_tree.item import (
+    Filter,
+    RatingVariant,
+    SavedSearch,
+    TreeItem,
+)
 
 if TYPE_CHECKING:
     from PySide6.QtWidgets import QWidget
@@ -131,6 +136,8 @@ class TreeModel(QAbstractItemModel):
             return item.checked
         if role == Qt.ItemDataRole.DecorationRole:
             return item.data.decoration()
+        if role == Qt.ItemDataRole.FontRole and isinstance(item.data, RatingVariant):
+            return get_rating_font()
         return None
 
     def flags(self, index: QIndex) -> Qt.ItemFlag:

@@ -37,7 +37,7 @@ class UsdbSong:
     creator: str
     edition: str
     golden_notes: bool
-    rating: int
+    rating: float
     views: int
     sample_url: str
     # not in USDB song list
@@ -82,7 +82,7 @@ class UsdbSong:
             creator=creator,
             edition=edition,
             golden_notes=golden_notes == strings.YES,
-            rating=rating.count("star.png"),
+            rating=rating.count("/star.png") + 0.5 * rating.count("/half_star.png"),
             views=int(views),
             sample_url=sample_url,
         )

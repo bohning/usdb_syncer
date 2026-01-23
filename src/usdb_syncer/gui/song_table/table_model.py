@@ -12,11 +12,12 @@ from PySide6.QtCore import (
     QPersistentModelIndex,
     Qt,
 )
-from PySide6.QtGui import QIcon
+from PySide6.QtGui import QFont, QIcon
 
 from usdb_syncer import SongId, events
 from usdb_syncer.db import JobStatus, ResourceKind
 from usdb_syncer.gui import icons
+from usdb_syncer.gui.resources.fonts import get_rating_font
 from usdb_syncer.gui.song_table.column import Column
 from usdb_syncer.sync_meta import Resource
 from usdb_syncer.usdb_song import UsdbSong
@@ -102,6 +103,8 @@ class TableModel(QAbstractTableModel):
             return _decoration_data(song, index.column())
         if role == Qt.ItemDataRole.ToolTipRole:
             return _tooltip_data(song, index.column())
+        if role == Qt.ItemDataRole.FontRole:
+            return _font_data(index.column())
         return None
 
     def _get_song(self, index: QIndex) -> UsdbSong | None:
@@ -255,6 +258,13 @@ def status_icon(resource: Resource) -> icons.Icon:
     return icon
 
 
+def _font_data(column: int) -> QFont | None:
+    col = Column(column)
+    if col == Column.RATING:
+        return get_rating_font()
+    return None
+
+
 def _tooltip_data(song: UsdbSong, column: int) -> str | None:
     if not (sync_meta := song.sync_meta):
         return None
@@ -296,7 +306,9 @@ def status_tooltip(resource: Resource) -> str:
 
 @cache
 def rating_str(rating: int) -> str:
-    return rating * "★"
+    # U+2605: BLACK STAR ★
+    # U+2BE8: HALF BLACK STAR
+    return int(rating) * "\u2605" + ("\u2be8" if rating % 1 == 0.5 else "")
 
 
 def yes_no_str(yes: bool) -> str:
