@@ -63,7 +63,6 @@ def load_available_songs(
     result = LoadSongsResult()
     if force_reload:
         last = db.LastUsdbUpdate.zero()
-        UsdbSong.delete_all()
     elif (last := db.LastUsdbUpdate.get()).is_zero() and (songs := load_cached_songs()):
         UsdbSong.upsert_many(songs)
         result.new_songs.update(s.song_id for s in songs)
@@ -80,6 +79,10 @@ def load_available_songs(
         if songs:
             UsdbSong.upsert_many(songs)
             result.new_songs.update(s.song_id for s in songs)
+            if force_reload:
+                UsdbSong.delete_many(
+                    [i for i in db.all_song_ids() if i not in result.new_songs]
+                )
     return result
 
 

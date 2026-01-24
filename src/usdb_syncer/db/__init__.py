@@ -667,8 +667,10 @@ class LastUsdbUpdate:
         return self.usdb_mtime == 0
 
 
-def delete_all_usdb_songs() -> None:
-    _DbState.connection().execute("DELETE FROM usdb_song")
+def delete_usdb_songs(ids: list[SongId]) -> None:
+    _DbState.connection().execute(
+        f"DELETE FROM usdb_song WHERE {_in_values_clause('song_id', ids)}", ids
+    )
 
 
 def all_local_usdb_songs() -> Iterable[SongId]:

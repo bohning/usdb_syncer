@@ -132,9 +132,10 @@ class UsdbSong:
             _UsdbSongCache.update(self)
 
     @classmethod
-    def delete_all(cls) -> None:
-        db.delete_all_usdb_songs()
-        _UsdbSongCache.clear()
+    def delete_many(cls, ids: list[SongId]) -> None:
+        db.delete_usdb_songs(ids)
+        for song_id in ids:
+            _UsdbSongCache.remove(song_id)
 
     def upsert(self) -> None:
         db.upsert_usdb_song(self.db_params())
