@@ -1,5 +1,15 @@
 BEGIN;
 
+-- Clean up leeches due to missing foreign key enforcement
+
+DELETE FROM usdb_song_creator WHERE song_id NOT IN (SELECT song_id FROM usdb_song);
+DELETE FROM usdb_song_genre WHERE song_id NOT IN (SELECT song_id FROM usdb_song);
+DELETE FROM usdb_song_language WHERE song_id NOT IN (SELECT song_id FROM usdb_song);
+DELETE FROM discord_notification WHERE song_id NOT IN (SELECT song_id FROM usdb_song);
+DELETE FROM sync_meta WHERE song_id NOT IN (SELECT song_id FROM usdb_song);
+DELETE FROM custom_meta_data WHERE sync_meta_id NOT IN (SELECT sync_meta_id FROM sync_meta);
+DELETE FROM resource_file WHERE sync_meta_id NOT IN (SELECT sync_meta_id FROM sync_meta);
+
 -- Migrate rating column from INTEGER to REAL to support half-star ratings
 -- SQLite has limited ALTER TABLE support, so the table needs to be recreated
 
