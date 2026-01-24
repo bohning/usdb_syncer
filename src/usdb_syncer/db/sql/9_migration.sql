@@ -13,7 +13,26 @@ DELETE FROM resource_file WHERE sync_meta_id NOT IN (SELECT sync_meta_id FROM sy
 -- Migrate rating column from INTEGER to REAL to support half-star ratings
 -- SQLite has limited ALTER TABLE support, so the table needs to be recreated
 
-ALTER TABLE usdb_song RENAME TO usdb_song_old;
+CREATE TABLE usdb_song_temp AS
+SELECT
+    song_id,
+    artist,
+    title,
+    language,
+    edition,
+    golden_notes,
+    CAST(rating AS REAL) rating,
+    views,
+    year,
+    genre,
+    creator,
+    tags,
+    sample_url,
+    usdb_mtime
+FROM
+    usdb_song;
+
+DROP TABLE usdb_song;
 
 CREATE TABLE usdb_song (
     song_id INTEGER NOT NULL,
@@ -33,24 +52,8 @@ CREATE TABLE usdb_song (
     PRIMARY KEY (song_id)
 );
 
-INSERT INTO usdb_song
-SELECT
-    song_id,
-    artist,
-    title,
-    language,
-    edition,
-    golden_notes,
-    CAST(rating AS REAL),
-    views,
-    year,
-    genre,
-    creator,
-    tags,
-    sample_url,
-    usdb_mtime
-FROM usdb_song_old;
+INSERT INTO usdb_song SELECT * FROM usdb_song_temp;
 
-DROP TABLE usdb_song_old;
+DROP TABLE usdb_song_temp;
 
 COMMIT;
