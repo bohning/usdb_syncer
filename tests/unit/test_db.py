@@ -26,6 +26,14 @@ def test_persisting_usdb_song(song: UsdbSong) -> None:
     assert attrs.asdict(song) == attrs.asdict(db_song)
 
 
+def test_foreign_key_enforcement(song: UsdbSong) -> None:
+    with db.managed_connection(":memory:"):
+        song.upsert()
+        assert len(list(db.all_local_usdb_songs())) == 1
+        song.delete()
+        assert len(list(db.all_local_usdb_songs())) == 0
+
+
 def test_persisting_saved_search() -> None:
     search = db.SavedSearch(
         name="name",
