@@ -25,7 +25,7 @@ if TYPE_CHECKING:
     from pathlib import Path
 
 
-SCHEMA_VERSION = 8
+SCHEMA_VERSION = 9
 
 # https://www.sqlite.org/limits.html
 _SQL_VARIABLES_LIMIT = 32766
@@ -324,7 +324,7 @@ class SearchBuilder:
     artists: list[str] = attrs.field(factory=list)
     titles: list[str] = attrs.field(factory=list)
     editions: list[str] = attrs.field(factory=list)
-    ratings: list[int] = attrs.field(factory=list)
+    ratings: list[float] = attrs.field(factory=list)
     statuses: list[DownloadStatus] = attrs.field(factory=list)
     languages: list[str] = attrs.field(factory=list)
     views: list[tuple[int, int | None]] = attrs.field(factory=list)
@@ -386,7 +386,7 @@ class SearchBuilder:
             return f" ORDER BY {sql} {'DESC' if self.descending else 'ASC'}"
         return ""
 
-    def parameters(self) -> Iterator[str | int | bool]:
+    def parameters(self) -> Iterator[str | float | int | bool]:
         if text := _fts5_phrases(self.text):
             yield text
         yield from self.artists
@@ -602,7 +602,7 @@ class UsdbSongParams:
     language: str
     edition: str
     golden_notes: bool
-    rating: int
+    rating: float
     views: int
     sample_url: str
     year: int | None
@@ -667,8 +667,10 @@ class LastUsdbUpdate:
         return self.usdb_mtime == 0
 
 
-def delete_all_usdb_songs() -> None:
-    _DbState.connection().execute("DELETE FROM usdb_song")
+def delete_usdb_songs(ids: list[SongId]) -> None:
+    _DbState.connection().execute(
+        f"DELETE FROM usdb_song WHERE {_in_values_clause('song_id', ids)}", ids
+    )
 
 
 def all_local_usdb_songs() -> Iterable[SongId]:

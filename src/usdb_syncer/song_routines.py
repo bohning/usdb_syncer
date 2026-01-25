@@ -21,12 +21,12 @@ from usdb_syncer import (
     events,
     settings,
     song_txt,
+    usdb_scraper,
     utils,
 )
 from usdb_syncer.logger import error_logger, logger
 from usdb_syncer.song_loader import DownloadManager
 from usdb_syncer.sync_meta import SyncMeta
-from usdb_syncer.usdb_scraper import get_updated_songs_from_usdb
 from usdb_syncer.usdb_song import UsdbSong, UsdbSongEncoder
 from usdb_syncer.utils import AppPaths
 
@@ -61,15 +61,18 @@ def load_available_songs(
     Return true if USDB was queried successfully.
     """
     result = LoadSongsResult()
-    if force_reload:
-        last = db.LastUsdbUpdate.zero()
-        UsdbSong.delete_all()
-    elif (last := db.LastUsdbUpdate.get()).is_zero() and (songs := load_cached_songs()):
-        UsdbSong.upsert_many(songs)
-        result.new_songs.update(s.song_id for s in songs)
+    last = db.LastUsdbUpdate.zero()
+    if not force_reload:
         last = db.LastUsdbUpdate.get()
+        if last.is_zero() and (songs := load_cached_songs()):
+            UsdbSong.upsert_many(songs)
+            result.new_songs.update(s.song_id for s in songs)
+            last = db.LastUsdbUpdate.get()
     try:
-        songs = get_updated_songs_from_usdb(last, session=session)
+        if last.is_zero():
+            songs = usdb_scraper.get_all_songs_from_usdb(session=session)
+        else:
+            songs = usdb_scraper.get_updated_songs_from_usdb(last, session=session)
     except errors.UsdbLoginError:
         logger.debug("Skipping fetching new songs as there is no login.")
     except requests.exceptions.ConnectionError:
@@ -80,6 +83,10 @@ def load_available_songs(
         if songs:
             UsdbSong.upsert_many(songs)
             result.new_songs.update(s.song_id for s in songs)
+            if force_reload:
+                UsdbSong.delete_many(
+                    [i for i in db.all_song_ids() if i not in result.new_songs]
+                )
     return result
 
 
