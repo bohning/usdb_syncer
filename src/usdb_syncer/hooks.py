@@ -9,7 +9,7 @@ import attrs
 from usdb_syncer.logger import logger
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
+    from collections.abc import Callable, MutableSet  # noqa: F401
     from http.cookiejar import CookieJar  # noqa: F401
 
     from usdb_syncer import usdb_song  # noqa: F401
@@ -49,9 +49,28 @@ class SongLoaderDidFinish(_Hook["usdb_song.UsdbSong"]):
     """Called after downloading a song."""
 
 
+class DangerouslyUseYtCookies(_Hook["MutableSet[str]"]):
+    """DANGEROUS: Set of error messages from youtube the syncer will retry with cookies.
+
+    This is dangerous because YouTube may ban accounts that download too much. By
+    default, the syncer only attempts to retry for age restricted resources.
+
+    Check `constants.YtErrorMsg` for possible error messages.
+
+    See https://github.com/yt-dlp/yt-dlp/issues/10085 and
+    https://github.com/yt-dlp/yt-dlp/issues/10108
+    """
+
+
 class GetYtCookies(_Hook["CookieJar"]):
-    """Called to get YouTube cookies for downloading videos."""
+    """Called to get YouTube cookies to retry downloading videos.
+
+    The passed CookieJar already contains cookies extracted by yt-dlp.
+    """
 
 
 class GetUsdbCookies(_Hook["CookieJar"]):
-    """Called to get USDB cookies for downloading resources."""
+    """Called to get USDB cookies for downloading resources.
+
+    The passed CookieJar already contains cookies extracted by yt-dlp.
+    """

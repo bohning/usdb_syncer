@@ -31,6 +31,7 @@
 - Addons are loaded earlier in the startup process than before. This means code executed at addon import time may behave differently. Hooks are unchanged.
 - Two new hooks regarding cookies have been introduced. See the new wiki page for details and usage.
 - Cookies for USDB are now pulled using yt-dlp instead of rookiepy.
+- Added a hook to control when the syncer retries a YouTube download with cookies.
 
 <!-- 0.18.0 -->
 

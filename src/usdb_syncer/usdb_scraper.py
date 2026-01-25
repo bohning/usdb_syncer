@@ -8,7 +8,6 @@ import time
 from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
-from http.cookiejar import CookieJar
 from typing import TYPE_CHECKING, Any, assert_never
 
 import attrs
@@ -127,10 +126,7 @@ def new_session_with_cookies(browser: settings.Browser) -> Session:
     if cookies := browser.cookies():
         for cookie in cookies:
             session.cookies.set_cookie(cookie)
-    addon_jar = CookieJar()
-    hooks.GetUsdbCookies.call(addon_jar)
-    for cookie in addon_jar:
-        session.cookies.set_cookie(cookie)
+    hooks.GetUsdbCookies.call(session.cookies)
     return session
 
 
