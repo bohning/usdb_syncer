@@ -37,7 +37,7 @@ class UsdbSong:
     creator: str
     edition: str
     golden_notes: bool
-    rating: int
+    rating: float
     views: int
     sample_url: str
     # not in USDB song list
@@ -82,7 +82,7 @@ class UsdbSong:
             creator=creator,
             edition=edition,
             golden_notes=golden_notes == strings.YES,
-            rating=rating.count("star.png"),
+            rating=rating.count("/star.png") + 0.5 * rating.count("/half_star.png"),
             views=int(views),
             sample_url=sample_url,
         )
@@ -132,9 +132,10 @@ class UsdbSong:
             _UsdbSongCache.update(self)
 
     @classmethod
-    def delete_all(cls) -> None:
-        db.delete_all_usdb_songs()
-        _UsdbSongCache.clear()
+    def delete_many(cls, ids: list[SongId]) -> None:
+        db.delete_usdb_songs(ids)
+        for song_id in ids:
+            _UsdbSongCache.remove(song_id)
 
     def upsert(self) -> None:
         db.upsert_usdb_song(self.db_params())

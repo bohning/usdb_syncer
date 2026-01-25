@@ -9,6 +9,8 @@ GITHUB_SHARED_CONTENT = (
     "https://raw.githubusercontent.com/bohning/usdb_syncer/refs/heads/main/shared"
 )
 DISCORD_WEBHOOK_API = "https://discordapp.com/api/webhooks"
+BLACK_STAR = "\u2605"
+HALF_BLACK_STAR = "\u2be8"
 
 
 class UsdbStrings:

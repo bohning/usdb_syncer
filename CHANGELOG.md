@@ -3,25 +3,25 @@
 # Changes
 
 - The syncer is now licensed with the GPLv3. We consider this a correction of the previous invalid license condition and not a change.
-- Removed support for cookies from Arc, Librewolf, Octo Browser, and Opera GX. This was due to an internal change. If you used one of those browsers, you may be interested in creating/using an addon, which can now natively supply the syncer with cookies. 
+- Removed support for cookies from Arc, Librewolf, Octo Browser, and Opera GX. This was due to an internal change. If you used one of those browsers, you may be interested in creating/using an addon, which can now natively supply the syncer with cookies.
 
 ## Features
 
-- FFmpeg's freezefilter is used to determine if a commented (fallback) resource is audio-only or not
-- Commented resources from dailymotion, vimeo, facebook and soundcloud are now parsed
-- Added a dialog that shows the reason why a song was not submitted to USDB
-- You can now open local files by double-clicking in the respective resource column icon
+- FFmpeg's freezefilter is used to determine if a commented (fallback) resource is audio-only or not.
+- Commented resources from dailymotion, vimeo, facebook and soundcloud are now parsed.
+- A dialog will show the reason why a song was not submitted to USDB.
+- You can now open local files by double-clicking in the respective resource column icon.
 
 ## Fixes
 
-- Resolved crash when using replaygain on linux with the bundles (#495)
-- A BPM of exactly 200 is now correctly doubled to 400
-- URL params from a/v meta tags are now stripped and a log message is issued
-- Status of updated files is now correctly written to the db
-- add dialog that displays non-submittable song(s) + reason(s)
-- Reading song files from legacy encodings (namely CP1252) is fixed
-- Determining local changes for submission is fixed (no canonical fixes for remote txt)
+- Resolved crash when using replaygain on linux with the bundles (#495).
+- A BPM of exactly 200 is now correctly doubled to 400.
+- URL params from a/v meta tags are now stripped and a log message is issued.
+- Status of updated files is now correctly written to the db.
+- Reading song files from legacy encodings (namely CP1252) is fixed.
+- Determining local changes for submission is fixed (no canonical fixes for remote txt).
 - Saving searches now works in the Linux bundle again.
+- Half-star ratings are now properly supported.
 
 ## Developer notes
 
@@ -30,7 +30,7 @@
 - A new build script (`tools/bundle.py`) makes bundling outside of github actions possible.
 - Addons are loaded earlier in the startup process than before. This means code executed at addon import time may behave differently. Hooks are unchanged.
 - Two new hooks regarding cookies have been introduced. See the new wiki page for details and usage.
-- Cookies for USDB are now pulled using yt-dlp instead of rookiepy. 
+- Cookies for USDB are now pulled using yt-dlp instead of rookiepy.
 
 <!-- 0.18.0 -->
 
