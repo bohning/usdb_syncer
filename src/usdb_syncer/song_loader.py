@@ -471,7 +471,7 @@ def _maybe_download_audio(ctx: _Context) -> JobStatus:
         return JobStatus.SKIPPED_UNAVAILABLE
 
     if primary_resource:
-        if video_url_from_resource(primary_resource) not in fallback_resources:
+        if primary_resource not in fallback_resources:
             ctx.logger.info(f"Audio resource '{primary_resource}' is not commented.")
         if primary_resource == ctx.out.audio.resource:
             ctx.logger.info("Audio resource is unchanged, skipping download.")
@@ -534,7 +534,7 @@ def _maybe_download_video(ctx: _Context) -> JobStatus:  # noqa: C901
         return JobStatus.SKIPPED_UNAVAILABLE
 
     if primary_resource:
-        if not any(primary_resource in resource for resource in fallback_resources):
+        if primary_resource not in fallback_resources:
             ctx.logger.info(f"Video resource '{primary_resource}' is not commented.")
         if primary_resource == ctx.out.video.resource:
             ctx.logger.info("Video resource is unchanged, skipping download.")
