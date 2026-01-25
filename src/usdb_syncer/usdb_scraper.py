@@ -403,14 +403,18 @@ def get_updated_songs_from_usdb(
             payload=payload,
             session=session,
         )
-        songs = {
+        parsed_songs = list(_parse_songs_from_songlist(html))
+        new_songs = {
             song.song_id: song
-            for song in _parse_songs_from_songlist(html)
+            for song in parsed_songs
             if song.is_new_since_last_update(last_update)
         }
-        available_songs.update(songs)
+        available_songs.update(new_songs)
 
-        if len(songs) < Usdb.MAX_SONGS_PER_PAGE:
+        if (
+            len(parsed_songs) < Usdb.MAX_SONGS_PER_PAGE
+            or parsed_songs[-1].usdb_mtime < last_update.usdb_mtime
+        ):
             break
 
     logger.info(f"Fetched {len(available_songs)} updated song(s) from USDB.")
