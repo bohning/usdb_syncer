@@ -15,6 +15,7 @@ from PySide6.QtCore import (
 from PySide6.QtGui import QFont, QIcon
 
 from usdb_syncer import SongId, events
+from usdb_syncer.constants import BLACK_STAR, HALF_BLACK_STAR
 from usdb_syncer.db import JobStatus, ResourceKind
 from usdb_syncer.gui import icons
 from usdb_syncer.gui.fonts import get_rating_font
@@ -306,9 +307,7 @@ def status_tooltip(resource: Resource) -> str:
 
 @cache
 def rating_str(rating: int) -> str:
-    # U+2605: BLACK STAR ★
-    # U+2BE8: HALF BLACK STAR
-    return int(rating) * "\u2605" + ("\u2be8" if rating % 1 == 0.5 else "")
+    return int(rating) * BLACK_STAR + (HALF_BLACK_STAR if rating % 1 == 0.5 else "")
 
 
 def yes_no_str(yes: bool) -> str:
