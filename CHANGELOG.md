@@ -3,7 +3,7 @@
 # Changes
 
 - The syncer is now licensed with the GPLv3. We consider this a correction of the previous invalid license condition and not a change.
-- Removed support for cookies from Arc, Librewolf, Octo Browser, and Opera GX. This was due to an internal change. If you used one of those browsers, you may be interested in creating/using an addon, which can now natively supply the syncer with cookies. 
+- Removed support for cookies from Arc, Librewolf, Octo Browser, and Opera GX. This was due to an internal change. If you used one of those browsers, you may be interested in creating/using an addon, which can now natively supply the syncer with cookies.
 
 ## Features
 
@@ -30,7 +30,8 @@
 - A new build script (`tools/bundle.py`) makes bundling outside of github actions possible.
 - Addons are loaded earlier in the startup process than before. This means code executed at addon import time may behave differently. Hooks are unchanged.
 - Two new hooks regarding cookies have been introduced. See the new wiki page for details and usage.
-- Cookies for USDB are now pulled using yt-dlp instead of rookiepy. 
+- Cookies for USDB are now pulled using yt-dlp instead of rookiepy.
+- Added a hook to control when the syncer retries a YouTube download with cookies.
 
 <!-- 0.18.0 -->
 
