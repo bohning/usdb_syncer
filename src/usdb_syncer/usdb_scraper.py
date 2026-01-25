@@ -30,7 +30,7 @@ from usdb_syncer.usdb_song import UsdbSong
 from usdb_syncer.utils import extract_youtube_id, normalize
 
 if TYPE_CHECKING:
-    from collections.abc import Iterator
+    from collections.abc import Generator, Iterator
 
 
 class UserRole(Enum):
@@ -387,9 +387,40 @@ def get_updated_songs_from_usdb(
 ) -> list[UsdbSong]:
     """Return a list of all songs that were updated (or added) since `last_update`."""
     available_songs: dict[SongId, UsdbSong] = {}
+    for batch in _get_songs_from_usdb(
+        "lastchange", True, content_filter=content_filter, session=session
+    ):
+        for song in batch:
+            if song.is_new_since_last_update(last_update):
+                available_songs[song.song_id] = song
+        if (
+            len(batch) < Usdb.MAX_SONGS_PER_PAGE
+            or batch[0].usdb_mtime < last_update.usdb_mtime
+        ):
+            break
+    logger.info(f"Fetched {len(available_songs)} updated song(s) from USDB.")
+    return list(available_songs.values())
+
+
+def get_all_songs_from_usdb(session: Session | None = None) -> list[UsdbSong]:
+    """Return a list of all USDB songs."""
+    available_songs = [
+        s for batch in _get_songs_from_usdb("id", False, session=session) for s in batch
+    ]
+    logger.info(f"Fetched {len(available_songs)} songs from USDB.")
+    return available_songs
+
+
+def _get_songs_from_usdb(
+    order: str,
+    descending: bool = False,
+    content_filter: dict[str, str] | None = None,
+    session: Session | None = None,
+) -> Generator[list[UsdbSong], None, None]:
+    """Yield songs from USDB by the given order."""
     payload = {
-        "order": "lastchange",
-        "ud": "desc",
+        "order": order,
+        "ud": "desc" if descending else "asc",
         "limit": str(Usdb.MAX_SONGS_PER_PAGE),
         "details": "1",
     }
@@ -403,18 +434,10 @@ def get_updated_songs_from_usdb(
             payload=payload,
             session=session,
         )
-        songs = {
-            song.song_id: song
-            for song in _parse_songs_from_songlist(html)
-            if song.is_new_since_last_update(last_update)
-        }
-        available_songs.update(songs)
-
-        if len(songs) < Usdb.MAX_SONGS_PER_PAGE:
+        parsed_songs = list(_parse_songs_from_songlist(html))
+        yield parsed_songs
+        if len(parsed_songs) < Usdb.MAX_SONGS_PER_PAGE:
             break
-
-    logger.info(f"Fetched {len(available_songs)} updated song(s) from USDB.")
-    return list(available_songs.values())
 
 
 def _parse_songs_from_songlist(html: str) -> Iterator[UsdbSong]:

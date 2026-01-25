@@ -56,4 +56,68 @@ INSERT INTO usdb_song SELECT * FROM usdb_song_temp;
 
 DROP TABLE usdb_song_temp;
 
+CREATE TRIGGER fts_usdb_song_insert
+AFTER
+INSERT
+    ON usdb_song BEGIN
+INSERT INTO
+    fts_usdb_song (
+        rowid,
+        song_id,
+        padded_song_id,
+        artist,
+        title,
+        language,
+        edition,
+        year,
+        genre,
+        creator,
+        tags
+    )
+VALUES
+    (
+        new.song_id,
+        new.song_id,
+        printf('%05d', new.song_id),
+        new.artist,
+        new.title,
+        new.language,
+        new.edition,
+        new.year,
+        new.genre,
+        new.creator,
+        new.tags
+    );
+END;
+
+CREATE TRIGGER fts_usdb_song_update BEFORE
+UPDATE
+    ON usdb_song BEGIN
+UPDATE
+    fts_usdb_song
+SET
+    rowid = new.song_id,
+    song_id = new.song_id,
+    padded_song_id = printf('%05d', new.song_id),
+    artist = new.artist,
+    title = new.title,
+    language = new.language,
+    edition = new.edition,
+    year = new.year,
+    genre = new.genre,
+    creator = new.creator,
+    tags = new.tags
+WHERE
+    rowid = old.song_id;
+END;
+
+CREATE TRIGGER fts_usdb_song_delete
+AFTER
+    DELETE ON usdb_song BEGIN
+DELETE FROM
+    fts_usdb_song
+WHERE
+    rowid = old.song_id;
+END;
+
 COMMIT;
