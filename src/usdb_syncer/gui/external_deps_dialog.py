@@ -14,15 +14,22 @@ from usdb_syncer.gui.forms.ExternalDepsDialog import Ui_Dialog
 def check_external_deps(parent: QWidget, on_success: Callable[[], Any]) -> None:
     """Check if external dependencies are available.
 
-    If external dependencies (currently: ffmpeg, deno) are available, can be
-    restored from the settings or are provided by the user, executes `on_success`.
+    If external dependencies (currently: ffmpeg, deno, demucs-cxfreeze) are available,
+    can be restored from the settings or are provided by the user, executes on_success.
     """
     ffmpeg_available = utils.ffmpeg_is_available()
     deno_available = utils.deno_is_available()
-    if ffmpeg_available and deno_available:
+    # Check for demucs-cxfreeze only if stem separation is enabled
+    require_demucs = (
+        settings.get_audio_stem_separation() != settings.AudioStemSeparation.DISABLE
+    )
+    demucs_available = utils.demucs_is_available() if require_demucs else True
+    if ffmpeg_available and deno_available and demucs_available:
         on_success()
     else:
-        ExternalDepsDialog(parent, ffmpeg_available, deno_available, on_success).show()
+        ExternalDepsDialog(
+            parent, ffmpeg_available, deno_available, demucs_available, on_success
+        ).show()
 
 
 class ExternalDepsDialog(Ui_Dialog, QDialog):
@@ -33,16 +40,19 @@ class ExternalDepsDialog(Ui_Dialog, QDialog):
         parent: QWidget,
         ffmpeg_available: bool,
         deno_available: bool,
+        demucs_available: bool,
         on_success: Callable[[], None],
     ) -> None:
         super().__init__(parent=parent)
         self.setupUi(self)
         self.ffmpeg_available = ffmpeg_available
         self.deno_available = deno_available
+        self.demucs_available = demucs_available
         self.on_success = on_success
 
         self.groupBox_ffmpeg.setVisible(not ffmpeg_available)
         self.groupBox_deno.setVisible(not deno_available)
+        self.groupBox_demucs.setVisible(not demucs_available)
 
         windows = sys.platform == "win32"
         macos = sys.platform == "darwin"
@@ -59,6 +69,8 @@ class ExternalDepsDialog(Ui_Dialog, QDialog):
 
         self.set_ffmpeg_location.clicked.connect(self._set_ffmpeg_location)
         self.set_deno_location.clicked.connect(self._set_deno_location)
+        if hasattr(self, "set_demucs_location"):
+            self.set_demucs_location.clicked.connect(self._set_demucs_location)
 
     def _set_ffmpeg_location(self) -> None:
         if not (path := self._get_ffmpeg_dir()):
@@ -66,12 +78,14 @@ class ExternalDepsDialog(Ui_Dialog, QDialog):
         utils.add_to_system_path(path)
         settings.set_ffmpeg_dir(path)
         self.ffmpeg_available = True
-        if self.deno_available:
+        if self.deno_available and self.demucs_available:
             self.accept()
 
     def _get_ffmpeg_dir(self) -> str:
         filt = "ffmpeg.exe" if sys.platform == "win32" else "ffmpeg"
-        path = QFileDialog.getOpenFileName(self, "Select ffmpeg", "", filt)[0]
+        path = QFileDialog.getOpenFileName(self, "Select ffmpeg executable", "", filt)[
+            0
+        ]
         return str(Path(path).parent)
 
     def _set_deno_location(self) -> None:
@@ -80,15 +94,31 @@ class ExternalDepsDialog(Ui_Dialog, QDialog):
         utils.add_to_system_path(path)
         settings.set_deno_dir(path)
         self.deno_available = True
-        if self.ffmpeg_available:
+        if self.ffmpeg_available and self.demucs_available:
             self.accept()
 
     def _get_deno_dir(self) -> str:
         filt = "deno.exe" if sys.platform == "win32" else "deno"
-        path = QFileDialog.getOpenFileName(self, "Select deno", "", filt)[0]
+        path = QFileDialog.getOpenFileName(self, "Select deno executable", "", filt)[0]
+        return str(Path(path).parent)
+
+    def _set_demucs_location(self) -> None:
+        if not (path := self._get_demucs_dir()):
+            return
+        utils.add_to_system_path(path)
+        settings.set_demucs_cxfreeze_dir(path)
+        self.demucs_available = True
+        if self.ffmpeg_available and self.deno_available:
+            self.accept()
+
+    def _get_demucs_dir(self) -> str:
+        filt = "demucs-cxfreeze.exe" if sys.platform == "win32" else "demucs-cxfreeze"
+        path = QFileDialog.getOpenFileName(
+            self, "Select demucs-cxfreeze executable", "", filt
+        )[0]
         return str(Path(path).parent)
 
     def accept(self) -> None:
-        if self.ffmpeg_available and self.deno_available:
+        if self.ffmpeg_available and self.deno_available and self.demucs_available:
             super().accept()
             self.on_success()

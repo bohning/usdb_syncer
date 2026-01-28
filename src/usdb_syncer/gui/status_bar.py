@@ -20,6 +20,7 @@ class StatusBar:
         self.set_usdb_login_status()
         self.set_ffmpeg_status()
         self.set_deno_status()
+        self.set_demucs_status()
         self.set_selection_status()
         gui_events.ThemeChanged.subscribe(self._set_usdb)
         events.LoggedInToUSDB.subscribe(self._on_usdb_login)
@@ -52,6 +53,16 @@ class StatusBar:
         self._deno_button.setCursor(Qt.CursorShape.PointingHandCursor)
         self._set_deno()
         self._statusbar.addPermanentWidget(self._deno_button)
+
+    def set_demucs_status(self) -> None:
+        self._demucs_button = QPushButton(self._statusbar)
+        self._demucs_button.setFlat(True)
+        self._demucs_button.clicked.connect(
+            lambda: check_external_deps(self._statusbar, lambda: None)
+        )
+        self._demucs_button.setCursor(Qt.CursorShape.PointingHandCursor)
+        self._set_demucs()
+        self._statusbar.addPermanentWidget(self._demucs_button)
 
     def set_selection_status(self) -> None:
         self._selection_label = QLabel(self._statusbar)
@@ -108,3 +119,18 @@ class StatusBar:
         self._deno_button.setIcon(icon)
         self._deno_button.setToolTip(tooltip)
         self._deno_button.setFixedSize(self._deno_button.sizeHint())
+
+    def _set_demucs(self, event: gui_events.ThemeChanged | None = None) -> None:
+        theme = event.theme.KEY if event else None
+        if utils.demucs_is_available():
+            text = ""
+            icon = icons.Icon.DEMUCS.icon(theme)
+            tooltip = "Demucs is available."
+        else:
+            text = "Demucs missing!"
+            icon = icons.Icon.DEMUCS_UNAVAILABLE.icon(theme)
+            tooltip = "Demucs is not available! Click for more info."
+        self._demucs_button.setText(text)
+        self._demucs_button.setIcon(icon)
+        self._demucs_button.setToolTip(tooltip)
+        self._demucs_button.setFixedSize(self._demucs_button.sizeHint())

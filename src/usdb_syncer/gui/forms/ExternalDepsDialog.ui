@@ -9,14 +9,14 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>784</width>
-    <height>573</height>
+    <width>770</width>
+    <height>707</height>
    </rect>
   </property>
   <property name="windowTitle">
    <string>External dependencies missing</string>
   </property>
-  <layout class="QVBoxLayout" name="verticalLayout_3">
+  <layout class="QVBoxLayout" name="verticalLayout_4">
    <item>
     <widget class="QGroupBox" name="groupBox_ffmpeg">
      <property name="title">
@@ -120,7 +120,7 @@
         <item>
          <widget class="QPushButton" name="set_ffmpeg_location">
           <property name="text">
-           <string>Set FFmpeg location...</string>
+           <string>Set FFmpeg location …</string>
           </property>
           <property name="icon">
            <iconset resource="../resources/qt/resources.qrc">
@@ -236,11 +236,67 @@
         <item>
          <widget class="QPushButton" name="set_deno_location">
           <property name="text">
-           <string>Set Deno location...</string>
+           <string>Set Deno location …</string>
           </property>
           <property name="icon">
            <iconset resource="../resources/qt/resources.qrc">
             <normaloff>:/icons/deno.svg</normaloff>:/icons/deno.svg</iconset>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </item>
+     </layout>
+    </widget>
+   </item>
+   <item>
+    <widget class="QGroupBox" name="groupBox_demucs">
+     <property name="title">
+      <string>Demucs</string>
+     </property>
+     <layout class="QVBoxLayout" name="verticalLayout_3">
+      <item>
+       <widget class="QLabel" name="label_demucs">
+        <property name="text">
+         <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:700;&quot;&gt;Demucs&lt;/span&gt; is required for stem separation into instrumental and vocal tracks. Download the binaries from &lt;a href=&quot;https://github.com/ostinsolo/demucs-cxfreeze&quot;&gt;&lt;span style=&quot; text-decoration: underline; color:#3586ff;&quot;&gt;https://github.com/ostinsolo/demucs-cxfreeze&lt;/span&gt;&lt;/a&gt; for your operating system, unpack and then set the location.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+        </property>
+        <property name="textFormat">
+         <enum>Qt::TextFormat::RichText</enum>
+        </property>
+        <property name="wordWrap">
+         <bool>true</bool>
+        </property>
+        <property name="openExternalLinks">
+         <bool>true</bool>
+        </property>
+        <property name="textInteractionFlags">
+         <set>Qt::TextInteractionFlag::TextBrowserInteraction</set>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <layout class="QHBoxLayout" name="horizontalLayout_4">
+        <item>
+         <spacer name="horizontalSpacer_3">
+          <property name="orientation">
+           <enum>Qt::Orientation::Horizontal</enum>
+          </property>
+          <property name="sizeHint" stdset="0">
+           <size>
+            <width>40</width>
+            <height>20</height>
+           </size>
+          </property>
+         </spacer>
+        </item>
+        <item>
+         <widget class="QPushButton" name="set_demucs_location">
+          <property name="text">
+           <string>Set Demucs location …</string>
+          </property>
+          <property name="icon">
+           <iconset resource="../resources/qt/resources.qrc">
+            <normaloff>:/icons/arrow-split.png</normaloff>:/icons/arrow-split.png</iconset>
           </property>
          </widget>
         </item>

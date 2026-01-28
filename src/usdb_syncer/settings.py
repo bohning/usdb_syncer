@@ -149,6 +149,7 @@ class SettingKey(Enum):
     SONG_DIR = "song_dir"
     FFMPEG_DIR = "ffmpeg_dir"
     DENO_DIR = "deno_dir"
+    DEMUCS_DIR = "demucs_dir"
     AUTO_UPDATE = "downloads/auto_update"
     BROWSER = "downloads/browser"
     TXT = "downloads/txt"
@@ -166,6 +167,7 @@ class SettingKey(Enum):
     AUDIO_BITRATE = "downloads/audio_bitrate"
     AUDIO_NORMALIZATION = "downloads/audio_normalization"
     AUDIO_EMBED_ARTWORK = "downloads/audio_embed_artwork"
+    AUDIO_STEM_SEPARATION = "downloads/audio_stem_separation"
     VIDEO = "downloads/video"
     VIDEO_FORMAT = "downloads/video_format"
     VIDEO_REENCODE = "downloads/video_reencode"
@@ -431,6 +433,42 @@ class AudioNormalization(Enum):
         if self.value is not None:
             return self.value
         return "disabled"
+
+
+class AudioStemSeparation(Enum):
+    """Audio stem separation options (disable or model to use)."""
+
+    DISABLE = None
+    HTDEMUCS = "htdemucs"
+    HTDEMUCS_FT = "htdemucs_ft"
+    HDDEMUCS_MMI = "hdemucs_mmi"
+    MDX = "mdx"
+    MDX_EXTRA = "mdx_extra"
+    MDX_Q = "mdx_q"
+    MDX_EXTRA_Q = "mdx_extra_q"
+
+    def __str__(self) -> str:
+        match self:
+            case AudioStemSeparation.DISABLE:
+                return "disabled"
+            case AudioStemSeparation.HTDEMUCS:
+                return "htdemucs - Hybrid Transformer Demucs (fast)"
+            case AudioStemSeparation.HTDEMUCS_FT:
+                return (
+                    "htdemucs_ft - Fine-tuned HTDemucs (best quality, bag of 4 models)"
+                )
+            case AudioStemSeparation.HDDEMUCS_MMI:
+                return "hdemucs_mmi - Hybrid Demucs with more musical information"
+            case AudioStemSeparation.MDX:
+                return "mdx - MDX architecture"
+            case AudioStemSeparation.MDX_EXTRA:
+                return "mdx_extra - MDX Extra (bag of 4)"
+            case AudioStemSeparation.MDX_Q:
+                return "mdx_q - MDX Quantized"
+            case AudioStemSeparation.MDX_EXTRA_Q:
+                return "mdx_extra_q - MDX Extra Quantized"
+            case _ as unreachable:
+                assert_never(unreachable)
 
 
 class Browser(Enum):
@@ -798,6 +836,14 @@ def set_audio_embed_artwork(value: bool, temp: bool = False) -> None:
     _Settings.set(SettingKey.AUDIO_EMBED_ARTWORK, value, temp)
 
 
+def get_audio_stem_separation() -> AudioStemSeparation:
+    return _Settings.get(SettingKey.AUDIO_STEM_SEPARATION, AudioStemSeparation.DISABLE)
+
+
+def set_audio_stem_separation(value: AudioStemSeparation) -> None:
+    _Settings.set(SettingKey.AUDIO_STEM_SEPARATION, value)
+
+
 def get_encoding() -> Encoding:
     return _Settings.get(SettingKey.ENCODING, Encoding.UTF_8)
 
@@ -988,6 +1034,14 @@ def get_deno_dir() -> str:
 
 def set_deno_dir(value: str, temp: bool = False) -> None:
     _Settings.set(SettingKey.DENO_DIR, value, temp)
+
+
+def get_demucs_cxfreeze_dir() -> str:
+    return _Settings.get(SettingKey.DEMUCS_DIR, "")
+
+
+def set_demucs_cxfreeze_dir(value: str, temp: bool = False) -> None:
+    _Settings.set(SettingKey.DEMUCS_DIR, value, temp)
 
 
 def get_geometry_main_window() -> QByteArray:
