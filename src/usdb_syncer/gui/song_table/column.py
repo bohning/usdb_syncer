@@ -120,10 +120,6 @@ class Column(IntEnum):
                 return "Text"
             case Column.AUDIO:
                 return "Audio"
-            case Column.INSTRUMENTAL:
-                return "Instrumental"
-            case Column.VOCALS:
-                return "Vocals"
             case Column.VIDEO:
                 return "Video"
             case Column.COVER:
