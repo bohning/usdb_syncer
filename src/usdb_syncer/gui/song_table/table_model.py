@@ -166,6 +166,8 @@ def _display_data(song: UsdbSong, column: int) -> str | None:  # noqa: C901
             Column.SAMPLE_URL
             | Column.TXT
             | Column.AUDIO
+            | Column.INSTRUMENTAL
+            | Column.VOCALS
             | Column.VIDEO
             | Column.COVER
             | Column.BACKGROUND
@@ -219,6 +221,14 @@ def _decoration_data(song: UsdbSong, column: int) -> QIcon | None:  # noqa: C901
             if not (sync_meta and (audio := sync_meta.audio)):
                 return None
             icon = status_icon(audio)
+        case Column.INSTRUMENTAL:
+            if not (song.sync_meta and song.sync_meta.instrumental):
+                return None
+            icon = status_icon(song.sync_meta.instrumental)
+        case Column.VOCALS:
+            if not (song.sync_meta and song.sync_meta.vocals):
+                return None
+            icon = status_icon(song.sync_meta.vocals)
         case Column.VIDEO:
             if not (sync_meta and (video := sync_meta.video)):
                 return None

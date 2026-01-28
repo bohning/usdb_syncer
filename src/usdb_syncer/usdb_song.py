@@ -89,7 +89,7 @@ class UsdbSong:
 
     @classmethod
     def from_db_row(cls, song_id: SongId, row: tuple) -> UsdbSong:
-        assert len(row) == 43
+        assert len(row) == 51
         return cls(
             song_id=song_id,
             usdb_mtime=row[1],
@@ -201,6 +201,16 @@ class UsdbSong:
         if not self.sync_meta:
             return None
         return self.sync_meta.audio_path()
+
+    def instrumental_path(self) -> Path | None:
+        if not self.sync_meta:
+            return None
+        return self.sync_meta.instrumental_path()
+
+    def vocals_path(self) -> Path | None:
+        if not self.sync_meta:
+            return None
+        return self.sync_meta.vocals_path()
 
     def video_path(self) -> Path | None:
         if not self.sync_meta:

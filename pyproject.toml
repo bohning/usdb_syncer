@@ -22,6 +22,7 @@ dependencies = [
     "pillow>=10",
     "platformdirs",
     "PySide6",
+    "python-ffmpeg>=2.0.12",
     "qrcode[pil]~=8.2",
     "reportlab",
     "requests",

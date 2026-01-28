@@ -40,6 +40,8 @@ class Column(IntEnum):
     PINNED = enum.auto()
     TXT = enum.auto()
     AUDIO = enum.auto()
+    INSTRUMENTAL = enum.auto()
+    VOCALS = enum.auto()
     VIDEO = enum.auto()
     COVER = enum.auto()
     BACKGROUND = enum.auto()
@@ -76,6 +78,8 @@ class Column(IntEnum):
                 | Column.VIEWS
                 | Column.TXT
                 | Column.AUDIO
+                | Column.INSTRUMENTAL
+                | Column.VOCALS
                 | Column.VIDEO
                 | Column.COVER
                 | Column.BACKGROUND
@@ -117,6 +121,10 @@ class Column(IntEnum):
                 icon = Icon.TEXT
             case Column.AUDIO:
                 icon = Icon.AUDIO
+            case Column.INSTRUMENTAL:
+                icon = Icon.INSTRUMENTAL
+            case Column.VOCALS:
+                icon = Icon.VOCALS
             case Column.VIDEO:
                 icon = Icon.VIDEO
             case Column.COVER:
@@ -156,6 +164,8 @@ class Column(IntEnum):
                 Column.SAMPLE_URL
                 | Column.TXT
                 | Column.AUDIO
+                | Column.INSTRUMENTAL
+                | Column.VOCALS
                 | Column.VIDEO
                 | Column.COVER
                 | Column.BACKGROUND
@@ -199,6 +209,10 @@ class Column(IntEnum):
                 return db.SongOrder.TXT
             case Column.AUDIO:
                 return db.SongOrder.AUDIO
+            case Column.INSTRUMENTAL:
+                return db.SongOrder.INSTRUMENTAL
+            case Column.VOCALS:
+                return db.SongOrder.VOCALS
             case Column.VIDEO:
                 return db.SongOrder.VIDEO
             case Column.COVER:
@@ -247,6 +261,10 @@ class Column(IntEnum):
                 return Column.TXT
             case db.SongOrder.AUDIO:
                 return Column.AUDIO
+            case db.SongOrder.INSTRUMENTAL:
+                return Column.INSTRUMENTAL
+            case db.SongOrder.VOCALS:
+                return Column.VOCALS
             case db.SongOrder.VIDEO:
                 return Column.VIDEO
             case db.SongOrder.COVER:
@@ -266,6 +284,10 @@ class Column(IntEnum):
                 return sync_meta.txt
             case Column.AUDIO:
                 return sync_meta.audio
+            case Column.INSTRUMENTAL:
+                return sync_meta.instrumental
+            case Column.VOCALS:
+                return sync_meta.vocals
             case Column.VIDEO:
                 return sync_meta.video
             case Column.COVER:

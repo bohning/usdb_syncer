@@ -5,6 +5,7 @@ from __future__ import annotations
 import copy
 import filecmp
 import shutil
+import subprocess
 import tempfile
 import time
 from enum import Enum
@@ -15,6 +16,7 @@ from typing import TYPE_CHECKING, ClassVar, assert_never
 
 import attrs
 import shiboken6
+from ffmpeg import FFmpeg
 from PySide6 import QtCore
 
 from usdb_syncer import (
@@ -38,7 +40,7 @@ from usdb_syncer.logger import Logger, logger, song_logger
 from usdb_syncer.meta_tags import ImageMetaTags
 from usdb_syncer.postprocessing import write_audio_tags, write_video_tags
 from usdb_syncer.resource_dl import ImageKind
-from usdb_syncer.settings import FormatVersion
+from usdb_syncer.settings import AudioStemSeparation, FormatVersion
 from usdb_syncer.song_txt import SongTxt
 from usdb_syncer.sync_meta import Resource, ResourceFile, SyncMeta
 from usdb_syncer.usdb_song import DownloadStatus, UsdbSong
@@ -182,6 +184,12 @@ class _Locations:
         else:
             self._target.parent.mkdir(parents=True, exist_ok=True)
 
+    def stem_separation_instrumental_path(self, model: str) -> Path:
+        return self._tempdir / model / self.filename() / "no_vocals.wav"
+
+    def stem_separation_vocals_path(self, model: str) -> Path:
+        return self._tempdir / model / self.filename() / "vocals.wav"
+
 
 @attrs.define
 class _TempResourceFile:
@@ -246,12 +254,24 @@ class _TempResourceFiles:
 
     txt: _TempResourceFile = attrs.field(factory=_TempResourceFile)
     audio: _TempResourceFile = attrs.field(factory=_TempResourceFile)
+    instrumental: _TempResourceFile = attrs.field(factory=_TempResourceFile)
+    vocals: _TempResourceFile = attrs.field(factory=_TempResourceFile)
     video: _TempResourceFile = attrs.field(factory=_TempResourceFile)
     cover: _TempResourceFile = attrs.field(factory=_TempResourceFile)
     background: _TempResourceFile = attrs.field(factory=_TempResourceFile)
 
     def __iter__(self) -> Iterator[_TempResourceFile]:
-        return iter((self.txt, self.audio, self.video, self.cover, self.background))
+        return iter(
+            (
+                self.txt,
+                self.audio,
+                self.instrumental,
+                self.vocals,
+                self.video,
+                self.cover,
+                self.background,
+            )
+        )
 
 
 @attrs.define
@@ -274,6 +294,8 @@ class _Context:
             for old, out in (
                 (self.song.sync_meta.txt, self.out.txt),
                 (self.song.sync_meta.audio, self.out.audio),
+                (self.song.sync_meta.instrumental, self.out.instrumental),
+                (self.song.sync_meta.vocals, self.out.vocals),
                 (self.song.sync_meta.video, self.out.video),
                 (self.song.sync_meta.cover, self.out.cover),
                 (self.song.sync_meta.background, self.out.background),
@@ -771,6 +793,8 @@ def _write_headers(ctx: _Context) -> None:
         ctx.txt.headers.providedby = constants.Usdb.BASE_URL
 
     _set_audio_headers(ctx, version)
+    _set_instrumental_headers(ctx, version)
+    _set_vocals_headers(ctx, version)
     _set_video_headers(ctx, version)
     _set_cover_headers(ctx, version)
     _set_background_headers(ctx, version)
@@ -800,6 +824,32 @@ def _set_audio_headers(ctx: _Context, version: FormatVersion) -> None:
                 ctx.txt.headers.audiourl = video_url_from_resource(resource)
         case _ as unreachable:
             assert_never(unreachable)
+
+
+def _set_instrumental_headers(ctx: _Context, version: FormatVersion) -> None:
+    path = ctx.out.instrumental.path(ctx.locations, temp=True)
+
+    if not path:
+        ctx.txt.headers.instrumental = None
+        return
+
+    fname = ctx.locations.filename(ext=utils.resource_file_ending(path.name))
+
+    if version >= FormatVersion.V1_1_0:
+        ctx.txt.headers.instrumental = fname
+
+
+def _set_vocals_headers(ctx: _Context, version: FormatVersion) -> None:
+    path = ctx.out.vocals.path(ctx.locations, temp=True)
+
+    if not path:
+        ctx.txt.headers.vocals = None
+        return
+
+    fname = ctx.locations.filename(ext=utils.resource_file_ending(path.name))
+
+    if version >= FormatVersion.V1_1_0:
+        ctx.txt.headers.vocals = fname
 
 
 def _set_video_headers(ctx: _Context, version: FormatVersion) -> None:
@@ -878,6 +928,74 @@ def _maybe_write_audio_tags(ctx: _Context) -> JobStatus:
 
     ctx.logger.info("Success! Wrote audio tags.")
     return JobStatus.SUCCESS
+
+
+def _maybe_separate_stems(ctx: _Context) -> JobStatus:
+    if not (audio_options := ctx.options.audio_options) or (
+        audio_options.stem_separation == AudioStemSeparation.DISABLE
+    ):
+        return JobStatus.SKIPPED_DISABLED
+    if not (audio_path := ctx.out.audio.path(ctx.locations, temp=True)):
+        ctx.logger.info("No audio file to separate, skipping stem separation.")
+        return JobStatus.SKIPPED_UNAVAILABLE
+    if ctx.results[Job.AUDIO_DOWNLOAD] is JobStatus.SUCCESS_UNCHANGED:
+        if ctx.song.instrumental_path() and ctx.song.vocals_path():
+            ctx.logger.info(
+                "Audio file is unchanged, stems are separated, skipping separation."
+            )
+            return JobStatus.SUCCESS_UNCHANGED
+        ctx.logger.info(
+            "Audio file is unchanged, but stems are missing. Stem-separating audio."
+        )
+
+    model = str(audio_options.stem_separation.value)
+    subprocess.run(
+        [
+            "demucs-cxfreeze",
+            "--two-stems",
+            "vocals",
+            "-n",
+            model,
+            "-o",
+            ctx.locations._tempdir.as_posix(),
+            audio_path.as_posix(),
+        ],
+        check=True,
+    )
+    # Transcode instrumental and vocals files to target format via ffmpeg
+    instrumental_input = ctx.locations.stem_separation_instrumental_path(model)
+    instrumental_output = ctx.locations.temp_path(
+        ext=f" [INSTR].{audio_options.format.value}"
+    )
+    transcode_audio(audio_options, instrumental_input, instrumental_output)
+    ctx.out.instrumental.resource = ctx.out.audio.resource
+    ctx.out.instrumental.new_fname = Path(instrumental_output).name
+
+    vocals_input = ctx.locations.stem_separation_vocals_path(model)
+    vocals_output = ctx.locations.temp_path(ext=f" [VOC].{audio_options.format.value}")
+    transcode_audio(audio_options, vocals_input, vocals_output)
+    ctx.out.vocals.resource = ctx.out.audio.resource
+    ctx.out.vocals.new_fname = Path(vocals_output).name
+    ctx.logger.info("Success! Separated audio file into instrumental and vocals.")
+    return JobStatus.SUCCESS
+
+
+def transcode_audio(
+    audio_options: download_options.AudioOptions, src: Path, dst: Path
+) -> None:
+    ffmpeg = (
+        FFmpeg()
+        .option("y")
+        .input(str(src))
+        .output(
+            str(dst),
+            {
+                "codec:a": audio_options.format.ffmpeg_encoder(),
+                "b:a": f"{audio_options.bitrate.ffmpeg_format()}",
+            },
+        )
+    )
+    ffmpeg.execute()
 
 
 def _maybe_write_video_tags(ctx: _Context) -> JobStatus:
@@ -971,6 +1089,12 @@ def _write_sync_meta(ctx: _Context) -> None:
     ctx.song.sync_meta.audio = ctx.out.audio.to_resource(
         ctx.locations, temp=False, status=ctx.results[Job.AUDIO_DOWNLOAD]
     )
+    ctx.song.sync_meta.instrumental = ctx.out.instrumental.to_resource(
+        ctx.locations, temp=False, status=ctx.results[Job.SEPARATE_STEMS]
+    )
+    ctx.song.sync_meta.vocals = ctx.out.vocals.to_resource(
+        ctx.locations, temp=False, status=ctx.results[Job.SEPARATE_STEMS]
+    )
     ctx.song.sync_meta.video = ctx.out.video.to_resource(
         ctx.locations, temp=False, status=ctx.results[Job.VIDEO_DOWNLOAD]
     )
@@ -987,6 +1111,7 @@ class Job(Enum):
     """All jobs in the song download pipeline, in logical order."""
 
     AUDIO_DOWNLOAD = partial(_maybe_download_audio)
+    SEPARATE_STEMS = partial(_maybe_separate_stems)
     VIDEO_DOWNLOAD = partial(_maybe_download_video)
     COVER_DOWNLOAD = partial(_maybe_download_cover)
     BACKGROUND_DOWNLOAD = partial(_maybe_download_background)
@@ -1000,6 +1125,9 @@ class Job(Enum):
 
     def depends_on(self) -> tuple[Job, ...]:
         match self:
+            # although Job.SEPARATE_STEMS depends on Job.AUDIO_DOWNLOAD, the Syncer
+            # should separate stems for existing audio files as well if the stems are
+            # not already present, so we don't declare a dependency here
             case Job.WRITE_AUDIO_TAGS | Job.WRITE_VIDEO_TAGS:
                 return (
                     Job.AUDIO_DOWNLOAD,

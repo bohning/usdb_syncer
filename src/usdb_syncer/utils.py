@@ -287,7 +287,7 @@ def compare_unicode_paths(lhs: Path, rhs: Path) -> bool:
 
 def resource_file_ending(name: str) -> str:
     """Return the suffix or name, including " [BG]" and " [CO]"."""
-    regex = re.compile(r".+?((?: \[(?:CO|BG)\])?\.[^.]+)")
+    regex = re.compile(r".+?((?: \[(?:CO|BG|INSTR|VOC)\])?\.[^.]+)")
     if match := regex.fullmatch(name):
         return match.group(1)
     return ""
@@ -390,6 +390,17 @@ def deno_is_available() -> bool:
         # first run; restore path from settings
         add_to_system_path(path)
         if shutil.which("deno"):
+            return True
+    return False
+
+
+def demucs_is_available() -> bool:
+    if shutil.which("demucs-cxfreeze"):
+        return True
+    if (path := settings.get_demucs_cxfreeze_dir()) and path not in os.environ["PATH"]:
+        # first run; restore path from settings
+        add_to_system_path(path)
+        if shutil.which("demucs-cxfreeze"):
             return True
     return False
 

@@ -136,6 +136,10 @@ class SongTable:
                 return sync_meta.txt_path()
             case Column.AUDIO:
                 return sync_meta.audio_path()
+            case Column.INSTRUMENTAL:
+                return sync_meta.instrumental_path()
+            case Column.VOCALS:
+                return sync_meta.vocals_path()
             case Column.VIDEO:
                 return sync_meta.video_path()
             case Column.COVER:

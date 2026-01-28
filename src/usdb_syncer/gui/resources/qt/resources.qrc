@@ -1,6 +1,8 @@
 <RCC>
   <qresource prefix="icons">
     <file>alert-white.svg</file>
+    <file>arrow-split-red.png</file>
+    <file>arrow-split.png</file>
     <file>artist-white.svg</file>
     <file>artist.png</file>
     <file>audio.png</file>
@@ -12,6 +14,7 @@
     <file>bug.png</file>
     <file>calendar-white.svg</file>
     <file>calendar.png</file>
+    <file>call-split-white.svg</file>
     <file>cards-white.svg</file>
     <file>changes-white.svg</file>
     <file>changes.png</file>
@@ -69,6 +72,8 @@
     <file>format-title-white.svg</file>
     <file>gold-white.svg</file>
     <file>golden_notes.png</file>
+    <file>guitar-white.svg</file>
+    <file>guitar.png</file>
     <file>heart-white.svg</file>
     <file>heart.png</file>
     <file>id.png</file>
@@ -83,6 +88,8 @@
     <file>menu-left-white.svg</file>
     <file>menu-right-white.svg</file>
     <file>menu-up-white.svg</file>
+    <file>microphone-white.svg</file>
+    <file>microphone.png</file>
     <file>minus-circle-white.svg</file>
     <file>minus-circle.png</file>
     <file>music--arrow.png</file>

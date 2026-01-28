@@ -231,6 +231,8 @@ class SongOrder(enum.Enum):
     PINNED = enum.auto()
     TXT = enum.auto()
     AUDIO = enum.auto()
+    INSTRUMENTAL = enum.auto()
+    VOCALS = enum.auto()
     VIDEO = enum.auto()
     COVER = enum.auto()
     BACKGROUND = enum.auto()
@@ -277,6 +279,10 @@ class SongOrder(enum.Enum):
                 return self.order("txt")
             case SongOrder.AUDIO:
                 return self.order("audio")
+            case SongOrder.INSTRUMENTAL:
+                return self.order("instrumental")
+            case SongOrder.VOCALS:
+                return self.order("vocals")
             case SongOrder.VIDEO:
                 return self.order("video")
             case SongOrder.COVER:
@@ -938,6 +944,8 @@ class ResourceKind(enum.StrEnum):
 
     TXT = "txt"
     AUDIO = "audio"
+    INSTRUMENTAL = "instrumental"
+    VOCALS = "vocals"
     VIDEO = "video"
     COVER = "cover"
     BACKGROUND = "background"
