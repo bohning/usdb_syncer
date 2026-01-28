@@ -85,6 +85,58 @@ class Column(IntEnum):
             case _ as unreachable:
                 assert_never(unreachable)
 
+    def column_label(self) -> str:  # noqa: C901
+        """Return a label for this column, needed for the header context menu."""
+        match self:
+            case Column.SAMPLE_URL:
+                return "Sample"
+            case Column.SONG_ID:
+                return "ID"
+            case Column.ARTIST:
+                return "Artist"
+            case Column.TITLE:
+                return "Title"
+            case Column.LANGUAGE:
+                return "Language"
+            case Column.EDITION:
+                return "Edition"
+            case Column.GOLDEN_NOTES:
+                return "Golden Notes"
+            case Column.RATING:
+                return "Rating"
+            case Column.VIEWS:
+                return "Views"
+            case Column.YEAR:
+                return "Year"
+            case Column.GENRE:
+                return "Genre"
+            case Column.CREATOR:
+                return "Creator"
+            case Column.TAGS:
+                return "Tags"
+            case Column.LAST_CHANGE:
+                return "Last change"
+            case Column.TXT:
+                return "Text"
+            case Column.AUDIO:
+                return "Audio"
+            case Column.INSTRUMENTAL:
+                return "Instrumental"
+            case Column.VOCALS:
+                return "Vocals"
+            case Column.VIDEO:
+                return "Video"
+            case Column.COVER:
+                return "Cover"
+            case Column.BACKGROUND:
+                return "Background"
+            case Column.PINNED:
+                return "Pinned"
+            case Column.DOWNLOAD_STATUS:
+                return "Status"
+            case _ as unreachable:
+                assert_never(unreachable)
+
     def decoration_data(self) -> QIcon:  # noqa: C901
         match self:
             case Column.SAMPLE_URL:
