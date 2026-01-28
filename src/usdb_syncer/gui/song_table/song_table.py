@@ -211,6 +211,9 @@ class SongTable:
             elif not existing_state:
                 header.resizeSection(column, DEFAULT_COLUMN_WIDTH)
 
+        header.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
+        header.customContextMenuRequested.connect(self._show_header_context_menu)
+
     def build_custom_data_menu(self) -> None:
         if not (song := self.current_song()) or not song.sync_meta:
             return
@@ -297,6 +300,29 @@ class SongTable:
         settings.set_table_view_header_state(
             self.mw.table_view.horizontalHeader().saveState()
         )
+
+    def _show_header_context_menu(self, pos: QtCore.QPoint) -> None:
+        menu = QtWidgets.QMenu(self.mw)
+        header = self._header()
+
+        for column in Column:
+            action = QAction(column.column_label(), menu)
+            action.setIcon(column.decoration_data())
+            action.setCheckable(True)
+            action.setChecked(not header.isSectionHidden(column))
+            action.triggered.connect(
+                partial(self._toggle_column_visibility, column, header)
+            )
+            menu.addAction(action)
+
+        menu.exec(header.mapToGlobal(pos))
+
+    def _toggle_column_visibility(
+        self, column: Column, header: QtWidgets.QHeaderView
+    ) -> None:
+        is_hidden = header.isSectionHidden(column)
+        header.setSectionHidden(column, not is_hidden)
+        self.save_state()
 
     # actions
 
