@@ -1,0 +1,40 @@
+name: Upload to testpypi
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  upload:
+    name: Upload to TestPyPI
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v7
+      - name: Generate pyside files
+        run: uv run --no-dev python -m tools.generate_pyside_files
+      - name: Get version from hatch
+        run: |
+          RAW_VERSION=$(uv run --with hatch hatch version)
+
+          CLEAN_VERSION="${RAW_VERSION%+*}"
+
+          git tag "v$CLEAN_VERSION"
+
+          echo "Created temporary tag: v$CLEAN_VERSION"
+      - name: Build the wheel
+        run: uv build --wheel --force-pep517
+      - name: Upload to TestPyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          verbose: true
+          repository-url: https://test.pypi.org/legacy/

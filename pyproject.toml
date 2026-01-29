@@ -69,24 +69,15 @@ default-groups = [
 source = "vcs"
 
 [tool.hatch.build.targets.sdist]
-include = [
+artifacts = [
     "src/usdb_syncer/gui/forms/*.py",
-    "src/usdb_syncer/gui/resources/qt/*.py",
-    "src/usdb_syncer/gui/resources/text/*",
-    "src/usdb_syncer/data/*.json",
-    "src/usdb_syncer/webserver/static/*",
-    "src/usdb_syncer/webserver/templates/*",
+    "src/usdb_syncer/gui/resources/qt/*.py"
 ]
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/usdb_syncer"]
-include = [
+artifacts = [
     "src/usdb_syncer/gui/forms/*.py",
     "src/usdb_syncer/gui/resources/qt/*.py",
-    "src/usdb_syncer/gui/resources/text/*",
-    "src/usdb_syncer/data/*.json",
-    "src/usdb_syncer/webserver/static/*",
-    "src/usdb_syncer/webserver/templates/*",
 ]
 
 [tool.ruff]

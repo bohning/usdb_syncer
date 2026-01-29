@@ -20,7 +20,7 @@ There are three ways to run USDB Syncer:
 3. We provide [ready-to-run executables](https://github.com/bohning/usdb_syncer/releases) for all major operating systems.
 
 > [!IMPORTANT]  
-> Linux users should check [Linux Compatibility](#linux-compatibility) as additional packages might be required.
+> Linux users should check [Linux Compatibility](#linux-compatibility) as additional configuration is usually required.
 
 ## Development
 
@@ -99,13 +99,19 @@ startup phase, they cannot be completely ruled out.
 
 ## Troubleshooting
 
-- The `keyring` package auto-detects an appropriate installed keyring backend (see [PyPI - keyring](https://pypi.org/project/keyring/)). Thus may require following additional package if no backend can be detected, see #136
+- With Qt issues, set the `QT_DEBUG_PLUGINS` environment variable to 1, then re-run. It will output much more diagnostics.
+
+- The `keyring` package auto-detects an appropriate installed keyring backend (see [PyPI - keyring](https://pypi.org/project/keyring/)). This may require following additional package if no backend can be detected, see #136
+  
+  With KDE, a Wallet may have to be activated in the system settings.
+
+  With gnome, install gnome-keyring
 
   ```bash
   apt install gnome-keyring
   ```
 
-  If using KDE, a Wallet will have to be activated in the system settings.
+  You can also disable the keyring entirely by setting `PYTHON_KEYRING_BACKEND=keyring.backends.null.Keyring`. The syncer will not be able to store your USDB password in that case.
 
 - One user using KDE Plasma experiencing an [issue with the menu bar](https://github.com/bohning/usdb_syncer/issues/198)
   solved it by forcing XWayland instead of Wayland being used: `env WAYLAND_DISPLAY=`.
@@ -114,36 +120,58 @@ startup phase, they cannot be completely ruled out.
 
 ### Required packages
 
-The bundles contain all necessary dependencies with the exception of some hardware-specific packages:
+The bundle contains most of the required packages. You will need to supply video libraries (which should be included for your desktop already) and [pipewire](https://pkgs.org/search/?q=pipewire&on=files).
+If you do encounter a warning or an error, set `export QT_DEBUG_PLUGINS=1` to see the exact library you are missing.
 
-```bash
-apt install -y libportaudio2
-```
+More packages are required when running from source or the official Python package, which are usually not installed by default:
 
-More packages are required when running from source or the official Python package, mostly for Qt:
+<details>
+<summary>Ubuntu/Debian</summary>
 
-```bash
-apt install -y libgstreamer-gl1.0-0 libxcb-glx0 libxcb-icccm4 libxcb-image0 libxcb-keysyms1 libxcb-randr0 libxcb-render-util0 libxcb-render0 libxcb-shape0 libxcb-shm0 libxcb-sync1 libxcb-util1 libxcb-xfixes0 libxcb1 libxkbcommon-dev libxkbcommon-x11-0 libxcb-cursor0 libva-dev libva-drm2 libva-x11-2 libportaudio2
-```
+````bash
+apt install libgssapi-krb5-2 libgl1 libegl1 libva2 libva-drm2 libva-x11-2 libpipewire-0.3-0 libxkbcommon0 libxkbcommon-x11-0 libxcb-cursor0 libxcb-icccm4 libxcb-keysyms1 libxcb-shape0 libxrandr2
+````
 
-If this doesn't help, you might also check:
+</details>
+<details>
+<summary>Fedora</summary>
 
-- https://doc.qt.io/qt-6/linux.html#requirements-for-development-host
-- https://doc.qt.io/qt-6/linux-requirements.html
+````bash
+dnf install libglvnd-glx libglvnd-egl fontconfig libxkbcommon libXrandr libxkbcommon-x11 xcb-util-cursor xcb-util-wm xcb-util-keysyms libva pipewire
+````
 
-### Binaries
+</details>
+<details>
+<summary>Arch</summary>
 
-Linux bundles are generated on AlmaLinux 9. They should be compatible with any modern distribution. If not, please open an issue.
+````bash
+pacman -Sy fontconfig libxkbcommon libxkbcommon-x11 xcb-util-cursor xcb-util-wm xcb-util-keysyms pipewire
+````
 
-The only known requirement for the binary is `glibc >= 2.34`. The current `glibc` version can be checked with:
+</details>
+
+You can also use the corresponding wayland libraries. We will fix issues related to wayland, but we are unable to efficiently test on wayland properly, which is why problems may be more frequent.
+
+### Compatibility
+
+The wheels are pure python with no extension modules, and are thus only restricted by the python version.
+
+Linux bundles are generated on an AlmaLinux 9 host. They should be compatible with any modern distribution. If not, please open an issue.
+
+They are linked against `glibc 2.34`. The current `glibc` version can be checked with:
 
 ```bash
 ldd --version
 ```
 
-Support for the following distributions has been manually confirmed as of March 2025:
+We confirm support automatically for these distros:
 
-- Ubuntu 22.04 and 24.04
-- Debian 12
-- Manjaro 24.2
-- Fedora 41
+- Ubuntu 22.04 (Deadsnakes PPA), 24.04
+- Debian 12, 13
+- Fedora 42, 43
+- Arch
+
+The following distros are officially unsupported:
+
+- Ubuntu 20.04
+- Debian 11
