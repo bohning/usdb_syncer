@@ -45,48 +45,7 @@ class Column(IntEnum):
     BACKGROUND = enum.auto()
     DOWNLOAD_STATUS = enum.auto()
 
-    def display_data(self) -> str | None:  # noqa: C901
-        match self:
-            case Column.SONG_ID:
-                return "ID"
-            case Column.ARTIST:
-                return "Artist"
-            case Column.TITLE:
-                return "Title"
-            case Column.LANGUAGE:
-                return "Language"
-            case Column.EDITION:
-                return "Edition"
-            case Column.YEAR:
-                return "Year"
-            case Column.GENRE:
-                return "Genre"
-            case Column.CREATOR:
-                return "Creator"
-            case Column.TAGS:
-                return "Tags"
-            case Column.LAST_CHANGE:
-                return "Last change"
-            case Column.DOWNLOAD_STATUS:
-                return "Status"
-            case (
-                Column.SAMPLE_URL
-                | Column.GOLDEN_NOTES
-                | Column.RATING
-                | Column.VIEWS
-                | Column.TXT
-                | Column.AUDIO
-                | Column.VIDEO
-                | Column.COVER
-                | Column.BACKGROUND
-                | Column.PINNED
-            ):
-                return None
-            case _ as unreachable:
-                assert_never(unreachable)
-
     def column_label(self) -> str:  # noqa: C901
-        """Return a label for this column, needed for the header context menu."""
         match self:
             case Column.SAMPLE_URL:
                 return "Sample"
@@ -132,6 +91,22 @@ class Column(IntEnum):
                 return "Status"
             case _ as unreachable:
                 assert_never(unreachable)
+
+    def display_data(self) -> str | None:
+        if self in (
+            Column.SAMPLE_URL,
+            Column.GOLDEN_NOTES,
+            Column.RATING,
+            Column.VIEWS,
+            Column.TXT,
+            Column.AUDIO,
+            Column.VIDEO,
+            Column.COVER,
+            Column.BACKGROUND,
+            Column.PINNED,
+        ):
+            return None
+        return self.column_label()
 
     def decoration_data(self) -> QIcon:  # noqa: C901
         match self:
