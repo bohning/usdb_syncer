@@ -23,7 +23,7 @@ jobs:
         run: uv run --no-dev python -m tools.generate_pyside_files
       - name: Get version from hatch
         run: |
-          RAW_VERSION=$(uv run --with hatch hatch version)
+          RAW_VERSION=$(uvx --with hatch hatch version)
 
           CLEAN_VERSION="${RAW_VERSION%+*}"
 
