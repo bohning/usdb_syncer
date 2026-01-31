@@ -58,6 +58,8 @@ jobs:
       fail-fast: false
       matrix:
         include:
+          - image: ubuntu:25.10
+            COMPATIBILITY: ubuntu
           - image: ubuntu:24.04
             COMPATIBILITY: ubuntu
           - image: ubuntu:22.04
@@ -115,6 +117,8 @@ jobs:
       fail-fast: false
       matrix:
         include:
+          - image: ubuntu:25.10
+            COMPATIBILITY: ubuntu
           - image: ubuntu:24.04
             COMPATIBILITY: ubuntu
           - image: ubuntu:22.04
@@ -140,13 +144,13 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - name: Install python (for debian:12). Will be 3.11.
+      - name: Install python3.11 (for debian:12)
         if: matrix.image == 'debian:12'
         run: |
           apt update
           apt install -y python3 python3-venv python3-pip
           ln -s $(which python3) /usr/local/bin/python
-      - name: Install python (for ubuntu:22.04) with deadsnakes PPA.
+      - name: Install python3.12 (for ubuntu:22.04) using deadsnakes PPA.
         if: matrix.image == 'ubuntu:22.04'
         run: |
           apt update
@@ -160,15 +164,15 @@ jobs:
         if: matrix.COMPATIBILITY == 'ubuntu'
         run: |
           apt update
-          apt install -y libgssapi-krb5-2 libgl1 libegl1 libva2 libva-drm2 libva-x11-2 pulseaudio libpipewire-0.3-0 libxkbcommon0 libxkbcommon-x11-0 libxcb-cursor0 libxcb-icccm4 libxcb-keysyms1 libxcb-shape0 libxrandr2 xvfb
+          apt install -y libgssapi-krb5-2 libgl1 libegl1 libva2 libva-drm2 libva-x11-2 pulseaudio libpipewire-0.3-0 libportaudio2 libxkbcommon0 libxkbcommon-x11-0 libxcb-cursor0 libxcb-icccm4 libxcb-keysyms1 libxcb-shape0 libxrandr2 libfontconfig1 xvfb
       - name: Set up fedora packages
         if: matrix.COMPATIBILITY == 'fedora'
         run: |
-          dnf install -y libglvnd-glx libglvnd-egl fontconfig libxkbcommon dbus-daemon libXrandr libxkbcommon-x11 xcb-util-cursor xcb-util-wm xcb-util-keysyms libva pulseaudio pipewire xorg-x11-server-Xvfb
+          dnf install -y libglvnd-glx libglvnd-egl fontconfig libxkbcommon dbus-daemon libXrandr libxkbcommon-x11 xcb-util-cursor xcb-util-wm xcb-util-keysyms libva pulseaudio pipewire portaudio xorg-x11-server-Xvfb
       - name: Set up archlinux packages
         if: matrix.COMPATIBILITY == 'archlinux'
         run: |
-          pacman -Sy --noconfirm fontconfig libxkbcommon libxkbcommon-x11 xcb-util-cursor xcb-util-wm xcb-util-keysyms dbus pulseaudio pipewire xorg-server-xvfb
+          pacman -Sy --noconfirm fontconfig libxkbcommon libxkbcommon-x11 xcb-util-cursor xcb-util-wm xcb-util-keysyms dbus pulseaudio pipewire portaudio xorg-server-xvfb
           groupadd -g 500 pulse
           useradd -u 500 -g pulse -d /var/run/pulse -s /usr/bin/nologin pulse
           usermod -aG audio pulse

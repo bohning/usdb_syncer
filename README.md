@@ -99,7 +99,7 @@ startup phase, they cannot be completely ruled out.
 
 ## Troubleshooting
 
-- With Qt issues, set the `QT_DEBUG_PLUGINS` environment variable to 1, then re-run. It will output much more diagnostics.
+- With Qt issues, set the `QT_DEBUG_PLUGINS` environment variable to 1, then re-run. It will output diagnostics while running.
 
 - The `keyring` package auto-detects an appropriate installed keyring backend (see [PyPI - keyring](https://pypi.org/project/keyring/)). This may require following additional package if no backend can be detected, see #136
   
@@ -111,7 +111,7 @@ startup phase, they cannot be completely ruled out.
   apt install gnome-keyring
   ```
 
-  You can also disable the keyring entirely by setting `PYTHON_KEYRING_BACKEND=keyring.backends.null.Keyring`. The syncer will not be able to store your USDB password in that case.
+  You can also disable the keyring entirely by setting `PYTHON_KEYRING_BACKEND=keyring.backends.null.Keyring`. The Syncer will not be able to store your USDB password in that case.
 
 - One user using KDE Plasma experiencing an [issue with the menu bar](https://github.com/bohning/usdb_syncer/issues/198)
   solved it by forcing XWayland instead of Wayland being used: `env WAYLAND_DISPLAY=`.
@@ -123,13 +123,13 @@ startup phase, they cannot be completely ruled out.
 The bundle contains most of the required packages. You will need to supply video libraries (which should be included for your desktop already) and [pipewire](https://pkgs.org/search/?q=pipewire&on=files).
 If you do encounter a warning or an error, set `export QT_DEBUG_PLUGINS=1` to see the exact library you are missing.
 
-More packages are required when running from source or the official Python package, which are usually not installed by default:
+More packages are required when running from source or the official Python package:
 
 <details>
 <summary>Ubuntu/Debian</summary>
 
 ````bash
-apt install libgssapi-krb5-2 libgl1 libegl1 libva2 libva-drm2 libva-x11-2 libpipewire-0.3-0 libxkbcommon0 libxkbcommon-x11-0 libxcb-cursor0 libxcb-icccm4 libxcb-keysyms1 libxcb-shape0 libxrandr2
+apt install libgssapi-krb5-2 libgl1 libegl1 libva2 libva-drm2 libva-x11-2 libpipewire-0.3-0 libportaudio2 libxkbcommon0 libxkbcommon-x11-0 libxcb-cursor0 libxcb-icccm4 libxcb-keysyms1 libxcb-shape0 libxrandr2 libfontconfig1
 ````
 
 </details>
@@ -137,7 +137,7 @@ apt install libgssapi-krb5-2 libgl1 libegl1 libva2 libva-drm2 libva-x11-2 libpip
 <summary>Fedora</summary>
 
 ````bash
-dnf install libglvnd-glx libglvnd-egl fontconfig libxkbcommon libXrandr libxkbcommon-x11 xcb-util-cursor xcb-util-wm xcb-util-keysyms libva pipewire
+dnf install libglvnd-glx libglvnd-egl fontconfig libxkbcommon libXrandr libxkbcommon-x11 xcb-util-cursor xcb-util-wm xcb-util-keysyms libva pipewire portaudio
 ````
 
 </details>
@@ -145,16 +145,16 @@ dnf install libglvnd-glx libglvnd-egl fontconfig libxkbcommon libXrandr libxkbco
 <summary>Arch</summary>
 
 ````bash
-pacman -Sy fontconfig libxkbcommon libxkbcommon-x11 xcb-util-cursor xcb-util-wm xcb-util-keysyms pipewire
+pacman -Sy fontconfig libxkbcommon libxkbcommon-x11 xcb-util-cursor xcb-util-wm xcb-util-keysyms pipewire portaudio
 ````
 
 </details>
 
-You can also use the corresponding wayland libraries. We will fix issues related to wayland, but we are unable to efficiently test on wayland properly, which is why problems may be more frequent.
+You can also use the corresponding wayland libraries. We will fix issues related to wayland, but we don't test on wayland, which is why problems may be more frequent.
 
 ### Compatibility
 
-The wheels are pure python with no extension modules, and are thus only restricted by the python version.
+The wheels are pure Python with no extension modules, and are thus only restricted by the Python version.
 
 Linux bundles are generated on an AlmaLinux 9 host. They should be compatible with any modern distribution. If not, please open an issue.
 
@@ -166,7 +166,7 @@ ldd --version
 
 We confirm support automatically for these distros:
 
-- Ubuntu 22.04 (Deadsnakes PPA), 24.04
+- Ubuntu 22.04 (Deadsnakes PPA), 24.04, 25.10
 - Debian 12, 13
 - Fedora 42, 43
 - Arch

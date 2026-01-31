@@ -324,13 +324,16 @@ def _run_heathcheck() -> int:
         from usdb_syncer.gui.mw import MainWindow  # noqa: F401
 
         # database check
-        with db.managed_connection(":memory:"):
-            pass
+        db.connect(":memory:")
 
         # resources check
         from usdb_syncer.gui.resources.text import NOTICE
 
         NOTICE.read_text()
+
+        # sounddevice check
+        import sounddevice  # noqa: F401
+
     except Exception as e:  # noqa: BLE001
         print(f"USDB Syncer healthcheck: failed: {e}")
         return 1
