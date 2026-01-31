@@ -24,10 +24,14 @@ jobs:
       - name: Get version from hatch
         run: |
           RAW_VERSION=$(uvx --with hatch hatch version)
+          echo "Raw version: $RAW_VERSION"
+          echo "RAW_VERSION=$RAW_VERSION" >> ${GITHUB_OUTPUT}
 
           CLEAN_VERSION="${RAW_VERSION%+*}"
 
-          git tag "v$CLEAN_VERSION"
+          git config user.name "gha"
+          git config user.email "gha@localhost"
+          git tag -a "v$CLEAN_VERSION" -m "Local tag"
 
           echo "Created temporary tag: v$CLEAN_VERSION"
       - name: Build the wheel
