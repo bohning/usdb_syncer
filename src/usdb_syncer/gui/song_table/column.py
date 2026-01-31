@@ -16,7 +16,7 @@ if TYPE_CHECKING:
     from usdb_syncer.sync_meta import Resource, SyncMeta
 
 
-MINIMUM_COLUMN_WIDTH = 24
+MIN_COLUMN_WIDTH = 24
 
 
 class ColumnValue(NamedTuple):
@@ -32,53 +32,29 @@ class ColumnValue(NamedTuple):
 class Column(enum.Enum):
     """Table columns."""
 
-    SAMPLE_URL = ColumnValue(
-        "Sample",
-        False,
-        Icon.AUDIO_SAMPLE,
-        MINIMUM_COLUMN_WIDTH,
-        db.SongOrder.SAMPLE_URL,
-    )
+    # fmt: off
+    SAMPLE_URL = ColumnValue("Sample", False, Icon.AUDIO_SAMPLE, MIN_COLUMN_WIDTH, db.SongOrder.SAMPLE_URL)
     SONG_ID = ColumnValue("ID", True, Icon.ID, None, db.SongOrder.SONG_ID)
     ARTIST = ColumnValue("Artist", True, Icon.ARTIST, None, db.SongOrder.ARTIST)
     TITLE = ColumnValue("Title", True, Icon.TITLE, None, db.SongOrder.TITLE)
     LANGUAGE = ColumnValue("Language", True, Icon.LANGUAGE, None, db.SongOrder.LANGUAGE)
     EDITION = ColumnValue("Edition", True, Icon.EDITION, None, db.SongOrder.EDITION)
-    GOLDEN_NOTES = ColumnValue(
-        "Golden Notes", False, Icon.GOLDEN_NOTES, None, db.SongOrder.GOLDEN_NOTES
-    )
+    GOLDEN_NOTES = ColumnValue("Golden Notes", False, Icon.GOLDEN_NOTES, None, db.SongOrder.GOLDEN_NOTES)
     RATING = ColumnValue("Rating", False, Icon.RATING, None, db.SongOrder.RATING)
     VIEWS = ColumnValue("Views", False, Icon.VIEWS, None, db.SongOrder.VIEWS)
     YEAR = ColumnValue("Year", True, Icon.CALENDAR, None, db.SongOrder.YEAR)
     GENRE = ColumnValue("Genre", True, Icon.GENRE, None, db.SongOrder.GENRE)
     CREATOR = ColumnValue("Creator", True, Icon.CREATOR, None, db.SongOrder.CREATOR)
     TAGS = ColumnValue("Tags", True, Icon.TAGS, None, db.SongOrder.TAGS)
-    LAST_CHANGE = ColumnValue(
-        "Last Change", True, Icon.LAST_CHANGE, None, db.SongOrder.LAST_CHANGE
-    )
-    PINNED = ColumnValue(
-        "Pinned", False, Icon.PIN, MINIMUM_COLUMN_WIDTH, db.SongOrder.PINNED
-    )
-    TXT = ColumnValue("Text", False, Icon.TEXT, MINIMUM_COLUMN_WIDTH, db.SongOrder.TXT)
-    AUDIO = ColumnValue(
-        "Audio", False, Icon.AUDIO, MINIMUM_COLUMN_WIDTH, db.SongOrder.AUDIO
-    )
-    VIDEO = ColumnValue(
-        "Video", False, Icon.VIDEO, MINIMUM_COLUMN_WIDTH, db.SongOrder.VIDEO
-    )
-    COVER = ColumnValue(
-        "Cover", False, Icon.COVER, MINIMUM_COLUMN_WIDTH, db.SongOrder.COVER
-    )
-    BACKGROUND = ColumnValue(
-        "Background",
-        False,
-        Icon.BACKGROUND,
-        MINIMUM_COLUMN_WIDTH,
-        db.SongOrder.BACKGROUND,
-    )
-    DOWNLOAD_STATUS = ColumnValue(
-        "Status", True, Icon.DOWNLOAD, None, db.SongOrder.STATUS
-    )
+    LAST_CHANGE = ColumnValue("Last Change", True, Icon.LAST_CHANGE, None, db.SongOrder.LAST_CHANGE)
+    PINNED = ColumnValue("Pinned", False, Icon.PIN, MIN_COLUMN_WIDTH, db.SongOrder.PINNED)
+    TXT = ColumnValue("Text", False, Icon.TEXT, MIN_COLUMN_WIDTH, db.SongOrder.TXT)
+    AUDIO = ColumnValue("Audio", False, Icon.AUDIO, MIN_COLUMN_WIDTH, db.SongOrder.AUDIO)
+    VIDEO = ColumnValue("Video", False, Icon.VIDEO, MIN_COLUMN_WIDTH, db.SongOrder.VIDEO)
+    COVER = ColumnValue("Cover", False, Icon.COVER, MIN_COLUMN_WIDTH, db.SongOrder.COVER)
+    BACKGROUND = ColumnValue("Background", False, Icon.BACKGROUND, MIN_COLUMN_WIDTH, db.SongOrder.BACKGROUND)
+    DOWNLOAD_STATUS = ColumnValue("Status", True, Icon.DOWNLOAD, None, db.SongOrder.STATUS)
+    # fmt: on
 
     def display_data(self) -> str | None:
         return self.value.label if self.value.display_data else None

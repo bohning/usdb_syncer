@@ -18,7 +18,7 @@ from usdb_syncer.gui import events as gui_events
 from usdb_syncer.gui import external_deps_dialog, previewer
 from usdb_syncer.gui.custom_data_dialog import CustomDataDialog
 from usdb_syncer.gui.progress import run_with_progress
-from usdb_syncer.gui.song_table.column import MINIMUM_COLUMN_WIDTH, Column
+from usdb_syncer.gui.song_table.column import MIN_COLUMN_WIDTH, Column
 from usdb_syncer.gui.song_table.table_model import TableModel
 from usdb_syncer.logger import song_logger
 from usdb_syncer.song_loader import DownloadManager
@@ -203,7 +203,7 @@ class SongTable:
 
         header.setSectionsMovable(True)
         header.setStretchLastSection(True)
-        header.setMinimumSectionSize(MINIMUM_COLUMN_WIDTH)
+        header.setMinimumSectionSize(MIN_COLUMN_WIDTH)
         header.setSectionResizeMode(QtWidgets.QHeaderView.ResizeMode.Interactive)
         header.setHighlightSections(False)
 

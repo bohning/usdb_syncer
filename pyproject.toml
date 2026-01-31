@@ -146,6 +146,8 @@ ignore = [
     "Q003",
     "COM812",
     "COM819",
+    # 'Line too long' will be caught by format check
+    "E501",
     # We're fine with `assert`s if they're not used for validation, but state facts
     "S101",
     # Allow `subprocess` and starting without shell.
