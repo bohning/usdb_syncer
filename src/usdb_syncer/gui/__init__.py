@@ -109,7 +109,7 @@ class CliArgs:
             "--host",
             type=int,
             help="Host for the webservice. Default is the device's public IP address. "
-            "Use 127.0.0.1 (localhost) to not be accessible by other devies "
+            "Use 127.0.0.1 (localhost) to not be accessible by other devices "
             "on the local network.",
         )
         serve.add_argument(
