@@ -17,7 +17,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.12"
+          python-version: "3.14"
       - name: Set up uv
         uses: astral-sh/setup-uv@v7
       - name: Generate pyside files
@@ -52,7 +52,7 @@ jobs:
           fetch-depth: 0
       - uses: actions/setup-python@v5
         with:
-          python-version: "3.12"
+          python-version: "3.14"
       - uses: astral-sh/setup-uv@v7
       - run: uv run --no-dev --group bundle python -m tools.generate_pyside_files
       - run: uv run --no-dev --group bundle python -m tools.bundle Linux --version TestBuild
@@ -156,7 +156,7 @@ jobs:
         if: matrix.image != 'debian:12' && matrix.image != 'ubuntu:22.04' # debian:12 and ubuntu:22.04 are too old for setup-python (https://github.com/actions/setup-python/issues/1224)
         uses: actions/setup-python@v5
         with:
-          python-version: "3.12"
+          python-version: "3.14"
       - name: Install python3.11 (for debian:12)
         if: matrix.image == 'debian:12'
         run: |
@@ -170,8 +170,8 @@ jobs:
           apt install -y software-properties-common
           add-apt-repository ppa:deadsnakes/ppa
           apt update
-          DEBIAN_FRONTEND=noninteractive apt install -y python3.12 python3.12-venv
-          ln -s /usr/bin/python3.12 /usr/local/bin/python
+          DEBIAN_FRONTEND=noninteractive apt install -y python3.14 python3.14-venv
+          ln -s /usr/bin/python3.14 /usr/local/bin/python
 
       - name: Set up ubuntu packages
         if: matrix.COMPATIBILITY == 'ubuntu'

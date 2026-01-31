@@ -38,6 +38,10 @@ SCHEMA_ERROR_MESSAGE = (
     f" more recent release, or remove the file at '{utils.AppPaths.db}' and restart to "
     "create a new database."
 )
+NOGIL_ERROR_MESSAGE = (
+    "USDB Syncer does not support running without the GIL. "
+    "Please use a build of Python with GIL support enabled."
+)
 
 
 @attrs.define
@@ -141,6 +145,9 @@ class CliArgs:
 
 
 def main() -> None:
+    if hasattr(sys, "_is_gil_enabled") and sys._is_gil_enabled() is False:
+        print(NOGIL_ERROR_MESSAGE)
+        sys.exit(1)
     sys.excepthook = _excepthook
     args = CliArgs.parse()
     args.apply()

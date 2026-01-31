@@ -21,7 +21,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.12"
+          python-version: "3.14"
       - name: Set up uv
         uses: astral-sh/setup-uv@v7
       - name: Scrape USDB song list to ship with the bundle
@@ -65,7 +65,7 @@ jobs:
         if: contains(matrix.os, 'macos') || contains(matrix.os, 'windows')
         uses: actions/setup-python@v5
         with:
-          python-version: "3.12"
+          python-version: "3.14"
       - name: Set up uv
         uses: astral-sh/setup-uv@v7
       - name: Set macOS deployment target (macOS 12+ compatibility)
@@ -126,7 +126,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.12"
+          python-version: "3.14"
       - name: Set up uv
         uses: astral-sh/setup-uv@v7
       - name: Generate GUI elements
