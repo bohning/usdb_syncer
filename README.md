@@ -120,7 +120,8 @@ startup phase, they cannot be completely ruled out.
 
 ### Required packages
 
-The bundle contains most of the required packages. You will need to supply video libraries (which should be included for your desktop already) and [pipewire](https://pkgs.org/search/?q=pipewire&on=files).
+The bundle contains most of the required packages. You will need to supply video libraries (which should be included for your desktop already) as well as [pipewire](https://pkgs.org/search/?q=pipewire) and [portaudio](https://pkgs.org/search/?q=portaudio).
+
 If you do encounter a warning or an error, set `export QT_DEBUG_PLUGINS=1` to see the exact library you are missing.
 
 More packages are required when running from source or the official Python package:

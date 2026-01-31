@@ -97,15 +97,15 @@ jobs:
         if: matrix.COMPATIBILITY == 'ubuntu'
         run: |
           apt update
-          apt install -y libgl1 libegl1 libva2 libva-drm2 libva-x11-2 pulseaudio libpipewire-0.3-0 xvfb
+          apt install -y libgl1 libegl1 libva2 libva-drm2 libva-x11-2 pulseaudio libpipewire-0.3-0 libportaudio2 xvfb
       - name: Set up fedora packages
         if: matrix.COMPATIBILITY == 'fedora'
         run: |
-          dnf install -y dbus-daemon libva pulseaudio pipewire xorg-x11-server-Xvfb
+          dnf install -y dbus-daemon libva pulseaudio pipewire portaudio xorg-x11-server-Xvfb
       - name: Set up archlinux packages
         if: matrix.COMPATIBILITY == 'archlinux'
         run: |
-          pacman -Sy --noconfirm dbus libva pulseaudio pipewire xorg-server-xvfb
+          pacman -Sy --noconfirm dbus libva pulseaudio pipewire portaudio xorg-server-xvfb
           groupadd -g 500 pulse
           useradd -u 500 -g pulse -d /var/run/pulse -s /usr/bin/nologin pulse
           usermod -aG audio pulse
@@ -119,7 +119,7 @@ jobs:
           export LC_CTYPE="C.utf8"
 
           chmod +x ./USDB_Syncer-TestBuild-Linux
-          xvfb-run -a timeout 120s ./USDB_Syncer-TestBuild-Linux --healthcheck
+          xvfb-run -a timeout 60s ./USDB_Syncer-TestBuild-Linux --healthcheck
 
   test_wheel:
     name: Test wheel

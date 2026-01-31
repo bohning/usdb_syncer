@@ -332,9 +332,11 @@ def _run_heathcheck() -> int:
         NOTICE.read_text()
 
         # sounddevice check
-        import sounddevice  # noqa: F401
+        with utils.LinuxEnvCleaner():
+            import sounddevice  # noqa: F401
 
     except Exception as e:  # noqa: BLE001
+        traceback.print_exc()
         print(f"USDB Syncer healthcheck: failed: {e}")
         return 1
     print("USDB Syncer healthcheck: No problems found.")

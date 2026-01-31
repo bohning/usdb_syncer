@@ -30,7 +30,8 @@ if TYPE_CHECKING:
     from usdb_syncer.usdb_song import UsdbSong
 else:
     try:
-        import sounddevice
+        with utils.LinuxEnvCleaner():
+            import sounddevice
     except (OSError, ImportError):
         _logger.exception(
             "Failed to load module 'sounddevice', some features may be unavailable."
@@ -115,9 +116,10 @@ class Previewer(Ui_MainWindow, QtWidgets.QMainWindow):
         if not sounddevice:
             QtWidgets.QMessageBox.warning(None, "Aborted", _MISSING_LIB_MSG)
             return False
-        if not sounddevice.query_devices():
-            QtWidgets.QMessageBox.warning(None, "Aborted", _NO_DEVICES_MSG)
-            return False
+        with utils.LinuxEnvCleaner():
+            if not sounddevice.query_devices():
+                QtWidgets.QMessageBox.warning(None, "Aborted", _NO_DEVICES_MSG)
+                return False
         if cls._instance:
             cls._instance._change_song(song_id, txt, audio_path, cover_path)
             cls._instance.raise_()
@@ -785,8 +787,9 @@ class _AudioPlayer:
 
     def stop(self) -> None:
         if self._stream:
-            self._stream.stop()
-            self._stream.close()
+            with utils.LinuxEnvCleaner():
+                self._stream.stop()
+                self._stream.close()
         if self._process:
             self._process.terminate()
             self._process = None
@@ -814,19 +817,21 @@ class _AudioPlayer:
             str(self._CHANNELS),
             "-",
         ]
-        self._process = subprocess.Popen(
-            cmd, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL
-        )
+        with utils.LinuxEnvCleaner():
+            self._process = subprocess.Popen(
+                cmd, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL
+            )
 
     def _start_stream(self) -> None:
-        self._stream = sounddevice.OutputStream(
-            samplerate=_SAMPLE_RATE,
-            channels=self._CHANNELS,
-            dtype="int16",
-            blocksize=self._STREAM_BUFFER_SIZE,
-            callback=self._stream_callback,
-        )
-        self._stream.start()
+        with utils.LinuxEnvCleaner():
+            self._stream = sounddevice.OutputStream(
+                samplerate=_SAMPLE_RATE,
+                channels=self._CHANNELS,
+                dtype="int16",
+                blocksize=self._STREAM_BUFFER_SIZE,
+                callback=self._stream_callback,
+            )
+            self._stream.start()
 
     def _stream_callback(
         self,
@@ -845,7 +850,8 @@ class _AudioPlayer:
         data = self._process.stdout.read(bytes_needed)
         if len(data) < bytes_needed:
             outdata[:] = np.zeros((samples, self._CHANNELS), dtype=np.int16)
-            self._stream.stop()
+            with utils.LinuxEnvCleaner():
+                self._stream.stop()
             return
         array = np.frombuffer(data, dtype=np.int16).reshape(-1, self._CHANNELS)
         outdata[:] = self._mix_audio(array, samples)
