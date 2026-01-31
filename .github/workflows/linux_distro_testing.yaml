@@ -215,8 +215,9 @@ jobs:
       - uses: actions/download-artifact@v7
         with:
           name: wheel
-          path: dist/
+          path: ${{ github.workspace }}/dist
       - name: Upload to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
+          packages_dir: ${{ github.workspace }}/dist
           verbose: true
