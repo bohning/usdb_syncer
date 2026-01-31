@@ -306,7 +306,7 @@ def status_tooltip(resource: Resource) -> str:
 
 
 @cache
-def rating_str(rating: int) -> str:
+def rating_str(rating: float) -> str:
     return int(rating) * BLACK_STAR + (HALF_BLACK_STAR if rating % 1 == 0.5 else "")
 
 
