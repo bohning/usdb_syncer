@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import enum
-from typing import TYPE_CHECKING, NamedTuple, assert_never
+from typing import TYPE_CHECKING, NamedTuple
 
 from PySide6.QtGui import QIcon
 
@@ -62,53 +62,11 @@ class Column(enum.Enum):
     def decoration_data(self) -> QIcon:
         return self.value.icon.icon()
 
-    @classmethod
-    def from_song_order(cls, song_order: db.SongOrder) -> Column:  # noqa: C901
-        match song_order:
-            case db.SongOrder.SAMPLE_URL:
-                return Column.SAMPLE_URL
-            case db.SongOrder.SONG_ID | db.SongOrder.NONE:
-                return Column.SONG_ID
-            case db.SongOrder.ARTIST:
-                return Column.ARTIST
-            case db.SongOrder.TITLE:
-                return Column.TITLE
-            case db.SongOrder.LANGUAGE:
-                return Column.LANGUAGE
-            case db.SongOrder.EDITION:
-                return Column.EDITION
-            case db.SongOrder.GOLDEN_NOTES:
-                return Column.GOLDEN_NOTES
-            case db.SongOrder.RATING:
-                return Column.RATING
-            case db.SongOrder.VIEWS:
-                return Column.VIEWS
-            case db.SongOrder.YEAR:
-                return Column.YEAR
-            case db.SongOrder.GENRE:
-                return Column.GENRE
-            case db.SongOrder.CREATOR:
-                return Column.CREATOR
-            case db.SongOrder.TAGS:
-                return Column.TAGS
-            case db.SongOrder.PINNED:
-                return Column.PINNED
-            case db.SongOrder.TXT:
-                return Column.TXT
-            case db.SongOrder.AUDIO:
-                return Column.AUDIO
-            case db.SongOrder.VIDEO:
-                return Column.VIDEO
-            case db.SongOrder.COVER:
-                return Column.COVER
-            case db.SongOrder.BACKGROUND:
-                return Column.BACKGROUND
-            case db.SongOrder.LAST_CHANGE:
-                return Column.LAST_CHANGE
-            case db.SongOrder.STATUS:
-                return Column.DOWNLOAD_STATUS
-            case unreachable:
-                assert_never(unreachable)
+    @staticmethod
+    def from_song_order(song_order: db.SongOrder) -> Column:
+        return next(
+            (c for c in COLUMNS if c.value.song_order == song_order), Column.SONG_ID
+        )
 
     def get_resource_for_column(self, sync_meta: SyncMeta) -> Resource | None:
         match self:
