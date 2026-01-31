@@ -28,12 +28,12 @@ def bundle(platform: OS, version: str, with_songlist: bool = False) -> None:
         "--add-data", "licenses:usdb_syncer/data/licenses",
         "--add-data", "src/tools/resources/license-hash:usdb_syncer/data",
         "--add-data", "src/usdb_syncer/db/sql:usdb_syncer/db/sql",
-        "--add-data", "src/usdb_syncer/gui/resources/fonts:usdb_syncer/gui/resources/fonts",  # noqa: E501
-        "--add-data", "src/usdb_syncer/gui/resources/styles:usdb_syncer/gui/resources/styles",  # noqa: E501
-        "--add-data", "src/usdb_syncer/gui/resources/audio:usdb_syncer/gui/resources/audio",  # noqa: E501
-        "--add-data", "src/usdb_syncer/gui/resources/text:usdb_syncer/gui/resources/text",  # noqa: E501
+        "--add-data", "src/usdb_syncer/gui/resources/fonts:usdb_syncer/gui/resources/fonts",
+        "--add-data", "src/usdb_syncer/gui/resources/styles:usdb_syncer/gui/resources/styles",
+        "--add-data", "src/usdb_syncer/gui/resources/audio:usdb_syncer/gui/resources/audio",
+        "--add-data", "src/usdb_syncer/gui/resources/text:usdb_syncer/gui/resources/text",
         "--add-data", "src/usdb_syncer/webserver/static:usdb_syncer/webserver/static",
-        "--add-data", "src/usdb_syncer/webserver/templates:usdb_syncer/webserver/templates",  # noqa: E501
+        "--add-data", "src/usdb_syncer/webserver/templates:usdb_syncer/webserver/templates",
     ]
     # fmt: on
     if with_songlist:

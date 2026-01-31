@@ -529,8 +529,7 @@ class _UsdbSongCache:
 
     @classmethod
     def remove(cls, song_id: SongId) -> None:
-        if song_id in cls._songs:
-            del cls._songs[song_id]
+        cls._songs.pop(song_id, None)
 
     @classmethod
     def clear(cls) -> None:
