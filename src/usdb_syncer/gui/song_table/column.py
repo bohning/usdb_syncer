@@ -3,8 +3,7 @@
 from __future__ import annotations
 
 import enum
-from enum import IntEnum
-from typing import TYPE_CHECKING, assert_never
+from typing import TYPE_CHECKING, NamedTuple, assert_never
 
 from PySide6.QtGui import QIcon
 
@@ -20,220 +19,72 @@ if TYPE_CHECKING:
 MINIMUM_COLUMN_WIDTH = 24
 
 
-class Column(IntEnum):
+class ColumnValue(NamedTuple):
+    """Values of a Column variant."""
+
+    label: str
+    display_data: bool
+    icon: Icon
+    fixed_size: int | None
+    song_order: db.SongOrder
+
+
+class Column(enum.Enum):
     """Table columns."""
 
-    SAMPLE_URL = 0
-    SONG_ID = enum.auto()
-    ARTIST = enum.auto()
-    TITLE = enum.auto()
-    LANGUAGE = enum.auto()
-    EDITION = enum.auto()
-    GOLDEN_NOTES = enum.auto()
-    RATING = enum.auto()
-    VIEWS = enum.auto()
-    YEAR = enum.auto()
-    GENRE = enum.auto()
-    CREATOR = enum.auto()
-    TAGS = enum.auto()
-    LAST_CHANGE = enum.auto()
-    PINNED = enum.auto()
-    TXT = enum.auto()
-    AUDIO = enum.auto()
-    VIDEO = enum.auto()
-    COVER = enum.auto()
-    BACKGROUND = enum.auto()
-    DOWNLOAD_STATUS = enum.auto()
-
-    def column_label(self) -> str:  # noqa: C901
-        match self:
-            case Column.SAMPLE_URL:
-                return "Sample"
-            case Column.SONG_ID:
-                return "ID"
-            case Column.ARTIST:
-                return "Artist"
-            case Column.TITLE:
-                return "Title"
-            case Column.LANGUAGE:
-                return "Language"
-            case Column.EDITION:
-                return "Edition"
-            case Column.GOLDEN_NOTES:
-                return "Golden Notes"
-            case Column.RATING:
-                return "Rating"
-            case Column.VIEWS:
-                return "Views"
-            case Column.YEAR:
-                return "Year"
-            case Column.GENRE:
-                return "Genre"
-            case Column.CREATOR:
-                return "Creator"
-            case Column.TAGS:
-                return "Tags"
-            case Column.LAST_CHANGE:
-                return "Last change"
-            case Column.TXT:
-                return "Text"
-            case Column.AUDIO:
-                return "Audio"
-            case Column.VIDEO:
-                return "Video"
-            case Column.COVER:
-                return "Cover"
-            case Column.BACKGROUND:
-                return "Background"
-            case Column.PINNED:
-                return "Pinned"
-            case Column.DOWNLOAD_STATUS:
-                return "Status"
-            case _ as unreachable:
-                assert_never(unreachable)
+    SAMPLE_URL = ColumnValue(
+        "Sample",
+        False,
+        Icon.AUDIO_SAMPLE,
+        MINIMUM_COLUMN_WIDTH,
+        db.SongOrder.SAMPLE_URL,
+    )
+    SONG_ID = ColumnValue("ID", True, Icon.ID, None, db.SongOrder.SONG_ID)
+    ARTIST = ColumnValue("Artist", True, Icon.ARTIST, None, db.SongOrder.ARTIST)
+    TITLE = ColumnValue("Title", True, Icon.TITLE, None, db.SongOrder.TITLE)
+    LANGUAGE = ColumnValue("Language", True, Icon.LANGUAGE, None, db.SongOrder.LANGUAGE)
+    EDITION = ColumnValue("Edition", True, Icon.EDITION, None, db.SongOrder.EDITION)
+    GOLDEN_NOTES = ColumnValue(
+        "Golden Notes", False, Icon.GOLDEN_NOTES, None, db.SongOrder.GOLDEN_NOTES
+    )
+    RATING = ColumnValue("Rating", False, Icon.RATING, None, db.SongOrder.RATING)
+    VIEWS = ColumnValue("Views", False, Icon.VIEWS, None, db.SongOrder.VIEWS)
+    YEAR = ColumnValue("Year", True, Icon.CALENDAR, None, db.SongOrder.YEAR)
+    GENRE = ColumnValue("Genre", True, Icon.GENRE, None, db.SongOrder.GENRE)
+    CREATOR = ColumnValue("Creator", True, Icon.CREATOR, None, db.SongOrder.CREATOR)
+    TAGS = ColumnValue("Tags", True, Icon.TAGS, None, db.SongOrder.TAGS)
+    LAST_CHANGE = ColumnValue(
+        "Last Change", True, Icon.LAST_CHANGE, None, db.SongOrder.LAST_CHANGE
+    )
+    PINNED = ColumnValue(
+        "Pinned", False, Icon.PIN, MINIMUM_COLUMN_WIDTH, db.SongOrder.PINNED
+    )
+    TXT = ColumnValue("Text", False, Icon.TEXT, MINIMUM_COLUMN_WIDTH, db.SongOrder.TXT)
+    AUDIO = ColumnValue(
+        "Audio", False, Icon.AUDIO, MINIMUM_COLUMN_WIDTH, db.SongOrder.AUDIO
+    )
+    VIDEO = ColumnValue(
+        "Video", False, Icon.VIDEO, MINIMUM_COLUMN_WIDTH, db.SongOrder.VIDEO
+    )
+    COVER = ColumnValue(
+        "Cover", False, Icon.COVER, MINIMUM_COLUMN_WIDTH, db.SongOrder.COVER
+    )
+    BACKGROUND = ColumnValue(
+        "Background",
+        False,
+        Icon.BACKGROUND,
+        MINIMUM_COLUMN_WIDTH,
+        db.SongOrder.BACKGROUND,
+    )
+    DOWNLOAD_STATUS = ColumnValue(
+        "Status", True, Icon.DOWNLOAD, None, db.SongOrder.STATUS
+    )
 
     def display_data(self) -> str | None:
-        if self in (
-            Column.SAMPLE_URL,
-            Column.GOLDEN_NOTES,
-            Column.RATING,
-            Column.VIEWS,
-            Column.TXT,
-            Column.AUDIO,
-            Column.VIDEO,
-            Column.COVER,
-            Column.BACKGROUND,
-            Column.PINNED,
-        ):
-            return None
-        return self.column_label()
+        return self.value.label if self.value.display_data else None
 
-    def decoration_data(self) -> QIcon:  # noqa: C901
-        match self:
-            case Column.SAMPLE_URL:
-                icon = Icon.AUDIO_SAMPLE
-            case Column.SONG_ID:
-                icon = Icon.ID
-            case Column.ARTIST:
-                icon = Icon.ARTIST
-            case Column.TITLE:
-                icon = Icon.TITLE
-            case Column.LANGUAGE:
-                icon = Icon.LANGUAGE
-            case Column.EDITION:
-                icon = Icon.EDITION
-            case Column.GOLDEN_NOTES:
-                icon = Icon.GOLDEN_NOTES
-            case Column.RATING:
-                icon = Icon.RATING
-            case Column.VIEWS:
-                icon = Icon.VIEWS
-            case Column.YEAR:
-                icon = Icon.CALENDAR
-            case Column.GENRE:
-                icon = Icon.GENRE
-            case Column.CREATOR:
-                icon = Icon.CREATOR
-            case Column.TAGS:
-                icon = Icon.TAGS
-            case Column.TXT:
-                icon = Icon.TEXT
-            case Column.AUDIO:
-                icon = Icon.AUDIO
-            case Column.VIDEO:
-                icon = Icon.VIDEO
-            case Column.COVER:
-                icon = Icon.COVER
-            case Column.BACKGROUND:
-                icon = Icon.BACKGROUND
-            case Column.LAST_CHANGE:
-                icon = Icon.LAST_CHANGE
-            case Column.DOWNLOAD_STATUS:
-                icon = Icon.DOWNLOAD
-            case Column.PINNED:
-                icon = Icon.PIN
-            case _ as unreachable:
-                assert_never(unreachable)
-        return icon.icon()
-
-    def fixed_size(self) -> int | None:
-        match self:
-            case (
-                Column.ARTIST
-                | Column.TITLE
-                | Column.LANGUAGE
-                | Column.EDITION
-                | Column.DOWNLOAD_STATUS
-                | Column.SONG_ID
-                | Column.VIEWS
-                | Column.RATING
-                | Column.GOLDEN_NOTES
-                | Column.YEAR
-                | Column.GENRE
-                | Column.CREATOR
-                | Column.TAGS
-                | Column.LAST_CHANGE
-            ):
-                return None
-            case (
-                Column.SAMPLE_URL
-                | Column.TXT
-                | Column.AUDIO
-                | Column.VIDEO
-                | Column.COVER
-                | Column.BACKGROUND
-                | Column.PINNED
-            ):
-                return MINIMUM_COLUMN_WIDTH
-            case _ as unreachable:
-                assert_never(unreachable)
-
-    def song_order(self) -> db.SongOrder:  # noqa: C901
-        match self:
-            case Column.SAMPLE_URL:
-                return db.SongOrder.SAMPLE_URL
-            case Column.SONG_ID:
-                return db.SongOrder.SONG_ID
-            case Column.ARTIST:
-                return db.SongOrder.ARTIST
-            case Column.TITLE:
-                return db.SongOrder.TITLE
-            case Column.LANGUAGE:
-                return db.SongOrder.LANGUAGE
-            case Column.EDITION:
-                return db.SongOrder.EDITION
-            case Column.GOLDEN_NOTES:
-                return db.SongOrder.GOLDEN_NOTES
-            case Column.RATING:
-                return db.SongOrder.RATING
-            case Column.VIEWS:
-                return db.SongOrder.VIEWS
-            case Column.YEAR:
-                return db.SongOrder.YEAR
-            case Column.GENRE:
-                return db.SongOrder.GENRE
-            case Column.CREATOR:
-                return db.SongOrder.CREATOR
-            case Column.TAGS:
-                return db.SongOrder.TAGS
-            case Column.PINNED:
-                return db.SongOrder.PINNED
-            case Column.TXT:
-                return db.SongOrder.TXT
-            case Column.AUDIO:
-                return db.SongOrder.AUDIO
-            case Column.VIDEO:
-                return db.SongOrder.VIDEO
-            case Column.COVER:
-                return db.SongOrder.COVER
-            case Column.BACKGROUND:
-                return db.SongOrder.BACKGROUND
-            case Column.LAST_CHANGE:
-                return db.SongOrder.LAST_CHANGE
-            case Column.DOWNLOAD_STATUS:
-                return db.SongOrder.STATUS
-            case unreachable:
-                assert_never(unreachable)
+    def decoration_data(self) -> QIcon:
+        return self.value.icon.icon()
 
     @classmethod
     def from_song_order(cls, song_order: db.SongOrder) -> Column:  # noqa: C901
@@ -297,3 +148,13 @@ class Column(IntEnum):
                 return sync_meta.background
             case _:
                 return None
+
+    @staticmethod
+    def from_index(index: int) -> Column:
+        return COLUMNS[index]
+
+    def index(self) -> int:
+        return COLUMNS.index(self)
+
+
+COLUMNS = list(Column)

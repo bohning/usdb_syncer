@@ -125,14 +125,14 @@ class TableModel(QAbstractTableModel):
         if orientation != Qt.Orientation.Horizontal:
             return None
         if role == Qt.ItemDataRole.DecorationRole:
-            return Column(section).decoration_data()
+            return Column.from_index(section).decoration_data()
         if role == Qt.ItemDataRole.DisplayRole:
-            return Column(section).display_data()
+            return Column.from_index(section).display_data()
         return None
 
 
 def _display_data(song: UsdbSong, column: int) -> str | None:  # noqa: C901
-    col = Column(column)
+    col = Column.from_index(column)
     match col:
         case Column.SONG_ID:
             return str(song.song_id)
@@ -177,7 +177,7 @@ def _display_data(song: UsdbSong, column: int) -> str | None:  # noqa: C901
 
 
 def _decoration_data(song: UsdbSong, column: int) -> QIcon | None:  # noqa: C901
-    col = Column(column)
+    col = Column.from_index(column)
     sync_meta = song.sync_meta
     match col:
         case (
@@ -260,7 +260,7 @@ def status_icon(resource: Resource) -> icons.Icon:
 
 
 def _font_data(column: int) -> QFont | None:
-    col = Column(column)
+    col = Column.from_index(column)
     if col == Column.RATING:
         return get_rating_font()
     return None
@@ -270,7 +270,7 @@ def _tooltip_data(song: UsdbSong, column: int) -> str | None:
     if not (sync_meta := song.sync_meta):
         return None
 
-    col = Column(column)
+    col = Column.from_index(column)
     if resource := col.get_resource_for_column(sync_meta):
         return status_tooltip(resource)
 
