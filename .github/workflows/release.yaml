@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
     inputs:
       dry_run:
-        description: "Dry run (no release, publish to TestPyPI)"
+        description: "Dry run (no release)"
         required: true
         default: true
         type: boolean
@@ -61,14 +61,11 @@ jobs:
         with:
           fetch-depth: 0
       - uses: actions/download-artifact@v4
-      - name: Mark Git directory as safe
-        if: contains(matrix.os, 'ubuntu')
-        run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
       - name: On macOS and windows, install python normally (linux container has python preinstalled)
         if: contains(matrix.os, 'macos') || contains(matrix.os, 'windows')
         uses: actions/setup-python@v5
         with:
-          python-version: "3.12.9"
+          python-version: "3.12"
       - name: Set up uv
         uses: astral-sh/setup-uv@v7
       - name: Set macOS deployment target (macOS 12+ compatibility)
@@ -116,11 +113,9 @@ jobs:
 
   publish:
     name: Build and publish release to PyPI
+    if: ${{ github.event.inputs.dry_run != 'true' }}
     needs: bundle
     runs-on: ubuntu-latest
-    environment:
-      name: ${{ github.event.inputs.dry_run == 'true' && 'testpypi' || 'pypi' }}
-      url: ${{ github.event.inputs.dry_run == 'true' && 'https://test.pypi.org/p/usdb_syncer' || 'https://pypi.org/p/usdb_syncer' }}
     permissions:
       id-token: write # IMPORTANT: this permission is mandatory for trusted publishing
     steps:
@@ -137,15 +132,8 @@ jobs:
       - name: Generate GUI elements
         run: uv run --no-dev python -m tools.generate_pyside_files
       - name: Build package
-        run: uv build
+        run: uv build --force-pep517
       - name: Publish package distributions to PyPI
-        if: ${{ github.event.inputs.dry_run != 'true' }}
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
-          verbose: true
-      - name: Publish package distributions to TestPyPI
-        if: ${{ github.event.inputs.dry_run == 'true' }}
-        uses: pypa/gh-action-pypi-publish@release/v1
-        with:
-          repository-url: https://test.pypi.org/legacy/
           verbose: true

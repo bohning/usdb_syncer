@@ -54,6 +54,7 @@ class CliArgs:
     profile: bool = False
     skip_pyside: bool = not utils.IS_SOURCE
     trace_sql: bool = False
+    healthcheck: bool = False
 
     # preview
     txt: Path | None = None
@@ -89,6 +90,9 @@ class CliArgs:
         dev_options.add_argument(
             "--profile", action="store_true", help="Run with profiling."
         )
+        dev_options.add_argument(
+            "--healthcheck", action="store_true", help="Run healthcheck and exit."
+        )
         if utils.IS_SOURCE:
             dev_options.add_argument(
                 "--skip-pyside",
@@ -122,6 +126,8 @@ class CliArgs:
         return parser.parse_args(namespace=cls())
 
     def apply(self) -> None:
+        if self.healthcheck:
+            sys.exit(_run_heathcheck())
         if self.reset_settings:
             settings.reset()
             print("Settings reset to default.")
@@ -309,6 +315,32 @@ def _maybe_copy_licenses() -> None:
         utils.AppPaths.licenses,
         dirs_exist_ok=True,
     )
+
+
+def _run_heathcheck() -> int:
+    """Run a healthcheck and return exit code."""
+    try:
+        # gui modules check
+        from usdb_syncer.gui.mw import MainWindow  # noqa: F401
+
+        # database check
+        db.connect(":memory:")
+
+        # resources check
+        from usdb_syncer.gui.resources.text import NOTICE
+
+        NOTICE.read_text()
+
+        # sounddevice check
+        with utils.LinuxEnvCleaner():
+            import sounddevice  # noqa: F401
+
+    except Exception as e:  # noqa: BLE001
+        traceback.print_exc()
+        print(f"USDB Syncer healthcheck: failed: {e}")
+        return 1
+    print("USDB Syncer healthcheck: No problems found.")
+    return 0
 
 
 class _LogSignal(QtCore.QObject):
