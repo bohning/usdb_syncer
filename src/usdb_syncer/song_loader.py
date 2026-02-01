@@ -7,8 +7,7 @@ import filecmp
 import shutil
 import tempfile
 import time
-from enum import Enum
-from functools import partial
+from enum import Enum, member
 from itertools import islice
 from pathlib import Path
 from typing import TYPE_CHECKING, ClassVar, assert_never
@@ -986,14 +985,14 @@ def _write_sync_meta(ctx: _Context) -> None:
 class Job(Enum):
     """All jobs in the song download pipeline, in logical order."""
 
-    AUDIO_DOWNLOAD = partial(_maybe_download_audio)
-    VIDEO_DOWNLOAD = partial(_maybe_download_video)
-    COVER_DOWNLOAD = partial(_maybe_download_cover)
-    BACKGROUND_DOWNLOAD = partial(_maybe_download_background)
+    AUDIO_DOWNLOAD = member(_maybe_download_audio)
+    VIDEO_DOWNLOAD = member(_maybe_download_video)
+    COVER_DOWNLOAD = member(_maybe_download_cover)
+    BACKGROUND_DOWNLOAD = member(_maybe_download_background)
     # write txt after all file downloads to include correct filenames
-    TXT_WRITTEN = partial(_maybe_write_txt)
-    WRITE_AUDIO_TAGS = partial(_maybe_write_audio_tags)
-    WRITE_VIDEO_TAGS = partial(_maybe_write_video_tags)
+    TXT_WRITTEN = member(_maybe_write_txt)
+    WRITE_AUDIO_TAGS = member(_maybe_write_audio_tags)
+    WRITE_VIDEO_TAGS = member(_maybe_write_video_tags)
 
     def __call__(self, ctx: _Context) -> JobStatus:
         return self.value(ctx)
