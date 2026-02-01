@@ -116,6 +116,7 @@ jobs:
     if: ${{ github.event.inputs.dry_run != 'true' }}
     needs: bundle
     runs-on: ubuntu-latest
+    environment: pypi
     permissions:
       id-token: write # IMPORTANT: this permission is mandatory for trusted publishing
     steps:

@@ -209,6 +209,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: test_wheel
     if: ${{ github.event_name == 'push' }} # don't upload on manual runs
+    environment: pypi
     permissions:
       id-token: write
     steps:
@@ -219,5 +220,5 @@ jobs:
       - name: Upload to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
-          packages_dir: ${{ github.workspace }}/dist
+          packages-dir: ${{ github.workspace }}/dist
           verbose: true

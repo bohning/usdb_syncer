@@ -4,11 +4,14 @@
 
 ## Features
 
+- Updated yt-dlp to 2026.1.29
 - Added support for Python 3.13 and 3.14. The Syncer now supports Python 3.11 to 3.14.
+- Columns in the song table can be hidden by right-clicking the header.
 
 ## Fixes
 
 - Fixed broken wheels from 0.19.0
+- Fixed fonts being broken on some Linux distros (#518).
 
 ## Developer notes
 
