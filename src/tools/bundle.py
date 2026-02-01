@@ -18,12 +18,48 @@ class OS(Enum):
     MACOS_X64 = "macOS-x64"
 
 
+# Binaries to exclude per platform (prefix match)
+EXCLUDED_BINARIES: dict[OS, list[str]] = {
+    OS.LINUX: [
+        "libstdc++"
+    ]  # See: https://github.com/pyinstaller/pyinstaller/issues/6993
+}
+
+
+def _run_pyinstaller(name: str, args: list[str], platform: OS) -> None:
+    """Run PyInstaller, optionally filtering binaries via a patched spec file."""
+    excludes = EXCLUDED_BINARIES.get(platform, [])
+    spec_file = Path(f"{name}.spec")
+
+    try:
+        subprocess.run(["pyi-makespec", "-n", name, *args], check=True)
+
+        if excludes:
+            content = spec_file.read_text()
+            filter_expr = " or ".join(f"b[0].startswith({e!r})" for e in excludes)
+            patch = f"a.binaries = [b for b in a.binaries if not ({filter_expr})]\n"
+            content = content.replace("pyz = PYZ(", patch + "pyz = PYZ(")
+            print(f"Patched spec file to exclude binaries: {', '.join(excludes)}")
+            print("Modified spec file content:")
+            print(content)
+            spec_file.write_text(content)
+
+        subprocess.run(
+            ["pyinstaller", "--workpath", "pyinstaller_build", str(spec_file)],
+            check=True,
+        )
+    except FileNotFoundError as e:
+        e.add_note("hint: make sure pyinstaller is available")
+        raise
+    finally:
+        spec_file.unlink(missing_ok=True)
+
+
 def bundle(platform: OS, version: str, with_songlist: bool = False) -> None:
     """Bundle the project for the given platform."""
     print("Bundling the project...")
     # fmt: off
     args: list[str] = [
-        "--workpath", "pyinstaller_build",
         "--exclude-module", "_tkinter",
         "--add-data", "licenses:usdb_syncer/data/licenses",
         "--add-data", "src/tools/resources/license-hash:usdb_syncer/data",
@@ -64,21 +100,9 @@ def bundle(platform: OS, version: str, with_songlist: bool = False) -> None:
             args.extend(["--onefile"])
         case _:
             assert_never(platform)
-    try:
-        subprocess.run(
-            [
-                "pyinstaller",
-                "-n",
-                f"USDB_Syncer-{version}-{platform.value}",
-                *args,
-                "src/usdb_syncer/gui/__init__.py",
-            ],
-            check=True,
-        )
-    except FileNotFoundError as e:
-        e.add_note("hint: make sure pyinstaller is available")
-        raise
-    next(Path.cwd().glob("USDB_Syncer-*.spec")).unlink(missing_ok=True)
+
+    args.append("src/usdb_syncer/gui/__init__.py")
+    _run_pyinstaller(f"USDB_Syncer-{version}-{platform.value}", args, platform)
 
     print("Executable(s) built successfully!")
     print("Starting platform-specific bundling...")
