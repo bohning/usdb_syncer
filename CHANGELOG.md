@@ -1,3 +1,19 @@
+<!-- 0.20.0 -->
+
+# Changes
+
+## Features
+
+- Added support for Python 3.13 and 3.14. The Syncer now supports Python 3.11 to 3.14.
+
+## Fixes
+
+- Fixed broken wheels from 0.19.0
+
+## Developer notes
+
+- Python 3.14 has a free-threaded build. This is unsupported for the Syncer, as PySide6 is currently not compatible.
+
 <!-- 0.19.0 -->
 
 # Changes
