@@ -164,6 +164,7 @@ def _display_data(song: UsdbSong, column: int) -> str | None:  # noqa: C901
             return str(song.status)
         case (
             Column.SAMPLE_URL
+            | Column.CUSTOM_DATA
             | Column.TXT
             | Column.AUDIO
             | Column.VIDEO
@@ -211,6 +212,10 @@ def _decoration_data(song: UsdbSong, column: int) -> QIcon | None:  # noqa: C901
                 icon = icons.Icon.PLAY_REMOTE
             else:
                 return None
+        case Column.CUSTOM_DATA:
+            if not sync_meta or sync_meta.custom_data.inner() == {}:
+                return None
+            return icons.Icon.CUSTOM_DATA.icon()
         case Column.TXT:
             if not (sync_meta and (txt := sync_meta.txt)):
                 return None
@@ -273,6 +278,8 @@ def _tooltip_data(song: UsdbSong, column: int) -> str | None:
     col = Column.from_index(column)
     if resource := col.get_resource_for_column(sync_meta):
         return status_tooltip(resource)
+    if col == Column.CUSTOM_DATA and sync_meta and sync_meta.custom_data.inner() != {}:
+        return str(sync_meta.custom_data)
 
     return None
 

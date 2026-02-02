@@ -235,6 +235,7 @@ class SongOrder(enum.Enum):
     COVER = enum.auto()
     BACKGROUND = enum.auto()
     LAST_CHANGE = enum.auto()
+    CUSTOM_DATA = enum.auto()
     STATUS = enum.auto()
 
     def sql(self) -> str | None:  # noqa: C901
@@ -285,6 +286,8 @@ class SongOrder(enum.Enum):
                 return self.order("background")
             case SongOrder.LAST_CHANGE:
                 return "usdb_song.usdb_mtime"
+            case SongOrder.CUSTOM_DATA:
+                return "CASE WHEN custom_meta_data.key IS NULL THEN 1 ELSE 0 END"
             case SongOrder.STATUS:
                 return _STATUS_COLUMN
 

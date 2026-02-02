@@ -47,6 +47,7 @@ class Column(enum.Enum):
     CREATOR = ColumnValue("Creator", True, Icon.CREATOR, None, db.SongOrder.CREATOR)
     TAGS = ColumnValue("Tags", True, Icon.TAGS, None, db.SongOrder.TAGS)
     LAST_CHANGE = ColumnValue("Last Change", True, Icon.LAST_CHANGE, None, db.SongOrder.LAST_CHANGE)
+    CUSTOM_DATA = ColumnValue("Custom Data", False, Icon.CUSTOM_DATA, MIN_COLUMN_WIDTH, db.SongOrder.CUSTOM_DATA)
     PINNED = ColumnValue("Pinned", False, Icon.PIN, MIN_COLUMN_WIDTH, db.SongOrder.PINNED)
     TXT = ColumnValue("Text", False, Icon.TEXT, MIN_COLUMN_WIDTH, db.SongOrder.TXT)
     AUDIO = ColumnValue("Audio", False, Icon.AUDIO, MIN_COLUMN_WIDTH, db.SongOrder.AUDIO)
