@@ -4,7 +4,7 @@ import webbrowser
 from collections.abc import Callable
 from pathlib import Path
 
-from PySide6.QtGui import QCloseEvent
+from PySide6.QtGui import QCloseEvent, QShowEvent
 from PySide6.QtWidgets import QFileDialog, QMainWindow
 
 from usdb_syncer import SongId, db, events, settings, song_routines, usdb_id_file, utils
@@ -72,8 +72,14 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         gui_events.CurrentSongChanged.subscribe(self._on_current_song_changed)
         self._setup_buttons()
         self.cover = cover_widget.ScaledCoverLabel(self.dock_cover)
-        self._restore_state()
         self._current_song_id: int | None = None
+        self._state_restored = False
+
+    def showEvent(self, event: QShowEvent) -> None:  # noqa: N802
+        super().showEvent(event)
+        if not self._state_restored:
+            self._restore_state()
+            self._state_restored = True
 
     def _focus_search(self) -> None:
         self.lineEdit_search.setFocus()
