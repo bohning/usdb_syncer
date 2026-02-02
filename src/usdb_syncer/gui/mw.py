@@ -467,12 +467,10 @@ class MainWindow(Ui_MainWindow, QMainWindow):
     def _restore_state(self) -> None:
         self.restoreGeometry(settings.get_geometry_main_window())
         self.restoreState(settings.get_state_main_window())
-        self.dock_log.restoreGeometry(settings.get_geometry_log_dock())
 
     def _save_state(self) -> None:
         settings.set_geometry_main_window(self.saveGeometry())
         settings.set_state_main_window(self.saveState())
-        settings.set_geometry_log_dock(self.dock_log.saveGeometry())
 
     def _on_theme_changed(self, event: gui_events.ThemeChanged) -> None:
         key = event.theme.KEY
