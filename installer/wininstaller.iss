@@ -60,3 +60,7 @@ Name: "{autodesktop}\USDB Syncer"; Filename: "{app}\{#BundleName}.exe"; Tasks: d
 
 [Run]
 Filename: "{app}\{#BundleName}.exe"; Description: "{cm:LaunchProgram,USDB Syncer}"; Flags: nowait postinstall skipifsilent
+
+[InstallDelete]
+Type: filesandordirs; Name: "{app}\_internal"
+Type: files; Name: "{app}\USDB_Syncer-*-Windows-install.exe"
