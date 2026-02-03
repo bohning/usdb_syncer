@@ -247,7 +247,7 @@ class SongTable:
                 _add_action(option, key_menu, slot, checked=checked)
 
     def _on_click(self, index: QtCore.QModelIndex) -> None:
-        if index.column() == Column.SAMPLE_URL.value and (
+        if index.column() == Column.SAMPLE_URL.index() and (
             song := UsdbSong.get(self._model.ids_for_indices([index])[0])
         ):
             self._play_or_stop_sample(song)
