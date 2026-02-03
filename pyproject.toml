@@ -64,6 +64,7 @@ bundle = [
 default-groups = [
     "dev",
 ]
+reinstall-package = ["usdb_syncer"]
 
 [tool.hatch.version]
 source = "vcs"
@@ -72,13 +73,6 @@ source = "vcs"
 artifacts = [
     "src/usdb_syncer/gui/forms/*.py",
     "src/usdb_syncer/gui/resources/qt/*.py"
-]
-exclude = [
-    "src/usdb_syncer/gui/forms/*.ui",
-    "src/usdb_syncer/gui/resources/qt/*.qrc",
-    "src/usdb_syncer/gui/resources/qt/*.png",
-    "src/usdb_syncer/gui/resources/qt/*.svg",
-    "src/usdb_syncer/gui/resources/qt/*.afphoto",
 ]
 
 [tool.hatch.build.targets.wheel]

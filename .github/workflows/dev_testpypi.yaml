@@ -31,7 +31,7 @@ jobs:
 
           git config user.name "gha"
           git config user.email "gha@localhost"
-          git tag -a "v$CLEAN_VERSION" -m "Local tag"
+          git tag -f -a "v$CLEAN_VERSION" -m "Local tag"
 
           echo "Created temporary tag: v$CLEAN_VERSION"
       - name: Build the wheel

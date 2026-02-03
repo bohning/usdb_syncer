@@ -19,6 +19,9 @@ There are three ways to run USDB Syncer:
 2. Use your favourite package manager to install the Python package, e.g. [pipx](https://pipx.pypa.io/stable/): `pipx install usdb_syncer`
 3. We provide [ready-to-run executables](https://github.com/bohning/usdb_syncer/releases) for all major operating systems.
 
+> [!NOTE]
+> We publish pre-releases on PyPI based on the main branch. If you need a feature early, check out those. For pipx, use `pipx install --pip-args="--pre" usdb_syncer`
+
 > [!IMPORTANT]  
 > Linux users should check [Linux Compatibility](#linux-compatibility) as additional configuration is usually required.
 
