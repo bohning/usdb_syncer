@@ -64,6 +64,7 @@ bundle = [
 default-groups = [
     "dev",
 ]
+reinstall-package = ["usdb_syncer"]
 
 [tool.hatch.version]
 source = "vcs"
