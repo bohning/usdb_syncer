@@ -213,7 +213,7 @@ def _decoration_data(song: UsdbSong, column: int) -> QIcon | None:  # noqa: C901
             else:
                 return None
         case Column.CUSTOM_DATA:
-            if not sync_meta or sync_meta.custom_data.inner() == {}:
+            if not sync_meta or sync_meta.custom_data == {}:
                 return None
             return icons.Icon.CUSTOM_DATA.icon()
         case Column.TXT:
