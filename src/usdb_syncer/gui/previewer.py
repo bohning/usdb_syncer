@@ -21,7 +21,7 @@ from usdb_syncer.logger import song_logger
 from usdb_syncer.song_txt import SongTxt, tracks
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Generator
+    from collections.abc import Generator
     from pathlib import Path
 
     import sounddevice
@@ -101,8 +101,8 @@ class Previewer(Ui_MainWindow, QtWidgets.QMainWindow):
         self._set_song_info(txt, cover)
         self._connect_ui_inputs()
         self._setup_timers()
-        self._on_theme_changed(theme.Theme.from_settings())
-        events.ThemeChanged.subscribe(lambda e: self._on_theme_changed(e.theme))
+        self._apply_theme(theme.Theme.from_settings())
+        events.ThemeChanged.subscribe(self._on_theme_changed)
 
     @classmethod
     def load(
@@ -196,9 +196,10 @@ class Previewer(Ui_MainWindow, QtWidgets.QMainWindow):
 
     def _setup_views(self) -> None:
         palette = theme.Theme.from_settings().preview_palette()
-        self._song_view = _SongView(self._state, palette, self._on_drag)
+        self._song_view = _SongView(self, self._state, palette)
+        self._song_view.on_drag.connect(self._on_drag)
         self.layout_main.insertWidget(0, self._song_view, 10)
-        self._line_view = _LineView(self._state, palette)
+        self._line_view = _LineView(self, self._state, palette)
         self.layout_main.insertWidget(1, self._line_view, 10)
         self.layout_main.insertStretch(2, 1)
 
@@ -296,7 +297,10 @@ class Previewer(Ui_MainWindow, QtWidgets.QMainWindow):
         self._player.seek_to(self._state.current_video_time)
         self._state.seeking = False
 
-    def _on_theme_changed(self, theme: theme.Theme) -> None:
+    def _on_theme_changed(self, event: events.ThemeChanged) -> None:
+        self._apply_theme(event.theme)
+
+    def _apply_theme(self, theme: theme.Theme) -> None:
         self.button_pause.setIcon(icons.Icon.PAUSE_REMOTE.icon(theme.KEY))
         self.button_to_start.setIcon(icons.Icon.SKIP_TO_START.icon(theme.KEY))
         self.button_backward.setIcon(icons.Icon.SKIP_BACKWARD.icon(theme.KEY))
@@ -325,6 +329,7 @@ class Previewer(Ui_MainWindow, QtWidgets.QMainWindow):
 
     def closeEvent(self, event: QtGui.QCloseEvent) -> None:  # noqa: N802
         self._player.stop()
+        events.ThemeChanged.unsubscribe(self._on_theme_changed)
         Previewer._instance = None
         event.accept()
 
@@ -557,21 +562,18 @@ class _Note:
 
 
 class _SongView(QtWidgets.QWidget):
+    on_drag = QtCore.Signal(float, bool)
     _is_dragging = False
     _MIN_HEIGHT = Pixel(20)
     _MAX_HEIGHT = Pixel(40)
     _NEEDLE_WIDTH = Pixel(2)
 
     def __init__(
-        self,
-        state: _PlayState,
-        colors: theme.PreviewPalette,
-        on_drag: Callable[[Seconds, bool], None],
+        self, parent: QtWidgets.QWidget, state: _PlayState, colors: theme.PreviewPalette
     ):
-        super().__init__()
+        super().__init__(parent)
         self._state = state
         self.colors = colors
-        self._on_drag = on_drag
         self.setMinimumHeight(self._MIN_HEIGHT)
         self.setMaximumHeight(self._MAX_HEIGHT)
         self.setCursor(Qt.CursorShape.OpenHandCursor)
@@ -602,17 +604,17 @@ class _SongView(QtWidgets.QWidget):
         if event.button() == Qt.MouseButton.LeftButton:
             self._is_dragging = True
             self.setCursor(Qt.CursorShape.ClosedHandCursor)
-            self._on_drag(self._current_time_at_mouse(event), False)
+            self.on_drag.emit(self._current_time_at_mouse(event), False)
 
     def mouseMoveEvent(self, event: QtGui.QMouseEvent) -> None:  # noqa: N802
         if self._is_dragging:
-            self._on_drag(self._current_time_at_mouse(event), False)
+            self.on_drag.emit(self._current_time_at_mouse(event), False)
 
     def mouseReleaseEvent(self, event: QtGui.QMouseEvent) -> None:  # noqa: N802
         if self._is_dragging:
             self._is_dragging = False
             self.setCursor(Qt.CursorShape.OpenHandCursor)
-            self._on_drag(self._current_time_at_mouse(event), True)
+            self.on_drag.emit(self._current_time_at_mouse(event), True)
 
 
 @attrs.define
@@ -662,8 +664,10 @@ class _LineView(QtWidgets.QWidget):
     _MIN_SIZE = (Pixel(600), Pixel(200))
     _MAX_HEIGHT = Pixel(600)
 
-    def __init__(self, state: _PlayState, colors: theme.PreviewPalette):
-        super().__init__()
+    def __init__(
+        self, parent: QtWidgets.QWidget, state: _PlayState, colors: theme.PreviewPalette
+    ):
+        super().__init__(parent)
         self._state = state
         self.colors = colors
         self.setMinimumSize(*self._MIN_SIZE)
