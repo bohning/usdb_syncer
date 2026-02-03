@@ -157,5 +157,5 @@ def test_invalid_song_id_imports_from_files(
     path = Path(resource_dir, "import", file)
     with pytest.raises(type(expected_error)) as exc_info:
         song_ids = parse_usdb_id_file(path)
-        assert exc_info.getrepr() == repr(expected_error), f"wrong error from {file}"
+        assert exc_info.getrepr() == repr(expected_error), f"wrong error from {file}"  # type: ignore
         assert not song_ids, f"should have no songids from {file}"

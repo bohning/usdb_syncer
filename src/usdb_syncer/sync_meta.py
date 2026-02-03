@@ -311,31 +311,27 @@ class SyncMeta:
         self.mtime = utils.get_mtime(self.path)
 
     def txt_path(self) -> Path | None:
-        if not self.txt or not self.txt.file or self.txt.file.fname is None:
+        if not self.txt or not self.txt.file:
             return None
         return self.path.parent / self.txt.file.fname
 
     def audio_path(self) -> Path | None:
-        if not self.audio or not self.audio.file or self.audio.file.fname is None:
+        if not self.audio or not self.audio.file:
             return None
         return self.path.parent / self.audio.file.fname
 
     def video_path(self) -> Path | None:
-        if not self.video or not self.video.file or self.video.file.fname is None:
+        if not self.video or not self.video.file:
             return None
         return self.path.parent / self.video.file.fname
 
     def cover_path(self) -> Path | None:
-        if not self.cover or not self.cover.file or self.cover.file.fname is None:
+        if not self.cover or not self.cover.file:
             return None
         return self.path.parent / self.cover.file.fname
 
     def background_path(self) -> Path | None:
-        if (
-            not self.background
-            or not self.background.file
-            or self.background.file.fname is None
-        ):
+        if not self.background or not self.background.file:
             return None
         return self.path.parent / self.background.file.fname
 

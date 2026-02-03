@@ -127,7 +127,6 @@ class UsdbUploadDialog(Ui_Dialog, QDialog):
                 assert song.sync_meta is not None
                 assert song.sync_meta.txt is not None
                 assert song.sync_meta.txt.file is not None
-                assert song.sync_meta.txt.file.fname is not None
                 submit_local_changes(
                     song.song_id,
                     song.sample_url,

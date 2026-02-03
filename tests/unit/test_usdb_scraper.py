@@ -23,7 +23,6 @@ def get_soup(resource_dir: Path, resource: str) -> BeautifulSoup:
 def test__parse_song_txt_from_txt_page(resource_dir: Path) -> None:
     soup = get_soup(resource_dir, "txt_page.htm")
     txt = _parse_song_txt_from_txt_page(soup)
-    assert txt is not None
     assert txt.startswith("#ARTIST:")
     assert txt.endswith("\nE")
 
