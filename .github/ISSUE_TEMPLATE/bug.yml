@@ -1,0 +1,63 @@
+name: Bug Report
+description: File a bug report.
+title: "[Bug]: "
+labels: ["bug"]
+projects: ["bohning/usdb_syncer"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to fill out this bug report!
+  - type: checkboxes
+    id: confirmed
+    attributes:
+      label: "Please confirm the following before submitting your bug report:"
+      options:
+        - label: I searched existing issues for duplicates.
+          required: true
+        - label: I have read the README and followed all applicable troubleshooting steps.
+          required: true
+    validations:
+      required: true
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened? What did you expect to happen? Is it reproducible every time?
+      description: Provide as much detail as possible.
+    validations:
+      required: true
+  - type: dropdown
+    id: OS
+    validations:
+      required: true
+    attributes:
+      label: What OS are you seeing the problem on?
+      multiple: false
+      options:
+        - Windows
+        - macOS
+        - Linux (please specify distribution in the "Additional context" section)
+        - Other (please specify in the "Additional context" section)
+  - type: dropdown
+    id: type-of-install
+    validations:
+      required: true
+    attributes:
+      label: How do you run the Syncer?
+      multiple: false
+      options:
+        - Installed
+        - Portable executable
+        - PyPI package
+        - from source
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant log output
+      description: Please copy and paste any relevant log output. You can find the log file by clicking "Help > Show Log" in the menu
+      render: shell
+  - type: textarea
+    id: additional-context
+    attributes:
+      label: Additional context
+      description: Add any other context about the problem here (like OS version, Syncer version, etc.)
