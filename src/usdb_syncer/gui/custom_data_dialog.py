@@ -5,6 +5,7 @@ from collections.abc import Callable
 from PySide6 import QtWidgets
 
 from usdb_syncer.custom_data import CustomData
+from usdb_syncer.gui import gui_utils
 from usdb_syncer.gui.forms.CustomDataDialog import Ui_Dialog
 
 
@@ -18,6 +19,7 @@ class CustomDataDialog(Ui_Dialog, QtWidgets.QDialog):
         key: str | None = None,
     ) -> None:
         super().__init__(parent=parent)
+        gui_utils.cleanup_on_close(self)
         self.setupUi(self)
         self._on_accept = on_accept
         if key:

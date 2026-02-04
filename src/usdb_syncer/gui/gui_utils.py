@@ -2,7 +2,7 @@
 
 import attrs
 from PySide6.QtCore import Qt
-from PySide6.QtWidgets import QAbstractScrollArea, QApplication
+from PySide6.QtWidgets import QAbstractScrollArea, QApplication, QWidget
 
 
 @attrs.define(kw_only=True)
@@ -26,3 +26,8 @@ def keyboard_modifiers() -> Modifiers:
         shift=bool(mods & Qt.KeyboardModifier.ShiftModifier),
         alt=bool(mods & Qt.KeyboardModifier.AltModifier),
     )
+
+
+def cleanup_on_close(widget: QWidget) -> None:
+    """Ensure widget is cleaned up on close."""
+    widget.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose, True)

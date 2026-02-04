@@ -9,7 +9,7 @@ from PySide6.QtGui import QDesktopServices
 
 from usdb_syncer import events, settings
 from usdb_syncer.constants import Usdb
-from usdb_syncer.gui import icons
+from usdb_syncer.gui import gui_utils, icons
 from usdb_syncer.gui.forms.UsdbLoginDialog import Ui_Dialog
 from usdb_syncer.usdb_scraper import (
     SessionManager,
@@ -27,6 +27,7 @@ class UsdbLoginDialog(Ui_Dialog, QtWidgets.QDialog):
 
     def __init__(self, parent: QtWidgets.QWidget) -> None:
         super().__init__(parent=parent)
+        gui_utils.cleanup_on_close(self)
         self._parent = parent
         self.setupUi(self)
         self.command_link_register.pressed.connect(

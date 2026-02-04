@@ -10,7 +10,7 @@ from PySide6 import QtWidgets
 from PySide6.QtWidgets import QDialog, QDialogButtonBox, QFileDialog, QWidget
 
 from usdb_syncer import SongId, events, path_template, settings
-from usdb_syncer.gui import icons, theme
+from usdb_syncer.gui import gui_utils, icons, theme
 from usdb_syncer.gui.forms.SettingsDialog import Ui_Dialog
 from usdb_syncer.path_template import PathTemplate
 from usdb_syncer.usdb_scraper import SessionManager
@@ -42,6 +42,7 @@ class SettingsDialog(Ui_Dialog, QDialog):
 
     def __init__(self, parent: QWidget, song: UsdbSong | None) -> None:
         super().__init__(parent=parent)
+        gui_utils.cleanup_on_close(self)
         self._song = song or _FALLBACK_SONG
         self.setupUi(self)
         # restore last tab

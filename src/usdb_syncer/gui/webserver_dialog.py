@@ -3,6 +3,7 @@
 from PySide6 import QtGui, QtWidgets
 
 from usdb_syncer import errors
+from usdb_syncer.gui import gui_utils
 from usdb_syncer.gui.forms.WebserverDialog import Ui_Dialog
 from usdb_syncer.webserver import webserver
 
@@ -12,6 +13,7 @@ class WebserverDialog(Ui_Dialog, QtWidgets.QDialog):
 
     def __init__(self, parent: QtWidgets.QWidget) -> None:
         super().__init__(parent=parent)
+        gui_utils.cleanup_on_close(self)
         self.setupUi(self)
         self._update_ui()
         self.edit_title.setPlaceholderText(webserver.DEFAULT_TITLE)

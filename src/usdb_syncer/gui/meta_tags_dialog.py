@@ -6,6 +6,7 @@ from typing import Literal
 from PySide6.QtGui import QGuiApplication
 from PySide6.QtWidgets import QDialog, QWidget
 
+from usdb_syncer.gui import gui_utils
 from usdb_syncer.gui.forms.MetaTagsDialog import Ui_Dialog
 from usdb_syncer.meta_tags import (
     CropMetaTags,
@@ -24,6 +25,7 @@ class MetaTagsDialog(Ui_Dialog, QDialog):
 
     def __init__(self, parent: QWidget) -> None:
         super().__init__(parent=parent)
+        gui_utils.cleanup_on_close(self)
         self.setupUi(self)
         self._connect_signals()
         self._shortened_urls: dict[str, str] = {}

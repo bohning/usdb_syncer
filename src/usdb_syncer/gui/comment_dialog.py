@@ -2,6 +2,7 @@
 
 from PySide6.QtWidgets import QDialog, QWidget
 
+from usdb_syncer.gui import gui_utils
 from usdb_syncer.gui.forms.CommentDialog import Ui_Dialog
 from usdb_syncer.usdb_scraper import post_song_comment
 from usdb_syncer.usdb_song import UsdbSong
@@ -12,6 +13,7 @@ class CommentDialog(Ui_Dialog, QDialog):
 
     def __init__(self, parent: QWidget, selected_song: UsdbSong) -> None:
         super().__init__(parent=parent)
+        gui_utils.cleanup_on_close(self)
         self._parent = parent
         self.setupUi(self)
         self._selected_song = selected_song
