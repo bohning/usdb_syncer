@@ -175,7 +175,7 @@ class UsdbSong:
         )
 
     def is_local(self) -> bool:
-        return self.sync_meta is not None and self.sync_meta.path is not None
+        return self.sync_meta is not None
 
     def is_pinned(self) -> bool:
         return self.sync_meta is not None and self.sync_meta.pinned
