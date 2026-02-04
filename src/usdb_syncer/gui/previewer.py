@@ -853,10 +853,7 @@ class _AudioPlayer:
         bytes_needed = samples * self._CHANNELS * 2
         data = self._process.stdout.read(bytes_needed)
         if len(data) < bytes_needed:
-            outdata[:] = np.zeros((samples, self._CHANNELS), dtype=np.int16)
-            with utils.LinuxEnvCleaner():
-                self._stream.stop()
-            return
+            raise sounddevice.CallbackStop
         array = np.frombuffer(data, dtype=np.int16).reshape(-1, self._CHANNELS)
         outdata[:] = self._mix_audio(array, samples)
         self._state.advance_current_sample(samples)
