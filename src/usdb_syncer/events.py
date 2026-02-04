@@ -62,6 +62,14 @@ class SubscriptableEvent(QtCore.QEvent):
             func(self)
 
 
+# program
+
+
+@attrs.define(slots=False)
+class Shutdown(SubscriptableEvent):
+    """Sent when a shutdown has been requested."""
+
+
 # songs
 
 

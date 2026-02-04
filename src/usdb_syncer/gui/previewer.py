@@ -12,8 +12,9 @@ import soundfile
 from PySide6 import QtCore, QtGui, QtWidgets
 from PySide6.QtCore import Qt
 
-from usdb_syncer import SongId, utils
-from usdb_syncer.gui import events, icons, theme
+from usdb_syncer import SongId, events, utils
+from usdb_syncer.gui import events as gui_events
+from usdb_syncer.gui import icons, theme
 from usdb_syncer.gui.forms.PreviewWindow import Ui_MainWindow
 from usdb_syncer.gui.resources.audio import METRONOME_TICK_WAV
 from usdb_syncer.logger import logger as _logger
@@ -102,7 +103,8 @@ class Previewer(Ui_MainWindow, QtWidgets.QMainWindow):
         self._connect_ui_inputs()
         self._setup_timers()
         self._apply_theme(theme.Theme.from_settings())
-        events.ThemeChanged.subscribe(self._on_theme_changed)
+        gui_events.ThemeChanged.subscribe(self._on_theme_changed)
+        events.Shutdown.subscribe(self._on_shutdown)
 
     @classmethod
     def load(
@@ -297,8 +299,11 @@ class Previewer(Ui_MainWindow, QtWidgets.QMainWindow):
         self._player.seek_to(self._state.current_video_time)
         self._state.seeking = False
 
-    def _on_theme_changed(self, event: events.ThemeChanged) -> None:
+    def _on_theme_changed(self, event: gui_events.ThemeChanged) -> None:
         self._apply_theme(event.theme)
+
+    def _on_shutdown(self, _event: events.Shutdown) -> None:
+        self.close()
 
     def _apply_theme(self, theme: theme.Theme) -> None:
         self.button_pause.setIcon(icons.Icon.PAUSE_REMOTE.icon(theme.KEY))
@@ -329,7 +334,8 @@ class Previewer(Ui_MainWindow, QtWidgets.QMainWindow):
 
     def closeEvent(self, event: QtGui.QCloseEvent) -> None:  # noqa: N802
         self._player.stop()
-        events.ThemeChanged.unsubscribe(self._on_theme_changed)
+        gui_events.ThemeChanged.unsubscribe(self._on_theme_changed)
+        events.Shutdown.unsubscribe(self._on_shutdown)
         Previewer._instance = None
         event.accept()
 
