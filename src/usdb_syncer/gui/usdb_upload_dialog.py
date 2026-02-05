@@ -9,7 +9,7 @@ from PySide6.QtGui import Qt
 from PySide6.QtWidgets import QDialog, QMessageBox, QWidget
 
 from usdb_syncer import settings
-from usdb_syncer.gui import progress, theme
+from usdb_syncer.gui import gui_utils, progress, theme
 from usdb_syncer.gui.forms.UsdbUploadDialog import Ui_Dialog
 from usdb_syncer.gui.theme import generate_diff_css
 from usdb_syncer.logger import song_logger
@@ -47,6 +47,7 @@ class UsdbUploadDialog(Ui_Dialog, QDialog):
         self, parent: QWidget | None, submittable: list[tuple[UsdbSong, SongChanges]]
     ) -> None:
         super().__init__(parent=parent)
+        gui_utils.cleanup_on_close(self)
         self.setupUi(self)
         self.resize(1200, 800)
         if ok_button := self.buttonBox.button(self.buttonBox.StandardButton.Ok):

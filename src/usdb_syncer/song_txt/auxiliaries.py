@@ -4,6 +4,8 @@
 # we disable the rule file-wide.
 # ruff: noqa: RUF001, RUF003
 
+from __future__ import annotations
+
 from typing import NamedTuple
 
 import attrs
@@ -36,7 +38,7 @@ class BeatsPerMinute:
         return f"{round(self.value, 2):g}"
 
     @classmethod
-    def parse(cls, value: str) -> "BeatsPerMinute":
+    def parse(cls, value: str) -> BeatsPerMinute:
         return cls(float(value.replace(",", ".")))
 
     def beats_to_secs(self, beats: int) -> float:

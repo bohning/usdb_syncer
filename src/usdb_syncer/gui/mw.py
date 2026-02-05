@@ -461,6 +461,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
             event.accept()
         else:
             logger.debug("Close event deferred, cleaning up ...")
+            events.Shutdown().post()
             run_with_progress("Shutting down ...", cleanup, on_done)
             event.ignore()
 

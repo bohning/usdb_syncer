@@ -15,7 +15,7 @@ from PySide6.QtWidgets import (
 )
 
 from usdb_syncer import SongId, db, settings, utils
-from usdb_syncer.gui import progress
+from usdb_syncer.gui import gui_utils, progress
 from usdb_syncer.gui.forms.ReportDialog import Ui_Dialog
 from usdb_syncer.gui.pdf import generate_report_pdf
 from usdb_syncer.gui.progress import run_with_progress
@@ -42,6 +42,7 @@ class ReportDialog(Ui_Dialog, QDialog):
 
     def __init__(self, parent: QWidget, song_table: SongTable) -> None:
         super().__init__(parent=parent)
+        gui_utils.cleanup_on_close(self)
         self.song_table = song_table
         self.setupUi(self)
         self._populate_comboboxes()

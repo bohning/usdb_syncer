@@ -4,6 +4,7 @@ from PySide6.QtCore import QTimer
 from PySide6.QtWidgets import QDialog, QWidget
 
 import usdb_syncer
+from usdb_syncer.gui import gui_utils
 from usdb_syncer.gui.forms.AboutDialog import Ui_Dialog
 
 RESET_GAP = 4000
@@ -16,6 +17,7 @@ class AboutDialog(Ui_Dialog, QDialog):
 
     def __init__(self, parent: QWidget) -> None:
         super().__init__(parent=parent)
+        gui_utils.cleanup_on_close(self)
         self.setupUi(self)
         self.label_version.setText(usdb_syncer.__version__)
         self._reset_text()

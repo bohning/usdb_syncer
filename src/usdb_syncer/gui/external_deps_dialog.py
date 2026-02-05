@@ -8,6 +8,7 @@ from typing import Any
 from PySide6.QtWidgets import QDialog, QFileDialog, QWidget
 
 from usdb_syncer import settings, utils
+from usdb_syncer.gui import gui_utils
 from usdb_syncer.gui.forms.ExternalDepsDialog import Ui_Dialog
 
 
@@ -36,6 +37,7 @@ class ExternalDepsDialog(Ui_Dialog, QDialog):
         on_success: Callable[[], None],
     ) -> None:
         super().__init__(parent=parent)
+        gui_utils.cleanup_on_close(self)
         self.setupUi(self)
         self.ffmpeg_available = ffmpeg_available
         self.deno_available = deno_available

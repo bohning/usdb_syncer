@@ -17,6 +17,7 @@ class DebugConsole(Ui_Dialog, QDialog):
 
     def __init__(self, parent: QWidget) -> None:
         super().__init__(parent=parent)
+        gui_utils.cleanup_on_close(self)
         self.setupUi(self)
         self._set_font()
         self._set_shortcuts()
