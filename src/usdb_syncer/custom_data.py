@@ -61,3 +61,6 @@ class CustomData:
 
     def __contains__(self, key: object) -> bool:
         return isinstance(key, str) and key in self._data
+
+    def __str__(self) -> str:
+        return "\n".join(f"{key}: {value}" for key, value in self.items())
