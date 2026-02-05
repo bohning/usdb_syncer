@@ -2,8 +2,11 @@
 
 # Changes
 
+- Updated yt-dlp to latest available version 2026.02.04, solving latest download issues.
+
 ## Fixes
 
+- Fixed song sample playback via mouse click.
 - Fixed dialogs leaking memory.
 
 <!-- 0.20.0 -->
@@ -12,13 +15,13 @@
 
 ## Features
 
-- Updated yt-dlp to 2026.1.29
+- Updated yt-dlp to latest available version 2026.01.29, solving latest download issues.
 - Added support for Python 3.13 and 3.14. The Syncer now supports Python 3.11 to 3.14.
 - Columns in the song table can be hidden by right-clicking the header.
 
 ## Fixes
 
-- Fixed broken wheels from 0.19.0
+- Fixed broken wheels from 0.19.0.
 - Fixed fonts being broken on some Linux distros (#518).
 
 ## Developer notes
