@@ -1,3 +1,11 @@
+<!-- 0.21.0 -->
+
+# Changes
+
+## Fixes
+
+- Fixed dialogs leaking memory.
+
 <!-- 0.20.0 -->
 
 # Changes
