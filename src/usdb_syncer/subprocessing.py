@@ -20,6 +20,7 @@ APPLY_CLEAN_ENV = IS_BUNDLE and sys.platform == "linux"
 
 BAD_ENVS = ["LD_LIBRARY_PATH", "QT_PLUGIN_PATH", "QT_QPA_PLATFORM_PLUGIN_PATH"]
 
+
 def run_clean(command: list[str], **kwargs: Any) -> subprocess.CompletedProcess[Any]:
     """Run a command with a cleaned environment."""
     kwargs.pop("env", None)
