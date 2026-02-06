@@ -24,14 +24,12 @@ BAD_ENVS = ["LD_LIBRARY_PATH", "QT_PLUGIN_PATH", "QT_QPA_PLATFORM_PLUGIN_PATH"]
 def run_clean(command: list[str], **kwargs: Any) -> subprocess.CompletedProcess[Any]:
     """Run a command with a cleaned environment."""
     kwargs.pop("env", None)
-    print(f"Running command: {' '.join(command)}")
     return subprocess.run(command, env=get_env_clean(), **kwargs)
 
 
 def popen_clean(command: list[str], **kwargs: Any) -> subprocess.Popen[Any]:
     """Run a command with a cleaned environment."""
     kwargs.pop("env", None)
-    print(f"Running command: {' '.join(command)}")
     return subprocess.Popen(command, env=get_env_clean(), **kwargs)
 
 
@@ -47,10 +45,12 @@ def unsafe_clean() -> Iterator[None]:
     environ_lock.acquire()
     original_env = get_env()
     safe_env = get_env_clean()
+    os.environ.clear()
     os.environ.update(safe_env)
     try:
         yield
     finally:
+        os.environ.clear()
         os.environ.update(original_env)
         environ_lock.release()
 
