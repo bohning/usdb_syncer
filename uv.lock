@@ -426,7 +426,7 @@ wheels = [
 
 [[package]]
 name = "ffmpeg-normalize"
-version = "1.36.1"
+version = "1.37.2"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "colorama", marker = "sys_platform == 'win32'" },
@@ -435,9 +435,9 @@ dependencies = [
     { name = "mutagen" },
     { name = "tqdm" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/a9/c3/a662f9f8cc8dd23d59e3895ae5cfc757be929662eac0f834f7cd7862f2d3/ffmpeg_normalize-1.36.1.tar.gz", hash = "sha256:1dc19d3ff5ef2c7c4040c0bd8a77e355331777efc31cd05de66e570f305764a9", size = 32815, upload-time = "2026-01-07T15:36:49.621Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/f6/32/f835e09147115b8fbdd5a6053870af375acc376b18097d439c9ede11d968/ffmpeg_normalize-1.37.2.tar.gz", hash = "sha256:b1fe6168671dcc2d0f797b023be58730b322e320493cf6862a207dded0bdca9f", size = 33376, upload-time = "2026-02-04T19:54:55.846Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/b6/df/203efa0d81a87624aa8af968dde04a37d9e5a89fdfd072bb5133787e5136/ffmpeg_normalize-1.36.1-py3-none-any.whl", hash = "sha256:b974dd9f5cf351b23378bd1e5df9755251ed7d0ee8d218f4d9fff0c2763c5c92", size = 39207, upload-time = "2026-01-07T15:36:48.281Z" },
+    { url = "https://files.pythonhosted.org/packages/a8/a4/774904b431a61cb3feedf6985347c42382573b002e08e47fef1e991d429c/ffmpeg_normalize-1.37.2-py3-none-any.whl", hash = "sha256:026b395d5a4760e06375bed5c655e6fa3909d2b0bcf184826e6636020af475e9", size = 39767, upload-time = "2026-02-04T19:54:54.84Z" },
 ]
 
 [[package]]
@@ -501,7 +501,7 @@ name = "importlib-metadata"
 version = "8.7.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "zipp" },
+    { name = "zipp", marker = "python_full_version < '3.13'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/f3/49/3b30cad09e7771a4982d9975a8cbf64f00d4a1ececb53297f1d9a7be1b10/importlib_metadata-8.7.1.tar.gz", hash = "sha256:49fef1ae6440c182052f407c8d34a68f72efc36db9ca90dc0113398f2fdde8bb", size = 57107, upload-time = "2025-12-21T10:00:19.278Z" }
 wheels = [

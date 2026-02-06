@@ -19,7 +19,17 @@ from PySide6 import QtCore, QtGui, QtWidgets
 from PySide6.QtCore import Qt
 
 import usdb_syncer
-from usdb_syncer import addons, data, db, errors, logger, settings, song_routines, utils
+from usdb_syncer import (
+    addons,
+    data,
+    db,
+    errors,
+    logger,
+    settings,
+    song_routines,
+    subprocessing,
+    utils,
+)
 from usdb_syncer import sync_meta as sync_meta
 from usdb_syncer import usdb_song as usdb_song
 from usdb_syncer.gui import events, hooks, theme
@@ -149,6 +159,7 @@ def main() -> None:
         print(NOGIL_ERROR_MESSAGE)
         sys.exit(1)
     sys.excepthook = _excepthook
+    subprocessing.patch_webbrowser_subprocess()
     args = CliArgs.parse()
     args.apply()
     addons.load_all()
@@ -339,7 +350,7 @@ def _run_heathcheck() -> int:
         NOTICE.read_text()
 
         # sounddevice check
-        with utils.LinuxEnvCleaner():
+        with subprocessing.unsafe_clean():
             import sounddevice  # noqa: F401
 
     except Exception as e:  # noqa: BLE001

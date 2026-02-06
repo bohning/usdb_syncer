@@ -40,7 +40,7 @@ from usdb_syncer.song_loader import DownloadManager
 from usdb_syncer.sync_meta import SyncMeta
 from usdb_syncer.usdb_scraper import SessionManager, UserRole, post_song_rating
 from usdb_syncer.usdb_song import UsdbSong
-from usdb_syncer.utils import AppPaths, LinuxEnvCleaner, open_path_or_file
+from usdb_syncer.utils import AppPaths, open_path_or_file
 from usdb_syncer.webserver import webserver
 
 
@@ -374,8 +374,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
     def _show_current_song_in_usdb(self) -> None:
         if song := self.table.current_song():
             logger.debug(f"Opening song page #{song.song_id} in webbrowser.")
-            with LinuxEnvCleaner():
-                webbrowser.open(f"{Usdb.DETAIL_URL}{song.song_id:d}")
+            webbrowser.open(f"{Usdb.DETAIL_URL}{song.song_id:d}")
         else:
             logger.info("No current song.")
 
