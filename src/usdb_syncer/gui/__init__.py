@@ -337,6 +337,7 @@ def _maybe_copy_licenses() -> None:
 
 def _run_heathcheck() -> int:
     """Run a healthcheck and return exit code."""
+    logger._SHUTDOWN_ON_ERROR = True
     try:
         # gui modules check
         from usdb_syncer.gui.mw import MainWindow  # noqa: F401
@@ -350,8 +351,8 @@ def _run_heathcheck() -> int:
         NOTICE.read_text()
 
         # sounddevice check
-        with subprocessing.unsafe_clean():
-            import sounddevice  # noqa: F401
+        import sounddevice
+        sounddevice.query_devices()
 
     except Exception as e:  # noqa: BLE001
         traceback.print_exc()
