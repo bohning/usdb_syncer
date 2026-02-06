@@ -45,7 +45,7 @@ class TextFilterChanged(events.SubscriptableEvent):
 class SearchOrderChanged(events.SubscriptableEvent):
     """Sent when the search order has been changed or reversed."""
 
-    order: db.SongOrder
+    order: db.SongOrderBase
     descending: bool
 
 
