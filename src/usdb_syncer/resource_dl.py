@@ -18,7 +18,7 @@ from PIL import Image, ImageEnhance, ImageOps
 from PIL.Image import Resampling
 from yt_dlp.utils import UnsupportedError, YoutubeDLError, download_range_func
 
-from usdb_syncer import SongId, hooks, utils
+from usdb_syncer import SongId, hooks, subprocessing, utils
 from usdb_syncer.constants import YtErrorMsg
 from usdb_syncer.discord import notify_discord
 from usdb_syncer.logger import Logger, song_logger
@@ -211,30 +211,30 @@ def fallback_resource_is_audio_only(
 
 
 def run_freezedetect(video_path: Path) -> list[float]:
-    with utils.LinuxEnvCleaner():
-        result = subprocess.run(
-            [
-                "ffmpeg",
-                "-loglevel",
-                "info",
-                "-hide_banner",
-                "-nostats",
-                "-i",
-                str(video_path),
-                "-vf",
-                (
-                    f"freezedetect=noise={FREEZE_NOISE_DB}dB:"
-                    f"duration={FREEZE_DURATION_SECONDS}"
-                ),
-                "-an",
-                "-f",
-                "null",
-                "-",
-            ],
-            capture_output=True,
-            text=True,
-            timeout=FFMPEG_TIMEOUT_SECONDS,
-        )
+    result = subprocess.run(
+        [
+            "ffmpeg",
+            "-loglevel",
+            "info",
+            "-hide_banner",
+            "-nostats",
+            "-i",
+            str(video_path),
+            "-vf",
+            (
+                f"freezedetect=noise={FREEZE_NOISE_DB}dB:"
+                f"duration={FREEZE_DURATION_SECONDS}"
+            ),
+            "-an",
+            "-f",
+            "null",
+            "-",
+        ],
+        capture_output=True,
+        text=True,
+        timeout=FFMPEG_TIMEOUT_SECONDS,
+        env=subprocessing.get_env_clean(),
+    )
 
     # ffmpeg's freezedetect filter emits results only as log messages, so we
     # intentionally parse freeze_duration from the output.

@@ -12,7 +12,7 @@ import soundfile
 from PySide6 import QtCore, QtGui, QtWidgets
 from PySide6.QtCore import Qt
 
-from usdb_syncer import SongId, events, utils
+from usdb_syncer import SongId, events, subprocessing, utils
 from usdb_syncer.gui import events as gui_events
 from usdb_syncer.gui import icons, theme
 from usdb_syncer.gui.forms.PreviewWindow import Ui_MainWindow
@@ -31,7 +31,7 @@ if TYPE_CHECKING:
     from usdb_syncer.usdb_song import UsdbSong
 else:
     try:
-        with utils.LinuxEnvCleaner():
+        with subprocessing.unsafe_clean():
             import sounddevice
     except (OSError, ImportError):
         _logger.exception(
@@ -118,10 +118,9 @@ class Previewer(Ui_MainWindow, QtWidgets.QMainWindow):
         if not sounddevice:
             QtWidgets.QMessageBox.warning(None, "Aborted", _MISSING_LIB_MSG)
             return False
-        with utils.LinuxEnvCleaner():
-            if not sounddevice.query_devices():
-                QtWidgets.QMessageBox.warning(None, "Aborted", _NO_DEVICES_MSG)
-                return False
+        if not sounddevice.query_devices():
+            QtWidgets.QMessageBox.warning(None, "Aborted", _NO_DEVICES_MSG)
+            return False
         if cls._instance:
             cls._instance._change_song(song_id, txt, audio_path, cover_path)
             cls._instance.raise_()
@@ -797,9 +796,8 @@ class _AudioPlayer:
 
     def stop(self) -> None:
         if self._stream:
-            with utils.LinuxEnvCleaner():
-                self._stream.stop()
-                self._stream.close()
+            self._stream.stop()
+            self._stream.close()
         if self._process:
             self._process.terminate()
             self._process = None
@@ -827,21 +825,22 @@ class _AudioPlayer:
             str(self._CHANNELS),
             "-",
         ]
-        with utils.LinuxEnvCleaner():
-            self._process = subprocess.Popen(
-                cmd, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL
-            )
+        self._process = subprocess.Popen(
+            cmd,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.DEVNULL,
+            env=subprocessing.get_env_clean(),
+        )
 
     def _start_stream(self) -> None:
-        with utils.LinuxEnvCleaner():
-            self._stream = sounddevice.OutputStream(
-                samplerate=_SAMPLE_RATE,
-                channels=self._CHANNELS,
-                dtype="int16",
-                blocksize=self._STREAM_BUFFER_SIZE,
-                callback=self._stream_callback,
-            )
-            self._stream.start()
+        self._stream = sounddevice.OutputStream(
+            samplerate=_SAMPLE_RATE,
+            channels=self._CHANNELS,
+            dtype="int16",
+            blocksize=self._STREAM_BUFFER_SIZE,
+            callback=self._stream_callback,
+        )
+        self._stream.start()
 
     def _stream_callback(
         self,

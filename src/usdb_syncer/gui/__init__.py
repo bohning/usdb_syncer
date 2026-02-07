@@ -19,7 +19,17 @@ from PySide6 import QtCore, QtGui, QtWidgets
 from PySide6.QtCore import Qt
 
 import usdb_syncer
-from usdb_syncer import addons, data, db, errors, logger, settings, song_routines, utils
+from usdb_syncer import (
+    addons,
+    constants,
+    data,
+    db,
+    errors,
+    logger,
+    settings,
+    song_routines,
+    utils,
+)
 from usdb_syncer import sync_meta as sync_meta
 from usdb_syncer import usdb_song as usdb_song
 from usdb_syncer.gui import events, hooks, theme
@@ -56,7 +66,7 @@ class CliArgs:
 
     # Development
     profile: bool = False
-    skip_pyside: bool = not utils.IS_SOURCE
+    skip_pyside: bool = not constants.IS_SOURCE
     trace_sql: bool = False
     healthcheck: bool = False
 
@@ -97,7 +107,7 @@ class CliArgs:
         dev_options.add_argument(
             "--healthcheck", action="store_true", help="Run healthcheck and exit."
         )
-        if utils.IS_SOURCE:
+        if constants.IS_SOURCE:
             dev_options.add_argument(
                 "--skip-pyside",
                 action="store_true",
@@ -137,7 +147,7 @@ class CliArgs:
             print("Settings reset to default.")
         if self.songpath:
             settings.set_song_dir(self.songpath.resolve(), temp=True)
-        if utils.IS_SOURCE and not self.skip_pyside:
+        if constants.IS_SOURCE and not self.skip_pyside:
             import tools.generate_pyside_files  # pylint: disable=import-outside-toplevel
 
             tools.generate_pyside_files.main()
@@ -189,7 +199,7 @@ def _run_main() -> None:
     mw = MainWindow()
     configure_logging(mw)
     mw.label_update_hint.setVisible(False)
-    if not utils.IS_SOURCE:
+    if not constants.IS_SOURCE:
         if version := utils.newer_version_available():
             mw.label_update_hint.setText(
                 mw.label_update_hint.text().replace("VERSION", version)
@@ -297,7 +307,7 @@ def _init_app() -> QtWidgets.QApplication:
 
 
 def _maybe_copy_licenses() -> None:
-    if not utils.IS_BUNDLE:
+    if not constants.IS_BUNDLE:
         return
 
     license_hash = (
@@ -339,8 +349,9 @@ def _run_heathcheck() -> int:
         NOTICE.read_text()
 
         # sounddevice check
-        with utils.LinuxEnvCleaner():
-            import sounddevice  # noqa: F401
+        import sounddevice
+
+        sounddevice.query_devices()
 
     except Exception as e:  # noqa: BLE001
         traceback.print_exc()
