@@ -11,23 +11,23 @@ import types
 import webbrowser
 from typing import TYPE_CHECKING, Any
 
+from usdb_syncer import constants
+
 if TYPE_CHECKING:
     from collections.abc import Iterator
 
-# Don't want to import utils here
-IS_BUNDLE = bool(getattr(sys, "frozen", False) and getattr(sys, "_MEIPASS", False))
-APPLY_CLEAN_ENV = IS_BUNDLE and sys.platform == "linux"
+APPLY_CLEAN_ENV = constants.IS_BUNDLE and sys.platform == "linux"
 
 BAD_ENVS = ["LD_LIBRARY_PATH", "QT_PLUGIN_PATH", "QT_QPA_PLATFORM_PLUGIN_PATH"]
 
 
-def run_clean(command: list[str], **kwargs: Any) -> subprocess.CompletedProcess[Any]:
+def run_clean(command: list[str], **kwargs: Any) -> subprocess.CompletedProcess:
     """Run a command with a cleaned environment."""
     kwargs.pop("env", None)
     return subprocess.run(command, env=get_env_clean(), **kwargs)
 
 
-def popen_clean(command: list[str], **kwargs: Any) -> subprocess.Popen[Any]:
+def popen_clean(command: list[str], **kwargs: Any) -> subprocess.Popen:
     """Run a command with a cleaned environment."""
     kwargs.pop("env", None)
     return subprocess.Popen(command, env=get_env_clean(), **kwargs)

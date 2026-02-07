@@ -28,12 +28,6 @@ CACHE_LIFETIME = 60 * 60
 _platform_dirs = PlatformDirs("usdb_syncer", "bohning")
 
 
-# https://pyinstaller.org/en/stable/runtime-information.html#run-time-information
-IS_BUNDLE = bool(getattr(sys, "frozen", False) and getattr(sys, "_MEIPASS", False))
-IS_INSTALLED = "site-packages" in __file__
-IS_SOURCE = not IS_BUNDLE and not IS_INSTALLED
-
-
 def _root() -> Path:
     """Return source root folder or temporary bundle folder if running as such."""
     if getattr(sys, "frozen", False) and (bundle := getattr(sys, "_MEIPASS", None)):
@@ -113,7 +107,7 @@ class AppPaths:
     license_hash = Path(_platform_dirs.user_data_dir, "license_hash.txt")
     song_list = Path(_platform_dirs.user_cache_dir, "available_songs.json")
     profile = Path(_platform_dirs.user_cache_dir, "usdb_syncer.prof")
-    shared = (_root() / "shared") if IS_SOURCE else None
+    shared = (_root() / "shared") if constants.IS_SOURCE else None
 
     @classmethod
     def make_dirs(cls) -> None:
@@ -262,7 +256,8 @@ def open_path_or_file(path: Path) -> None:
 
 
 def add_to_system_path(path: str) -> None:
-    os.environ["PATH"] = path + os.pathsep + os.environ["PATH"]
+    with subprocessing.environ_lock:
+        os.environ["PATH"] = path + os.pathsep + os.environ["PATH"]
 
 
 def normalize(text: str) -> str:
