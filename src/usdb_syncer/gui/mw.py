@@ -1,6 +1,5 @@
 """usdb_syncer's GUI."""
 
-import webbrowser
 from collections.abc import Callable
 from pathlib import Path
 
@@ -374,7 +373,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
     def _show_current_song_in_usdb(self) -> None:
         if song := self.table.current_song():
             logger.debug(f"Opening song page #{song.song_id} in webbrowser.")
-            webbrowser.open(f"{Usdb.DETAIL_URL}{song.song_id:d}")
+            utils.open_url_in_browser(f"{Usdb.DETAIL_URL}{song.song_id:d}")
         else:
             logger.info("No current song.")
 

@@ -28,7 +28,6 @@ from usdb_syncer import (
     logger,
     settings,
     song_routines,
-    subprocessing,
     utils,
 )
 from usdb_syncer import sync_meta as sync_meta
@@ -160,7 +159,6 @@ def main() -> None:
         print(NOGIL_ERROR_MESSAGE)
         sys.exit(1)
     sys.excepthook = _excepthook
-    subprocessing.patch_webbrowser_subprocess()
     args = CliArgs.parse()
     args.apply()
     addons.load_all()

@@ -7,8 +7,6 @@ import os
 import subprocess
 import sys
 import threading
-import types
-import webbrowser
 from typing import TYPE_CHECKING, Any
 
 from usdb_syncer import constants
@@ -53,18 +51,6 @@ def unsafe_clean() -> Iterator[None]:
         os.environ.clear()
         os.environ.update(original_env)
         environ_lock.release()
-
-
-def patch_webbrowser_subprocess() -> None:
-    """Patch the `webbrowser` module to use `run_clean` for subprocess calls."""
-    if not APPLY_CLEAN_ENV:
-        return
-
-    proxy_subprocess = types.ModuleType("proxy_subprocess")
-    proxy_subprocess.__dict__.update(subprocess.__dict__)
-    proxy_subprocess.run = run_clean  # type: ignore[assignment, attr-defined]
-    proxy_subprocess.Popen = popen_clean  # type: ignore[assignment, attr-defined]
-    webbrowser.subprocess = proxy_subprocess  # type: ignore[attr-defined]
 
 
 def get_env() -> dict[str, str]:
