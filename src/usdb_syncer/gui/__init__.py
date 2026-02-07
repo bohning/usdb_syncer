@@ -336,7 +336,6 @@ def _maybe_copy_licenses() -> None:
 
 def _run_heathcheck() -> int:
     """Run a healthcheck and return exit code."""
-    logger._SHUTDOWN_ON_ERROR = True
     try:
         # gui modules check
         from usdb_syncer.gui.mw import MainWindow  # noqa: F401

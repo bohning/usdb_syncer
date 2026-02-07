@@ -9,13 +9,10 @@ Logging levels:
 """
 
 import logging
-import sys
 from types import TracebackType
 from typing import Any
 
 from usdb_syncer import SongId
-
-_SHUTDOWN_ON_ERROR = False
 
 
 class Logger(logging.LoggerAdapter):
@@ -39,8 +36,6 @@ class Logger(logging.LoggerAdapter):
             self.debug(None, exc_info=exc_info, **kwargs)
         if msg:
             self.error(msg, *args, exc_info=False, **kwargs)
-        if _SHUTDOWN_ON_ERROR:
-            sys.exit(2)
 
 
 class SongLogger(Logger):
