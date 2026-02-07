@@ -39,7 +39,7 @@ def open_url_in_browser(url: str) -> None:
     """Safely open a URL in the user's default web browser, with platform-specific handling."""
     match sys.platform:
         case "win32":
-            os.startfile(url)
+            os.startfile(url)  # type: ignore[attr-defined]
         case "darwin":
             subprocess.run(["open", url], check=True)
         case "linux":
