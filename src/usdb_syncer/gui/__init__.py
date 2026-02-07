@@ -160,7 +160,7 @@ class CliArgs:
 
 def main() -> None:
     sys.excepthook = _excepthook
-    if hasattr(sys, "_is_gil_enabled") and sys._is_gil_enabled() is False:
+    if hasattr(sys, "_is_gil_enabled") and sys._is_gil_enabled() is False:  # type: ignore[attr-defined]
         print(NOGIL_ERROR_MESSAGE)
         sys.exit(1)
     args = CliArgs.parse()
@@ -171,7 +171,7 @@ def main() -> None:
     app.setAttribute(Qt.ApplicationAttribute.AA_DontShowIconsInMenus, False)
 
     def run_main() -> None:
-        _run_main(stdout_log_level=args.log_level.upper())
+        _run_main(stdout_log_level=args.log_level)
         app.exec()
 
     match args.subcommand:
@@ -188,7 +188,7 @@ def main() -> None:
 
 
 def configure_logging(
-    mw: MainWindow | None = None, stdout_level: logging._Level = logging.DEBUG
+    mw: MainWindow | None = None, stdout_level: logger.LOGLEVEL = logging.DEBUG
 ) -> None:
     handlers: list[logging.Handler] = [
         logging.FileHandler(utils.AppPaths.log, encoding="utf-8"),
@@ -199,7 +199,7 @@ def configure_logging(
     logger.configure_logging(*handlers)
 
 
-def _run_main(stdout_log_level: logging._Level) -> None:
+def _run_main(stdout_log_level: logger.LOGLEVEL) -> None:
     from usdb_syncer.gui.mw import MainWindow
 
     mw = MainWindow()

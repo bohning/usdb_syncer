@@ -15,6 +15,8 @@ from typing import Any, TextIO
 
 from usdb_syncer import SongId
 
+LOGLEVEL = int | str
+
 
 class Logger(logging.LoggerAdapter):
     """Logger wrapper with our custom logic."""
@@ -43,7 +45,7 @@ class StdoutHandler(logging.StreamHandler):
     """Logging handler that writes to stdout."""
 
     def __init__(
-        self, stream: TextIO = sys.stdout, level: logging._Level = logging.DEBUG
+        self, stream: TextIO = sys.stdout, level: LOGLEVEL = logging.DEBUG
     ) -> None:
         super().__init__(stream)
         self.setLevel(level)
