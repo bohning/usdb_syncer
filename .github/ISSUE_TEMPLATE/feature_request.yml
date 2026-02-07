@@ -8,12 +8,6 @@ body:
     attributes:
       value: |
         Thanks for taking the time to suggest a new feature!
-  - type: checkbox
-    id: confirmed-searched-issues
-    attributes:
-      label: I searched existing issues for similar feature requests.
-    validations:
-      required: true
   - type: textarea
     id: feature-description
     attributes:

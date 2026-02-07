@@ -9,8 +9,9 @@ Logging levels:
 """
 
 import logging
+import sys
 from types import TracebackType
-from typing import Any
+from typing import Any, TextIO
 
 from usdb_syncer import SongId
 
@@ -36,6 +37,16 @@ class Logger(logging.LoggerAdapter):
             self.debug(None, exc_info=exc_info, **kwargs)
         if msg:
             self.error(msg, *args, exc_info=False, **kwargs)
+
+
+class StdoutHandler(logging.StreamHandler):
+    """Logging handler that writes to stdout."""
+
+    def __init__(
+        self, stream: TextIO = sys.stdout, level: logging._Level = logging.DEBUG
+    ) -> None:
+        super().__init__(stream)
+        self.setLevel(level)
 
 
 class SongLogger(Logger):

@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import cProfile
 import logging
 import shutil
 import subprocess
@@ -16,7 +15,7 @@ from typing import TYPE_CHECKING, Any
 
 import attrs
 from PySide6 import QtCore, QtGui, QtWidgets
-from PySide6.QtCore import Qt
+from PySide6.QtCore import Qt, qInstallMessageHandler
 
 import usdb_syncer
 from usdb_syncer import addons, data, db, errors, logger, settings, song_routines, utils
@@ -48,6 +47,8 @@ NOGIL_ERROR_MESSAGE = (
 class CliArgs:
     """Command line arguments."""
 
+    log_level: str = "info"
+
     reset_settings: bool = False
     subcommand: str = ""
 
@@ -55,6 +56,7 @@ class CliArgs:
     songpath: Path | None = None
 
     # Development
+    show_debug: bool = False
     profile: bool = False
     skip_pyside: bool = not utils.IS_SOURCE
     trace_sql: bool = False
@@ -75,6 +77,12 @@ class CliArgs:
             "--version", action="version", version=usdb_syncer.__version__
         )
         parser.add_argument(
+            "--log-level",
+            type=str,
+            choices=["debug", "info", "warning", "error", "critical"],
+            help="Set the log level for stdout logging. Default is info.",
+        )
+        parser.add_argument(
             "--reset-settings",
             action="store_true",
             help="Reset all settings to default.",
@@ -88,6 +96,11 @@ class CliArgs:
         )
 
         dev_options = parser.add_argument_group("development", "Development options.")
+        dev_options.add_argument(
+            "--show-debug",
+            action="store_true",
+            help="Show debug messages in the console. Disables stderr suppression.",
+        )
         dev_options.add_argument(
             "--trace-sql", action="store_true", help="Trace SQL statements."
         )
@@ -134,21 +147,22 @@ class CliArgs:
             sys.exit(_run_heathcheck())
         if self.reset_settings:
             settings.reset()
-            print("Settings reset to default.")
         if self.songpath:
             settings.set_song_dir(self.songpath.resolve(), temp=True)
         if utils.IS_SOURCE and not self.skip_pyside:
             import tools.generate_pyside_files  # pylint: disable=import-outside-toplevel
 
             tools.generate_pyside_files.main()
+        if not self.show_debug:
+            qInstallMessageHandler(supress_qt_warnings)
         db.set_trace_sql(self.trace_sql)
 
 
 def main() -> None:
+    sys.excepthook = _excepthook
     if hasattr(sys, "_is_gil_enabled") and sys._is_gil_enabled() is False:
         print(NOGIL_ERROR_MESSAGE)
         sys.exit(1)
-    sys.excepthook = _excepthook
     args = CliArgs.parse()
     args.apply()
     addons.load_all()
@@ -157,7 +171,7 @@ def main() -> None:
     app.setAttribute(Qt.ApplicationAttribute.AA_DontShowIconsInMenus, False)
 
     def run_main() -> None:
-        _run_main()
+        _run_main(stdout_log_level=args.log_level.upper())
         app.exec()
 
     match args.subcommand:
@@ -173,21 +187,23 @@ def main() -> None:
                 run_main()
 
 
-def configure_logging(mw: MainWindow | None = None) -> None:
+def configure_logging(
+    mw: MainWindow | None = None, stdout_level: logging._Level = logging.DEBUG
+) -> None:
     handlers: list[logging.Handler] = [
         logging.FileHandler(utils.AppPaths.log, encoding="utf-8"),
-        logging.StreamHandler(sys.stdout),
+        logger.StdoutHandler(level=stdout_level),
     ]
     if mw:
         handlers.append(_TextEditLogger(mw))
     logger.configure_logging(*handlers)
 
 
-def _run_main() -> None:
+def _run_main(stdout_log_level: logging._Level) -> None:
     from usdb_syncer.gui.mw import MainWindow
 
     mw = MainWindow()
-    configure_logging(mw)
+    configure_logging(mw, stdout_level=stdout_log_level)
     mw.label_update_hint.setVisible(False)
     if not utils.IS_SOURCE:
         if version := utils.newer_version_available():
@@ -236,7 +252,9 @@ def _excepthook(
 
 
 def _with_profile(func: Callable[[], None]) -> None:
-    print("Running with profiling enabled.")
+    import cProfile
+
+    logger.logger.debug("Running with profiling enabled.")
     profiler = cProfile.Profile()
     profiler.enable()
     func()
@@ -348,6 +366,10 @@ def _run_heathcheck() -> int:
         return 1
     print("USDB Syncer healthcheck: No problems found.")
     return 0
+
+
+def supress_qt_warnings(**_: Any) -> None:
+    return
 
 
 class _LogSignal(QtCore.QObject):
