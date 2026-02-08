@@ -18,7 +18,12 @@ from usdb_syncer.gui import events as gui_events
 from usdb_syncer.gui import external_deps_dialog, previewer
 from usdb_syncer.gui.custom_data_dialog import CustomDataDialog
 from usdb_syncer.gui.progress import run_with_progress
-from usdb_syncer.gui.song_table.column import MIN_COLUMN_WIDTH, Column, ColumnBase
+from usdb_syncer.gui.song_table.column import (
+    MIN_COLUMN_WIDTH,
+    Column,
+    ColumnBase,
+    CustomColumn,
+)
 from usdb_syncer.gui.song_table.table_model import TableModel
 from usdb_syncer.logger import song_logger
 from usdb_syncer.song_loader import DownloadManager
@@ -44,6 +49,8 @@ class SongTable:
 
     def __init__(self, mw: MainWindow) -> None:
         self.mw = mw
+        for key in settings.get_custom_meta_data_columns():
+            CustomColumn.register_column(key)
         self._model = TableModel(mw)
         self._view = mw.table_view
         self._media_player = media_player.media_player()

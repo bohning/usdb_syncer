@@ -14,8 +14,9 @@ from PySide6.QtGui import QFont, QIcon
 
 from usdb_syncer import SongId, events
 from usdb_syncer.db import JobStatus
+from usdb_syncer.gui import events as gui_events
 from usdb_syncer.gui.fonts import get_rating_font
-from usdb_syncer.gui.song_table.column import Column, ColumnBase
+from usdb_syncer.gui.song_table.column import Column, ColumnBase, CustomColumn
 from usdb_syncer.sync_meta import Resource
 from usdb_syncer.usdb_song import UsdbSong
 
@@ -34,6 +35,7 @@ class TableModel(QAbstractTableModel):
         events.SongChanged.subscribe(self._on_song_changed)
         events.SongDeleted.subscribe(self._on_song_deleted)
         events.SongDirChanged.subscribe(lambda _: self.reset)
+        gui_events.CustomColumnToggled.subscribe(self._on_custom_column_toggled)
 
     def reset(self) -> None:
         self.beginResetModel()
@@ -77,6 +79,17 @@ class TableModel(QAbstractTableModel):
         del self._rows[event.song_id]
         self._ids = self._ids[:row] + self._ids[row + 1 :]
         self.endRemoveRows()
+
+    def _on_custom_column_toggled(self, event: gui_events.CustomColumnToggled) -> None:
+        if not event.enabled and (col := CustomColumn.get(event.key)):
+            index = col.index()
+            self.beginRemoveColumns(QModelIndex(), index, index)
+            CustomColumn.unregister_column(col)
+            self.endRemoveColumns()
+        elif event.enabled and not CustomColumn.get(event.key):
+            self.beginInsertColumns(QModelIndex(), ColumnBase.len(), ColumnBase.len())
+            CustomColumn.register_column(event.key)
+            self.endInsertColumns()
 
     # QAbstractTableModel implementation
 

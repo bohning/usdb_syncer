@@ -225,6 +225,9 @@ class SongOrderBase:
             return CustomSongOrder(value)
         raise TypeError
 
+    def parameter(self) -> str | None:
+        return None
+
 
 class SongOrder(SongOrderBase, enum.Enum):
     """Native song orders."""
@@ -336,13 +339,19 @@ class CustomSongOrder(SongOrderBase):
     custom_data_key: str
 
     def sql(self) -> str:
-        return "custom_data.key"
+        return (
+            "CASE custom_meta_data.key WHEN ? THEN custom_meta_data.value "
+            "ELSE char(0x10FFFF) END"
+        )
 
     def __eq__(self, value: Any) -> bool:
         return (
             isinstance(value, CustomSongOrder)
             and value.custom_data_key == self.custom_data_key
         )
+
+    def parameter(self) -> str | None:
+        return self.custom_data_key
 
 
 @attrs.define
@@ -438,6 +447,8 @@ class SearchBuilder:
                 yield max_views
         if self.golden_notes is not None:
             yield self.golden_notes
+        if param := self.order.parameter():
+            yield param
 
     def statement(self) -> str:
         select_from = Sql.SELECT_SONG_ID.text()

@@ -7,6 +7,7 @@ from datetime import datetime
 from functools import cache
 from typing import TYPE_CHECKING, ClassVar, NamedTuple, assert_never
 
+import attrs
 from PySide6.QtGui import QIcon
 
 from usdb_syncer import db
@@ -88,7 +89,7 @@ class ColumnValue(NamedTuple):
     display_data: bool
     icon: Icon
     fixed_size: int | None
-    song_order: db.SongOrder
+    song_order: db.SongOrderBase
 
 
 class Column(ColumnBase, enum.Enum):
@@ -247,6 +248,50 @@ class Column(ColumnBase, enum.Enum):
             case _ as unreachable:
                 assert_never(unreachable)
         return icon.icon()
+
+
+@attrs.define(frozen=True)
+class CustomColumn(ColumnBase):
+    """Custom table column."""
+
+    value: ColumnValue
+
+    def val(self) -> ColumnValue:
+        return self.value
+
+    @classmethod
+    def new(cls, key: str) -> CustomColumn:
+        return cls(
+            ColumnValue(
+                label=key,
+                display_data=True,
+                icon=Icon.CUSTOM_DATA,
+                fixed_size=None,
+                song_order=db.CustomSongOrder(key),
+            )
+        )
+
+    def cell_display_data(self, song: UsdbSong) -> str | None:
+        if song.sync_meta:
+            return song.sync_meta.custom_data.get(self.value.label)
+        return None
+
+    def cell_decoration_data(self, song: UsdbSong) -> QIcon | None:  # noqa: ARG002
+        return None
+
+    def __eq__(self, value):
+        return isinstance(value, CustomColumn) and self.value.label == value.value.label
+
+    @classmethod
+    def get(cls, key: str) -> CustomColumn | None:
+        return col if (col := cls.new(key)) in _ColumnRegistry.columns else None
+
+    def unregister_column(self) -> None:
+        _ColumnRegistry.columns.remove(self)
+
+    @classmethod
+    def register_column(cls, key: str) -> None:
+        _ColumnRegistry.columns.append(cls.new(key))
 
 
 def status_icon(resource: Resource) -> Icon:

@@ -24,6 +24,14 @@ class RowCountChanged(events.SubscriptableEvent):
     selected: int
 
 
+@attrs.define(slots=False)
+class CustomColumnToggled(events.SubscriptableEvent):
+    """Sent when a custom meta data column was added or removed."""
+
+    key: str
+    enabled: bool
+
+
 # search
 
 
