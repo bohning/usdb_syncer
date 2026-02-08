@@ -90,7 +90,7 @@ def establish_usdb_login(session: Session) -> UsdbUser | None:
     user = get_logged_in_usdb_user(session)
 
     if user:
-        logger.info(f"Using existing USDB login of {user.role} '{user.name}'.")
+        logger.info(f"Using browser cookie USDB login of {user.role} '{user.name}'.")
     else:
         auth_user, auth_pass = settings.get_usdb_auth()
         if auth_user and auth_pass:
@@ -98,7 +98,7 @@ def establish_usdb_login(session: Session) -> UsdbUser | None:
                 user = get_logged_in_usdb_user(session)
                 if user:
                     logger.info(
-                        "Successfully logged in to USDB with "
+                        "Logged in to USDB with credentials as "
                         f"{user.role} '{user.name}'."
                     )
                 else:
@@ -110,7 +110,7 @@ def establish_usdb_login(session: Session) -> UsdbUser | None:
                 logger.error(f"Login to USDB with user '{auth_user}' failed!")
         else:
             logger.warning(
-                "Not logged in to USDB. Please go to 'Synchronize > USDB Login', then "
+                "Not logged in to USDB. Please go to 'USDB > USDB Login', then "
                 "select the browser you are logged in with and/or enter your "
                 "credentials."
             )
@@ -316,10 +316,8 @@ def _get_usdb_page_inner(
     url = Usdb.BASE_URL + rel_url
     match method:
         case RequestMethod.GET:
-            logger.debug(f"Get request for {url}")
             response = session.get(url, headers=headers, params=params, timeout=10)
         case RequestMethod.POST:
-            logger.debug(f"Post request for {url}")
             response = session.post(
                 url, headers=headers, data=payload, params=params, timeout=10
             )
