@@ -200,8 +200,7 @@ class SongTable:
         header = self._header()
         existing_state = False
         if not state.isEmpty():
-            header.restoreState(state)
-            if header.count() != ColumnBase.len():
+            if not header.restoreState(state) or header.count() != ColumnBase.len():
                 header.reset()
             else:
                 existing_state = True
