@@ -5,12 +5,12 @@ from __future__ import annotations
 import enum
 from datetime import datetime
 from functools import cache
-from typing import TYPE_CHECKING, ClassVar, NamedTuple, assert_never
+from typing import TYPE_CHECKING, Any, ClassVar, NamedTuple, assert_never
 
 import attrs
 from PySide6.QtGui import QIcon
 
-from usdb_syncer import db
+from usdb_syncer import db, settings
 from usdb_syncer.constants import BLACK_STAR, HALF_BLACK_STAR
 from usdb_syncer.gui.icons import Icon
 
@@ -50,14 +50,16 @@ class ColumnBase:
     def cell_display_data(self, song: UsdbSong) -> str | None:
         raise NotImplementedError
 
-    def cell_decoration_data(self, song: UsdbSong) -> QIcon | None:
+    def cell_decoration_data(
+        self, song: UsdbSong, theme: settings.Theme
+    ) -> QIcon | None:
         raise NotImplementedError
 
     def display_data(self) -> str | None:
         return self.val().label if self.val().display_data else None
 
-    def decoration_data(self) -> QIcon:
-        return self.val().icon.icon()
+    def decoration_data(self, theme: settings.Theme) -> QIcon:
+        return self.val().icon.icon(theme)
 
     @staticmethod
     def from_song_order(song_order: db.SongOrderBase) -> ColumnBase:
@@ -125,9 +127,6 @@ class Column(ColumnBase, enum.Enum):
     def display_data(self) -> str | None:
         return self.value.label if self.value.display_data else None
 
-    def decoration_data(self) -> QIcon:
-        return self.value.icon.icon()
-
     def get_resource_for_column(self, sync_meta: SyncMeta) -> Resource | None:
         match self:
             case Column.TXT:
@@ -186,7 +185,9 @@ class Column(ColumnBase, enum.Enum):
             case _ as unreachable:
                 assert_never(unreachable)
 
-    def cell_decoration_data(self, song: UsdbSong) -> QIcon | None:  # noqa: C901
+    def cell_decoration_data(  # noqa: C901
+        self, song: UsdbSong, theme: settings.Theme
+    ) -> QIcon | None:
         sync_meta = song.sync_meta
         match self:
             case (
@@ -247,7 +248,7 @@ class Column(ColumnBase, enum.Enum):
                 icon = Icon.PIN
             case _ as unreachable:
                 assert_never(unreachable)
-        return icon.icon()
+        return icon.icon(theme)
 
 
 @attrs.define(frozen=True)
@@ -276,10 +277,14 @@ class CustomColumn(ColumnBase):
             return song.sync_meta.custom_data.get(self.value.label)
         return None
 
-    def cell_decoration_data(self, song: UsdbSong) -> QIcon | None:  # noqa: ARG002
+    def cell_decoration_data(
+        self,
+        song: UsdbSong,  # noqa: ARG002
+        theme: settings.Theme,  # noqa: ARG002
+    ) -> QIcon | None:
         return None
 
-    def __eq__(self, value):
+    def __eq__(self, value: Any) -> bool:
         return isinstance(value, CustomColumn) and self.value.label == value.value.label
 
     @classmethod

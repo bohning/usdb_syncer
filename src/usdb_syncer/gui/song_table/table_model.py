@@ -12,7 +12,7 @@ from PySide6.QtCore import (
 )
 from PySide6.QtGui import QFont, QIcon
 
-from usdb_syncer import SongId, events
+from usdb_syncer import SongId, events, settings
 from usdb_syncer.db import JobStatus
 from usdb_syncer.gui import events as gui_events
 from usdb_syncer.gui.fonts import get_rating_font
@@ -32,10 +32,12 @@ class TableModel(QAbstractTableModel):
     def __init__(self, parent: QObject) -> None:
         super().__init__(parent)
         self._rows = {}
+        self._theme = settings.get_theme()
         events.SongChanged.subscribe(self._on_song_changed)
         events.SongDeleted.subscribe(self._on_song_deleted)
         events.SongDirChanged.subscribe(lambda _: self.reset)
         gui_events.CustomColumnToggled.subscribe(self._on_custom_column_toggled)
+        gui_events.ThemeChanged.subscribe(self._on_theme_changed)
 
     def reset(self) -> None:
         self.beginResetModel()
@@ -110,7 +112,7 @@ class TableModel(QAbstractTableModel):
         if role == Qt.ItemDataRole.DisplayRole:
             return _display_data(song, index.column())
         if role == Qt.ItemDataRole.DecorationRole:
-            return _decoration_data(song, index.column())
+            return _decoration_data(song, index.column(), self._theme)
         if role == Qt.ItemDataRole.ToolTipRole:
             return _tooltip_data(song, index.column())
         if role == Qt.ItemDataRole.FontRole:
@@ -134,18 +136,23 @@ class TableModel(QAbstractTableModel):
         if orientation != Qt.Orientation.Horizontal:
             return None
         if role == Qt.ItemDataRole.DecorationRole:
-            return ColumnBase.from_index(section).decoration_data()
+            return ColumnBase.from_index(section).decoration_data(self._theme)
         if role == Qt.ItemDataRole.DisplayRole:
             return ColumnBase.from_index(section).display_data()
         return None
+
+    def _on_theme_changed(self, event: gui_events.ThemeChanged) -> None:
+        self._theme = event.theme.KEY
 
 
 def _display_data(song: UsdbSong, column: int) -> str | None:
     return ColumnBase.from_index(column).cell_display_data(song)
 
 
-def _decoration_data(song: UsdbSong, column: int) -> QIcon | None:
-    return ColumnBase.from_index(column).cell_decoration_data(song)
+def _decoration_data(
+    song: UsdbSong, column: int, theme: settings.Theme
+) -> QIcon | None:
+    return ColumnBase.from_index(column).cell_decoration_data(song, theme)
 
 
 def _font_data(column: int) -> QFont | None:

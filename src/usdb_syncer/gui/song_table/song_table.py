@@ -319,7 +319,7 @@ class SongTable:
 
         for idx, column in enumerate(ColumnBase.all_columns()):
             action = QAction(column.val().label, menu)
-            action.setIcon(column.decoration_data())
+            action.setIcon(column.decoration_data(settings.get_theme()))
             action.setCheckable(True)
             action.setChecked(not header.isSectionHidden(idx))
             action.triggered.connect(
