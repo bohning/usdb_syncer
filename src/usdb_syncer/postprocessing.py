@@ -4,7 +4,7 @@ from base64 import b64encode
 from os import devnull
 from pathlib import Path
 
-from ffmpeg_normalize import FFmpegNormalize
+from ffmpeg_normalize import FFmpegNormalize, ffmpeg_env
 from mutagen import id3
 from mutagen.flac import Picture
 from mutagen.mp3 import MP3
@@ -14,7 +14,7 @@ from mutagen.oggopus import OggOpus
 from mutagen.oggvorbis import OggVorbis
 from PIL import Image
 
-from usdb_syncer import settings, utils
+from usdb_syncer import settings, subprocessing
 from usdb_syncer.constants import ISO_639_2B_LANGUAGE_CODES
 from usdb_syncer.download_options import AudioOptions, VideoOptions
 from usdb_syncer.logger import Logger
@@ -30,7 +30,7 @@ Image.init()
 
 
 def normalize_audio(options: AudioOptions, path_stem: Path, input_ext: str) -> None:
-    with utils.LinuxEnvCleaner():
+    with ffmpeg_env(subprocessing.get_env_clean()):
         normalizer = _create_normalizer(options)
         input_file = f"{path_stem}.{input_ext}"
         output_file = f"{path_stem}.{options.format.value}"
