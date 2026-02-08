@@ -18,7 +18,12 @@ from usdb_syncer.gui import events as gui_events
 from usdb_syncer.gui import external_deps_dialog, previewer
 from usdb_syncer.gui.custom_data_dialog import CustomDataDialog
 from usdb_syncer.gui.progress import run_with_progress
-from usdb_syncer.gui.song_table.column import MIN_COLUMN_WIDTH, Column
+from usdb_syncer.gui.song_table.column import (
+    MIN_COLUMN_WIDTH,
+    Column,
+    ColumnBase,
+    CustomColumn,
+)
 from usdb_syncer.gui.song_table.table_model import TableModel
 from usdb_syncer.logger import song_logger
 from usdb_syncer.song_loader import DownloadManager
@@ -44,6 +49,8 @@ class SongTable:
 
     def __init__(self, mw: MainWindow) -> None:
         self.mw = mw
+        for key in settings.get_custom_meta_data_columns():
+            CustomColumn.register_column(key)
         self._model = TableModel(mw)
         self._view = mw.table_view
         self._media_player = media_player.media_player()
@@ -119,7 +126,7 @@ class SongTable:
         ):
             return
 
-        column = Column.from_index(idx.column())
+        column = ColumnBase.from_index(idx.column())
         if (
             (sync_meta := song.sync_meta)
             and (file_path := self.file_path(sync_meta, column))
@@ -130,7 +137,9 @@ class SongTable:
 
         self._download([idx.row()])
 
-    def file_path(self, sync_meta: sync_meta.SyncMeta, column: Column) -> Path | None:
+    def file_path(
+        self, sync_meta: sync_meta.SyncMeta, column: ColumnBase
+    ) -> Path | None:
         match column:
             case Column.TXT:
                 return sync_meta.txt_path()
@@ -191,14 +200,15 @@ class SongTable:
         header = self._header()
         existing_state = False
         if not state.isEmpty():
-            header.restoreState(state)
-            if header.count() != len(Column):
+            if not header.restoreState(state) or header.count() != ColumnBase.len():
                 header.reset()
             else:
                 existing_state = True
-                self._search.order = Column.from_index(
-                    header.sortIndicatorSection()
-                ).value.song_order
+                self._search.order = (
+                    ColumnBase.from_index(header.sortIndicatorSection())
+                    .val()
+                    .song_order
+                )
                 self._search.descending = bool(header.sortIndicatorOrder().value)
 
         header.setSectionsMovable(True)
@@ -207,8 +217,8 @@ class SongTable:
         header.setSectionResizeMode(QtWidgets.QHeaderView.ResizeMode.Interactive)
         header.setHighlightSections(False)
 
-        for idx, column in enumerate(Column):
-            if size := column.value.fixed_size:
+        for idx, column in enumerate(ColumnBase.all_columns()):
+            if size := column.val().fixed_size:
                 header.resizeSection(idx, size)
             elif not existing_state:
                 header.resizeSection(idx, DEFAULT_COLUMN_WIDTH)
@@ -247,7 +257,7 @@ class SongTable:
                 _add_action(option, key_menu, slot, checked=checked)
 
     def _on_click(self, index: QtCore.QModelIndex) -> None:
-        if index.column() == Column.SAMPLE_URL.index() and (
+        if ColumnBase.from_index(index.column()) == Column.SAMPLE_URL and (
             song := UsdbSong.get(self._model.ids_for_indices([index])[0])
         ):
             self._play_or_stop_sample(song)
@@ -307,9 +317,9 @@ class SongTable:
         menu = QtWidgets.QMenu(self.mw)
         header = self._header()
 
-        for idx, column in enumerate(Column):
-            action = QAction(column.value.label, menu)
-            action.setIcon(column.decoration_data())
+        for idx, column in enumerate(ColumnBase.all_columns()):
+            action = QAction(column.val().label, menu)
+            action.setIcon(column.decoration_data(settings.get_theme()))
             action.setCheckable(True)
             action.setChecked(not header.isSectionHidden(idx))
             action.triggered.connect(
@@ -320,7 +330,7 @@ class SongTable:
         menu.exec(header.mapToGlobal(pos))
 
     def _toggle_column_visibility(
-        self, column: Column, header: QtWidgets.QHeaderView
+        self, column: ColumnBase, header: QtWidgets.QHeaderView
     ) -> None:
         is_hidden = header.isSectionHidden(column.index())
         header.setSectionHidden(column.index(), not is_hidden)
@@ -485,7 +495,7 @@ class SongTable:
         self.search_songs(400)
 
     def _on_sort_order_changed(self, section: int, order: Qt.SortOrder) -> None:
-        self._search.order = Column.from_index(section).value.song_order
+        self._search.order = Column.from_index(section).val().song_order
         self._search.descending = bool(order.value)
         gui_events.SearchOrderChanged(
             self._search.order, self._search.descending

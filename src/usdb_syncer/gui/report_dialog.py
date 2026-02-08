@@ -50,10 +50,11 @@ class ReportDialog(Ui_Dialog, QDialog):
         self._load_settings()
 
     def _populate_optional_columns(self) -> None:
+        theme = settings.get_theme()
         for column in optional_columns:
             item = QListWidgetItem()
             item.setData(Qt.ItemDataRole.UserRole, column)
-            if icon := column.decoration_data():
+            if icon := column.decoration_data(theme):
                 item.setIcon(icon)
             if name := column.display_data():
                 item.setText(name)

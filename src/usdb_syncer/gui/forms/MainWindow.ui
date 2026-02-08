@@ -197,7 +197,7 @@
      <x>0</x>
      <y>0</y>
      <width>1540</width>
-     <height>33</height>
+     <height>22</height>
     </rect>
    </property>
    <widget class="QMenu" name="menu_tools">
@@ -913,6 +913,17 @@
    </property>
    <property name="text">
     <string>Third-Party Licenses</string>
+   </property>
+  </action>
+  <action name="action_set_custom_meta_data_column">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>&amp;Display in song table</string>
+   </property>
+   <property name="menuRole">
+    <enum>QAction::MenuRole::NoRole</enum>
    </property>
   </action>
  </widget>

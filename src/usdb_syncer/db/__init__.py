@@ -211,8 +211,26 @@ class DownloadStatus(enum.IntEnum):
                 assert_never(unreachable)
 
 
-class SongOrder(enum.Enum):
-    """Attributes songs can be sorted by."""
+class SongOrderBase:
+    """Base class for native and custom song orders."""
+
+    def sql(self) -> str | None:
+        raise NotImplementedError
+
+    @staticmethod
+    def from_json(value: Any) -> SongOrderBase:
+        if isinstance(value, int):
+            return SongOrder(value)
+        if isinstance(value, str):
+            return CustomSongOrder(value)
+        raise TypeError
+
+    def parameter(self) -> str | None:
+        return None
+
+
+class SongOrder(SongOrderBase, enum.Enum):
+    """Native song orders."""
 
     NONE = 0
     SAMPLE_URL = enum.auto()
@@ -315,10 +333,32 @@ class SongOrder(enum.Enum):
 
 
 @attrs.define
+class CustomSongOrder(SongOrderBase):
+    """Custom song orders."""
+
+    custom_data_key: str
+
+    def sql(self) -> str:
+        return (
+            "CASE custom_meta_data.key WHEN ? THEN custom_meta_data.value "
+            "ELSE char(0x10FFFF) END"
+        )
+
+    def __eq__(self, value: Any) -> bool:
+        return (
+            isinstance(value, CustomSongOrder)
+            and value.custom_data_key == self.custom_data_key
+        )
+
+    def parameter(self) -> str | None:
+        return self.custom_data_key
+
+
+@attrs.define
 class SearchBuilder:
     """Helper for building a where clause to find songs."""
 
-    order: SongOrder = SongOrder.NONE
+    order: SongOrderBase = SongOrder.NONE
     descending: bool = False
     text: str = ""
     artists: list[str] = attrs.field(factory=list)
@@ -407,6 +447,8 @@ class SearchBuilder:
                 yield max_views
         if self.golden_notes is not None:
             yield self.golden_notes
+        if param := self.order.parameter():
+            yield param
 
     def statement(self) -> str:
         select_from = Sql.SELECT_SONG_ID.text()
@@ -422,7 +464,7 @@ class SearchBuilder:
         fields = attrs.fields(cls)
         try:
             dct = json.loads(json_str)
-            dct[fields.order.name] = SongOrder(dct[fields.order.name])
+            dct[fields.order.name] = SongOrderBase.from_json(dct[fields.order.name])
             dct[fields.statuses.name] = [
                 DownloadStatus(s) for s in dct[fields.statuses.name]
             ]
@@ -447,6 +489,8 @@ class _SearchEncoder(json.JSONEncoder):
             return attrs.asdict(o, recurse=False)
         if isinstance(o, enum.Enum):
             return o.value
+        if isinstance(o, CustomSongOrder):
+            return o.custom_data_key
         return super().default(o)
 
 
