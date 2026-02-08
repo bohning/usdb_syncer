@@ -210,7 +210,8 @@ class Column(ColumnBase, enum.Enum):
             case Column.SAMPLE_URL:
                 local = bool(
                     song.sync_meta
-                    and song.sync_meta.resource_is_local(db.ResourceKind.AUDIO)
+                    and song.sync_meta.audio
+                    and song.sync_meta.audio.file
                 )
                 if song.is_playing and local:
                     icon = Icon.PAUSE_LOCAL
