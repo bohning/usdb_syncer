@@ -36,16 +36,15 @@ def _root() -> Path:
 
 
 def open_url_in_browser(url: str) -> None:
-    """Safely open a URL in the user's default web browser, with platform-specific handling."""
-    match sys.platform:
-        case "win32":
-            os.startfile(url)  # type: ignore[attr-defined]
-        case "darwin":
-            subprocess.run(["open", url], check=True)
-        case "linux":
-            subprocessing.run_clean(["xdg-open", url])
-        case _:
-            logger.error(f"Cannot open URLs on platform '{sys.platform}'.")
+    """Open a URL in the user's default web browser."""
+    if sys.platform == "win32":
+        os.startfile(url)
+    elif sys.platform == "darwin":
+        subprocess.run(["open", url], check=True)
+    elif sys.platform == "linux":
+        subprocessing.run_clean(["xdg-open", url])
+    else:
+        logger.error(f"Cannot open URLs on platform '{sys.platform}'.")
 
 
 def video_url_from_resource(resource: str) -> str | None:
