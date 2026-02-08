@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+import contextlib
 import cProfile
+import io
 import logging
 import shutil
 import subprocess
@@ -141,7 +143,7 @@ class CliArgs:
 
     def apply(self) -> None:
         if self.healthcheck:
-            sys.exit(_run_heathcheck())
+            sys.exit(_run_healthcheck())
         if self.reset_settings:
             settings.reset()
             print("Settings reset to default.")
@@ -334,29 +336,55 @@ def _maybe_copy_licenses() -> None:
     )
 
 
-def _run_heathcheck() -> int:
+class StderrHandler(io.StringIO):
+    """Handler for stderr that also prints to the original stderr."""
+
+    def __init__(self) -> None:
+        super().__init__()
+        self._original_stderr = sys.stderr
+
+    def write(self, s: str) -> int:
+        self._original_stderr.write(s)
+        return super().write(s)
+
+    def flush(self) -> None:
+        self._original_stderr.flush()
+        super().flush()
+
+
+def _run_healthcheck() -> int:
     """Run a healthcheck and return exit code."""
+    handler = StderrHandler()
     try:
-        # gui modules check
-        from usdb_syncer.gui.mw import MainWindow  # noqa: F401
+        with contextlib.redirect_stderr(handler):
+            # import sounddevice properly
+            from usdb_syncer.gui import previewer  # noqa: F401
 
-        # database check
-        db.connect(":memory:")
+            # gui modules check
+            from usdb_syncer.gui.mw import MainWindow  # noqa: F401
 
-        # resources check
-        from usdb_syncer.gui.resources.text import NOTICE
+            # database check
+            db.connect(":memory:")
 
-        NOTICE.read_text()
+            # resources check
+            from usdb_syncer.gui.resources.text import NOTICE
 
-        # sounddevice check
-        import sounddevice
+            NOTICE.read_text(encoding="utf-8")
 
-        sounddevice.query_devices()
+            # sounddevice check
+            import sounddevice
+
+            sounddevice.query_devices()
 
     except Exception as e:  # noqa: BLE001
         traceback.print_exc()
         print(f"USDB Syncer healthcheck: failed: {e}")
         return 1
+    handler.seek(0)
+    for line in handler:
+        if "[ERROR]" in line or "[WARNING]" in line or "[CRITICAL]" in line:
+            print(f"USDB Syncer healthcheck: failed with error log: {line}")
+            return 2
     print("USDB Syncer healthcheck: No problems found.")
     return 0
 
