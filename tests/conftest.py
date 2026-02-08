@@ -1,12 +1,12 @@
 """This module contains pytest fixtures."""
 
+from __future__ import annotations
+
 import datetime
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 import pytest
-from _pytest.config import Config
-from _pytest.config.argparsing import Parser
-from _pytest.nodes import Item
 
 from usdb_syncer import SongId, SyncMetaId
 from usdb_syncer.db import JobStatus
@@ -14,6 +14,11 @@ from usdb_syncer.meta_tags import ImageMetaTags, MetaTags
 from usdb_syncer.sync_meta import Resource, ResourceFile, SyncMeta
 from usdb_syncer.usdb_scraper import SongDetails
 from usdb_syncer.usdb_song import UsdbSong
+
+if TYPE_CHECKING:
+    from _pytest.config import Config
+    from _pytest.config.argparsing import Parser
+    from _pytest.nodes import Item
 
 
 # taken from https://docs.pytest.org/en/latest/example/simple.html#control-skipping-of-tests-according-to-command-line-option
