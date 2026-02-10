@@ -73,17 +73,18 @@ def song_logger(song_id: SongId) -> SongLogger:
     return SongLogger(song_id, logger)
 
 
+_FORMATTER = logging.Formatter(
+    style="{", fmt="{asctime} [{levelname}] {message}", datefmt="%Y-%m-%d %H:%M:%S"
+)
+
+
 def configure_logging(*handlers: logging.Handler) -> None:
-    logging.basicConfig(
-        level=logging.INFO,
-        style="{",
-        format="{asctime} [{levelname}] {message}",
-        datefmt="%Y-%m-%d %H:%M:%S",
-        encoding="utf-8",
-        handlers=handlers,
-    )
+    logging.basicConfig(level=logging.INFO, encoding="utf-8", handlers=handlers)
+    for handler in logging.getLogger().handlers:
+        handler.setFormatter(_FORMATTER)
     logger.setLevel(logging.DEBUG)
 
 
 def add_root_handler(handler: logging.Handler) -> None:
+    handler.setFormatter(_FORMATTER)
     logging.getLogger().addHandler(handler)

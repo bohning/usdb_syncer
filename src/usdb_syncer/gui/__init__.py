@@ -47,7 +47,7 @@ NOGIL_ERROR_MESSAGE = (
 class CliArgs:
     """Command line arguments."""
 
-    log_level: str = "info"
+    log_level: str = "INFO"
 
     reset_settings: bool = False
     subcommand: str = ""
@@ -56,7 +56,6 @@ class CliArgs:
     songpath: Path | None = None
 
     # Development
-    show_debug: bool = False
     profile: bool = False
     skip_pyside: bool = not utils.IS_SOURCE
     trace_sql: bool = False
@@ -96,11 +95,6 @@ class CliArgs:
         )
 
         dev_options = parser.add_argument_group("development", "Development options.")
-        dev_options.add_argument(
-            "--show-debug",
-            action="store_true",
-            help="Show debug messages in the console. Disables stderr suppression.",
-        )
         dev_options.add_argument(
             "--trace-sql", action="store_true", help="Trace SQL statements."
         )
@@ -153,8 +147,6 @@ class CliArgs:
             import tools.generate_pyside_files  # pylint: disable=import-outside-toplevel
 
             tools.generate_pyside_files.main()
-        if not self.show_debug:
-            qInstallMessageHandler(supress_qt_warnings)
         db.set_trace_sql(self.trace_sql)
 
 
@@ -163,15 +155,17 @@ def main() -> None:
     if hasattr(sys, "_is_gil_enabled") and sys._is_gil_enabled() is False:  # type: ignore[attr-defined]
         print(NOGIL_ERROR_MESSAGE)
         sys.exit(1)
+    qInstallMessageHandler(log_qt_log)
     args = CliArgs.parse()
     args.apply()
     addons.load_all()
     utils.AppPaths.make_dirs()
+    configure_logging(stdout_level=args.log_level.upper())
     app = _init_app()
     app.setAttribute(Qt.ApplicationAttribute.AA_DontShowIconsInMenus, False)
 
     def run_main() -> None:
-        _run_main(stdout_log_level=args.log_level)
+        _run_main()
         app.exec()
 
     match args.subcommand:
@@ -187,23 +181,19 @@ def main() -> None:
                 run_main()
 
 
-def configure_logging(
-    mw: MainWindow | None = None, stdout_level: logger.LOGLEVEL = logging.DEBUG
-) -> None:
+def configure_logging(stdout_level: logger.LOGLEVEL = logging.DEBUG) -> None:
     handlers: list[logging.Handler] = [
         logging.FileHandler(utils.AppPaths.log, encoding="utf-8"),
         logger.StdoutHandler(level=stdout_level),
     ]
-    if mw:
-        handlers.append(_TextEditLogger(mw))
     logger.configure_logging(*handlers)
 
 
-def _run_main(stdout_log_level: logger.LOGLEVEL) -> None:
+def _run_main() -> None:
     from usdb_syncer.gui.mw import MainWindow
 
     mw = MainWindow()
-    configure_logging(mw, stdout_level=stdout_log_level)
+    logger.add_root_handler(_TextEditLogger(mw))
     mw.label_update_hint.setVisible(False)
     if not utils.IS_SOURCE:
         if version := utils.newer_version_available():
@@ -224,7 +214,6 @@ def _run_main(stdout_log_level: logger.LOGLEVEL) -> None:
 
 
 def _run_preview(txt: Path) -> bool:
-    configure_logging()
     from usdb_syncer.gui.previewer import Previewer
 
     theme.Theme.from_settings().apply()
@@ -234,7 +223,6 @@ def _run_preview(txt: Path) -> bool:
 def _run_webserver(
     host: str | None = None, port: int | None = None, title: str | None = None
 ) -> None:
-    configure_logging()
     webserver.start(host=host, port=port, title=title)
     logger.logger.info("Webserver is running in headless mode. Press Ctrl+C to stop.")
     try:
@@ -368,8 +356,9 @@ def _run_heathcheck() -> int:
     return 0
 
 
-def supress_qt_warnings(**_: Any) -> None:
-    return
+def log_qt_log(mode, _, message) -> None:
+    """Log Qt messages to the main logger."""
+    logger.logger.debug(f"Qt log message with mode {mode}: {message}")
 
 
 class _LogSignal(QtCore.QObject):
