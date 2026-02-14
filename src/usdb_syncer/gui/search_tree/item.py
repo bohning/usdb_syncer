@@ -530,14 +530,15 @@ class ViewsVariant(NodeItemData, enum.Enum):
 
 
 @attrs.define
-class SavedSearch(NodeItemData, db.SavedSearch):
+class SavedSearch(NodeItemData, settings.SavedSearch):
     """A search saved by the user."""
 
     @classmethod
     def load_all(cls) -> Iterable[SavedSearch]:
-        with db.transaction():
-            searches = db.SavedSearch.load_saved_searches()
-        return (cls(s.name, s.search, s.is_default, s.subscribed) for s in searches)
+        return (
+            cls(s.name, s.search, s.is_default, s.subscribed)
+            for s in sorted(settings.get_saved_searches(), key=lambda s: s.name)
+        )
 
     def build_search(self, search: db.SearchBuilder) -> None:
         pass

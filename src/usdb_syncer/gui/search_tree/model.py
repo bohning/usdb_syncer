@@ -70,8 +70,7 @@ class TreeModel(QAbstractItemModel):
         item.checked = checked
 
     def insert_saved_search(self, search: SavedSearch) -> QModelIndex:
-        with db.transaction():
-            search.insert()
+        search.insert()
         parent = self.root.children[0]
         parent_idx = self.index_for_item(parent)
         item = TreeItem(data=search, parent=parent)
@@ -85,8 +84,7 @@ class TreeModel(QAbstractItemModel):
         if not item or not isinstance(item.data, SavedSearch) or not item.parent:
             return
         self.beginRemoveRows(index.parent(), index.row(), index.row())
-        with db.transaction():
-            item.data.delete()
+        item.data.remove()
         item.parent.remove_child(item)
         self.endRemoveRows()
 

@@ -134,8 +134,7 @@ class FilterTree:
     def _update_saved_search(self) -> None:
         if search := self._get_current_saved_search():
             search.search = copy.deepcopy(self._search)
-            with db.transaction():
-                search.update()
+            search.update()
 
     def _add_saved_search(self) -> None:
         index = self._proxy_model.mapFromSource(
@@ -151,14 +150,12 @@ class FilterTree:
                     if isinstance(item.data, SavedSearch) and item.data.is_default:
                         item.data.is_default = False
             search.is_default = default
-            with db.transaction():
-                search.update()
+            search.update()
 
     def _set_search_subscribed(self, subscribe: bool) -> None:
         if search := self._get_current_saved_search():
             search.subscribed = subscribe
-            with db.transaction():
-                search.update()
+            search.update()
 
     def _on_search_order_changed(self, event: events.SearchOrderChanged) -> None:
         self._search.descending = event.descending
