@@ -58,11 +58,11 @@ class Logger(logging.LoggerAdapter):
             self.error(msg, *args, exc_info=False, **kwargs)
 
 
-class StdoutHandler(logging.StreamHandler):
+class StderrHandler(logging.StreamHandler):
     """Logging handler that writes to stdout."""
 
     def __init__(
-        self, stream: TextIO = sys.stdout, level: LOGLEVEL = logging.DEBUG
+        self, stream: TextIO = sys.stderr, level: LOGLEVEL = logging.DEBUG
     ) -> None:
         super().__init__(stream)
         self.setLevel(level)
