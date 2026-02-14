@@ -77,8 +77,8 @@ class CliArgs:
         )
         parser.add_argument(
             "--log-level",
-            type=str,
-            choices=["debug", "info", "warning", "error", "critical"],
+            type=str.upper,
+            choices=["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"],
             help="Set the log level for stdout logging. Default is info.",
         )
         parser.add_argument(
@@ -160,7 +160,7 @@ def main() -> None:
     args.apply()
     addons.load_all()
     utils.AppPaths.make_dirs()
-    configure_logging(stdout_level=args.log_level.upper())
+    configure_logging(stdout_level=args.log_level)
     app = _init_app()
     app.setAttribute(Qt.ApplicationAttribute.AA_DontShowIconsInMenus, False)
 

@@ -416,6 +416,7 @@ def _handle_forbidden(url: str, logger: Logger) -> None:
 
 
 def download_image(url: str, logger: Logger) -> ResourceDLResult[bytes]:
+    logger.debug(f"Downloading image from url: {url}")
     try:
         reply = requests.get(
             url, allow_redirects=True, headers=IMAGE_DOWNLOAD_HEADERS, timeout=60

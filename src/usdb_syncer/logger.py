@@ -10,6 +10,7 @@ Logging levels:
 
 import logging
 import sys
+import threading
 from types import TracebackType
 from typing import Any, TextIO
 
@@ -20,6 +21,21 @@ LOGLEVEL = int | str
 
 class Logger(logging.LoggerAdapter):
     """Logger wrapper with our custom logic."""
+
+    def debug(self, msg: object, *args: object, **kwargs: Any) -> None:
+        """Log a message with debug level.
+
+        Since log messages generally are unfortunately currently
+        for user communication, only debug logs contain additional context.
+        """
+        if not isinstance(msg, str):
+            super().debug(msg, *args, **kwargs)
+            return
+
+        # Append context to the message.
+        thread_name = threading.current_thread().name
+        context = f" [{thread_name}]"
+        super().debug(msg + context, *args, **kwargs)
 
     def exception(
         self,
@@ -35,6 +51,7 @@ class Logger(logging.LoggerAdapter):
         **kwargs: Any,
     ) -> None:
         """Log exception info with debug and message with error level."""
+        print(msg, args, exc_info)
         if exc_info:
             self.debug(None, exc_info=exc_info, **kwargs)
         if msg:
