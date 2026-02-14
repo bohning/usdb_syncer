@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import contextlib
-import cProfile
 import io
 import logging
 import shutil
@@ -168,7 +167,7 @@ def main() -> None:
     if hasattr(sys, "_is_gil_enabled") and sys._is_gil_enabled() is False:  # type: ignore[attr-defined]
         print(NOGIL_ERROR_MESSAGE)
         sys.exit(1)
-    qInstallMessageHandler(log_qt_log)
+    qInstallMessageHandler(handle_qt_log)
     args = CliArgs.parse()
     args.apply()
     addons.load_all()
@@ -396,7 +395,7 @@ def _run_healthcheck() -> int:
     return 0
 
 
-def log_qt_log(mode, _, message) -> None:
+def handle_qt_log(mode: int, _, message: str) -> None:
     """Log Qt messages to the main logger."""
     logger.logger.debug(f"Qt log message with mode {mode}: {message}")
 

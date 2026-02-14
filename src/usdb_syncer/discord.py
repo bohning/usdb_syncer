@@ -50,7 +50,9 @@ def notify_discord(
 
         payload = {"embeds": [embed]}
 
-        logger.debug(f"Sending Discord notification for song id {song_id} with payload: {payload}")
+        logger.debug(
+            f"Sending Discord notification for song id {song_id} with payload: {payload}"
+        )
 
         response = requests.post(dwh_url, json=payload, timeout=5)
         response.raise_for_status()
