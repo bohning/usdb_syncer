@@ -1,3 +1,11 @@
+<!-- 0.22.0 -->
+
+# Changes
+
+## Features
+
+- Custom data values can now be displayed in dedicated columns. For configuration, rightclick the relevant custom data key in the sidebar tree.
+
 <!-- 0.21.0 -->
 
 # Changes

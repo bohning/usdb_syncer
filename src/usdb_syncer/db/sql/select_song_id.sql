@@ -17,3 +17,4 @@ FROM
     AND sync_meta.sync_meta_id = cover.sync_meta_id
     LEFT JOIN resource_file AS background ON background.kind = 'background'
     AND sync_meta.sync_meta_id = background.sync_meta_id
+    LEFT JOIN custom_meta_data ON sync_meta.sync_meta_id = custom_meta_data.sync_meta_id

@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING, Generic, TypeVar, assert_never
 import attrs
 from PySide6.QtCore import Qt
 
-from usdb_syncer import db
+from usdb_syncer import db, settings
 from usdb_syncer.constants import BLACK_STAR, HALF_BLACK_STAR
 from usdb_syncer.custom_data import CustomData
 from usdb_syncer.gui.icons import Icon
@@ -23,7 +23,7 @@ if TYPE_CHECKING:
 class TreeItemData:
     """Interface for objects to be rendered as a tree node."""
 
-    def decoration(self) -> QIcon | None:
+    def decoration(self, theme: settings.Theme) -> QIcon | None:
         raise NotImplementedError
 
     def is_checkable(self, has_checked_children: bool) -> bool:
@@ -51,7 +51,7 @@ class TreeItemData:
 class RootItemData(TreeItemData):
     """Implementation of the tree root."""
 
-    def decoration(self) -> QIcon | None:
+    def decoration(self, theme: settings.Theme) -> QIcon | None:  # noqa: ARG002
         return None
 
     def is_checkable(self, has_checked_children: bool) -> bool:  # noqa: ARG002
@@ -287,7 +287,7 @@ class Filter(TreeItemData, enum.Enum):
             case _ as unreachable:
                 assert_never(unreachable)
 
-    def decoration(self) -> QIcon:  # noqa: C901
+    def decoration(self, theme: settings.Theme) -> QIcon:  # noqa: C901
         match self:
             case Filter.SAVED:
                 icon = Icon.SAVED_SEARCH
@@ -315,7 +315,7 @@ class Filter(TreeItemData, enum.Enum):
                 icon = Icon.CUSTOM_DATA
             case _ as unreachable:
                 assert_never(unreachable)
-        return icon.icon()
+        return icon.icon(theme)
 
     def is_checkable(self, has_checked_children: bool) -> bool:
         return self != Filter.SAVED and has_checked_children
@@ -339,7 +339,7 @@ class Filter(TreeItemData, enum.Enum):
 class NodeItemData(TreeItemData):
     """Base implementation for a child of a filter item."""
 
-    def decoration(self) -> QIcon | None:
+    def decoration(self, theme: settings.Theme) -> QIcon | None:  # noqa: ARG002
         return None
 
     def is_checkable(self, has_checked_children: bool) -> bool:  # noqa: ARG002

@@ -11,7 +11,6 @@ import sys
 import time
 import unicodedata
 from pathlib import Path
-from types import TracebackType
 from typing import ClassVar
 
 import requests
@@ -22,17 +21,11 @@ from platformdirs import PlatformDirs
 from unidecode import unidecode
 
 import usdb_syncer
-from usdb_syncer import constants, errors, settings
+from usdb_syncer import constants, errors, settings, subprocessing
 from usdb_syncer.logger import Logger, logger
 
 CACHE_LIFETIME = 60 * 60
 _platform_dirs = PlatformDirs("usdb_syncer", "bohning")
-
-
-# https://pyinstaller.org/en/stable/runtime-information.html#run-time-information
-IS_BUNDLE = bool(getattr(sys, "frozen", False) and getattr(sys, "_MEIPASS", False))
-IS_INSTALLED = "site-packages" in __file__
-IS_SOURCE = not IS_BUNDLE and not IS_INSTALLED
 
 
 def _root() -> Path:
@@ -40,6 +33,18 @@ def _root() -> Path:
     if getattr(sys, "frozen", False) and (bundle := getattr(sys, "_MEIPASS", None)):
         return Path(bundle)
     return Path(__file__).parent.parent.parent.absolute()
+
+
+def open_url_in_browser(url: str) -> None:
+    """Open a URL in the user's default web browser."""
+    if sys.platform == "win32":
+        os.startfile(url)
+    elif sys.platform == "darwin":
+        subprocess.run(["open", url], check=True)
+    elif sys.platform == "linux":
+        subprocessing.run_clean(["xdg-open", url])
+    else:
+        logger.error(f"Cannot open URLs on platform '{sys.platform}'.")
 
 
 def video_url_from_resource(resource: str) -> str | None:
@@ -115,7 +120,7 @@ class AppPaths:
     license_hash = Path(_platform_dirs.user_data_dir, "license_hash.txt")
     song_list = Path(_platform_dirs.user_cache_dir, "available_songs.json")
     profile = Path(_platform_dirs.user_cache_dir, "usdb_syncer.prof")
-    shared = (_root() / "shared") if IS_SOURCE else None
+    shared = (_root() / "shared") if constants.IS_SOURCE else None
 
     @classmethod
     def make_dirs(cls) -> None:
@@ -256,14 +261,16 @@ def open_path_or_file(path: Path) -> None:
     if sys.platform == "win32":
         os.startfile(path)
     elif sys.platform == "linux":
-        with LinuxEnvCleaner() as env:
-            subprocess.run(["xdg-open", str(path)], check=True, env=env)
+        subprocess.run(
+            ["xdg-open", str(path)], check=True, env=subprocessing.get_env_clean()
+        )
     else:
         subprocess.run(["open", str(path)], check=True)
 
 
 def add_to_system_path(path: str) -> None:
-    os.environ["PATH"] = path + os.pathsep + os.environ["PATH"]
+    with subprocessing.environ_lock:
+        os.environ["PATH"] = path + os.pathsep + os.environ["PATH"]
 
 
 def normalize(text: str) -> str:
@@ -351,8 +358,9 @@ def start_process_detached(command: list[str]) -> subprocess.Popen:
     flags = 0
     if sys.platform == "win32":
         flags = subprocess.DETACHED_PROCESS | subprocess.CREATE_NEW_PROCESS_GROUP
-    with LinuxEnvCleaner() as env:
-        return subprocess.Popen(command, creationflags=flags, close_fds=True, env=env)
+    return subprocess.Popen(
+        command, creationflags=flags, close_fds=True, env=subprocessing.get_env_clean()
+    )
 
 
 def get_media_duration(path: Path) -> float:
@@ -428,63 +436,3 @@ def trash_or_delete_path(path: Path) -> None:
             raise errors.TrashError(path) from err
     else:
         shutil.rmtree(path) if path.is_dir() else path.unlink()
-
-
-class LinuxEnvCleaner:
-    """Context manager to clean an environment.
-
-    Specifically, it removes paths starting
-    with /tmp/_MEI and some specific Qt-related paths from the environment.
-
-    This is needed when running applications bundled with PyInstaller, as it links some
-    libraries that may interfere with dynamically loaded libraries.
-
-    This class is only useful on Linux systems, where it modifies the environment to
-    avoid conflicts.
-    On non-Linux platforms, it is a no-op and does not alter the environment.
-    """
-
-    def __init__(self) -> None:
-        self.env = os.environ.copy()
-        self.modified_env = self.env.copy()
-        self.old_values: dict[str, str] = {}
-
-    def __enter__(self) -> dict[str, str]:
-        if sys.platform == "linux":
-            for key, value in self.env.items():
-                if key == "LD_LIBRARY_PATH":
-                    new_value = ":".join(
-                        path
-                        for path in (value.split(":") if value else [])
-                        if not path.startswith("/tmp/_MEI")  # noqa: S108
-                    )
-                    self.old_values[key] = value
-                    self.modified_env[key] = new_value
-                if key in (
-                    "QT_PLUGIN_PATH",
-                    "QT_QPA_PLATFORM_PLUGIN_PATH",
-                    "QT_DEBUG_PLUGINS",
-                ):
-                    self.old_values[key] = value
-                    self.modified_env.pop(key)
-            os.environ.clear()
-            os.environ.update(self.modified_env)
-        return self.modified_env.copy()
-
-    def __exit__(
-        self,
-        exc_type: type[BaseException] | None,
-        exc_value: BaseException | None,
-        traceback: TracebackType | None,
-    ) -> None:
-        if sys.platform == "linux":
-            current_env = os.environ.copy()
-
-            for key, value in current_env.items():
-                if key not in self.env:
-                    self.modified_env[key] = value
-            for key, value in self.old_values.items():
-                self.modified_env[key] = value
-
-            os.environ.clear()
-            os.environ.update(self.modified_env)

@@ -1,5 +1,8 @@
 """Database tests."""
 
+from __future__ import annotations
+
+import copy
 from pathlib import Path
 
 import attrs
@@ -7,6 +10,8 @@ import pytest
 
 from usdb_syncer import SongId, SyncMetaId, db
 from usdb_syncer.db import JobStatus
+from usdb_syncer.meta_tags import MetaTags
+from usdb_syncer.sync_meta import SyncMeta
 from usdb_syncer.usdb_song import UsdbSong
 
 PERFORMANCE_TEST_ITEM_COUNT = 100000
@@ -118,3 +123,30 @@ def test_upsert_delete_custom_metadata_many() -> None:
         _disable_foreign_keys()
         db.upsert_custom_meta_data(custom_metadata_params)
         db.delete_custom_meta_data(sync_meta_ids)
+
+
+def test_custom_data_order(song: UsdbSong) -> None:
+    key = "key"
+    song_1 = copy.copy(song)
+    song_1.song_id = SongId(1)
+    song_1.sync_meta = SyncMeta(
+        SyncMetaId.new(), song_1.song_id, 0, Path("C:/1"), 0, MetaTags()
+    )
+    song_1.sync_meta.custom_data.set(key, "a")
+    song_2 = copy.copy(song)
+    song_2.song_id = SongId(2)
+    song_2.sync_meta = SyncMeta(
+        SyncMetaId.new(), song_2.song_id, 0, Path("C:/2"), 0, MetaTags()
+    )
+    song_2.sync_meta.custom_data.set(key, "b")
+    with db.managed_connection(":memory:"):
+        song.upsert()
+        song_1.upsert()
+        song_2.upsert()
+        db.reset_active_sync_metas(Path("C:"))
+        search = db.SearchBuilder(order=db.CustomSongOrder(key))
+        ids_asc = list(db.search_usdb_songs(search))
+        search.descending = True
+        ids_desc = list(db.search_usdb_songs(search))
+    assert ids_asc == [song_1.song_id, song_2.song_id, song.song_id]
+    assert ids_desc == [song.song_id, song_2.song_id, song_1.song_id]

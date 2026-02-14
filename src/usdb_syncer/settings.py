@@ -204,6 +204,7 @@ class SettingKey(Enum):
     VIEW_COLORED_BACKGROUND = "view/colored_background"
     DIFF_ONLY_CHANGES = "diff/only_changes"
     DIFF_CONTEXT_LINES = "diff/context_lines"
+    CUSTOM_META_DATA_COLUMNS = "custom_meta_data/columns"
 
 
 class Encoding(Enum):
@@ -1182,3 +1183,11 @@ def get_diff_context_lines() -> int:
 
 def set_diff_context_lines(lines: int, temp: bool = False) -> None:
     _Settings.set(SettingKey.DIFF_CONTEXT_LINES, lines, temp)
+
+
+def get_custom_meta_data_columns() -> list[str]:
+    return _Settings.get(SettingKey.CUSTOM_META_DATA_COLUMNS, [])
+
+
+def set_custom_meta_data_columns(keys: list[str], temp: bool = False) -> None:
+    _Settings.set(SettingKey.CUSTOM_META_DATA_COLUMNS, keys, temp)

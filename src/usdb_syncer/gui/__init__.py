@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+import contextlib
+import cProfile
+import io
 import logging
 import shutil
 import subprocess
@@ -18,7 +21,17 @@ from PySide6 import QtCore, QtGui, QtWidgets
 from PySide6.QtCore import Qt, qInstallMessageHandler
 
 import usdb_syncer
-from usdb_syncer import addons, data, db, errors, logger, settings, song_routines, utils
+from usdb_syncer import (
+    addons,
+    constants,
+    data,
+    db,
+    errors,
+    logger,
+    settings,
+    song_routines,
+    utils,
+)
 from usdb_syncer import sync_meta as sync_meta
 from usdb_syncer import usdb_song as usdb_song
 from usdb_syncer.gui import events, hooks, theme
@@ -57,7 +70,7 @@ class CliArgs:
 
     # Development
     profile: bool = False
-    skip_pyside: bool = not utils.IS_SOURCE
+    skip_pyside: bool = not constants.IS_SOURCE
     trace_sql: bool = False
     healthcheck: bool = False
 
@@ -104,7 +117,7 @@ class CliArgs:
         dev_options.add_argument(
             "--healthcheck", action="store_true", help="Run healthcheck and exit."
         )
-        if utils.IS_SOURCE:
+        if constants.IS_SOURCE:
             dev_options.add_argument(
                 "--skip-pyside",
                 action="store_true",
@@ -138,12 +151,12 @@ class CliArgs:
 
     def apply(self) -> None:
         if self.healthcheck:
-            sys.exit(_run_heathcheck())
+            sys.exit(_run_healthcheck())
         if self.reset_settings:
             settings.reset()
         if self.songpath:
             settings.set_song_dir(self.songpath.resolve(), temp=True)
-        if utils.IS_SOURCE and not self.skip_pyside:
+        if constants.IS_SOURCE and not self.skip_pyside:
             import tools.generate_pyside_files  # pylint: disable=import-outside-toplevel
 
             tools.generate_pyside_files.main()
@@ -195,7 +208,7 @@ def _run_main() -> None:
     mw = MainWindow()
     logger.add_root_handler(_TextEditLogger(mw))
     mw.label_update_hint.setVisible(False)
-    if not utils.IS_SOURCE:
+    if not constants.IS_SOURCE:
         if version := utils.newer_version_available():
             mw.label_update_hint.setText(
                 mw.label_update_hint.text().replace("VERSION", version)
@@ -303,7 +316,7 @@ def _init_app() -> QtWidgets.QApplication:
 
 
 def _maybe_copy_licenses() -> None:
-    if not utils.IS_BUNDLE:
+    if not constants.IS_BUNDLE:
         return
 
     license_hash = (
@@ -330,28 +343,55 @@ def _maybe_copy_licenses() -> None:
     )
 
 
-def _run_heathcheck() -> int:
+class StderrHandler(io.StringIO):
+    """Handler for stderr that also prints to the original stderr."""
+
+    def __init__(self) -> None:
+        super().__init__()
+        self._original_stderr = sys.stderr
+
+    def write(self, s: str) -> int:
+        self._original_stderr.write(s)
+        return super().write(s)
+
+    def flush(self) -> None:
+        self._original_stderr.flush()
+        super().flush()
+
+
+def _run_healthcheck() -> int:
     """Run a healthcheck and return exit code."""
+    handler = StderrHandler()
     try:
-        # gui modules check
-        from usdb_syncer.gui.mw import MainWindow  # noqa: F401
+        with contextlib.redirect_stderr(handler):
+            # import sounddevice properly
+            from usdb_syncer.gui import previewer  # noqa: F401
 
-        # database check
-        db.connect(":memory:")
+            # gui modules check
+            from usdb_syncer.gui.mw import MainWindow  # noqa: F401
 
-        # resources check
-        from usdb_syncer.gui.resources.text import NOTICE
+            # database check
+            db.connect(":memory:")
 
-        NOTICE.read_text()
+            # resources check
+            from usdb_syncer.gui.resources.text import NOTICE
 
-        # sounddevice check
-        with utils.LinuxEnvCleaner():
-            import sounddevice  # noqa: F401
+            NOTICE.read_text(encoding="utf-8")
+
+            # sounddevice check
+            import sounddevice
+
+            sounddevice.query_devices()
 
     except Exception as e:  # noqa: BLE001
         traceback.print_exc()
         print(f"USDB Syncer healthcheck: failed: {e}")
         return 1
+    handler.seek(0)
+    for line in handler:
+        if "[ERROR]" in line or "[WARNING]" in line or "[CRITICAL]" in line:
+            print(f"USDB Syncer healthcheck: failed with error log: {line}")
+            return 2
     print("USDB Syncer healthcheck: No problems found.")
     return 0
 

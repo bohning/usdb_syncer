@@ -8,11 +8,11 @@ from typing import TYPE_CHECKING
 from PySide6 import QtCore, QtGui, QtWidgets
 from PySide6.QtCore import QModelIndex, Qt
 
-from usdb_syncer import db
+from usdb_syncer import db, settings
 from usdb_syncer.gui import events
 from usdb_syncer.gui.gui_utils import keyboard_modifiers
 
-from .item import Filter, SavedSearch
+from .item import CustomDataKeyMatch, Filter, SavedSearch
 from .model import TreeModel, TreeProxyModel
 
 if TYPE_CHECKING:
@@ -52,6 +52,9 @@ class FilterTree:
         )
         self.mw.action_set_saved_search_subscribed.triggered.connect(
             self._set_search_subscribed
+        )
+        self.mw.action_set_custom_meta_data_column.triggered.connect(
+            self._set_custom_meta_data_column
         )
 
     def populate(self) -> None:
@@ -104,6 +107,11 @@ class FilterTree:
                 self.mw.action_set_saved_search_default,
                 self.mw.action_set_saved_search_subscribed,
             ]
+        elif item and isinstance(item.data, CustomDataKeyMatch):
+            self.mw.action_set_custom_meta_data_column.setChecked(
+                item.data.key in settings.get_custom_meta_data_columns()
+            )
+            actions = [self.mw.action_set_custom_meta_data_column]
         else:
             return
         menu = QtWidgets.QMenu()
@@ -158,3 +166,19 @@ class FilterTree:
 
     def _on_text_filter_changed(self, event: events.TextFilterChanged) -> None:
         self._search.text = event.search
+
+    def _set_custom_meta_data_column(self, enabled: bool) -> None:
+        item = self._model.item_for_index(
+            self._proxy_model.mapToSource(self.view.currentIndex())
+        )
+        if not item or not isinstance(item.data, CustomDataKeyMatch):
+            return
+        cols = settings.get_custom_meta_data_columns()
+        if enabled and item.data.key not in cols:
+            cols.append(item.data.key)
+        elif not enabled and item.data.key in cols:
+            cols.remove(item.data.key)
+        else:
+            return
+        settings.set_custom_meta_data_columns(cols)
+        events.CustomColumnToggled(item.data.key, enabled).post()
