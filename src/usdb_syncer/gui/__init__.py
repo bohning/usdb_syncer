@@ -395,7 +395,7 @@ def _run_healthcheck() -> int:
     return 0
 
 
-def handle_qt_log(mode: int, _, message: str) -> None:
+def handle_qt_log(mode: int, _: Any, message: str) -> None:
     """Log Qt messages to the main logger."""
     logger.logger.debug(f"Qt log message with mode {mode}: {message}")
 
