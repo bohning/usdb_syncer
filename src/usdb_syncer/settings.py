@@ -207,6 +207,7 @@ class SettingKey(Enum):
     DIFF_CONTEXT_LINES = "diff/context_lines"
     CUSTOM_META_DATA_COLUMNS = "custom_meta_data/columns"
     SAVED_SEARCHES = "saved_searches"
+    DEFAULT_SAVED_SEARCH = "default_saved_search"
 
 
 class Encoding(Enum):
@@ -749,7 +750,6 @@ class SavedSearch:
 
     name: str
     search: db.SearchBuilder
-    is_default: bool = False
     subscribed: bool = False
 
     def remove(self, temp: bool = False) -> None:
@@ -776,7 +776,10 @@ class SavedSearch:
 
     @classmethod
     def get_default(cls) -> SavedSearch | None:
-        return next((s for s in get_saved_searches() if s.is_default), None)
+        name = get_default_saved_search()
+        if not name:
+            return None
+        return next((s for s in get_saved_searches() if s.name == name), None)
 
 
 def reset() -> None:
@@ -1247,3 +1250,11 @@ def get_saved_searches() -> list[SavedSearch]:
 
 def set_saved_searches(searches: list[SavedSearch], temp: bool = False) -> None:
     _Settings.set(SettingKey.SAVED_SEARCHES, searches, temp)
+
+
+def get_default_saved_search() -> str:
+    return _Settings.get(SettingKey.DEFAULT_SAVED_SEARCH, "")
+
+
+def set_default_saved_search(name: str, temp: bool = False) -> None:
+    _Settings.set(SettingKey.DEFAULT_SAVED_SEARCH, name, temp)

@@ -75,7 +75,7 @@ class FilterTree:
         ):
             return
         if isinstance(item.data, SavedSearch):
-            events.SavedSearchRestored(item.data.search).post()
+            events.SavedSearchRestored(item.data.inner.search).post()
         else:
             for changed in item.toggle_checked(keyboard_modifiers().ctrl):
                 self._model.emit_item_changed(changed)
@@ -100,7 +100,9 @@ class FilterTree:
             actions = [self.mw.action_add_saved_search]
         elif item and isinstance(item.data, SavedSearch):
             self.mw.action_set_saved_search_default.setChecked(item.data.is_default)
-            self.mw.action_set_saved_search_subscribed.setChecked(item.data.subscribed)
+            self.mw.action_set_saved_search_subscribed.setChecked(
+                item.data.inner.subscribed
+            )
             actions = [
                 self.mw.action_update_saved_search,
                 self.mw.action_delete_saved_search,
@@ -133,12 +135,14 @@ class FilterTree:
 
     def _update_saved_search(self) -> None:
         if search := self._get_current_saved_search():
-            search.search = copy.deepcopy(self._search)
-            search.update()
+            search.inner.search = copy.deepcopy(self._search)
+            search.inner.update()
 
     def _add_saved_search(self) -> None:
         index = self._proxy_model.mapFromSource(
-            self._model.insert_saved_search(SavedSearch("My search", self._search))
+            self._model.insert_saved_search(
+                SavedSearch(settings.SavedSearch("My search", self._search))
+            )
         )
         self.view.setCurrentIndex(index)
         self.view.edit(index)
@@ -150,12 +154,12 @@ class FilterTree:
                     if isinstance(item.data, SavedSearch) and item.data.is_default:
                         item.data.is_default = False
             search.is_default = default
-            search.update()
+            settings.set_default_saved_search(search.inner.name if default else "")
 
     def _set_search_subscribed(self, subscribe: bool) -> None:
         if search := self._get_current_saved_search():
-            search.subscribed = subscribe
-            search.update()
+            search.inner.subscribed = subscribe
+            search.inner.update()
 
     def _on_search_order_changed(self, event: events.SearchOrderChanged) -> None:
         self._search.descending = event.descending

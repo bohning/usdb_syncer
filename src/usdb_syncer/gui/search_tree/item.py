@@ -530,13 +530,17 @@ class ViewsVariant(NodeItemData, enum.Enum):
 
 
 @attrs.define
-class SavedSearch(NodeItemData, settings.SavedSearch):
+class SavedSearch(NodeItemData):
     """A search saved by the user."""
+
+    inner: settings.SavedSearch
+    is_default: bool = False
 
     @classmethod
     def load_all(cls) -> Iterable[SavedSearch]:
+        default = settings.get_default_saved_search()
         return (
-            cls(s.name, s.search, s.is_default, s.subscribed)
+            cls(s, is_default=s.name == default)
             for s in sorted(settings.get_saved_searches(), key=lambda s: s.name)
         )
 
@@ -544,7 +548,7 @@ class SavedSearch(NodeItemData, settings.SavedSearch):
         pass
 
     def __str__(self) -> str:
-        return self.name
+        return self.inner.name
 
     def is_in_search(self, search: db.SearchBuilder) -> bool:  # noqa: ARG002
         return False

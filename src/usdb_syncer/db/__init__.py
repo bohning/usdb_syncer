@@ -483,13 +483,20 @@ class SearchBuilder:
 def _migrate_to_version_10() -> None:
     from usdb_syncer import settings
 
-    stmt = "SELECT name, search, is_default, subscribed FROM saved_search"
+    stmt = "SELECT name, search, subscribed FROM saved_search"
     searches = [
-        settings.SavedSearch(row[0], search, bool(row[2]), bool(row[3]))
+        settings.SavedSearch(row[0], search, bool(row[2]))
         for row in _DbState.connection().execute(stmt).fetchall()
         if (search := SearchBuilder.from_json(row[1]))
     ]
     settings.set_saved_searches(searches)
+    default = (
+        _DbState.connection()
+        .execute("SELECT name FROM saved_search WHERE is_default = True")
+        .fetchone()
+    )
+    if default:
+        settings.set_default_saved_search(default[0])
 
 
 def _in_values_clause(attribute: str, values: list) -> str:
