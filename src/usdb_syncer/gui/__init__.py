@@ -198,14 +198,16 @@ def configure_logging(stderr_level: logger.LOGLEVEL = logging.DEBUG) -> None:
         logging.FileHandler(utils.AppPaths.log, encoding="utf-8"),
         logger.StderrHandler(level=stderr_level),
     ]
-    logger.configure_logging(*handlers)
+    logger.configure_logging(*handlers, formatter=logger.DEBUG_FORMATTER)
 
 
 def _run_main() -> None:
     from usdb_syncer.gui.mw import MainWindow
 
     mw = MainWindow()
-    logger.add_root_handler(_TextEditLogger(mw))
+    mw_logger = _TextEditLogger(mw)
+    mw_logger.setFormatter(logger.GUI_FORMATTER)
+    logger.add_root_handler(mw_logger)
     mw.label_update_hint.setVisible(False)
     if not constants.IS_SOURCE:
         if version := utils.newer_version_available():
