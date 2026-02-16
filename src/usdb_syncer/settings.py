@@ -14,6 +14,7 @@ from enum import Enum, StrEnum, auto
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, ClassVar, TypeVar, assert_never, cast
 
+import attrs
 import keyring
 import yt_dlp.cookies
 from PySide6.QtCore import QByteArray, QSettings
@@ -23,7 +24,7 @@ from usdb_syncer.logger import logger
 if TYPE_CHECKING:
     from http.cookiejar import CookieJar
 
-    from usdb_syncer import path_template
+    from usdb_syncer import db, path_template
 
 SYSTEM_USDB = "USDB Syncer/USDB"
 NO_KEYRING_BACKEND_WARNING = (
@@ -205,6 +206,8 @@ class SettingKey(Enum):
     DIFF_ONLY_CHANGES = "diff/only_changes"
     DIFF_CONTEXT_LINES = "diff/context_lines"
     CUSTOM_META_DATA_COLUMNS = "custom_meta_data/columns"
+    SAVED_SEARCHES = "saved_searches"
+    DEFAULT_SAVED_SEARCH = "default_saved_search"
 
 
 class Encoding(Enum):
@@ -731,6 +734,54 @@ class ReportPDFOrientation(Enum):
         return str(self.value)
 
 
+def _get_unique_search_name(base_name: str, others: list[SavedSearch]) -> str:
+    names = [s.name for s in others]
+    unique_new_name = base_name
+    suffix = 0
+    while unique_new_name in names:
+        suffix += 1
+        unique_new_name = f"{base_name} ({suffix})"
+    return unique_new_name
+
+
+@attrs.define
+class SavedSearch:
+    """A persistent user-defined search."""
+
+    name: str
+    search: db.SearchBuilder
+    subscribed: bool = False
+
+    def remove(self, temp: bool = False) -> None:
+        set_saved_searches(
+            [s for s in get_saved_searches() if s.name != self.name], temp=temp
+        )
+
+    def update(self, new_name: str | None = None, temp: bool = False) -> None:
+        searches = [s for s in get_saved_searches() if s.name != self.name]
+        if new_name:
+            self.name = _get_unique_search_name(new_name, searches)
+        searches.append(self)
+        set_saved_searches(searches, temp=temp)
+
+    def insert(self, temp: bool = False) -> None:
+        searches = get_saved_searches()
+        self.name = _get_unique_search_name(self.name, searches)
+        searches.append(self)
+        set_saved_searches(searches, temp=temp)
+
+    @classmethod
+    def get(cls, name: str) -> SavedSearch | None:
+        return next((s for s in get_saved_searches() if s.name == name), None)
+
+    @classmethod
+    def get_default(cls) -> SavedSearch | None:
+        name = get_default_saved_search()
+        if not name:
+            return None
+        return next((s for s in get_saved_searches() if s.name == name), None)
+
+
 def reset() -> None:
     _Settings.reset()
 
@@ -1191,3 +1242,19 @@ def get_custom_meta_data_columns() -> list[str]:
 
 def set_custom_meta_data_columns(keys: list[str], temp: bool = False) -> None:
     _Settings.set(SettingKey.CUSTOM_META_DATA_COLUMNS, keys, temp)
+
+
+def get_saved_searches() -> list[SavedSearch]:
+    return _Settings.get(SettingKey.SAVED_SEARCHES, [])
+
+
+def set_saved_searches(searches: list[SavedSearch], temp: bool = False) -> None:
+    _Settings.set(SettingKey.SAVED_SEARCHES, searches, temp)
+
+
+def get_default_saved_search() -> str:
+    return _Settings.get(SettingKey.DEFAULT_SAVED_SEARCH, "")
+
+
+def set_default_saved_search(name: str, temp: bool = False) -> None:
+    _Settings.set(SettingKey.DEFAULT_SAVED_SEARCH, name, temp)

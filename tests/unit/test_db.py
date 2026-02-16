@@ -39,33 +39,6 @@ def test_foreign_key_enforcement(song: UsdbSong) -> None:
         assert len(list(db.all_local_usdb_songs())) == 0
 
 
-def test_persisting_saved_search() -> None:
-    search = db.SavedSearch(
-        name="name",
-        search=db.SearchBuilder(
-            order=db.SongOrder.ARTIST,
-            text="foo bar",
-            genres=["Rock", "Pop"],
-            views=[(0, 100)],
-            years=[1990, 2000, 2010],
-        ),
-    )
-    with db.managed_connection(":memory:"):
-        search.insert()
-        saved = list(db.SavedSearch.load_saved_searches())
-        assert len(saved) == 1
-        assert search.name == "name"
-        assert saved[0] == search
-
-        search.insert()
-        assert search.name == "name (1)"
-        assert len(list(db.SavedSearch.load_saved_searches())) == 2
-
-        search.update(new_name="name")
-        assert search.name == "name (1)"
-        assert len(list(db.SavedSearch.load_saved_searches())) == 2
-
-
 @pytest.mark.slow
 def test_upsert_delete_sync_metas_many() -> None:
     """Test inserting and deleting many sync metas at once."""

@@ -25,7 +25,7 @@ if TYPE_CHECKING:
     from pathlib import Path
 
 
-SCHEMA_VERSION = 9
+SCHEMA_VERSION = 10
 
 # https://www.sqlite.org/limits.html
 _SQL_VARIABLES_LIMIT = 32766
@@ -114,6 +114,8 @@ def _validate_schema(connection: sqlite3.Connection) -> None:
             raise errors.UnknownSchemaError
         version = row[0]
     for ver in range(version + 1, SCHEMA_VERSION + 1):
+        if ver == 10:
+            _migrate_to_version_10()
         connection.executescript(Sql.migration_text(ver))
         logger.debug(f"Database migrated to version {ver}.")
     if version < SCHEMA_VERSION:
@@ -456,9 +458,6 @@ class SearchBuilder:
         order_by = self._order_by_clause()
         return f"{select_from}{where}{order_by}"
 
-    def to_json(self) -> str:
-        return json.dumps(self, cls=_SearchEncoder)
-
     @classmethod
     def from_json(cls, json_str: str) -> SearchBuilder | None:
         fields = attrs.fields(cls)
@@ -481,118 +480,23 @@ class SearchBuilder:
         return None
 
 
-class _SearchEncoder(json.JSONEncoder):
-    """Custom encoder for a search."""
+def _migrate_to_version_10() -> None:
+    from usdb_syncer import settings
 
-    def default(self, o: Any) -> Any:
-        if isinstance(o, SearchBuilder):
-            return attrs.asdict(o, recurse=False)
-        if isinstance(o, enum.Enum):
-            return o.value
-        if isinstance(o, CustomSongOrder):
-            return o.custom_data_key
-        return super().default(o)
-
-
-@attrs.define
-class SavedSearch:
-    """A search saved to the database by the user."""
-
-    name: str
-    search: SearchBuilder
-    is_default: bool = False
-    subscribed: bool = False
-
-    def insert(self) -> None:
-        conn = _DbState.connection()
-        name = conn.execute(
-            Sql.SELECT_UNIQUE_SEARCH_NAME.text(),
-            {"new_name": self.name, "old_name": ""},
-        ).fetchone()[0]
-        conn.execute(
-            "INSERT INTO saved_search (name, search, is_default, subscribed)"
-            " VALUES (?, ?, ?, ?)",
-            (name, self.search.to_json(), self.is_default, self.subscribed),
-        )
-        self.name = name
-
-    def delete(self) -> None:
-        _DbState.connection().execute(
-            "DELETE FROM saved_search WHERE name = ?", (self.name,)
-        )
-
-    @classmethod
-    def get(cls, name: str) -> SavedSearch | None:
-        stmt = (
-            "SELECT name, search, is_default, subscribed FROM saved_search"
-            " WHERE name = ?"
-        )
-        row = _DbState.connection().execute(stmt, (name,)).fetchone()
-        if row and (search := cls._validate_saved_search_row(*row)):
-            return search
-        return None
-
-    @classmethod
-    def get_default(cls) -> SavedSearch | None:
-        stmt = (
-            "SELECT name, search, is_default, subscribed FROM saved_search"
-            " WHERE is_default = true"
-        )
-        row = _DbState.connection().execute(stmt).fetchone()
-        if row and (search := cls._validate_saved_search_row(*row)):
-            return search
-        return None
-
-    def update(self, new_name: str | None = None) -> None:
-        conn = _DbState.connection()
-        name = self.name
-        if new_name:
-            name = conn.execute(
-                Sql.SELECT_UNIQUE_SEARCH_NAME.text(),
-                {"new_name": new_name, "old_name": self.name},
-            ).fetchone()[0]
-        conn.execute(
-            "UPDATE saved_search SET name = ?, search = ?, is_default = ?,"
-            " subscribed = ? WHERE name = ?",
-            (name, self.search.to_json(), self.is_default, self.subscribed, self.name),
-        )
-        self.name = name
-
-    @classmethod
-    def load_saved_searches(
-        cls, subscribed_only: bool = False
-    ) -> Iterable[SavedSearch]:
-        stmt = (
-            "SELECT name, search, is_default, subscribed FROM saved_search"
-            f"{' WHERE subscribed' if subscribed_only else ''} ORDER BY name"
-        )
-        return (
-            search
-            for row in _DbState.connection().execute(stmt).fetchall()
-            if (search := cls._validate_saved_search_row(*row))
-        )
-
-    @classmethod
-    def _validate_saved_search_row(
-        cls, name: str, json_str: str, is_default: int, subscribed: int
-    ) -> SavedSearch | None:
-        if search := SearchBuilder.from_json(json_str):
-            return cls(name, search, bool(is_default), bool(subscribed))
-        _DbState.connection().execute(
-            "DELETE FROM saved_search WHERE name = ?", (name,)
-        )
-        logger.warning(f"Dropped invalid saved search '{name}'.")
-        return None
-
-    @classmethod
-    def get_subscribed_song_ids(cls) -> Iterable[SongId]:
-        if not (searches := list(cls.load_saved_searches(subscribed_only=True))):
-            return []
-        for search in searches:
-            search.search.order = SongOrder.NONE
-        stmt = "\nUNION\n".join(s.search.statement() for s in searches)
-        params = tuple(p for s in searches for p in s.search.parameters())
-        return (SongId(r[0]) for r in _DbState.connection().execute(stmt, params))
+    stmt = "SELECT name, search, subscribed FROM saved_search"
+    searches = [
+        settings.SavedSearch(row[0], search, bool(row[2]))
+        for row in _DbState.connection().execute(stmt).fetchall()
+        if (search := SearchBuilder.from_json(row[1]))
+    ]
+    settings.set_saved_searches(searches)
+    default = (
+        _DbState.connection()
+        .execute("SELECT name FROM saved_search WHERE is_default = True")
+        .fetchone()
+    )
+    if default:
+        settings.set_default_saved_search(default[0])
 
 
 def _in_values_clause(attribute: str, values: list) -> str:
