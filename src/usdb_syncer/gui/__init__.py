@@ -222,7 +222,7 @@ def _run_main() -> None:
         _load_main_window(mw)
     except errors.UnknownSchemaError:
         QtWidgets.QMessageBox.critical(mw, "Version conflict", SCHEMA_ERROR_MESSAGE)
-        return
+        sys.exit(1)
     _maybe_copy_licenses()
     hooks.MainWindowDidLoad.call(mw)
 

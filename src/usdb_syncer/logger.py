@@ -77,7 +77,8 @@ GUI_FORMATTER = logging.Formatter(
     style="{", fmt="{asctime} [{levelname}] {message}", datefmt="%Y-%m-%d %H:%M:%S"
 )
 DEBUG_FORMATTER = logging.Formatter(
-    style="{", fmt="{asctime} [{levelname}] [{filename}:{lineno}, {threadName}] {message}"
+    style="{",
+    fmt="{asctime} [{levelname}] [{filename}:{lineno}, {threadName}] {message}",
 )
 
 
