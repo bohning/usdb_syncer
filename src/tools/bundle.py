@@ -80,13 +80,18 @@ def bundle(platform: OS, version: str, with_songlist: bool = False) -> None:
             args.extend(
                 [
                     "--onefile",
+                    "--windowed",
                     "--icon",
                     "src/usdb_syncer/gui/resources/qt/appicon_128x128.png",
                 ]
             )
         case OS.WINDOWS_INSTALL:
             args.extend(
-                ["--icon", "src/usdb_syncer/gui/resources/qt/appicon_128x128.png"]
+                [
+                    "--windowed",
+                    "--icon",
+                    "src/usdb_syncer/gui/resources/qt/appicon_128x128.png",
+                ]
             )
         case OS.MACOS_ARM64 | OS.MACOS_X64:
             args.extend(

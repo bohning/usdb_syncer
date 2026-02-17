@@ -67,8 +67,7 @@ class _DbState:
         cls._local.connection = sqlite3.connect(
             db_path, check_same_thread=False, isolation_level=None, timeout=60
         )
-        thread = threading.current_thread().name
-        logger.debug(f"Connected to database at '{db_path}' on thread {thread}.")
+        logger.debug(f"Connected to database at '{db_path}'.")
         if cls.trace_sql:
             cls._local.connection.set_trace_callback(logger.debug)
         _validate_schema(cls._local.connection)
@@ -84,8 +83,7 @@ class _DbState:
         if _DbState._local.connection is not None:
             _DbState._local.connection.close()
             _DbState._local.connection = None
-            thread = threading.current_thread().name
-            logger.debug(f"Closed database connection on thread {thread}.")
+            logger.debug("Closed database connection.")
 
 
 @contextlib.contextmanager

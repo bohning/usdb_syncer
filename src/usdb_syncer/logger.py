@@ -9,10 +9,13 @@ Logging levels:
 """
 
 import logging
+import sys
 from types import TracebackType
-from typing import Any
+from typing import Any, TextIO
 
 from usdb_syncer import SongId
+
+LOGLEVEL = int | str
 
 
 class Logger(logging.LoggerAdapter):
@@ -38,6 +41,16 @@ class Logger(logging.LoggerAdapter):
             self.error(msg, *args, exc_info=False, **kwargs)
 
 
+class StderrHandler(logging.StreamHandler):
+    """Logging handler that writes to stdout."""
+
+    def __init__(
+        self, stream: TextIO = sys.stderr, level: LOGLEVEL = logging.DEBUG
+    ) -> None:
+        super().__init__(stream)
+        self.setLevel(level)
+
+
 class SongLogger(Logger):
     """Logger wrapper that takes care of logging the song id."""
 
@@ -60,15 +73,20 @@ def song_logger(song_id: SongId) -> SongLogger:
     return SongLogger(song_id, logger)
 
 
-def configure_logging(*handlers: logging.Handler) -> None:
-    logging.basicConfig(
-        level=logging.INFO,
-        style="{",
-        format="{asctime} [{levelname}] {message}",
-        datefmt="%Y-%m-%d %H:%M:%S",
-        encoding="utf-8",
-        handlers=handlers,
-    )
+GUI_FORMATTER = logging.Formatter(
+    style="{", fmt="{asctime} [{levelname}] {message}", datefmt="%Y-%m-%d %H:%M:%S"
+)
+DEBUG_FORMATTER = logging.Formatter(
+    style="{",
+    fmt="{asctime} [{levelname}] [{filename}:{lineno}, {threadName}] {message}",
+    datefmt="%Y-%m-%d %H:%M:%S",
+)
+
+
+def configure_logging(*handlers: logging.Handler, formatter: logging.Formatter) -> None:
+    logging.basicConfig(level=logging.INFO, encoding="utf-8", handlers=handlers)
+    for handler in logging.getLogger().handlers:
+        handler.setFormatter(formatter)
     logger.setLevel(logging.DEBUG)
 
 

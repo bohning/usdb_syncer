@@ -87,6 +87,7 @@ def _parse_polsy_html(html: str) -> list[str] | None:
 def get_allowed_countries(resource: str) -> list[str] | None:
     """Fetch YouTube video availability information from polsy.org.uk."""
     url = f"https://polsy.org.uk/stuff/ytrestrict.cgi?agreed=on&ytid={resource}"
+    logger.debug(f"Fetching allowed countries for YouTube video from {url}")
     response = requests.get(url, timeout=5)
 
     if not response.ok:
@@ -321,6 +322,7 @@ def remove_url_params(url: str, logger: Logger | None = None) -> str:
 
 def get_latest_version() -> str | None:
     try:
+        logger.debug("Fetching latest version from GitHub API.")
         response = requests.get(constants.GITHUB_API_LATEST, timeout=5)
         response.raise_for_status()
         return response.json().get("tag_name")

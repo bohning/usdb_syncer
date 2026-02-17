@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import contextlib
-import cProfile
 import io
 import logging
 import shutil
@@ -18,7 +17,7 @@ from typing import TYPE_CHECKING, Any
 
 import attrs
 from PySide6 import QtCore, QtGui, QtWidgets
-from PySide6.QtCore import Qt
+from PySide6.QtCore import Qt, qInstallMessageHandler
 
 import usdb_syncer
 from usdb_syncer import (
@@ -60,6 +59,8 @@ NOGIL_ERROR_MESSAGE = (
 class CliArgs:
     """Command line arguments."""
 
+    log_level: str = "INFO"
+
     reset_settings: bool = False
     subcommand: str = ""
 
@@ -85,6 +86,12 @@ class CliArgs:
         parser = ArgumentParser(description="USDB Syncer")
         parser.add_argument(
             "--version", action="version", version=usdb_syncer.__version__
+        )
+        parser.add_argument(
+            "--log-level",
+            type=str.upper,
+            choices=["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"],
+            help="Set the log level for stderr logging. Default is info.",
         )
         parser.add_argument(
             "--reset-settings",
@@ -146,7 +153,6 @@ class CliArgs:
             sys.exit(_run_healthcheck())
         if self.reset_settings:
             settings.reset()
-            print("Settings reset to default.")
         if self.songpath:
             settings.set_song_dir(self.songpath.resolve(), temp=True)
         if constants.IS_SOURCE and not self.skip_pyside:
@@ -157,14 +163,16 @@ class CliArgs:
 
 
 def main() -> None:
-    if hasattr(sys, "_is_gil_enabled") and sys._is_gil_enabled() is False:
+    sys.excepthook = _excepthook
+    if getattr(sys, "_is_gil_enabled", lambda: False)():
         print(NOGIL_ERROR_MESSAGE)
         sys.exit(1)
-    sys.excepthook = _excepthook
+    qInstallMessageHandler(handle_qt_log)
     args = CliArgs.parse()
     args.apply()
     addons.load_all()
     utils.AppPaths.make_dirs()
+    configure_logging(stderr_level=args.log_level)
     app = _init_app()
     app.setAttribute(Qt.ApplicationAttribute.AA_DontShowIconsInMenus, False)
 
@@ -185,21 +193,21 @@ def main() -> None:
                 run_main()
 
 
-def configure_logging(mw: MainWindow | None = None) -> None:
+def configure_logging(stderr_level: logger.LOGLEVEL = logging.DEBUG) -> None:
     handlers: list[logging.Handler] = [
         logging.FileHandler(utils.AppPaths.log, encoding="utf-8"),
-        logging.StreamHandler(sys.stdout),
+        logger.StderrHandler(level=stderr_level),
     ]
-    if mw:
-        handlers.append(_TextEditLogger(mw))
-    logger.configure_logging(*handlers)
+    logger.configure_logging(*handlers, formatter=logger.DEBUG_FORMATTER)
 
 
 def _run_main() -> None:
     from usdb_syncer.gui.mw import MainWindow
 
     mw = MainWindow()
-    configure_logging(mw)
+    mw_logger = _TextEditLogger(mw)
+    mw_logger.setFormatter(logger.GUI_FORMATTER)
+    logger.add_root_handler(mw_logger)
     mw.label_update_hint.setVisible(False)
     if not constants.IS_SOURCE:
         if version := utils.newer_version_available():
@@ -214,13 +222,12 @@ def _run_main() -> None:
         _load_main_window(mw)
     except errors.UnknownSchemaError:
         QtWidgets.QMessageBox.critical(mw, "Version conflict", SCHEMA_ERROR_MESSAGE)
-        return
+        sys.exit(1)
     _maybe_copy_licenses()
     hooks.MainWindowDidLoad.call(mw)
 
 
 def _run_preview(txt: Path) -> bool:
-    configure_logging()
     from usdb_syncer.gui.previewer import Previewer
 
     theme.Theme.from_settings().apply()
@@ -230,7 +237,6 @@ def _run_preview(txt: Path) -> bool:
 def _run_webserver(
     host: str | None = None, port: int | None = None, title: str | None = None
 ) -> None:
-    configure_logging()
     webserver.start(host=host, port=port, title=title)
     logger.logger.info("Webserver is running in headless mode. Press Ctrl+C to stop.")
     try:
@@ -248,7 +254,9 @@ def _excepthook(
 
 
 def _with_profile(func: Callable[[], None]) -> None:
-    print("Running with profiling enabled.")
+    import cProfile
+
+    logger.logger.debug("Running with profiling enabled.")
     profiler = cProfile.Profile()
     profiler.enable()
     func()
@@ -387,6 +395,11 @@ def _run_healthcheck() -> int:
             return 2
     print("USDB Syncer healthcheck: No problems found.")
     return 0
+
+
+def handle_qt_log(mode: int, _: Any, message: str) -> None:
+    """Log Qt messages to the main logger."""
+    logger.logger.debug(f"Qt log message with mode {mode}: {message}")
 
 
 class _LogSignal(QtCore.QObject):

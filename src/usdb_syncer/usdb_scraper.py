@@ -90,7 +90,7 @@ def establish_usdb_login(session: Session) -> UsdbUser | None:
     user = get_logged_in_usdb_user(session)
 
     if user:
-        logger.info(f"Using existing USDB login of {user.role} '{user.name}'.")
+        logger.info(f"Using browser cookie USDB login of {user.role} '{user.name}'.")
     else:
         auth_user, auth_pass = settings.get_usdb_auth()
         if auth_user and auth_pass:
@@ -98,7 +98,7 @@ def establish_usdb_login(session: Session) -> UsdbUser | None:
                 user = get_logged_in_usdb_user(session)
                 if user:
                     logger.info(
-                        "Successfully logged in to USDB with "
+                        "Logged in to USDB with credentials as "
                         f"{user.role} '{user.name}'."
                     )
                 else:
@@ -110,7 +110,7 @@ def establish_usdb_login(session: Session) -> UsdbUser | None:
                 logger.error(f"Login to USDB with user '{auth_user}' failed!")
         else:
             logger.warning(
-                "Not logged in to USDB. Please go to 'Synchronize > USDB Login', then "
+                "Not logged in to USDB. Please go to 'USDB > USDB Login', then "
                 "select the browser you are logged in with and/or enter your "
                 "credentials."
             )
@@ -167,6 +167,7 @@ class SessionManager:
 
 def get_logged_in_usdb_user(session: Session) -> UsdbUser | None:
     """Return the logged-in USDB user's name and role, or None if not logged in."""
+    logger.debug("Getting USDB user.")
     response = session.get(Usdb.BASE_URL, timeout=10, params={"link": "profil"})
     response.raise_for_status()
 
@@ -194,6 +195,7 @@ def login_to_usdb(session: Session, user: str, password: str) -> bool:
 
 
 def log_out_of_usdb(session: Session) -> None:
+    logger.debug("Logging out of USDB.")
     session.post(Usdb.BASE_URL, timeout=10, params={"link": "logout"})
 
 
@@ -316,10 +318,8 @@ def _get_usdb_page_inner(
     url = Usdb.BASE_URL + rel_url
     match method:
         case RequestMethod.GET:
-            logger.debug(f"Get request for {url}")
             response = session.get(url, headers=headers, params=params, timeout=10)
         case RequestMethod.POST:
-            logger.debug(f"Post request for {url}")
             response = session.post(
                 url, headers=headers, data=payload, params=params, timeout=10
             )
@@ -336,6 +336,7 @@ def _get_usdb_page_inner(
 
 def get_usdb_details(song_id: SongId) -> SongDetails:
     """Retrieve song details from usdb webpage, if song exists."""
+    logger.debug(f"Getting USDB details page of {song_id}.")
     html = get_usdb_page(
         "index.php", params={"id": str(int(song_id)), "link": "detail"}
     )
@@ -382,6 +383,7 @@ def get_updated_songs_from_usdb(
     session: Session | None = None,
 ) -> list[UsdbSong]:
     """Return a list of all songs that were updated (or added) since `last_update`."""
+    logger.debug(f"Getting updated songs from USDB since {last_update.usdb_mtime}.")
     available_songs: dict[SongId, UsdbSong] = {}
     for batch in _get_songs_from_usdb(
         "lastchange", True, content_filter=content_filter, session=session
@@ -400,6 +402,7 @@ def get_updated_songs_from_usdb(
 
 def get_all_songs_from_usdb(session: Session | None = None) -> list[UsdbSong]:
     """Return a list of all USDB songs."""
+    logger.debug("Getting all songs from USDB.")
     available_songs = [
         s for batch in _get_songs_from_usdb("id", False, session=session) for s in batch
     ]
@@ -640,7 +643,7 @@ def post_song_comment(song_id: SongId, text: str, rating: str) -> None:
         payload=payload,
     )
     logger = song_logger(song_id)
-    logger.debug("Comment posted on USDB.")
+    logger.info("Comment posted on USDB.")
 
 
 def post_song_rating(song_id: SongId, stars: int) -> None:
@@ -655,13 +658,15 @@ def post_song_rating(song_id: SongId, stars: int) -> None:
         payload=payload,
     )
     logger = song_logger(song_id)
-    logger.debug(f"{stars}-star rating posted on USDB.")
+    logger.info(f"{stars}-star rating posted on USDB.")
 
 
 def submit_local_changes(
     song_id: SongId, sample_url: str, txt: str, filename: str, logger: Logger
 ) -> None:
     """Submit local changes of a song to USDB."""
+    logger.debug(f"Submitting local changes to USDB song {song_id}.")
+
     payload = {
         "coverinput": "",
         "sampleinput": sample_url,

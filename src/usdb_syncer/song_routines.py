@@ -77,8 +77,7 @@ def load_available_songs(
     except errors.UsdbLoginError:
         logger.debug("Skipping fetching new songs as there is no login.")
     except requests.exceptions.ConnectionError:
-        logger.debug("", exc_info=True)
-        logger.error("Failed to fetch new songs; check network connection.")
+        logger.exception("Failed to fetch new songs; check network connection.")
     else:
         result.synced_with_usdb = True
         if songs:
