@@ -164,7 +164,7 @@ class CliArgs:
 
 def main() -> None:
     sys.excepthook = _excepthook
-    if getattr(sys, "_is_gil_enabled", lambda: False)():
+    if not getattr(sys, "_is_gil_enabled", lambda: True)():
         print(NOGIL_ERROR_MESSAGE)
         sys.exit(1)
     qInstallMessageHandler(handle_qt_log)
