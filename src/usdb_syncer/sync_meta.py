@@ -39,10 +39,11 @@ class ResourceFile:
     fname: str
     mtime: int
     resource: str
+    _is_in_sync: bool | None = None
 
     @classmethod
     def new(cls, path: Path, resource: str) -> ResourceFile:
-        return cls(path.name, utils.get_mtime(path), resource)
+        return cls(path.name, utils.get_mtime(path), resource, True)
 
     @classmethod
     def from_nested_dict(cls, dct: Any) -> ResourceFile | None:
@@ -65,12 +66,14 @@ class ResourceFile:
 
     def is_in_sync(self, folder: Path) -> bool:
         """Check file exists in the given folder and is in sync."""
-        path = folder.joinpath(self.fname)
-        return (
-            path.exists()
-            and abs(utils.get_mtime(path) - self.mtime) / 1_000_000
-            < MTIME_TOLERANCE_SECS
-        )
+        if self._is_in_sync is None:
+            path = folder.joinpath(self.fname)
+            self._is_in_sync = (
+                path.exists()
+                and abs(utils.get_mtime(path) - self.mtime) / 1_000_000
+                < MTIME_TOLERANCE_SECS
+            )
+        return self._is_in_sync
 
 
 @attrs.define
@@ -119,6 +122,9 @@ class Resource:
             resource=self.file.resource if self.file else None,
             status=self.status,
         )
+
+    def file_in_sync(self, folder: Path) -> bool:
+        return bool(self.file and self.file.is_in_sync(folder))
 
 
 @attrs.define

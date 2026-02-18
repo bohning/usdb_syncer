@@ -16,6 +16,10 @@
     <file>changes-white.svg</file>
     <file>changes.png</file>
     <file>check_for_update.png</file>
+    <file>check-circle-outline-white.svg</file>
+    <file>check-circle-white.svg</file>
+    <file>check-decagram-outline-white.svg</file>
+    <file>check-decagram-white.svg</file>
     <file>chevron-down-white.svg</file>
     <file>chevron-left-white.svg</file>
     <file>chevron-right-white.svg</file>
@@ -126,9 +130,10 @@
     <file>tag-white.svg</file>
     <file>text.png</file>
     <file>tick-green.png</file>
-    <file>tick-parentheses-white.svg</file>
+    <file>tick-green-exclamation.png</file>
     <file>tick-white.svg</file>
     <file>tick-yellow.png</file>
+    <file>tick-yellow-exclamation.png</file>
     <file>title.png</file>
     <file>translate-variant-white.svg</file>
     <file>tune-perfect.png</file>

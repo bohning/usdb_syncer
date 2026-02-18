@@ -1,6 +1,7 @@
 """Table model for song data."""
 
 from collections.abc import Iterable
+from pathlib import Path
 from typing import Any, assert_never
 
 from PySide6.QtCore import (
@@ -167,31 +168,33 @@ def _tooltip_data(song: UsdbSong, column: int) -> str | None:
 
     col = Column.from_index(column)
     if resource := col.get_resource_for_column(sync_meta):
-        return status_tooltip(resource)
+        return status_tooltip(resource, sync_meta.path.parent)
 
     return None
 
 
-def status_tooltip(resource: Resource) -> str:
-    file = resource.file
+def status_tooltip(resource: Resource, folder: Path) -> str:
+    local_changes = ""
+    if (file := resource.file) and not file.is_in_sync(folder):
+        local_changes = " (has local changes)"
     match resource.status:
         case JobStatus.SUCCESS | JobStatus.SUCCESS_UNCHANGED:
-            tooltip = file.fname if file else "local file missing"
+            tooltip = f"{file.fname}{local_changes}" if file else "Local file missing"
         case JobStatus.SKIPPED_DISABLED:
             tooltip = "Resource download disabled in the settings"
         case JobStatus.SKIPPED_UNAVAILABLE:
             tooltip = "No resource available"
         case JobStatus.FALLBACK:
             tooltip = (
-                (f"{file.fname} (fallback to commented/USDB resource)")
+                (f"{file.fname} (fallback to commented/USDB resource){local_changes}")
                 if file
-                else "local file missing"
+                else "Local file missing"
             )
         case JobStatus.FAILURE_EXISTING:
             tooltip = (
-                (f"{file.fname} (fallback to existing resource)")
+                (f"{file.fname} (fallback to existing resource){local_changes}")
                 if file
-                else "local file missing"
+                else "Local file missing"
             )
         case JobStatus.FAILURE:
             tooltip = "Resource download failed"
