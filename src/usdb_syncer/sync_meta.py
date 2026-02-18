@@ -64,9 +64,9 @@ class ResourceFile:
             return None
         return cls(fname=row[0], mtime=row[1], resource=row[2])
 
-    def is_in_sync(self, folder: Path) -> bool:
+    def is_in_sync(self, folder: Path, force_check: bool = False) -> bool:
         """Check file exists in the given folder and is in sync."""
-        if self._is_in_sync is None:
+        if force_check or self._is_in_sync is None:
             path = folder.joinpath(self.fname)
             self._is_in_sync = (
                 path.exists()
@@ -334,24 +334,25 @@ class SyncMeta:
         return self.path.parent / self.background.file.fname
 
 
+_RESOURCE_FILE_FILTER = attrs.filters.exclude(attrs.fields(ResourceFile)._is_in_sync)
+_SYNC_META_FIELDS = attrs.fields(SyncMeta)
+_SYNC_META_FILTER = attrs.filters.exclude(
+    _SYNC_META_FIELDS.sync_meta_id, _SYNC_META_FIELDS.path, _SYNC_META_FIELDS.mtime
+)
+
+
 class SyncMetaEncoder(json.JSONEncoder):
     """Custom JSON encoder."""
 
     def default(self, o: Any) -> Any:
-        if isinstance(o, ResourceFile):
-            return attrs.asdict(o)
         if isinstance(o, Resource):
-            if o.file is None:
-                return {"status": o.status}
-            dct = attrs.asdict(o.file)
+            dct = attrs.asdict(o.file, filter=_RESOURCE_FILE_FILTER) if o.file else {}
             dct["status"] = o.status
             return dct
         if isinstance(o, MetaTags):
             return str(o)
         if isinstance(o, SyncMeta):
-            fields = attrs.fields(SyncMeta)
-            filt = attrs.filters.exclude(fields.sync_meta_id, fields.path, fields.mtime)
-            dct = attrs.asdict(o, recurse=False, filter=filt)
+            dct = attrs.asdict(o, recurse=False, filter=_SYNC_META_FILTER)
             dct["version"] = SYNC_META_VERSION
             return dct
         if isinstance(o, CustomData):
