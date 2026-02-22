@@ -15,7 +15,7 @@ import requests
 from bs4 import BeautifulSoup, NavigableString, Tag
 from requests import Session
 
-from usdb_syncer import SongId, db, errors, events, hooks, settings
+from usdb_syncer import SongId, db, errors, events, hooks, settings, utils
 from usdb_syncer.constants import (
     SUPPORTED_VIDEO_SOURCES_REGEX,
     Usdb,
@@ -30,6 +30,8 @@ from usdb_syncer.utils import extract_youtube_id, normalize
 
 if TYPE_CHECKING:
     from collections.abc import Generator, Iterator
+
+N_USDB_SONGS_APPROX = 30_000
 
 
 class UserRole(Enum):
@@ -379,18 +381,21 @@ def _usdb_strings_from_welcome(welcome_string: str) -> type[UsdbStrings]:
 
 def get_updated_songs_from_usdb(
     last_update: db.LastUsdbUpdate,
+    progress: utils.ProgressProxy,
     content_filter: dict[str, str] | None = None,
     session: Session | None = None,
 ) -> list[UsdbSong]:
     """Return a list of all songs that were updated (or added) since `last_update`."""
     logger.debug(f"Getting updated songs from USDB since {last_update.usdb_mtime}.")
     available_songs: dict[SongId, UsdbSong] = {}
+    progress.reset("Fetching updates from USDB: 0")
     for batch in _get_songs_from_usdb(
         "lastchange", True, content_filter=content_filter, session=session
     ):
         for song in batch:
             if song.is_new_since_last_update(last_update):
                 available_songs[song.song_id] = song
+        progress.label = f"Fetching updates from USDB: {len(available_songs)}"
         if (
             len(batch) < Usdb.MAX_SONGS_PER_PAGE
             or batch[0].usdb_mtime < last_update.usdb_mtime
@@ -400,12 +405,16 @@ def get_updated_songs_from_usdb(
     return list(available_songs.values())
 
 
-def get_all_songs_from_usdb(session: Session | None = None) -> list[UsdbSong]:
+def get_all_songs_from_usdb(
+    progress: utils.ProgressProxy, session: Session | None = None
+) -> list[UsdbSong]:
     """Return a list of all USDB songs."""
     logger.debug("Getting all songs from USDB.")
-    available_songs = [
-        s for batch in _get_songs_from_usdb("id", False, session=session) for s in batch
-    ]
+    available_songs = []
+    progress.reset("Fetching songs from USDB.", maximum=N_USDB_SONGS_APPROX)
+    for batch in _get_songs_from_usdb("id", False, session=session):
+        available_songs.extend(batch)
+        progress.value += len(batch)
     logger.info(f"Fetched {len(available_songs)} songs from USDB.")
     return available_songs
 

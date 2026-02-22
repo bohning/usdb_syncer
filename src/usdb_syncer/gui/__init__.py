@@ -275,7 +275,7 @@ def _load_main_window(mw: MainWindow) -> None:
 
     def on_done(result: progress.Result) -> None:
         result.result()
-        splash.progress.label = "Setting up GUI ..."
+        splash.progress.reset("Setting up GUI.")
         mw.tree.populate()
         if default_search := settings.SavedSearch.get_default():
             events.SavedSearchRestored(default_search.search).post()
@@ -289,9 +289,7 @@ def _load_main_window(mw: MainWindow) -> None:
 
     progress.run_background_task(
         splash.progress,
-        lambda _: song_routines.load_available_songs_and_sync_meta(
-            folder, False, splash.progress
-        ),
+        lambda p: song_routines.load_available_songs_and_sync_meta(folder, False, p),
         on_done=on_done,
     )
 
@@ -317,7 +315,7 @@ class SplashScreen(QtWidgets.QSplashScreen):
         )
         painter.end()
         super().__init__(canvas)
-        self.progress = utils.ProgressProxy("Loading data ...")
+        self.progress = utils.ProgressProxy("Loading data.")
         self._timer = QtCore.QTimer(self, singleShot=False, interval=100)
         self._timer.timeout.connect(self._show_message)
         self._timer.start()

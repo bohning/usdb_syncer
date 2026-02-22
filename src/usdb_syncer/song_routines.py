@@ -41,7 +41,7 @@ def load_available_songs_and_sync_meta(
 ) -> None:
     """Load available songs from USDB and synchronize the sync meta folder."""
     with db.transaction():
-        result = load_available_songs(force_reload=force_reload)
+        result = load_available_songs(force_reload=force_reload, progress=progress)
         synchronize_sync_meta_folder(folder, not result.synced_with_usdb, progress)
         SyncMeta.reset_active(folder)
     UsdbSong.clear_cache()
@@ -57,12 +57,13 @@ class LoadSongsResult:
 
 
 def load_available_songs(
-    force_reload: bool, session: Session | None = None
+    force_reload: bool, progress: utils.ProgressProxy, session: Session | None = None
 ) -> LoadSongsResult:
     """Load songs from USDB.
 
     Return true if USDB was queried successfully.
     """
+    progress.reset("Checking available songs.")
     result = LoadSongsResult()
     last = db.LastUsdbUpdate.zero()
     if not force_reload:
@@ -73,14 +74,17 @@ def load_available_songs(
             last = db.LastUsdbUpdate.get()
     try:
         if last.is_zero():
-            songs = usdb_scraper.get_all_songs_from_usdb(session=session)
+            songs = usdb_scraper.get_all_songs_from_usdb(progress, session=session)
         else:
-            songs = usdb_scraper.get_updated_songs_from_usdb(last, session=session)
+            songs = usdb_scraper.get_updated_songs_from_usdb(
+                last, progress, session=session
+            )
     except errors.UsdbLoginError:
         logger.debug("Skipping fetching new songs as there is no login.")
     except requests.exceptions.ConnectionError:
         logger.exception("Failed to fetch new songs; check network connection.")
     else:
+        progress.reset("Writing USDB songs to database.")
         result.synced_with_usdb = True
         if songs:
             UsdbSong.upsert_many(songs)
@@ -172,15 +176,13 @@ class _SyncMetaFolderSyncer:
         )
 
     def process(self) -> None:
-        self.progress.label = "Searching for .usdb files ..."
+        self.progress.reset("Searching for .usdb files.")
         paths = list(_iterate_usdb_files_in_folder_recursively(folder=self.folder))
-        self.progress.label = "Checking .usdb files ..."
-        self.progress.maximum = len(paths)
+        self.progress.reset("Checking .usdb files.", maximum=len(paths))
         for path in paths:
             self._process_path(path)
             self.progress.value += 1
-        self.progress.maximum = 0
-        self.progress.label = "Synchronizing database ..."
+        self.progress.reset("Writing changes to database.")
         SyncMeta.delete_many_in_folder(
             self.folder, tuple(self.db_metas.keys() - self.found_metas)
         )

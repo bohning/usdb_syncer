@@ -452,3 +452,8 @@ class ProgressProxy:
     label: str
     value: int = 0
     maximum: int = 0
+
+    def reset(self, label: str, maximum: int = 0) -> None:
+        self.label = label
+        self.maximum = maximum
+        self.value = 0
