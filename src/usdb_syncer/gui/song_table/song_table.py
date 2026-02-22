@@ -64,7 +64,7 @@ class SongTable:
         self._setup_row_count_change()
         self._set_app_actions_visible()
         events.PreferencesChanged.subscribe(lambda _: self._set_app_actions_visible())
-        events.SongChanged.subscribe(self._on_song_changed)
+        events.SongsChanged.subscribe(self._on_songs_changed)
         self._setup_search_timer()
         gui_events.TreeFilterChanged.subscribe(self._on_tree_filter_changed)
         gui_events.TextFilterChanged.subscribe(self._on_text_filter_changed)
@@ -86,7 +86,7 @@ class SongTable:
             self._playing_song_id = None
         with db.transaction():
             song.set_playing(play)
-        events.SongChanged(song.song_id).post()
+        events.SongsChanged([song.song_id]).post()
 
     def _on_playback_error_changed(self) -> None:
         if not self._media_player.error().value or self._next_playing_song_id is None:
@@ -168,20 +168,22 @@ class SongTable:
         ids = self._model.ids_for_rows(rows)
         progress.reset("Collecting selected songs.", maximum=len(ids))
         to_download: list[UsdbSong] = []
-        for song_id in ids:
-            song = UsdbSong.get(song_id)
-            assert song
-            if song.sync_meta and song.sync_meta.pinned:
-                song_logger(song.song_id).info("Not downloading song as it is pinned.")
-                continue
-            if song.status.can_be_downloaded():
-                self.stop_playing_local_song(song)
-                previewer.Previewer.close_song(song.song_id)
-                with db.transaction():
+        with db.transaction():
+            for song_id in ids:
+                song = UsdbSong.get(song_id)
+                assert song
+                if song.sync_meta and song.sync_meta.pinned:
+                    song_logger(song.song_id).info(
+                        "Not downloading song as it is pinned."
+                    )
+                    continue
+                if song.status.can_be_downloaded():
+                    self.stop_playing_local_song(song)
+                    previewer.Previewer.close_song(song.song_id)
                     song.set_status(DownloadStatus.PENDING)
-                events.SongChanged(song.song_id).post()
-                to_download.append(song)
-            progress.value += 1
+                    to_download.append(song)
+                progress.value += 1
+        events.SongsChanged([s.song_id for s in to_download]).post()
         if to_download:
             events.DownloadsRequested(len(to_download)).post()
             DownloadManager.download(to_download, progress)
@@ -340,8 +342,8 @@ class SongTable:
 
     # actions
 
-    def _on_song_changed(self, event: events.SongChanged) -> None:
-        if event.song_id == self.current_song_id():
+    def _on_songs_changed(self, event: events.SongsChanged) -> None:
+        if (curr := self.current_song_id()) is not None and curr in event.song_ids:
             self._on_current_song_changed()
 
     def _on_current_song_changed(self) -> None:
@@ -391,18 +393,19 @@ class SongTable:
                 break
             with db.transaction():
                 song.remove_sync_meta()
-            events.SongChanged(song.song_id).post()
+            events.SongsChanged([song.song_id]).post()
             logger.debug("Trashed song folder.")
 
     def set_pin_selected_songs(self, pin: bool) -> None:
-        for song in self.selected_songs():
-            if not song.sync_meta or song.sync_meta.pinned == pin:
-                continue
-            song.sync_meta.pinned = pin
-            song.sync_meta.synchronize_to_file()
-            with db.transaction():
+        songs = self.selected_songs()
+        with db.transaction():
+            for song in songs:
+                if not song.sync_meta or song.sync_meta.pinned == pin:
+                    continue
+                song.sync_meta.pinned = pin
+                song.sync_meta.synchronize_to_file()
                 song.sync_meta.upsert()
-            events.SongChanged(song.song_id).post()
+        events.SongsChanged([song.song_id for song in songs]).post()
 
     # selection model
 
@@ -525,5 +528,4 @@ def _update_custom_data(songs: list[UsdbSong], key: str, value: str | None) -> N
             song.sync_meta.custom_data.set(key, value)
     with db.transaction():
         UsdbSong.upsert_many(songs)
-    for song in songs:
-        events.SongChanged(song.song_id).post()
+    events.SongsChanged([song.song_id for song in songs]).post()

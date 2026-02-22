@@ -74,10 +74,10 @@ class Shutdown(SubscriptableEvent):
 
 
 @attrs.define(slots=False)
-class SongChanged(SubscriptableEvent):
-    """Sent when attributes of a UsdbSong have changed."""
+class SongsChanged(SubscriptableEvent):
+    """Sent when attributes of UsdbSongs have changed."""
 
-    song_id: SongId
+    song_ids: list[SongId]
 
 
 @attrs.define(slots=False)

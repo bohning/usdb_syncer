@@ -422,7 +422,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
                 else:
                     with db.transaction():
                         song.remove_sync_meta()
-                    events.SongChanged(song.song_id)
+                    events.SongsChanged([song.song_id])
                     logger.info("Song does not exist locally anymore.")
             else:
                 logger.info("Song does not exist locally.")

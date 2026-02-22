@@ -74,17 +74,19 @@ class DownloadManager:
     @classmethod
     def abort(cls, songs: list[SongId], progress: utils.ProgressProxy) -> None:
         progress.reset("Aborting downloads.", maximum=len(songs))
+        changed = []
         for song in songs:
             if (job := cls._jobs.get(song)) and shiboken6.isValid(job):
                 if cls._threadpool().tryTake(job):
                     job.logger.info("Download aborted by user request.")
                     with db.transaction():
                         job.song.set_status(job.song.get_resetted_status())
-                    events.SongChanged(job.song_id).post()
+                        changed.append(job.song_id)
                     events.DownloadFinished(job.song_id).post()
                 else:
                     job.abort = True
             progress.value += 1
+        events.SongsChanged(changed).post()
 
     @classmethod
     def set_pause(cls, pause: bool) -> None:
@@ -415,14 +417,14 @@ class _SongLoader(QtCore.QRunnable):
             with db.transaction():
                 self.song.upsert()
                 self.song.set_status(status)
-        events.SongChanged(self.song_id).post()
+        events.SongsChanged([self.song_id]).post()
         events.DownloadFinished(self.song_id).post()
 
     def _run_inner(self) -> UsdbSong:
         self._check_flags()
         with db.transaction():
             self.song.set_status(DownloadStatus.DOWNLOADING)
-        events.SongChanged(self.song_id).post()
+        events.SongsChanged([self.song_id]).post()
         with tempfile.TemporaryDirectory() as tempdir:
             ctx = _Context.new(self.song, self.options, Path(tempdir), self.logger)
             for job in Job:
