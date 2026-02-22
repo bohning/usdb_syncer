@@ -391,7 +391,7 @@ class SongTable:
                 break
             with db.transaction():
                 song.remove_sync_meta()
-            events.SongChanged(song.song_id)
+            events.SongChanged(song.song_id).post()
             logger.debug("Trashed song folder.")
 
     def set_pin_selected_songs(self, pin: bool) -> None:
@@ -402,7 +402,7 @@ class SongTable:
             song.sync_meta.synchronize_to_file()
             with db.transaction():
                 song.sync_meta.upsert()
-            events.SongChanged(song.song_id)
+            events.SongChanged(song.song_id).post()
 
     # selection model
 
