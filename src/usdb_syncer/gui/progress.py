@@ -97,6 +97,27 @@ def run_with_progress(
 ) -> None:
     """Run a task on a background thread while a modal progress dialog is shown."""
     dialog = ProgressDialog(label)
+    done = False
+
+    def wrapped_on_done(result: Result[T]) -> None:
+        nonlocal done
+        done = True
+        dialog.finish()
+        on_done(result)
+
+    run_background_task(dialog.progress, task, wrapped_on_done)
+    start = time.time()
+    while not done and (time.time() - start) * 1000 < _MINIMUM_DURATION_MS:
+        # block until task is completed or dialog shows
+        time.sleep(0.01)
+
+
+def run_background_task(
+    progress: utils.ProgressProxy,
+    task: Callable[[utils.ProgressProxy], T],
+    on_done: Callable[[Result[T]], Any] = lambda res: res.result(),
+) -> None:
+    """Run a task on a background thread."""
     signal = _ResultSignal()
     result: Result | None = None
 
@@ -104,14 +125,13 @@ def run_with_progress(
         nonlocal result
         try:
             with db.managed_connection(utils.AppPaths.db):
-                result = Result(task(dialog.progress))
+                result = Result(task(progress))
         except Exception as exc:  # noqa: BLE001
             result = Result(_Error(exc))
         signal.result.emit()
 
     def wrapped_on_done() -> None:
         assert result
-        dialog.finish()
         on_done(result)
         # prevent Qt from cleaning up the signal before it's done
         # https://bugreports.qt.io/browse/PYSIDE-2921
@@ -119,7 +139,3 @@ def run_with_progress(
 
     signal.result.connect(wrapped_on_done)
     QtCore.QThreadPool.globalInstance().start(wrapped_task)
-    start = time.time()
-    while result is None and (time.time() - start) * 1000 < _MINIMUM_DURATION_MS:
-        # block until task is completed or dialog shows
-        time.sleep(0.01)
