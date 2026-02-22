@@ -8,7 +8,7 @@ from typing import ClassVar
 from PySide6.QtGui import Qt
 from PySide6.QtWidgets import QDialog, QMessageBox, QWidget
 
-from usdb_syncer import settings
+from usdb_syncer import settings, utils
 from usdb_syncer.gui import gui_utils, progress, theme
 from usdb_syncer.gui.forms.UsdbUploadDialog import Ui_Dialog
 from usdb_syncer.gui.theme import generate_diff_css
@@ -123,7 +123,7 @@ class UsdbUploadDialog(Ui_Dialog, QDialog):
     def accept(self) -> None:
         """Submit selected songs and close dialog."""
 
-        def task() -> None:
+        def task(_: utils.ProgressProxy) -> None:
             for song, changes in self.submittable:
                 assert song.sync_meta is not None
                 assert song.sync_meta.txt is not None

@@ -36,11 +36,13 @@ if TYPE_CHECKING:
     from importlib.resources.abc import Traversable
 
 
-def load_available_songs_and_sync_meta(folder: Path, force_reload: bool) -> None:
+def load_available_songs_and_sync_meta(
+    folder: Path, force_reload: bool, progress: utils.ProgressProxy
+) -> None:
     """Load available songs from USDB and synchronize the sync meta folder."""
     with db.transaction():
         result = load_available_songs(force_reload=force_reload)
-        synchronize_sync_meta_folder(folder, not result.synced_with_usdb)
+        synchronize_sync_meta_folder(folder, not result.synced_with_usdb, progress)
         SyncMeta.reset_active(folder)
     UsdbSong.clear_cache()
     initialize_auto_downloads(result.new_songs)
@@ -153,9 +155,12 @@ class _SyncMetaFolderSyncer:
     song_ids: set[SongId]
     to_upsert: list[SyncMeta]
     found_metas: set[SyncMetaId]
+    progress: utils.ProgressProxy
 
     @classmethod
-    def new(cls, folder: Path, keep_unknown_song_ids: bool) -> _SyncMetaFolderSyncer:
+    def new(
+        cls, folder: Path, keep_unknown_song_ids: bool, progress: utils.ProgressProxy
+    ) -> _SyncMetaFolderSyncer:
         return cls(
             folder=folder,
             keep_unknown_song_ids=keep_unknown_song_ids,
@@ -163,11 +168,19 @@ class _SyncMetaFolderSyncer:
             song_ids=set(db.all_song_ids()),
             to_upsert=[],
             found_metas=set(),
+            progress=progress,
         )
 
     def process(self) -> None:
-        for path in _iterate_usdb_files_in_folder_recursively(folder=self.folder):
+        self.progress.label = "Searching for .usdb files ..."
+        paths = list(_iterate_usdb_files_in_folder_recursively(folder=self.folder))
+        self.progress.label = "Checking .usdb files ..."
+        self.progress.maximum = len(paths)
+        for path in paths:
             self._process_path(path)
+            self.progress.value += 1
+        self.progress.maximum = 0
+        self.progress.label = "Synchronizing database ..."
         SyncMeta.delete_many_in_folder(
             self.folder, tuple(self.db_metas.keys() - self.found_metas)
         )
@@ -211,8 +224,10 @@ class _SyncMetaFolderSyncer:
                 utils.trash_or_delete_path(path.parent)
 
 
-def synchronize_sync_meta_folder(folder: Path, keep_unknown_song_ids: bool) -> None:
-    _SyncMetaFolderSyncer.new(folder, keep_unknown_song_ids).process()
+def synchronize_sync_meta_folder(
+    folder: Path, keep_unknown_song_ids: bool, progress: utils.ProgressProxy
+) -> None:
+    _SyncMetaFolderSyncer.new(folder, keep_unknown_song_ids, progress).process()
 
 
 def find_local_songs(directory: Path) -> set[SongId]:

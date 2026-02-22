@@ -13,6 +13,7 @@ import unicodedata
 from pathlib import Path
 from typing import ClassVar
 
+import attrs
 import requests
 import send2trash
 from bs4 import BeautifulSoup, Tag
@@ -436,3 +437,18 @@ def trash_or_delete_path(path: Path) -> None:
             raise errors.TrashError(path) from err
     else:
         shutil.rmtree(path) if path.is_dir() else path.unlink()
+
+
+@attrs.define
+class ProgressProxy:
+    """Data container for the progress of a long-running operation.
+
+    When a handler spawns an operation for which some sort of progress indicator should
+    be shown, it can pass an instance of this class to the operation logic.
+    The operation code can then modify the attributes of this object to reflect its
+    progress, while the handler can watch these changes and render them in some form.
+    """
+
+    label: str
+    value: int = 0
+    maximum: int = 0

@@ -161,7 +161,7 @@ class SongTable:
         external_deps_dialog.check_external_deps(
             self.mw,
             lambda: run_with_progress(
-                "Initializing downloads ...", partial(self._download_inner, rows)
+                "Initializing downloads ...", lambda _: self._download_inner(rows)
             ),
         )
 
@@ -186,7 +186,9 @@ class SongTable:
 
     def abort_selected_downloads(self) -> None:
         ids = self._model.ids_for_rows(self._selected_rows())
-        run_with_progress("Aborting downloads ...", lambda: DownloadManager.abort(ids))
+        run_with_progress(
+            "Aborting downloads ...", lambda _: DownloadManager.abort(ids)
+        )
 
     def _setup_view(self) -> None:
         state = settings.get_table_view_header_state()

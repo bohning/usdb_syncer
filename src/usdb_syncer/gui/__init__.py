@@ -274,7 +274,8 @@ def _load_main_window(mw: MainWindow) -> None:
     db.connect(utils.AppPaths.db)
     with db.transaction():
         db.delete_session_data()
-    song_routines.load_available_songs_and_sync_meta(folder, False)
+    progress = utils.ProgressProxy("Loading data ...")
+    song_routines.load_available_songs_and_sync_meta(folder, False, progress)
     mw.tree.populate()
     if default_search := settings.SavedSearch.get_default():
         events.SavedSearchRestored(default_search.search).post()

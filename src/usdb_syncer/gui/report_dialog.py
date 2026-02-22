@@ -155,7 +155,7 @@ class ReportDialog(Ui_Dialog, QDialog):
                     optional_info.append(item.data(Qt.ItemDataRole.UserRole))
             run_with_progress(
                 "Creating PDF report ...",
-                lambda: generate_report_pdf(
+                lambda _: generate_report_pdf(
                     songs=songs,
                     path=path,
                     size=pagesize,
@@ -199,7 +199,7 @@ class ReportDialog(Ui_Dialog, QDialog):
         if path:
             run_with_progress(
                 "Creating JSON report ...",
-                lambda: generate_report_json(
+                lambda _: generate_report_json(
                     songs=songs, path=Path(path), indent=indent
                 ),
                 on_done=on_done,

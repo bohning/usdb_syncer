@@ -297,14 +297,14 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         if directory := QFileDialog.getExistingDirectory(self, "Select Song Directory"):
             run_with_progress(
                 "Reading song txts ...",
-                lambda: song_routines.find_local_songs(Path(directory)),
+                lambda _: song_routines.find_local_songs(Path(directory)),
                 on_done=on_done,
             )
 
     def _refetch_song_list(self) -> None:
-        def task() -> None:
+        def task(progress: utils.ProgressProxy) -> None:
             folder = settings.get_song_dir()
-            song_routines.load_available_songs_and_sync_meta(folder, True)
+            song_routines.load_available_songs_and_sync_meta(folder, True, progress)
 
         def on_done(result: progress.Result[None]) -> None:
             self.table.end_reset()
@@ -320,9 +320,9 @@ class MainWindow(Ui_MainWindow, QMainWindow):
             return
         path = Path(song_dir).resolve(strict=True)
 
-        def task() -> None:
+        def task(progress: utils.ProgressProxy) -> None:
             with db.transaction():
-                song_routines.synchronize_sync_meta_folder(path, True)
+                song_routines.synchronize_sync_meta_folder(path, True, progress)
                 SyncMeta.reset_active(path)
 
         def on_done(result: progress.Result[None]) -> None:
@@ -441,7 +441,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         self.menu_open_song_in.popup(pos)
 
     def closeEvent(self, event: QCloseEvent) -> None:  # noqa: N802
-        def cleanup() -> None:
+        def cleanup(_: utils.ProgressProxy) -> None:
             DownloadManager.quit()
             webserver.stop()
 
