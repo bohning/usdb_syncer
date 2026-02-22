@@ -6,7 +6,7 @@ from pathlib import Path
 
 from requests import Session
 
-from usdb_syncer import song_routines
+from usdb_syncer import song_routines, utils
 from usdb_syncer.usdb_scraper import get_all_songs_from_usdb, login_to_usdb
 
 
@@ -15,7 +15,7 @@ def main(target: Path, user: str, password: str) -> None:
     if not login_to_usdb(session, user, password):
         print("Invalid credentials!")
         sys.exit(1)
-    songs = get_all_songs_from_usdb(session=session)
+    songs = get_all_songs_from_usdb(utils.ProgressProxy(""), session=session)
     song_routines.dump_available_songs(songs, target)
     print(f"{len(songs)} entries written to {target}.")
 

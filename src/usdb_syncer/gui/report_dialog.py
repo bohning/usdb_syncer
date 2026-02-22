@@ -154,8 +154,7 @@ class ReportDialog(Ui_Dialog, QDialog):
                 if item.checkState() == Qt.CheckState.Checked:
                     optional_info.append(item.data(Qt.ItemDataRole.UserRole))
             run_with_progress(
-                "Creating PDF report ...",
-                lambda _: generate_report_pdf(
+                lambda progress: generate_report_pdf(
                     songs=songs,
                     path=path,
                     size=pagesize,
@@ -164,6 +163,7 @@ class ReportDialog(Ui_Dialog, QDialog):
                     column_count=column_count,
                     base_font_size=base_font_size,
                     optional_info=optional_info,
+                    progress=progress,
                 ),
                 on_done=on_done,
             )
@@ -198,9 +198,8 @@ class ReportDialog(Ui_Dialog, QDialog):
         indent = self.spinBox_json_indent.value()
         if path:
             run_with_progress(
-                "Creating JSON report ...",
-                lambda _: generate_report_json(
-                    songs=songs, path=Path(path), indent=indent
+                lambda progress: generate_report_json(
+                    songs=songs, path=Path(path), indent=indent, progress=progress
                 ),
                 on_done=on_done,
             )

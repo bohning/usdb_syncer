@@ -44,7 +44,7 @@ from usdb_syncer.usdb_song import DownloadStatus, UsdbSong
 from usdb_syncer.utils import video_url_from_resource
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable, Iterator
+    from collections.abc import Iterator
 
     from usdb_syncer.logger import Logger
     from usdb_syncer.meta_tags import ImageMetaTags
@@ -59,7 +59,8 @@ class DownloadManager:
     _pool: QtCore.QThreadPool | None = None
 
     @classmethod
-    def download(cls, songs: Iterable[UsdbSong]) -> None:
+    def download(cls, songs: list[UsdbSong], progress: utils.ProgressProxy) -> None:
+        progress.reset("Initializing downloads.", maximum=len(songs))
         options = download_options.download_options()
         for song in songs:
             if song.song_id in cls._jobs:
@@ -68,9 +69,11 @@ class DownloadManager:
             cls._jobs[song.song_id] = job = _SongLoader(song, options)
             job.pause = cls._pause
             cls._threadpool().start(job)
+            progress.value += 1
 
     @classmethod
-    def abort(cls, songs: Iterable[SongId]) -> None:
+    def abort(cls, songs: list[SongId], progress: utils.ProgressProxy) -> None:
+        progress.reset("Aborting downloads.", maximum=len(songs))
         for song in songs:
             if (job := cls._jobs.get(song)) and shiboken6.isValid(job):
                 if cls._threadpool().tryTake(job):
@@ -81,6 +84,7 @@ class DownloadManager:
                     events.DownloadFinished(job.song_id).post()
                 else:
                     job.abort = True
+            progress.value += 1
 
     @classmethod
     def set_pause(cls, pause: bool) -> None:
@@ -89,12 +93,14 @@ class DownloadManager:
             job.pause = pause
 
     @classmethod
-    def quit(cls) -> None:
+    def quit(cls, progress: utils.ProgressProxy) -> None:
+        progress.reset("Quitting downloads.", maximum=len(cls._jobs))
         if cls._pool:
             logger.debug(f"Quitting {len(cls._jobs)} downloads.")
             for job in cls._jobs.values():
                 job.abort = True
             cls._pool.waitForDone()
+            progress.value += 1
 
     @classmethod
     def _threadpool(cls) -> QtCore.QThreadPool:

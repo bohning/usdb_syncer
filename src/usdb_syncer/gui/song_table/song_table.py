@@ -159,15 +159,16 @@ class SongTable:
 
     def _download(self, rows: Iterable[int]) -> None:
         external_deps_dialog.check_external_deps(
-            self.mw,
-            lambda: run_with_progress(
-                "Initializing downloads ...", lambda _: self._download_inner(rows)
-            ),
+            self.mw, lambda: run_with_progress(lambda p: self._download_inner(rows, p))
         )
 
-    def _download_inner(self, rows: Iterable[int]) -> None:
+    def _download_inner(
+        self, rows: Iterable[int], progress: utils.ProgressProxy
+    ) -> None:
+        ids = self._model.ids_for_rows(rows)
+        progress.reset("Collecting selected songs.", maximum=len(ids))
         to_download: list[UsdbSong] = []
-        for song_id in self._model.ids_for_rows(rows):
+        for song_id in ids:
             song = UsdbSong.get(song_id)
             assert song
             if song.sync_meta and song.sync_meta.pinned:
@@ -180,15 +181,14 @@ class SongTable:
                     song.set_status(DownloadStatus.PENDING)
                 events.SongChanged(song.song_id).post()
                 to_download.append(song)
+            progress.value += 1
         if to_download:
             events.DownloadsRequested(len(to_download)).post()
-            DownloadManager.download(to_download)
+            DownloadManager.download(to_download, progress)
 
     def abort_selected_downloads(self) -> None:
         ids = self._model.ids_for_rows(self._selected_rows())
-        run_with_progress(
-            "Aborting downloads ...", lambda _: DownloadManager.abort(ids)
-        )
+        run_with_progress(lambda p: DownloadManager.abort(ids, p))
 
     def _setup_view(self) -> None:
         state = settings.get_table_view_header_state()

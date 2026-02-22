@@ -123,7 +123,12 @@ class UsdbUploadDialog(Ui_Dialog, QDialog):
     def accept(self) -> None:
         """Submit selected songs and close dialog."""
 
-        def task(_: utils.ProgressProxy) -> None:
+        def task(progress: utils.ProgressProxy) -> None:
+            progress.reset(
+                "Submitting song."
+                if num_songs == 1
+                else f"Submitting {num_songs} songs."
+            )
             for song, changes in self.submittable:
                 assert song.sync_meta is not None
                 assert song.sync_meta.txt is not None
@@ -135,10 +140,10 @@ class UsdbUploadDialog(Ui_Dialog, QDialog):
                     song.sync_meta.txt.file.fname,
                     song_logger(song.song_id),
                 )
+                progress.value += 1
 
         num_songs = len(self.submittable)
-        plural = "s" if num_songs != 1 else ""
-        progress.run_with_progress(f"Submitting {num_songs} song{plural}…", task)
+        progress.run_with_progress(task)
         UsdbUploadDialog._instance = None
         self._save_settings()
         super().accept()

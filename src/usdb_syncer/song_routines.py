@@ -45,7 +45,7 @@ def load_available_songs_and_sync_meta(
         synchronize_sync_meta_folder(folder, not result.synced_with_usdb, progress)
         SyncMeta.reset_active(folder)
     UsdbSong.clear_cache()
-    initialize_auto_downloads(result.new_songs)
+    initialize_auto_downloads(result.new_songs, progress)
 
 
 @attrs.define
@@ -106,7 +106,9 @@ def _get_default_search_song_ids() -> set[SongId]:
     )
 
 
-def initialize_auto_downloads(updates: set[SongId]) -> None:
+def initialize_auto_downloads(
+    updates: set[SongId], progress: utils.ProgressProxy
+) -> None:
     if not utils.ffmpeg_is_available():
         return
     download_ids = _get_default_search_song_ids().intersection(updates)
@@ -120,7 +122,7 @@ def initialize_auto_downloads(updates: set[SongId]) -> None:
         for song in songs:
             song.set_status(db.DownloadStatus.PENDING)
     events.DownloadsRequested(len(songs)).post()
-    DownloadManager.download(songs)
+    DownloadManager.download(songs, progress)
 
 
 def load_cached_songs() -> list[UsdbSong] | None:
@@ -232,9 +234,12 @@ def synchronize_sync_meta_folder(
     _SyncMetaFolderSyncer.new(folder, keep_unknown_song_ids, progress).process()
 
 
-def find_local_songs(directory: Path) -> set[SongId]:
+def find_local_songs(directory: Path, progress: utils.ProgressProxy) -> set[SongId]:
+    progress.reset("Searching for .txt files.")
+    paths = list(directory.glob("**/*.txt"))
     matched_rows: set[SongId] = set()
-    for path in directory.glob("**/*.txt"):
+    progress.reset("Parsing .txt files.", maximum=len(paths))
+    for path in paths:
         if headers := try_parse_txt_headers(path):
             name = headers.artist_title_str()
             if matches := list(
@@ -247,6 +252,7 @@ def find_local_songs(directory: Path) -> set[SongId]:
                 matched_rows.update(matches)
             else:
                 logger.warning(f"No matches for '{name}'.")
+        progress.value += 1
     return matched_rows
 
 

@@ -60,7 +60,7 @@ class ProgressDialog(QtWidgets.QProgressDialog):
 
     _allow_close = False
 
-    def __init__(self, label: str) -> None:
+    def __init__(self, label: str = "Processing.") -> None:
         super().__init__(parent=None, labelText=label, minimum=0, maximum=0)
         self.setCancelButton(None)
         self.setWindowModality(QtCore.Qt.WindowModality.ApplicationModal)
@@ -97,12 +97,11 @@ class ProgressDialog(QtWidgets.QProgressDialog):
 
 
 def run_with_progress(
-    label: str,
     task: Callable[[utils.ProgressProxy], T],
     on_done: Callable[[Result[T]], Any] = lambda res: res.result(),
 ) -> None:
     """Run a task on a background thread while a modal progress dialog is shown."""
-    dialog = ProgressDialog(label)
+    dialog = ProgressDialog()
     done = False
 
     def wrapped_on_done(result: Result[T]) -> None:

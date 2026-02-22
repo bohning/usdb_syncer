@@ -296,8 +296,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
 
         if directory := QFileDialog.getExistingDirectory(self, "Select Song Directory"):
             run_with_progress(
-                "Reading song txts ...",
-                lambda _: song_routines.find_local_songs(Path(directory)),
+                lambda p: song_routines.find_local_songs(Path(directory), p),
                 on_done=on_done,
             )
 
@@ -312,7 +311,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
             result.result()
 
         self.table.begin_reset()
-        run_with_progress("Fetching song list ...", task=task, on_done=on_done)
+        run_with_progress(task=task, on_done=on_done)
 
     def _select_song_dir(self) -> None:
         song_dir = QFileDialog.getExistingDirectory(self, "Select Song Directory")
@@ -332,7 +331,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
             UsdbSong.clear_cache()
             events.SongDirChanged(path).post()
 
-        run_with_progress("Reading meta files ...", task=task, on_done=on_done)
+        run_with_progress(task=task, on_done=on_done)
 
     def _import_usdb_ids_from_files(self) -> None:
         file_list = QFileDialog.getOpenFileNames(
@@ -441,8 +440,8 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         self.menu_open_song_in.popup(pos)
 
     def closeEvent(self, event: QCloseEvent) -> None:  # noqa: N802
-        def cleanup(_: utils.ProgressProxy) -> None:
-            DownloadManager.quit()
+        def cleanup(progress: utils.ProgressProxy) -> None:
+            DownloadManager.quit(progress)
             webserver.stop()
 
         def on_done(result: progress.Result) -> None:
@@ -460,7 +459,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         else:
             logger.debug("Close event deferred, cleaning up ...")
             events.Shutdown().post()
-            run_with_progress("Shutting down ...", cleanup, on_done)
+            run_with_progress(cleanup, on_done)
             event.ignore()
 
     def _restore_state(self) -> None:
