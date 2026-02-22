@@ -327,7 +327,9 @@ class SplashScreen(QtWidgets.QSplashScreen):
 
     def finish(self, w: QtWidgets.QWidget) -> None:
         self._timer.stop()
+        self._timer.deleteLater()
         super().finish(w)
+        self.deleteLater()
 
 
 def _init_app() -> QtWidgets.QApplication:

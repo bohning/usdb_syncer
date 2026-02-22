@@ -58,6 +58,8 @@ class _ResultSignal(QtCore.QObject):
 class ProgressDialog(QtWidgets.QProgressDialog):
     """Progress dialog that cannot be closed by the user."""
 
+    _allow_close = False
+
     def __init__(self, label: str) -> None:
         super().__init__(parent=None, labelText=label, minimum=0, maximum=0)
         self.setCancelButton(None)
@@ -71,7 +73,10 @@ class ProgressDialog(QtWidgets.QProgressDialog):
         self._timer.start()
 
     def closeEvent(self, event: QtGui.QCloseEvent) -> None:  # noqa: N802
-        event.ignore()
+        if self._allow_close:
+            super().closeEvent(event)
+        else:
+            event.ignore()
 
     def reject(self) -> None:
         pass
@@ -86,7 +91,8 @@ class ProgressDialog(QtWidgets.QProgressDialog):
     def finish(self) -> None:
         self._timer.stop()
         self._timer.deleteLater()
-        self.setValue(self.maximum())
+        self._allow_close = True
+        self.close()
         self.deleteLater()
 
 
@@ -131,11 +137,11 @@ def run_background_task(
         signal.result.emit()
 
     def wrapped_on_done() -> None:
-        assert result
-        on_done(result)
         # prevent Qt from cleaning up the signal before it's done
         # https://bugreports.qt.io/browse/PYSIDE-2921
-        _ = signal
+        signal.deleteLater()
+        assert result
+        on_done(result)
 
     signal.result.connect(wrapped_on_done)
     QtCore.QThreadPool.globalInstance().start(wrapped_task)
