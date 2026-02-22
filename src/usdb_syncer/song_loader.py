@@ -62,14 +62,23 @@ class DownloadManager:
     def download(cls, songs: list[UsdbSong], progress: utils.ProgressProxy) -> None:
         progress.reset("Initializing downloads.", maximum=len(songs))
         options = download_options.download_options()
+        started = []
         for song in songs:
+            if song.sync_meta and song.sync_meta.pinned:
+                continue
             if song.song_id in cls._jobs:
                 cls._jobs[song.song_id].logger.warning("Already downloading!")
                 continue
+            with db.transaction():
+                song.set_status(DownloadStatus.PENDING)
             cls._jobs[song.song_id] = job = _SongLoader(song, options)
             job.pause = cls._pause
             cls._threadpool().start(job)
+            started.append(song.song_id)
             progress.value += 1
+        if started:
+            events.DownloadsRequested(len(started)).post()
+            events.SongsChanged(started).post()
 
     @classmethod
     def abort(cls, songs: list[SongId], progress: utils.ProgressProxy) -> None:

@@ -28,7 +28,7 @@ from usdb_syncer.gui.song_table.table_model import TableModel
 from usdb_syncer.logger import song_logger
 from usdb_syncer.song_loader import DownloadManager
 from usdb_syncer.song_txt import SongTxt
-from usdb_syncer.usdb_song import DownloadStatus, UsdbSong
+from usdb_syncer.usdb_song import UsdbSong
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable, Iterator
@@ -168,24 +168,18 @@ class SongTable:
         ids = self._model.ids_for_rows(rows)
         progress.reset("Collecting selected songs.", maximum=len(ids))
         to_download: list[UsdbSong] = []
-        with db.transaction():
-            for song_id in ids:
-                song = UsdbSong.get(song_id)
-                assert song
-                if song.sync_meta and song.sync_meta.pinned:
-                    song_logger(song.song_id).info(
-                        "Not downloading song as it is pinned."
-                    )
-                    continue
-                if song.status.can_be_downloaded():
-                    self.stop_playing_local_song(song)
-                    previewer.Previewer.close_song(song.song_id)
-                    song.set_status(DownloadStatus.PENDING)
-                    to_download.append(song)
-                progress.value += 1
-        events.SongsChanged([s.song_id for s in to_download]).post()
+        for song_id in ids:
+            song = UsdbSong.get(song_id)
+            assert song
+            if song.sync_meta and song.sync_meta.pinned:
+                song_logger(song.song_id).info("Not downloading song as it is pinned.")
+                continue
+            if song.status.can_be_downloaded():
+                self.stop_playing_local_song(song)
+                previewer.Previewer.close_song(song.song_id)
+                to_download.append(song)
+            progress.value += 1
         if to_download:
-            events.DownloadsRequested(len(to_download)).post()
             DownloadManager.download(to_download, progress)
 
     def abort_selected_downloads(self) -> None:

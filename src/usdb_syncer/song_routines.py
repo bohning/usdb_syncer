@@ -19,7 +19,6 @@ from usdb_syncer import (
     data,
     db,
     errors,
-    events,
     settings,
     song_txt,
     usdb_scraper,
@@ -118,10 +117,6 @@ def initialize_auto_downloads(
     songs = [s for i in download_ids if (s := UsdbSong.get(i))]
     if not songs:
         return
-    with db.transaction():
-        for song in songs:
-            song.set_status(db.DownloadStatus.PENDING)
-    events.DownloadsRequested(len(songs)).post()
     DownloadManager.download(songs, progress)
 
 
