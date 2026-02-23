@@ -687,7 +687,7 @@ class SupportedApps(StrEnum):
             case SupportedApps.VOCALUXE:
                 return "Vocaluxe"
             case SupportedApps.YASS_RELOADED:
-                return "yass"
+                return "Yass-Reloaded"
             case _ as unreachable:
                 assert_never(unreachable)
 

@@ -6,6 +6,10 @@
 
 - Custom data values can now be displayed in dedicated columns. For configuration, rightclick the relevant custom data key in the sidebar tree.
 
+## Fixes
+
+- Fixed launching latest YASS Reloaded via the Syncer.
+
 <!-- 0.21.0 -->
 
 # Changes
