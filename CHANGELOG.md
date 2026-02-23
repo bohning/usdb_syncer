@@ -16,6 +16,7 @@
 
 - Fixed song sample playback via mouse click.
 - Fixed dialogs leaking memory.
+- Fixed launching latest YASS Reloaded via the Syncer.
 
 <!-- 0.20.0 -->
 
