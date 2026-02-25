@@ -3,6 +3,7 @@
 from collections import defaultdict
 from collections.abc import Iterable
 from dataclasses import dataclass
+from functools import cache
 from typing import assert_never
 
 from reportlab.lib import colors
@@ -20,12 +21,16 @@ from usdb_syncer.gui.song_table.column import Column
 from usdb_syncer.settings import ReportPDFOrientation, ReportPDFPagesize
 from usdb_syncer.usdb_song import UsdbSong
 
-for font in (
-    fonts.NOTOSANS_BLACK_TTF,
-    fonts.NOTOSANS_BOLD_TTF,
-    fonts.NOTOSANS_WITH_SYMBOLS2_REGULAR_TTF,
-):
-    pdfmetrics.registerFont(TTFont(font.name, font))
+
+@cache
+def _ensure_fonts_registered() -> None:
+    """Register PDF fonts on first use instead of at import time."""
+    for font in (
+        fonts.NOTOSANS_BLACK_TTF,
+        fonts.NOTOSANS_BOLD_TTF,
+        fonts.NOTOSANS_WITH_SYMBOLS2_REGULAR_TTF,
+    ):
+        pdfmetrics.registerFont(TTFont(font.name, font))
 
 
 class Bookmark(Flowable):
@@ -53,6 +58,7 @@ def generate_report_pdf(
     base_font_size: int = 10,
     optional_info: list[Column] | None = None,
 ) -> str:
+    _ensure_fonts_registered()
     optional_info = optional_info or []
     pagesize = _get_pagesize(size, orientation)
 
