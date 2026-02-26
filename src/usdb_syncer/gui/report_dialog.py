@@ -15,7 +15,7 @@ from PySide6.QtWidgets import (
 )
 
 from usdb_syncer import SongId, db, settings, utils
-from usdb_syncer.gui import gui_utils, progress
+from usdb_syncer.gui import gui_utils
 from usdb_syncer.gui.forms.ReportDialog import Ui_Dialog
 from usdb_syncer.gui.pdf import generate_report_pdf
 from usdb_syncer.gui.progress import run_with_progress
@@ -120,10 +120,9 @@ class ReportDialog(Ui_Dialog, QDialog):
         settings.set_report_json_indent(self.spinBox_json_indent.value())
 
     def _generate_report_pdf(self) -> bool:
-        def on_done(result: progress.Result) -> None:
-            path = result.result()
+        def on_done(path: str) -> None:
             logger.info(f"PDF report created at {path}.")
-            utils.open_path_or_file(path)
+            utils.open_path_or_file(Path(path))
 
         songs: Iterable[SongId] = []
         if self.radioButton_locally_available_songs.isChecked():
@@ -173,8 +172,8 @@ class ReportDialog(Ui_Dialog, QDialog):
         return False
 
     def _generate_report_json(self) -> bool:
-        def on_done(result: progress.Result) -> None:
-            path, num_of_songs = result.result()
+        def on_done(result: tuple[Path, int]) -> None:
+            path, num_of_songs = result
             logger.info(f"JSON report created at {path} ({num_of_songs} songs).")
 
         songs: Iterable[SongId] = []

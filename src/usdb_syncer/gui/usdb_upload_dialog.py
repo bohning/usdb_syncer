@@ -140,7 +140,7 @@ class UsdbUploadDialog(Ui_Dialog, QDialog):
                     song.sync_meta.txt.file.fname,
                     song_logger(song.song_id),
                 )
-                progress.value += 1
+                progress.increase()
 
         num_songs = len(self.submittable)
         progress.run_with_progress(task)

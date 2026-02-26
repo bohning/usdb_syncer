@@ -2,6 +2,7 @@
 
 from collections.abc import Callable
 from pathlib import Path
+from typing import Any
 
 from PySide6.QtGui import QCloseEvent, QShowEvent
 from PySide6.QtWidgets import QFileDialog, QMainWindow
@@ -13,7 +14,6 @@ from usdb_syncer.gui import (
     external_deps_dialog,
     gui_utils,
     icons,
-    progress,
     progress_bar,
     status_bar,
 )
@@ -289,8 +289,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
                     self.plainTextEdit.appendPlainText(message)
 
     def _select_local_songs(self) -> None:
-        def on_done(result: progress.Result[set[SongId]]) -> None:
-            songs = result.result()
+        def on_done(songs: set[SongId]) -> None:
             self.table.set_selection_to_song_ids(songs)
             logger.info(f"Selected {len(songs)} songs.")
 
@@ -305,13 +304,19 @@ class MainWindow(Ui_MainWindow, QMainWindow):
             folder = settings.get_song_dir()
             song_routines.load_available_songs_and_sync_meta(folder, True, progress)
 
-        def on_done(result: progress.Result[None]) -> None:
+        def on_done(_: None) -> None:
             self.table.end_reset()
             self.table.search_songs()
-            result.result()
+
+        def on_error(error: Exception) -> None:
+            self.table.end_reset()
+            raise error
+
+        def on_abort() -> None:
+            self.table.end_reset()
 
         self.table.begin_reset()
-        run_with_progress(task=task, on_done=on_done)
+        run_with_progress(task, on_done, on_error, on_abort)
 
     def _select_song_dir(self) -> None:
         song_dir = QFileDialog.getExistingDirectory(self, "Select Song Directory")
@@ -324,8 +329,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
                 song_routines.synchronize_sync_meta_folder(path, True, progress)
                 SyncMeta.reset_active(path)
 
-        def on_done(result: progress.Result[None]) -> None:
-            result.result()
+        def on_done(_: None) -> None:
             self.lineEdit_song_dir.setText(str(path))
             settings.set_song_dir(path)
             UsdbSong.clear_cache()
@@ -444,8 +448,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
             DownloadManager.quit(progress)
             webserver.stop()
 
-        def on_done(result: progress.Result) -> None:
-            result.log_error()
+        def on_done(*_args: Any) -> None:
             self.table.save_state()
             self._save_state()
             db.close()
@@ -459,7 +462,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         else:
             logger.debug("Close event deferred, cleaning up ...")
             events.Shutdown().post()
-            run_with_progress(cleanup, on_done)
+            run_with_progress(cleanup, on_done=on_done, on_error=on_done)
             event.ignore()
 
     def _restore_state(self) -> None:

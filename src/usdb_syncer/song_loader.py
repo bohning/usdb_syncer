@@ -33,7 +33,7 @@ from usdb_syncer import (
 from usdb_syncer.custom_data import CustomData
 from usdb_syncer.db import JobStatus, ResourceKind
 from usdb_syncer.download_options import AudioOptions, VideoOptions
-from usdb_syncer.logger import Logger, logger, song_logger
+from usdb_syncer.logger import Logger, song_logger
 from usdb_syncer.meta_tags import ImageMetaTags
 from usdb_syncer.postprocessing import write_audio_tags, write_video_tags
 from usdb_syncer.resource_dl import ImageKind
@@ -63,39 +63,44 @@ class DownloadManager:
         progress.reset("Initializing downloads.", maximum=len(songs))
         options = download_options.download_options()
         started = []
-        for song in songs:
-            if song.sync_meta and song.sync_meta.pinned:
-                continue
-            if song.song_id in cls._jobs:
-                cls._jobs[song.song_id].logger.warning("Already downloading!")
-                continue
-            with db.transaction():
-                song.set_status(DownloadStatus.PENDING)
-            cls._jobs[song.song_id] = job = _SongLoader(song, options)
-            job.pause = cls._pause
-            cls._threadpool().start(job)
-            started.append(song.song_id)
-            progress.value += 1
-        if started:
-            events.DownloadsRequested(len(started)).post()
-            events.SongsChanged(started).post()
+        with db.transaction(commit_on_error=True):
+            try:
+                for song in songs:
+                    if song.sync_meta and song.sync_meta.pinned:
+                        continue
+                    if song.song_id in cls._jobs:
+                        cls._jobs[song.song_id].logger.warning("Already downloading!")
+                        continue
+                    song.set_status(DownloadStatus.PENDING)
+                    cls._jobs[song.song_id] = job = _SongLoader(song, options)
+                    job.pause = cls._pause
+                    cls._threadpool().start(job)
+                    started.append(song.song_id)
+                    progress.increase()
+            finally:
+                if started:
+                    events.DownloadsRequested(len(started)).post()
+                    events.SongsChanged(started).post()
 
     @classmethod
     def abort(cls, songs: list[SongId], progress: utils.ProgressProxy) -> None:
         progress.reset("Aborting downloads.", maximum=len(songs))
         changed = []
-        for song in songs:
-            if (job := cls._jobs.get(song)) and shiboken6.isValid(job):
-                if cls._threadpool().tryTake(job):
-                    job.logger.info("Download aborted by user request.")
-                    with db.transaction():
-                        job.song.set_status(job.song.get_resetted_status())
-                        changed.append(job.song_id)
-                    events.DownloadFinished(job.song_id).post()
-                else:
-                    job.abort = True
-            progress.value += 1
-        events.SongsChanged(changed).post()
+        with db.transaction(commit_on_error=True):
+            try:
+                for song in songs:
+                    if (job := cls._jobs.get(song)) and shiboken6.isValid(job):
+                        if cls._threadpool().tryTake(job):
+                            job.logger.info("Download aborted by user request.")
+                            job.song.set_status(job.song.get_resetted_status())
+                            changed.append(job.song_id)
+                        else:
+                            job.abort = True
+                    progress.increase()
+            finally:
+                if changed:
+                    events.SongsChanged(changed).post()
+                    events.DownloadsFinished(changed).post()
 
     @classmethod
     def set_pause(cls, pause: bool) -> None:
@@ -105,13 +110,11 @@ class DownloadManager:
 
     @classmethod
     def quit(cls, progress: utils.ProgressProxy) -> None:
-        progress.reset("Quitting downloads.", maximum=len(cls._jobs))
-        if cls._pool:
-            logger.debug(f"Quitting {len(cls._jobs)} downloads.")
-            for job in cls._jobs.values():
-                job.abort = True
-            cls._pool.waitForDone()
-            progress.value += 1
+        if not cls._pool:
+            return
+        cls.abort(list(cls._jobs), progress)
+        progress.reset("Waiting for downloads to stop.")
+        cls._pool.waitForDone()
 
     @classmethod
     def _threadpool(cls) -> QtCore.QThreadPool:
@@ -119,13 +122,13 @@ class DownloadManager:
             cls._pool = QtCore.QThreadPool()
             if threads := settings.get_throttling_threads():
                 cls._pool.setMaxThreadCount(threads)
-            events.DownloadFinished.subscribe(cls._remove_job)
+            events.DownloadsFinished.subscribe(cls._remove_job)
         return cls._pool
 
     @classmethod
-    def _remove_job(cls, event: events.DownloadFinished) -> None:
-        if event.song_id in cls._jobs:
-            del cls._jobs[event.song_id]
+    def _remove_job(cls, event: events.DownloadsFinished) -> None:
+        for song_id in event.song_ids:
+            cls._jobs.pop(song_id, None)
 
 
 @attrs.define(kw_only=True)
@@ -412,7 +415,7 @@ class _SongLoader(QtCore.QRunnable):
                     self.logger.info(f"Trashing local song {path}")
                     utils.trash_or_delete_path(path)
                 events.SongDeleted(self.song_id).post()
-                events.DownloadFinished(self.song_id).post()
+                events.DownloadsFinished([self.song_id]).post()
                 return
             except Exception:
                 self.logger.exception(
@@ -427,7 +430,7 @@ class _SongLoader(QtCore.QRunnable):
                 self.song.upsert()
                 self.song.set_status(status)
         events.SongsChanged([self.song_id]).post()
-        events.DownloadFinished(self.song_id).post()
+        events.DownloadsFinished([self.song_id]).post()
 
     def _run_inner(self) -> UsdbSong:
         self._check_flags()

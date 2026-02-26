@@ -98,10 +98,10 @@ class DownloadsRequested(SubscriptableEvent):
 
 
 @attrs.define(slots=False)
-class DownloadFinished(SubscriptableEvent):
-    """Sent when a song download has finished."""
+class DownloadsFinished(SubscriptableEvent):
+    """Sent when song downloads have finished."""
 
-    song_id: SongId
+    song_ids: list[SongId]
 
 
 # files

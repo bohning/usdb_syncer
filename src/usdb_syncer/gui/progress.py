@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING, Any, Generic, TypeVar
 import attrs
 from PySide6 import QtCore, QtGui, QtWidgets
 
-from usdb_syncer import db, utils
+from usdb_syncer import db, errors, utils
 from usdb_syncer.logger import logger
 
 if TYPE_CHECKING:
@@ -62,11 +62,15 @@ class ProgressDialog(QtWidgets.QProgressDialog):
 
     def __init__(self, label: str = "Processing.") -> None:
         super().__init__(parent=None, labelText=label, minimum=0, maximum=0)
-        self.setCancelButton(None)
+        if cancel_button := self.findChild(QtWidgets.QPushButton):
+            cancel_button.clicked.disconnect(self.canceled)
+            cancel_button.clicked.connect(self._on_cancel)
         self.setWindowModality(QtCore.Qt.WindowModality.ApplicationModal)
         self.setWindowTitle("USDB Syncer")
         self.setMinimumDuration(_MINIMUM_DURATION_MS)
         self.setValue(0)
+        self.setAutoClose(False)
+        self.setAutoReset(False)
         self.progress = utils.ProgressProxy(label)
         self._timer = QtCore.QTimer(self, singleShot=False, interval=100)
         self._timer.timeout.connect(self._set_progress)
@@ -81,12 +85,15 @@ class ProgressDialog(QtWidgets.QProgressDialog):
     def reject(self) -> None:
         pass
 
+    def _on_cancel(self) -> None:
+        self.progress.set_abort()
+        if cancel_button := self.findChild(QtWidgets.QPushButton):
+            cancel_button.setEnabled(False)
+
     def _set_progress(self) -> None:
-        self.setLabelText(self.progress.label)
-        self.setMaximum(self.progress.maximum)
-        if self.progress.maximum > 0:
-            # setting value to maximum would close the dialog
-            self.setValue(min(self.progress.value, self.progress.maximum - 1))
+        self.setLabelText(self.progress.label())
+        self.setMaximum(self.progress.maximum())
+        self.setValue(self.progress.value())
 
     def finish(self) -> None:
         self._timer.stop()
@@ -98,19 +105,37 @@ class ProgressDialog(QtWidgets.QProgressDialog):
 
 def run_with_progress(
     task: Callable[[utils.ProgressProxy], T],
-    on_done: Callable[[Result[T]], Any] = lambda res: res.result(),
+    on_done: Callable[[T], Any] | None = None,
+    on_error: Callable[[Exception], Any] | None = None,
+    on_abort: Callable[[], Any] | None = None,
 ) -> None:
     """Run a task on a background thread while a modal progress dialog is shown."""
     dialog = ProgressDialog()
     done = False
 
-    def wrapped_on_done(result: Result[T]) -> None:
+    def finish() -> None:
         nonlocal done
         done = True
         dialog.finish()
-        on_done(result)
 
-    run_background_task(dialog.progress, task, wrapped_on_done)
+    def wrapped_on_done(result: T) -> None:
+        finish()
+        if on_done:
+            on_done(result)
+
+    def wrapped_on_error(result: Exception) -> None:
+        finish()
+        if on_error:
+            on_error(result)
+
+    def wrapped_on_abort() -> None:
+        finish()
+        if on_abort:
+            on_abort()
+
+    run_background_task(
+        dialog.progress, task, wrapped_on_done, wrapped_on_error, wrapped_on_abort
+    )
     start = time.time()
     while not done and (time.time() - start) * 1000 < _MINIMUM_DURATION_MS:
         # block until task is completed or dialog shows
@@ -120,11 +145,13 @@ def run_with_progress(
 def run_background_task(
     progress: utils.ProgressProxy,
     task: Callable[[utils.ProgressProxy], T],
-    on_done: Callable[[Result[T]], Any] = lambda res: res.result(),
+    on_done: Callable[[T], Any] | None = None,
+    on_error: Callable[[Exception], Any] | None = None,
+    on_abort: Callable[[], Any] | None = None,
 ) -> None:
     """Run a task on a background thread."""
     signal = _ResultSignal()
-    result: Result | None = None
+    result: Result[T] | None = None
 
     def wrapped_task() -> None:
         nonlocal result
@@ -140,7 +167,19 @@ def run_background_task(
         # https://bugreports.qt.io/browse/PYSIDE-2921
         signal.deleteLater()
         assert result
-        on_done(result)
+        try:
+            res = result.result()
+        except errors.AbortError:
+            if on_abort:
+                on_abort()
+        except Exception as error:
+            if on_error:
+                on_error(error)
+            else:
+                raise
+        else:
+            if on_done:
+                on_done(res)
 
     signal.result.connect(wrapped_on_done)
     QtCore.QThreadPool.globalInstance().start(wrapped_task)

@@ -395,7 +395,7 @@ def get_updated_songs_from_usdb(
         for song in batch:
             if song.is_new_since_last_update(last_update):
                 available_songs[song.song_id] = song
-        progress.label = f"Fetching updates from USDB: {len(available_songs)}"
+        progress.reset(f"Fetching updates from USDB: {len(available_songs)}")
         if (
             len(batch) < Usdb.MAX_SONGS_PER_PAGE
             or batch[0].usdb_mtime < last_update.usdb_mtime
@@ -414,7 +414,7 @@ def get_all_songs_from_usdb(
     progress.reset("Fetching songs from USDB.", maximum=N_USDB_SONGS_APPROX)
     for batch in _get_songs_from_usdb("id", False, session=session):
         available_songs.extend(batch)
-        progress.value += len(batch)
+        progress.increase(len(batch))
     logger.info(f"Fetched {len(available_songs)} songs from USDB.")
     return available_songs
 

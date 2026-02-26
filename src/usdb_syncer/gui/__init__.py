@@ -273,8 +273,7 @@ def _load_main_window(mw: MainWindow) -> None:
     with db.transaction():
         db.delete_session_data()
 
-    def on_done(result: progress.Result) -> None:
-        result.result()
+    def on_done(_result: None) -> None:
         splash.progress.reset("Setting up GUI.")
         mw.tree.populate()
         if default_search := settings.SavedSearch.get_default():
@@ -321,7 +320,7 @@ class SplashScreen(QtWidgets.QSplashScreen):
         self._timer.start()
 
     def _show_message(self) -> None:
-        self.showMessage(self.progress.label, color=Qt.GlobalColor.gray)
+        self.showMessage(self.progress.label(), color=Qt.GlobalColor.gray)
 
     def finish(self, w: QtWidgets.QWidget) -> None:
         self._timer.stop()

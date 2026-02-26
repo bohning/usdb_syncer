@@ -74,7 +74,10 @@ class TableModel(QAbstractTableModel):
 
     def _on_songs_changed(self, event: events.SongsChanged) -> None:
         if len(event.song_ids) > _SINGLE_ROW_UPDATE_THRESHOLD:
-            self.reset()
+            self.dataChanged.emit(
+                self.index(0, 0),
+                self.index(self.rowCount() - 1, self.columnCount() - 1),
+            )
         else:
             for song_id in event.song_ids:
                 if (row := self._rows.get(song_id)) is not None:

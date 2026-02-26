@@ -178,7 +178,7 @@ class _SyncMetaFolderSyncer:
         self.progress.reset("Checking .usdb files.", maximum=len(paths))
         for path in paths:
             self._process_path(path)
-            self.progress.value += 1
+            self.progress.increase()
         self.progress.reset("Writing changes to database.")
         SyncMeta.delete_many_in_folder(
             self.folder, tuple(self.db_metas.keys() - self.found_metas)
@@ -247,7 +247,7 @@ def find_local_songs(directory: Path, progress: utils.ProgressProxy) -> set[Song
                 matched_rows.update(matches)
             else:
                 logger.warning(f"No matches for '{name}'.")
-        progress.value += 1
+        progress.increase()
     return matched_rows
 
 

@@ -178,7 +178,7 @@ class SongTable:
                 self.stop_playing_local_song(song)
                 previewer.Previewer.close_song(song.song_id)
                 to_download.append(song)
-            progress.value += 1
+            progress.increase()
         if to_download:
             DownloadManager.download(to_download, progress)
 
