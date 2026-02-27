@@ -280,7 +280,7 @@ class _Context:
                 if (
                     old
                     and (old_file := old.file)
-                    and old_file.is_in_sync(current.parent)
+                    and old_file.is_in_sync(current.parent, force_check=True)
                 ):
                     out.resource = old_file.resource
                     out.old_fname = old_file.fname

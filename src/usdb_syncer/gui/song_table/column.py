@@ -16,6 +16,7 @@ from usdb_syncer.gui.icons import Icon
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
+    from pathlib import Path
 
     from PySide6.QtGui import QIcon
 
@@ -226,23 +227,23 @@ class Column(ColumnBase, enum.Enum):
             case Column.TXT:
                 if not (sync_meta and (txt := sync_meta.txt)):
                     return None
-                icon = status_icon(txt)
+                icon = status_icon(txt, sync_meta.path.parent)
             case Column.AUDIO:
                 if not (sync_meta and (audio := sync_meta.audio)):
                     return None
-                icon = status_icon(audio)
+                icon = status_icon(audio, sync_meta.path.parent)
             case Column.VIDEO:
                 if not (sync_meta and (video := sync_meta.video)):
                     return None
-                icon = status_icon(video)
+                icon = status_icon(video, sync_meta.path.parent)
             case Column.COVER:
                 if not (sync_meta and (cover := sync_meta.cover)):
                     return None
-                icon = status_icon(cover)
+                icon = status_icon(cover, sync_meta.path.parent)
             case Column.BACKGROUND:
                 if not (sync_meta and (background := sync_meta.background)):
                     return None
-                icon = status_icon(background)
+                icon = status_icon(background, sync_meta.path.parent)
             case Column.PINNED:
                 if not (sync_meta and sync_meta.pinned):
                     return None
@@ -300,18 +301,28 @@ class CustomColumn(ColumnBase):
         _ColumnRegistry.columns.append(cls.new(key))
 
 
-def status_icon(resource: Resource) -> Icon:
+def status_icon(resource: Resource, folder: Path) -> Icon:
     match resource.status:
         case db.JobStatus.SUCCESS | db.JobStatus.SUCCESS_UNCHANGED:
-            icon = Icon.SUCCESS
+            icon = (
+                Icon.SUCCESS if resource.file_in_sync(folder) else Icon.SUCCESS_CHANGES
+            )
         case db.JobStatus.SKIPPED_DISABLED:
             icon = Icon.SKIPPED_DISABLED
         case db.JobStatus.SKIPPED_UNAVAILABLE:
             icon = Icon.SKIPPED_UNAVAILABLE
         case db.JobStatus.FALLBACK:
-            icon = Icon.FALLBACK
+            icon = (
+                Icon.FALLBACK
+                if resource.file_in_sync(folder)
+                else Icon.FALLBACK_CHANGES
+            )
         case db.JobStatus.FAILURE_EXISTING:
-            icon = Icon.FAILURE_EXISTING
+            icon = (
+                Icon.FAILURE_EXISTING
+                if resource.file_in_sync(folder)
+                else Icon.FAILURE_EXISTING_CHANGES
+            )
         case db.JobStatus.FAILURE:
             icon = Icon.FAILURE
         case _ as unreachable:
