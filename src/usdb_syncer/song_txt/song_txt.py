@@ -217,12 +217,14 @@ class SongTxt:
                     self.headers.main_language(), self.logger
                 )
 
+    def minimum_song_seconds(self) -> int:
+        """Return the minimum song length in seconds based on last beat, BPM and GAP."""
+        beats_secs = self.headers.bpm.beats_to_secs(self.notes.end())
+        return round(beats_secs + self.headers.gap / 1000)
+
     def minimum_song_length(self) -> str:
         """Return the minimum song length based on last beat, BPM and GAP."""
-        beats_secs = self.headers.bpm.beats_to_secs(self.notes.end())
-        minimum_secs = round(beats_secs + self.headers.gap / 1000)
-        minutes, seconds = divmod(minimum_secs, 60)
-
+        minutes, seconds = divmod(self.minimum_song_seconds(), 60)
         return f"{minutes:02d}:{seconds:02d}"
 
     def medley_duration(self) -> int | None:

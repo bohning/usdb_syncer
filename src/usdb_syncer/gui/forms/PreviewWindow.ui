@@ -213,6 +213,13 @@
        </spacer>
       </item>
       <item>
+       <widget class="QLabel" name="label_no_audio">
+        <property name="text">
+         <string>Download this song to enable playback!</string>
+        </property>
+       </widget>
+      </item>
+      <item>
        <layout class="QGridLayout" name="gridLayout">
         <item row="2" column="2">
          <widget class="QLabel" name="label_ticks_volume">
