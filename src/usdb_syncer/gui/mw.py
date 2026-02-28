@@ -534,7 +534,6 @@ class MainWindow(Ui_MainWindow, QMainWindow):
             self.action_open_song_in_yass_reloaded,
             self.action_delete,
             self.action_pin,
-            self.action_preview,
             self.menu_custom_data,
         ):
             action.setEnabled(song.is_local())

@@ -9,7 +9,6 @@ from PySide6.QtGui import QPixmap, QResizeEvent
 from PySide6.QtWidgets import QDockWidget, QLabel, QSizePolicy
 
 from usdb_syncer import SongId, logger
-from usdb_syncer.constants import Usdb
 from usdb_syncer.gui import events as gui_events
 from usdb_syncer.usdb_song import UsdbSong
 
@@ -75,10 +74,7 @@ class ScaledCoverLabel(QLabel):
             self.set_cover(None)
             return
         worker = CoverLoader(
-            song.song_id,
-            self._signals,
-            song.cover_path() if song.is_local() else None,
-            None if song.is_local() else f"{Usdb.COVER_URL}{song.song_id:d}.jpg",
+            song.song_id, self._signals, song.cover_path(), song.cover_remote_url()
         )
         QThreadPool.globalInstance().start(worker)
 

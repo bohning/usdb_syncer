@@ -10,7 +10,7 @@ from typing import TYPE_CHECKING, Any, ClassVar
 import attrs
 from diff_match_patch import diff_match_patch
 
-from usdb_syncer import SongId, db
+from usdb_syncer import SongId, Usdb, db
 from usdb_syncer.db import DownloadStatus
 from usdb_syncer.logger import song_logger
 from usdb_syncer.song_txt import SongTxt
@@ -271,6 +271,9 @@ class UsdbSong:
         )
 
         return SongChanges(local_str, diff_remote, diff_local, builder)
+
+    def cover_remote_url(self) -> str:
+        return f"{Usdb.COVER_URL}{self.song_id:d}.jpg"
 
 
 def generate_remote_vs_local_diffs(

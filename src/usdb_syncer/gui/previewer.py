@@ -12,9 +12,9 @@ import soundfile
 from PySide6 import QtCore, QtGui, QtWidgets
 from PySide6.QtCore import Qt
 
-from usdb_syncer import SongId, events, subprocessing, utils
+from usdb_syncer import SongId, events, subprocessing, usdb_scraper, utils
+from usdb_syncer.gui import cover_widget, icons, theme
 from usdb_syncer.gui import events as gui_events
-from usdb_syncer.gui import icons, theme
 from usdb_syncer.gui.forms.PreviewWindow import Ui_MainWindow
 from usdb_syncer.gui.resources.audio import METRONOME_TICK_WAV
 from usdb_syncer.logger import logger as _logger
@@ -88,7 +88,12 @@ class Previewer(Ui_MainWindow, QtWidgets.QMainWindow):
     _DOUBLECLICK_DELAY_SECS = Seconds(_DOUBLECLICK_DELAY_MS / 1000)
 
     def __init__(
-        self, song_id: SongId | None, txt: SongTxt, audio: Path, cover: Path | None
+        self,
+        song_id: SongId | None,
+        txt: SongTxt,
+        audio: Path | None,
+        cover_path: Path | None,
+        cover_remote_url: str | None,
     ) -> None:
         super().__init__()
         self.song_id = song_id
@@ -99,7 +104,7 @@ class Previewer(Ui_MainWindow, QtWidgets.QMainWindow):
         self._state = _PlayState.new(txt, audio)
         self._player = _AudioPlayer.new(audio, self._state)
         self._setup_views()
-        self._set_song_info(txt, cover)
+        self._set_song_info(txt, cover_path, cover_remote_url)
         self._connect_ui_inputs()
         self._setup_timers()
         self._apply_theme(theme.Theme.from_settings())
@@ -111,8 +116,9 @@ class Previewer(Ui_MainWindow, QtWidgets.QMainWindow):
         cls,
         *,
         txt: SongTxt,
-        audio_path: Path,
+        audio_path: Path | None,
         cover_path: Path | None,
+        cover_remote_url: str | None,
         song_id: SongId | None,
     ) -> bool:
         if not sounddevice:
@@ -122,29 +128,31 @@ class Previewer(Ui_MainWindow, QtWidgets.QMainWindow):
             QtWidgets.QMessageBox.warning(None, "Aborted", _NO_DEVICES_MSG)
             return False
         if cls._instance:
-            cls._instance._change_song(song_id, txt, audio_path, cover_path)
+            cls._instance._change_song(
+                song_id, txt, audio_path, cover_path, cover_remote_url
+            )
             cls._instance.raise_()
         else:
-            cls._instance = cls(song_id, txt, audio_path, cover_path)
+            cls._instance = cls(song_id, txt, audio_path, cover_path, cover_remote_url)
             cls._instance.show()
         return True
 
     @classmethod
     def load_song(cls, song: UsdbSong) -> bool:
-        if not (txt_path := song.txt_path()) or not (
-            txt := SongTxt.try_from_file(txt_path, song_logger(song.song_id))
-        ):
+        logger = song_logger(song.song_id)
+        if txt_path := song.txt_path():
+            txt = SongTxt.try_from_file(txt_path, logger)
+        else:
+            txt_str = usdb_scraper.get_notes(song.song_id, logger)
+            txt = SongTxt.try_parse(txt_str, logger)
+        if not txt:
             QtWidgets.QMessageBox.warning(None, "Aborted", "Txt file is invalid!")
-            return False
-        if not (audio_path := song.audio_path()):
-            QtWidgets.QMessageBox.warning(
-                None, "Aborted", "Song must have txt and audio files!"
-            )
             return False
         return cls.load(
             txt=txt,
-            audio_path=audio_path,
+            audio_path=song.audio_path(),
             cover_path=song.cover_path(),
+            cover_remote_url=song.cover_remote_url(),
             song_id=song.song_id,
         )
 
@@ -153,23 +161,22 @@ class Previewer(Ui_MainWindow, QtWidgets.QMainWindow):
         if not (txt := SongTxt.try_from_file(txt_path, _logger)):
             QtWidgets.QMessageBox.warning(None, "Aborted", "Txt file is invalid!")
             return False
-        if not (audio_file := txt.headers.audio or txt.headers.mp3):
-            QtWidgets.QMessageBox.warning(
-                None, "Aborted", "Song txt does not define an audio source!"
-            )
-            return False
-        if not (audio_path := txt_path.parent / audio_file).is_file():
-            QtWidgets.QMessageBox.warning(
-                None, "Aborted", f"Audio source '{audio_path}' not found!"
-            )
-            return False
+        if (
+            not (audio_file := txt.headers.audio or txt.headers.mp3)
+            or not (audio_path := txt_path.parent / audio_file).is_file()
+        ):
+            audio_path = None
         if (
             not txt.headers.cover
             or not (cover_path := txt_path.parent / txt.headers.cover).is_file()
         ):
             cover_path = None
         return cls.load(
-            txt=txt, audio_path=audio_path, cover_path=cover_path, song_id=None
+            txt=txt,
+            audio_path=audio_path,
+            cover_path=cover_path,
+            cover_remote_url=None,
+            song_id=None,
         )
 
     @classmethod
@@ -178,7 +185,12 @@ class Previewer(Ui_MainWindow, QtWidgets.QMainWindow):
             cls._instance.close()
 
     def _change_song(
-        self, song_id: SongId | None, txt: SongTxt, audio: Path, cover: Path | None
+        self,
+        song_id: SongId | None,
+        txt: SongTxt,
+        audio: Path | None,
+        cover_path: Path | None,
+        cover_remote_url: str | None,
     ) -> None:
         self.song_id = song_id
         self._player.stop()
@@ -186,7 +198,7 @@ class Previewer(Ui_MainWindow, QtWidgets.QMainWindow):
         self._setup_voice_selection(txt)
         self._state.change_song(txt, audio)
         self._player.change_source(audio)
-        self._set_song_info(txt, cover)
+        self._set_song_info(txt, cover_path, cover_remote_url)
 
     def _setup_voice_selection(self, txt: SongTxt) -> None:
         self.label_voice.setVisible(bool(txt.notes.track_2))
@@ -218,12 +230,16 @@ class Previewer(Ui_MainWindow, QtWidgets.QMainWindow):
         self.slider_pitch.valueChanged.connect(self._on_pitch_volume_changed)
         self.comboBox_voice.currentIndexChanged.connect(self._state.set_voice)
 
-    def _set_song_info(self, txt: SongTxt, cover: Path | None) -> None:
-        self._cover_label.setPixmap(QtGui.QPixmap(cover) if cover else QtGui.QPixmap())
+    def _set_song_info(
+        self, txt: SongTxt, cover_path: Path | None, cover_remote_url: str | None
+    ) -> None:
+        cover = cover_widget.load_cover(cover_path, cover_remote_url)
+        self._cover_label.setPixmap(cover)
         self.label_bpm.setText(f"#BPM: {txt.headers.bpm}")
         self.label_gap.setText(f"#GAP: {txt.headers.gap}")
         self.label_start.setText(f"#START: {txt.headers.start or '-'}")
         self.label_end.setText(f"#END: {txt.headers.end or '-'}")
+        self.label_no_audio.setVisible(not self._player._source)
 
     def _insert_cover_widget(self) -> None:
         self._cover_label = _SquareLabel("")
@@ -385,8 +401,10 @@ class _PlayState:
     pitch_volume: float = 0.0
 
     @classmethod
-    def new(cls, txt: SongTxt, audio: Path) -> _PlayState:
-        song_duration = Seconds(utils.get_media_duration(audio))
+    def new(cls, txt: SongTxt, audio: Path | None) -> _PlayState:
+        song_duration = Seconds(
+            utils.get_media_duration(audio) if audio else txt.minimum_song_seconds()
+        )
         track_list = list(filter(None, [txt.notes.track_1, txt.notes.track_2]))
         tracks_ = [
             [
@@ -415,7 +433,7 @@ class _PlayState:
         self._audio_note_iter = self._iter_notes()
         self.current_audio_note = next(self._audio_note_iter, None)
 
-    def change_song(self, txt: SongTxt, audio: Path) -> None:
+    def change_song(self, txt: SongTxt, audio: Path | None) -> None:
         new = _PlayState.new(txt, audio)
         self._tracks = new._tracks
         self.song_duration = new.song_duration
@@ -772,7 +790,7 @@ class _LineView(QtWidgets.QWidget):
 
 @attrs.define
 class _AudioPlayer:
-    _source: Path
+    _source: Path | None
     _state: _PlayState
     _tick_data: np.ndarray
     _stream: sounddevice.OutputStream | None = None
@@ -781,14 +799,14 @@ class _AudioPlayer:
     _STREAM_BUFFER_SIZE = Sample(2048)
 
     @classmethod
-    def new(cls, source: Path, state: _PlayState) -> _AudioPlayer:
+    def new(cls, source: Path | None, state: _PlayState) -> _AudioPlayer:
         data, _samplerate = soundfile.read(METRONOME_TICK_WAV, dtype="float32")
         player = cls(source=source, state=state, tick_data=data)
         player._start_ffmpeg(state.current_video_time)
         player._start_stream()
         return player
 
-    def change_source(self, source: Path) -> None:
+    def change_source(self, source: Path | None) -> None:
         self.stop()
         self._source = source
         self._start_ffmpeg(self._state.current_video_time)
@@ -809,6 +827,8 @@ class _AudioPlayer:
 
     def _start_ffmpeg(self, start: Seconds = Seconds(0.0)) -> None:
         self._state.set_current_sample_from_secs(start)
+        if self._source is None:
+            return
         cmd = [
             "ffmpeg",
             "-ss",
@@ -849,16 +869,16 @@ class _AudioPlayer:
         time: Any,  # noqa: ARG002
         status: sounddevice.CallbackFlags,  # noqa: ARG002
     ) -> None:
-        if (
-            not (self._process and self._process.stdout and self._stream)
-            or self._state.paused
-        ):
+        if not self._stream or self._state.paused:
             outdata[:] = np.zeros((samples, self._CHANNELS), dtype=np.int16)
             return
         bytes_needed = samples * self._CHANNELS * 2
-        data = self._process.stdout.read(bytes_needed)
-        if len(data) < bytes_needed:
-            raise sounddevice.CallbackStop
+        if self._process and self._process.stdout:
+            data = self._process.stdout.read(bytes_needed)
+            if len(data) < bytes_needed:
+                raise sounddevice.CallbackStop
+        else:
+            data = np.zeros((samples, self._CHANNELS), dtype=np.int16)
         array = np.frombuffer(data, dtype=np.int16).reshape(-1, self._CHANNELS)
         outdata[:] = self._mix_audio(array, samples)
         self._state.advance_current_sample(samples)
