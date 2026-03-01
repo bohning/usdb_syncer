@@ -5,6 +5,9 @@
 ## Features
 
 - Custom data values can now be displayed in dedicated columns. For configuration, rightclick the relevant custom data key in the sidebar tree.
+- The progress dialog can be cancelled and shows a completion percentage whenever possible.
+- The previewer can be used without previously downloading a song. This won't play the audio track, though.
+- Resource files that have been modified locally since downloading are now indicated in the song table.
 
 <!-- 0.21.0 -->
 
