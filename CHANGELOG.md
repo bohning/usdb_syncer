@@ -9,6 +9,9 @@
 - The previewer can be used without previously downloading a song. This won't play the audio track, though.
 - Resource files that have been modified locally since downloading are now indicated in the song table.
 
+## Fixes
+- PDF reports now display figures correctly.
+
 <!-- 0.21.0 -->
 
 # Changes
