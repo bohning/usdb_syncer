@@ -17,7 +17,7 @@ class ProgressBar:
 
     def __attrs_post_init__(self) -> None:
         events.DownloadsRequested.subscribe(self._on_downloads_requested)
-        events.DownloadFinished.subscribe(self._on_download_finished)
+        events.DownloadsFinished.subscribe(self._on_download_finished)
 
     def _on_downloads_requested(self, event: events.DownloadsRequested) -> None:
         if self._running == self._finished:
@@ -26,8 +26,8 @@ class ProgressBar:
         self._running += event.count
         self._update()
 
-    def _on_download_finished(self, _event: events.DownloadFinished) -> None:
-        self._finished += 1
+    def _on_download_finished(self, event: events.DownloadsFinished) -> None:
+        self._finished += len(event.song_ids)
         self._update()
 
     def _update(self) -> None:

@@ -57,7 +57,9 @@ def generate_report_pdf(
     column_count: int = 1,
     base_font_size: int = 10,
     optional_info: list[Column] | None = None,
+    progress: utils.ProgressProxy,
 ) -> str:
+    progress.reset("Creating PDF report.")
     _ensure_fonts_registered()
     optional_info = optional_info or []
     pagesize = _get_pagesize(size, orientation)

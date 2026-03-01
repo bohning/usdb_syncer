@@ -15,7 +15,7 @@ from PySide6.QtWidgets import (
 )
 
 from usdb_syncer import SongId, db, settings, utils
-from usdb_syncer.gui import gui_utils, progress
+from usdb_syncer.gui import gui_utils
 from usdb_syncer.gui.forms.ReportDialog import Ui_Dialog
 from usdb_syncer.gui.pdf import generate_report_pdf
 from usdb_syncer.gui.progress import run_with_progress
@@ -120,10 +120,9 @@ class ReportDialog(Ui_Dialog, QDialog):
         settings.set_report_json_indent(self.spinBox_json_indent.value())
 
     def _generate_report_pdf(self) -> bool:
-        def on_done(result: progress.Result) -> None:
-            path = result.result()
+        def on_done(path: str) -> None:
             logger.info(f"PDF report created at {path}.")
-            utils.open_path_or_file(path)
+            utils.open_path_or_file(Path(path))
 
         songs: Iterable[SongId] = []
         if self.radioButton_locally_available_songs.isChecked():
@@ -154,8 +153,7 @@ class ReportDialog(Ui_Dialog, QDialog):
                 if item.checkState() == Qt.CheckState.Checked:
                     optional_info.append(item.data(Qt.ItemDataRole.UserRole))
             run_with_progress(
-                "Creating PDF report ...",
-                lambda: generate_report_pdf(
+                lambda progress: generate_report_pdf(
                     songs=songs,
                     path=path,
                     size=pagesize,
@@ -164,6 +162,7 @@ class ReportDialog(Ui_Dialog, QDialog):
                     column_count=column_count,
                     base_font_size=base_font_size,
                     optional_info=optional_info,
+                    progress=progress,
                 ),
                 on_done=on_done,
             )
@@ -173,8 +172,8 @@ class ReportDialog(Ui_Dialog, QDialog):
         return False
 
     def _generate_report_json(self) -> bool:
-        def on_done(result: progress.Result) -> None:
-            path, num_of_songs = result.result()
+        def on_done(result: tuple[Path, int]) -> None:
+            path, num_of_songs = result
             logger.info(f"JSON report created at {path} ({num_of_songs} songs).")
 
         songs: Iterable[SongId] = []
@@ -198,9 +197,8 @@ class ReportDialog(Ui_Dialog, QDialog):
         indent = self.spinBox_json_indent.value()
         if path:
             run_with_progress(
-                "Creating JSON report ...",
-                lambda: generate_report_json(
-                    songs=songs, path=Path(path), indent=indent
+                lambda progress: generate_report_json(
+                    songs=songs, path=Path(path), indent=indent, progress=progress
                 ),
                 on_done=on_done,
             )

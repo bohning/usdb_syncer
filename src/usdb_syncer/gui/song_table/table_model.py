@@ -22,6 +22,7 @@ from usdb_syncer.sync_meta import Resource
 from usdb_syncer.usdb_song import UsdbSong
 
 QIndex = QModelIndex | QPersistentModelIndex
+_SINGLE_ROW_UPDATE_THRESHOLD = 100
 
 
 class TableModel(QAbstractTableModel):
@@ -34,7 +35,7 @@ class TableModel(QAbstractTableModel):
         super().__init__(parent)
         self._rows = {}
         self._theme = settings.get_theme()
-        events.SongChanged.subscribe(self._on_song_changed)
+        events.SongsChanged.subscribe(self._on_songs_changed)
         events.SongDeleted.subscribe(self._on_song_deleted)
         events.SongDirChanged.subscribe(lambda _: self.reset)
         gui_events.CustomColumnToggled.subscribe(self._on_custom_column_toggled)
@@ -71,9 +72,16 @@ class TableModel(QAbstractTableModel):
         end_idx = self.index(row, self.columnCount() - 1)
         self.dataChanged.emit(start_idx, end_idx)
 
-    def _on_song_changed(self, event: events.SongChanged) -> None:
-        if (row := self._rows.get(event.song_id)) is not None:
-            self._row_changed(row)
+    def _on_songs_changed(self, event: events.SongsChanged) -> None:
+        if len(event.song_ids) > _SINGLE_ROW_UPDATE_THRESHOLD:
+            self.dataChanged.emit(
+                self.index(0, 0),
+                self.index(self.rowCount() - 1, self.columnCount() - 1),
+            )
+        else:
+            for song_id in event.song_ids:
+                if (row := self._rows.get(song_id)) is not None:
+                    self._row_changed(row)
 
     def _on_song_deleted(self, event: events.SongDeleted) -> None:
         if (row := self._rows.get(event.song_id)) is None:

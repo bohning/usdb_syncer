@@ -33,7 +33,7 @@ from usdb_syncer import (
 )
 from usdb_syncer import sync_meta as sync_meta
 from usdb_syncer import usdb_song as usdb_song
-from usdb_syncer.gui import events, hooks, theme
+from usdb_syncer.gui import events, hooks, progress, theme
 from usdb_syncer.webserver import webserver
 
 if TYPE_CHECKING:
@@ -177,7 +177,7 @@ def main() -> None:
     app.setAttribute(Qt.ApplicationAttribute.AA_DontShowIconsInMenus, False)
 
     def run_main() -> None:
-        _run_main()
+        QtCore.QTimer.singleShot(0, _run_main)
         app.exec()
 
     match args.subcommand:
@@ -266,46 +266,67 @@ def _with_profile(func: Callable[[], None]) -> None:
 
 
 def _load_main_window(mw: MainWindow) -> None:
-    splash = _generate_splashscreen()
+    splash = SplashScreen()
     splash.show()
-    QtWidgets.QApplication.processEvents()
-    splash.showMessage("Loading song database ...", color=Qt.GlobalColor.gray)
     folder = settings.get_song_dir()
     db.connect(utils.AppPaths.db)
     with db.transaction():
         db.delete_session_data()
-    song_routines.load_available_songs_and_sync_meta(folder, False)
-    mw.tree.populate()
-    if default_search := settings.SavedSearch.get_default():
-        events.SavedSearchRestored(default_search.search).post()
-        logger.logger.info(f"Applied default search '{default_search.name}'.")
-    mw.table.search_songs()
-    splash.showMessage("Song database successfully loaded.", color=Qt.GlobalColor.gray)
-    mw.setWindowTitle(f"USDB Syncer ({usdb_syncer.__version__})")
-    mw.show()
-    logger.logger.info("Application successfully loaded.")
-    theme.Theme.from_settings().apply()
-    splash.finish(mw)
 
+    def on_done(_result: None) -> None:
+        splash.progress.reset("Setting up GUI.")
+        mw.tree.populate()
+        if default_search := settings.SavedSearch.get_default():
+            events.SavedSearchRestored(default_search.search).post()
+            logger.logger.info(f"Applied default search '{default_search.name}'.")
+        mw.table.search_songs()
+        mw.setWindowTitle(f"USDB Syncer ({usdb_syncer.__version__})")
+        mw.show()
+        logger.logger.info("Application successfully loaded.")
+        theme.Theme.from_settings().apply()
+        splash.finish(mw)
 
-def _generate_splashscreen() -> QtWidgets.QSplashScreen:
-    canvas = QtGui.QPixmap(":/splash/splash.png")
-    painter = QtGui.QPainter(canvas)
-    painter.setPen(QtGui.QColor(0, 174, 239))  # light blue
-    font = QtGui.QFont()
-    font.setFamily("Kozuka Gothic Pro")
-    font.setPointSize(20)
-    painter.setFont(font)
-    painter.drawText(
-        0,
-        0,
-        428,
-        150,
-        Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignBottom,
-        usdb_syncer.__version__,
+    progress.run_background_task(
+        splash.progress,
+        lambda p: song_routines.load_available_songs_and_sync_meta(folder, False, p),
+        on_done=on_done,
     )
-    painter.end()
-    return QtWidgets.QSplashScreen(canvas)
+
+
+class SplashScreen(QtWidgets.QSplashScreen):
+    """Splash screen shown during app startup."""
+
+    def __init__(self) -> None:
+        canvas = QtGui.QPixmap(":/splash/splash.png")
+        painter = QtGui.QPainter(canvas)
+        painter.setPen(QtGui.QColor(0, 174, 239))  # light blue
+        font = QtGui.QFont()
+        font.setFamily("Kozuka Gothic Pro")
+        font.setPointSize(20)
+        painter.setFont(font)
+        painter.drawText(
+            0,
+            0,
+            428,
+            150,
+            Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignBottom,
+            usdb_syncer.__version__,
+        )
+        painter.end()
+        super().__init__(canvas)
+        self.progress = utils.ProgressProxy("Loading data.")
+        self._timer = QtCore.QTimer(self, singleShot=False, interval=100)
+        self._timer.timeout.connect(self._show_message)
+        self._timer.start()
+
+    def _show_message(self) -> None:
+        self.showMessage(self.progress.label(), color=Qt.GlobalColor.gray)
+
+    def finish(self, w: QtWidgets.QWidget) -> None:
+        self._timer.stop()
+        self._timer.deleteLater()
+        super().finish(w)
+        self.deleteLater()
 
 
 def _init_app() -> QtWidgets.QApplication:
