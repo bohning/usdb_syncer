@@ -23,6 +23,11 @@
   <td class="px-1 md:px-4">{{ song.artist }}</td>
   <td class="px-1 md:px-4">{{ song.title }}</td>
   <td class="px-1 md:px-4">{{ song.year if song.year }}</td>
+  <td class="px-1 md:px-4">
+    <button hx-post="/api/like/{{ song.song_id }}">
+      {% if song.song_id in liked_songs %} ❤ {% else %} 🤍 {% endif %} {{ like_counter[song.song_id] }}
+    </button>
+  </td>
 </tr>
 {% endfor %} {% if songs|length >= 100 %}
 <!-- Infinite scroll trigger -->

@@ -44,6 +44,20 @@
           {% endif %}
         </button>
       </th>
+      <th class="px-1 md:px-4 py-2 md:py-3">
+        <button
+          hx-get="/?search={{ search }}&sort_by=likes&sort_order={{ 'desc' if sort_by == 'likes' and sort_order == 'asc' else 'asc' }}"
+          hx-target="#songs-table"
+          hx-indicator="#loading"
+          class="w-full hover:text-blue-300 transition-colors flex items-center justify-between"
+        >
+          LIKES {% if sort_by == 'likes' %}
+          <span class="text-blue-400"
+            >{{ '↑' if sort_order == 'asc' else '↓' }}</span
+          >
+          {% endif %}
+        </button>
+      </th>
     </tr>
   </thead>
   <tbody id="songs-tbody">

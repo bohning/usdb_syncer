@@ -9,6 +9,8 @@ import logging
 import os
 import socket
 import sys
+import uuid
+from collections import Counter
 from io import BytesIO
 from typing import Any, ClassVar
 
@@ -22,14 +24,19 @@ from usdb_syncer import SongId, db, errors, logger, utils
 from usdb_syncer.song_loader import DownloadManager
 from usdb_syncer.usdb_song import UsdbSong
 
+_COOKIE_MAX_AGE = 60 * 60 * 24 * 365
 
-def _get_songs(request: flask.Request, show_nonlocal_songs: bool) -> list[UsdbSong]:
+
+def _get_songs(
+    request: flask.Request, show_nonlocal_songs: bool, like_counter: Counter[SongId]
+) -> list[UsdbSong]:
     builder = db.SearchBuilder()
     if not show_nonlocal_songs:
         builder.statuses = [db.DownloadStatus.OUTDATED, db.DownloadStatus.SYNCHRONIZED]
     if search := request.args.get("search"):
         builder.text = search
-    match request.args.get("sort_by", "artist"):
+    sort_by = request.args.get("sort_by", "artist")
+    match sort_by:
         case "artist":
             builder.order = db.SongOrder.ARTIST
         case "title":
@@ -43,6 +50,10 @@ def _get_songs(request: flask.Request, show_nonlocal_songs: bool) -> list[UsdbSo
     offset = request.args.get("offset", 0, type=int)
 
     song_ids = db.search_usdb_songs(builder)
+    if sort_by == "likes":
+        song_ids = sorted(
+            song_ids, key=lambda s: like_counter[s], reverse=sort_order == "desc"
+        )
     return [
         s
         for i in itertools.islice(song_ids, offset, offset + limit)
@@ -50,8 +61,14 @@ def _get_songs(request: flask.Request, show_nonlocal_songs: bool) -> list[UsdbSo
     ]
 
 
-def _index(title: str, show_nonlocal_songs: bool, allow_downloading: bool) -> str:
-    songs = _get_songs(flask.request, show_nonlocal_songs)
+def _index(
+    title: str,
+    show_nonlocal_songs: bool,
+    allow_downloading: bool,
+    like_counter: Counter[SongId],
+    session_id: str,
+) -> str:
+    songs = _get_songs(flask.request, show_nonlocal_songs, like_counter)
     search = flask.request.args.get("search", default="")
     sort_by = flask.request.args.get("sort_by", "artist")
     sort_order = flask.request.args.get("sort_order", "asc")
@@ -65,6 +82,8 @@ def _index(title: str, show_nonlocal_songs: bool, allow_downloading: bool) -> st
             sort_order=sort_order,
             offset=offset,
             allow_downloading=allow_downloading,
+            liked_songs=_get_liked_songs(session_id),
+            like_counter=like_counter,
         )
     return flask.render_template(
         "index.html",
@@ -76,11 +95,18 @@ def _index(title: str, show_nonlocal_songs: bool, allow_downloading: bool) -> st
         sort_order=sort_order,
         offset=offset,
         allow_downloading=allow_downloading,
+        liked_songs=_get_liked_songs(session_id),
+        like_counter=like_counter,
     )
 
 
-def _api_songs(show_nonlocal_songs: bool, allow_downloading: bool) -> str:
-    songs = _get_songs(flask.request, show_nonlocal_songs)
+def _api_songs(
+    show_nonlocal_songs: bool,
+    allow_downloading: bool,
+    like_counter: Counter[SongId],
+    session_id: str,
+) -> str:
+    songs = _get_songs(flask.request, show_nonlocal_songs, like_counter)
     search = flask.request.args.get("search", default="")
     sort_by = flask.request.args.get("sort_by", "artist")
     sort_order = flask.request.args.get("sort_order", "asc")
@@ -93,6 +119,8 @@ def _api_songs(show_nonlocal_songs: bool, allow_downloading: bool) -> str:
         sort_order=sort_order,
         offset=offset,
         allow_downloading=allow_downloading,
+        liked_songs=_get_liked_songs(session_id),
+        like_counter=like_counter,
     )
 
 
@@ -121,18 +149,31 @@ def _api_download() -> flask.Response:
     return flask.make_response("", 200)
 
 
+def _get_liked_songs(session_id: str) -> set[SongId]:
+    cookie = flask.request.cookies.get("liked_songs", "")
+    if not cookie.startswith(session_id + ":") or len(cookie) <= len(session_id) + 1:
+        return set()
+    return set(map(SongId.parse, cookie[len(session_id) + 1 :].split(",")))
+
+
 def _create_app(
     title: str, *, show_nonlocal_songs: bool, allow_downloading: bool
 ) -> flask.Flask:
     app = flask.Flask(__name__)
+    like_counter: Counter[SongId] = Counter()
+    session_id = str(uuid.uuid4())
 
     @app.route("/")
     def index() -> str:
-        return _index(title, show_nonlocal_songs, allow_downloading)
+        return _index(
+            title, show_nonlocal_songs, allow_downloading, like_counter, session_id
+        )
 
     @app.route("/api/songs")
     def api_songs() -> str:
-        return _api_songs(show_nonlocal_songs, allow_downloading)
+        return _api_songs(
+            show_nonlocal_songs, allow_downloading, like_counter, session_id
+        )
 
     @app.route("/api/mp3")
     def api_mp3() -> flask.Response:
@@ -143,6 +184,26 @@ def _create_app(
         if not allow_downloading:
             return flask.abort(403, "Downloading is not allowed")
         return _api_download()
+
+    @app.post("/api/like/<int:selected_id>")
+    def like(selected_id: int) -> flask.Response:
+        song_id = SongId(selected_id)
+        liked_songs = _get_liked_songs(session_id)
+        if song_id in liked_songs:
+            liked_songs.remove(song_id)
+            like_counter[song_id] -= 1
+            icon = "🤍"
+        else:
+            liked_songs.add(song_id)
+            like_counter[song_id] += 1
+            icon = "❤"
+        resp = flask.make_response(f"{icon} {like_counter[song_id]}")
+        resp.set_cookie(
+            "liked_songs",
+            f"{session_id}:{','.join(map(str, liked_songs))}",
+            max_age=_COOKIE_MAX_AGE,
+        )
+        return resp
 
     @app.before_request
     def before_request() -> None:
