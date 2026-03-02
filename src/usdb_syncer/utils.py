@@ -118,6 +118,7 @@ class AppPaths:
     db = Path(_platform_dirs.user_data_dir, "usdb_syncer.db")
     addons = Path(_platform_dirs.user_data_dir, "addons")
     licenses = Path(_platform_dirs.user_data_dir, "licenses")
+    fonts = Path(_platform_dirs.user_data_dir, "fonts")
     license_hash = Path(_platform_dirs.user_data_dir, "license_hash.txt")
     song_list = Path(_platform_dirs.user_cache_dir, "available_songs.json")
     profile = Path(_platform_dirs.user_cache_dir, "usdb_syncer.prof")

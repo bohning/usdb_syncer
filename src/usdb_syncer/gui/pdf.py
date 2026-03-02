@@ -7,6 +7,7 @@ from datetime import datetime
 from functools import cache
 from typing import assert_never
 
+import requests
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import A3, A4, A5, LEGAL, LETTER, landscape
 from reportlab.lib.styles import ParagraphStyle
@@ -16,23 +17,62 @@ from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.pdfgen.canvas import Canvas
 from reportlab.platypus import BaseDocTemplate, Flowable, Frame, PageTemplate, Paragraph
 
-from usdb_syncer import SongId, utils
-from usdb_syncer._version import __version__ as __version__
-from usdb_syncer.gui.resources import fonts
+from usdb_syncer import SongId, __version__, utils
 from usdb_syncer.gui.song_table.column import Column
+from usdb_syncer.logger import logger
 from usdb_syncer.settings import ReportPDFOrientation, ReportPDFPagesize
 from usdb_syncer.usdb_song import UsdbSong
 
 
+@dataclass(frozen=True)
+class PdfFont:
+    """Font metadata for PDF report generation."""
+
+    name: str
+    url: str
+
+
+FONT_INITIAL = PdfFont(
+    name="NotoSans-Black.ttf",
+    url="https://github.com/notofonts/notofonts.github.io/raw/refs/heads/main/fonts/NotoSans/hinted/ttf/NotoSans-Black.ttf",
+)
+FONT_ARTIST = PdfFont(
+    name="GoNotoCurrent-Bold.ttf",
+    url="https://github.com/satbyy/go-noto-universal/releases/download/v7.0/GoNotoCurrent-Bold.ttf",
+)
+FONT_ENTRY = PdfFont(
+    name="GoNotoCurrent-Regular.ttf",
+    url="https://github.com/satbyy/go-noto-universal/releases/download/v7.0/GoNotoCurrent-Regular.ttf",
+)
+
+FONTS = [FONT_INITIAL, FONT_ARTIST, FONT_ENTRY]
+
+
 @cache
-def _ensure_fonts_registered() -> None:
-    """Register PDF fonts on first use instead of at import time."""
-    for font in (
-        fonts.NOTOSANS_BLACK_TTF,
-        fonts.GONOTOCURRENT_BOLD_TTF,
-        fonts.GONOTO_CURRENT_REGULAR_TTF,
-    ):
-        pdfmetrics.registerFont(TTFont(font.name, font))
+def _ensure_fonts_downloaded_and_registered() -> None:
+    """Download and register PDF fonts on first use instead of at import time."""
+    font_dir = utils.AppPaths.fonts
+    font_dir.mkdir(parents=True, exist_ok=True)
+    target = font_dir / "OFL.txt"
+    if not target.exists():
+        logger.info("Downloading font license ...")
+        resp = requests.get(
+            "https://github.com/notofonts/notofonts.github.io/raw/refs/heads/main/fonts/LICENSE",
+            timeout=10,
+        )
+        resp.raise_for_status()
+        target.write_text(resp.text, encoding="utf-8")
+
+    for font in FONTS:
+        target = font_dir / font.name
+        if not target.exists():
+            logger.info(f"Downloading font {font.name} ...")
+            resp = requests.get(font.url, timeout=10)
+            resp.raise_for_status()
+            target.write_bytes(resp.content)
+
+        logger.info(f"Registering font {font.name} ...")
+        pdfmetrics.registerFont(TTFont(font.name, str(target)))
 
 
 class Bookmark(Flowable):
@@ -62,7 +102,7 @@ def generate_report_pdf(
     progress: utils.ProgressProxy,
 ) -> str:
     progress.reset("Creating PDF report.")
-    _ensure_fonts_registered()
+    _ensure_fonts_downloaded_and_registered()
     optional_info = optional_info or []
     pagesize = _get_pagesize(size, orientation)
 
@@ -129,7 +169,7 @@ def _create_paragraph_styles(base_font_size: int) -> ParagraphStyles:
     return ParagraphStyles(
         initial=ParagraphStyle(
             "Initial",
-            fontName=fonts.NOTOSANS_BLACK_TTF.name,
+            fontName=FONT_INITIAL.name,
             fontSize=base_font_size * 3,
             textColor=colors.green,
             spaceBefore=base_font_size * 2.4,
@@ -137,7 +177,7 @@ def _create_paragraph_styles(base_font_size: int) -> ParagraphStyles:
         ),
         artist=ParagraphStyle(
             "Artist",
-            fontName=fonts.GONOTOCURRENT_BOLD_TTF.name,
+            fontName=FONT_ARTIST.name,
             fontSize=base_font_size * 1.2,
             spaceBefore=base_font_size * 1.2,
             leading=base_font_size * 1.6,
@@ -146,7 +186,7 @@ def _create_paragraph_styles(base_font_size: int) -> ParagraphStyles:
         ),
         entry=ParagraphStyle(
             "Entry",
-            fontName=fonts.GONOTO_CURRENT_REGULAR_TTF.name,
+            fontName=FONT_ENTRY.name,
             fontSize=base_font_size,
             leftIndent=base_font_size,
             leading=base_font_size * 1.4,
@@ -223,7 +263,7 @@ def _format_song_entry(  # noqa: C901
 def _add_page_number(canvas: Canvas, doc: BaseDocTemplate) -> None:
     canvas.saveState()
     page_num: str = str(doc.page)
-    canvas.setFont(fonts.GONOTO_CURRENT_REGULAR_TTF.name, 8)
+    canvas.setFont("GoNotoCurrent-Regular.ttf", 8)
     canvas.setFillColor(colors.grey)
     canvas.drawCentredString(doc.pagesize[0] / 2, doc.bottomMargin * 0.5, page_num)
     canvas.restoreState()
