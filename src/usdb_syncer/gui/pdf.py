@@ -55,21 +55,34 @@ def _ensure_fonts_downloaded_and_registered() -> None:
     font_dir.mkdir(parents=True, exist_ok=True)
     target = font_dir / "OFL.txt"
     if not target.exists():
-        logger.info("Downloading font license ...")
-        resp = requests.get(
-            "https://github.com/notofonts/notofonts.github.io/raw/refs/heads/main/fonts/LICENSE",
-            timeout=10,
-        )
-        resp.raise_for_status()
-        target.write_text(resp.text, encoding="utf-8")
+        try:
+            logger.info("Downloading font license ...")
+            resp = requests.get(
+                "https://github.com/notofonts/notofonts.github.io/raw/refs/heads/main/fonts/LICENSE",
+                timeout=10,
+            )
+            resp.raise_for_status()
+            target.write_text(resp.text, encoding="utf-8")
+        except requests.RequestException as error:
+            logger.debug("Failed to download font license.")
+            logger.error(str(error))
+        else:
+            logger.debug("Successfully downloaded font license.")
 
     for font in FONTS:
         target = font_dir / font.name
         if not target.exists():
-            logger.info(f"Downloading font {font.name} ...")
-            resp = requests.get(font.url, timeout=10)
-            resp.raise_for_status()
-            target.write_bytes(resp.content)
+            try:
+                logger.info(f"Downloading font '{font.name}' ...")
+                resp = requests.get(font.url, timeout=10)
+                resp.raise_for_status()
+                target.write_bytes(resp.content)
+            except requests.RequestException as error:
+                logger.debug(f"Failed to download font '{font.name}'.")
+                logger.error(str(error))
+                continue
+            else:
+                logger.debug(f"Successfully downloaded font '{font.name}'.")
 
         logger.info(f"Registering font {font.name} ...")
         pdfmetrics.registerFont(TTFont(font.name, str(target)))
