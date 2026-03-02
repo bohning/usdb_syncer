@@ -249,9 +249,9 @@ class _WebserverManager:
         title: str | None = None,
         show_nonlocal_songs: bool = False,
         allow_downloading: bool = False,
-    ) -> None:
+    ) -> bool:
         if cls._server:
-            return
+            return False
         if title:
             cls.title = title
         app = _create_app(
@@ -267,16 +267,18 @@ class _WebserverManager:
         cls.port = cls._server.socket.getsockname()[1]
         cls._thread = _WebserverThread(cls._server)
         cls._thread.start()
+        return True
 
     @classmethod
-    def stop(cls) -> None:
-        if cls._server:
-            cls._server.shutdown()
-            cls._server = None
-        if cls._thread:
-            cls._thread.quit()
-            cls._thread.wait()
-            cls._thread = None
+    def stop(cls) -> bool:
+        if not cls._server or not cls._thread:
+            return False
+        cls._server.shutdown()
+        cls._server = None
+        cls._thread.quit()
+        cls._thread.wait(10)
+        cls._thread = None
+        return True
 
     @classmethod
     def is_running(cls) -> bool:
@@ -321,19 +323,19 @@ def start(
     allow_downloading: bool = False,
 ) -> None:
     logging.getLogger("werkzeug").setLevel(logging.DEBUG)
-    _WebserverManager.start(
+    if _WebserverManager.start(
         host=host,
         port=port,
         title=title,
         show_nonlocal_songs=show_nonlocal_songs,
         allow_downloading=allow_downloading,
-    )
-    logger.logger.info(f"Webserver is now running on {address()}")
+    ):
+        logger.logger.info(f"Webserver is now running on {address()}")
 
 
 def stop() -> None:
-    _WebserverManager.stop()
-    logger.logger.info("Webserver was stopped.")
+    if _WebserverManager.stop():
+        logger.logger.info("Webserver was stopped.")
 
 
 def is_running() -> bool:
