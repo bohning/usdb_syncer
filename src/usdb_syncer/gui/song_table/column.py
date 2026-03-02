@@ -11,7 +11,7 @@ import attrs
 from PySide6.QtGui import QIcon
 
 from usdb_syncer import db, settings
-from usdb_syncer.constants import BLACK_STAR, HALF_BLACK_STAR
+from usdb_syncer.constants import RatingSymbol
 from usdb_syncer.gui.icons import Icon
 
 if TYPE_CHECKING:
@@ -339,7 +339,9 @@ class _ColumnRegistry:
 
 @cache
 def rating_str(rating: float) -> str:
-    return int(rating) * BLACK_STAR + (HALF_BLACK_STAR if rating % 1 == 0.5 else "")
+    return int(rating) * RatingSymbol.BLACK_STAR + (
+        RatingSymbol.LEFT_HALF_BLACK_STAR if rating % 1 == 0.5 else ""
+    )
 
 
 def yes_no_str(yes: bool) -> str:

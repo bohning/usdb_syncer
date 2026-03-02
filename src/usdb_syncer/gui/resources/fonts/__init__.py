@@ -2,6 +2,5 @@
 
 from importlib import resources
 
-NOTOSANSSYMBOLS2_REGULAR_TTF = (
-    resources.files(__package__) / "NotoSansSymbols2-Regular.ttf"
-)
+NOTOSANSRATINGSYMBOLS_TTF = resources.files(__package__) / "NotoSansRatingSymbols.ttf"
+KOZUKAGOTHICPROVERSION_OTF = resources.files(__package__) / "KozukaGothicProVersion.otf"

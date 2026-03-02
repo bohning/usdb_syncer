@@ -18,7 +18,7 @@ from reportlab.pdfgen.canvas import Canvas
 from reportlab.platypus import BaseDocTemplate, Flowable, Frame, PageTemplate, Paragraph
 
 from usdb_syncer import SongId, __version__, utils
-from usdb_syncer.gui.song_table.column import Column
+from usdb_syncer.gui.song_table.column import Column, rating_str
 from usdb_syncer.logger import logger
 from usdb_syncer.settings import ReportPDFOrientation, ReportPDFPagesize
 from usdb_syncer.usdb_song import UsdbSong
@@ -63,11 +63,10 @@ def _ensure_fonts_downloaded_and_registered() -> None:
             )
             resp.raise_for_status()
             target.write_text(resp.text, encoding="utf-8")
-        except requests.RequestException as error:
-            logger.debug("Failed to download font license.")
-            logger.error(str(error))
+        except requests.RequestException:
+            logger.exception("Failed to download font license.")
         else:
-            logger.debug("Successfully downloaded font license.")
+            logger.info("Successfully downloaded font license.")
 
     for font in FONTS:
         target = font_dir / font.name
@@ -77,12 +76,11 @@ def _ensure_fonts_downloaded_and_registered() -> None:
                 resp = requests.get(font.url, timeout=10)
                 resp.raise_for_status()
                 target.write_bytes(resp.content)
-            except requests.RequestException as error:
-                logger.debug(f"Failed to download font '{font.name}'.")
-                logger.error(str(error))
+            except requests.RequestException:
+                logger.exception(f"Failed to download font '{font.name}'.")
                 continue
             else:
-                logger.debug(f"Successfully downloaded font '{font.name}'.")
+                logger.info(f"Successfully downloaded font '{font.name}'.")
 
         logger.info(f"Registering font {font.name} ...")
         pdfmetrics.registerFont(TTFont(font.name, str(target)))
@@ -264,7 +262,10 @@ def _format_song_entry(  # noqa: C901
                 if song.creator:
                     parts.append(song.creator)
             case Column.SONG_ID:
-                parts.append(f"{song.song_id}")
+                parts.append(str(song.song_id))
+            case Column.RATING:
+                if song.rating > 0:
+                    parts.append(rating_str(song.rating))
             case _:
                 pass
     if parts:
@@ -276,7 +277,7 @@ def _format_song_entry(  # noqa: C901
 def _add_page_number(canvas: Canvas, doc: BaseDocTemplate) -> None:
     canvas.saveState()
     page_num: str = str(doc.page)
-    canvas.setFont("GoNotoCurrent-Regular.ttf", 8)
+    canvas.setFont(FONT_ENTRY.name, 8)
     canvas.setFillColor(colors.grey)
     canvas.drawCentredString(doc.pagesize[0] / 2, doc.bottomMargin * 0.5, page_num)
     canvas.restoreState()

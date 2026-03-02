@@ -1,10 +1,12 @@
 """Dialog with app settings."""
 
 from PySide6.QtCore import QTimer
+from PySide6.QtGui import QFont
 from PySide6.QtWidgets import QDialog, QWidget
 
 import usdb_syncer
 from usdb_syncer.gui import gui_utils
+from usdb_syncer.gui.fonts import get_version_font
 from usdb_syncer.gui.forms.AboutDialog import Ui_Dialog
 
 RESET_GAP = 4000
@@ -19,7 +21,10 @@ class AboutDialog(Ui_Dialog, QDialog):
         super().__init__(parent=parent)
         gui_utils.cleanup_on_close(self)
         self.setupUi(self)
-        self.label_version.setText(usdb_syncer.__version__)
+        font = get_version_font() or QFont()
+        font.setPixelSize(20)
+        self.label_version.setFont(font)
+        self.label_version.setText(usdb_syncer.__version__[:12])
         self._reset_text()
 
     def _scroll_down(self) -> None:

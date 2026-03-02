@@ -31,6 +31,7 @@ optional_columns = [
     Column.YEAR,
     Column.CREATOR,
     Column.SONG_ID,
+    Column.RATING,
 ]
 
 if TYPE_CHECKING:
@@ -56,8 +57,7 @@ class ReportDialog(Ui_Dialog, QDialog):
             item.setData(Qt.ItemDataRole.UserRole, column)
             if icon := column.decoration_data(theme):
                 item.setIcon(icon)
-            if name := column.display_data():
-                item.setText(name)
+            item.setText(column.val().label)
             item.setCheckState(Qt.CheckState.Unchecked)
             if column in [Column.ARTIST, Column.TITLE]:
                 item.setCheckState(Qt.CheckState.Checked)

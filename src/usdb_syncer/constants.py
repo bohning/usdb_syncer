@@ -2,6 +2,7 @@
 
 import re
 import sys
+from enum import StrEnum
 
 BPM_THRESHOLD = 200.0
 GITHUB_API_LATEST = "https://api.github.com/repos/bohning/usdb_syncer/releases/latest"
@@ -10,13 +11,21 @@ GITHUB_SHARED_CONTENT = (
     "https://raw.githubusercontent.com/bohning/usdb_syncer/refs/heads/main/shared"
 )
 DISCORD_WEBHOOK_API = "https://discordapp.com/api/webhooks"
-BLACK_STAR = "\u2605"
-HALF_BLACK_STAR = "\u2be8"
 
 # https://pyinstaller.org/en/stable/runtime-information.html#run-time-information
 IS_BUNDLE = bool(getattr(sys, "frozen", False) and getattr(sys, "_MEIPASS", False))
 IS_INSTALLED = "site-packages" in __file__
 IS_SOURCE = not IS_BUNDLE and not IS_INSTALLED
+
+
+class RatingSymbol(StrEnum):
+    """Symbols needed for star ratings."""
+
+    BLACK_STAR = "\u2605"
+    LEFT_HALF_BLACK_STAR = "\u2be8"
+
+    def __str__(self) -> str:
+        return f"U+{ord(self.value):04X}"
 
 
 class UsdbStrings:
