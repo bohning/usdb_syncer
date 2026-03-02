@@ -34,7 +34,7 @@ class PdfFont:
 
 FONT_INITIAL = PdfFont(
     name="NotoSans-Black.ttf",
-    url="https://github.com/notofonts/notofonts.github.io/raw/refs/heads/main/fonts/NotoSans/hinted/ttf/NotoSans-Black.ttf",
+    url="https://github.com/notofonts/notofonts.github.io/raw/refs/heads/main/fonts/NotoSans/unhinted/ttf/NotoSans-Black.ttf",
 )
 FONT_ARTIST = PdfFont(
     name="GoNotoCurrent-Bold.ttf",

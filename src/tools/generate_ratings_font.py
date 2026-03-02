@@ -13,7 +13,7 @@ from fontTools.ttLib import TTFont
 from usdb_syncer.constants import RatingSymbol
 
 BASE_FONT = "NotoSansSymbols2-Regular.ttf"
-URL = f"https://github.com/notofonts/notofonts.github.io/raw/refs/heads/main/fonts/NotoSansSymbols2/hinted/ttf/{BASE_FONT}"
+URL = f"https://github.com/notofonts/notofonts.github.io/raw/refs/heads/main/fonts/NotoSansSymbols2/unhinted/ttf/{BASE_FONT}"
 NEW_FONT_NAME = "Noto Sans Rating Symbols"
 OUTPUT_DIR = (
     Path(__file__).parent.parent / "usdb_syncer" / "gui" / "resources" / "fonts"
