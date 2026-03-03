@@ -25,27 +25,32 @@ from usdb_syncer.usdb_song import UsdbSong
 
 
 @dataclass(frozen=True)
-class PdfFont:
-    """Font metadata for PDF report generation."""
+class FontFile:
+    """Font file for PDF report generation."""
 
     name: str
     url: str
 
 
-FONT_INITIAL = PdfFont(
+FONT_LICENSE = FontFile(
+    name="OFL.txt",
+    url="https://github.com/notofonts/notofonts.github.io/raw/refs/heads/main/fonts/LICENSE",
+)
+
+FONT_INITIAL = FontFile(
     name="NotoSans-Black.ttf",
     url="https://github.com/notofonts/notofonts.github.io/raw/refs/heads/main/fonts/NotoSans/unhinted/ttf/NotoSans-Black.ttf",
 )
-FONT_ARTIST = PdfFont(
+FONT_ARTIST = FontFile(
     name="GoNotoCurrent-Bold.ttf",
     url="https://github.com/satbyy/go-noto-universal/releases/download/v7.0/GoNotoCurrent-Bold.ttf",
 )
-FONT_ENTRY = PdfFont(
+FONT_ENTRY = FontFile(
     name="GoNotoCurrent-Regular.ttf",
     url="https://github.com/satbyy/go-noto-universal/releases/download/v7.0/GoNotoCurrent-Regular.ttf",
 )
 
-FONTS = [FONT_INITIAL, FONT_ARTIST, FONT_ENTRY]
+FONT_FILES = [FONT_LICENSE, FONT_INITIAL, FONT_ARTIST, FONT_ENTRY]
 
 
 @cache
@@ -53,26 +58,12 @@ def _ensure_fonts_downloaded_and_registered() -> None:
     """Download and register PDF fonts on first use instead of at import time."""
     font_dir = utils.AppPaths.fonts
     font_dir.mkdir(parents=True, exist_ok=True)
-    target = font_dir / "OFL.txt"
-    if not target.exists():
-        try:
-            logger.info("Downloading font license ...")
-            resp = requests.get(
-                "https://github.com/notofonts/notofonts.github.io/raw/refs/heads/main/fonts/LICENSE",
-                timeout=10,
-            )
-            resp.raise_for_status()
-            target.write_text(resp.text, encoding="utf-8")
-        except requests.RequestException:
-            logger.exception("Failed to download font license.")
-        else:
-            logger.info("Successfully downloaded font license.")
 
-    for font in FONTS:
+    for font in FONT_FILES:
         target = font_dir / font.name
         if not target.exists():
             try:
-                logger.info(f"Downloading font '{font.name}' ...")
+                logger.info(f"Downloading font file '{font.name}' ...")
                 resp = requests.get(font.url, timeout=10)
                 resp.raise_for_status()
                 target.write_bytes(resp.content)
@@ -82,8 +73,9 @@ def _ensure_fonts_downloaded_and_registered() -> None:
             else:
                 logger.info(f"Successfully downloaded font '{font.name}'.")
 
-        logger.info(f"Registering font {font.name} ...")
-        pdfmetrics.registerFont(TTFont(font.name, str(target)))
+        if target.name.lower().endswith(".ttf"):
+            logger.info(f"Registering font {font.name} ...")
+            pdfmetrics.registerFont(TTFont(font.name, str(target)))
 
 
 class Bookmark(Flowable):
