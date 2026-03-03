@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!doctype html>
 <html>
   <head>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -99,7 +99,7 @@
 
           currentAudio = audio;
           currentPlayingButton = button;
-          button.textContent = "⏸";
+          button.textContent = "⏹";
           button.setAttribute("title", "Pause");
 
           audio.onended = function () {
@@ -110,6 +110,27 @@
             }
             currentAudio = null;
           };
+
+          event.preventDefault();
+        } else if (event.target.classList.contains("download-button")) {
+          const button = event.target;
+          const songId = button.getAttribute("song_id");
+
+          fetch("/api/download?song_id=" + songId)
+            .then((response) => {
+              if (response.ok) {
+                button.setAttribute("title", "Downloading");
+                button.classList.add("animate-pulse");
+                button.disabled = true;
+              } else {
+                response.text().then((text) => {
+                  alert("Error: " + text);
+                });
+              }
+            })
+            .catch((error) => {
+              alert("Error: " + error);
+            });
 
           event.preventDefault();
         }

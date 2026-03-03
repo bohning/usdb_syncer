@@ -9,6 +9,8 @@ import logging
 import os
 import socket
 import sys
+import uuid
+from collections import Counter
 from io import BytesIO
 from typing import Any, ClassVar
 
@@ -19,15 +21,22 @@ from PySide6 import QtCore
 from werkzeug.serving import WSGIRequestHandler
 
 from usdb_syncer import SongId, db, errors, logger, utils
+from usdb_syncer.song_loader import DownloadManager
 from usdb_syncer.usdb_song import UsdbSong
 
+_COOKIE_MAX_AGE = 60 * 60 * 24 * 365
 
-def _get_songs(request: flask.Request) -> list[UsdbSong]:
+
+def _get_songs(
+    request: flask.Request, show_nonlocal_songs: bool, like_counter: Counter[SongId]
+) -> list[UsdbSong]:
     builder = db.SearchBuilder()
-    builder.statuses = [db.DownloadStatus.OUTDATED, db.DownloadStatus.SYNCHRONIZED]
+    if not show_nonlocal_songs:
+        builder.statuses = [db.DownloadStatus.OUTDATED, db.DownloadStatus.SYNCHRONIZED]
     if search := request.args.get("search"):
         builder.text = search
-    match request.args.get("sort_by", "artist"):
+    sort_by = request.args.get("sort_by", "artist")
+    match sort_by:
         case "artist":
             builder.order = db.SongOrder.ARTIST
         case "title":
@@ -41,6 +50,10 @@ def _get_songs(request: flask.Request) -> list[UsdbSong]:
     offset = request.args.get("offset", 0, type=int)
 
     song_ids = db.search_usdb_songs(builder)
+    if sort_by == "likes":
+        song_ids = sorted(
+            song_ids, key=lambda s: like_counter[s], reverse=sort_order == "desc"
+        )
     return [
         s
         for i in itertools.islice(song_ids, offset, offset + limit)
@@ -48,8 +61,14 @@ def _get_songs(request: flask.Request) -> list[UsdbSong]:
     ]
 
 
-def _index(title: str) -> str:
-    songs = _get_songs(flask.request)
+def _index(
+    title: str,
+    show_nonlocal_songs: bool,
+    allow_downloading: bool,
+    like_counter: Counter[SongId],
+    session_id: str,
+) -> str:
+    songs = _get_songs(flask.request, show_nonlocal_songs, like_counter)
     search = flask.request.args.get("search", default="")
     sort_by = flask.request.args.get("sort_by", "artist")
     sort_order = flask.request.args.get("sort_order", "asc")
@@ -62,6 +81,9 @@ def _index(title: str) -> str:
             sort_by=sort_by,
             sort_order=sort_order,
             offset=offset,
+            allow_downloading=allow_downloading,
+            liked_songs=_get_liked_songs(session_id),
+            like_counter=like_counter,
         )
     return flask.render_template(
         "index.html",
@@ -72,11 +94,19 @@ def _index(title: str) -> str:
         sort_by=sort_by,
         sort_order=sort_order,
         offset=offset,
+        allow_downloading=allow_downloading,
+        liked_songs=_get_liked_songs(session_id),
+        like_counter=like_counter,
     )
 
 
-def _api_songs() -> str:
-    songs = _get_songs(flask.request)
+def _api_songs(
+    show_nonlocal_songs: bool,
+    allow_downloading: bool,
+    like_counter: Counter[SongId],
+    session_id: str,
+) -> str:
+    songs = _get_songs(flask.request, show_nonlocal_songs, like_counter)
     search = flask.request.args.get("search", default="")
     sort_by = flask.request.args.get("sort_by", "artist")
     sort_order = flask.request.args.get("sort_order", "asc")
@@ -88,6 +118,9 @@ def _api_songs() -> str:
         sort_by=sort_by,
         sort_order=sort_order,
         offset=offset,
+        allow_downloading=allow_downloading,
+        liked_songs=_get_liked_songs(session_id),
+        like_counter=like_counter,
     )
 
 
@@ -104,20 +137,73 @@ def _api_mp3() -> flask.Response:
     return flask.send_file(audio_path, mimetype="audio/mp3")
 
 
-def _create_app(title: str) -> flask.Flask:
+def _api_download() -> flask.Response:
+    song_id = flask.request.args.get("song_id", type=int)
+    if not song_id:
+        return flask.abort(400, "song_id parameter is required")
+    song = UsdbSong.get(SongId(song_id))
+    if not song:
+        return flask.abort(404, "Song not found")
+    if song.status.can_be_downloaded():
+        DownloadManager.download([song], utils.ProgressProxy(""))
+    return flask.make_response("", 200)
+
+
+def _get_liked_songs(session_id: str) -> set[SongId]:
+    cookie = flask.request.cookies.get("liked_songs", "")
+    if not cookie.startswith(session_id + ":") or len(cookie) <= len(session_id) + 1:
+        return set()
+    return set(map(SongId.parse, cookie[len(session_id) + 1 :].split(",")))
+
+
+def _create_app(
+    title: str, *, show_nonlocal_songs: bool, allow_downloading: bool
+) -> flask.Flask:
     app = flask.Flask(__name__)
+    like_counter: Counter[SongId] = Counter()
+    session_id = str(uuid.uuid4())
 
     @app.route("/")
     def index() -> str:
-        return _index(title)
+        return _index(
+            title, show_nonlocal_songs, allow_downloading, like_counter, session_id
+        )
 
     @app.route("/api/songs")
     def api_songs() -> str:
-        return _api_songs()
+        return _api_songs(
+            show_nonlocal_songs, allow_downloading, like_counter, session_id
+        )
 
     @app.route("/api/mp3")
     def api_mp3() -> flask.Response:
         return _api_mp3()
+
+    @app.route("/api/download")
+    def api_download() -> flask.Response:
+        if not allow_downloading:
+            return flask.abort(403, "Downloading is not allowed")
+        return _api_download()
+
+    @app.post("/api/like/<int:selected_id>")
+    def like(selected_id: int) -> flask.Response:
+        song_id = SongId(selected_id)
+        liked_songs = _get_liked_songs(session_id)
+        if song_id in liked_songs:
+            liked_songs.remove(song_id)
+            like_counter[song_id] -= 1
+            icon = "🤍"
+        else:
+            liked_songs.add(song_id)
+            like_counter[song_id] += 1
+            icon = "❤"
+        resp = flask.make_response(f"{icon} {like_counter[song_id]}")
+        resp.set_cookie(
+            "liked_songs",
+            f"{session_id}:{','.join(map(str, liked_songs))}",
+            max_age=_COOKIE_MAX_AGE,
+        )
+        return resp
 
     @app.before_request
     def before_request() -> None:
@@ -131,7 +217,7 @@ def _create_app(title: str) -> flask.Flask:
 
 
 class _CustomRequestHandler(WSGIRequestHandler):
-    def log(self, type: str, message: str, *args: Any) -> None:  # noqa: A002 ARG002
+    def log(self, type: str, message: str, *args: Any) -> None:  # noqa: A002, ARG002
         # don't log requests to info level
         super().log("debug", message, *args)
 
@@ -157,13 +243,22 @@ class _WebserverManager:
 
     @classmethod
     def start(
-        cls, host: str | None = None, port: int | None = None, title: str | None = None
-    ) -> None:
+        cls,
+        host: str | None = None,
+        port: int | None = None,
+        title: str | None = None,
+        show_nonlocal_songs: bool = False,
+        allow_downloading: bool = False,
+    ) -> bool:
         if cls._server:
-            return
+            return False
         if title:
             cls.title = title
-        app = _create_app(cls.title)
+        app = _create_app(
+            cls.title,
+            show_nonlocal_songs=show_nonlocal_songs,
+            allow_downloading=allow_downloading,
+        )
         cls.host = host or get_local_ip()
         cls._validate_port(port)
         cls._server = werkzeug.serving.make_server(
@@ -172,16 +267,18 @@ class _WebserverManager:
         cls.port = cls._server.socket.getsockname()[1]
         cls._thread = _WebserverThread(cls._server)
         cls._thread.start()
+        return True
 
     @classmethod
-    def stop(cls) -> None:
-        if cls._server:
-            cls._server.shutdown()
-            cls._server = None
-        if cls._thread:
-            cls._thread.quit()
-            cls._thread.wait()
-            cls._thread = None
+    def stop(cls) -> bool:
+        if not cls._server or not cls._thread:
+            return False
+        cls._server.shutdown()
+        cls._server = None
+        cls._thread.quit()
+        cls._thread.wait(10)
+        cls._thread = None
+        return True
 
     @classmethod
     def is_running(cls) -> bool:
@@ -219,16 +316,26 @@ class _WebserverManager:
 
 
 def start(
-    host: str | None = None, port: int | None = None, title: str | None = None
+    host: str | None = None,
+    port: int | None = None,
+    title: str | None = None,
+    show_nonlocal_songs: bool = False,
+    allow_downloading: bool = False,
 ) -> None:
     logging.getLogger("werkzeug").setLevel(logging.DEBUG)
-    _WebserverManager.start(host=host, port=port, title=title)
-    logger.logger.info(f"Webserver is now running on {address()}")
+    if _WebserverManager.start(
+        host=host,
+        port=port,
+        title=title,
+        show_nonlocal_songs=show_nonlocal_songs,
+        allow_downloading=allow_downloading,
+    ):
+        logger.logger.info(f"Webserver is now running on {address()}")
 
 
 def stop() -> None:
-    _WebserverManager.stop()
-    logger.logger.info("Webserver was stopped.")
+    if _WebserverManager.stop():
+        logger.logger.info("Webserver was stopped.")
 
 
 def is_running() -> bool:
