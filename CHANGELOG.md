@@ -10,6 +10,10 @@
 - Resource files that have been modified locally since downloading are now indicated in the song table.
 - When serving the song list as a website, you can now optionally include not yet downloaded songs and let visitors initiate downloads. They can also like songs to signal interest.
 
+## Fixes
+
+- Fixed launching latest YASS Reloaded via the Syncer.
+
 <!-- 0.21.0 -->
 
 # Changes
