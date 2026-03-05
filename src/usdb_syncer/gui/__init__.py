@@ -34,6 +34,7 @@ from usdb_syncer import (
 from usdb_syncer import sync_meta as sync_meta
 from usdb_syncer import usdb_song as usdb_song
 from usdb_syncer.gui import events, hooks, progress, theme
+from usdb_syncer.gui.fonts import get_version_font
 from usdb_syncer.webserver import webserver
 
 if TYPE_CHECKING:
@@ -316,9 +317,8 @@ class SplashScreen(QtWidgets.QSplashScreen):
         canvas = QtGui.QPixmap(":/splash/splash.png")
         painter = QtGui.QPainter(canvas)
         painter.setPen(QtGui.QColor(0, 174, 239))  # light blue
-        font = QtGui.QFont()
-        font.setFamily("Kozuka Gothic Pro")
-        font.setPointSize(20)
+        font = get_version_font() or QtGui.QFont()
+        font.setPixelSize(20)
         painter.setFont(font)
         painter.drawText(
             0,
@@ -416,9 +416,9 @@ def _run_healthcheck() -> int:
 
             NOTICE.read_text(encoding="utf-8")
 
-            from usdb_syncer.gui.pdf import _ensure_fonts_registered
+            from usdb_syncer.gui.pdf import _ensure_fonts_downloaded_and_registered
 
-            _ensure_fonts_registered()
+            _ensure_fonts_downloaded_and_registered()
 
             # sounddevice check
             import sounddevice

@@ -9,7 +9,7 @@ import attrs
 from PySide6.QtCore import Qt
 
 from usdb_syncer import db, settings
-from usdb_syncer.constants import BLACK_STAR, HALF_BLACK_STAR
+from usdb_syncer.constants import RatingSymbol
 from usdb_syncer.custom_data import CustomData
 from usdb_syncer.gui.icons import Icon
 
@@ -470,8 +470,8 @@ class RatingVariant(NodeItemData, enum.Enum):
     def __str__(self) -> str:
         if self == RatingVariant.R_NONE:
             return "None"
-        return int(self.value) * BLACK_STAR + (
-            HALF_BLACK_STAR if self.value % 1 == 0.5 else ""
+        return int(self.value) * RatingSymbol.BLACK_STAR + (
+            RatingSymbol.LEFT_HALF_BLACK_STAR if self.value % 1 == 0.5 else ""
         )
 
     def build_search(self, search: db.SearchBuilder) -> None:

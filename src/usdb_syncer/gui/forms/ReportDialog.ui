@@ -85,7 +85,7 @@
            <item>
             <widget class="QLabel" name="label_7">
              <property name="text">
-              <string>Optional data to include:</string>
+              <string>Optional data to include (drag to sort):</string>
              </property>
             </widget>
            </item>
@@ -112,7 +112,7 @@
               <item row="4" column="0">
                <widget class="QLabel" name="label_font_size">
                 <property name="text">
-                 <string>Font size:</string>
+                 <string>Base font size:</string>
                 </property>
                </widget>
               </item>
