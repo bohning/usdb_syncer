@@ -33,7 +33,7 @@ def create_subset(original_path: Path, output_path: Path) -> None:
     subset.main(
         [
             str(original_path),
-            f"--unicodes={','.join(str(glyph) for glyph in RatingSymbol)}",
+            f"--unicodes={','.join(glyph.unicode_code_point() for glyph in RatingSymbol)}",
             f"--output-file={output_path!s}",
         ]
     )

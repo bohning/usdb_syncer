@@ -24,7 +24,7 @@ class RatingSymbol(StrEnum):
     BLACK_STAR = "\u2605"
     LEFT_HALF_BLACK_STAR = "\u2be8"
 
-    def __str__(self) -> str:
+    def unicode_code_point(self) -> str:
         return f"U+{ord(self.value):04X}"
 
 
