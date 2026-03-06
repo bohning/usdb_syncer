@@ -132,6 +132,12 @@
       "notice_text": "mit_standard"
     },
     {
+      "name": "deno",
+      "license": "MIT",
+      "copyright": "Copyright (c) 2026 Deno Land Inc.",
+      "notice_text": "mit_standard"
+    },
+    {
       "name": "diff-match-patch",
       "license": "Apache-2.0",
       "copyright": "Copyright (c) Neil Fraser",
