@@ -34,8 +34,6 @@ class Icon(enum.Enum):
     CUSTOM_DATA = "drawer.png", "dresser-white.svg"
     DATABASE = "database.png", "database-white.svg"
     DELETE = "bin.png", "delete-white.svg"
-    DENO = "deno.svg", None
-    DENO_UNAVAILABLE = "deno-unavailable.svg", None
     DIFF = "diff.png", "diff-white.svg"
     DOWNLOAD = "status.png", "download-white.svg"
     EDGE = "edge.png", None
