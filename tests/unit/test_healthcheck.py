@@ -4,7 +4,7 @@ from io import StringIO
 
 import pytest
 
-from usdb_syncer import gui
+from usdb_syncer import main
 
 
 def test_healthcheck_warning_exits(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -14,9 +14,9 @@ def test_healthcheck_warning_exits(monkeypatch: pytest.MonkeyPatch) -> None:
         with contextlib.suppress(Exception):
             yield
 
-    monkeypatch.setattr(gui.contextlib, "redirect_stderr", fake_redirect_stderr)
+    monkeypatch.setattr(main.contextlib, "redirect_stderr", fake_redirect_stderr)
 
-    assert gui._run_healthcheck() == 2
+    assert main.run_healthcheck() == 2
 
 
 def test_healthcheck_error_exits(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -26,9 +26,9 @@ def test_healthcheck_error_exits(monkeypatch: pytest.MonkeyPatch) -> None:
         with contextlib.suppress(Exception):
             yield
 
-    monkeypatch.setattr(gui.contextlib, "redirect_stderr", fake_redirect_stderr)
+    monkeypatch.setattr(main.contextlib, "redirect_stderr", fake_redirect_stderr)
 
-    assert gui._run_healthcheck() == 2
+    assert main.run_healthcheck() == 2
 
 
 def test_healthcheck_critical_exits(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -38,9 +38,9 @@ def test_healthcheck_critical_exits(monkeypatch: pytest.MonkeyPatch) -> None:
         with contextlib.suppress(Exception):
             yield
 
-    monkeypatch.setattr(gui.contextlib, "redirect_stderr", fake_redirect_stderr)
+    monkeypatch.setattr(main.contextlib, "redirect_stderr", fake_redirect_stderr)
 
-    assert gui._run_healthcheck() == 2
+    assert main.run_healthcheck() == 2
 
 
 def test_healthcheck_no_warning_succeeds(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -50,6 +50,6 @@ def test_healthcheck_no_warning_succeeds(monkeypatch: pytest.MonkeyPatch) -> Non
         with contextlib.suppress(Exception):
             yield
 
-    monkeypatch.setattr(gui.contextlib, "redirect_stderr", fake_redirect_stderr)
+    monkeypatch.setattr(main.contextlib, "redirect_stderr", fake_redirect_stderr)
 
-    assert gui._run_healthcheck() == 0
+    assert main.run_healthcheck() == 0

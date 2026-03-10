@@ -2,26 +2,17 @@
 
 from __future__ import annotations
 
-import contextlib
-import io
 import logging
 import shutil
-import subprocess
 import sys
-import time
-import traceback
-from argparse import ArgumentParser
 from importlib import resources as importlib_resources
-from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
-import attrs
 from PySide6 import QtCore, QtGui, QtWidgets
-from PySide6.QtCore import Qt, qInstallMessageHandler
+from PySide6.QtCore import Qt
 
 import usdb_syncer
 from usdb_syncer import (
-    addons,
     constants,
     data,
     db,
@@ -34,11 +25,9 @@ from usdb_syncer import (
 from usdb_syncer import sync_meta as sync_meta
 from usdb_syncer import usdb_song as usdb_song
 from usdb_syncer.gui import events, hooks, theme
-from usdb_syncer.webserver import webserver
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-    from types import TracebackType
+    from pathlib import Path
 
     # only import from gui after pyside file generation
     from usdb_syncer.gui.mw import MainWindow
@@ -49,159 +38,9 @@ SCHEMA_ERROR_MESSAGE = (
     f" more recent release, or remove the file at '{utils.AppPaths.db}' and restart to "
     "create a new database."
 )
-NOGIL_ERROR_MESSAGE = (
-    "USDB Syncer does not support running without the GIL. "
-    "Please use a build of Python with GIL support enabled."
-)
 
 
-@attrs.define
-class CliArgs:
-    """Command line arguments."""
-
-    log_level: str = "INFO"
-
-    reset_settings: bool = False
-    subcommand: str = ""
-
-    # Settings
-    songpath: Path | None = None
-
-    # Development
-    profile: bool = False
-    skip_pyside: bool = not constants.IS_SOURCE
-    trace_sql: bool = False
-    healthcheck: bool = False
-
-    # preview
-    txt: Path | None = None
-
-    # webserver
-    host: str | None = None
-    port: int | None = None
-    title: str | None = None
-
-    @classmethod
-    def parse(cls) -> CliArgs:
-        parser = ArgumentParser(description="USDB Syncer")
-        parser.add_argument(
-            "--version", action="version", version=usdb_syncer.__version__
-        )
-        parser.add_argument(
-            "--log-level",
-            type=str.upper,
-            choices=["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"],
-            help="Set the log level for stderr logging. Default is info.",
-        )
-        parser.add_argument(
-            "--reset-settings",
-            action="store_true",
-            help="Reset all settings to default.",
-        )
-
-        setting_overrides = parser.add_argument_group(
-            "settings", "Provide temporary overrides for settings."
-        )
-        setting_overrides.add_argument(
-            "--songpath", type=Path, help="path to the song folder"
-        )
-
-        dev_options = parser.add_argument_group("development", "Development options.")
-        dev_options.add_argument(
-            "--trace-sql", action="store_true", help="Trace SQL statements."
-        )
-        dev_options.add_argument(
-            "--profile", action="store_true", help="Run with profiling."
-        )
-        dev_options.add_argument(
-            "--healthcheck", action="store_true", help="Run healthcheck and exit."
-        )
-        if constants.IS_SOURCE:
-            dev_options.add_argument(
-                "--skip-pyside",
-                action="store_true",
-                help="Skip PySide file generation.",
-            )
-
-        subcommands = parser.add_subparsers(
-            title="subcommands", description="Subcommands.", dest="subcommand"
-        )
-        preview = subcommands.add_parser("preview", help="Show preview for song txt.")
-        preview.add_argument("txt", type=Path, help="Path to the song txt file.")
-
-        serve = subcommands.add_parser(
-            "serve", help="Launch webserver with local songs."
-        )
-        serve.add_argument(
-            "--host",
-            type=int,
-            help="Host for the webservice. Default is the device's public IP address. "
-            "Use 127.0.0.1 (localhost) to not be accessible by other devices "
-            "on the local network.",
-        )
-        serve.add_argument(
-            "--port",
-            type=int,
-            help="Port the webservice will bind to. Defaults to a random free port.",
-        )
-        serve.add_argument("--title", help="Title displayed at the top of the page.")
-
-        return parser.parse_args(namespace=cls())
-
-    def apply(self) -> None:
-        if self.healthcheck:
-            sys.exit(_run_healthcheck())
-        if self.reset_settings:
-            settings.reset()
-        if self.songpath:
-            settings.set_song_dir(self.songpath.resolve(), temp=True)
-        if constants.IS_SOURCE and not self.skip_pyside:
-            import tools.generate_pyside_files  # pylint: disable=import-outside-toplevel
-
-            tools.generate_pyside_files.main()
-        db.set_trace_sql(self.trace_sql)
-
-
-def main() -> None:
-    sys.excepthook = _excepthook
-    if not getattr(sys, "_is_gil_enabled", lambda: True)():
-        print(NOGIL_ERROR_MESSAGE)
-        sys.exit(1)
-    qInstallMessageHandler(handle_qt_log)
-    args = CliArgs.parse()
-    args.apply()
-    addons.load_all()
-    utils.AppPaths.make_dirs()
-    configure_logging(stderr_level=args.log_level)
-    app = _init_app()
-    app.setAttribute(Qt.ApplicationAttribute.AA_DontShowIconsInMenus, False)
-
-    def run_main() -> None:
-        _run_main()
-        app.exec()
-
-    match args.subcommand:
-        case "preview":
-            if args.txt and _run_preview(args.txt):
-                app.exec()
-        case "serve":
-            _run_webserver(host=args.host, port=args.port, title=args.title)
-        case _:
-            if args.profile:
-                _with_profile(run_main)
-            else:
-                run_main()
-
-
-def configure_logging(stderr_level: logger.LOGLEVEL = logging.DEBUG) -> None:
-    handlers: list[logging.Handler] = [
-        logging.FileHandler(utils.AppPaths.log, encoding="utf-8"),
-        logger.StderrHandler(level=stderr_level),
-    ]
-    logger.configure_logging(*handlers, formatter=logger.DEBUG_FORMATTER)
-
-
-def _run_main() -> None:
+def run_gui() -> None:
     from usdb_syncer.gui.mw import MainWindow
 
     mw = MainWindow()
@@ -227,42 +66,11 @@ def _run_main() -> None:
     hooks.MainWindowDidLoad.call(mw)
 
 
-def _run_preview(txt: Path) -> bool:
+def run_preview(txt: Path) -> bool:
     from usdb_syncer.gui.previewer import Previewer
 
     theme.Theme.from_settings().apply()
     return Previewer.load_txt(txt)
-
-
-def _run_webserver(
-    host: str | None = None, port: int | None = None, title: str | None = None
-) -> None:
-    webserver.start(host=host, port=port, title=title)
-    logger.logger.info("Webserver is running in headless mode. Press Ctrl+C to stop.")
-    try:
-        while True:
-            time.sleep(1)
-    except KeyboardInterrupt:
-        webserver.stop()
-
-
-def _excepthook(
-    error_type: type[BaseException], error: BaseException, tb_type: TracebackType | None
-) -> Any:
-    text = "    ".join(traceback.format_exception(error_type, error, tb_type)).strip()
-    logger.logger.error(f"Uncaught exception:\n    {text}")
-
-
-def _with_profile(func: Callable[[], None]) -> None:
-    import cProfile
-
-    logger.logger.debug("Running with profiling enabled.")
-    profiler = cProfile.Profile()
-    profiler.enable()
-    func()
-    profiler.disable()
-    profiler.dump_stats(utils.AppPaths.profile)
-    subprocess.call(["snakeviz", utils.AppPaths.profile])
 
 
 def _load_main_window(mw: MainWindow) -> None:
@@ -308,7 +116,7 @@ def _generate_splashscreen() -> QtWidgets.QSplashScreen:
     return QtWidgets.QSplashScreen(canvas)
 
 
-def _init_app() -> QtWidgets.QApplication:
+def init_app() -> QtWidgets.QApplication:
     app = QtWidgets.QApplication(sys.argv)
     app.setOrganizationName("bohning")
     app.setApplicationName("usdb_syncer")
@@ -344,63 +152,6 @@ def _maybe_copy_licenses() -> None:
     )
 
 
-class StderrHandler(io.StringIO):
-    """Handler for stderr that also prints to the original stderr."""
-
-    def __init__(self) -> None:
-        super().__init__()
-        self._original_stderr = sys.stderr
-
-    def write(self, s: str) -> int:
-        self._original_stderr.write(s)
-        return super().write(s)
-
-    def flush(self) -> None:
-        self._original_stderr.flush()
-        super().flush()
-
-
-def _run_healthcheck() -> int:
-    """Run a healthcheck and return exit code."""
-    handler = StderrHandler()
-    try:
-        with contextlib.redirect_stderr(handler):
-            # import sounddevice properly
-            from usdb_syncer.gui import previewer  # noqa: F401
-
-            # gui modules check
-            from usdb_syncer.gui.mw import MainWindow  # noqa: F401
-
-            # database check
-            db.connect(":memory:")
-
-            # resources check
-            from usdb_syncer.gui.resources.text import NOTICE
-
-            NOTICE.read_text(encoding="utf-8")
-
-            from usdb_syncer.gui.pdf import _ensure_fonts_registered
-
-            _ensure_fonts_registered()
-
-            # sounddevice check
-            import sounddevice
-
-            sounddevice.query_devices()
-
-    except Exception as e:  # noqa: BLE001
-        traceback.print_exc()
-        print(f"USDB Syncer healthcheck: failed: {e}")
-        return 1
-    handler.seek(0)
-    for line in handler:
-        if "[ERROR]" in line or "[WARNING]" in line or "[CRITICAL]" in line:
-            print(f"USDB Syncer healthcheck: failed with error log: {line}")
-            return 2
-    print("USDB Syncer healthcheck: No problems found.")
-    return 0
-
-
 def handle_qt_log(mode: int, _: Any, message: str) -> None:
     """Log Qt messages to the main logger."""
     logger.logger.debug(f"Qt log message with mode {mode}: {message}")
@@ -423,7 +174,3 @@ class _TextEditLogger(logging.Handler):
     def emit(self, record: logging.LogRecord) -> None:
         message = self.format(record)
         self.signals.message_level_time.emit(message, record.levelno, record.created)
-
-
-if __name__ == "__main__":
-    main()
