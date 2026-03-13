@@ -10,6 +10,7 @@ readme = "README.md"
 dependencies = [
     "attrs",
     "beautifulsoup4",
+    "deno>=2.7.4",
     "diff-match-patch",
     "ffmpeg-normalize>=1.27",
     "filetype",

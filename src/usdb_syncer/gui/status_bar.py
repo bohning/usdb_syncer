@@ -19,7 +19,6 @@ class StatusBar:
         self._statusbar = statusbar
         self.set_usdb_login_status()
         self.set_ffmpeg_status()
-        self.set_deno_status()
         self.set_selection_status()
         gui_events.ThemeChanged.subscribe(self._set_usdb)
         events.LoggedInToUSDB.subscribe(self._on_usdb_login)
@@ -42,16 +41,6 @@ class StatusBar:
         self._ffmpeg_button.setCursor(Qt.CursorShape.PointingHandCursor)
         self._set_ffmpeg()
         self._statusbar.addPermanentWidget(self._ffmpeg_button)
-
-    def set_deno_status(self) -> None:
-        self._deno_button = QPushButton(self._statusbar)
-        self._deno_button.setFlat(True)
-        self._deno_button.clicked.connect(
-            lambda: check_external_deps(self._statusbar, lambda: None)
-        )
-        self._deno_button.setCursor(Qt.CursorShape.PointingHandCursor)
-        self._set_deno()
-        self._statusbar.addPermanentWidget(self._deno_button)
 
     def set_selection_status(self) -> None:
         self._selection_label = QLabel(self._statusbar)
@@ -93,18 +82,3 @@ class StatusBar:
         self._ffmpeg_button.setIcon(icon)
         self._ffmpeg_button.setToolTip(tooltip)
         self._ffmpeg_button.setFixedSize(self._ffmpeg_button.sizeHint())
-
-    def _set_deno(self, event: gui_events.ThemeChanged | None = None) -> None:
-        theme = event.theme.KEY if event else None
-        if utils.deno_is_available():
-            text = ""
-            icon = icons.Icon.DENO.icon(theme)
-            tooltip = "Deno is available."
-        else:
-            text = "Deno missing!"
-            icon = icons.Icon.DENO_UNAVAILABLE.icon(theme)
-            tooltip = "Deno is not available! Click for more info."
-        self._deno_button.setText(text)
-        self._deno_button.setIcon(icon)
-        self._deno_button.setToolTip(tooltip)
-        self._deno_button.setFixedSize(self._deno_button.sizeHint())

@@ -19,7 +19,6 @@ from usdb_syncer import (
     data,
     db,
     errors,
-    events,
     settings,
     song_txt,
     usdb_scraper,
@@ -36,14 +35,16 @@ if TYPE_CHECKING:
     from importlib.resources.abc import Traversable
 
 
-def load_available_songs_and_sync_meta(folder: Path, force_reload: bool) -> None:
+def load_available_songs_and_sync_meta(
+    folder: Path, force_reload: bool, progress: utils.ProgressProxy
+) -> None:
     """Load available songs from USDB and synchronize the sync meta folder."""
     with db.transaction():
-        result = load_available_songs(force_reload=force_reload)
-        synchronize_sync_meta_folder(folder, not result.synced_with_usdb)
+        result = load_available_songs(force_reload=force_reload, progress=progress)
+        synchronize_sync_meta_folder(folder, not result.synced_with_usdb, progress)
         SyncMeta.reset_active(folder)
     UsdbSong.clear_cache()
-    initialize_auto_downloads(result.new_songs)
+    initialize_auto_downloads(result.new_songs, progress)
 
 
 @attrs.define
@@ -55,12 +56,13 @@ class LoadSongsResult:
 
 
 def load_available_songs(
-    force_reload: bool, session: Session | None = None
+    force_reload: bool, progress: utils.ProgressProxy, session: Session | None = None
 ) -> LoadSongsResult:
     """Load songs from USDB.
 
     Return true if USDB was queried successfully.
     """
+    progress.reset("Checking available songs.")
     result = LoadSongsResult()
     last = db.LastUsdbUpdate.zero()
     if not force_reload:
@@ -71,14 +73,17 @@ def load_available_songs(
             last = db.LastUsdbUpdate.get()
     try:
         if last.is_zero():
-            songs = usdb_scraper.get_all_songs_from_usdb(session=session)
+            songs = usdb_scraper.get_all_songs_from_usdb(progress, session=session)
         else:
-            songs = usdb_scraper.get_updated_songs_from_usdb(last, session=session)
+            songs = usdb_scraper.get_updated_songs_from_usdb(
+                last, progress, session=session
+            )
     except errors.UsdbLoginError:
         logger.debug("Skipping fetching new songs as there is no login.")
     except requests.exceptions.ConnectionError:
         logger.exception("Failed to fetch new songs; check network connection.")
     else:
+        progress.reset("Writing USDB songs to database.")
         result.synced_with_usdb = True
         if songs:
             UsdbSong.upsert_many(songs)
@@ -100,7 +105,9 @@ def _get_default_search_song_ids() -> set[SongId]:
     )
 
 
-def initialize_auto_downloads(updates: set[SongId]) -> None:
+def initialize_auto_downloads(
+    updates: set[SongId], progress: utils.ProgressProxy
+) -> None:
     if not utils.ffmpeg_is_available():
         return
     download_ids = _get_default_search_song_ids().intersection(updates)
@@ -110,11 +117,7 @@ def initialize_auto_downloads(updates: set[SongId]) -> None:
     songs = [s for i in download_ids if (s := UsdbSong.get(i))]
     if not songs:
         return
-    with db.transaction():
-        for song in songs:
-            song.set_status(db.DownloadStatus.PENDING)
-    events.DownloadsRequested(len(songs)).post()
-    DownloadManager.download(songs)
+    DownloadManager.download(songs, progress)
 
 
 def load_cached_songs() -> list[UsdbSong] | None:
@@ -153,9 +156,12 @@ class _SyncMetaFolderSyncer:
     song_ids: set[SongId]
     to_upsert: list[SyncMeta]
     found_metas: set[SyncMetaId]
+    progress: utils.ProgressProxy
 
     @classmethod
-    def new(cls, folder: Path, keep_unknown_song_ids: bool) -> _SyncMetaFolderSyncer:
+    def new(
+        cls, folder: Path, keep_unknown_song_ids: bool, progress: utils.ProgressProxy
+    ) -> _SyncMetaFolderSyncer:
         return cls(
             folder=folder,
             keep_unknown_song_ids=keep_unknown_song_ids,
@@ -163,11 +169,17 @@ class _SyncMetaFolderSyncer:
             song_ids=set(db.all_song_ids()),
             to_upsert=[],
             found_metas=set(),
+            progress=progress,
         )
 
     def process(self) -> None:
-        for path in _iterate_usdb_files_in_folder_recursively(folder=self.folder):
+        self.progress.reset("Searching for .usdb files.")
+        paths = list(_iterate_usdb_files_in_folder_recursively(folder=self.folder))
+        self.progress.reset("Checking .usdb files.", maximum=len(paths))
+        for path in paths:
             self._process_path(path)
+            self.progress.increase()
+        self.progress.reset("Writing changes to database.")
         SyncMeta.delete_many_in_folder(
             self.folder, tuple(self.db_metas.keys() - self.found_metas)
         )
@@ -211,13 +223,18 @@ class _SyncMetaFolderSyncer:
                 utils.trash_or_delete_path(path.parent)
 
 
-def synchronize_sync_meta_folder(folder: Path, keep_unknown_song_ids: bool) -> None:
-    _SyncMetaFolderSyncer.new(folder, keep_unknown_song_ids).process()
+def synchronize_sync_meta_folder(
+    folder: Path, keep_unknown_song_ids: bool, progress: utils.ProgressProxy
+) -> None:
+    _SyncMetaFolderSyncer.new(folder, keep_unknown_song_ids, progress).process()
 
 
-def find_local_songs(directory: Path) -> set[SongId]:
+def find_local_songs(directory: Path, progress: utils.ProgressProxy) -> set[SongId]:
+    progress.reset("Searching for .txt files.")
+    paths = list(directory.glob("**/*.txt"))
     matched_rows: set[SongId] = set()
-    for path in directory.glob("**/*.txt"):
+    progress.reset("Parsing .txt files.", maximum=len(paths))
+    for path in paths:
         if headers := try_parse_txt_headers(path):
             name = headers.artist_title_str()
             if matches := list(
@@ -230,6 +247,7 @@ def find_local_songs(directory: Path) -> set[SongId]:
                 matched_rows.update(matches)
             else:
                 logger.warning(f"No matches for '{name}'.")
+        progress.increase()
     return matched_rows
 
 

@@ -9,7 +9,6 @@ from typing import TYPE_CHECKING, Any
 
 import attrs
 
-from usdb_syncer import SongId
 from usdb_syncer.logger import logger
 from usdb_syncer.meta_tags import ImagePrefix
 from usdb_syncer.usdb_song import UsdbSong
@@ -19,7 +18,7 @@ if TYPE_CHECKING:
     from collections.abc import Iterable
     from pathlib import Path
 
-    from usdb_syncer import SongId
+    from usdb_syncer import SongId, utils
 
 
 JSON_EXPORT_VERSION = 1
@@ -118,8 +117,9 @@ class JsonSongListEncoder(JSONEncoder):
 
 
 def generate_report_json(
-    songs: Iterable[SongId], path: Path, indent: int = 4
+    songs: Iterable[SongId], path: Path, progress: utils.ProgressProxy, indent: int = 4
 ) -> tuple[Path, int]:
+    progress.reset("Creating JSON report.")
     content = JsonSongList.from_songs(songs=songs, date=datetime.datetime.now())
     with path.open("w", encoding="utf8") as file:
         json.dump(

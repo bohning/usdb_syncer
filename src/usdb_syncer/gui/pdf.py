@@ -3,9 +3,11 @@
 from collections import defaultdict
 from collections.abc import Iterable
 from dataclasses import dataclass
+from datetime import datetime
 from functools import cache
 from typing import assert_never
 
+import requests
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import A3, A4, A5, LEGAL, LETTER, landscape
 from reportlab.lib.styles import ParagraphStyle
@@ -15,22 +17,65 @@ from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.pdfgen.canvas import Canvas
 from reportlab.platypus import BaseDocTemplate, Flowable, Frame, PageTemplate, Paragraph
 
-from usdb_syncer import SongId, utils
-from usdb_syncer.gui.resources import fonts
-from usdb_syncer.gui.song_table.column import Column
+from usdb_syncer import SongId, __version__, utils
+from usdb_syncer.gui.song_table.column import Column, rating_str
+from usdb_syncer.logger import logger
 from usdb_syncer.settings import ReportPDFOrientation, ReportPDFPagesize
 from usdb_syncer.usdb_song import UsdbSong
 
 
+@dataclass(frozen=True)
+class FontFile:
+    """Font file for PDF report generation."""
+
+    name: str
+    url: str
+
+
+FONT_LICENSE = FontFile(
+    name="OFL.txt",
+    url="https://github.com/notofonts/notofonts.github.io/raw/refs/heads/main/fonts/LICENSE",
+)
+
+FONT_INITIAL = FontFile(
+    name="NotoSans-Black.ttf",
+    url="https://github.com/notofonts/notofonts.github.io/raw/refs/heads/main/fonts/NotoSans/unhinted/ttf/NotoSans-Black.ttf",
+)
+FONT_ARTIST = FontFile(
+    name="GoNotoCurrent-Bold.ttf",
+    url="https://github.com/satbyy/go-noto-universal/releases/download/v7.0/GoNotoCurrent-Bold.ttf",
+)
+FONT_ENTRY = FontFile(
+    name="GoNotoCurrent-Regular.ttf",
+    url="https://github.com/satbyy/go-noto-universal/releases/download/v7.0/GoNotoCurrent-Regular.ttf",
+)
+
+FONT_FILES = [FONT_LICENSE, FONT_INITIAL, FONT_ARTIST, FONT_ENTRY]
+
+
 @cache
-def _ensure_fonts_registered() -> None:
-    """Register PDF fonts on first use instead of at import time."""
-    for font in (
-        fonts.NOTOSANS_BLACK_TTF,
-        fonts.NOTOSANS_BOLD_TTF,
-        fonts.NOTOSANS_WITH_SYMBOLS2_REGULAR_TTF,
-    ):
-        pdfmetrics.registerFont(TTFont(font.name, font))
+def _ensure_fonts_downloaded_and_registered() -> None:
+    """Download and register PDF fonts on first use instead of at import time."""
+    font_dir = utils.AppPaths.fonts
+    font_dir.mkdir(parents=True, exist_ok=True)
+
+    for font in FONT_FILES:
+        target = font_dir / font.name
+        if not target.exists():
+            try:
+                logger.info(f"Downloading font file '{font.name}' ...")
+                resp = requests.get(font.url, timeout=10)
+                resp.raise_for_status()
+                target.write_bytes(resp.content)
+            except requests.RequestException:
+                logger.exception(f"Failed to download font '{font.name}'.")
+                continue
+            else:
+                logger.info(f"Successfully downloaded font '{font.name}'.")
+
+        if target.name.lower().endswith(".ttf"):
+            logger.info(f"Registering font {font.name} ...")
+            pdfmetrics.registerFont(TTFont(font.name, str(target)))
 
 
 class Bookmark(Flowable):
@@ -57,8 +102,10 @@ def generate_report_pdf(
     column_count: int = 1,
     base_font_size: int = 10,
     optional_info: list[Column] | None = None,
+    progress: utils.ProgressProxy,
 ) -> str:
-    _ensure_fonts_registered()
+    progress.reset("Creating PDF report.")
+    _ensure_fonts_downloaded_and_registered()
     optional_info = optional_info or []
     pagesize = _get_pagesize(size, orientation)
 
@@ -69,6 +116,8 @@ def generate_report_pdf(
         rightMargin=margin * mm,
         topMargin=margin * mm,
         bottomMargin=margin * mm,
+        author=f"USDB Syncer {__version__}",
+        title=f"Song List ({datetime.now().strftime('%Y-%m-%d %H:%M:%S')})",
     )
 
     custom_styles = _create_paragraph_styles(base_font_size)
@@ -123,7 +172,7 @@ def _create_paragraph_styles(base_font_size: int) -> ParagraphStyles:
     return ParagraphStyles(
         initial=ParagraphStyle(
             "Initial",
-            fontName=fonts.NOTOSANS_BLACK_TTF.name,
+            fontName=FONT_INITIAL.name,
             fontSize=base_font_size * 3,
             textColor=colors.green,
             spaceBefore=base_font_size * 2.4,
@@ -131,7 +180,7 @@ def _create_paragraph_styles(base_font_size: int) -> ParagraphStyles:
         ),
         artist=ParagraphStyle(
             "Artist",
-            fontName=fonts.NOTOSANS_BOLD_TTF.name,
+            fontName=FONT_ARTIST.name,
             fontSize=base_font_size * 1.2,
             spaceBefore=base_font_size * 1.2,
             leading=base_font_size * 1.6,
@@ -140,7 +189,7 @@ def _create_paragraph_styles(base_font_size: int) -> ParagraphStyles:
         ),
         entry=ParagraphStyle(
             "Entry",
-            fontName=fonts.NOTOSANS_WITH_SYMBOLS2_REGULAR_TTF.name,
+            fontName=FONT_ENTRY.name,
             fontSize=base_font_size,
             leftIndent=base_font_size,
             leading=base_font_size * 1.4,
@@ -184,29 +233,35 @@ def _build_pdf_content(
 def _format_song_entry(  # noqa: C901
     song: UsdbSong, base_font_size: int, optional_info: list[Column]
 ) -> str:
-    entry = f"{song.title} "
+    entry = f"{song.title}  "
     entry += f'<font size="{base_font_size * 0.8}" color="{colors.grey.hexval()}">'
+    parts: list[str] = []
     for column in optional_info:
         match column:
             case Column.LANGUAGE:
                 if song.language:
-                    entry += f"&nbsp;&nbsp;{song.language}"
+                    parts.append(song.language)
             case Column.EDITION:
                 if song.edition:
-                    entry += f"&nbsp;&nbsp;{song.edition}"
+                    parts.append(song.edition)
             case Column.GENRE:
                 if song.genre:
-                    entry += f"&nbsp;&nbsp;{song.genre}"
+                    parts.append(song.genre)
             case Column.YEAR:
                 if song.year:
-                    entry += f"&nbsp;&nbsp;{song.year}"
+                    parts.append(str(song.year))
             case Column.CREATOR:
                 if song.creator:
-                    entry += f"&nbsp;&nbsp;{song.creator}"
+                    parts.append(song.creator)
             case Column.SONG_ID:
-                entry += f"&nbsp;&nbsp;({song.song_id})"
+                parts.append(str(song.song_id))
+            case Column.RATING:
+                if song.rating > 0:
+                    parts.append(rating_str(song.rating))
             case _:
                 pass
+    if parts:
+        entry += "&nbsp;| ".join(parts)
     entry += "</font>"
     return entry
 
@@ -214,7 +269,7 @@ def _format_song_entry(  # noqa: C901
 def _add_page_number(canvas: Canvas, doc: BaseDocTemplate) -> None:
     canvas.saveState()
     page_num: str = str(doc.page)
-    canvas.setFont(fonts.NOTOSANS_WITH_SYMBOLS2_REGULAR_TTF.name, 8)
+    canvas.setFont(FONT_ENTRY.name, 8)
     canvas.setFillColor(colors.grey)
     canvas.drawCentredString(doc.pagesize[0] / 2, doc.bottomMargin * 0.5, page_num)
     canvas.restoreState()

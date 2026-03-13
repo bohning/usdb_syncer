@@ -144,9 +144,9 @@ def run_healthcheck() -> int:
 
             NOTICE.read_text(encoding="utf-8")
 
-            from usdb_syncer.gui.pdf import _ensure_fonts_registered
+            from usdb_syncer.gui.pdf import _ensure_fonts_downloaded_and_registered
 
-            _ensure_fonts_registered()
+            _ensure_fonts_downloaded_and_registered()
 
             # sounddevice check
             import sounddevice

@@ -1,6 +1,7 @@
 """Table model for song data."""
 
 from collections.abc import Iterable
+from pathlib import Path
 from typing import Any, assert_never
 
 from PySide6.QtCore import (
@@ -21,6 +22,7 @@ from usdb_syncer.sync_meta import Resource
 from usdb_syncer.usdb_song import UsdbSong
 
 QIndex = QModelIndex | QPersistentModelIndex
+_SINGLE_ROW_UPDATE_THRESHOLD = 100
 
 
 class TableModel(QAbstractTableModel):
@@ -33,7 +35,7 @@ class TableModel(QAbstractTableModel):
         super().__init__(parent)
         self._rows = {}
         self._theme = settings.get_theme()
-        events.SongChanged.subscribe(self._on_song_changed)
+        events.SongsChanged.subscribe(self._on_songs_changed)
         events.SongDeleted.subscribe(self._on_song_deleted)
         events.SongDirChanged.subscribe(lambda _: self.reset)
         gui_events.CustomColumnToggled.subscribe(self._on_custom_column_toggled)
@@ -70,9 +72,16 @@ class TableModel(QAbstractTableModel):
         end_idx = self.index(row, self.columnCount() - 1)
         self.dataChanged.emit(start_idx, end_idx)
 
-    def _on_song_changed(self, event: events.SongChanged) -> None:
-        if (row := self._rows.get(event.song_id)) is not None:
-            self._row_changed(row)
+    def _on_songs_changed(self, event: events.SongsChanged) -> None:
+        if len(event.song_ids) > _SINGLE_ROW_UPDATE_THRESHOLD:
+            self.dataChanged.emit(
+                self.index(0, 0),
+                self.index(self.rowCount() - 1, self.columnCount() - 1),
+            )
+        else:
+            for song_id in event.song_ids:
+                if (row := self._rows.get(song_id)) is not None:
+                    self._row_changed(row)
 
     def _on_song_deleted(self, event: events.SongDeleted) -> None:
         if (row := self._rows.get(event.song_id)) is None:
@@ -167,31 +176,33 @@ def _tooltip_data(song: UsdbSong, column: int) -> str | None:
 
     col = Column.from_index(column)
     if resource := col.get_resource_for_column(sync_meta):
-        return status_tooltip(resource)
+        return status_tooltip(resource, sync_meta.path.parent)
 
     return None
 
 
-def status_tooltip(resource: Resource) -> str:
-    file = resource.file
+def status_tooltip(resource: Resource, folder: Path) -> str:
+    local_changes = ""
+    if (file := resource.file) and not file.is_in_sync(folder):
+        local_changes = " (has local changes)"
     match resource.status:
         case JobStatus.SUCCESS | JobStatus.SUCCESS_UNCHANGED:
-            tooltip = file.fname if file else "local file missing"
+            tooltip = f"{file.fname}{local_changes}" if file else "Local file missing"
         case JobStatus.SKIPPED_DISABLED:
             tooltip = "Resource download disabled in the settings"
         case JobStatus.SKIPPED_UNAVAILABLE:
             tooltip = "No resource available"
         case JobStatus.FALLBACK:
             tooltip = (
-                (f"{file.fname} (fallback to commented/USDB resource)")
+                (f"{file.fname} (fallback to commented/USDB resource){local_changes}")
                 if file
-                else "local file missing"
+                else "Local file missing"
             )
         case JobStatus.FAILURE_EXISTING:
             tooltip = (
-                (f"{file.fname} (fallback to existing resource)")
+                (f"{file.fname} (fallback to existing resource){local_changes}")
                 if file
-                else "local file missing"
+                else "Local file missing"
             )
         case JobStatus.FAILURE:
             tooltip = "Resource download failed"

@@ -87,13 +87,16 @@ class _DbState:
 
 
 @contextlib.contextmanager
-def transaction() -> Generator[None, None, None]:
+def transaction(commit_on_error: bool = False) -> Generator[None, None, None]:
     try:
         _DbState.connection().execute("BEGIN IMMEDIATE")
         _DbState.in_transaction = True
         yield None
     except Exception:
-        _DbState.connection().rollback()
+        if commit_on_error:
+            _DbState.connection().commit()
+        else:
+            _DbState.connection().rollback()
         _DbState.in_transaction = False
         raise
     _DbState.connection().commit()
