@@ -1,0 +1,10 @@
+Toast {
+    background-color: rgba(40, 40, 40, 230);
+    border-radius: 8px;
+    border: 1px solid rgba(80, 80, 80, 255);
+}
+QLabel {
+    color: white;
+    font-size: 15px;
+    background: transparent;
+}
