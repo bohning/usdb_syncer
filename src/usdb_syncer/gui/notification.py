@@ -2,22 +2,24 @@
 
 from __future__ import annotations
 
+from enum import Enum
 from typing import TYPE_CHECKING
 
 from PySide6.QtCore import QEvent, QObject, QPoint, QPropertyAnimation, Qt, QTimer
-from PySide6.QtGui import QPainter
+from PySide6.QtGui import QColor, QPainter
 from PySide6.QtWidgets import (
     QApplication,
     QGraphicsOpacityEffect,
     QHBoxLayout,
     QLabel,
-    QMainWindow,
     QStyle,
     QStyleOption,
     QWidget,
 )
 
-from usdb_syncer.gui.resources.styles import TOAST_QSS
+from usdb_syncer import logger
+from usdb_syncer.gui import events as gui_events
+from usdb_syncer.gui import main_window_instance, theme
 
 if TYPE_CHECKING:
     from PySide6.QtGui import QCloseEvent, QPaintEvent
@@ -25,9 +27,17 @@ if TYPE_CHECKING:
     from usdb_syncer.gui.icons import Icon
 
 
-_TOAST_MARGIN = 30
+_TOAST_MARGIN = 50
 _TOAST_SPACING = 10
 _FADE_DURATION_MS = 300
+
+
+class ToastType(Enum):
+    """Type of toast."""
+
+    INFO = QColor(0, 128, 255)
+    WARNING = QColor(255, 165, 0)
+    ERROR = QColor(255, 0, 0)
 
 
 class Toast(QWidget):
@@ -36,11 +46,14 @@ class Toast(QWidget):
     def __init__(
         self,
         message: str,
+        toast_type: ToastType,
         icon: Icon | None = None,
         delay_ms: int = 3000,
         parent: QWidget | None = None,
     ) -> None:
         super().__init__(parent)
+
+        self.icon = icon
 
         self.setWindowFlags(
             Qt.WindowType.Tool
@@ -56,11 +69,15 @@ class Toast(QWidget):
         layout.setContentsMargins(15, 10, 15, 10)
         layout.setSpacing(10)
 
-        self.setStyleSheet(TOAST_QSS.read_text())
+        self.setStyleSheet(
+            theme.generate_toast_css(
+                theme.Theme.from_settings().toast_palette(toast_type.value)
+            )
+        )
 
         if icon:
-            icon_label = QLabel(self, pixmap=icon.icon().pixmap(16, 16))
-            layout.addWidget(icon_label)
+            self.icon_label = QLabel(self, pixmap=icon.icon().pixmap(16, 16))
+            layout.addWidget(self.icon_label)
 
         text_label = QLabel(message, self)
         layout.addWidget(text_label)
@@ -116,13 +133,18 @@ class ToastManager(QObject):
         self.toasts: list[Toast] = []
         self.slide_animations: list[QPropertyAnimation] = []
 
-        app = QApplication.instance()
-        if isinstance(app, QApplication):
-            for widget in app.topLevelWidgets():
-                if isinstance(widget, QMainWindow):
-                    self.main_window = widget
-                    widget.installEventFilter(self)
-                    break
+        if main_window_instance:
+            main_window_instance.installEventFilter(self)
+        gui_events.ThemeChanged.subscribe(self._on_theme_changed)
+
+    def _on_theme_changed(self, event: gui_events.ThemeChanged) -> None:
+        css = theme.generate_toast_css(event.theme.toast_palette())
+        for toast in self.toasts:
+            toast.setStyleSheet(css)
+            if toast.icon:
+                toast.icon_label.setPixmap(
+                    toast.icon.icon(event.theme.KEY).pixmap(16, 16)
+                )
 
     @classmethod
     def get_instance(cls) -> ToastManager:
@@ -134,13 +156,24 @@ class ToastManager(QObject):
 
     @classmethod
     def show_message(
-        cls, message: str, icon: Icon | None = None, delay_ms: int = 10_000
+        cls,
+        message: str,
+        toast_type: ToastType = ToastType.INFO,
+        icon: Icon | None = None,
+        delay_ms: int = 10_000,
     ) -> None:
         """Show a toast message."""
-        cls.get_instance()._spawn_toast(message, icon, delay_ms)
+        if not main_window_instance:
+            logger.logger.warning(
+                "No main window instance available to show toast: %s", message
+            )
+            return
+        cls.get_instance()._spawn_toast(message, toast_type, icon, delay_ms)
 
-    def _spawn_toast(self, message: str, icon: Icon | None, delay_ms: int) -> None:
-        toast = Toast(message, icon, delay_ms, parent=self.main_window)
+    def _spawn_toast(
+        self, message: str, toast_type: ToastType, icon: Icon | None, delay_ms: int
+    ) -> None:
+        toast = Toast(message, toast_type, icon, delay_ms, parent=main_window_instance)
         toast.adjustSize()
 
         bottom_right = self._get_bottom_right()
@@ -156,7 +189,11 @@ class ToastManager(QObject):
         toast.show_toast()
 
     def _get_bottom_right(self) -> QPoint:
-        return self.main_window.mapToGlobal(self.main_window.rect().bottomRight())
+        if not main_window_instance:
+            raise
+        return main_window_instance.mapToGlobal(
+            main_window_instance.rect().bottomRight()
+        )
 
     def remove_toast(self, toast: Toast) -> None:
         if toast in self.toasts:
@@ -196,7 +233,7 @@ class ToastManager(QObject):
 
     def eventFilter(self, watched: QObject, event: QEvent) -> bool:  # noqa: N802
         """Move toasts when main window moves or resizes."""
-        if watched == self.main_window and event.type() in (
+        if watched == main_window_instance and event.type() in (
             QEvent.Type.Move,
             QEvent.Type.Resize,
         ):
