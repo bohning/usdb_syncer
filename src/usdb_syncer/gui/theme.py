@@ -66,6 +66,10 @@ def _rgb_str(color: QColor) -> str:
     return f"rgb({color.red()}, {color.green()}, {color.blue()})"
 
 
+def _rgba_str(color: QColor) -> str:
+    return f"rgba({color.red()}, {color.green()}, {color.blue()}, {color.alpha()})"
+
+
 def generate_diff_css(palette: DiffPalette) -> str:
     """Generate diff CSS from theme palette."""
     return styles.DIFF_CSS.read_text(encoding="utf-8").format(
@@ -82,6 +86,15 @@ def generate_diff_css(palette: DiffPalette) -> str:
         del_inline_bg=_rgb_str(palette.del_inline_bg),
         del_inline_text=_rgb_str(palette.del_inline_text),
         empty_bg=_rgb_str(palette.empty_bg),
+    )
+
+
+def generate_toast_css(palette: ToastPalette) -> str:
+    """Generate toast CSS from theme palette."""
+    return styles.TOAST_QSS.read_text(encoding="utf-8").format(
+        bg=_rgba_str(palette.bg),
+        text=_rgba_str(palette.text),
+        border=_rgba_str(palette.border),
     )
 
 
@@ -119,6 +132,15 @@ class DiffPalette:
     lineno_border: QColor
 
 
+@attrs.define
+class ToastPalette:
+    """Palette for toast notifications."""
+
+    bg: QColor
+    text: QColor
+    border: QColor
+
+
 class Theme(abc.ABC):
     """Abstract base class for themes."""
 
@@ -138,6 +160,10 @@ class Theme(abc.ABC):
 
     @abc.abstractmethod
     def diff_palette(self) -> DiffPalette:
+        pass
+
+    @abc.abstractmethod
+    def toast_palette(self, backgroud_accent: QColor | None = None) -> ToastPalette:
         pass
 
     @classmethod
@@ -222,6 +248,16 @@ class SystemTheme(Theme):
             empty_bg=_overlay_colors(base, palette.highlight().color(), 0.3),
             lineno_text=gray.s_700,
             lineno_border=gray.s_700,
+        )
+
+    def toast_palette(self, backgroud_accent: QColor | None = None) -> ToastPalette:
+        palette = self.q_palette()
+        bg = palette.window().color()
+        if backgroud_accent:
+            bg = _overlay_colors(bg, backgroud_accent, 0.1)
+        bg.setAlpha(230)
+        return ToastPalette(
+            bg=bg, text=palette.text().color(), border=palette.dark().color()
         )
 
 
@@ -332,6 +368,13 @@ class DarkTheme(Theme):
             lineno_text=self.text(_Text.DISABLED),
             lineno_border=self.surface(_Surface.DP_03),
         )
+
+    def toast_palette(self, backgroud_accent: QColor | None = None) -> ToastPalette:
+        bg = self.surface(_Surface.DP_24)
+        if backgroud_accent:
+            bg = _overlay_colors(bg, backgroud_accent, 0.1)
+        bg.setAlpha(230)
+        return ToastPalette(bg=bg, text=self.text(_Text.HIGH), border=self.primary)
 
 
 @attrs.define

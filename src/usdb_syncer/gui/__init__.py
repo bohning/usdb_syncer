@@ -56,6 +56,9 @@ NOGIL_ERROR_MESSAGE = (
 )
 
 
+main_window_instance: MainWindow | None = None
+
+
 @attrs.define
 class CliArgs:
     """Command line arguments."""
@@ -216,10 +219,13 @@ def configure_logging(stderr_level: logger.LOGLEVEL = logging.DEBUG) -> None:
 def _run_main() -> None:
     from usdb_syncer.gui.mw import MainWindow
 
+    global main_window_instance
+
     mw = MainWindow()
     mw_logger = _TextEditLogger(mw)
     mw_logger.setFormatter(logger.GUI_FORMATTER)
     logger.add_root_handler(mw_logger)
+    main_window_instance = mw
     mw.label_update_hint.setVisible(False)
     if not constants.IS_SOURCE:
         if version := utils.newer_version_available():
