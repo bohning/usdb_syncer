@@ -13,6 +13,10 @@
 ## Fixes
 - PDF reports now display figures correctly.
 
+## Fixes
+
+- Fixed launching latest YASS Reloaded via the Syncer.
+
 <!-- 0.21.0 -->
 
 # Changes
