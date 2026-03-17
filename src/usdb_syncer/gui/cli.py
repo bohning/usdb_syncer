@@ -108,7 +108,7 @@ class CliArgs:
     def apply(self) -> None:
         if self.healthcheck:
             # Import here to avoid circular imports.
-            from usdb_syncer.main import run_healthcheck
+            from usdb_syncer.gui.main import run_healthcheck
 
             sys.exit(run_healthcheck())
         if self.reset_settings:

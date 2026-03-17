@@ -4,7 +4,7 @@ from io import StringIO
 
 import pytest
 
-from usdb_syncer import main
+from usdb_syncer.gui import main
 
 
 def test_healthcheck_warning_exits(monkeypatch: pytest.MonkeyPatch) -> None:

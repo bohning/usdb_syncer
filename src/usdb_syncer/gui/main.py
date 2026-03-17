@@ -1,4 +1,4 @@
-"""Main entrypoint for USDB Syncer."""
+"""Main GUI entrypoint for USDB Syncer."""
 
 from __future__ import annotations
 
@@ -12,8 +12,9 @@ import traceback
 from typing import TYPE_CHECKING, Any
 
 from usdb_syncer import addons, db, logger, utils
-from usdb_syncer.cli import CliArgs
 from usdb_syncer.webserver import webserver
+
+from .cli import CliArgs
 
 if TYPE_CHECKING:
     from collections.abc import Generator
