@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from enum import Enum
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, ClassVar
 
 from PySide6.QtCore import QEvent, QObject, QPoint, QPropertyAnimation, Qt, QTimer
 from PySide6.QtGui import QColor, QPainter
@@ -17,9 +17,9 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from usdb_syncer import logger
+from usdb_syncer import errors, logger
 from usdb_syncer.gui import events as gui_events
-from usdb_syncer.gui import main_window_instance, theme
+from usdb_syncer.gui import theme
 
 if TYPE_CHECKING:
     from PySide6.QtGui import QCloseEvent, QPaintEvent
@@ -53,6 +53,7 @@ class Toast(QWidget):
     ) -> None:
         super().__init__(parent)
 
+        self.toast_type = toast_type
         self.icon = icon
 
         self.setWindowFlags(
@@ -122,29 +123,33 @@ class Toast(QWidget):
         ToastManager.get_instance().remove_toast(self)
         super().closeEvent(event)
 
+    def update_theme(self, new_theme: theme.Theme) -> None:
+        self.setStyleSheet(
+            theme.generate_toast_css(new_theme.toast_palette(self.toast_type.value))
+        )
+        if self.icon:
+            self.icon_label.setPixmap(self.icon.icon(new_theme.KEY).pixmap(16, 16))
+
 
 class ToastManager(QObject):
     """Manages Toasts."""
 
     _instance: ToastManager | None = None
+    _mainwindow: ClassVar[QWidget | None] = None
 
     def __init__(self, parent: QObject | None = None) -> None:
+        if not ToastManager._mainwindow:
+            raise errors.NoMainWindowError("ToastManager")
+
         super().__init__(parent)
         self.toasts: list[Toast] = []
         self.slide_animations: list[QPropertyAnimation] = []
 
-        if main_window_instance:
-            main_window_instance.installEventFilter(self)
         gui_events.ThemeChanged.subscribe(self._on_theme_changed)
 
     def _on_theme_changed(self, event: gui_events.ThemeChanged) -> None:
-        css = theme.generate_toast_css(event.theme.toast_palette())
         for toast in self.toasts:
-            toast.setStyleSheet(css)
-            if toast.icon:
-                toast.icon_label.setPixmap(
-                    toast.icon.icon(event.theme.KEY).pixmap(16, 16)
-                )
+            toast.update_theme(event.theme)
 
     @classmethod
     def get_instance(cls) -> ToastManager:
@@ -155,6 +160,12 @@ class ToastManager(QObject):
         return cls._instance
 
     @classmethod
+    def set_main_window(cls, window: QWidget) -> None:
+        """Set the main window."""
+        cls._mainwindow = window
+        window.installEventFilter(cls.get_instance())
+
+    @classmethod
     def show_message(
         cls,
         message: str,
@@ -163,7 +174,7 @@ class ToastManager(QObject):
         delay_ms: int = 10_000,
     ) -> None:
         """Show a toast message."""
-        if not main_window_instance:
+        if not ToastManager._mainwindow:
             logger.logger.warning(
                 "No main window instance available to show toast: %s", message
             )
@@ -173,7 +184,9 @@ class ToastManager(QObject):
     def _spawn_toast(
         self, message: str, toast_type: ToastType, icon: Icon | None, delay_ms: int
     ) -> None:
-        toast = Toast(message, toast_type, icon, delay_ms, parent=main_window_instance)
+        toast = Toast(
+            message, toast_type, icon, delay_ms, parent=ToastManager._mainwindow
+        )
         toast.adjustSize()
 
         bottom_right = self._get_bottom_right()
@@ -189,10 +202,10 @@ class ToastManager(QObject):
         toast.show_toast()
 
     def _get_bottom_right(self) -> QPoint:
-        if not main_window_instance:
-            raise
-        return main_window_instance.mapToGlobal(
-            main_window_instance.rect().bottomRight()
+        if not ToastManager._mainwindow:
+            raise errors.NoMainWindowError("ToastManager")
+        return ToastManager._mainwindow.mapToGlobal(
+            ToastManager._mainwindow.rect().bottomRight()
         )
 
     def remove_toast(self, toast: Toast) -> None:
@@ -208,6 +221,7 @@ class ToastManager(QObject):
         """
         for anim in self.slide_animations:
             anim.stop()
+            anim.deleteLater()
         self.slide_animations.clear()
 
         bottom_right = self._get_bottom_right()
@@ -226,14 +240,14 @@ class ToastManager(QObject):
                 anim.setEndValue(target_pos)
                 anim.start()
                 self.slide_animations.append(anim)
-            elif not animate:
+            elif not animate and toast.pos() != target_pos:
                 toast.move(target_pos)
 
             current_y = target_y - _TOAST_SPACING
 
     def eventFilter(self, watched: QObject, event: QEvent) -> bool:  # noqa: N802
         """Move toasts when main window moves or resizes."""
-        if watched == main_window_instance and event.type() in (
+        if watched == ToastManager._mainwindow and event.type() in (
             QEvent.Type.Move,
             QEvent.Type.Resize,
         ):

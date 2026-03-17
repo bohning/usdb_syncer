@@ -33,7 +33,7 @@ from usdb_syncer import (
 )
 from usdb_syncer import sync_meta as sync_meta
 from usdb_syncer import usdb_song as usdb_song
-from usdb_syncer.gui import events, hooks, progress, theme
+from usdb_syncer.gui import events, hooks, notification, progress, theme
 from usdb_syncer.gui.fonts import get_version_font
 from usdb_syncer.webserver import webserver
 
@@ -54,9 +54,6 @@ NOGIL_ERROR_MESSAGE = (
     "USDB Syncer does not support running without the GIL. "
     "Please use a build of Python with GIL support enabled."
 )
-
-
-main_window_instance: MainWindow | None = None
 
 
 @attrs.define
@@ -219,13 +216,11 @@ def configure_logging(stderr_level: logger.LOGLEVEL = logging.DEBUG) -> None:
 def _run_main() -> None:
     from usdb_syncer.gui.mw import MainWindow
 
-    global main_window_instance
-
     mw = MainWindow()
     mw_logger = _TextEditLogger(mw)
     mw_logger.setFormatter(logger.GUI_FORMATTER)
     logger.add_root_handler(mw_logger)
-    main_window_instance = mw
+    notification.ToastManager.set_main_window(mw)
     mw.label_update_hint.setVisible(False)
     if not constants.IS_SOURCE:
         if version := utils.newer_version_available():
