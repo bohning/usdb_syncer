@@ -123,6 +123,7 @@ class ReportDialog(Ui_Dialog, QDialog):
     def _generate_report_pdf(self) -> bool:
         def on_done(path: str) -> None:
             logger.info(f"PDF report created at {path}.")
+            ToastManager.show_message("PDF report generated")
             utils.open_path_or_file(Path(path))
 
         songs: Iterable[SongId] = []
@@ -170,12 +171,12 @@ class ReportDialog(Ui_Dialog, QDialog):
             return True
         # dialog is hidden by main window on macOS if file picker was cancelled
         self.raise_()
-        ToastManager.show_message("PDF report generated")
         return False
 
     def _generate_report_json(self) -> bool:
         def on_done(result: tuple[Path, int]) -> None:
             path, num_of_songs = result
+            ToastManager.show_message("JSON report created")
             logger.info(f"JSON report created at {path} ({num_of_songs} songs).")
 
         songs: Iterable[SongId] = []
@@ -207,5 +208,4 @@ class ReportDialog(Ui_Dialog, QDialog):
             return True
         # dialog is hidden by main window on macOS if file picker was cancelled
         self.raise_()
-        ToastManager.show_message("JSON report created")
         return False
