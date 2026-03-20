@@ -422,7 +422,8 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         if not (user := SessionManager.get_user()):
             logger.info("Not logged in, skipping song submission.")
             ToastManager.show_message(
-                "Not logged in to USDB. Song submission skipped", toast_type=ToastType.ERROR
+                "Not logged in to USDB. Song submission skipped",
+                toast_type=ToastType.ERROR,
             )
             return
 
@@ -443,7 +444,8 @@ class MainWindow(Ui_MainWindow, QMainWindow):
                         song.remove_sync_meta()
                     events.SongsChanged([song.song_id])
                     ToastManager.show_message(
-                        "Song does not exist locally anymore", toast_type=ToastType.ERROR
+                        "Song does not exist locally anymore",
+                        toast_type=ToastType.ERROR,
                     )
                     logger.info("Song does not exist locally anymore.")
             else:

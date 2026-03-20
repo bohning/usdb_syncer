@@ -187,7 +187,8 @@ def _validate_song_for_submission(
     if not remote_str:
         logger.info("Cannot submit: song is not remote.")
         ToastManager.show_message(
-            f"Cannot submit {song.artist_title_str()}: not remote", toast_type=ToastType.ERROR
+            f"Cannot submit {song.artist_title_str()}: not remote",
+            toast_type=ToastType.ERROR,
         )
         return ValidationFailure("not remote")
 
@@ -204,7 +205,8 @@ def _validate_song_for_submission(
     if not sync_meta or not sync_meta.path.exists():
         logger.info("Cannot submit: song is not local.")
         ToastManager.show_message(
-            f"Cannot submit {song.artist_title_str()}: not local", toast_type=ToastType.ERROR
+            f"Cannot submit {song.artist_title_str()}: not local",
+            toast_type=ToastType.ERROR,
         )
         return ValidationFailure("not local")
 
