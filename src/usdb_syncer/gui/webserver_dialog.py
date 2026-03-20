@@ -5,6 +5,7 @@ from PySide6 import QtGui, QtWidgets
 from usdb_syncer import errors
 from usdb_syncer.gui import gui_utils
 from usdb_syncer.gui.forms.WebserverDialog import Ui_Dialog
+from usdb_syncer.gui.notification import ToastManager
 from usdb_syncer.webserver import webserver
 
 
@@ -47,10 +48,12 @@ class WebserverDialog(Ui_Dialog, QtWidgets.QDialog):
                 show_nonlocal_songs=not self.checkBox_only_local_songs.isChecked(),
                 allow_downloading=self.checkBox_allow_downloads.isChecked(),
             )
+            ToastManager.show_message("Webserver started successfully.")
         except errors.WebserverError as e:
             QtWidgets.QMessageBox.warning(None, "Failed to start webserver", str(e))
         self._update_ui()
 
     def _stop(self) -> None:
         webserver.stop()
+        ToastManager.show_message("Webserver stopped.")
         self._update_ui()

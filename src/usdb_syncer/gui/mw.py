@@ -24,6 +24,7 @@ from usdb_syncer.gui.debug_console import DebugConsole
 from usdb_syncer.gui.forms.MainWindow import Ui_MainWindow
 from usdb_syncer.gui.licenses_dialog import LicensesDialog
 from usdb_syncer.gui.meta_tags_dialog import MetaTagsDialog
+from usdb_syncer.gui.notification import ToastManager
 from usdb_syncer.gui.previewer import Previewer
 from usdb_syncer.gui.progress import run_with_progress
 from usdb_syncer.gui.report_dialog import ReportDialog
@@ -292,6 +293,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         def on_done(songs: set[SongId]) -> None:
             self.table.set_selection_to_song_ids(songs)
             logger.info(f"Selected {len(songs)} songs.")
+            ToastManager.show_message(f"Found {len(songs)} songs")
 
         if directory := QFileDialog.getExistingDirectory(self, "Select Song Directory"):
             run_with_progress(
@@ -305,6 +307,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
             song_routines.load_available_songs_and_sync_meta(folder, True, progress)
 
         def on_done(_: None) -> None:
+            ToastManager.show_message("Fetched updated songs from USDB")
             self.table.end_reset()
             self.table.search_songs()
 
@@ -352,6 +355,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         paths = [Path(f) for f in file_list]
         if available := usdb_id_file.get_available_song_ids_from_files(paths):
             self.table.set_selection_to_song_ids(available)
+            ToastManager.show_message(f"Selected {len(available)} songs from file")
 
     def _export_usdb_ids_to_file(self) -> None:
         selected_ids = [song.song_id for song in self.table.selected_songs()]
@@ -371,6 +375,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
             return
 
         usdb_id_file.write_usdb_id_file(Path(path), selected_ids)
+        ToastManager.show_message(f"Exported {len(selected_ids)} USDB IDs")
         logger.info(f"exported {len(selected_ids)} USDB IDs to {path}")
 
     def _show_current_song_in_usdb(self) -> None:

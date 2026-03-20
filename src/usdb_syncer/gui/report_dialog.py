@@ -17,6 +17,7 @@ from PySide6.QtWidgets import (
 from usdb_syncer import SongId, db, settings, utils
 from usdb_syncer.gui import gui_utils
 from usdb_syncer.gui.forms.ReportDialog import Ui_Dialog
+from usdb_syncer.gui.notification import ToastManager
 from usdb_syncer.gui.pdf import generate_report_pdf
 from usdb_syncer.gui.progress import run_with_progress
 from usdb_syncer.gui.song_table.column import Column
@@ -169,6 +170,7 @@ class ReportDialog(Ui_Dialog, QDialog):
             return True
         # dialog is hidden by main window on macOS if file picker was cancelled
         self.raise_()
+        ToastManager.show_message("PDF report generated")
         return False
 
     def _generate_report_json(self) -> bool:
@@ -205,4 +207,5 @@ class ReportDialog(Ui_Dialog, QDialog):
             return True
         # dialog is hidden by main window on macOS if file picker was cancelled
         self.raise_()
+        ToastManager.show_message("JSON report created")
         return False
