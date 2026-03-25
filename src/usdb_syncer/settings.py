@@ -149,6 +149,7 @@ class SettingKey(Enum):
 
     SONG_DIR = "song_dir"
     FFMPEG_DIR = "ffmpeg_dir"
+    STEM_SEPARATION_PATH = "stem_separation_path"
     AUTO_UPDATE = "downloads/auto_update"
     BROWSER = "downloads/browser"
     TXT = "downloads/txt"
@@ -1031,6 +1032,14 @@ def get_ffmpeg_dir() -> str:
 
 def set_ffmpeg_dir(value: str, temp: bool = False) -> None:
     _Settings.set(SettingKey.FFMPEG_DIR, value, temp)
+
+
+def get_stem_separation_path() -> str:
+    return _Settings.get(SettingKey.STEM_SEPARATION_PATH, "")
+
+
+def set_stem_separation_path(value: str, temp: bool = False) -> None:
+    _Settings.set(SettingKey.STEM_SEPARATION_PATH, value, temp)
 
 
 def get_geometry_main_window() -> QByteArray:
