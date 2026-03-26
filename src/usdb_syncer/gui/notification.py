@@ -9,7 +9,6 @@ from PySide6.QtCore import QEvent, QObject, QPoint, QPropertyAnimation, Qt, QTim
 from PySide6.QtGui import QColor, QPainter
 from PySide6.QtWidgets import (
     QApplication,
-    QGraphicsOpacityEffect,
     QHBoxLayout,
     QLabel,
     QStyle,
@@ -83,9 +82,7 @@ class Toast(QWidget):
         text_label = QLabel(message, self)
         layout.addWidget(text_label)
 
-        self.opacity_effect = QGraphicsOpacityEffect(self)
-        self.opacity_effect.setOpacity(0.0)
-        self.setGraphicsEffect(self.opacity_effect)
+        self.setWindowOpacity(0.0)
 
         self.fade_in_anim = self._create_fade_anim(0.0, 1.0)
         self.fade_out_anim = self._create_fade_anim(1.0, 0.0)
@@ -104,7 +101,7 @@ class Toast(QWidget):
         super().paintEvent(event)
 
     def _create_fade_anim(self, start: float, end: float) -> QPropertyAnimation:
-        anim = QPropertyAnimation(self.opacity_effect, b"opacity", self)
+        anim = QPropertyAnimation(self, b"windowOpacity", self)
         anim.setDuration(_FADE_DURATION_MS)
         anim.setStartValue(start)
         anim.setEndValue(end)
