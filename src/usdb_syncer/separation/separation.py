@@ -6,6 +6,8 @@ from pathlib import Path
 from threading import Semaphore
 from typing import Any
 
+from usdb_syncer import logger
+
 from .client import JsonRpcClient
 
 SPEC_VERSION = "1"
@@ -19,6 +21,7 @@ class SeparationManager:
     _max_concurrent: int = 2
 
     def __init__(self, command: list[str], max_concurrent: int) -> None:
+        logger.logger.debug("Creating new separation manager.")
         self.client = JsonRpcClient(command)
         self.client.start()
         self._semaphore = Semaphore(max_concurrent)
@@ -56,7 +59,7 @@ class SeparationManager:
             return self.client.request(method, params)
 
     def exit(self) -> None:
-        """Stop separation manager."""
+        """Request stop of separation provider."""
         self._request("exit")
 
     def get_name(self) -> str:
@@ -79,6 +82,7 @@ class SeparationManager:
         self, input_file: Path, output_dir: Path, model: str
     ) -> tuple[Path, Path]:
         """Split a file into vocals and instrumental."""
+        logger.logger.debug(f"Splitting {input_file} into vocals and instrumental.")
         out = self._request(
             "split",
             {

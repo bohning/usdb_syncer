@@ -149,7 +149,6 @@ class SettingKey(Enum):
 
     SONG_DIR = "song_dir"
     FFMPEG_DIR = "ffmpeg_dir"
-    STEM_SEPARATION_PATH = "stem_separation_path"
     AUTO_UPDATE = "downloads/auto_update"
     BROWSER = "downloads/browser"
     TXT = "downloads/txt"
@@ -167,6 +166,9 @@ class SettingKey(Enum):
     AUDIO_BITRATE = "downloads/audio_bitrate"
     AUDIO_NORMALIZATION = "downloads/audio_normalization"
     AUDIO_EMBED_ARTWORK = "downloads/audio_embed_artwork"
+    AUDIO_SEPARATION = "downloads/audio_separation"
+    AUDIO_SEPARATION_EXEC = "downloads/audio_separation_executable"
+    AUDIO_SEPARATION_MODEL = "downloads/audio_separation_model"
     VIDEO = "downloads/video"
     VIDEO_FORMAT = "downloads/video_format"
     VIDEO_REENCODE = "downloads/video_reencode"
@@ -850,6 +852,30 @@ def set_audio_embed_artwork(value: bool, temp: bool = False) -> None:
     _Settings.set(SettingKey.AUDIO_EMBED_ARTWORK, value, temp)
 
 
+def get_audio_separation() -> bool:
+    return _Settings.get(SettingKey.AUDIO_SEPARATION, False)
+
+
+def set_audio_separation(value: bool, temp: bool = False) -> None:
+    _Settings.set(SettingKey.AUDIO_SEPARATION, value, temp)
+
+
+def get_audio_separation_executable() -> str:
+    return _Settings.get(SettingKey.AUDIO_SEPARATION_EXEC, "")
+
+
+def set_audio_separation_executable(value: str, temp: bool = False) -> None:
+    _Settings.set(SettingKey.AUDIO_SEPARATION_EXEC, value, temp)
+
+
+def get_audio_separation_model() -> str:
+    return _Settings.get(SettingKey.AUDIO_SEPARATION_MODEL, "")
+
+
+def set_audio_separation_model(value: str, temp: bool = False) -> None:
+    _Settings.set(SettingKey.AUDIO_SEPARATION_MODEL, value, temp)
+
+
 def get_encoding() -> Encoding:
     return _Settings.get(SettingKey.ENCODING, Encoding.UTF_8)
 
@@ -1032,14 +1058,6 @@ def get_ffmpeg_dir() -> str:
 
 def set_ffmpeg_dir(value: str, temp: bool = False) -> None:
     _Settings.set(SettingKey.FFMPEG_DIR, value, temp)
-
-
-def get_stem_separation_path() -> str:
-    return _Settings.get(SettingKey.STEM_SEPARATION_PATH, "")
-
-
-def set_stem_separation_path(value: str, temp: bool = False) -> None:
-    _Settings.set(SettingKey.STEM_SEPARATION_PATH, value, temp)
 
 
 def get_geometry_main_window() -> QByteArray:

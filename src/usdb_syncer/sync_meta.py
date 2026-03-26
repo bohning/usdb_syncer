@@ -140,6 +140,8 @@ class SyncMeta:
     pinned: bool = False
     txt: Resource | None = None
     audio: Resource | None = None
+    vocals: Resource | None = None
+    instrumental: Resource | None = None
     video: Resource | None = None
     cover: Resource | None = None
     background: Resource | None = None
@@ -186,6 +188,8 @@ class SyncMeta:
                 pinned=bool(dct.get("pinned", False)),
                 txt=Resource.from_nested_dict(dct["txt"]),
                 audio=Resource.from_nested_dict(dct["audio"]),
+                vocals=Resource.from_nested_dict(dct["vocals"]),
+                instrumental=Resource.from_nested_dict(dct["instrumental"]),
                 video=Resource.from_nested_dict(dct["video"]),
                 cover=Resource.from_nested_dict(dct["cover"]),
                 background=Resource.from_nested_dict(dct["background"]),
@@ -201,7 +205,7 @@ class SyncMeta:
 
     @classmethod
     def from_db_row(cls, row: tuple) -> SyncMeta:
-        assert len(row) == 27
+        assert len(row) == 35
         meta = cls(
             sync_meta_id=SyncMetaId(row[0]),
             song_id=SongId(row[1]),
@@ -213,9 +217,11 @@ class SyncMeta:
         )
         meta.txt = Resource.from_db_row(row[7:11])
         meta.audio = Resource.from_db_row(row[11:15])
-        meta.video = Resource.from_db_row(row[15:19])
-        meta.cover = Resource.from_db_row(row[19:23])
-        meta.background = Resource.from_db_row(row[23:])
+        meta.vocals = Resource.from_db_row(row[15:19])
+        meta.instrumental = Resource.from_db_row(row[19:23])
+        meta.video = Resource.from_db_row(row[23:27])
+        meta.cover = Resource.from_db_row(row[27:31])
+        meta.background = Resource.from_db_row(row[31:])
         meta.custom_data = CustomData(db.get_custom_data(meta.sync_meta_id))
         return meta
 
@@ -286,6 +292,8 @@ class SyncMeta:
         return (
             (self.txt, db.ResourceKind.TXT),
             (self.audio, db.ResourceKind.AUDIO),
+            (self.vocals, db.ResourceKind.VOCALS),
+            (self.instrumental, db.ResourceKind.INSTRUMENTAL),
             (self.video, db.ResourceKind.VIDEO),
             (self.cover, db.ResourceKind.COVER),
             (self.background, db.ResourceKind.BACKGROUND),
@@ -317,6 +325,16 @@ class SyncMeta:
         if not self.audio or not self.audio.file:
             return None
         return self.path.parent / self.audio.file.fname
+
+    def vocals_path(self) -> Path | None:
+        if not self.vocals or not self.vocals.file:
+            return None
+        return self.path.parent / self.vocals.file.fname
+
+    def instrumental_path(self) -> Path | None:
+        if not self.instrumental or not self.instrumental.file:
+            return None
+        return self.path.parent / self.instrumental.file.fname
 
     def video_path(self) -> Path | None:
         if not self.video or not self.video.file:

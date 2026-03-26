@@ -116,6 +116,8 @@ class Column(ColumnBase, enum.Enum):
     PINNED = ColumnValue("Pinned", False, Icon.PIN, MIN_COLUMN_WIDTH, db.SongOrder.PINNED)
     TXT = ColumnValue("Text", False, Icon.TEXT, MIN_COLUMN_WIDTH, db.SongOrder.TXT)
     AUDIO = ColumnValue("Audio", False, Icon.AUDIO, MIN_COLUMN_WIDTH, db.SongOrder.AUDIO)
+    VOCALS = ColumnValue("Vocals", False, Icon.VOCALS, MIN_COLUMN_WIDTH, db.SongOrder.VOCALS)
+    INSTRUMENTAL = ColumnValue("Instrumental", False, Icon.INSTRUMENTAL, MIN_COLUMN_WIDTH, db.SongOrder.INSTRUMENTAL)
     VIDEO = ColumnValue("Video", False, Icon.VIDEO, MIN_COLUMN_WIDTH, db.SongOrder.VIDEO)
     COVER = ColumnValue("Cover", False, Icon.COVER, MIN_COLUMN_WIDTH, db.SongOrder.COVER)
     BACKGROUND = ColumnValue("Background", False, Icon.BACKGROUND, MIN_COLUMN_WIDTH, db.SongOrder.BACKGROUND)
@@ -134,6 +136,10 @@ class Column(ColumnBase, enum.Enum):
                 return sync_meta.txt
             case Column.AUDIO:
                 return sync_meta.audio
+            case Column.VOCALS:
+                return sync_meta.vocals
+            case Column.INSTRUMENTAL:
+                return sync_meta.instrumental
             case Column.VIDEO:
                 return sync_meta.video
             case Column.COVER:
@@ -177,6 +183,8 @@ class Column(ColumnBase, enum.Enum):
                 Column.SAMPLE_URL
                 | Column.TXT
                 | Column.AUDIO
+                | Column.VOCALS
+                | Column.INSTRUMENTAL
                 | Column.VIDEO
                 | Column.COVER
                 | Column.BACKGROUND
@@ -232,6 +240,14 @@ class Column(ColumnBase, enum.Enum):
                 if not (sync_meta and (audio := sync_meta.audio)):
                     return None
                 icon = status_icon(audio, sync_meta.path.parent)
+            case Column.VOCALS:
+                if not (sync_meta and (vocals := sync_meta.vocals)):
+                    return None
+                icon = status_icon(vocals, sync_meta.path.parent)
+            case Column.INSTRUMENTAL:
+                if not (sync_meta and (instrumental := sync_meta.instrumental)):
+                    return None
+                icon = status_icon(instrumental, sync_meta.path.parent)
             case Column.VIDEO:
                 if not (sync_meta and (video := sync_meta.video)):
                     return None
