@@ -670,16 +670,25 @@ def _maybe_separate_stems(ctx: _Context) -> JobStatus:
         return JobStatus.SKIPPED_UNAVAILABLE
     if ctx.results[Job.AUDIO_DOWNLOAD] is JobStatus.SUCCESS_UNCHANGED:
         if ctx.song.vocals_path() and ctx.song.instrumental_path():
-            ctx.logger.info("Audio file unchanged, skipping stem separation.")
+            ctx.logger.info("Audio resource unchanged, skipping stem separation.")
             return JobStatus.SUCCESS_UNCHANGED
-        ctx.logger.debug("Audio unchanged, but stems missing. Separating stems.")
+        ctx.logger.info(
+            "Audio resource unchanged, but stems missing. Separating stems."
+        )
 
+    ctx.logger.info("Separating stems.")
     SeparationManager.set_command([ctx.options.audio_options.separation_executable])
-    vocals_path, instrumental_path = SeparationManager.get_instance().split(
-        audio_file,
-        ctx.locations.temp_path(),
-        ctx.options.audio_options.separation_model,
-    )
+    try:
+        vocals_path, instrumental_path = SeparationManager.get_instance().split(
+            audio_file,
+            ctx.locations.temp_path(),
+            ctx.options.audio_options.separation_model,
+        )
+    except errors.JsonRpcError as e:
+        ctx.logger.exception(
+            f"Failed to separate stems. Provider error code {e.code}. See log for details."
+        )
+        return JobStatus.FAILURE
 
     ctx.logger.debug("Finished separation, transcoding to target format.")
 
@@ -690,12 +699,12 @@ def _maybe_separate_stems(ctx: _Context) -> JobStatus:
         ext=f" [INSTR].{ctx.options.audio_options.format.value}"
     )
     if not transcode_audio(ctx.options.audio_options, vocals_path, vocals_out_path):
-        ctx.logger.warning("Failed to transcode vocals, skipping.")
+        ctx.logger.error("Failed to transcode vocals.")
         return JobStatus.FAILURE
     if not transcode_audio(
         ctx.options.audio_options, instrumental_path, instrumental_out_path
     ):
-        ctx.logger.warning("Failed to transcode instrumental, skipping.")
+        ctx.logger.error("Failed to transcode instrumental.")
         return JobStatus.FAILURE
 
     ctx.out.vocals.resource = ctx.out.audio.resource
