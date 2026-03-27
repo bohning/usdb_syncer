@@ -132,8 +132,8 @@ class SettingsDialog(Ui_Dialog, QDialog):
         self.checkBox_colored_background.setHidden(hidden)
 
     def _handle_format_dependent_settings(self) -> None:
-        if self.comboBox_format_version.currentData() <= settings.FormatVersion.V1_0_0:
-            self.groupBox_stem_separation.setDisabled(True)
+        disabled = self.comboBox_format_version.currentData() <= settings.FormatVersion.V1_0_0
+        self.groupBox_stem_separation.setDisabled(disabled)
 
     def _set_location(self, app: settings.SupportedApps) -> None:
         path = self._get_executable(app)
