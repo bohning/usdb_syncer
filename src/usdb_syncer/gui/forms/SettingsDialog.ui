@@ -524,10 +524,10 @@
                <bool>false</bool>
               </property>
               <layout class="QGridLayout" name="gridLayout_12">
-               <item row="3" column="0">
-                <widget class="QLabel" name="label_separation_model">
+               <item row="0" column="0">
+                <widget class="QLabel" name="label_separation_num">
                  <property name="text">
-                  <string>Separation Model:</string>
+                  <string>Simultanious Separations:</string>
                  </property>
                 </widget>
                </item>
@@ -547,19 +547,59 @@
                  </property>
                 </widget>
                </item>
-               <item row="2" column="1">
-                <widget class="QPushButton" name="button_select_separation_provider">
-                 <property name="text">
-                  <string>Select File...</string>
-                 </property>
-                </widget>
-               </item>
-               <item row="2" column="0">
+               <item row="1" column="1">
                 <widget class="QPushButton" name="button_info">
                  <property name="text">
                   <string>Info</string>
                  </property>
                 </widget>
+               </item>
+               <item row="3" column="0">
+                <widget class="QLabel" name="label_separation_model">
+                 <property name="text">
+                  <string>Separation Model:</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="0" column="1">
+                <widget class="QSpinBox" name="spinBox_separation_num">
+                 <property name="minimum">
+                  <number>1</number>
+                 </property>
+                 <property name="maximum">
+                  <number>10</number>
+                 </property>
+                </widget>
+               </item>
+               <item row="1" column="0">
+                <layout class="QHBoxLayout" name="horizontalLayout_15">
+                 <item>
+                  <widget class="QPushButton" name="button_select_separation_provider">
+                   <property name="text">
+                    <string>Select Provider</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item>
+                  <widget class="QLabel" name="label_is_provider_selected">
+                   <property name="enabled">
+                    <bool>false</bool>
+                   </property>
+                   <property name="sizePolicy">
+                    <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+                     <horstretch>0</horstretch>
+                     <verstretch>0</verstretch>
+                    </sizepolicy>
+                   </property>
+                   <property name="text">
+                    <string/>
+                   </property>
+                   <property name="pixmap">
+                    <pixmap resource="../resources/qt/resources.qrc">:/icons/error.png</pixmap>
+                   </property>
+                  </widget>
+                 </item>
+                </layout>
                </item>
               </layout>
              </widget>

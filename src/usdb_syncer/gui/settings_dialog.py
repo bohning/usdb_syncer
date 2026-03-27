@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import enum
 import sys
 from pathlib import Path
 from typing import ClassVar, assert_never
@@ -40,6 +41,14 @@ _FALLBACK_SONG = UsdbSong(
 )
 
 
+class _ProviderState(enum.Enum):
+    """State of the stem separation provider."""
+
+    NOT_SELECTED = enum.auto()
+    SELECTED_NOT_WORKING = enum.auto()
+    SELECTED_AND_WORKING = enum.auto()
+
+
 class SettingsDialog(Ui_Dialog, QDialog):
     """Dialog with app settings."""
 
@@ -47,6 +56,7 @@ class SettingsDialog(Ui_Dialog, QDialog):
     _last_tab_index: ClassVar[int] = 0
     _path_template: PathTemplate | None = None
     _separation_manager: separation.SeparationManager
+    _provider_state: _ProviderState = _ProviderState.NOT_SELECTED
 
     def __init__(self, parent: QWidget, song: UsdbSong | None) -> None:
         super().__init__(parent=parent)
@@ -65,7 +75,6 @@ class SettingsDialog(Ui_Dialog, QDialog):
         self.groupBox_reencode_video.setVisible(False)
         if sys.platform != "win32":
             self.groupBox_vocaluxe.setVisible(False)
-        self.button_info.clicked.connect(self._show_separation_details)
         self.pushButton_browse_karedi.clicked.connect(
             lambda: self._set_location(settings.SupportedApps.KAREDI)
         )
@@ -87,6 +96,7 @@ class SettingsDialog(Ui_Dialog, QDialog):
         self.pushButton_browse_yass_reloaded.clicked.connect(
             lambda: self._set_location(settings.SupportedApps.YASS_RELOADED)
         )
+        self.button_info.clicked.connect(self._show_separation_details)
         self.button_select_separation_provider.clicked.connect(
             self._on_select_separation_provider
         )
@@ -108,7 +118,9 @@ class SettingsDialog(Ui_Dialog, QDialog):
             cls._instance = cls(parent, song)
             cls._instance.show()
 
-    def _connect_stem_separation(self, command: list[str], max_concurrent: int) -> None:
+    def _connect_stem_separation(
+        self, command: list[str], max_concurrent: int, *, provider_selected: bool = True
+    ) -> None:
         try:
             self._separation_manager = separation.SeparationManager(
                 command, max_concurrent
@@ -116,23 +128,32 @@ class SettingsDialog(Ui_Dialog, QDialog):
         except Exception:  # noqa: BLE001
             self.comboBox_separation_model.clear()
             self.comboBox_separation_model.setEnabled(False)
+            state = (
+                _ProviderState.SELECTED_NOT_WORKING
+                if provider_selected
+                else _ProviderState.NOT_SELECTED
+            )
+            self._update_provider_label(state)
             return
 
         models = self._separation_manager.get_available_models()
         self.comboBox_separation_model.clear()
-        self.comboBox_separation_model.addItems(models)
+        for model in models:
+            self.comboBox_separation_model.addItem(model, model)
         self.comboBox_separation_model.setEnabled(True)
-        if (model := settings.get_audio_separation_model()) in models:
-            self.comboBox_separation_model.setCurrentText(model)
+        self._update_provider_label(_ProviderState.SELECTED_AND_WORKING)
 
     def _set_theme_settings_enabled(self) -> None:
         hidden = self.comboBox_theme.currentData() == settings.Theme.SYSTEM
         self.label_primary_color.setHidden(hidden)
         self.comboBox_primary_color.setHidden(hidden)
         self.checkBox_colored_background.setHidden(hidden)
+        self._update_provider_label(self._provider_state)
 
     def _handle_format_dependent_settings(self) -> None:
-        disabled = self.comboBox_format_version.currentData() <= settings.FormatVersion.V1_0_0
+        disabled = (
+            self.comboBox_format_version.currentData() <= settings.FormatVersion.V1_0_0
+        )
         self.groupBox_stem_separation.setDisabled(disabled)
 
     def _set_location(self, app: settings.SupportedApps) -> None:
@@ -204,9 +225,24 @@ class SettingsDialog(Ui_Dialog, QDialog):
             f"{name}",
             f"{name} v{self._separation_manager.get_version()}\n"
             f"Location: {self._separation_manager.client.command[0]}\n"
-            f"GPU Accelerated: {self._separation_manager.is_gpu_accelerated()}\n"
             f"Available Models: {', '.join(self._separation_manager.get_available_models())}",
         )
+
+    def _update_provider_label(self, state: _ProviderState) -> None:
+        self._provider_state = state
+        match state:
+            case _ProviderState.NOT_SELECTED:
+                icon = icons.Icon.WARNING
+                tooltip = "No separation provider selected."
+            case _ProviderState.SELECTED_NOT_WORKING:
+                icon = icons.Icon.STEM_SEPARATION_UNAVAILABLE
+                tooltip = "Separation provider selected but not working."
+            case _ProviderState.SELECTED_AND_WORKING:
+                icon = icons.Icon.STEM_SEPARATION
+                tooltip = "Separation provider selected and working."
+        pixmap = icon.icon().pixmap(16, 16)
+        self.label_is_provider_selected.setPixmap(pixmap)
+        self.label_is_provider_selected.setToolTip(tooltip)
 
     def _on_select_separation_provider(self) -> None:
         if path := self._select_separation_executable():
@@ -295,8 +331,17 @@ class SettingsDialog(Ui_Dialog, QDialog):
         self.checkBox_audio_embed_artwork.setChecked(settings.get_audio_embed_artwork())
 
         self.groupBox_stem_separation.setChecked(settings.get_audio_separation())
-        self._connect_stem_separation([settings.get_audio_separation_executable()], 2)
-
+        self.spinBox_separation_num.setValue(settings.get_audio_separation_num())
+        self._connect_stem_separation(
+            [settings.get_audio_separation_executable()],
+            settings.get_audio_separation_num(),
+            provider_selected=bool(settings.get_audio_separation_executable()),
+        )
+        self.comboBox_separation_model.setCurrentIndex(
+            self.comboBox_separation_model.findData(
+                settings.get_audio_separation_model()
+            )
+        )
         self.groupBox_video.setChecked(settings.get_video())
         self.comboBox_videocontainer.setCurrentIndex(
             self.comboBox_videocontainer.findData(settings.get_video_format())
@@ -419,8 +464,12 @@ class SettingsDialog(Ui_Dialog, QDialog):
         settings.set_audio_embed_artwork(self.checkBox_audio_embed_artwork.isChecked())
 
         settings.set_audio_separation(self.groupBox_stem_separation.isChecked())
+        settings.set_audio_separation_num(self.spinBox_separation_num.value())
+        settings.set_audio_separation_executable(
+            self._separation_manager.client.command[0]
+        )
         settings.set_audio_separation_model(
-            self.comboBox_separation_model.currentText()
+            self.comboBox_separation_model.currentData()
         )
         settings.set_video(self.groupBox_video.isChecked())
         settings.set_video_format(self.comboBox_videocontainer.currentData())
