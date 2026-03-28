@@ -5,6 +5,7 @@ from __future__ import annotations
 import copy
 import filecmp
 import shutil
+import subprocess
 import tempfile
 import time
 from enum import Enum, member
@@ -653,10 +654,8 @@ def _try_download_audio_or_video(
 
 def _maybe_separate_stems(ctx: _Context) -> JobStatus:
     if not ctx.options.audio_options or not ctx.options.audio_options.separation:
+        ctx.logger.info("Stem separation is disabled, skipping.")
         return JobStatus.SKIPPED_DISABLED
-    if not (audio_file := ctx.out.audio.path(ctx.locations, temp=True)):
-        ctx.logger.warning("No audio file to separate, skipping stem separation.")
-        return JobStatus.SKIPPED_UNAVAILABLE
 
     if not ctx.options.audio_options.separation_executable:
         ctx.logger.warning(
@@ -668,18 +667,25 @@ def _maybe_separate_stems(ctx: _Context) -> JobStatus:
             "No stem separation model selected, skipping stem separation."
         )
         return JobStatus.SKIPPED_UNAVAILABLE
-    if ctx.results[Job.AUDIO_DOWNLOAD] is JobStatus.SUCCESS_UNCHANGED:
-        if ctx.song.vocals_path() and ctx.song.instrumental_path():
-            ctx.logger.info("Audio resource unchanged, skipping stem separation.")
-            return JobStatus.SUCCESS_UNCHANGED
+
+    if not (audio_file := ctx.out.audio.path(ctx.locations, temp=True)):
+        ctx.logger.warning("No audio file to separate, skipping stem separation.")
+        return JobStatus.SKIPPED_UNAVAILABLE
+
+    audio_resource = ctx.out.audio.resource
+    if audio_resource and audio_resource == ctx.out.vocals.resource:
+        ctx.logger.info("Audio resource is unchanged, skipping stem separation.")
+        return JobStatus.SUCCESS_UNCHANGED
+    if ctx.song.vocals_path() and ctx.song.instrumental_path():
         ctx.logger.info(
-            "Audio resource unchanged, but stems missing. Separating stems."
+            f"Audio resource has changed ('{ctx.out.vocals.resource}' -> "
+            f"'{audio_resource}'), re-separating stems."
         )
 
     ctx.logger.info("Separating stems.")
-    SeparationManager.set_command([ctx.options.audio_options.separation_executable])
+    manager = SeparationManager([ctx.options.audio_options.separation_executable])
     try:
-        vocals_path, instrumental_path = SeparationManager.get_instance().split(
+        vocals_path, instrumental_path = manager.split(
             audio_file,
             ctx.locations.temp_path(),
             ctx.options.audio_options.separation_model,
@@ -688,7 +694,9 @@ def _maybe_separate_stems(ctx: _Context) -> JobStatus:
         ctx.logger.exception(
             f"Failed to separate stems. Provider error code {e.code}. See log for details."
         )
-        return JobStatus.FAILURE
+        return _handle_separation_failure(ctx)
+    finally:
+        manager.close()
 
     ctx.logger.debug("Finished separation, transcoding to target format.")
 
@@ -700,12 +708,12 @@ def _maybe_separate_stems(ctx: _Context) -> JobStatus:
     )
     if not transcode_audio(ctx.options.audio_options, vocals_path, vocals_out_path):
         ctx.logger.error("Failed to transcode vocals.")
-        return JobStatus.FAILURE
+        return _handle_separation_failure(ctx)
     if not transcode_audio(
         ctx.options.audio_options, instrumental_path, instrumental_out_path
     ):
         ctx.logger.error("Failed to transcode instrumental.")
-        return JobStatus.FAILURE
+        return _handle_separation_failure(ctx)
 
     ctx.out.vocals.resource = ctx.out.audio.resource
     ctx.out.vocals.new_fname = vocals_out_path.name
@@ -713,7 +721,15 @@ def _maybe_separate_stems(ctx: _Context) -> JobStatus:
     ctx.out.instrumental.resource = ctx.out.audio.resource
     ctx.out.instrumental.new_fname = instrumental_out_path.name
 
+    ctx.logger.info("Success! Separated stems.")
     return JobStatus.SUCCESS
+
+
+def _handle_separation_failure(ctx: _Context) -> JobStatus:
+    if ctx.out.vocals.resource and ctx.out.instrumental.resource:
+        ctx.logger.error("Keeping existing stems.")
+        return JobStatus.FAILURE_EXISTING
+    return JobStatus.FAILURE
 
 
 def transcode_audio(
@@ -729,7 +745,9 @@ def transcode_audio(
         str(audio_options.bitrate.ffmpeg_format()),
         str(dest),
     ]
-    out = subprocessing.run_clean(cmd)
+    out = subprocessing.run_clean(
+        cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
+    )
     # TODO: normalization?
     return out.returncode == 0
 

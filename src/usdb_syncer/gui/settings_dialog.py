@@ -55,7 +55,7 @@ class SettingsDialog(Ui_Dialog, QDialog):
     _instance: ClassVar[SettingsDialog | None] = None
     _last_tab_index: ClassVar[int] = 0
     _path_template: PathTemplate | None = None
-    _separation_manager: separation.SeparationManager
+    _separation_manager: separation.SeparationManager | None = None
     _provider_state: _ProviderState = _ProviderState.NOT_SELECTED
 
     def __init__(self, parent: QWidget, song: UsdbSong | None) -> None:
@@ -119,13 +119,17 @@ class SettingsDialog(Ui_Dialog, QDialog):
             cls._instance.show()
 
     def _connect_stem_separation(
-        self, command: list[str], max_concurrent: int, *, provider_selected: bool = True
+        self, command: list[str], *, provider_selected: bool = True
     ) -> None:
+        # Kill any previous probing subprocess
+        if self._separation_manager is not None:
+            self._separation_manager.close()
+            self._separation_manager = None
+
         try:
-            self._separation_manager = separation.SeparationManager(
-                command, max_concurrent
-            )
+            self._separation_manager = separation.SeparationManager(command)
         except Exception:  # noqa: BLE001
+            self._separation_manager = None
             self.comboBox_separation_model.clear()
             self.comboBox_separation_model.setEnabled(False)
             state = (
@@ -217,7 +221,7 @@ class SettingsDialog(Ui_Dialog, QDialog):
         return Path(filename)
 
     def _show_separation_details(self) -> None:
-        if not self._separation_manager:
+        if self._separation_manager is None:
             return
         name = self._separation_manager.get_name()
         QMessageBox.information(
@@ -246,7 +250,7 @@ class SettingsDialog(Ui_Dialog, QDialog):
 
     def _on_select_separation_provider(self) -> None:
         if path := self._select_separation_executable():
-            self._connect_stem_separation([str(path)], 2)
+            self._connect_stem_separation([str(path)])
 
     def _populate_comboboxes(self) -> None:
         combobox_settings = (
@@ -334,7 +338,6 @@ class SettingsDialog(Ui_Dialog, QDialog):
         self.spinBox_separation_num.setValue(settings.get_audio_separation_num())
         self._connect_stem_separation(
             [settings.get_audio_separation_executable()],
-            settings.get_audio_separation_num(),
             provider_selected=bool(settings.get_audio_separation_executable()),
         )
         self.comboBox_separation_model.setCurrentIndex(
@@ -424,12 +427,19 @@ class SettingsDialog(Ui_Dialog, QDialog):
             return
         if self._browser != self.comboBox_browser.currentData():
             SessionManager.reset_session()
+        self._cleanup_separation_manager()
         SettingsDialog._instance = None
         super().accept()
 
     def reject(self) -> None:
+        self._cleanup_separation_manager()
         SettingsDialog._instance = None
         super().reject()
+
+    def _cleanup_separation_manager(self) -> None:
+        if self._separation_manager is not None:
+            self._separation_manager.close()
+            self._separation_manager = None
 
     def _save_settings(self) -> bool:
         new_theme = self.comboBox_theme.currentData()
@@ -464,10 +474,13 @@ class SettingsDialog(Ui_Dialog, QDialog):
         settings.set_audio_embed_artwork(self.checkBox_audio_embed_artwork.isChecked())
 
         settings.set_audio_separation(self.groupBox_stem_separation.isChecked())
-        settings.set_audio_separation_num(self.spinBox_separation_num.value())
-        settings.set_audio_separation_executable(
-            self._separation_manager.client.command[0]
-        )
+        num = self.spinBox_separation_num.value()
+        settings.set_audio_separation_num(num)
+        separation.set_max_concurrent(num)
+        if self._separation_manager is not None:
+            settings.set_audio_separation_executable(
+                self._separation_manager.client.command[0]
+            )
         settings.set_audio_separation_model(
             self.comboBox_separation_model.currentData()
         )

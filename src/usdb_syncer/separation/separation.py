@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
+import threading
 from pathlib import Path
-from threading import Semaphore
 from typing import Any
 
 from usdb_syncer import logger
@@ -13,49 +13,75 @@ from .client import JsonRpcClient
 SPEC_VERSION = "1"
 
 
+class _ResizableSemaphore:
+    """A semaphore that can be resized at runtime."""
+
+    def __init__(self, max_count: int) -> None:
+        self._cond = threading.Condition(threading.Lock())
+        self._max = max_count
+        self._value = max_count
+
+    def acquire(self) -> None:
+        with self._cond:
+            while self._value <= 0:
+                self._cond.wait()
+            self._value -= 1
+
+    def release(self) -> None:
+        with self._cond:
+            if self._value < self._max:
+                self._value += 1
+            self._cond.notify()
+
+    def resize(self, new_max: int) -> None:
+        with self._cond:
+            delta = new_max - self._max
+            self._max = new_max
+            self._value += delta
+            if delta > 0:
+                self._cond.notify_all()
+
+    def __enter__(self) -> _ResizableSemaphore:
+        self.acquire()
+        return self
+
+    def __exit__(self, *args: object) -> None:
+        self.release()
+
+
+_semaphore = _ResizableSemaphore(1)
+
+
+def set_max_concurrent(n: int) -> None:
+    """Update the global concurrency limit for split operations."""
+    _semaphore.resize(n)
+
+
 class SeparationManager:
     """Manages stem separation."""
 
-    _instance: SeparationManager | None = None
-    _command: list[str] | None = None
-    _max_concurrent: int = 2
-
-    def __init__(self, command: list[str], max_concurrent: int) -> None:
-        logger.logger.debug("Creating new separation manager.")
+    def __init__(
+        self, command: list[str], logger: logger.Logger = logger.logger.logger
+    ) -> None:
+        self.logger = logger
+        self.logger.debug("Creating new separation manager.")
         self.client = JsonRpcClient(command)
         self.client.start()
-        self._semaphore = Semaphore(max_concurrent)
         version = self.client.request("get_spec_version")
         if version != SPEC_VERSION:
             self.client.kill()
             msg = f"Unsupported separation manager version: {version}. Expected {SPEC_VERSION}"
             raise ValueError(msg)
 
-    @classmethod
-    def set_command(cls, command: list[str]) -> bool:
-        """Set separation manager command.
-
-        True on success, False if manager is running.
-        """
-        if cls._instance is not None:
-            return False
-        cls._command = command
-        return True
-
-    @classmethod
-    def get_instance(cls) -> SeparationManager:
-        """Get separation manager instance."""
-        if cls._instance is None:
-            if cls._command is None:
-                msg = "No separation manager command set. Call set_command() first."
-                raise RuntimeError(msg)
-            cls._instance = SeparationManager(cls._command, cls._max_concurrent)
-        return cls._instance
+    def close(self) -> None:
+        """Kill the subprocess."""
+        self.client.kill()
 
     def _request(self, method: str, params: dict | list | None = None) -> Any:
         if method in ("get_name", "get_version", "get_available_models"):
             return self.client.request(method, params)
-        with self._semaphore:
+        with _semaphore:
+            self.logger.debug(f"Acquired semaphore for {method}.")
             return self.client.request(method, params)
 
     def exit(self) -> None:
@@ -82,7 +108,7 @@ class SeparationManager:
         self, input_file: Path, output_dir: Path, model: str
     ) -> tuple[Path, Path]:
         """Split a file into vocals and instrumental."""
-        logger.logger.debug(f"Splitting {input_file} into vocals and instrumental.")
+        self.logger.debug(f"Splitting {input_file} into vocals and instrumental.")
         out = self._request(
             "split",
             {
