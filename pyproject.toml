@@ -198,4 +198,9 @@ exclude = [
     "src/usdb_syncer/gui/resources",
     "venv",
     ".tox",
+    "**/node_modules",
+    "**/__pycache__",
+    "**/.*",
+    ".venv",
+    "info",
 ]
