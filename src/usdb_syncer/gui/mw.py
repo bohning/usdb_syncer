@@ -24,7 +24,7 @@ from usdb_syncer.gui.debug_console import DebugConsole
 from usdb_syncer.gui.forms.MainWindow import Ui_MainWindow
 from usdb_syncer.gui.licenses_dialog import LicensesDialog
 from usdb_syncer.gui.meta_tags_dialog import MetaTagsDialog
-from usdb_syncer.gui.notification import ToastManager, ToastType
+from usdb_syncer.gui.notification import ToastManager
 from usdb_syncer.gui.previewer import Previewer
 from usdb_syncer.gui.progress import run_with_progress
 from usdb_syncer.gui.report_dialog import ReportDialog
@@ -293,7 +293,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         def on_done(songs: set[SongId]) -> None:
             self.table.set_selection_to_song_ids(songs)
             logger.info(f"Selected {len(songs)} songs.")
-            ToastManager.show_message(f"Found {len(songs)} songs")
+            ToastManager.success(f"Found {len(songs)} songs")
 
         if directory := QFileDialog.getExistingDirectory(self, "Select Song Directory"):
             run_with_progress(
@@ -307,7 +307,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
             song_routines.load_available_songs_and_sync_meta(folder, True, progress)
 
         def on_done(_: None) -> None:
-            ToastManager.show_message("Fetched updated songs from USDB")
+            ToastManager.success("Fetched updated songs from USDB")
             self.table.end_reset()
             self.table.search_songs()
 
@@ -351,22 +351,18 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         )[0]
         if not file_list:
             logger.info("no files selected to import USDB IDs from")
-            ToastManager.show_message(
-                "No files selected to import USDB IDs from", toast_type=ToastType.ERROR
-            )
+            ToastManager.error("No files selected to import USDB IDs from")
             return
         paths = [Path(f) for f in file_list]
         if available := usdb_id_file.get_available_song_ids_from_files(paths):
             self.table.set_selection_to_song_ids(available)
-            ToastManager.show_message(f"Selected {len(available)} songs from file")
+            ToastManager.success(f"Selected {len(available)} songs from file")
 
     def _export_usdb_ids_to_file(self) -> None:
         selected_ids = [song.song_id for song in self.table.selected_songs()]
         if not selected_ids:
             logger.info("Skipping export: no songs selected.")
-            ToastManager.show_message(
-                "No songs selected to export USDB IDs from", toast_type=ToastType.ERROR
-            )
+            ToastManager.error("No songs selected to export USDB IDs from")
             return
 
         # Note: automatically checks if file already exists
@@ -378,11 +374,11 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         )[0]
         if not path:
             logger.info("export aborted")
-            ToastManager.show_message("Export aborted", toast_type=ToastType.ERROR)
+            ToastManager.error("Export aborted")
             return
 
         usdb_id_file.write_usdb_id_file(Path(path), selected_ids)
-        ToastManager.show_message(f"Exported {len(selected_ids)} USDB IDs")
+        ToastManager.success(f"Exported {len(selected_ids)} USDB IDs")
         logger.info(f"exported {len(selected_ids)} USDB IDs to {path}")
 
     def _show_current_song_in_usdb(self) -> None:
@@ -421,10 +417,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         """
         if not (user := SessionManager.get_user()):
             logger.info("Not logged in, skipping song submission.")
-            ToastManager.show_message(
-                "Not logged in to USDB. Song submission skipped",
-                toast_type=ToastType.ERROR,
-            )
+            ToastManager.error("Not logged in to USDB. Song submission skipped")
             return
 
         if user.role == UserRole.USER:
@@ -443,18 +436,13 @@ class MainWindow(Ui_MainWindow, QMainWindow):
                     with db.transaction():
                         song.remove_sync_meta()
                     events.SongsChanged([song.song_id])
-                    ToastManager.show_message(
-                        "Song does not exist locally anymore",
-                        toast_type=ToastType.ERROR,
-                    )
+                    ToastManager.error("Song does not exist locally anymore")
                     logger.info("Song does not exist locally anymore.")
             else:
-                ToastManager.show_message(
-                    "Song does not exist locally", toast_type=ToastType.ERROR
-                )
+                ToastManager.error("Song does not exist locally")
                 logger.info("Song does not exist locally.")
         else:
-            ToastManager.show_message("No current song", toast_type=ToastType.ERROR)
+            ToastManager.error("No current song")
             logger.info("No current song.")
 
     def _open_current_song_folder(self) -> None:

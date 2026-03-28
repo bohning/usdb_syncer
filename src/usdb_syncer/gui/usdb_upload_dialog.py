@@ -11,7 +11,7 @@ from PySide6.QtWidgets import QDialog, QMessageBox, QWidget
 from usdb_syncer import settings, utils
 from usdb_syncer.gui import gui_utils, progress, theme
 from usdb_syncer.gui.forms.UsdbUploadDialog import Ui_Dialog
-from usdb_syncer.gui.notification import ToastManager, ToastType
+from usdb_syncer.gui.notification import ToastManager
 from usdb_syncer.gui.theme import generate_diff_css
 from usdb_syncer.logger import song_logger
 from usdb_syncer.song_txt import SongTxt
@@ -143,9 +143,9 @@ class UsdbUploadDialog(Ui_Dialog, QDialog):
                 )
                 progress.increase()
             if num_songs == 1:
-                ToastManager.show_message("Submitted song")
+                ToastManager.success("Submitted song")
             else:
-                ToastManager.show_message(f"Submitted {num_songs} songs")
+                ToastManager.success(f"Submitted {num_songs} songs")
 
         num_songs = len(self.submittable)
         progress.run_with_progress(task)
@@ -186,45 +186,25 @@ def _validate_song_for_submission(
     remote_str = get_notes(song.song_id, logger)
     if not remote_str:
         logger.info("Cannot submit: song is not remote.")
-        ToastManager.show_message(
-            f"Cannot submit {song.artist_title_str()}: not remote",
-            toast_type=ToastType.ERROR,
-        )
         return ValidationFailure("not remote")
 
     remote_txt = SongTxt.try_parse(remote_str, logger)
     if not remote_txt:
         logger.info("Cannot submit: remote song parsing failed.")
-        ToastManager.show_message(
-            f"Cannot submit {song.artist_title_str()}: remote parsing failed",
-            toast_type=ToastType.ERROR,
-        )
         return ValidationFailure("remote parsing failed")
 
     sync_meta = song.sync_meta
     if not sync_meta or not sync_meta.path.exists():
         logger.info("Cannot submit: song is not local.")
-        ToastManager.show_message(
-            f"Cannot submit {song.artist_title_str()}: not local",
-            toast_type=ToastType.ERROR,
-        )
         return ValidationFailure("not local")
 
     if song.status is not DownloadStatus.SYNCHRONIZED:
         logger.info("Cannot submit: song is not synchronized.")
-        ToastManager.show_message(
-            f"Cannot submit {song.artist_title_str()}: not synchronized",
-            toast_type=ToastType.ERROR,
-        )
         return ValidationFailure("not synchronized")
 
     song_changes = song.get_changes(remote_txt)
     if not song_changes or not song_changes.has_changes():
         logger.info("Cannot submit: song has no local changes.")
-        ToastManager.show_message(
-            f"Cannot submit {song.artist_title_str()}: no local changes",
-            toast_type=ToastType.ERROR,
-        )
         return ValidationFailure("no local changes")
 
     return ValidationSuccess(song_changes)

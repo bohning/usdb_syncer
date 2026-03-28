@@ -29,6 +29,7 @@ if TYPE_CHECKING:
 _TOAST_MARGIN = 85
 _TOAST_SPACING = 10
 _FADE_DURATION_MS = 300
+_DEFAULT_DELAY_MS = 5_000
 
 
 class ToastType(Enum):
@@ -166,9 +167,9 @@ class ToastManager(QObject):
     def show_message(
         cls,
         message: str,
-        toast_type: ToastType = ToastType.INFO,
+        toast_type: ToastType,
         icon: Icon | None = None,
-        delay_ms: int = 10_000,
+        delay_ms: int = _DEFAULT_DELAY_MS,
     ) -> None:
         """Show a toast message."""
         if not ToastManager._mainwindow:
@@ -177,6 +178,21 @@ class ToastManager(QObject):
             )
             return
         cls.get_instance()._spawn_toast(message, toast_type, icon, delay_ms)
+
+    @classmethod
+    def info(cls, message: str, delay_ms: int = _DEFAULT_DELAY_MS) -> None:
+        """Show a toast message for a successful action."""
+        cls.show_message(message, ToastType.INFO, delay_ms=delay_ms)
+
+    @classmethod
+    def warning(cls, message: str, delay_ms: int = _DEFAULT_DELAY_MS) -> None:
+        """Show a toast message with a warning."""
+        cls.show_message(message, ToastType.WARNING, delay_ms=delay_ms)
+
+    @classmethod
+    def error(cls, message: str, delay_ms: int = _DEFAULT_DELAY_MS) -> None:
+        """Show a toast message with an error."""
+        cls.show_message(message, ToastType.ERROR, delay_ms=delay_ms)
 
     def _spawn_toast(
         self, message: str, toast_type: ToastType, icon: Icon | None, delay_ms: int
