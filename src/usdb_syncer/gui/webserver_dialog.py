@@ -48,12 +48,12 @@ class WebserverDialog(Ui_Dialog, QtWidgets.QDialog):
                 show_nonlocal_songs=not self.checkBox_only_local_songs.isChecked(),
                 allow_downloading=self.checkBox_allow_downloads.isChecked(),
             )
-            ToastManager.show_message("Webserver started successfully.")
+            ToastManager.success("Webserver started successfully.")
         except errors.WebserverError as e:
             QtWidgets.QMessageBox.warning(None, "Failed to start webserver", str(e))
         self._update_ui()
 
     def _stop(self) -> None:
         webserver.stop()
-        ToastManager.show_message("Webserver stopped.")
+        ToastManager.success("Webserver stopped.")
         self._update_ui()

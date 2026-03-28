@@ -122,8 +122,7 @@ class ReportDialog(Ui_Dialog, QDialog):
 
     def _generate_report_pdf(self) -> bool:
         def on_done(path: str) -> None:
-            logger.info(f"PDF report created at {path}.")
-            ToastManager.show_message("PDF report generated")
+            ToastManager.success(f"PDF report created at {path}.")
             utils.open_path_or_file(Path(path))
 
         songs: Iterable[SongId] = []
@@ -176,8 +175,9 @@ class ReportDialog(Ui_Dialog, QDialog):
     def _generate_report_json(self) -> bool:
         def on_done(result: tuple[Path, int]) -> None:
             path, num_of_songs = result
-            ToastManager.show_message("JSON report created")
-            logger.info(f"JSON report created at {path} ({num_of_songs} songs).")
+            ToastManager.success(
+                f"JSON report created at {path} ({num_of_songs} songs)."
+            )
 
         songs: Iterable[SongId] = []
         if self.radioButton_locally_available_songs.isChecked():

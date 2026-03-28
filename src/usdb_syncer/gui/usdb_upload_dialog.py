@@ -142,13 +142,10 @@ class UsdbUploadDialog(Ui_Dialog, QDialog):
                     song_logger(song.song_id),
                 )
                 progress.increase()
-            if num_songs == 1:
-                ToastManager.success("Submitted song")
-            else:
-                ToastManager.success(f"Submitted {num_songs} songs")
 
         num_songs = len(self.submittable)
-        progress.run_with_progress(task)
+        msg = "Submitted song." if num_songs == 1 else f"Submitted {num_songs} songs."
+        progress.run_with_progress(task, on_done=lambda _: ToastManager.success(msg))
         UsdbUploadDialog._instance = None
         self._save_settings()
         super().accept()

@@ -369,9 +369,8 @@ class SongTable:
             logger = song_logger(song.song_id)
             if song.is_pinned():
                 ToastManager.warning(
-                    f"Not deleting {song.artist_title_str()} as it is pinned"
+                    f"Not deleting '{song.artist_title_str()}' as it is pinned."
                 )
-                logger.info("Not trashing song folder as it is pinned.")
                 continue
             self.stop_playing_local_song(song)
             previewer.Previewer.close_song(song.song_id)
