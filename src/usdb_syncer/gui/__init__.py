@@ -291,7 +291,7 @@ def _load_main_window(mw: MainWindow) -> None:
     with db.transaction():
         db.delete_session_data()
 
-    def on_done(_result: None) -> None:
+    def on_done(result: song_routines.LoadSongsResult) -> None:
         splash.progress.reset("Setting up GUI.")
         mw.tree.populate()
         if default_search := settings.SavedSearch.get_default():
@@ -303,6 +303,7 @@ def _load_main_window(mw: MainWindow) -> None:
         logger.logger.info("Application successfully loaded.")
         theme.Theme.from_settings().apply()
         splash.finish(mw)
+        notification.report_load_song_result(result)
 
     progress.run_background_task(
         splash.progress,

@@ -14,6 +14,7 @@ from usdb_syncer.gui import (
     external_deps_dialog,
     gui_utils,
     icons,
+    notification,
     progress_bar,
     status_bar,
 )
@@ -301,12 +302,14 @@ class MainWindow(Ui_MainWindow, QMainWindow):
             )
 
     def _refetch_song_list(self) -> None:
-        def task(progress: utils.ProgressProxy) -> None:
+        def task(progress: utils.ProgressProxy) -> song_routines.LoadSongsResult:
             folder = settings.get_song_dir()
-            song_routines.load_available_songs_and_sync_meta(folder, True, progress)
+            return song_routines.load_available_songs_and_sync_meta(
+                folder, True, progress
+            )
 
-        def on_done(_: None) -> None:
-            ToastManager.success("Fetched updated songs from USDB.")
+        def on_done(result: song_routines.LoadSongsResult) -> None:
+            notification.report_load_song_result(result)
             self.table.end_reset()
             self.table.search_songs()
 
@@ -381,7 +384,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
             logger.debug(f"Opening song page #{song.song_id} in webbrowser.")
             utils.open_url_in_browser(f"{Usdb.DETAIL_URL}{song.song_id:d}")
         else:
-            logger.info("No current song.")
+            ToastManager.error("No current song.")
 
     def _show_comment_dialog(self) -> None:
         song = self.table.current_song()

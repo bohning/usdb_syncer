@@ -25,6 +25,7 @@ from usdb_syncer.gui.icons import Icon
 if TYPE_CHECKING:
     from PySide6.QtGui import QCloseEvent, QPaintEvent
 
+    from usdb_syncer.song_routines import LoadSongsResult
 
 _TOAST_MARGIN = 85
 _TOAST_SPACING = 10
@@ -270,3 +271,14 @@ class ToastManager(QObject):
         ):
             self._update_positions(animate=False)
         return super().eventFilter(watched, event)
+
+
+def report_load_song_result(result: LoadSongsResult) -> None:
+    if n_songs := len(result.new_songs) > 1:
+        ToastManager.success(f"Fetched {n_songs} updated songs from USDB.")
+    elif n_songs == 1:
+        ToastManager.success("Fetched 1 updated song from USDB.")
+    elif result.no_usdb_login:
+        ToastManager.warning("Skipped fetching new songs as there is no login.")
+    elif result.no_connection:
+        ToastManager.error("Failed to fetch new songs; check network connection.")
