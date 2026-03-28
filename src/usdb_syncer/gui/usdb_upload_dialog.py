@@ -9,9 +9,8 @@ from PySide6.QtGui import Qt
 from PySide6.QtWidgets import QDialog, QMessageBox, QWidget
 
 from usdb_syncer import settings, utils
-from usdb_syncer.gui import gui_utils, progress, theme
+from usdb_syncer.gui import gui_utils, notification, progress, theme
 from usdb_syncer.gui.forms.UsdbUploadDialog import Ui_Dialog
-from usdb_syncer.gui.notification import ToastManager
 from usdb_syncer.gui.theme import generate_diff_css
 from usdb_syncer.logger import song_logger
 from usdb_syncer.song_txt import SongTxt
@@ -145,7 +144,7 @@ class UsdbUploadDialog(Ui_Dialog, QDialog):
 
         num_songs = len(self.submittable)
         msg = "Submitted song." if num_songs == 1 else f"Submitted {num_songs} songs."
-        progress.run_with_progress(task, on_done=lambda _: ToastManager.success(msg))
+        progress.run_with_progress(task, on_done=lambda _: notification.success(msg))
         UsdbUploadDialog._instance = None
         self._save_settings()
         super().accept()

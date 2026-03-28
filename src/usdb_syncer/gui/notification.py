@@ -23,7 +23,7 @@ from usdb_syncer.gui import theme
 from usdb_syncer.gui.icons import Icon
 
 if TYPE_CHECKING:
-    from PySide6.QtGui import QCloseEvent, QPaintEvent
+    from PySide6.QtGui import QCloseEvent, QPaintEvent, QResizeEvent
 
     from usdb_syncer.song_routines import LoadSongsResult
 
@@ -130,7 +130,7 @@ class Toast(QWidget):
         if self.icon:
             self.icon_label.setPixmap(self.icon.icon(new_theme.KEY).pixmap(16, 16))
 
-    def resizeEvent(self, event):  # noqa: N802
+    def resizeEvent(self, event: QResizeEvent) -> None:  # noqa: N802
         super().resizeEvent(event)
         self._overlay.setGeometry(self.rect())
         self._overlay.raise_()
@@ -185,21 +185,6 @@ class ToastManager(QObject):
             )
             return
         cls.get_instance()._spawn_toast(message, toast_type, icon, delay_ms)
-
-    @classmethod
-    def success(cls, message: str, delay_ms: int = _DEFAULT_DELAY_MS) -> None:
-        """Show a toast message for a successful action."""
-        cls.show_message(message, ToastType.SUCCESS, delay_ms=delay_ms)
-
-    @classmethod
-    def warning(cls, message: str, delay_ms: int = _DEFAULT_DELAY_MS) -> None:
-        """Show a toast message with a warning."""
-        cls.show_message(message, ToastType.WARNING, delay_ms=delay_ms)
-
-    @classmethod
-    def error(cls, message: str, delay_ms: int = _DEFAULT_DELAY_MS) -> None:
-        """Show a toast message with an error."""
-        cls.show_message(message, ToastType.ERROR, delay_ms=delay_ms)
 
     def _spawn_toast(
         self, message: str, toast_type: ToastType, icon: Icon | None, delay_ms: int
@@ -273,12 +258,27 @@ class ToastManager(QObject):
         return super().eventFilter(watched, event)
 
 
+def success(message: str, delay_ms: int = _DEFAULT_DELAY_MS) -> None:
+    """Show a toast message for a successful action."""
+    ToastManager.show_message(message, ToastType.SUCCESS, delay_ms=delay_ms)
+
+
+def warning(message: str, delay_ms: int = _DEFAULT_DELAY_MS) -> None:
+    """Show a toast message with a warning."""
+    ToastManager.show_message(message, ToastType.WARNING, delay_ms=delay_ms)
+
+
+def error(message: str, delay_ms: int = _DEFAULT_DELAY_MS) -> None:
+    """Show a toast message with an error."""
+    ToastManager.show_message(message, ToastType.ERROR, delay_ms=delay_ms)
+
+
 def report_load_song_result(result: LoadSongsResult) -> None:
-    if n_songs := len(result.new_songs) > 1:
-        ToastManager.success(f"Fetched {n_songs} updated songs from USDB.")
+    if (n_songs := len(result.new_songs)) > 1:
+        success(f"Fetched {n_songs} updated songs from USDB.")
     elif n_songs == 1:
-        ToastManager.success("Fetched 1 updated song from USDB.")
+        success("Fetched 1 updated song from USDB.")
     elif result.no_usdb_login:
-        ToastManager.warning("Skipped fetching new songs as there is no login.")
+        warning("Skipped fetching new songs as there is no login.")
     elif result.no_connection:
-        ToastManager.error("Failed to fetch new songs; check network connection.")
+        error("Failed to fetch new songs; check network connection.")

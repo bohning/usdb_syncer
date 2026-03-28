@@ -15,9 +15,8 @@ from PySide6.QtMultimedia import QMediaPlayer
 from usdb_syncer import SongId, db, events, media_player, settings, sync_meta, utils
 from usdb_syncer.custom_data import CustomData
 from usdb_syncer.gui import events as gui_events
-from usdb_syncer.gui import external_deps_dialog, previewer
+from usdb_syncer.gui import external_deps_dialog, notification, previewer
 from usdb_syncer.gui.custom_data_dialog import CustomDataDialog
-from usdb_syncer.gui.notification import ToastManager
 from usdb_syncer.gui.progress import run_with_progress
 from usdb_syncer.gui.song_table.column import (
     MIN_COLUMN_WIDTH,
@@ -368,7 +367,7 @@ class SongTable:
                 continue
             logger = song_logger(song.song_id)
             if song.is_pinned():
-                ToastManager.warning(
+                notification.warning(
                     f"Not deleting '{song.artist_title_str()}' as it is pinned."
                 )
                 continue
