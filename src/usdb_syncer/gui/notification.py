@@ -26,7 +26,7 @@ if TYPE_CHECKING:
     from usdb_syncer.gui.icons import Icon
 
 
-_TOAST_MARGIN = 50
+_TOAST_MARGIN = 85
 _TOAST_SPACING = 10
 _FADE_DURATION_MS = 300
 
@@ -192,7 +192,7 @@ class ToastManager(QObject):
         for t in self.toasts:
             target_y -= t.height() + _TOAST_SPACING
 
-        target_x = bottom_right.x() - toast.width() - _TOAST_MARGIN
+        target_x = (bottom_right.x() - toast.width()) // 2
         toast.move(QPoint(target_x, target_y - toast.height()))
 
         self.toasts.append(toast)
@@ -226,9 +226,7 @@ class ToastManager(QObject):
 
         for toast in self.toasts:
             target_y = current_y - toast.height()
-            target_pos = QPoint(
-                bottom_right.x() - toast.width() - _TOAST_MARGIN, target_y
-            )
+            target_pos = QPoint((bottom_right.x() - toast.width()) // 2, target_y)
 
             if animate and toast.pos() != target_pos:
                 anim = QPropertyAnimation(toast, b"pos", self)
