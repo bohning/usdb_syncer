@@ -380,10 +380,13 @@ Toast {{
     border-style: solid;
     background: {surface_12dp};
 }}
+Toast > QWidget {{
+    background: transparent;
+}}
 Toast > QLabel {{
-    padding: 4px;
     font-size: 16px;
     color: {on_surface};
+    padding: 16px 24px 16px 20px;
 }}
 Toast[toast_type=success] {{
     border-color: {success};
@@ -393,4 +396,10 @@ Toast[toast_type=warning] {{
 }}
 Toast[toast_type=error] {{
     border-color: {error};
+}}
+Toast QPushButton,
+Toast QPushButton:pressed,
+Toast QPushButton:hover {{
+    background: transparent;
+    padding: 6px 4px;
 }}

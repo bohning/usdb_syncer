@@ -4,10 +4,12 @@ Toast {{
     border-width: 1px;
     border-left-width: 10px;
 }}
+Toast > QWidget {{
+    background: transparent;
+}}
 Toast > QLabel {{
-    padding: 2px;
-    padding-left: 12px;
     font-size: 16px;
+    padding: 16px 24px;
 }}
 Toast[toast_type=success] {{
     border-color: {success};
@@ -18,3 +20,10 @@ Toast[toast_type=warning] {{
 Toast[toast_type=error] {{
     border-color: {error};
 }}
+Toast QPushButton,
+Toast QPushButton:pressed,
+Toast QPushButton:hover {{
+    background: transparent;
+    padding: 4px 2px;
+}}
+

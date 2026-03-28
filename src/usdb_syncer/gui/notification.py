@@ -11,6 +11,7 @@ from PySide6.QtWidgets import (
     QApplication,
     QHBoxLayout,
     QLabel,
+    QPushButton,
     QStyle,
     QStyleOption,
     QWidget,
@@ -19,17 +20,16 @@ from PySide6.QtWidgets import (
 from usdb_syncer import errors, logger
 from usdb_syncer.gui import events as gui_events
 from usdb_syncer.gui import theme
+from usdb_syncer.gui.icons import Icon
 
 if TYPE_CHECKING:
     from PySide6.QtGui import QCloseEvent, QPaintEvent
-
-    from usdb_syncer.gui.icons import Icon
 
 
 _TOAST_MARGIN = 85
 _TOAST_SPACING = 10
 _FADE_DURATION_MS = 300
-_DEFAULT_DELAY_MS = 5_000
+_DEFAULT_DELAY_MS = 10_000
 
 
 class ToastType(enum.StrEnum):
@@ -66,8 +66,7 @@ class Toast(QWidget):
         self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground)
 
         layout = QHBoxLayout(self)
-        layout.setContentsMargins(15, 10, 15, 10)
-        layout.setSpacing(10)
+        layout.setContentsMargins(0, 0, 0, 0)
 
         if icon:
             self.icon_label = QLabel(self, pixmap=icon.icon().pixmap(16, 16))
@@ -75,6 +74,17 @@ class Toast(QWidget):
 
         text_label = QLabel(message, self)
         layout.addWidget(text_label)
+
+        self._close_button = QPushButton(self)
+        self._close_button.clicked.connect(self.close)
+        self._close_button.setIcon(Icon.CLOSE.icon())
+        self._overlay = QWidget(self)
+        overlay_layout = QHBoxLayout(self._overlay)
+        overlay_layout.setContentsMargins(0, 0, 0, 0)
+        overlay_layout.setAlignment(
+            Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignRight
+        )
+        overlay_layout.addWidget(self._close_button)
 
         self.setWindowOpacity(0.0)
 
@@ -115,8 +125,14 @@ class Toast(QWidget):
         super().closeEvent(event)
 
     def update_theme(self, new_theme: theme.Theme) -> None:
+        self._close_button.setIcon(Icon.CLOSE.icon(new_theme.KEY))
         if self.icon:
             self.icon_label.setPixmap(self.icon.icon(new_theme.KEY).pixmap(16, 16))
+
+    def resizeEvent(self, event):  # noqa: N802
+        super().resizeEvent(event)
+        self._overlay.setGeometry(self.rect())
+        self._overlay.raise_()
 
 
 class ToastManager(QObject):
@@ -199,7 +215,7 @@ class ToastManager(QObject):
             target_y -= t.height() + _TOAST_SPACING
 
         target_x = (bottom_right.x() - toast.width()) // 2
-        toast.move(QPoint(target_x, target_y - toast.height()))
+        toast.move(target_x, target_y - toast.height())
 
         self.toasts.append(toast)
         toast.show_toast()
