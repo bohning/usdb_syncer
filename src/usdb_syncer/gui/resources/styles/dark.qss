@@ -372,3 +372,25 @@ QSlider::handle {{
     margin: -4px 0;
     border-radius: 8px;
 }}
+
+
+Toast {{
+    border-radius: 8px;
+    border-width: 2px;
+    border-style: solid;
+    background: {surface_12dp};
+}}
+Toast > QLabel {{
+    padding: 4px;
+    font-size: 16px;
+    color: {on_surface};
+}}
+Toast[toast_type=success] {{
+    border-color: {success};
+}}
+Toast[toast_type=warning] {{
+    border-color: {warning};
+}}
+Toast[toast_type=error] {{
+    border-color: {error};
+}}

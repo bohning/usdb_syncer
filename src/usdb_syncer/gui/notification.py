@@ -2,11 +2,11 @@
 
 from __future__ import annotations
 
-from enum import Enum
+import enum
 from typing import TYPE_CHECKING, ClassVar
 
 from PySide6.QtCore import QEvent, QObject, QPoint, QPropertyAnimation, Qt, QTimer
-from PySide6.QtGui import QColor, QPainter
+from PySide6.QtGui import QPainter
 from PySide6.QtWidgets import (
     QApplication,
     QHBoxLayout,
@@ -32,12 +32,12 @@ _FADE_DURATION_MS = 300
 _DEFAULT_DELAY_MS = 5_000
 
 
-class ToastType(Enum):
+class ToastType(enum.StrEnum):
     """Type of toast."""
 
-    INFO = QColor(0, 128, 255)
-    WARNING = QColor(255, 165, 0)
-    ERROR = QColor(255, 0, 0)
+    SUCCESS = "success"
+    WARNING = "warning"
+    ERROR = "error"
 
 
 class Toast(QWidget):
@@ -52,8 +52,7 @@ class Toast(QWidget):
         parent: QWidget | None = None,
     ) -> None:
         super().__init__(parent)
-
-        self.toast_type = toast_type
+        self.setProperty("toast_type", toast_type)
         self.icon = icon
 
         self.setWindowFlags(
@@ -69,12 +68,6 @@ class Toast(QWidget):
         layout = QHBoxLayout(self)
         layout.setContentsMargins(15, 10, 15, 10)
         layout.setSpacing(10)
-
-        self.setStyleSheet(
-            theme.generate_toast_css(
-                theme.Theme.from_settings().toast_palette(toast_type.value)
-            )
-        )
 
         if icon:
             self.icon_label = QLabel(self, pixmap=icon.icon().pixmap(16, 16))
@@ -122,9 +115,6 @@ class Toast(QWidget):
         super().closeEvent(event)
 
     def update_theme(self, new_theme: theme.Theme) -> None:
-        self.setStyleSheet(
-            theme.generate_toast_css(new_theme.toast_palette(self.toast_type.value))
-        )
         if self.icon:
             self.icon_label.setPixmap(self.icon.icon(new_theme.KEY).pixmap(16, 16))
 
@@ -180,9 +170,9 @@ class ToastManager(QObject):
         cls.get_instance()._spawn_toast(message, toast_type, icon, delay_ms)
 
     @classmethod
-    def info(cls, message: str, delay_ms: int = _DEFAULT_DELAY_MS) -> None:
+    def success(cls, message: str, delay_ms: int = _DEFAULT_DELAY_MS) -> None:
         """Show a toast message for a successful action."""
-        cls.show_message(message, ToastType.INFO, delay_ms=delay_ms)
+        cls.show_message(message, ToastType.SUCCESS, delay_ms=delay_ms)
 
     @classmethod
     def warning(cls, message: str, delay_ms: int = _DEFAULT_DELAY_MS) -> None:

@@ -89,15 +89,6 @@ def generate_diff_css(palette: DiffPalette) -> str:
     )
 
 
-def generate_toast_css(palette: ToastPalette) -> str:
-    """Generate toast CSS from theme palette."""
-    return styles.TOAST_QSS.read_text(encoding="utf-8").format(
-        bg=_rgba_str(palette.bg),
-        text=_rgba_str(palette.text),
-        border=_rgba_str(palette.border),
-    )
-
-
 @attrs.define
 class PreviewPalette:
     """Palette for the song preview."""
@@ -132,15 +123,6 @@ class DiffPalette:
     lineno_border: QColor
 
 
-@attrs.define
-class ToastPalette:
-    """Palette for toast notifications."""
-
-    bg: QColor
-    text: QColor
-    border: QColor
-
-
 class Theme(abc.ABC):
     """Abstract base class for themes."""
 
@@ -160,10 +142,6 @@ class Theme(abc.ABC):
 
     @abc.abstractmethod
     def diff_palette(self) -> DiffPalette:
-        pass
-
-    @abc.abstractmethod
-    def toast_palette(self, backgroud_accent: QColor | None = None) -> ToastPalette:
         pass
 
     @classmethod
@@ -206,12 +184,18 @@ class SystemTheme(Theme):
 
     KEY = settings.Theme.SYSTEM
     GOLD = QColor(245, 189, 2)
+    _style_template = styles.SYSTEM_QSS
 
     def q_palette(self) -> QPalette:
         return QPalette()
 
     def style(self) -> str:
-        return ""
+        return self._style_template.read_text(encoding="utf-8").format(
+            base=_rgb_str(self.q_palette().base().color()),
+            success=_rgb_str(Swatch.get(settings.Color.GREEN).s_700),
+            warning=_rgb_str(Swatch.get(settings.Color.YELLOW).s_700),
+            error=_rgb_str(Swatch.get(settings.Color.RED).s_700),
+        )
 
     def preview_palette(self) -> PreviewPalette:
         palette = self.q_palette()
@@ -248,16 +232,6 @@ class SystemTheme(Theme):
             empty_bg=_overlay_colors(base, palette.highlight().color(), 0.3),
             lineno_text=gray.s_700,
             lineno_border=gray.s_700,
-        )
-
-    def toast_palette(self, backgroud_accent: QColor | None = None) -> ToastPalette:
-        palette = self.q_palette()
-        bg = palette.window().color()
-        if backgroud_accent:
-            bg = _overlay_colors(bg, backgroud_accent, 0.1)
-        bg.setAlpha(230)
-        return ToastPalette(
-            bg=bg, text=palette.text().color(), border=palette.dark().color()
         )
 
 
@@ -337,6 +311,9 @@ class DarkTheme(Theme):
             on_secondary=_rgb_str(self.on_secondary),
             on_background=_rgb_str(self.on_background),
             on_surface=_rgb_str(self.on_surface),
+            success=_rgb_str(Swatch.get(settings.Color.GREEN).s_500),
+            warning=_rgb_str(Swatch.get(settings.Color.YELLOW).s_700),
+            error=_rgb_str(Swatch.get(settings.Color.RED).s_500),
         )
 
     def preview_palette(self) -> PreviewPalette:
@@ -368,13 +345,6 @@ class DarkTheme(Theme):
             lineno_text=self.text(_Text.DISABLED),
             lineno_border=self.surface(_Surface.DP_03),
         )
-
-    def toast_palette(self, backgroud_accent: QColor | None = None) -> ToastPalette:
-        bg = self.surface(_Surface.DP_24)
-        if backgroud_accent:
-            bg = _overlay_colors(bg, backgroud_accent, 0.1)
-        bg.setAlpha(230)
-        return ToastPalette(bg=bg, text=self.text(_Text.HIGH), border=self.primary)
 
 
 @attrs.define
