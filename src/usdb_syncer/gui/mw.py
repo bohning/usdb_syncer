@@ -14,6 +14,7 @@ from usdb_syncer.gui import (
     external_deps_dialog,
     gui_utils,
     icons,
+    notification,
     progress_bar,
     status_bar,
 )
@@ -291,7 +292,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
     def _select_local_songs(self) -> None:
         def on_done(songs: set[SongId]) -> None:
             self.table.set_selection_to_song_ids(songs)
-            logger.info(f"Selected {len(songs)} songs.")
+            notification.success(f"Found {len(songs)} songs.")
 
         if directory := QFileDialog.getExistingDirectory(self, "Select Song Directory"):
             run_with_progress(
@@ -300,11 +301,14 @@ class MainWindow(Ui_MainWindow, QMainWindow):
             )
 
     def _refetch_song_list(self) -> None:
-        def task(progress: utils.ProgressProxy) -> None:
+        def task(progress: utils.ProgressProxy) -> song_routines.LoadSongsResult:
             folder = settings.get_song_dir()
-            song_routines.load_available_songs_and_sync_meta(folder, True, progress)
+            return song_routines.load_available_songs_and_sync_meta(
+                folder, True, progress
+            )
 
-        def on_done(_: None) -> None:
+        def on_done(result: song_routines.LoadSongsResult) -> None:
+            notification.report_load_song_result(result)
             self.table.end_reset()
             self.table.search_songs()
 
@@ -347,16 +351,17 @@ class MainWindow(Ui_MainWindow, QMainWindow):
             ),
         )[0]
         if not file_list:
-            logger.info("no files selected to import USDB IDs from")
+            notification.error("No files selected to import USDB IDs from.")
             return
         paths = [Path(f) for f in file_list]
         if available := usdb_id_file.get_available_song_ids_from_files(paths):
             self.table.set_selection_to_song_ids(available)
+            notification.success(f"Selected {len(available)} songs from file.")
 
     def _export_usdb_ids_to_file(self) -> None:
         selected_ids = [song.song_id for song in self.table.selected_songs()]
         if not selected_ids:
-            logger.info("Skipping export: no songs selected.")
+            notification.error("No songs selected to export USDB IDs from.")
             return
 
         # Note: automatically checks if file already exists
@@ -367,18 +372,18 @@ class MainWindow(Ui_MainWindow, QMainWindow):
             filter="USDB ID File (*.usdb_ids)",
         )[0]
         if not path:
-            logger.info("export aborted")
             return
 
         usdb_id_file.write_usdb_id_file(Path(path), selected_ids)
-        logger.info(f"exported {len(selected_ids)} USDB IDs to {path}")
+        notification.success(f"Exported {len(selected_ids)} USDB IDs.")
+        logger.info(f"Exported {len(selected_ids)} USDB IDs to {path}.")
 
     def _show_current_song_in_usdb(self) -> None:
         if song := self.table.current_song():
             logger.debug(f"Opening song page #{song.song_id} in webbrowser.")
             utils.open_url_in_browser(f"{Usdb.DETAIL_URL}{song.song_id:d}")
         else:
-            logger.info("No current song.")
+            notification.error("No current song.")
 
     def _show_comment_dialog(self) -> None:
         song = self.table.current_song()
@@ -408,7 +413,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         Moderators may submit all selected songs.
         """
         if not (user := SessionManager.get_user()):
-            logger.info("Not logged in, skipping song submission.")
+            notification.error("Not logged in to USDB. Song submission skipped.")
             return
 
         if user.role == UserRole.USER:
@@ -427,11 +432,11 @@ class MainWindow(Ui_MainWindow, QMainWindow):
                     with db.transaction():
                         song.remove_sync_meta()
                     events.SongsChanged([song.song_id])
-                    logger.info("Song does not exist locally anymore.")
+                    notification.error("Song does not exist locally anymore.")
             else:
-                logger.info("Song does not exist locally.")
+                notification.error("Song does not exist locally.")
         else:
-            logger.info("No current song.")
+            notification.error("No current song.")
 
     def _open_current_song_folder(self) -> None:
         self._open_current_song(open_path_or_file)
