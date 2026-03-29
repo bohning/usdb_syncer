@@ -3,6 +3,9 @@ name: Manual upload to testpypi
 on:
   workflow_dispatch:
 
+env:
+  PYTHON_VERSION: "3.14.2"
+
 jobs:
   upload:
     name: Upload to TestPyPI
@@ -10,15 +13,14 @@ jobs:
     permissions:
       id-token: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.14"
-      - name: Set up uv
+      - name: Set up uv and Python
         uses: astral-sh/setup-uv@v7
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          enable-cache: true
       - name: Generate pyside files
         run: uv run --no-dev python -m tools.generate_pyside_files
       - name: Get version from hatch
