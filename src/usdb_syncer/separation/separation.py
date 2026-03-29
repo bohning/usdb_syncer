@@ -100,7 +100,7 @@ class SeparationManager:
         """Check if separation is GPU accelerated."""
         return self._request("is_gpu_accelerated")
 
-    def get_available_models(self) -> list[str]:
+    def get_available_models(self) -> dict[str, str]:
         """Get the models the separation provider supports."""
         return self._request("get_available_models")
 

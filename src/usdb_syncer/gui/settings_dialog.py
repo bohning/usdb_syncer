@@ -17,7 +17,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from usdb_syncer import SongId, events, path_template, separation, settings
+from usdb_syncer import SongId, events, path_template, separation, settings, utils
 from usdb_syncer.gui import gui_utils, icons, theme
 from usdb_syncer.gui.forms.SettingsDialog import Ui_Dialog
 from usdb_syncer.path_template import PathTemplate
@@ -96,6 +96,7 @@ class SettingsDialog(Ui_Dialog, QDialog):
         self.pushButton_browse_yass_reloaded.clicked.connect(
             lambda: self._set_location(settings.SupportedApps.YASS_RELOADED)
         )
+        self.toolButton_separation_help.clicked.connect(self._show_separation_help)
         self.button_info.clicked.connect(self._show_separation_details)
         self.button_select_separation_provider.clicked.connect(
             self._on_select_separation_provider
@@ -117,6 +118,11 @@ class SettingsDialog(Ui_Dialog, QDialog):
         else:
             cls._instance = cls(parent, song)
             cls._instance.show()
+
+    def _show_separation_help(self) -> None:
+        utils.open_url_in_browser(
+            "https://github.com/bohning/usdb_syncer/wiki/Separation-Providers"
+        )
 
     def _connect_stem_separation(
         self, command: list[str], *, provider_selected: bool = True
@@ -142,8 +148,8 @@ class SettingsDialog(Ui_Dialog, QDialog):
 
         models = self._separation_manager.get_available_models()
         self.comboBox_separation_model.clear()
-        for model in models:
-            self.comboBox_separation_model.addItem(model, model)
+        for model_name, model_display_name in models.items():
+            self.comboBox_separation_model.addItem(model_display_name, model_name)
         self.comboBox_separation_model.setEnabled(True)
         self._update_provider_label(_ProviderState.SELECTED_AND_WORKING)
 

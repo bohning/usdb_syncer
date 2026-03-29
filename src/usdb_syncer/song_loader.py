@@ -748,7 +748,6 @@ def transcode_audio(
     out = subprocessing.run_clean(
         cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
     )
-    # TODO: normalization?
     return out.returncode == 0
 
 
