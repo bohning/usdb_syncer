@@ -13,7 +13,7 @@ on:
         type: boolean
 
 env:
-  PYTHON_VERSION: "3.14.2"
+  PYTHON_VERSION: "3.14"
 
 jobs:
   scrape-song-list:
@@ -58,6 +58,8 @@ jobs:
             TARGET: Windows-portable
           - os: windows-latest
             TARGET: Windows-install
+    env:
+      UV_PYTHON_DOWNLOADS: "never"
     steps:
       - uses: actions/checkout@v6
         with:
@@ -70,6 +72,9 @@ jobs:
           python-version: ${{ env.PYTHON_VERSION }}
       - name: Set up uv
         uses: astral-sh/setup-uv@v7
+        with:
+          enable-cache: true
+          python-version: ${{ env.PYTHON_VERSION }}
       - name: Set macOS deployment target (macOS 12+ compatibility)
         if: startsWith(matrix.os, 'macos')
         run: echo "MACOSX_DEPLOYMENT_TARGET=12.0" >> $GITHUB_ENV
