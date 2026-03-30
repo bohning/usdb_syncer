@@ -8,7 +8,6 @@ on:
 
 env:
   PYTHON_VERSION: "3.14.2"
-  UV_PYTHON_DOWNLOADS: "never"
 
 jobs:
   wheel:
@@ -49,6 +48,8 @@ jobs:
     name: Build bundle
     runs-on: ubuntu-latest
     container: ghcr.io/bohning/syncer_linux_builder_image:latest
+    env:
+      UV_PYTHON_DOWNLOADS: "never"
     steps:
       - uses: actions/checkout@v6
         with:
