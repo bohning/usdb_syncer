@@ -12,18 +12,20 @@ on:
         default: true
         type: boolean
 
+env:
+  PYTHON_VERSION: "3.14.2"
+
 jobs:
   scrape-song-list:
     name: Scrape USDB song list
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.14"
-      - name: Set up uv
+      - uses: actions/checkout@v6
+      - name: Set up uv and Python
         uses: astral-sh/setup-uv@v7
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          enable-cache: true
       - name: Scrape USDB song list to ship with the bundle
         run: >
           uv run --no-dev python -m tools.generate_song_list_json
@@ -57,15 +59,15 @@ jobs:
           - os: windows-latest
             TARGET: Windows-install
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0
       - uses: actions/download-artifact@v4
       - name: On macOS and windows, install python normally (linux container has python preinstalled)
         if: contains(matrix.os, 'macos') || contains(matrix.os, 'windows')
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
-          python-version: "3.14"
+          python-version: ${{ env.PYTHON_VERSION }}
       - name: Set up uv
         uses: astral-sh/setup-uv@v7
       - name: Set macOS deployment target (macOS 12+ compatibility)
@@ -120,15 +122,14 @@ jobs:
     permissions:
       id-token: write # IMPORTANT: this permission is mandatory for trusted publishing
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.14"
-      - name: Set up uv
+      - name: Set up uv and Python
         uses: astral-sh/setup-uv@v7
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          enable-cache: true
       - name: Generate GUI elements
         run: uv run --no-dev python -m tools.generate_pyside_files
       - name: Build package
