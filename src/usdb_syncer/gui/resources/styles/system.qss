@@ -1,0 +1,29 @@
+Toast {{
+    background: {base};
+    border-style: solid;
+    border-width: 1px;
+    border-left-width: 10px;
+}}
+Toast > QWidget {{
+    background: transparent;
+}}
+Toast > QLabel {{
+    font-size: 14px;
+    padding: 12px 24px;
+}}
+Toast[toast_type=success] {{
+    border-color: {success};
+}}
+Toast[toast_type=warning] {{
+    border-color: {warning};
+}}
+Toast[toast_type=error] {{
+    border-color: {error};
+}}
+Toast QPushButton,
+Toast QPushButton:pressed,
+Toast QPushButton:hover {{
+    background: transparent;
+    padding: 4px 2px;
+}}
+

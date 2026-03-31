@@ -6,20 +6,22 @@ on:
       - main
   workflow_dispatch:
 
+env:
+  PYTHON_VERSION: "3.14.2"
+
 jobs:
   wheel:
     name: Build wheel
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.14"
-      - name: Set up uv
+      - name: Set up uv and Python
         uses: astral-sh/setup-uv@v7
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          enable-cache: true
       - name: Generate pyside files
         run: uv run --no-dev python -m tools.generate_pyside_files
       - name: Get version from hatch
@@ -46,14 +48,15 @@ jobs:
     name: Build bundle
     runs-on: ubuntu-latest
     container: ghcr.io/bohning/syncer_linux_builder_image:latest
+    env:
+      UV_PYTHON_DOWNLOADS: "never"
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.14"
       - uses: astral-sh/setup-uv@v7
+        with:
+          enable-cache: true
       - run: uv run --no-dev --group bundle python -m tools.generate_pyside_files
       - run: uv run --no-dev --group bundle python -m tools.bundle Linux --version TestBuild
       - name: Upload bundle artifact
@@ -154,9 +157,9 @@ jobs:
       - run: ls -R
       - name: Set up python
         if: matrix.image != 'debian:12' && matrix.image != 'ubuntu:22.04' # debian:12 and ubuntu:22.04 are too old for setup-python (https://github.com/actions/setup-python/issues/1224)
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
-          python-version: "3.14"
+          python-version: ${{ env.PYTHON_VERSION }}
       - name: Install python3.11 (for debian:12)
         if: matrix.image == 'debian:12'
         run: |

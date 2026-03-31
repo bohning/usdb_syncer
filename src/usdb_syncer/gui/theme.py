@@ -66,6 +66,10 @@ def _rgb_str(color: QColor) -> str:
     return f"rgb({color.red()}, {color.green()}, {color.blue()})"
 
 
+def _rgba_str(color: QColor) -> str:
+    return f"rgba({color.red()}, {color.green()}, {color.blue()}, {color.alpha()})"
+
+
 def generate_diff_css(palette: DiffPalette) -> str:
     """Generate diff CSS from theme palette."""
     return styles.DIFF_CSS.read_text(encoding="utf-8").format(
@@ -180,12 +184,18 @@ class SystemTheme(Theme):
 
     KEY = settings.Theme.SYSTEM
     GOLD = QColor(245, 189, 2)
+    _style_template = styles.SYSTEM_QSS
 
     def q_palette(self) -> QPalette:
         return QPalette()
 
     def style(self) -> str:
-        return ""
+        return self._style_template.read_text(encoding="utf-8").format(
+            base=_rgb_str(self.q_palette().base().color()),
+            success=_rgb_str(Swatch.get(settings.Color.GREEN).s_700),
+            warning=_rgb_str(Swatch.get(settings.Color.YELLOW).s_700),
+            error=_rgb_str(Swatch.get(settings.Color.RED).s_700),
+        )
 
     def preview_palette(self) -> PreviewPalette:
         palette = self.q_palette()
@@ -301,6 +311,9 @@ class DarkTheme(Theme):
             on_secondary=_rgb_str(self.on_secondary),
             on_background=_rgb_str(self.on_background),
             on_surface=_rgb_str(self.on_surface),
+            success=_rgb_str(Swatch.get(settings.Color.GREEN).s_500),
+            warning=_rgb_str(Swatch.get(settings.Color.YELLOW).s_700),
+            error=_rgb_str(Swatch.get(settings.Color.RED).s_500),
         )
 
     def preview_palette(self) -> PreviewPalette:

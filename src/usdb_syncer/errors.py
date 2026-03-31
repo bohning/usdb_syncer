@@ -38,6 +38,22 @@ class UnknownSchemaError(DatabaseError):
     """Raised if schema version is not compatible."""
 
 
+# gui related
+
+
+class GuiError(UsdbSyncerError):
+    """Base class for gui errors."""
+
+
+class NoMainWindowError(GuiError):
+    """Raised when the main window is needed for an operation, but is not available."""
+
+    def __init__(self, operation: str) -> None:
+        super().__init__(
+            f"{operation} requires the main window, but it is not available."
+        )
+
+
 # meta files
 
 

@@ -372,3 +372,34 @@ QSlider::handle {{
     margin: -4px 0;
     border-radius: 8px;
 }}
+
+
+Toast {{
+    border-radius: 8px;
+    border-width: 2px;
+    border-style: solid;
+    background: {surface_12dp};
+}}
+Toast > QWidget {{
+    background: transparent;
+}}
+Toast > QLabel {{
+    font-size: 14px;
+    color: {on_surface};
+    padding: 12px 24px 12px 16px;
+}}
+Toast[toast_type=success] {{
+    border-color: {success};
+}}
+Toast[toast_type=warning] {{
+    border-color: {warning};
+}}
+Toast[toast_type=error] {{
+    border-color: {error};
+}}
+Toast QPushButton,
+Toast QPushButton:pressed,
+Toast QPushButton:hover {{
+    background: transparent;
+    padding: 6px 4px;
+}}

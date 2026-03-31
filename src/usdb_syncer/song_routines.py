@@ -37,7 +37,7 @@ if TYPE_CHECKING:
 
 def load_available_songs_and_sync_meta(
     folder: Path, force_reload: bool, progress: utils.ProgressProxy
-) -> None:
+) -> LoadSongsResult:
     """Load available songs from USDB and synchronize the sync meta folder."""
     with db.transaction():
         result = load_available_songs(force_reload=force_reload, progress=progress)
@@ -45,6 +45,7 @@ def load_available_songs_and_sync_meta(
         SyncMeta.reset_active(folder)
     UsdbSong.clear_cache()
     initialize_auto_downloads(result.new_songs, progress)
+    return result
 
 
 @attrs.define
@@ -53,6 +54,8 @@ class LoadSongsResult:
 
     new_songs: set[SongId] = attrs.field(factory=set)
     synced_with_usdb: bool = False
+    no_usdb_login: bool = False
+    no_connection: bool = False
 
 
 def load_available_songs(
@@ -80,8 +83,10 @@ def load_available_songs(
             )
     except errors.UsdbLoginError:
         logger.debug("Skipping fetching new songs as there is no login.")
+        result.no_usdb_login = True
     except requests.exceptions.ConnectionError:
         logger.exception("Failed to fetch new songs; check network connection.")
+        result.no_connection = True
     else:
         progress.reset("Writing USDB songs to database.")
         result.synced_with_usdb = True

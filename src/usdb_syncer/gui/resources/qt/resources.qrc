@@ -158,6 +158,8 @@
     <file>vivaldi.png</file>
     <file>vocaluxe.png</file>
     <file>warning.png</file>
+    <file>window-close.svg</file>
+    <file>window-close-white.svg</file>
     <file>yass-reloaded.png</file>
     <file>yass.png</file>
   </qresource>

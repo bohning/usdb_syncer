@@ -28,6 +28,7 @@ class Icon(enum.Enum):
     CHEVRON_UP = None, "chevron-up-white.svg"
     CHROME = "chrome.png", None
     CHROMIUM = "chromium.png", None
+    CLOSE = "window-close.svg", "window-close-white.svg"
     COMMENT = "balloon.png", "comment-white.svg"
     COVER = "cover.png", "image-white.svg"
     CREATOR = "quill.png", "feather-white.svg"
