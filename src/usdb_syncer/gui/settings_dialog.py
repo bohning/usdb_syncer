@@ -18,7 +18,7 @@ from PySide6.QtWidgets import (
 )
 
 from usdb_syncer import SongId, events, path_template, separation, settings, utils
-from usdb_syncer.gui import notification, gui_utils, icons, theme
+from usdb_syncer.gui import gui_utils, icons, notification, theme
 from usdb_syncer.gui.forms.SettingsDialog import Ui_Dialog
 from usdb_syncer.path_template import PathTemplate
 from usdb_syncer.usdb_scraper import SessionManager

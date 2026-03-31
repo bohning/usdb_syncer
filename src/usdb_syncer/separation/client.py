@@ -16,7 +16,10 @@ from usdb_syncer.errors import CommunicationError, JsonRpcError
 
 
 class JsonRpcClient:
-    """A JSON-RPC 2.0 client."""
+    """A JSON-RPC 2.0 client.
+
+    The advantage of this over a package is that we can handle spec specific stuff right here (like using line-delimited json). json-rpc is a very simple protocol.
+    """
 
     def __init__(self, command: list[str]) -> None:
         self.command = command

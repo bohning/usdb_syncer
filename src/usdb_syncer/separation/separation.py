@@ -14,7 +14,10 @@ SPEC_VERSION = "1"
 
 
 class _ResizableSemaphore:
-    """A semaphore that can be resized at runtime."""
+    """A semaphore that can be resized at runtime.
+
+    This allows us to limit the number of concurrent separation operations, and to update that limit globally at runtime when the user changes it in the settings.
+    """
 
     def __init__(self, max_count: int) -> None:
         self._cond = threading.Condition(threading.Lock())
@@ -49,6 +52,7 @@ class _ResizableSemaphore:
         self.release()
 
 
+# A global seemed the simplest way to enforce the limit everywhere. Should only be accessed in this module
 _semaphore = _ResizableSemaphore(1)
 
 
