@@ -35,6 +35,7 @@ class Icon(enum.Enum):
     CUSTOM_DATA = "drawer.png", "dresser-white.svg"
     DATABASE = "database.png", "database-white.svg"
     DELETE = "bin.png", "delete-white.svg"
+    DENO = "deno.svg", None
     DIFF = "diff.png", "diff-white.svg"
     DOWNLOAD = "status.png", "download-white.svg"
     EDGE = "edge.png", None
@@ -111,6 +112,7 @@ class Icon(enum.Enum):
     WARNING = "warning.png", "alert-white.svg"
     YASS = "yass.png", None
     YASS_RELOADED = "yass-reloaded.png", None
+    YTDLP = "ytdlp.svg", None
 
     def __init__(self, colored_name: str | None, white_name: str | None):
         colored = colored_name or white_name

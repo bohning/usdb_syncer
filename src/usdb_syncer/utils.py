@@ -395,6 +395,22 @@ def ffmpeg_is_available() -> bool:
     return False
 
 
+@functools.cache
+def get_ffmpeg_version() -> str | None:
+    if not ffmpeg_is_available():
+        return None
+
+    result = subprocess.run(
+        ["ffmpeg", "-version"], capture_output=True, text=True, check=False
+    )
+
+    parts = result.stdout.splitlines()[0].split()
+
+    if len(parts) >= 3:
+        return parts[2]
+    return None
+
+
 def open_external_app(app: settings.SupportedApps, path: Path) -> None:
     logger.debug(f"Starting {app} with '{path}'.")
     executable = settings.get_app_path(app)

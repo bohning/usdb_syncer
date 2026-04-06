@@ -1,5 +1,7 @@
 """Manager of the main window's status bar."""
 
+import importlib.metadata
+
 from PySide6.QtGui import Qt
 from PySide6.QtWidgets import QLabel, QPushButton, QStatusBar
 
@@ -18,6 +20,8 @@ class StatusBar:
     def __init__(self, statusbar: QStatusBar) -> None:
         self._statusbar = statusbar
         self.set_usdb_login_status()
+        self.set_ytdlp_status()
+        self.set_deno_status()
         self.set_ffmpeg_status()
         self.set_selection_status()
         gui_events.ThemeChanged.subscribe(self._set_usdb)
@@ -31,6 +35,20 @@ class StatusBar:
         self._usdb_button.setCursor(Qt.CursorShape.PointingHandCursor)
         self._set_usdb()
         self._statusbar.addPermanentWidget(self._usdb_button)
+
+    def set_ytdlp_status(self) -> None:
+        self._ytdlp_button = QPushButton(self._statusbar)
+        self._ytdlp_button.setFlat(True)
+        self._ytdlp_button.setCursor(Qt.CursorShape.PointingHandCursor)
+        self._set_ytdlp()
+        self._statusbar.addPermanentWidget(self._ytdlp_button)
+
+    def set_deno_status(self) -> None:
+        self._deno_button = QPushButton(self._statusbar)
+        self._deno_button.setFlat(True)
+        self._deno_button.setCursor(Qt.CursorShape.PointingHandCursor)
+        self._set_deno()
+        self._statusbar.addPermanentWidget(self._deno_button)
 
     def set_ffmpeg_status(self) -> None:
         self._ffmpeg_button = QPushButton(self._statusbar)
@@ -68,12 +86,26 @@ class StatusBar:
         self._usdb_button.setText(text)
         self._usdb_button.setIcon(icon)
 
+    def _set_ytdlp(self, event: gui_events.ThemeChanged | None = None) -> None:
+        theme = event.theme.KEY if event else None
+        self._ytdlp_button.setIcon(icons.Icon.YTDLP.icon(theme))
+        ytdlp_version = importlib.metadata.version("yt-dlp")
+        self._ytdlp_button.setToolTip(f"yt-dlp {ytdlp_version}")
+        self._ytdlp_button.setFixedSize(self._ytdlp_button.sizeHint())
+
+    def _set_deno(self, event: gui_events.ThemeChanged | None = None) -> None:
+        theme = event.theme.KEY if event else None
+        self._deno_button.setIcon(icons.Icon.DENO.icon(theme))
+        deno_version = importlib.metadata.version("deno")
+        self._deno_button.setToolTip(f"deno {deno_version}")
+        self._deno_button.setFixedSize(self._deno_button.sizeHint())
+
     def _set_ffmpeg(self, event: gui_events.ThemeChanged | None = None) -> None:
         theme = event.theme.KEY if event else None
         if utils.ffmpeg_is_available():
             text = ""
             icon = icons.Icon.FFMPEG.icon(theme)
-            tooltip = "FFmpeg is available."
+            tooltip = f"ffmpeg {utils.get_ffmpeg_version()}"
         else:
             text = "FFmpeg missing!"
             icon = icons.Icon.FFMPEG_UNAVAILABLE.icon(theme)
