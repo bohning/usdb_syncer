@@ -2,12 +2,14 @@
 
 from __future__ import annotations
 
+import xml.etree.ElementTree as ET
 from typing import TYPE_CHECKING, assert_never
 
 import attrs
 
 from usdb_syncer import SongId as SongId
 from usdb_syncer import download_options, errors
+from usdb_syncer.constants import ISO_639_1_LANGUAGE_CODES
 from usdb_syncer.meta_tags import MedleyTag, MetaTags
 from usdb_syncer.settings import Encoding, FixLinebreaks, FixSpaces
 
@@ -21,6 +23,16 @@ if TYPE_CHECKING:
 
 MEDLEY_MIN_DURATION_SECONDS = 20
 MEDLEY_MAX_DURATION_SECONDS = 80
+
+# TTML namespaces
+TTML = "http://www.w3.org/ns/ttml"
+TTM = "http://www.w3.org/ns/ttml#metadata"
+ITUNES = "http://music.apple.com/lyric-ttml-internal"
+US = "http://www.example.com/ns/us"
+ET.register_namespace("", TTML)
+ET.register_namespace("ttm", TTM)
+ET.register_namespace("itunes", ITUNES)
+ET.register_namespace("us", US)
 
 
 @attrs.define()
@@ -101,6 +113,122 @@ class SongTxt:
             )
             for line in self.notes.all_lines()
         ]
+
+    def synchronized_lyrics_ttml(self) -> str:
+        def timestamp_ms(note_time: int) -> int:
+            return round(self.headers.bpm.beats_to_ms(note_time) + self.headers.gap)
+
+        def timestamp_ttml(ms_val: int) -> str:
+            minutes, ms_rem = divmod(ms_val, 60_000)
+            seconds, ms_rem = divmod(ms_rem, 1_000)
+            return f"{minutes:02}:{seconds:02}.{ms_rem:03}"
+
+        lang = ISO_639_1_LANGUAGE_CODES.get(self.headers.main_language(), "und")
+
+        # --- root ---
+        tt = ET.Element(
+            f"{{{TTML}}}tt",
+            {
+                "{http://www.w3.org/XML/1998/namespace}lang": lang,
+                f"{{{ITUNES}}}timing": "Word",
+            },
+        )
+
+        # --- head / metadata ---
+        head = ET.SubElement(tt, f"{{{TTML}}}head")
+        metadata = ET.SubElement(head, f"{{{TTML}}}metadata")
+
+        agent = ET.SubElement(
+            metadata,
+            f"{{{TTM}}}agent",
+            {"type": "person", "{http://www.w3.org/XML/1998/namespace}id": "v1"},
+        )
+        ET.SubElement(
+            agent, f"{{{TTM}}}name", {"type": "full"}
+        ).text = self.headers.artist
+
+        ET.SubElement(metadata, f"{{{TTM}}}title").text = self.headers.title
+
+        def add_us_meta(key: str, value: str | None, *, multi: bool = False) -> None:
+            if not value:
+                return
+
+            values = (
+                (v.strip() for v in value.split(",") if v.strip())
+                if multi
+                else (value,)
+            )
+
+            for item in values:
+                ET.SubElement(metadata, f"{{{US}}}meta", {"key": key, "value": item})
+
+        # --- keep UltraStar header info to allow a roundtrip conversion
+        add_us_meta("artist", self.headers.artist)
+        add_us_meta("title", self.headers.title)
+        add_us_meta("language", self.headers.language, multi=True)
+        add_us_meta("edition", self.headers.edition, multi=True)
+        add_us_meta("genre", self.headers.genre, multi=True)
+        add_us_meta("year", self.headers.year)
+        add_us_meta("creator", self.headers.creator, multi=True)
+        add_us_meta("bpm", str(self.headers.bpm.value))
+        add_us_meta("gap", str(self.headers.gap))
+
+        # --- body ---
+        dur = 0
+        body = ET.SubElement(tt, f"{{{TTML}}}body")
+
+        div = ET.SubElement(
+            body, f"{{{TTML}}}div", {"begin": timestamp_ttml(round(self.headers.gap))}
+        )
+
+        for idx, line in enumerate(self.notes.all_lines(), start=1):
+            notes = list(line.notes)
+            if not notes:
+                continue
+
+            line_start = timestamp_ms(notes[0].start)
+            line_end = timestamp_ms(notes[-1].start + notes[-1].duration)
+
+            p = ET.SubElement(
+                div,
+                f"{{{TTML}}}p",
+                {
+                    "begin": timestamp_ttml(line_start),
+                    "end": timestamp_ttml(line_end),
+                    f"{{{ITUNES}}}key": f"L{idx}",
+                    f"{{{TTM}}}agent": "v1",
+                },
+            )
+
+            for note in notes:
+                kind = note.kind
+                start = timestamp_ms(note.start)
+                end = timestamp_ms(note.start + note.duration)
+                text = note.text
+                pitch = note.pitch
+                span = ET.SubElement(
+                    p,
+                    f"{{{TTML}}}span",
+                    {
+                        "begin": timestamp_ttml(start),
+                        "end": timestamp_ttml(end),
+                        f"{{{US}}}kind": kind.name.lower(),
+                        f"{{{US}}}pitch": str(pitch),
+                    },
+                )
+                span.text = text
+
+            dur = line_end
+
+        div.set("end", timestamp_ttml(dur))
+        div.set(f"{{{ITUNES}}}songPart", "Song")
+        body_elem = tt.find(f"{{{TTML}}}body")
+        if body_elem is not None:
+            div.set("end", timestamp_ttml(dur))
+
+        # --- serialise ---
+        ET.indent(tt, space="    ")
+        return ET.tostring(tt, encoding="unicode")
 
     @classmethod
     def parse(cls, value: str, logger: Logger) -> SongTxt:
