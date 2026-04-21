@@ -15,7 +15,7 @@ from mutagen.oggvorbis import OggVorbis
 from PIL import Image
 
 from usdb_syncer import settings, subprocessing
-from usdb_syncer.constants import ISO_639_2B_LANGUAGE_CODES
+from usdb_syncer.constants import ISO_639_2_T_LANGUAGE_CODES
 from usdb_syncer.download_options import AudioOptions, VideoOptions
 from usdb_syncer.logger import Logger
 from usdb_syncer.settings import AudioFormat, AudioNormalization, VideoContainer
@@ -163,7 +163,7 @@ def _write_tags_mp3(
         mp3.add_tags()
     if not mp3.tags:
         return
-    lang = ISO_639_2B_LANGUAGE_CODES.get(txt.headers.main_language(), "und")
+    lang = ISO_639_2_T_LANGUAGE_CODES.get(txt.headers.main_language(), "und")
     mp3.tags["TPE1"] = id3.TPE1(encoding=id3.Encoding.UTF8, text=txt.headers.artist)
     mp3.tags["TIT2"] = id3.TIT2(encoding=id3.Encoding.UTF8, text=txt.headers.title)
     mp3.tags["TLAN"] = id3.TLAN(encoding=id3.Encoding.UTF8, text=lang)
@@ -221,7 +221,7 @@ def _write_tags_ogg(
     # Set basic tags
     ogg["artist"] = txt.headers.artist
     ogg["title"] = txt.headers.title
-    ogg["language"] = ISO_639_2B_LANGUAGE_CODES.get(txt.headers.main_language(), "und")
+    ogg["language"] = ISO_639_2_T_LANGUAGE_CODES.get(txt.headers.main_language(), "und")
     if genre := txt.headers.genre:
         ogg["genre"] = genre
     if year := txt.headers.year:
