@@ -65,7 +65,7 @@ class SeparationManager:
     """Manages stem separation."""
 
     def __init__(
-        self, command: list[str], logger: logger.Logger = logger.logger.logger
+        self, command: list[str], logger: logger.Logger = logger.logger
     ) -> None:
         self.logger = logger
         self.logger.debug("Creating new separation manager.")

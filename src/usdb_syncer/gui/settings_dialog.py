@@ -18,6 +18,7 @@ from PySide6.QtWidgets import (
 )
 
 from usdb_syncer import SongId, events, path_template, separation, settings, utils
+from usdb_syncer.gui import events as gui_events
 from usdb_syncer.gui import gui_utils, icons, notification, theme
 from usdb_syncer.gui.forms.SettingsDialog import Ui_Dialog
 from usdb_syncer.path_template import PathTemplate
@@ -60,6 +61,7 @@ class SettingsDialog(Ui_Dialog, QDialog):
 
     def __init__(self, parent: QWidget, song: UsdbSong | None) -> None:
         super().__init__(parent=parent)
+        gui_events.ThemeChanged.subscribe(self.on_theme_changed)
         gui_utils.cleanup_on_close(self)
         self._song = song or _FALLBACK_SONG
         self.setupUi(self)
@@ -108,6 +110,7 @@ class SettingsDialog(Ui_Dialog, QDialog):
         self.comboBox_format_version.currentIndexChanged.connect(
             self._handle_format_dependent_settings
         )
+        self.toolButton_separation_help.setIcon(icons.Icon.INFO.icon())
         self._handle_format_dependent_settings()
 
     @classmethod
@@ -143,6 +146,7 @@ class SettingsDialog(Ui_Dialog, QDialog):
                 if provider_selected
                 else _ProviderState.NOT_SELECTED
             )
+            notification.error("Selected provider encountered an error")
             self._update_provider_label(state)
             return
 
@@ -250,6 +254,8 @@ class SettingsDialog(Ui_Dialog, QDialog):
             case _ProviderState.SELECTED_AND_WORKING:
                 icon = icons.Icon.STEM_SEPARATION
                 tooltip = "Separation provider selected and working."
+            case _:
+                assert_never()
         pixmap = icon.icon().pixmap(16, 16)
         self.label_is_provider_selected.setPixmap(pixmap)
         self.label_is_provider_selected.setToolTip(tooltip)
@@ -539,3 +545,7 @@ class SettingsDialog(Ui_Dialog, QDialog):
 
     def _on_tab_changed(self, index: int) -> None:
         SettingsDialog._last_tab_index = index
+
+    def on_theme_changed(self, event: gui_events.ThemeChanged) -> None:
+        key = event.theme.KEY
+        self.toolButton_separation_help.setIcon(icons.Icon.INFO.icon(key))
