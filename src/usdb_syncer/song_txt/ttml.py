@@ -39,10 +39,14 @@ def _beats_to_ms(note_time: int, headers: Headers) -> int:
 
 
 def _build_metadata(
-    metadata: ET.Element, headers: Headers, notes: Tracks, meta_tags: MetaTags
+    metadata: ET.Element,
+    headers: Headers,
+    notes: Tracks,
+    meta_tags: MetaTags,
+    line_entries: list[tuple[int, int, str, list[Note]]],
 ) -> None:
     """Populate the <metadata> element."""
-    _build_agents(metadata, headers, notes, meta_tags)
+    _build_agents(metadata, headers, notes, meta_tags, line_entries)
 
     ET.SubElement(metadata, f"{{{TTM}}}title").text = headers.title
 
@@ -68,7 +72,11 @@ def _build_metadata(
 
 
 def _build_agents(
-    metadata: ET.Element, headers: Headers, notes: Tracks, meta_tags: MetaTags
+    metadata: ET.Element,
+    headers: Headers,
+    notes: Tracks,
+    meta_tags: MetaTags,
+    line_entries: list[tuple[int, int, str, list[Note]]],
 ) -> None:
     """Add one or two <ttm:agent> elements depending on whether it's a duet."""
     if notes.track_2:
@@ -82,6 +90,11 @@ def _build_agents(
             ET.SubElement(agent, f"{{{TTM}}}name", {"type": "full"}).text = (
                 player_meta or player_header or agent_id.upper()
             )
+        if any(e[2] == "v3" for e in line_entries):
+            agent = ET.SubElement(
+                metadata, f"{{{TTM}}}agent", {"type": "group", _XML_ID: "v3"}
+            )
+            ET.SubElement(agent, f"{{{TTM}}}name", {"type": "full"}).text = "Group"
     else:
         agent = ET.SubElement(
             metadata, f"{{{TTM}}}agent", {"type": "person", _XML_ID: "v1"}
@@ -89,14 +102,17 @@ def _build_agents(
         ET.SubElement(agent, f"{{{TTM}}}name", {"type": "full"}).text = headers.artist
 
 
-def _build_body(tt: ET.Element, headers: Headers, notes: Tracks) -> None:
+def _build_body(
+    tt: ET.Element,
+    headers: Headers,
+    line_entries: list[tuple[int, int, str, list[Note]]],
+) -> None:
     """Populate the <body> element with sorted, interleaved lines."""
     body = ET.SubElement(tt, f"{{{TTML}}}body")
     div = ET.SubElement(
         body, f"{{{TTML}}}div", {"begin": _timestamp_ttml(round(headers.gap))}
     )
 
-    line_entries = _collect_lines(headers, notes)
     last_end = _append_paragraphs(div, headers, line_entries)
 
     div.set("end", _timestamp_ttml(last_end))
@@ -107,7 +123,7 @@ def _collect_lines(
     headers: Headers, notes: Tracks
 ) -> list[tuple[int, int, str, list[Note]]]:
     """Return all lines from all tracks, sorted by start time."""
-    entries: list[tuple[int, int, str, list[Note]]] = []
+    entries: list[tuple[int, int, str, list[Note], str]] = []
     for track_index, track in enumerate(notes.all_tracks(), start=1):
         agent_id = f"v{track_index}"
         for line in track:
@@ -118,10 +134,32 @@ def _collect_lines(
             line_end = _beats_to_ms(
                 line_notes[-1].start + line_notes[-1].duration, headers
             )
-            entries.append((line_start, line_end, agent_id, line_notes))
+            text = "".join(note.text for note in line_notes)
+            entries.append((line_start, line_end, agent_id, line_notes, text))
 
-    entries.sort(key=lambda e: e[0])
-    return entries
+    if notes.track_2:
+        # Group by (start, end, text)
+        from collections import defaultdict
+
+        groups = defaultdict(list)
+        for entry in entries:
+            key = (entry[0], entry[1], entry[4])
+            groups[key].append((entry[2], entry[3]))  # agent_id, line_notes
+
+        merged_entries: list[tuple[int, int, str, list[Note]]] = []
+        for (start, end, _), agents_notes in groups.items():
+            agents = [aid for aid, _ in agents_notes]
+            if len(agents) == 2 and set(agents) == {"v1", "v2"}:
+                # Use v3 for group
+                merged_entries.append((start, end, "v3", agents_notes[0][1]))
+            else:
+                for aid, ln in agents_notes:
+                    merged_entries.append((start, end, aid, ln))
+    else:
+        merged_entries = [(e[0], e[1], e[2], e[3]) for e in entries]
+
+    merged_entries.sort(key=lambda e: e[0])
+    return merged_entries
 
 
 def _append_paragraphs(
@@ -176,8 +214,9 @@ def to_ttml(headers: Headers, notes: Tracks, meta_tags: MetaTags) -> str:
 
     head = ET.SubElement(tt, f"{{{TTML}}}head")
     metadata = ET.SubElement(head, f"{{{TTML}}}metadata")
-    _build_metadata(metadata, headers, notes, meta_tags)
-    _build_body(tt, headers, notes)
+    line_entries = _collect_lines(headers, notes)
+    _build_metadata(metadata, headers, notes, meta_tags, line_entries)
+    _build_body(tt, headers, line_entries)
 
     ET.indent(tt, space="    ")
     return ET.tostring(tt, encoding="unicode")
