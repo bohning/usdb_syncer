@@ -95,7 +95,6 @@ class Icon(enum.Enum):
     SKIP_TO_START = "control-skip-180.png", "skip-backward-white.svg"
     SONG_FOLDER = "folder_note.png", "folder-music-white.svg"
     STEM_SEPARATION = "arrow-split.png", "call-split-white.svg"
-    STEM_SEPARATION_UNAVAILABLE = "arrow-split-red.png", "call-split-red.svg"
     SUCCESS = "tick-green.png", "check-circle-white.svg"
     SUCCESS_CHANGES = "tick-green-exclamation.png", "check-decagram-white.svg"
     TAGS = "price-tag.png", "tag-white.svg"

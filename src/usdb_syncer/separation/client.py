@@ -25,7 +25,7 @@ class JsonRpcClient:
         self.command = command
         self._process: subprocess.Popen | None = None
         self._id_generator = itertools.count(1)
-        self._pending: dict[int, concurrent.futures.Future] = {}
+        self._pending: dict[int, concurrent.futures.Future[Any]] = {}
         self._pending_lock = threading.Lock()
         self._write_lock = threading.Lock()
 
@@ -51,7 +51,7 @@ class JsonRpcClient:
 
         if not future.done():
             if "error" in response:
-                error = response["error"]
+                error: dict[str, Any] = response["error"]
                 future.set_exception(
                     JsonRpcError(
                         error.get("code", 0),
@@ -88,7 +88,7 @@ class JsonRpcClient:
 
         with self._pending_lock:
             request_id = next(self._id_generator)
-            future: concurrent.futures.Future = concurrent.futures.Future()
+            future: concurrent.futures.Future[Any] = concurrent.futures.Future()
             self._pending[request_id] = future
 
         try:

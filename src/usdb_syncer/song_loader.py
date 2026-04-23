@@ -654,7 +654,7 @@ def _try_download_audio_or_video(
 
 def _maybe_separate_stems(ctx: _Context) -> JobStatus:
     if not ctx.options.audio_options or not ctx.options.audio_options.separation:
-        ctx.logger.info("Stem separation is disabled, skipping.")
+        ctx.logger.debug("Stem separation is disabled, skipping.")
         return JobStatus.SKIPPED_DISABLED
 
     if not ctx.options.audio_options.separation_executable:
