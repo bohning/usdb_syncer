@@ -17,14 +17,6 @@ class CornerButtonGroupBox(QGroupBox):
             QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed
         )
         self.corner_button.setFixedSize(20, 20)
-        # Style it so it looks like a small tab/button on the border
-        # self.corner_button.setStyleSheet("""
-        #    QPushButton {
-        #        border: 1px solid;
-        #        font-size: 9px;
-        #        font-weight: bold;
-        #    }
-        # """)
 
     def resizeEvent(self, event: PySide6.QtGui.QResizeEvent) -> None:  # noqa: N802
         """Move the corner button."""
