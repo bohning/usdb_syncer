@@ -242,7 +242,7 @@ ISO_639_1_LANGUAGE_CODES = {
     "Zulu": "zu",
 }
 
-ISO_639_2B_LANGUAGE_CODES = {
+ISO_639_2_T_LANGUAGE_CODES = {
     "Albanian": "sqi",
     "Arabic": "ara",
     "Armenian": "hye",
