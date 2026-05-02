@@ -210,6 +210,7 @@
     <addaction name="action_settings"/>
     <addaction name="action_meta_tags"/>
     <addaction name="action_generate_song_list"/>
+    <addaction name="action_bulk_download"/>
     <addaction name="action_webserver"/>
    </widget>
    <widget class="QMenu" name="menu_usdb">
@@ -892,6 +893,18 @@
    </property>
    <property name="text">
     <string>Webserver</string>
+   </property>
+  </action>
+  <action name="action_bulk_download">
+   <property name="icon">
+    <iconset resource="../resources/qt/resources.qrc">
+     <normaloff>:/icons/download.svg</normaloff>:/icons/download.svg</iconset>
+   </property>
+   <property name="text">
+    <string>Bulk Download</string>
+   </property>
+   <property name="toolTip">
+    <string>Bulk download songs from a CSV/TXT file</string>
    </property>
   </action>
   <action name="action_submit_to_usdb">

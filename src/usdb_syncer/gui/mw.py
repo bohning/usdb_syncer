@@ -20,6 +20,7 @@ from usdb_syncer.gui import (
 )
 from usdb_syncer.gui import events as gui_events
 from usdb_syncer.gui.about_dialog import AboutDialog
+from usdb_syncer.gui.bulk_download_dialog import BulkDownloadDialog
 from usdb_syncer.gui.comment_dialog import CommentDialog
 from usdb_syncer.gui.debug_console import DebugConsole
 from usdb_syncer.gui.forms.MainWindow import Ui_MainWindow
@@ -127,6 +128,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
             (self.action_about, lambda: AboutDialog(self).show(), None),
             (self.action_licenses, lambda: LicensesDialog(self).show(), None),
             (self.action_webserver, lambda: WebserverDialog(self).show(), None),
+            (self.action_bulk_download, lambda: BulkDownloadDialog(self).show(), None),
             (
                 self.action_generate_song_list,
                 lambda: ReportDialog(self, self.table).show(),
@@ -491,6 +493,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         self.action_meta_tags.setIcon(icons.Icon.META_TAGS.icon(key))
         self.action_generate_song_list.setIcon(icons.Icon.REPORT.icon(key))
         self.action_webserver.setIcon(icons.Icon.SERVER.icon(key))
+        self.action_bulk_download.setIcon(icons.Icon.DOWNLOAD.icon(key))
         self.action_usdb_login.setIcon(icons.Icon.USDB.icon(key))
         self.action_refetch_song_list.setIcon(icons.Icon.CHECK_FOR_UPDATE.icon(key))
         self.action_show_log.setIcon(icons.Icon.LOG.icon(key))
