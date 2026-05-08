@@ -84,7 +84,7 @@ DEBUG_FORMATTER = logging.Formatter(
 
 
 def configure_logging(*handlers: logging.Handler, formatter: logging.Formatter) -> None:
-    logging.basicConfig(level=logging.INFO, encoding="utf-8", handlers=handlers)
+    logging.basicConfig(level=logging.INFO, handlers=handlers)
     for handler in logging.getLogger().handlers:
         handler.setFormatter(formatter)
     logger.setLevel(logging.DEBUG)
