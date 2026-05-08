@@ -10,9 +10,9 @@ from usdb_syncer import SongId as SongId
 from usdb_syncer import download_options, errors
 from usdb_syncer.meta_tags import MedleyTag, MetaTags
 from usdb_syncer.settings import Encoding, FixLinebreaks, FixSpaces
-
-from .headers import Headers
-from .tracks import Tracks
+from usdb_syncer.song_txt import ttml
+from usdb_syncer.song_txt.headers import Headers
+from usdb_syncer.song_txt.tracks import Tracks
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -101,6 +101,9 @@ class SongTxt:
             )
             for line in self.notes.all_lines()
         ]
+
+    def synchronized_lyrics_ttml(self) -> str:
+        return ttml.to_ttml(self.headers, self.notes, self.meta_tags)
 
     @classmethod
     def parse(cls, value: str, logger: Logger) -> SongTxt:
