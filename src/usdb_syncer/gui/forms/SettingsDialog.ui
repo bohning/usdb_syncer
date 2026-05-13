@@ -516,7 +516,7 @@
                </sizepolicy>
               </property>
               <property name="title">
-               <string>Separate audio stems</string>
+               <string>Separate audio stems (beta)</string>
               </property>
               <property name="alignment">
                <set>Qt::AlignmentFlag::AlignLeading|Qt::AlignmentFlag::AlignLeft|Qt::AlignmentFlag::AlignTop</set>
