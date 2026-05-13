@@ -61,6 +61,7 @@ class Icon(enum.Enum):
     GOLDEN_NOTES = "golden_notes.png", "gold-white.svg"
     ID = "id.png", "database-marker-white.svg"
     INFO = "info.png", "information-white.svg"
+    INSTRUMENTAL = "guitar.png", "guitar-white.svg"
     KAREDI = "karedi.png", None
     LANGUAGE = "language.png", "translate-variant-white.svg"
     LAST_CHANGE = "calendar.png", "calendar-white.svg"  # noqa: PIE796
@@ -94,6 +95,7 @@ class Icon(enum.Enum):
     SKIP_TO_END = "control-skip.png", "skip-forward-white.svg"
     SKIP_TO_START = "control-skip-180.png", "skip-backward-white.svg"
     SONG_FOLDER = "folder_note.png", "folder-music-white.svg"
+    STEM_SEPARATION = "arrow-split.png", "call-split-white.svg"
     SUCCESS = "tick-green.png", "check-circle-white.svg"
     SUCCESS_CHANGES = "tick-green-exclamation.png", "check-decagram-white.svg"
     TAGS = "price-tag.png", "tag-white.svg"
@@ -108,6 +110,7 @@ class Icon(enum.Enum):
     VIDEO = "video.png", "filmstrip-white.svg"
     VIEWS = "views.png", "views-white.svg"
     VIVALDI = "vivaldi.png", None
+    VOCALS = "microphone.png", "microphone-white.svg"
     VOCALUXE = "vocaluxe.png", None
     WARNING = "warning.png", "alert-white.svg"
     YASS = "yass.png", None

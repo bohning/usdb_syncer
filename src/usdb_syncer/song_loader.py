@@ -5,6 +5,7 @@ from __future__ import annotations
 import copy
 import filecmp
 import shutil
+import subprocess
 import tempfile
 import time
 from enum import Enum, member
@@ -27,6 +28,7 @@ from usdb_syncer import (
     hooks,
     resource_dl,
     settings,
+    subprocessing,
     usdb_scraper,
     utils,
 )
@@ -37,6 +39,7 @@ from usdb_syncer.logger import Logger, song_logger
 from usdb_syncer.meta_tags import ImageMetaTags
 from usdb_syncer.postprocessing import write_audio_tags, write_video_tags
 from usdb_syncer.resource_dl import ImageKind
+from usdb_syncer.separation import SeparationManager
 from usdb_syncer.settings import FormatVersion
 from usdb_syncer.song_txt import SongTxt
 from usdb_syncer.sync_meta import Resource, ResourceFile, SyncMeta
@@ -265,12 +268,24 @@ class _TempResourceFiles:
 
     txt: _TempResourceFile = attrs.field(factory=_TempResourceFile)
     audio: _TempResourceFile = attrs.field(factory=_TempResourceFile)
+    vocals: _TempResourceFile = attrs.field(factory=_TempResourceFile)
+    instrumental: _TempResourceFile = attrs.field(factory=_TempResourceFile)
     video: _TempResourceFile = attrs.field(factory=_TempResourceFile)
     cover: _TempResourceFile = attrs.field(factory=_TempResourceFile)
     background: _TempResourceFile = attrs.field(factory=_TempResourceFile)
 
     def __iter__(self) -> Iterator[_TempResourceFile]:
-        return iter((self.txt, self.audio, self.video, self.cover, self.background))
+        return iter(
+            (
+                self.txt,
+                self.audio,
+                self.vocals,
+                self.instrumental,
+                self.video,
+                self.cover,
+                self.background,
+            )
+        )
 
 
 @attrs.define
@@ -293,6 +308,8 @@ class _Context:
             for old, out in (
                 (self.song.sync_meta.txt, self.out.txt),
                 (self.song.sync_meta.audio, self.out.audio),
+                (self.song.sync_meta.vocals, self.out.vocals),
+                (self.song.sync_meta.instrumental, self.out.instrumental),
                 (self.song.sync_meta.video, self.out.video),
                 (self.song.sync_meta.cover, self.out.cover),
                 (self.song.sync_meta.background, self.out.background),
@@ -635,6 +652,105 @@ def _try_download_audio_or_video(
     return JobStatus.FAILURE
 
 
+def _maybe_separate_stems(ctx: _Context) -> JobStatus:
+    if not ctx.options.audio_options or not ctx.options.audio_options.separation:
+        ctx.logger.debug("Stem separation is disabled, skipping.")
+        return JobStatus.SKIPPED_DISABLED
+
+    if not ctx.options.audio_options.separation_executable:
+        ctx.logger.warning(
+            "No stem separation executable selected, skipping stem separation."
+        )
+        return JobStatus.SKIPPED_UNAVAILABLE
+    if not ctx.options.audio_options.separation_model:
+        ctx.logger.warning(
+            "No stem separation model selected, skipping stem separation."
+        )
+        return JobStatus.SKIPPED_UNAVAILABLE
+
+    if not (audio_file := ctx.out.audio.path(ctx.locations, temp=True)):
+        ctx.logger.warning("No audio file to separate, skipping stem separation.")
+        return JobStatus.SKIPPED_UNAVAILABLE
+
+    audio_resource = ctx.out.audio.resource
+    if audio_resource and audio_resource == ctx.out.vocals.resource:
+        ctx.logger.info("Audio resource is unchanged, skipping stem separation.")
+        return JobStatus.SUCCESS_UNCHANGED
+    if ctx.song.vocals_path() and ctx.song.instrumental_path():
+        ctx.logger.info(
+            f"Audio resource has changed ('{ctx.out.vocals.resource}' -> "
+            f"'{audio_resource}'), re-separating stems."
+        )
+
+    ctx.logger.info("Separating stems.")
+    manager = SeparationManager([ctx.options.audio_options.separation_executable])
+    try:
+        vocals_path, instrumental_path = manager.split(
+            audio_file,
+            ctx.locations.temp_path(),
+            ctx.options.audio_options.separation_model,
+        )
+    except errors.JsonRpcError as e:
+        ctx.logger.exception(
+            f"Failed to separate stems. Provider error code {e.code}. See log for details."
+        )
+        return _handle_separation_failure(ctx)
+    finally:
+        manager.close()
+
+    ctx.logger.debug("Finished separation, transcoding to target format.")
+
+    vocals_out_path = ctx.locations.temp_path(
+        ext=f" [VOC].{ctx.options.audio_options.format.value}"
+    )
+    instrumental_out_path = ctx.locations.temp_path(
+        ext=f" [INSTR].{ctx.options.audio_options.format.value}"
+    )
+    if not transcode_audio(ctx.options.audio_options, vocals_path, vocals_out_path):
+        ctx.logger.error("Failed to transcode vocals.")
+        return _handle_separation_failure(ctx)
+    if not transcode_audio(
+        ctx.options.audio_options, instrumental_path, instrumental_out_path
+    ):
+        ctx.logger.error("Failed to transcode instrumental.")
+        return _handle_separation_failure(ctx)
+
+    ctx.out.vocals.resource = ctx.out.audio.resource
+    ctx.out.vocals.new_fname = vocals_out_path.name
+
+    ctx.out.instrumental.resource = ctx.out.audio.resource
+    ctx.out.instrumental.new_fname = instrumental_out_path.name
+
+    ctx.logger.info("Success! Separated stems.")
+    return JobStatus.SUCCESS
+
+
+def _handle_separation_failure(ctx: _Context) -> JobStatus:
+    if ctx.out.vocals.resource and ctx.out.instrumental.resource:
+        ctx.logger.error("Keeping existing stems.")
+        return JobStatus.FAILURE_EXISTING
+    return JobStatus.FAILURE
+
+
+def transcode_audio(
+    audio_options: download_options.AudioOptions, src: Path, dest: Path
+) -> bool:
+    cmd = [
+        "ffmpeg",
+        "-i",
+        str(src),
+        "-c:a",
+        audio_options.format.ffmpeg_encoder(),
+        "-b:a",
+        str(audio_options.bitrate.ffmpeg_format()),
+        str(dest),
+    ]
+    out = subprocessing.run_clean(
+        cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
+    )
+    return out.returncode == 0
+
+
 def _maybe_download_cover(ctx: _Context) -> JobStatus:
     if not ctx.options.cover:
         return JobStatus.SKIPPED_DISABLED
@@ -790,6 +906,8 @@ def _write_headers(ctx: _Context) -> None:
         ctx.txt.headers.providedby = constants.Usdb.BASE_URL
 
     _set_audio_headers(ctx, version)
+    _set_vocals_headers(ctx, version)
+    _set_instrumental_headers(ctx, version)
     _set_video_headers(ctx, version)
     _set_cover_headers(ctx, version)
     _set_background_headers(ctx, version)
@@ -819,6 +937,34 @@ def _set_audio_headers(ctx: _Context, version: FormatVersion) -> None:
                 ctx.txt.headers.audiourl = video_url_from_resource(resource)
         case _ as unreachable:
             assert_never(unreachable)
+
+
+def _set_vocals_headers(ctx: _Context, version: FormatVersion) -> None:
+    if version < FormatVersion.V1_1_0:
+        return
+
+    path = ctx.out.vocals.path(ctx.locations, temp=True)
+
+    if not path:
+        ctx.txt.headers.vocals = None
+        return
+
+    fname = ctx.locations.filename(ext=utils.resource_file_ending(path.name))
+    ctx.txt.headers.vocals = fname
+
+
+def _set_instrumental_headers(ctx: _Context, version: FormatVersion) -> None:
+    if version < FormatVersion.V1_1_0:
+        return
+
+    path = ctx.out.instrumental.path(ctx.locations, temp=True)
+
+    if not path:
+        ctx.txt.headers.instrumental = None
+        return
+
+    fname = ctx.locations.filename(ext=utils.resource_file_ending(path.name))
+    ctx.txt.headers.instrumental = fname
 
 
 def _set_video_headers(ctx: _Context, version: FormatVersion) -> None:
@@ -990,6 +1136,12 @@ def _write_sync_meta(ctx: _Context) -> None:
     ctx.song.sync_meta.audio = ctx.out.audio.to_resource(
         ctx.locations, temp=False, status=ctx.results[Job.AUDIO_DOWNLOAD]
     )
+    ctx.song.sync_meta.vocals = ctx.out.vocals.to_resource(
+        ctx.locations, temp=False, status=ctx.results[Job.SEPARATE_STEMS]
+    )
+    ctx.song.sync_meta.instrumental = ctx.out.instrumental.to_resource(
+        ctx.locations, temp=False, status=ctx.results[Job.SEPARATE_STEMS]
+    )
     ctx.song.sync_meta.video = ctx.out.video.to_resource(
         ctx.locations, temp=False, status=ctx.results[Job.VIDEO_DOWNLOAD]
     )
@@ -1006,6 +1158,7 @@ class Job(Enum):
     """All jobs in the song download pipeline, in logical order."""
 
     AUDIO_DOWNLOAD = member(_maybe_download_audio)
+    SEPARATE_STEMS = member(_maybe_separate_stems)
     VIDEO_DOWNLOAD = member(_maybe_download_video)
     COVER_DOWNLOAD = member(_maybe_download_cover)
     BACKGROUND_DOWNLOAD = member(_maybe_download_background)

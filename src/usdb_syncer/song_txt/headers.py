@@ -90,7 +90,7 @@ class Headers:
 
     def reset_file_location_headers(self) -> None:
         """Clear all tags with local file locations."""
-        self.mp3 = self.audio = self.vocals = self.instrumental = self.video = (
+        self.mp3 = self.audio = self.instrumental = self.vocals = self.video = (
             self.cover
         ) = self.background = None
 
