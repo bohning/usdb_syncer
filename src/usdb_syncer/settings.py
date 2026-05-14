@@ -168,7 +168,7 @@ class SettingKey(Enum):
     AUDIO_EMBED_ARTWORK = "downloads/audio_embed_artwork"
     AUDIO_SEPARATION = "downloads/audio_separation"
     AUDIO_SEPARATION_EXEC = "downloads/audio_separation_executable"
-    AUDIO_SEPARATION_NUM = "downloads/audio_separation_num"
+    AUDIO_SEPARATION_THREADS = "downloads/audio_separation_threads"
     AUDIO_SEPARATION_MODEL = "downloads/audio_separation_model"
     VIDEO = "downloads/video"
     VIDEO_FORMAT = "downloads/video_format"
@@ -877,12 +877,12 @@ def set_audio_separation_model(value: str, temp: bool = False) -> None:
     _Settings.set(SettingKey.AUDIO_SEPARATION_MODEL, value, temp)
 
 
-def get_audio_separation_num() -> int:
-    return _Settings.get(SettingKey.AUDIO_SEPARATION_NUM, 1)
+def get_audio_separation_threads() -> int:
+    return _Settings.get(SettingKey.AUDIO_SEPARATION_THREADS, 1)
 
 
-def set_audio_separation_num(value: int, temp: bool = False) -> None:
-    _Settings.set(SettingKey.AUDIO_SEPARATION_NUM, value, temp)
+def set_audio_separation_threads(value: int, temp: bool = False) -> None:
+    _Settings.set(SettingKey.AUDIO_SEPARATION_THREADS, value, temp)
 
 
 def get_encoding() -> Encoding:

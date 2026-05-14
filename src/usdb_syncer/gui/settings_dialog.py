@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import contextlib
 import enum
 import sys
 from pathlib import Path
@@ -10,16 +9,9 @@ from typing import ClassVar, assert_never
 
 import platformdirs
 from PySide6 import QtWidgets
-from PySide6.QtWidgets import (
-    QDialog,
-    QDialogButtonBox,
-    QFileDialog,
-    QMessageBox,
-    QWidget,
-)
+from PySide6.QtWidgets import QDialog, QDialogButtonBox, QFileDialog, QWidget
 
-from usdb_syncer import SongId, events, path_template, separation, settings, utils
-from usdb_syncer.gui import events as gui_events
+from usdb_syncer import SongId, events, path_template, separation, settings
 from usdb_syncer.gui import gui_utils, icons, notification, theme
 from usdb_syncer.gui.forms.SettingsDialog import Ui_Dialog
 from usdb_syncer.path_template import PathTemplate
@@ -62,7 +54,6 @@ class SettingsDialog(Ui_Dialog, QDialog):
 
     def __init__(self, parent: QWidget, song: UsdbSong | None) -> None:
         super().__init__(parent=parent)
-        gui_events.ThemeChanged.subscribe(self.on_theme_changed)
         gui_utils.cleanup_on_close(self)
         self._song = song or _FALLBACK_SONG
         self.setupUi(self)
@@ -99,11 +90,7 @@ class SettingsDialog(Ui_Dialog, QDialog):
         self.pushButton_browse_yass_reloaded.clicked.connect(
             lambda: self._set_location(settings.SupportedApps.YASS_RELOADED)
         )
-        stem_groupbox_button = self.groupBox_stem_separation.corner_button
-        stem_groupbox_button.setIcon(icons.Icon.INFO.icon())
-        stem_groupbox_button.clicked.connect(self._show_separation_help)
 
-        self.button_info.clicked.connect(self._show_separation_details)
         self.button_select_separation_provider.clicked.connect(
             self._on_select_separation_provider
         )
@@ -125,11 +112,6 @@ class SettingsDialog(Ui_Dialog, QDialog):
             cls._instance = cls(parent, song)
             cls._instance.show()
 
-    def _show_separation_help(self) -> None:
-        utils.open_url_in_browser(
-            "https://github.com/bohning/usdb_syncer/wiki/Separation-Providers"
-        )
-
     def _connect_stem_separation(self, command: list[str]) -> None:
         # Kill any previous probing subprocess
         if self._separation_manager is not None:
@@ -141,7 +123,10 @@ class SettingsDialog(Ui_Dialog, QDialog):
         except Exception:  # noqa: BLE001
             self._separation_manager = None
             self.comboBox_separation_model.clear()
+            self.label_separation_model.setEnabled(False)
             self.comboBox_separation_model.setEnabled(False)
+            self.label_separation_threads.setEnabled(False)
+            self.spinBox_separation_threads.setEnabled(False)
             state = _ProviderState.NOT_SELECTED
             notification.error("Selected provider encountered an error")
             self._update_provider_label(state)
@@ -151,7 +136,10 @@ class SettingsDialog(Ui_Dialog, QDialog):
         self.comboBox_separation_model.clear()
         for model_name, model_display_name in models.items():
             self.comboBox_separation_model.addItem(model_display_name, model_name)
+        self.label_separation_model.setEnabled(True)
         self.comboBox_separation_model.setEnabled(True)
+        self.label_separation_threads.setEnabled(True)
+        self.spinBox_separation_threads.setEnabled(True)
         self._update_provider_label(_ProviderState.SELECTED)
 
     def _set_theme_settings_enabled(self) -> None:
@@ -228,38 +216,22 @@ class SettingsDialog(Ui_Dialog, QDialog):
         self._separation_manager_command = filename
         return Path(filename)
 
-    def _show_separation_details(self) -> None:
-        if self._separation_manager is None:
-            QMessageBox.information(
-                self,
-                "No provider selected",
-                "No working separation provider selected.\n"
-                f"Path: {self._separation_manager_command or 'None'}",
-            )
-        else:
-            name = self._separation_manager.get_name()
-            QMessageBox.information(
-                self,
-                f"{name}",
-                f"{name} v{self._separation_manager.get_version()}\n"
-                f"Location: {self._separation_manager.client.command[0]}\n"
-                f"Available Models: {', '.join(self._separation_manager.get_available_models())}",
-            )
-
     def _update_provider_label(self, state: _ProviderState) -> None:
         self._provider_state = state
         match state:
             case _ProviderState.NOT_SELECTED:
-                icon = icons.Icon.WARNING
-                tooltip = "No separation provider selected."
+                info_text = "No separation provider selected."
+                info_tooltip = (
+                    "Please select a separation provider to enable stem separation."
+                )
             case _ProviderState.SELECTED:
-                icon = icons.Icon.STEM_SEPARATION
-                tooltip = "Separation provider selected and working."
+                assert self._separation_manager is not None
+                info_text = f"{self._separation_manager.get_name()} v.{self._separation_manager.get_version()}"
+                info_tooltip = f"Location: {self._separation_manager.client.command[0]}"
             case _:
                 assert_never()
-        pixmap = icon.icon().pixmap(16, 16)
-        self.label_is_provider_selected.setPixmap(pixmap)
-        self.label_is_provider_selected.setToolTip(tooltip)
+        self.label_separation_provider_info.setText(info_text)
+        self.label_separation_provider_info.setToolTip(info_tooltip)
 
     def _on_select_separation_provider(self) -> None:
         if path := self._select_separation_executable():
@@ -349,12 +321,14 @@ class SettingsDialog(Ui_Dialog, QDialog):
         self.checkBox_audio_embed_artwork.setChecked(settings.get_audio_embed_artwork())
 
         self.groupBox_stem_separation.setChecked(settings.get_audio_separation())
-        self.spinBox_separation_num.setValue(settings.get_audio_separation_num())
         self._connect_stem_separation([self._separation_manager_command])
         self.comboBox_separation_model.setCurrentIndex(
             self.comboBox_separation_model.findData(
                 settings.get_audio_separation_model()
             )
+        )
+        self.spinBox_separation_threads.setValue(
+            settings.get_audio_separation_threads()
         )
         self.groupBox_video.setChecked(settings.get_video())
         self.comboBox_videocontainer.setCurrentIndex(
@@ -438,20 +412,14 @@ class SettingsDialog(Ui_Dialog, QDialog):
             return
         if self._browser != self.comboBox_browser.currentData():
             SessionManager.reset_session()
-        self._unsubscribe_events()
         self._cleanup_separation_manager()
         SettingsDialog._instance = None
         super().accept()
 
     def reject(self) -> None:
-        self._unsubscribe_events()
         self._cleanup_separation_manager()
         SettingsDialog._instance = None
         super().reject()
-
-    def _unsubscribe_events(self) -> None:
-        with contextlib.suppress(ValueError):
-            gui_events.ThemeChanged.unsubscribe(self.on_theme_changed)
 
     def _cleanup_separation_manager(self) -> None:
         if self._separation_manager is not None:
@@ -491,9 +459,9 @@ class SettingsDialog(Ui_Dialog, QDialog):
         settings.set_audio_embed_artwork(self.checkBox_audio_embed_artwork.isChecked())
 
         settings.set_audio_separation(self.groupBox_stem_separation.isChecked())
-        num = self.spinBox_separation_num.value()
-        settings.set_audio_separation_num(num)
-        separation.set_max_concurrent(num)
+        separation_threads = self.spinBox_separation_threads.value()
+        settings.set_audio_separation_threads(separation_threads)
+        separation.set_max_concurrent(separation_threads)
         if self._separation_manager is not None:
             settings.set_audio_separation_executable(
                 self._separation_manager.client.command[0]
@@ -550,13 +518,3 @@ class SettingsDialog(Ui_Dialog, QDialog):
 
     def _on_tab_changed(self, index: int) -> None:
         SettingsDialog._last_tab_index = index
-
-    def on_theme_changed(self, event: gui_events.ThemeChanged) -> None:
-        key = event.theme.KEY
-        try:
-            self.groupBox_stem_separation.corner_button.setIcon(
-                icons.Icon.INFO.icon(key)
-            )
-        except RuntimeError:
-            # Dialog is being destroyed
-            self._unsubscribe_events()
