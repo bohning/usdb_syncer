@@ -230,8 +230,8 @@ class SettingsDialog(Ui_Dialog, QDialog):
                 info_tooltip = f"Location: {self._separation_manager.client.command[0]}"
             case _:
                 assert_never()
-        self.label_separation_provider_info.setText(info_text)
-        self.label_separation_provider_info.setToolTip(info_tooltip)
+        self.lineEdit_separation_provider_info.setText(info_text)
+        self.lineEdit_separation_provider_info.setToolTip(info_tooltip)
 
     def _on_select_separation_provider(self) -> None:
         if path := self._select_separation_executable():

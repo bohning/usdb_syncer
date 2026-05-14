@@ -17,7 +17,7 @@
    <item row="0" column="0" rowspan="2" colspan="2">
     <widget class="QTabWidget" name="tabWidget">
      <property name="currentIndex">
-      <number>1</number>
+      <number>0</number>
      </property>
      <widget class="QWidget" name="tab">
       <attribute name="title">
@@ -507,31 +507,23 @@
             <bool>false</bool>
            </property>
            <layout class="QGridLayout" name="gridLayout_5">
-            <item row="0" column="0">
-             <widget class="QLabel" name="label_separation_provider">
+            <item row="2" column="0">
+             <widget class="QLabel" name="label_separation_threads">
               <property name="text">
-               <string>Separation provider:</string>
+               <string>Separation threads:</string>
               </property>
              </widget>
             </item>
-            <item row="0" column="1">
-             <widget class="QLabel" name="label_separation_provider_info">
-              <property name="text">
-               <string>No separation provider selected.</string>
+            <item row="2" column="2" colspan="2">
+             <widget class="QSpinBox" name="spinBox_separation_threads">
+              <property name="alignment">
+               <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
               </property>
-             </widget>
-            </item>
-            <item row="0" column="2">
-             <widget class="QPushButton" name="button_select_separation_provider">
-              <property name="sizePolicy">
-               <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-                <horstretch>0</horstretch>
-                <verstretch>0</verstretch>
-               </sizepolicy>
+              <property name="minimum">
+               <number>1</number>
               </property>
-              <property name="icon">
-               <iconset resource="../resources/qt/resources.qrc">
-                <normaloff>:/icons/arrow-split.png</normaloff>:/icons/arrow-split.png</iconset>
+              <property name="maximum">
+               <number>10</number>
               </property>
              </widget>
             </item>
@@ -548,14 +540,7 @@
               </property>
              </widget>
             </item>
-            <item row="2" column="0">
-             <widget class="QLabel" name="label_separation_threads">
-              <property name="text">
-               <string>Separation threads:</string>
-              </property>
-             </widget>
-            </item>
-            <item row="1" column="1" colspan="2">
+            <item row="1" column="2" colspan="2">
              <widget class="QComboBox" name="comboBox_separation_model">
               <property name="enabled">
                <bool>false</bool>
@@ -571,16 +556,34 @@
               </property>
              </widget>
             </item>
-            <item row="2" column="1" colspan="2">
-             <widget class="QSpinBox" name="spinBox_separation_threads">
-              <property name="alignment">
-               <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
+            <item row="0" column="3">
+             <widget class="QPushButton" name="button_select_separation_provider">
+              <property name="sizePolicy">
+               <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+                <horstretch>0</horstretch>
+                <verstretch>0</verstretch>
+               </sizepolicy>
               </property>
-              <property name="minimum">
-               <number>1</number>
+              <property name="icon">
+               <iconset resource="../resources/qt/resources.qrc">
+                <normaloff>:/icons/arrow-split.png</normaloff>:/icons/arrow-split.png</iconset>
               </property>
-              <property name="maximum">
-               <number>10</number>
+             </widget>
+            </item>
+            <item row="0" column="0">
+             <widget class="QLabel" name="label_separation_provider">
+              <property name="text">
+               <string>Separation provider:</string>
+              </property>
+             </widget>
+            </item>
+            <item row="0" column="2">
+             <widget class="QLineEdit" name="lineEdit_separation_provider_info">
+              <property name="text">
+               <string>No separation provider selected.</string>
+              </property>
+              <property name="readOnly">
+               <bool>true</bool>
               </property>
              </widget>
             </item>
