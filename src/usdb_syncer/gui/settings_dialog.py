@@ -98,6 +98,10 @@ class SettingsDialog(Ui_Dialog, QDialog):
             self._set_theme_settings_enabled
         )
         self._set_theme_settings_enabled()
+        self.groupBox_audio.toggled.connect(self._update_stem_separation_enabled)
+        self.groupBox_stem_separation.toggled.connect(
+            self._update_stem_separation_enabled
+        )
         self.comboBox_format_version.currentIndexChanged.connect(
             self._handle_format_dependent_settings
         )
@@ -141,6 +145,9 @@ class SettingsDialog(Ui_Dialog, QDialog):
         self.label_separation_threads.setEnabled(True)
         self.spinBox_separation_threads.setEnabled(True)
         self._update_provider_label(_ProviderState.SELECTED)
+        self._set_stem_separation_control_states(
+            self.groupBox_stem_separation.isChecked()
+        )
 
     def _set_theme_settings_enabled(self) -> None:
         hidden = self.comboBox_theme.currentData() == settings.Theme.SYSTEM
@@ -151,10 +158,25 @@ class SettingsDialog(Ui_Dialog, QDialog):
         self._update_provider_label(self._provider_state)
 
     def _handle_format_dependent_settings(self) -> None:
+        self._update_stem_separation_enabled()
+
+    def _update_stem_separation_enabled(self) -> None:
         disabled = (
             self.comboBox_format_version.currentData() <= settings.FormatVersion.V1_0_0
+            or not self.groupBox_audio.isChecked()
         )
         self.groupBox_stem_separation.setDisabled(disabled)
+        self._set_stem_separation_control_states(
+            self.groupBox_stem_separation.isChecked() and not disabled
+        )
+
+    def _set_stem_separation_control_states(self, enabled: bool) -> None:
+        self.button_select_separation_provider.setEnabled(enabled)
+        self.lineEdit_separation_provider_info.setEnabled(enabled)
+        self.label_separation_model.setEnabled(enabled)
+        self.comboBox_separation_model.setEnabled(enabled)
+        self.label_separation_threads.setEnabled(enabled)
+        self.spinBox_separation_threads.setEnabled(enabled)
 
     def _set_location(self, app: settings.SupportedApps) -> None:
         path = self._get_executable(app)
@@ -319,7 +341,6 @@ class SettingsDialog(Ui_Dialog, QDialog):
             )
         )
         self.checkBox_audio_embed_artwork.setChecked(settings.get_audio_embed_artwork())
-
         self.groupBox_stem_separation.setChecked(settings.get_audio_separation())
         self._connect_stem_separation([self._separation_manager_command])
         self.comboBox_separation_model.setCurrentIndex(
