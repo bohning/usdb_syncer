@@ -283,7 +283,6 @@ class SettingsDialog(Ui_Dialog, QDialog):
         self.comboBox_cover_max_size.setCurrentIndex(
             self.comboBox_cover_max_size.findData(settings.get_cover_max_size())
         )
-        self.groupBox_songfile.setChecked(settings.get_txt())
         self.comboBox_encoding.setCurrentIndex(
             self.comboBox_encoding.findData(settings.get_encoding())
         )
@@ -439,7 +438,6 @@ class SettingsDialog(Ui_Dialog, QDialog):
         settings.set_browser(self.comboBox_browser.currentData())
         settings.set_cover(self.groupBox_cover.isChecked())
         settings.set_cover_max_size(self.comboBox_cover_max_size.currentData())
-        settings.set_txt(self.groupBox_songfile.isChecked())
         settings.set_encoding(self.comboBox_encoding.currentData())
         settings.set_newline(self.comboBox_line_endings.currentData())
         settings.set_version(self.comboBox_format_version.currentData())
