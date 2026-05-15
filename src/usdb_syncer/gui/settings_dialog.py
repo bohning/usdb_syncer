@@ -146,6 +146,7 @@ class SettingsDialog(Ui_Dialog, QDialog):
         hidden = self.comboBox_theme.currentData() == settings.Theme.SYSTEM
         self.label_primary_color.setHidden(hidden)
         self.comboBox_primary_color.setHidden(hidden)
+        self.label_colored_background.setHidden(hidden)
         self.checkBox_colored_background.setHidden(hidden)
         self._update_provider_label(self._provider_state)
 
