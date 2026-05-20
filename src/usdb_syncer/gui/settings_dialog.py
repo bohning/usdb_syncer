@@ -91,7 +91,7 @@ class SettingsDialog(Ui_Dialog, QDialog):
             lambda: self._set_location(settings.SupportedApps.YASS_RELOADED)
         )
 
-        self.button_select_separation_provider.clicked.connect(
+        self.pushButton_select_separation_provider.clicked.connect(
             self._on_select_separation_provider
         )
         self.comboBox_theme.currentIndexChanged.connect(
@@ -171,7 +171,7 @@ class SettingsDialog(Ui_Dialog, QDialog):
         )
 
     def _set_stem_separation_control_states(self, enabled: bool) -> None:
-        self.button_select_separation_provider.setEnabled(enabled)
+        self.pushButton_select_separation_provider.setEnabled(enabled)
         self.lineEdit_separation_provider_info.setEnabled(enabled)
         self.label_separation_model.setEnabled(enabled)
         self.comboBox_separation_model.setEnabled(enabled)
