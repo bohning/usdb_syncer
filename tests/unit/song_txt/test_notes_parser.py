@@ -1,5 +1,6 @@
 """Tests for functions from the note_utils module."""
 
+import re
 from pathlib import Path
 
 from usdb_syncer.download_options import TxtOptions
@@ -65,3 +66,32 @@ def test_notes_parser_invalid(resource_dir: str) -> None:
             contents = file.read()
         txt = SongTxt.try_parse(contents, logger)
         assert txt is None, f"failed test for '{path}'"
+
+
+def test_synchronized_lyrics_ttml_inserts_duet_agents(resource_dir: str) -> None:
+    path = Path(resource_dir, "txt", "normalized", "duet.txt")
+    contents = path.read_text(encoding="utf-8")
+    txt = SongTxt.parse(contents, logger)
+    txt.meta_tags.player1 = "Alice"
+    txt.meta_tags.player2 = "Bob"
+
+    ttml = txt.synchronized_lyrics_ttml()
+
+    assert ttml.count("<ttm:agent") == 2
+    assert '<ttm:name type="full">Alice</ttm:name>' in ttml
+    assert '<ttm:name type="full">Bob</ttm:name>' in ttml
+    assert 'ttm:agent="v1"' in ttml
+    assert 'ttm:agent="v2"' in ttml
+
+
+def test_synchronized_lyrics_ttml_sorts_lines_by_begin(resource_dir: str) -> None:
+    path = Path(resource_dir, "txt", "normalized", "duet.txt")
+    contents = path.read_text(encoding="utf-8")
+    txt = SongTxt.parse(contents, logger)
+    txt.meta_tags.player1 = "Alice"
+    txt.meta_tags.player2 = "Bob"
+
+    ttml = txt.synchronized_lyrics_ttml()
+    begin_times = re.findall(r'<p[^>]+begin="([^"]+)"', ttml)
+
+    assert begin_times == sorted(begin_times)

@@ -1,6 +1,7 @@
 """Errors thrown by the USDB Syncer."""
 
 from pathlib import Path
+from typing import Any
 
 
 class UsdbSyncerError(Exception):
@@ -195,3 +196,30 @@ class PortInUseError(WebserverError):
         )
         self.port = port
         self.host = host
+
+
+# separation
+
+
+class SeparationError(UsdbSyncerError):
+    """Base class for separation errors."""
+
+
+class JsonRpcError(SeparationError):
+    """Exception raised by the JSON-RPC server."""
+
+    def __init__(self, code: int, message: str, data: Any = None):
+        self.code = code
+        self.message = message
+        self.data = data
+        super().__init__(
+            f"[{code}] {message}" + (f": {data}" if data is not None else "")
+        )
+
+
+class CommunicationError(SeparationError):
+    """Raised when communication with the server fails (e.g. server died)."""
+
+    def __init__(self, message: str) -> None:
+        super().__init__(message)
+        self.message = message

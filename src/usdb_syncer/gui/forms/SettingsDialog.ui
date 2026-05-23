@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>673</width>
-    <height>828</height>
+    <height>933</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -40,7 +40,7 @@
    <item row="0" column="0" rowspan="2" colspan="2">
     <widget class="QTabWidget" name="tabWidget">
      <property name="currentIndex">
-      <number>2</number>
+      <number>1</number>
      </property>
      <widget class="QWidget" name="tab">
       <attribute name="title">
@@ -225,7 +225,7 @@
             <item row="2" column="1">
              <widget class="QComboBox" name="comboBox_format_version">
               <property name="toolTip">
-               <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:700;&quot;&gt;V1.0.0&lt;/span&gt;&lt;/p&gt;&lt;p&gt;Choose this version for highest compatibility. This uses #MP3 to specifiy the audio file.&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:700;&quot;&gt;V1.1.0&lt;/span&gt;&lt;/p&gt;&lt;p&gt;This version switches from #MP3 to #AUDIO to underline that other audio formats than mp3 are supported. For compatibility, the Syncer adds both #MP3 and #AUDIO to the text file, which should cause no issues when loading the song.&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:700;&quot;&gt;V1.2.0&lt;/span&gt;&lt;/p&gt;&lt;p&gt;This version introduces new tags #AUDIOURL, #COVERURL, #BACKGROUNDURL and #VIDEOURL to specify URLs for the respective sources. The syncer will fill these tags with the contents of the respective metatags, if available.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+               <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:700;&quot;&gt;V1.0.0&lt;/span&gt;&lt;/p&gt;&lt;p&gt;Choose this version for highest compatibility. This uses #MP3 to specifiy the audio file.&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:700;&quot;&gt;V1.1.0&lt;/span&gt;&lt;/p&gt;&lt;p&gt;This version switches from #MP3 to #AUDIO to underline that other audio formats than mp3 are supported. For compatibility, the Syncer adds both #MP3 and #AUDIO to the text file, which should cause no issues when loading the song. This version also adds the #INSTRUMENTAL and #VOCALS headers to support true karaoke singing with instrumental and vocals tracks.&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:700;&quot;&gt;V1.2.0&lt;/span&gt;&lt;/p&gt;&lt;p&gt;This version introduces new tags #AUDIOURL, #COVERURL, #BACKGROUNDURL and #VIDEOURL to specify URLs for the respective sources. The syncer will fill these tags with the contents of the respective metatags, if available.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
               </property>
              </widget>
             </item>
@@ -440,67 +440,208 @@
            <property name="checkable">
             <bool>true</bool>
            </property>
-           <layout class="QGridLayout" name="gridLayout_5">
-            <item row="3" column="3">
-             <widget class="QCheckBox" name="checkBox_audio_embed_artwork">
-              <property name="text">
-               <string/>
-              </property>
-             </widget>
+           <layout class="QVBoxLayout" name="verticalLayout_10">
+            <item>
+             <layout class="QGridLayout" name="gridLayout_12">
+              <item row="1" column="1">
+               <widget class="QComboBox" name="comboBox_audio_bitrate">
+                <property name="toolTip">
+                 <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;If the audio file is reencoded, the selected bitrate will be used.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                </property>
+               </widget>
+              </item>
+              <item row="2" column="0">
+               <widget class="QLabel" name="label_audio_normalize">
+                <property name="text">
+                 <string>Normalization:</string>
+                </property>
+               </widget>
+              </item>
+              <item row="0" column="0">
+               <widget class="QLabel" name="label_audio_format">
+                <property name="text">
+                 <string>Format:</string>
+                </property>
+               </widget>
+              </item>
+              <item row="1" column="0">
+               <widget class="QLabel" name="label_audio_bitrate">
+                <property name="text">
+                 <string>Bitrate:</string>
+                </property>
+               </widget>
+              </item>
+              <item row="2" column="1">
+               <widget class="QComboBox" name="comboBox_audio_normalization">
+                <property name="toolTip">
+                 <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;It is recommended to adjust the volume of your audio files so that they all have the same level of perceived loudness.&lt;/p&gt;&lt;p&gt;If you use a recent version of USDX (2025.4.0 or newer), then choose &lt;span style=&quot; font-weight:700;&quot;&gt;ReplayGain&lt;/span&gt;, as this does not reencode the file but instead writes the normalization information into the audio header. You have to enable ReplayGain in USDX sound settings for this take effect.&lt;/p&gt;&lt;p&gt;For karaoke softwares that do not (yet) support replay gain, choose &lt;span style=&quot; font-weight:700;&quot;&gt;Normalize&lt;/span&gt;. This will adjust the loudness by re-encoding the file.&lt;/p&gt;&lt;p&gt;To skip normalization, choose &lt;span style=&quot; font-weight:700;&quot;&gt;disabled&lt;/span&gt;. This saves time, but resulting audio files will have different loudness levels.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                </property>
+               </widget>
+              </item>
+              <item row="0" column="1">
+               <widget class="QComboBox" name="comboBox_audio_format">
+                <property name="sizePolicy">
+                 <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+                  <horstretch>0</horstretch>
+                  <verstretch>0</verstretch>
+                 </sizepolicy>
+                </property>
+                <property name="toolTip">
+                 <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:700;&quot;&gt;M4A:&lt;/span&gt; Best quality and speed. Compatible with UltraStar Deluxe, Vocaluxe, Performous and UltraStar World Party.&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:700;&quot;&gt;MP3: &lt;/span&gt;Worst quality and speed. Full compatibility.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                </property>
+               </widget>
+              </item>
+              <item row="3" column="0">
+               <widget class="QLabel" name="label_audio_embed_artwork">
+                <property name="text">
+                 <string>Embed artwork:</string>
+                </property>
+               </widget>
+              </item>
+              <item row="3" column="1">
+               <widget class="QCheckBox" name="checkBox_audio_embed_artwork">
+                <property name="text">
+                 <string/>
+                </property>
+               </widget>
+              </item>
+             </layout>
             </item>
-            <item row="3" column="0">
-             <widget class="QLabel" name="label_audio_embed_artwork">
-              <property name="text">
-               <string>Embed artwork:</string>
-              </property>
-             </widget>
-            </item>
-            <item row="1" column="0">
-             <widget class="QLabel" name="label_audio_bitrate">
-              <property name="text">
-               <string>Bitrate:</string>
-              </property>
-             </widget>
-            </item>
-            <item row="1" column="3">
-             <widget class="QComboBox" name="comboBox_audio_bitrate">
-              <property name="toolTip">
-               <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;If the audio file is reencoded, the selected bitrate will be used.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-              </property>
-             </widget>
-            </item>
-            <item row="2" column="0">
-             <widget class="QLabel" name="label_audio_normalize">
-              <property name="text">
-               <string>Normalization:</string>
-              </property>
-             </widget>
-            </item>
-            <item row="0" column="0">
-             <widget class="QLabel" name="label_audio_format">
-              <property name="text">
-               <string>Format:</string>
-              </property>
-             </widget>
-            </item>
-            <item row="0" column="3">
-             <widget class="QComboBox" name="comboBox_audio_format">
+            <item>
+             <widget class="CornerButtonGroupBox" name="groupBox_stem_separation">
               <property name="sizePolicy">
-               <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
-                <horstretch>0</horstretch>
+               <sizepolicy hsizetype="MinimumExpanding" vsizetype="Expanding">
+                <horstretch>1</horstretch>
                 <verstretch>0</verstretch>
                </sizepolicy>
               </property>
-              <property name="toolTip">
-               <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:700;&quot;&gt;M4A:&lt;/span&gt; Best quality and speed. Compatible with UltraStar Deluxe, Vocaluxe, Performous and UltraStar World Party.&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:700;&quot;&gt;MP3: &lt;/span&gt;Worst quality and speed. Full compatibility.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+              <property name="title">
+               <string>Separate audio stems (beta)</string>
               </property>
-             </widget>
-            </item>
-            <item row="2" column="3">
-             <widget class="QComboBox" name="comboBox_audio_normalization">
-              <property name="toolTip">
-               <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;It is recommended to adjust the volume of your audio files so that they all have the same level of perceived loudness.&lt;/p&gt;&lt;p&gt;If you use a recent version of USDX (2025.4.0 or newer), then choose &lt;span style=&quot; font-weight:700;&quot;&gt;ReplayGain&lt;/span&gt;, as this does not reencode the file but instead writes the normalization information into the audio header. You have to enable ReplayGain in USDX sound settings for this take effect.&lt;/p&gt;&lt;p&gt;For karaoke softwares that do not (yet) support replay gain, choose &lt;span style=&quot; font-weight:700;&quot;&gt;Normalize&lt;/span&gt;. This will adjust the loudness by re-encoding the file.&lt;/p&gt;&lt;p&gt;To skip normalization, choose &lt;span style=&quot; font-weight:700;&quot;&gt;disabled&lt;/span&gt;. This saves time, but resulting audio files will have different loudness levels.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+              <property name="alignment">
+               <set>Qt::AlignmentFlag::AlignLeading|Qt::AlignmentFlag::AlignLeft|Qt::AlignmentFlag::AlignTop</set>
               </property>
+              <property name="checkable">
+               <bool>true</bool>
+              </property>
+              <property name="checked">
+               <bool>false</bool>
+              </property>
+              <layout class="QGridLayout" name="gridLayout_5">
+               <property name="leftMargin">
+                <number>4</number>
+               </property>
+               <property name="topMargin">
+                <number>4</number>
+               </property>
+               <property name="rightMargin">
+                <number>0</number>
+               </property>
+               <property name="bottomMargin">
+                <number>4</number>
+               </property>
+               <item row="5" column="1">
+                <layout class="QHBoxLayout" name="horizontalLayout_17"/>
+               </item>
+               <item row="4" column="0">
+                <widget class="QLabel" name="label_separation_model">
+                 <property name="sizePolicy">
+                  <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
+                   <horstretch>0</horstretch>
+                   <verstretch>0</verstretch>
+                  </sizepolicy>
+                 </property>
+                 <property name="text">
+                  <string>Separation Model:</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="3" column="1">
+                <layout class="QHBoxLayout" name="horizontalLayout_18">
+                 <item>
+                  <widget class="QLabel" name="label_is_provider_selected">
+                   <property name="enabled">
+                    <bool>false</bool>
+                   </property>
+                   <property name="sizePolicy">
+                    <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+                     <horstretch>0</horstretch>
+                     <verstretch>0</verstretch>
+                    </sizepolicy>
+                   </property>
+                   <property name="text">
+                    <string/>
+                   </property>
+                   <property name="pixmap">
+                    <pixmap resource="../resources/qt/resources.qrc">:/icons/error.png</pixmap>
+                   </property>
+                  </widget>
+                 </item>
+                 <item>
+                  <widget class="QPushButton" name="button_info">
+                   <property name="sizePolicy">
+                    <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+                     <horstretch>0</horstretch>
+                     <verstretch>0</verstretch>
+                    </sizepolicy>
+                   </property>
+                   <property name="text">
+                    <string>Provider Info</string>
+                   </property>
+                  </widget>
+                 </item>
+                </layout>
+               </item>
+               <item row="3" column="0">
+                <widget class="QPushButton" name="button_select_separation_provider">
+                 <property name="sizePolicy">
+                  <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+                   <horstretch>0</horstretch>
+                   <verstretch>0</verstretch>
+                  </sizepolicy>
+                 </property>
+                 <property name="text">
+                  <string>Select provider</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="4" column="1">
+                <widget class="QComboBox" name="comboBox_separation_model">
+                 <property name="enabled">
+                  <bool>false</bool>
+                 </property>
+                 <property name="sizePolicy">
+                  <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+                   <horstretch>0</horstretch>
+                   <verstretch>0</verstretch>
+                  </sizepolicy>
+                 </property>
+                 <property name="toolTip">
+                  <string/>
+                 </property>
+                </widget>
+               </item>
+               <item row="1" column="0">
+                <widget class="QLabel" name="label_separation_num">
+                 <property name="text">
+                  <string>Simult. separations:</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="1" column="1">
+                <widget class="QSpinBox" name="spinBox_separation_num">
+                 <property name="alignment">
+                  <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
+                 </property>
+                 <property name="minimum">
+                  <number>1</number>
+                 </property>
+                 <property name="maximum">
+                  <number>10</number>
+                 </property>
+                </widget>
+               </item>
+              </layout>
              </widget>
             </item>
            </layout>
@@ -1291,6 +1432,14 @@
    </item>
   </layout>
  </widget>
+ <customwidgets>
+  <customwidget>
+   <class>CornerButtonGroupBox</class>
+   <extends>QGroupBox</extends>
+   <header>usdb_syncer.gui.custom_widgets</header>
+   <container>1</container>
+  </customwidget>
+ </customwidgets>
  <resources>
   <include location="../resources/qt/resources.qrc"/>
  </resources>

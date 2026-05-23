@@ -136,7 +136,7 @@ def _write_tags_m4a_mp4(
         m4a_mp4.tags["\xa9gen"] = txt.headers.genre
     if txt.headers.year:
         m4a_mp4.tags["\xa9day"] = txt.headers.year
-    m4a_mp4.tags["\xa9lyr"] = txt.unsynchronized_lyrics()
+    m4a_mp4.tags["\xa9lyr"] = txt.synchronized_lyrics_ttml()
     m4a_mp4.tags["\xa9cmt"] = audio_video[1]
 
     if embed_artwork:

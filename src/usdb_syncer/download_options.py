@@ -27,6 +27,9 @@ class AudioOptions:
     bitrate: settings.AudioBitrate
     normalization: settings.AudioNormalization
     embed_artwork: bool
+    separation: bool
+    separation_executable: str
+    separation_model: str
     rate_limit: settings.YtdlpRateLimit
 
     def ytdl_format(self) -> str:
@@ -132,6 +135,9 @@ def _audio_options() -> AudioOptions | None:
         bitrate=settings.get_audio_bitrate(),
         normalization=settings.get_audio_normalization(),
         embed_artwork=settings.get_audio_embed_artwork(),
+        separation=settings.get_audio_separation(),
+        separation_executable=settings.get_audio_separation_executable(),
+        separation_model=settings.get_audio_separation_model(),
         rate_limit=settings.get_ytdlp_rate_limit(),
     )
 
