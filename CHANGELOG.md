@@ -4,6 +4,7 @@
 
 ## Features
 
+- Updated yt-dlp to latest available version 2026.6.9, solving latest download issues.
 - Custom data values can now be displayed in dedicated columns. For configuration, rightclick the relevant custom data key in the sidebar tree.
 - The progress dialog can be cancelled and shows a completion percentage whenever possible.
 - The previewer can be used without previously downloading a song. This won't play the audio track, though.
