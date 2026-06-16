@@ -15,6 +15,7 @@
 - Synchronized lyrics in TTML format are now written to m4a audio files.
 
 ## Fixes
+
 - PDF reports now display figures correctly.
 - Fixed launching latest YASS Reloaded via the Syncer.
 
