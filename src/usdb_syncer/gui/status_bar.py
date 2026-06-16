@@ -21,7 +21,6 @@ class StatusBar:
         self._statusbar = statusbar
         self.set_usdb_login_status()
         self.set_ytdlp_status()
-        self.set_deno_status()
         self.set_ffmpeg_status()
         self.set_selection_status()
         gui_events.ThemeChanged.subscribe(self._set_usdb)
@@ -42,13 +41,6 @@ class StatusBar:
         self._ytdlp_button.setCursor(Qt.CursorShape.PointingHandCursor)
         self._set_ytdlp()
         self._statusbar.addPermanentWidget(self._ytdlp_button)
-
-    def set_deno_status(self) -> None:
-        self._deno_button = QPushButton(self._statusbar)
-        self._deno_button.setFlat(True)
-        self._deno_button.setCursor(Qt.CursorShape.PointingHandCursor)
-        self._set_deno()
-        self._statusbar.addPermanentWidget(self._deno_button)
 
     def set_ffmpeg_status(self) -> None:
         self._ffmpeg_button = QPushButton(self._statusbar)
@@ -92,13 +84,6 @@ class StatusBar:
         ytdlp_version = importlib.metadata.version("yt-dlp")
         self._ytdlp_button.setToolTip(f"yt-dlp {ytdlp_version}")
         self._ytdlp_button.setFixedSize(self._ytdlp_button.sizeHint())
-
-    def _set_deno(self, event: gui_events.ThemeChanged | None = None) -> None:
-        theme = event.theme.KEY if event else None
-        self._deno_button.setIcon(icons.Icon.DENO.icon(theme))
-        deno_version = importlib.metadata.version("deno")
-        self._deno_button.setToolTip(f"deno {deno_version}")
-        self._deno_button.setFixedSize(self._deno_button.sizeHint())
 
     def _set_ffmpeg(self, event: gui_events.ThemeChanged | None = None) -> None:
         theme = event.theme.KEY if event else None
