@@ -114,8 +114,6 @@ def download_options() -> Options:
 
 
 def _txt_options() -> TxtOptions | None:
-    if not settings.get_txt():
-        return None
     return TxtOptions(
         encoding=settings.get_encoding(),
         newline=settings.get_newline(),

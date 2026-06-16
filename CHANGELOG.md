@@ -4,17 +4,19 @@
 
 ## Features
 
+- Updated yt-dlp to latest available version 2026.6.9, solving latest download issues.
 - Custom data values can now be displayed in dedicated columns. For configuration, rightclick the relevant custom data key in the sidebar tree.
 - The progress dialog can be cancelled and shows a completion percentage whenever possible.
 - The previewer can be used without previously downloading a song. This won't play the audio track, though.
 - Resource files that have been modified locally since downloading are now indicated in the song table.
 - When serving the song list as a website, you can now optionally include not yet downloaded songs and let visitors initiate downloads. They can also like songs to signal interest.
+- Deno is no longer required as an external dependency.
+- The bundled yt-dlp version and the found ffmpeg version are now displayed as tooltips in the status bar.
+- Synchronized lyrics in TTML format are now written to m4a audio files.
 
 ## Fixes
+
 - PDF reports now display figures correctly.
-
-## Fixes
-
 - Fixed launching latest YASS Reloaded via the Syncer.
 
 <!-- 0.21.0 -->

@@ -217,7 +217,7 @@ def _run_main() -> None:
     from usdb_syncer import separation
     from usdb_syncer.gui.mw import MainWindow
 
-    separation.set_max_concurrent(settings.get_audio_separation_num())
+    separation.set_max_concurrent(settings.get_audio_separation_threads())
     mw = MainWindow()
     mw_logger = _TextEditLogger(mw)
     mw_logger.setFormatter(logger.GUI_FORMATTER)
