@@ -5,6 +5,7 @@
 ## Fixes
 
 - ffmpeg version extraction fixed for Linux.
+- Fixed retrieving file paths from settings, which would crash the application on start.
 
 <!-- 0.22.0 -->
 
