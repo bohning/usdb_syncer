@@ -404,10 +404,10 @@ def get_ffmpeg_version() -> str | None:
         ["ffmpeg", "-version"], capture_output=True, text=True, check=False
     )
 
-    parts = result.stdout.splitlines()[0].split()
-
-    if len(parts) >= 3:
-        return parts[2]
+    output = result.stdout or result.stderr
+    match = re.search(r"ffmpeg version\s+([^\s]+)", output, re.IGNORECASE)
+    if match:
+        return match.group(1)
     return None
 
 
