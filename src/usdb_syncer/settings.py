@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import functools
 import os
+import sys
 import threading
 from enum import Enum, StrEnum, auto
 from pathlib import Path
@@ -25,6 +26,15 @@ if TYPE_CHECKING:
     from http.cookiejar import CookieJar
 
     from usdb_syncer import db, path_template
+
+if "pathlib._local" not in sys.modules:
+    # required for Path objects pickled with Python < 3.14
+    try:
+        import pathlib._local
+    except ModuleNotFoundError:
+        import pathlib
+
+        sys.modules["pathlib._local"] = pathlib
 
 SYSTEM_USDB = "USDB Syncer/USDB"
 NO_KEYRING_BACKEND_WARNING = (
