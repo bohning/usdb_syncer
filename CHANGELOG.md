@@ -1,3 +1,11 @@
+<!-- 0.21.1 -->
+
+# Changes
+
+## Fixes
+
+- ffmpeg version extraction fixed for Linux.
+
 <!-- 0.22.0 -->
 
 # Changes
