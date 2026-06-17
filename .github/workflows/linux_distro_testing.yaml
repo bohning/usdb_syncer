@@ -18,7 +18,7 @@ jobs:
         with:
           fetch-depth: 0
       - name: Set up uv and Python
-        uses: astral-sh/setup-uv@v7
+        uses: astral-sh/setup-uv@v8.0.0
         with:
           python-version: ${{ env.PYTHON_VERSION }}
           enable-cache: true
@@ -40,7 +40,7 @@ jobs:
       - name: Build the wheel
         run: uv build --wheel --force-pep517
       - name: Upload whl artifact
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: wheel
           path: dist/*.whl
@@ -54,14 +54,14 @@ jobs:
       - uses: actions/checkout@v6
         with:
           fetch-depth: 0
-      - uses: astral-sh/setup-uv@v7
+      - uses: astral-sh/setup-uv@v8.0.0
         with:
           python-version: ${{ env.PYTHON_VERSION }}
           enable-cache: true
       - run: uv run --no-dev --group bundle python -m tools.generate_pyside_files
       - run: uv run --no-dev --group bundle python -m tools.bundle Linux --version TestBuild
       - name: Upload bundle artifact
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: bundle
           path: dist/USDB_Syncer*
@@ -93,7 +93,7 @@ jobs:
             COMPATIBILITY: archlinux
     steps:
       - name: Download artifacts
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           name: bundle
       - run: ls -R
@@ -152,7 +152,7 @@ jobs:
             COMPATIBILITY: archlinux
     steps:
       - name: Download artifacts
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           name: wheel
       - run: ls -R
@@ -217,7 +217,7 @@ jobs:
     permissions:
       id-token: write
     steps:
-      - uses: actions/download-artifact@v7
+      - uses: actions/download-artifact@v8
         with:
           name: wheel
           path: ${{ github.workspace }}/dist
