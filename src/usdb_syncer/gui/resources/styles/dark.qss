@@ -12,6 +12,8 @@ QTableView {{
   background-color: {surface_01dp};
   alternate-background-color: {surface_02dp};
   border: none;
+  selection-color: {text_high};
+  selection-background-color: transparent;
 }}
 
 QTreeView::item,
