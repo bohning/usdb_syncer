@@ -181,7 +181,6 @@ def main() -> None:
     utils.AppPaths.make_dirs()
     configure_logging(stderr_level=args.log_level)
     app = _init_app()
-    app.setAttribute(Qt.ApplicationAttribute.AA_DontShowIconsInMenus, False)
 
     def run_main() -> None:
         QtCore.QTimer.singleShot(0, _run_main)
@@ -349,11 +348,27 @@ class SplashScreen(QtWidgets.QSplashScreen):
         self.deleteLater()
 
 
+class _NoFocusRectStyle(QtWidgets.QProxyStyle):
+    def drawPrimitive(  # noqa: N802
+        self,
+        element: QtWidgets.QStyle.PrimitiveElement,
+        option: QtWidgets.QStyleOption,
+        painter: QtGui.QPainter,
+        /,
+        widget: QtWidgets.QWidget | None = None,
+    ):
+        if element == QtWidgets.QStyle.PrimitiveElement.PE_FrameFocusRect:
+            return
+        super().drawPrimitive(element, option, painter, widget)
+
+
 def _init_app() -> QtWidgets.QApplication:
     app = QtWidgets.QApplication(sys.argv)
     app.setOrganizationName("bohning")
     app.setApplicationName("usdb_syncer")
     app.setWindowIcon(QtGui.QIcon(":/app/appicon_128x128.png"))
+    app.setAttribute(Qt.ApplicationAttribute.AA_DontShowIconsInMenus, False)
+    app.setStyle(_NoFocusRectStyle(app.style()))
     return app
 
 
