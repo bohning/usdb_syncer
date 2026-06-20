@@ -65,6 +65,9 @@ jobs:
         with:
           fetch-depth: 0
       - uses: actions/download-artifact@v8
+        with:
+          name: artifacts
+          path: artifacts
       - name: On macOS and windows, install python normally (linux container has python preinstalled)
         if: contains(matrix.os, 'macos') || contains(matrix.os, 'windows')
         uses: actions/setup-python@v6
