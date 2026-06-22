@@ -61,6 +61,7 @@ def bundle(platform: OS, version: str, with_songlist: bool = False) -> None:
     # fmt: off
     args: list[str] = [
         "--exclude-module", "_tkinter",
+        "--hidden-import", "defusedxml",
         "--copy-metadata", "yt-dlp",
         "--copy-metadata", "deno",
         "--add-data", "licenses:usdb_syncer/data/licenses",
