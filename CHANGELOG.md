@@ -12,7 +12,7 @@
 
 ## Fixes
 
-- Robustied ffmpeg version extraction, which could crash the application on start.
+- Robustified ffmpeg version extraction, which could crash the application on start.
 - Fixed retrieving file paths from settings, which would crash the application on start.
 
 <!-- 0.22.0 -->
