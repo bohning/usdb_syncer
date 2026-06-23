@@ -5,7 +5,6 @@
 ## Fixes
 
 - Disable ffmpeg-normalize progress bar for bundles.
-- Fix macOS bundles by including defusedxml as hidden-import.
 
 <!-- 0.22.1 -->
 
@@ -13,7 +12,7 @@
 
 ## Fixes
 
-- ffmpeg version extraction fixed for Linux.
+- Robustied ffmpeg version extraction, which could crash the application on start.
 - Fixed retrieving file paths from settings, which would crash the application on start.
 
 <!-- 0.22.0 -->
