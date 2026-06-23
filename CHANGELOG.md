@@ -1,4 +1,13 @@
-<!-- 0.21.1 -->
+<!-- 0.22.2 -->
+
+# Changes
+
+## Fixes
+
+- Disable ffmpeg-normalize progress bar for bundles.
+- Fix macOS bundles by including defusedxml as hidden-import.
+
+<!-- 0.22.1 -->
 
 # Changes
 
