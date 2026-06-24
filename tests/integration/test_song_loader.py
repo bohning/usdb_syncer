@@ -69,7 +69,7 @@ def _options(
     if not video:
         options_dict["video_options"] = None
     if not cover:
-        options_dict["cover"] = None
+        options_dict["cover_options"] = None
     if not background:
         options_dict["background_options"] = None
     return download_options.Options(**options_dict)

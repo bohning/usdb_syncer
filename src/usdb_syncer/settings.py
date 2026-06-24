@@ -191,6 +191,7 @@ class SettingKey(Enum):
     COVER_MAX_SIZE = "downloads/cover_max_size"
     BACKGROUND = "downloads/background"
     BACKGROUND_ALWAYS = "downloads/background_always"
+    BACKGROUND_MAX_SIZE = "downloads/background_max_size"
     DISCORD_ALLOWED = "downloads/discord_allowed"
     TRASH_REMOTELY_DELETED_SONGS = "downloads/trash_remotely_deleted_songs"
     MAIN_WINDOW_GEOMETRY = "geometry/main_window"
@@ -346,6 +347,31 @@ class CoverMaxSize(Enum):
                 return "1000x1000 px"
             case CoverMaxSize.PX_640:
                 return "640x640 px"
+            case _ as unreachable:
+                assert_never(unreachable)
+
+
+class BackgroundMaxSize(Enum):
+    """Maximum background size."""
+
+    DISABLE = 0
+    PX_3840 = 3840
+    PX_1920 = 1920
+    PX_1280 = 1280
+    PX_940 = 940
+
+    def __str__(self) -> str:
+        match self:
+            case BackgroundMaxSize.DISABLE:
+                return "disable"
+            case BackgroundMaxSize.PX_3840:
+                return "3840x3840 px"
+            case BackgroundMaxSize.PX_1920:
+                return "1920x1920 px"
+            case BackgroundMaxSize.PX_1280:
+                return "1280x1280 px"
+            case BackgroundMaxSize.PX_940:
+                return "940x940 px"
             case _ as unreachable:
                 assert_never(unreachable)
 
@@ -1061,6 +1087,14 @@ def get_background_always() -> bool:
 
 def set_background_always(value: bool, temp: bool = False) -> None:
     _Settings.set(SettingKey.BACKGROUND_ALWAYS, value, temp)
+
+
+def get_background_max_size() -> BackgroundMaxSize:
+    return _Settings.get(SettingKey.BACKGROUND_MAX_SIZE, BackgroundMaxSize.PX_1920)
+
+
+def set_background_max_size(value: BackgroundMaxSize, temp: bool = False) -> None:
+    _Settings.set(SettingKey.BACKGROUND_MAX_SIZE, value, temp)
 
 
 def get_discord_allowed() -> bool:

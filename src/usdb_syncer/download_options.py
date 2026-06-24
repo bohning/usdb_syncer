@@ -79,6 +79,7 @@ class BackgroundOptions:
     """Settings regarding the background image to be downloaded."""
 
     even_with_video: bool
+    max_size: settings.BackgroundMaxSize | None
 
     def download_background(self, has_video: bool) -> bool:
         return not has_video or self.even_with_video
@@ -95,7 +96,7 @@ class Options:
     audio_options: AudioOptions | None
     browser: settings.Browser
     video_options: VideoOptions | None
-    cover: CoverOptions | None
+    cover_options: CoverOptions | None
     background_options: BackgroundOptions | None
 
 
@@ -108,7 +109,7 @@ def download_options() -> Options:
         audio_options=_audio_options(),
         browser=settings.get_browser(),
         video_options=_video_options(),
-        cover=_cover_options(),
+        cover_options=_cover_options(),
         background_options=_background_options(),
     )
 
@@ -164,4 +165,7 @@ def _cover_options() -> CoverOptions | None:
 def _background_options() -> BackgroundOptions | None:
     if not settings.get_background():
         return None
-    return BackgroundOptions(even_with_video=settings.get_background_always())
+    return BackgroundOptions(
+        even_with_video=settings.get_background_always(),
+        max_size=settings.get_background_max_size() or None,
+    )

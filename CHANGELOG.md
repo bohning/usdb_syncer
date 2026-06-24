@@ -1,6 +1,10 @@
-<!-- 0.22.2 -->
+<!-- 0.23.0 -->
 
 # Changes
+
+## Features
+
+- Added setting to limit background image size.
 
 ## Fixes
 

@@ -753,7 +753,7 @@ def transcode_audio(
 
 
 def _maybe_download_cover(ctx: _Context) -> JobStatus:
-    if not ctx.options.cover:
+    if not ctx.options.cover_options:
         return JobStatus.SKIPPED_DISABLED
 
     if primary_cover := ctx.primary_cover():
@@ -826,7 +826,7 @@ def _maybe_download_background(ctx: _Context) -> JobStatus:
         )
 
     status = _try_download_cover_or_background(
-        ctx, url, ImageKind.BACKGROUND, process=False
+        ctx, url, ImageKind.BACKGROUND, process=True
     )
     if status is JobStatus.SUCCESS:
         ctx.logger.info("Success! Downloaded background. ")
@@ -850,7 +850,13 @@ def _background_params_unchanged(ctx: _Context) -> bool:
 def _try_download_cover_or_background(
     ctx: _Context, url: str, kind: ImageKind, process: bool
 ) -> JobStatus:
-    assert ctx.options.cover
+    max_width: settings.CoverMaxSize | settings.BackgroundMaxSize | None
+    if kind == ImageKind.BACKGROUND:
+        assert ctx.options.background_options
+        max_width = ctx.options.background_options.max_size
+    else:
+        assert ctx.options.cover_options
+        max_width = ctx.options.cover_options.max_size
 
     if path := resource_dl.download_and_process_image(
         url=url,
@@ -860,7 +866,7 @@ def _try_download_cover_or_background(
         else ctx.txt.meta_tags.background,
         details=ctx.details,
         kind=kind,
-        max_width=ctx.options.cover.max_size,
+        max_width=max_width,
         process=process,
         notify_discord=ctx.options.notify_discord,
     ):
