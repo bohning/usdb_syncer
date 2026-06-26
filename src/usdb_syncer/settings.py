@@ -329,7 +329,14 @@ class FixSpaces(Enum):
                 assert_never(unreachable)
 
 
-class CoverMaxSize(Enum):
+class MaxSize(Enum):
+    """Base class for maximum image sizes."""
+
+    def _should_apply_max_size(self, image_width: int) -> bool:
+        return self.value != 0 and self.value < image_width
+
+
+class CoverMaxSize(MaxSize):
     """Maximum cover size."""
 
     DISABLE = 0
@@ -351,7 +358,7 @@ class CoverMaxSize(Enum):
                 assert_never(unreachable)
 
 
-class BackgroundMaxSize(Enum):
+class BackgroundMaxSize(MaxSize):
     """Maximum background size."""
 
     DISABLE = 0

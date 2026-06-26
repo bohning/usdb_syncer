@@ -850,7 +850,7 @@ def _background_params_unchanged(ctx: _Context) -> bool:
 def _try_download_cover_or_background(
     ctx: _Context, url: str, kind: ImageKind, process: bool
 ) -> JobStatus:
-    max_width: settings.CoverMaxSize | settings.BackgroundMaxSize | None
+    max_width: settings.MaxSize | None
     if kind == ImageKind.BACKGROUND:
         assert ctx.options.background_options
         max_width = ctx.options.background_options.max_size
