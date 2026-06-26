@@ -270,6 +270,7 @@ class SettingsDialog(Ui_Dialog, QDialog):
             (self.comboBox_fix_linebreaks, settings.FixLinebreaks),
             (self.comboBox_fix_spaces, settings.FixSpaces),
             (self.comboBox_cover_max_size, settings.CoverMaxSize),
+            (self.comboBox_background_max_size, settings.BackgroundMaxSize),
             (self.comboBox_ytdlp_rate_limit, settings.YtdlpRateLimit),
             (self.comboBox_audio_format, settings.AudioFormat),
             (self.comboBox_audio_bitrate, settings.AudioBitrate),
@@ -368,6 +369,11 @@ class SettingsDialog(Ui_Dialog, QDialog):
         self.checkBox_video_embed_artwork.setChecked(settings.get_video_embed_artwork())
         self.groupBox_background.setChecked(settings.get_background())
         self.checkBox_background_always.setChecked(settings.get_background_always())
+        self.comboBox_background_max_size.setCurrentIndex(
+            self.comboBox_background_max_size.findData(
+                settings.get_background_max_size()
+            )
+        )
         self.checkBox_trash_files.setChecked(settings.get_trash_files())
         self.checkBox_trash_remotely_deleted_songs.setChecked(
             settings.get_trash_remotely_deleted_songs()
@@ -498,6 +504,9 @@ class SettingsDialog(Ui_Dialog, QDialog):
         settings.set_video_embed_artwork(self.checkBox_video_embed_artwork.isChecked())
         settings.set_background(self.groupBox_background.isChecked())
         settings.set_background_always(self.checkBox_background_always.isChecked())
+        settings.set_background_max_size(
+            self.comboBox_background_max_size.currentData()
+        )
         settings.set_discord_allowed(self.checkBox_discord_allowed.isChecked())
         if self._path_template:
             settings.set_path_template(self._path_template)

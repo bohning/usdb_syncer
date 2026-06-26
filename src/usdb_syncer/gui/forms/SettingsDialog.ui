@@ -529,6 +529,16 @@
               <bool>true</bool>
              </property>
              <layout class="QGridLayout" name="gridLayout_background" columnstretch="0,1">
+              <item row="0" column="1">
+               <widget class="QCheckBox" name="checkBox_background_always">
+                <property name="toolTip">
+                 <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;If checked, background images will be downloaded even if there is a video for the song as well.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                </property>
+                <property name="checked">
+                 <bool>true</bool>
+                </property>
+               </widget>
+              </item>
               <item row="0" column="0">
                <widget class="QLabel" name="label_background_always">
                 <property name="sizePolicy">
@@ -551,15 +561,18 @@
                 </property>
                </widget>
               </item>
-              <item row="0" column="1">
-               <widget class="QCheckBox" name="checkBox_background_always">
-                <property name="toolTip">
-                 <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;If checked, background images will be downloaded even if there is a video for the song as well.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+              <item row="1" column="0">
+               <widget class="QLabel" name="label_background_max_size">
+                <property name="text">
+                 <string>Maximum dimensions:</string>
                 </property>
-                <property name="checked">
-                 <bool>true</bool>
+                <property name="alignment">
+                 <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
                 </property>
                </widget>
+              </item>
+              <item row="1" column="1">
+               <widget class="QComboBox" name="comboBox_background_max_size"/>
               </item>
              </layout>
             </widget>

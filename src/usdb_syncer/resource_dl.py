@@ -23,12 +23,7 @@ from usdb_syncer.constants import YtErrorMsg
 from usdb_syncer.discord import notify_discord
 from usdb_syncer.logger import Logger, song_logger
 from usdb_syncer.postprocessing import normalize_audio
-from usdb_syncer.settings import (
-    AudioNormalization,
-    Browser,
-    CoverMaxSize,
-    YtdlpRateLimit,
-)
+from usdb_syncer.settings import AudioNormalization, Browser, MaxSize, YtdlpRateLimit
 from usdb_syncer.utils import video_url_from_resource
 
 if TYPE_CHECKING:
@@ -466,7 +461,7 @@ def download_and_process_image(
     meta_tags: ImageMetaTags | None,
     details: SongDetails,
     kind: ImageKind,
-    max_width: CoverMaxSize | None,
+    max_width: MaxSize | None,
     process: bool = True,
     notify_discord: bool = False,
 ) -> Path | None:
@@ -524,7 +519,7 @@ def _adjust_contrast(image: Image.Image, meta_tags: ImageMetaTags) -> Image.Imag
 def _process_image(
     meta_tags: ImageMetaTags | None,
     kind: ImageKind,
-    max_width: CoverMaxSize | None,
+    max_width: MaxSize | None,
     path: Path,
 ) -> None:
     processed = False
@@ -542,11 +537,7 @@ def _process_image(
             for operation in operations:
                 image = operation(image, meta_tags)
 
-        if (
-            max_width
-            and max_width != CoverMaxSize.DISABLE
-            and max_width.value < image.width
-        ):
+        if max_width and max_width._should_apply_max_size(image.width):
             processed = True
             height = round(image.height * max_width.value / image.width)
             image = image.resize((max_width.value, height), resample=Resampling.LANCZOS)
