@@ -356,7 +356,7 @@ class _NoFocusRectStyle(QtWidgets.QProxyStyle):
         painter: QtGui.QPainter,
         /,
         widget: QtWidgets.QWidget | None = None,
-    ):
+    ) -> None:
         if element == QtWidgets.QStyle.PrimitiveElement.PE_FrameFocusRect:
             return
         super().drawPrimitive(element, option, painter, widget)
