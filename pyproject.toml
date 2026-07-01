@@ -12,6 +12,7 @@ dependencies = [
     "beautifulsoup4",
     "deno>=2.7.4",
     "diff-match-patch",
+    "fake-useragent>=2.2.0",
     "ffmpeg-normalize>=1.27",
     "filetype",
     "flask>=3.1.1,<4",
