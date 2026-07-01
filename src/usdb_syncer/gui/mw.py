@@ -115,6 +115,11 @@ class MainWindow(Ui_MainWindow, QMainWindow):
                 self.table.abort_selected_downloads,
                 SongTableShortcut.ABORT_DOWNLOAD,
             ),
+            (
+                self.action_force_redownload,
+                lambda: self.table.download_selection(force_redownload=True),
+                None,
+            ),
             (self.action_find_local_songs, self._select_local_songs, None),
             (self.action_refetch_song_list, self._refetch_song_list, None),
             (self.action_usdb_login, lambda: UsdbLoginDialog.load(self), None),
@@ -496,6 +501,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         self.action_show_log.setIcon(icons.Icon.LOG.icon(key))
         self.action_songs_download.setIcon(icons.Icon.DOWNLOAD.icon(key))
         self.action_songs_abort.setIcon(icons.Icon.ABORT.icon(key))
+        self.action_force_redownload.setIcon(icons.Icon.DOWNLOAD_FORCE.icon(key))
         self.action_show_in_usdb.setIcon(icons.Icon.USDB.icon(key))
         self.action_post_comment_in_usdb.setIcon(icons.Icon.COMMENT.icon(key))
         self.menu_rate_song_on_usdb.setIcon(icons.Icon.RATING.icon(key))

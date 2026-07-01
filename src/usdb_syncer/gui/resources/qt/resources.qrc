@@ -51,7 +51,10 @@
         <file>diff.png</file>
         <file>document-export.png</file>
         <file>document-import.png</file>
+        <file>download-force-white.svg</file>
+        <file>download-force.png</file>
         <file>download-white.svg</file>
+        <file>download.png</file>
         <file>drawer.png</file>
         <file>dresser-white.svg</file>
         <file>edge.png</file>
@@ -128,7 +131,6 @@
         <file>skipped-unavailable-white.svg</file>
         <file>skipped-unavailable.png</file>
         <file>spectrum-absorption.png</file>
-        <file>status.png</file>
         <file>sync-white.svg</file>
         <file>tag-hash.png</file>
         <file>tag-white.svg</file>
