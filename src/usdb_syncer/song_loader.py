@@ -531,22 +531,26 @@ def _maybe_download_audio(ctx: _Context) -> JobStatus:
             ctx.logger.info("Audio resource is unchanged, skipping download.")
             return JobStatus.SUCCESS_UNCHANGED
         if ctx.song.audio_path():
-            if primary_resource != ctx.out.audio.resource:
-                ctx.logger.info(
-                    f"Audio resource has changed ('{ctx.out.audio.resource}' -> "
-                    f"'{primary_resource}'), redownloading."
-                )
-            else:
-                ctx.logger.info("Force redownloading audio resource.")
+            msg = (
+                f"Audio resource has changed ('{ctx.out.audio.resource}' -> "
+                f"'{primary_resource}'), redownloading."
+                if primary_resource != ctx.out.audio.resource
+                else "Force redownloading audio resource."
+            )
+            ctx.logger.info(msg)
 
-        status = _try_download_audio_or_video(ctx, primary_resource, options)
-        if status is JobStatus.SUCCESS:
+        if (
+            _try_download_audio_or_video(ctx, primary_resource, options)
+            is JobStatus.SUCCESS
+        ):
             ctx.logger.info(f"Success! Downloaded audio '{primary_resource}'.")
             return JobStatus.SUCCESS
 
     for fallback_resource in fallback_resources:
-        status = _try_download_audio_or_video(ctx, fallback_resource, options)
-        if status is JobStatus.SUCCESS:
+        if (
+            _try_download_audio_or_video(ctx, fallback_resource, options)
+            is JobStatus.SUCCESS
+        ):
             ctx.logger.warning(
                 f"Downloaded commented audio '{fallback_resource}'. "
                 "This may require adaptations in GAP and/or BPM."
