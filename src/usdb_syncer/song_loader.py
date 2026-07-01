@@ -62,7 +62,13 @@ class DownloadManager:
     _pool: QtCore.QThreadPool | None = None
 
     @classmethod
-    def download(cls, songs: list[UsdbSong], progress: utils.ProgressProxy) -> None:
+    def download(
+        cls,
+        songs: list[UsdbSong],
+        progress: utils.ProgressProxy,
+        *,
+        force_redownload: bool = False,
+    ) -> None:
         progress.reset("Initializing downloads.", maximum=len(songs))
         options = download_options.download_options()
         started = []
@@ -75,7 +81,9 @@ class DownloadManager:
                         cls._jobs[song.song_id].logger.warning("Already downloading!")
                         continue
                     song.set_status(DownloadStatus.PENDING)
-                    cls._jobs[song.song_id] = job = _SongLoader(song, options)
+                    cls._jobs[song.song_id] = job = _SongLoader(
+                        song, options, force_redownload=force_redownload
+                    )
                     job.pause = cls._pause
                     cls._threadpool().start(job)
                     started.append(song.song_id)
@@ -301,6 +309,7 @@ class _Context:
     logger: Logger
     out: _TempResourceFiles = attrs.field(factory=_TempResourceFiles)
     results: dict[Job, JobStatus] = attrs.field(factory=dict)
+    force_redownload: bool = False
 
     def __attrs_post_init__(self) -> None:
         # reuse old resource files unless we acquire new ones later on
@@ -407,12 +416,19 @@ class _SongLoader(QtCore.QRunnable):
     abort = False
     pause = False
 
-    def __init__(self, song: UsdbSong, options: download_options.Options) -> None:
+    def __init__(
+        self,
+        song: UsdbSong,
+        options: download_options.Options,
+        *,
+        force_redownload: bool = False,
+    ) -> None:
         super().__init__()
         self.song = song
         self.song_id = song.song_id
         self.options = options
         self.logger = song_logger(self.song_id)
+        self.force_redownload = force_redownload
 
     def run(self) -> None:
         with db.managed_connection(utils.AppPaths.db):
@@ -457,6 +473,7 @@ class _SongLoader(QtCore.QRunnable):
         events.SongsChanged([self.song_id]).post()
         with tempfile.TemporaryDirectory() as tempdir:
             ctx = _Context.new(self.song, self.options, Path(tempdir), self.logger)
+            ctx.force_redownload = self.force_redownload
             for job in Job:
                 self._check_flags()
                 self.logger.debug(f"Running job: {job.name}")
@@ -510,14 +527,17 @@ def _maybe_download_audio(ctx: _Context) -> JobStatus:
     if primary_resource:
         if primary_resource not in fallback_resources:
             ctx.logger.info(f"Audio resource '{primary_resource}' is not commented.")
-        if primary_resource == ctx.out.audio.resource:
+        if not ctx.force_redownload and primary_resource == ctx.out.audio.resource:
             ctx.logger.info("Audio resource is unchanged, skipping download.")
             return JobStatus.SUCCESS_UNCHANGED
         if ctx.song.audio_path():
-            ctx.logger.info(
-                f"Audio resource has changed ('{ctx.out.audio.resource}' -> "
-                f"'{primary_resource}'), redownloading."
-            )
+            if primary_resource != ctx.out.audio.resource:
+                ctx.logger.info(
+                    f"Audio resource has changed ('{ctx.out.audio.resource}' -> "
+                    f"'{primary_resource}'), redownloading."
+                )
+            else:
+                ctx.logger.info("Force redownloading audio resource.")
 
         status = _try_download_audio_or_video(ctx, primary_resource, options)
         if status is JobStatus.SUCCESS:
@@ -573,14 +593,17 @@ def _maybe_download_video(ctx: _Context) -> JobStatus:  # noqa: C901
     if primary_resource:
         if primary_resource not in fallback_resources:
             ctx.logger.info(f"Video resource '{primary_resource}' is not commented.")
-        if primary_resource == ctx.out.video.resource:
+        if not ctx.force_redownload and primary_resource == ctx.out.video.resource:
             ctx.logger.info("Video resource is unchanged, skipping download.")
             return JobStatus.SUCCESS_UNCHANGED
         if ctx.song.video_path():
-            ctx.logger.info(
-                f"Video resource has changed ('{ctx.out.video.resource}' -> "
-                f"'{primary_resource}'), redownloading."
-            )
+            if primary_resource != ctx.out.video.resource:
+                ctx.logger.info(
+                    f"Video resource has changed ('{ctx.out.video.resource}' -> "
+                    f"'{primary_resource}'), redownloading."
+                )
+            else:
+                ctx.logger.info("Force redownloading video resource.")
 
         status = _try_download_audio_or_video(ctx, primary_resource, options)
         if status is JobStatus.SUCCESS:
@@ -758,7 +781,7 @@ def _maybe_download_cover(ctx: _Context) -> JobStatus:
 
     if primary_cover := ctx.primary_cover():
         url = primary_cover.source_url(ctx.logger)
-        if url == ctx.out.cover.resource:
+        if not ctx.force_redownload and url == ctx.out.cover.resource:
             if _cover_params_unchanged(ctx):
                 ctx.logger.info(
                     "Cover resource and processing parameters are unchanged, skipping "
@@ -769,6 +792,8 @@ def _maybe_download_cover(ctx: _Context) -> JobStatus:
                 "Cover resource and/or processing parameters have changed, "
                 "redownloading."
             )
+        elif ctx.force_redownload and url == ctx.out.cover.resource:
+            ctx.logger.info("Force redownloading cover resource.")
 
         status = _try_download_cover_or_background(
             ctx, url, ImageKind.COVER, process=True
@@ -813,7 +838,7 @@ def _maybe_download_background(ctx: _Context) -> JobStatus:
         ctx.logger.warning("No background resource found.")
         return JobStatus.SKIPPED_UNAVAILABLE
 
-    if url == ctx.out.background.resource:
+    if not ctx.force_redownload and url == ctx.out.background.resource:
         if _background_params_unchanged(ctx):
             ctx.logger.info(
                 "Background resource and processing parameters are unchanged, skipping "
@@ -823,6 +848,13 @@ def _maybe_download_background(ctx: _Context) -> JobStatus:
         ctx.logger.info(
             "Background resource and/or processing parameters have changed, "
             "redownloading."
+        )
+    elif ctx.force_redownload and url == ctx.out.background.resource:
+        ctx.logger.info("Force redownloading background resource.")
+    elif url != ctx.out.background.resource and ctx.song.background_path():
+        ctx.logger.info(
+            f"Background resource has changed ('{ctx.out.background.resource}' -> "
+            f"'{url}'), redownloading."
         )
 
     status = _try_download_cover_or_background(
