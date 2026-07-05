@@ -14,6 +14,7 @@ from typing import TYPE_CHECKING, Final, Generic, TypeVar, assert_never
 import filetype
 import requests
 import yt_dlp
+from fake_useragent import UserAgent
 from PIL import Image, ImageEnhance, ImageOps
 from PIL.Image import Resampling
 from yt_dlp.utils import UnsupportedError, YoutubeDLError, download_range_func
@@ -32,12 +33,14 @@ if TYPE_CHECKING:
     from usdb_syncer.usdb_scraper import SongDetails
 
 
-IMAGE_DOWNLOAD_HEADERS = {
-    "User-Agent": (
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
-        "(KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36"
-    )
-}
+_USER_AGENT_FALLBACK: Final = (
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+    "AppleWebKit/537.36 (KHTML, like Gecko) "
+    "Chrome/123.0.0.0 Safari/537.36"
+)
+_USER_AGENT_GENERATOR: Final = UserAgent(
+    platforms="desktop", fallback=_USER_AGENT_FALLBACK
+)
 
 # Constants for ffmpeg's freezedetect analysis
 START_TIME_SECONDS: Final[int] = 0
@@ -48,6 +51,20 @@ FREEZE_RATIO_THRESHOLD: Final[float] = 0.5
 FFMPEG_TIMEOUT_SECONDS: Final[int] = 60
 
 YtdlOptions = dict[str, str | bool | tuple | list | int | download_range_func]
+
+
+def get_image_headers() -> dict[str, str]:
+    """Get headers suitable for downloading images."""
+    return {
+        "User-Agent": _USER_AGENT_GENERATOR.random,
+        "Accept": "image/jpeg,image/png,image/webp,image/apng,image/*,*/*;q=0.8",
+        "Accept-Encoding": "gzip, deflate, br",
+        "Connection": "keep-alive",
+        "Sec-Fetch-Dest": "image",
+        "Sec-Fetch-Mode": "no-cors",
+        "Sec-Fetch-Site": "cross-site",
+        "Cache-Control": "max-age=0",
+    }
 
 
 @dataclass
@@ -414,7 +431,7 @@ def download_image(url: str, logger: Logger) -> ResourceDLResult[bytes]:
     logger.debug(f"Downloading image from url: {url}")
     try:
         reply = requests.get(
-            url, allow_redirects=True, headers=IMAGE_DOWNLOAD_HEADERS, timeout=60
+            url, allow_redirects=True, headers=get_image_headers(), timeout=60
         )
     except requests.exceptions.SSLError:
         logger.exception(
