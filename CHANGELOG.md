@@ -1,3 +1,13 @@
+<!-- 0.24.0 -->
+
+# Changes
+
+## Features
+
+- Added an action to force a redownload of resources, even if they are unchanged.
+
+## Fixes
+
 <!-- 0.23.0 -->
 
 # Changes
