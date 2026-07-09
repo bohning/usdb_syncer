@@ -41,7 +41,7 @@ class Icon(enum.Enum):
     EDGE = "edge.png", None
     EDITION = "edition.png", "edition-white.svg"
     ERROR = "error.png", "close-octagon-white.svg"
-    FAILURE = "cross.png", "cross-white.svg"
+    FAILURE = "cross.png", "close-white.svg"
     FAILURE_EXISTING = "tick-yellow.png", "check-circle-outline-white.svg"
     FAILURE_EXISTING_CHANGES = (
         "tick-yellow-exclamation.png",
