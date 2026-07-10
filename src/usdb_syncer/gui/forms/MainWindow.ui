@@ -284,6 +284,7 @@
     </widget>
     <addaction name="action_songs_download"/>
     <addaction name="action_songs_abort"/>
+    <addaction name="action_force_redownload"/>
     <addaction name="action_show_in_usdb"/>
     <addaction name="action_post_comment_in_usdb"/>
     <addaction name="menu_rate_song_on_usdb"/>
@@ -693,6 +694,14 @@
    </property>
    <property name="text">
     <string>&amp;Abort Download</string>
+   </property>
+  </action>
+  <action name="action_force_redownload">
+   <property name="text">
+    <string>Force &amp;Redownload</string>
+   </property>
+   <property name="toolTip">
+    <string>Redownload selected songs even if the current resources are unchanged</string>
    </property>
   </action>
   <action name="action_delete_saved_search">

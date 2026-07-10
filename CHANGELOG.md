@@ -1,3 +1,15 @@
+<!-- 0.24.0 -->
+
+# Changes
+
+## Features
+
+- Added an action to force a redownload of resources, even if they are unchanged.
+
+## Fixes
+
+- Disable ffmpeg-normalize's CLI progress bar which caused terminal windows to spawn in certain cases.
+
 <!-- 0.23.0 -->
 
 # Changes

@@ -36,11 +36,12 @@ class Icon(enum.Enum):
     DATABASE = "database.png", "database-white.svg"
     DELETE = "bin.png", "delete-white.svg"
     DIFF = "diff.png", "diff-white.svg"
-    DOWNLOAD = "status.png", "download-white.svg"
+    DOWNLOAD = "download.png", "download-white.svg"
+    DOWNLOAD_FORCE = "download-force.png", "download-force-white.svg"
     EDGE = "edge.png", None
     EDITION = "edition.png", "edition-white.svg"
     ERROR = "error.png", "close-octagon-white.svg"
-    FAILURE = "cross.png", "cross-white.svg"
+    FAILURE = "cross.png", "close-white.svg"
     FAILURE_EXISTING = "tick-yellow.png", "check-circle-outline-white.svg"
     FAILURE_EXISTING_CHANGES = (
         "tick-yellow-exclamation.png",

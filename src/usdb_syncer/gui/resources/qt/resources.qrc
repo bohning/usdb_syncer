@@ -29,6 +29,7 @@
         <file>chrome.png</file>
         <file>chromium.png</file>
         <file>close-octagon-white.svg</file>
+        <file>close-white.svg</file>
         <file>cog-white.svg</file>
         <file>cog.png</file>
         <file>comment-white.svg</file>
@@ -41,7 +42,6 @@
         <file>control-skip-180.png</file>
         <file>control-skip.png</file>
         <file>cover.png</file>
-        <file>cross-white.svg</file>
         <file>cross.png</file>
         <file>database-marker-white.svg</file>
         <file>database-white.svg</file>
@@ -51,7 +51,10 @@
         <file>diff.png</file>
         <file>document-export.png</file>
         <file>document-import.png</file>
+        <file>download-force-white.svg</file>
+        <file>download-force.png</file>
         <file>download-white.svg</file>
+        <file>download.png</file>
         <file>drawer.png</file>
         <file>dresser-white.svg</file>
         <file>edge.png</file>
@@ -128,7 +131,6 @@
         <file>skipped-unavailable-white.svg</file>
         <file>skipped-unavailable.png</file>
         <file>spectrum-absorption.png</file>
-        <file>status.png</file>
         <file>sync-white.svg</file>
         <file>tag-hash.png</file>
         <file>tag-white.svg</file>

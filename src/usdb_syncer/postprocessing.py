@@ -1,6 +1,5 @@
 """Functions for postprocessing audio/video files."""
 
-import sys
 from base64 import b64encode
 from os import devnull
 from pathlib import Path
@@ -58,7 +57,7 @@ def _create_normalizer(options: AudioOptions) -> FFmpegNormalize:
         dynamic=False,
         audio_codec=options.format.ffmpeg_encoder(),
         audio_bitrate=options.bitrate.ffmpeg_format(),
-        progress=(sys.stderr is not None),
+        progress=False,
         replaygain=(options.normalization == AudioNormalization.REPLAYGAIN),
     )
 

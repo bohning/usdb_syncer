@@ -158,16 +158,19 @@ class SongTable:
             case _:
                 return None
 
-    def download_selection(self) -> None:
-        self._download(self._selected_rows())
+    def download_selection(self, force_redownload: bool = False) -> None:
+        self._download(self._selected_rows(), force_redownload=force_redownload)
 
-    def _download(self, rows: Iterable[int]) -> None:
+    def _download(self, rows: Iterable[int], *, force_redownload: bool = False) -> None:
         external_deps_dialog.check_external_deps(
-            self.mw, lambda: run_with_progress(lambda p: self._download_inner(rows, p))
+            self.mw,
+            lambda: run_with_progress(
+                lambda p: self._download_inner(rows, p, force_redownload)
+            ),
         )
 
     def _download_inner(
-        self, rows: Iterable[int], progress: utils.ProgressProxy
+        self, rows: Iterable[int], progress: utils.ProgressProxy, force_redownload: bool
     ) -> None:
         ids = self._model.ids_for_rows(rows)
         progress.reset("Collecting selected songs.", maximum=len(ids))
@@ -181,7 +184,9 @@ class SongTable:
                 to_download.append(song)
             progress.increase()
         if to_download:
-            DownloadManager.download(to_download, progress)
+            DownloadManager.download(
+                to_download, progress, force_redownload=force_redownload
+            )
 
     def abort_selected_downloads(self) -> None:
         ids = self._model.ids_for_rows(self._selected_rows())
