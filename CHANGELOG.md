@@ -8,6 +8,8 @@
 
 ## Fixes
 
+- Disable ffmpeg-normalize's CLI progress bar which caused terminal windows to spawn in certain cases.
+
 <!-- 0.23.0 -->
 
 # Changes
