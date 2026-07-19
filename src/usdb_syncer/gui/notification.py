@@ -274,10 +274,10 @@ def error(message: str, delay_ms: int = _DEFAULT_DELAY_MS) -> None:
 
 
 def report_load_song_result(result: LoadSongsResult) -> None:
-    if (n_songs := len(result.new_songs)) > 1:
-        success(f"Fetched {n_songs} updated songs from USDB.")
-    elif n_songs == 1:
-        success("Fetched 1 updated song from USDB.")
+    if n_songs := len(result.new_songs):
+        success(
+            f"Fetched {n_songs} updated song{'s' if n_songs != 1 else ''} from USDB."
+        )
     elif result.no_usdb_login:
         warning("Skipped fetching new songs as there is no login.")
     elif result.no_connection:

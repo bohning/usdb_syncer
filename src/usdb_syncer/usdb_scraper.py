@@ -401,7 +401,10 @@ def get_updated_songs_from_usdb(
             or batch[0].usdb_mtime < last_update.usdb_mtime
         ):
             break
-    logger.info(f"Fetched {len(available_songs)} updated song(s) from USDB.")
+    n_songs = len(available_songs)
+    logger.info(
+        f"Fetched {n_songs} updated song{'s' if n_songs != 1 else ''} from USDB."
+    )
     return list(available_songs.values())
 
 
@@ -415,7 +418,8 @@ def get_all_songs_from_usdb(
     for batch in _get_songs_from_usdb("id", False, session=session):
         available_songs.extend(batch)
         progress.increase(len(batch))
-    logger.info(f"Fetched {len(available_songs)} songs from USDB.")
+    n_songs = len(available_songs)
+    logger.info(f"Fetched {n_songs} song{'s' if n_songs != 1 else ''} from USDB.")
     return available_songs
 
 
