@@ -343,7 +343,8 @@ class SettingsDialog(Ui_Dialog, QDialog):
         )
         self.checkBox_audio_embed_artwork.setChecked(settings.get_audio_embed_artwork())
         self.groupBox_stem_separation.setChecked(settings.get_audio_separation())
-        self._connect_stem_separation([self._separation_manager_command])
+        if self._separation_manager_command:
+            self._connect_stem_separation([self._separation_manager_command])
         self.comboBox_separation_model.setCurrentIndex(
             self.comboBox_separation_model.findData(
                 settings.get_audio_separation_model()
