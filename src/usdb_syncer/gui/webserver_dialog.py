@@ -2,7 +2,7 @@
 
 from PySide6 import QtGui, QtWidgets
 
-from usdb_syncer import errors
+from usdb_syncer import errors, settings
 from usdb_syncer.gui import gui_utils, notification
 from usdb_syncer.gui.forms.WebserverDialog import Ui_Dialog
 from usdb_syncer.webserver import webserver
@@ -17,6 +17,7 @@ class WebserverDialog(Ui_Dialog, QtWidgets.QDialog):
         self.setupUi(self)
         self._update_ui()
         self.edit_title.setPlaceholderText(webserver.DEFAULT_TITLE)
+        self._load_settings()
         self.button_start.clicked.connect(self._start)
         self.button_stop.clicked.connect(self._stop)
 
@@ -40,6 +41,7 @@ class WebserverDialog(Ui_Dialog, QtWidgets.QDialog):
         self.label_qrcode.setPixmap(pixmap)
 
     def _start(self) -> None:
+        self._save_settings()
         try:
             webserver.start(
                 title=self.edit_title.text(),
@@ -56,3 +58,15 @@ class WebserverDialog(Ui_Dialog, QtWidgets.QDialog):
         webserver.stop()
         notification.success("Webserver stopped.")
         self._update_ui()
+
+    def _load_settings(self) -> None:
+        self.edit_title.setText(settings.get_webserver_title())
+        self.box_port.setValue(settings.get_webserver_port())
+        self.checkBox_only_local_songs.setChecked(settings.get_webserver_local_songs_only())
+        self.checkBox_allow_downloads.setChecked(settings.get_webserver_allow_downloads())
+
+    def _save_settings(self) -> None:
+        settings.set_webserver_title(self.edit_title.text())
+        settings.set_webserver_port(self.box_port.value())
+        settings.set_webserver_local_songs_only(self.checkBox_only_local_songs.isChecked())
+        settings.set_webserver_allow_downloads(self.checkBox_allow_downloads.isChecked())

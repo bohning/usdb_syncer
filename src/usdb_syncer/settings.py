@@ -222,6 +222,10 @@ class SettingKey(Enum):
     CUSTOM_META_DATA_COLUMNS = "custom_meta_data/columns"
     SAVED_SEARCHES = "saved_searches"
     DEFAULT_SAVED_SEARCH = "default_saved_search"
+    WEBSERVER_TITLE = "webserver/title"
+    WEBSERVER_PORT = "webserver/port"
+    WEBSERVER_LOCAL_SONGS_ONLY = "webserver/local_songs_only"
+    WEBSERVER_ALLOW_DOWNLOADS = "webserver/allow_downloads"
 
 
 class Encoding(Enum):
@@ -1336,3 +1340,35 @@ def get_default_saved_search() -> str:
 
 def set_default_saved_search(name: str, temp: bool = False) -> None:
     _Settings.set(SettingKey.DEFAULT_SAVED_SEARCH, name, temp)
+
+
+def get_webserver_title() -> str:
+    return _Settings.get(SettingKey.WEBSERVER_TITLE, "")
+
+
+def set_webserver_title(title: str, temp: bool = False) -> None:
+    _Settings.set(SettingKey.WEBSERVER_TITLE, title, temp)
+
+
+def get_webserver_port() -> int:
+    return _Settings.get(SettingKey.WEBSERVER_PORT, 0)
+
+
+def set_webserver_port(port: int, temp: bool = False) -> None:
+    _Settings.set(SettingKey.WEBSERVER_PORT, port, temp)
+
+
+def get_webserver_local_songs_only() -> bool:
+    return _Settings.get(SettingKey.WEBSERVER_LOCAL_SONGS_ONLY, True)
+
+
+def set_webserver_local_songs_only(yes: bool, temp: bool = False) -> None:
+    _Settings.set(SettingKey.WEBSERVER_LOCAL_SONGS_ONLY, yes, temp)
+
+
+def get_webserver_allow_downloads() -> bool:
+    return _Settings.get(SettingKey.WEBSERVER_ALLOW_DOWNLOADS, False)
+
+
+def set_webserver_allow_downloads(yes: bool, temp: bool = False) -> None:
+    _Settings.set(SettingKey.WEBSERVER_ALLOW_DOWNLOADS, yes, temp)
