@@ -41,17 +41,12 @@ class WebserverDialog(Ui_Dialog, QtWidgets.QDialog):
         self.label_qrcode.setPixmap(pixmap)
 
     def _start(self) -> None:
-        self._save_settings()
-        try:
-            webserver.start(
-                title=self.edit_title.text(),
-                port=self.box_port.value(),
-                show_nonlocal_songs=not self.checkBox_only_local_songs.isChecked(),
-                allow_downloading=self.checkBox_allow_downloads.isChecked(),
-            )
-            notification.success("Webserver started successfully.")
-        except errors.WebserverError as e:
-            QtWidgets.QMessageBox.warning(None, "Failed to start webserver", str(e))
+        try_to_start_webserver(
+            title=self.edit_title.text(),
+            port=self.box_port.value(),
+            show_nonlocal_songs=not self.checkBox_only_local_songs.isChecked(),
+            allow_downloading=self.checkBox_allow_downloads.isChecked(),
+        )
         self._update_ui()
 
     def _stop(self) -> None:
@@ -62,11 +57,47 @@ class WebserverDialog(Ui_Dialog, QtWidgets.QDialog):
     def _load_settings(self) -> None:
         self.edit_title.setText(settings.get_webserver_title())
         self.box_port.setValue(settings.get_webserver_port())
-        self.checkBox_only_local_songs.setChecked(settings.get_webserver_local_songs_only())
-        self.checkBox_allow_downloads.setChecked(settings.get_webserver_allow_downloads())
+        self.checkBox_only_local_songs.setChecked(
+            not settings.get_webserver_show_nonlocal_songs()
+        )
+        self.checkBox_allow_downloads.setChecked(
+            settings.get_webserver_allow_downloading()
+        )
+        self.checkBox_auto_start.setChecked(settings.get_webserver_auto_start())
 
     def _save_settings(self) -> None:
         settings.set_webserver_title(self.edit_title.text())
         settings.set_webserver_port(self.box_port.value())
-        settings.set_webserver_local_songs_only(self.checkBox_only_local_songs.isChecked())
-        settings.set_webserver_allow_downloads(self.checkBox_allow_downloads.isChecked())
+        settings.set_webserver_show_nonlocal_songs(
+            not self.checkBox_only_local_songs.isChecked()
+        )
+        settings.set_webserver_allow_downloading(
+            self.checkBox_allow_downloads.isChecked()
+        )
+        settings.set_webserver_auto_start(self.checkBox_auto_start.isChecked())
+
+    def accept(self) -> None:
+        self._save_settings()
+        super().accept()
+
+    def reject(self) -> None:
+        self._save_settings()
+        super().reject()
+
+
+def try_to_start_webserver(
+    port: int | None = None,
+    title: str | None = None,
+    show_nonlocal_songs: bool = False,
+    allow_downloading: bool = False,
+) -> None:
+    try:
+        webserver.start(
+            port=port,
+            title=title,
+            show_nonlocal_songs=show_nonlocal_songs,
+            allow_downloading=allow_downloading,
+        )
+        notification.success("Webserver started successfully.")
+    except errors.WebserverError as e:
+        QtWidgets.QMessageBox.warning(None, "Failed to start webserver", str(e))
