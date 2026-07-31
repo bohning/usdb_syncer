@@ -1,3 +1,11 @@
+<!-- 0.25.0 -->
+
+# Changes
+
+## Features
+
+- Webserver settings are now saved and the webserver may be automatically started on app launch.
+
 <!-- 0.24.0 -->
 
 # Changes

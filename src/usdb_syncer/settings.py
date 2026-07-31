@@ -222,6 +222,11 @@ class SettingKey(Enum):
     CUSTOM_META_DATA_COLUMNS = "custom_meta_data/columns"
     SAVED_SEARCHES = "saved_searches"
     DEFAULT_SAVED_SEARCH = "default_saved_search"
+    WEBSERVER_TITLE = "webserver/title"
+    WEBSERVER_PORT = "webserver/port"
+    WEBSERVER_SHOW_NONLOCAL_SONGS = "webserver/show_nonlocal_songs"
+    WEBSERVER_ALLOW_DOWNLOADING = "webserver/allow_downloading"
+    WEBSERVER_AUTO_START = "webserver/auto_start"
 
 
 class Encoding(Enum):
@@ -1336,3 +1341,43 @@ def get_default_saved_search() -> str:
 
 def set_default_saved_search(name: str, temp: bool = False) -> None:
     _Settings.set(SettingKey.DEFAULT_SAVED_SEARCH, name, temp)
+
+
+def get_webserver_title() -> str:
+    return _Settings.get(SettingKey.WEBSERVER_TITLE, "")
+
+
+def set_webserver_title(title: str, temp: bool = False) -> None:
+    _Settings.set(SettingKey.WEBSERVER_TITLE, title, temp)
+
+
+def get_webserver_port() -> int:
+    return _Settings.get(SettingKey.WEBSERVER_PORT, 0)
+
+
+def set_webserver_port(port: int, temp: bool = False) -> None:
+    _Settings.set(SettingKey.WEBSERVER_PORT, port, temp)
+
+
+def get_webserver_show_nonlocal_songs() -> bool:
+    return _Settings.get(SettingKey.WEBSERVER_SHOW_NONLOCAL_SONGS, True)
+
+
+def set_webserver_show_nonlocal_songs(yes: bool, temp: bool = False) -> None:
+    _Settings.set(SettingKey.WEBSERVER_SHOW_NONLOCAL_SONGS, yes, temp)
+
+
+def get_webserver_allow_downloading() -> bool:
+    return _Settings.get(SettingKey.WEBSERVER_ALLOW_DOWNLOADING, False)
+
+
+def set_webserver_allow_downloading(yes: bool, temp: bool = False) -> None:
+    _Settings.set(SettingKey.WEBSERVER_ALLOW_DOWNLOADING, yes, temp)
+
+
+def get_webserver_auto_start() -> bool:
+    return _Settings.get(SettingKey.WEBSERVER_AUTO_START, False)
+
+
+def set_webserver_auto_start(yes: bool, temp: bool = False) -> None:
+    _Settings.set(SettingKey.WEBSERVER_AUTO_START, yes, temp)
