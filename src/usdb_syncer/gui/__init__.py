@@ -89,6 +89,7 @@ class CliArgs:
     port: int | None = None
     title: str | None = None
     show_nonlocal: bool = False
+    allow_downloading: bool = False
 
     @classmethod
     def parse(cls) -> CliArgs:
@@ -159,6 +160,11 @@ class CliArgs:
             action="store_true",
             help="Show songs that are not in the local collection.",
         )
+        serve.add_argument(
+            "--allow-downloading",
+            action="store_true",
+            help="Let visitors initiate song downloads on the server.",
+        )
 
         return parser.parse_args(namespace=cls())
 
@@ -203,6 +209,7 @@ def main() -> None:
                 port=args.port,
                 title=args.title,
                 show_nonlocal_songs=args.show_nonlocal,
+                allow_downloading=args.allow_downloading,
             )
         case _:
             if args.profile:
@@ -267,9 +274,14 @@ def _run_webserver(
     port: int | None = None,
     title: str | None = None,
     show_nonlocal_songs: bool = False,
+    allow_downloading: bool = False,
 ) -> None:
     webserver.start(
-        host=host, port=port, title=title, show_nonlocal_songs=show_nonlocal_songs
+        host=host,
+        port=port,
+        title=title,
+        show_nonlocal_songs=show_nonlocal_songs,
+        allow_downloading=allow_downloading,
     )
     logger.logger.info("Webserver is running in headless mode. Press Ctrl+C to stop.")
     try:
