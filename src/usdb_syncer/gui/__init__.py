@@ -163,7 +163,7 @@ class CliArgs:
         serve.add_argument(
             "--allow-downloading",
             action="store_true",
-            help="Let visitors initiate song donloads on the server.",
+            help="Let visitors initiate song downloads on the server.",
         )
 
         return parser.parse_args(namespace=cls())
