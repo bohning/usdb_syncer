@@ -196,6 +196,10 @@ def _create_app(
             show_nonlocal_songs, allow_downloading, like_counter, session_id
         )
 
+    @app.route("/api/songs")
+    def api_songs() -> list[UsdbSong]:
+        return _get_songs(flask.request, show_nonlocal_songs, like_counter)
+
     @app.route("/api/songs/<int:selected_id>/audio")
     def api_audio(selected_id: int) -> flask.Response:
         return _api_audio(selected_id)
