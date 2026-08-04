@@ -1,0 +1,9 @@
+{% if song_id in liked_songs %}
+<button hx-swap="outerHTML" hx-delete="/fragments/songs/{{ song_id }}/like">
+  ❤ {{ like_counter[song_id] }}
+</button>
+{% else %}
+<button hx-swap="outerHTML" hx-put="/fragments/songs/{{ song_id }}/like">
+  🤍 {{ like_counter[song_id] }}
+</button>
+{% endif %}

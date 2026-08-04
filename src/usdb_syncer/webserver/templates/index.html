@@ -89,7 +89,7 @@
             }
           }
 
-          const audio = new Audio("/api/mp3?song_id=" + songId);
+          const audio = new Audio("/api/songs/" + songId + "/audio");
           audio.addEventListener("loadedmetadata", function () {
             if (previewOffset > 0) {
               audio.currentTime = previewOffset;
@@ -116,7 +116,7 @@
           const button = event.target;
           const songId = button.getAttribute("song_id");
 
-          fetch("/api/download?song_id=" + songId)
+          fetch("/api/songs/" + songId + "/download", { method: "POST" })
             .then((response) => {
               if (response.ok) {
                 button.setAttribute("title", "Downloading");
