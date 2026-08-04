@@ -152,7 +152,7 @@ def _get_liked_songs(session_id: str) -> set[SongId]:
 
 def _fragments_like(
     session_id: str, like_counter: Counter[SongId], selected_id: int, like: bool
-):
+) -> flask.Response:
     song_id = SongId(selected_id)
     liked_songs = _get_liked_songs(session_id)
     if like and song_id not in liked_songs:
