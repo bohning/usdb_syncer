@@ -134,13 +134,13 @@ def _api_audio(song_id: int) -> flask.Response:
     return flask.send_file(audio_path, mimetype="audio/mp3")
 
 
-def _api_download(song_id: int, start: bool) -> dict[str, str]:
+def _download(song_id: int, start: bool) -> UsdbSong:
     song = UsdbSong.get(SongId(song_id))
     if not song:
         return flask.abort(404, "Song not found")
     if start and song.status.can_be_downloaded():
         DownloadManager.download([song], utils.ProgressProxy(""))
-    return {"status": str(song.status)}
+    return song
 
 
 def _get_liked_songs(session_id: str) -> set[SongId]:
@@ -208,13 +208,35 @@ def _create_app(  # noqa: C901
     def api_get_download(selected_id: int) -> dict[str, str]:
         if not allow_downloading:
             return flask.abort(403, "Downloading is not allowed")
-        return _api_download(selected_id, start=False)
+        return {"status": str(_download(selected_id, start=False).status)}
 
     @app.post("/api/songs/<int:selected_id>/download")
     def api_post_download(selected_id: int) -> dict[str, str]:
         if not allow_downloading:
             return flask.abort(403, "Downloading is not allowed")
-        return _api_download(selected_id, start=True)
+        return {"status": str(_download(selected_id, start=True).status)}
+
+    @app.route("/fragments/songs/<int:selected_id>/download")
+    def fragments_get_download(selected_id: int) -> str:
+        if not allow_downloading:
+            return flask.abort(403, "Downloading is not allowed")
+        song = _download(selected_id, start=False)
+        return flask.render_template(
+            "play_or_download_button.html",
+            allow_downloading=allow_downloading,
+            song=song,
+        )
+
+    @app.post("/fragments/songs/<int:selected_id>/download")
+    def fragments_post_download(selected_id: int) -> str:
+        if not allow_downloading:
+            return flask.abort(403, "Downloading is not allowed")
+        song = _download(selected_id, start=True)
+        return flask.render_template(
+            "play_or_download_button.html",
+            allow_downloading=allow_downloading,
+            song=song,
+        )
 
     @app.put("/fragments/songs/<int:selected_id>/like")
     def fragments_like(selected_id: int) -> flask.Response:

@@ -1,0 +1,31 @@
+{% if song.sync_meta %}
+    <button
+    class="play-button text-lg md:text-2xl"
+    song_id="{{ song.song_id }}"
+    preview_offset="{{ song.sync_meta.meta_tags.preview if song.sync_meta and song.sync_meta.meta_tags and song.sync_meta.meta_tags.preview else 0 }}"
+    title="Play"
+    >
+    ▶
+    </button>
+{% elif allow_downloading %}
+    {% if song.status|string in ['Pending', 'Downloading'] %}
+        <span
+        class="text-lg md:text-2xl animate-pulse"
+        title="Downloading"
+        hx-swap="outerHTML"
+        hx-get="/fragments/songs/{{ song.song_id }}/download"
+        hx-trigger="every 3s"
+        >
+            ⤓
+        </span>
+    {% else %}
+        <button
+        class="text-lg md:text-2xl"
+        title="Request download"
+        hx-swap="outerHTML"
+        hx-post="/fragments/songs/{{ song.song_id }}/download"
+        >
+            ⤓
+        </button>
+    {% endif %}
+{% endif %}
