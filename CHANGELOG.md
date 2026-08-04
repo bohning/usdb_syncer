@@ -4,7 +4,7 @@
 
 ## Features
 
-- Webserver settings are now saved and the webserver may be automatically started on app launch.
+- Webserver settings are now saved and the webserver may be automatically started on app launch. It also got an improved API that makes it easy for external apps to interact with the Syncer (like [this mod for Melody Mania](https://steamcommunity.com/sharedfiles/filedetails/?id=3181930801)).
 
 <!-- 0.24.0 -->
 

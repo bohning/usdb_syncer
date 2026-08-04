@@ -100,7 +100,7 @@ def _index(
     )
 
 
-def _api_songs(
+def _fragments_songs(
     show_nonlocal_songs: bool,
     allow_downloading: bool,
     like_counter: Counter[SongId],
@@ -124,10 +124,7 @@ def _api_songs(
     )
 
 
-def _api_mp3() -> flask.Response:
-    song_id = flask.request.args.get("song_id", type=int)
-    if not song_id:
-        return flask.abort(400, "song_id parameter is required")
+def _api_audio(song_id: int) -> flask.Response:
     song = UsdbSong.get(SongId(song_id))
     if not song:
         return flask.abort(404, "Song not found")
@@ -137,16 +134,13 @@ def _api_mp3() -> flask.Response:
     return flask.send_file(audio_path, mimetype="audio/mp3")
 
 
-def _api_download() -> flask.Response:
-    song_id = flask.request.args.get("song_id", type=int)
-    if not song_id:
-        return flask.abort(400, "song_id parameter is required")
+def _download(song_id: int, start: bool) -> UsdbSong:
     song = UsdbSong.get(SongId(song_id))
     if not song:
         return flask.abort(404, "Song not found")
-    if song.status.can_be_downloaded():
+    if start and song.status.can_be_downloaded():
         DownloadManager.download([song], utils.ProgressProxy(""))
-    return flask.make_response("", 200)
+    return song
 
 
 def _get_liked_songs(session_id: str) -> set[SongId]:
@@ -156,7 +150,34 @@ def _get_liked_songs(session_id: str) -> set[SongId]:
     return set(map(SongId.parse, cookie[len(session_id) + 1 :].split(",")))
 
 
-def _create_app(
+def _fragments_like(
+    session_id: str, like_counter: Counter[SongId], selected_id: int, like: bool
+) -> flask.Response:
+    song_id = SongId(selected_id)
+    liked_songs = _get_liked_songs(session_id)
+    if like and song_id not in liked_songs:
+        liked_songs.add(song_id)
+        like_counter[song_id] += 1
+    elif not like and song_id in liked_songs:
+        liked_songs.remove(song_id)
+        like_counter[song_id] -= 1
+    resp = flask.make_response(
+        flask.render_template(
+            "like_button.html",
+            song_id=song_id,
+            like_counter=like_counter,
+            liked_songs=liked_songs,
+        )
+    )
+    resp.set_cookie(
+        "liked_songs",
+        f"{session_id}:{','.join(map(str, liked_songs))}",
+        max_age=_COOKIE_MAX_AGE,
+    )
+    return resp
+
+
+def _create_app(  # noqa: C901
     title: str, *, show_nonlocal_songs: bool, allow_downloading: bool
 ) -> flask.Flask:
     app = flask.Flask(__name__)
@@ -169,41 +190,61 @@ def _create_app(
             title, show_nonlocal_songs, allow_downloading, like_counter, session_id
         )
 
-    @app.route("/api/songs")
-    def api_songs() -> str:
-        return _api_songs(
+    @app.route("/fragments/songs")
+    def fragments_songs() -> str:
+        return _fragments_songs(
             show_nonlocal_songs, allow_downloading, like_counter, session_id
         )
 
-    @app.route("/api/mp3")
-    def api_mp3() -> flask.Response:
-        return _api_mp3()
+    @app.route("/api/songs")
+    def api_songs() -> list[UsdbSong]:
+        return _get_songs(flask.request, show_nonlocal_songs, like_counter)
 
-    @app.route("/api/download")
-    def api_download() -> flask.Response:
+    @app.route("/api/songs/<int:selected_id>/audio")
+    def api_audio(selected_id: int) -> flask.Response:
+        return _api_audio(selected_id)
+
+    @app.route("/api/songs/<int:selected_id>/download")
+    def api_get_download(selected_id: int) -> dict[str, str]:
         if not allow_downloading:
             return flask.abort(403, "Downloading is not allowed")
-        return _api_download()
+        return {"status": str(_download(selected_id, start=False).status)}
 
-    @app.post("/api/like/<int:selected_id>")
-    def like(selected_id: int) -> flask.Response:
-        song_id = SongId(selected_id)
-        liked_songs = _get_liked_songs(session_id)
-        if song_id in liked_songs:
-            liked_songs.remove(song_id)
-            like_counter[song_id] -= 1
-            icon = "🤍"
-        else:
-            liked_songs.add(song_id)
-            like_counter[song_id] += 1
-            icon = "❤"
-        resp = flask.make_response(f"{icon} {like_counter[song_id]}")
-        resp.set_cookie(
-            "liked_songs",
-            f"{session_id}:{','.join(map(str, liked_songs))}",
-            max_age=_COOKIE_MAX_AGE,
+    @app.post("/api/songs/<int:selected_id>/download")
+    def api_post_download(selected_id: int) -> dict[str, str]:
+        if not allow_downloading:
+            return flask.abort(403, "Downloading is not allowed")
+        return {"status": str(_download(selected_id, start=True).status)}
+
+    @app.route("/fragments/songs/<int:selected_id>/download")
+    def fragments_get_download(selected_id: int) -> str:
+        if not allow_downloading:
+            return flask.abort(403, "Downloading is not allowed")
+        song = _download(selected_id, start=False)
+        return flask.render_template(
+            "play_or_download_button.html",
+            allow_downloading=allow_downloading,
+            song=song,
         )
-        return resp
+
+    @app.post("/fragments/songs/<int:selected_id>/download")
+    def fragments_post_download(selected_id: int) -> str:
+        if not allow_downloading:
+            return flask.abort(403, "Downloading is not allowed")
+        song = _download(selected_id, start=True)
+        return flask.render_template(
+            "play_or_download_button.html",
+            allow_downloading=allow_downloading,
+            song=song,
+        )
+
+    @app.put("/fragments/songs/<int:selected_id>/like")
+    def fragments_like(selected_id: int) -> flask.Response:
+        return _fragments_like(session_id, like_counter, selected_id, like=True)
+
+    @app.delete("/fragments/songs/<int:selected_id>/like")
+    def fragments_unlike(selected_id: int) -> flask.Response:
+        return _fragments_like(session_id, like_counter, selected_id, like=False)
 
     @app.before_request
     def before_request() -> None:
