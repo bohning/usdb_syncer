@@ -134,13 +134,13 @@ def _api_audio(song_id: int) -> flask.Response:
     return flask.send_file(audio_path, mimetype="audio/mp3")
 
 
-def _api_download(song_id: int) -> flask.Response:
+def _api_download(song_id: int, start: bool) -> dict[str, str]:
     song = UsdbSong.get(SongId(song_id))
     if not song:
         return flask.abort(404, "Song not found")
-    if song.status.can_be_downloaded():
+    if start and song.status.can_be_downloaded():
         DownloadManager.download([song], utils.ProgressProxy(""))
-    return flask.make_response("", 200)
+    return {"status": str(song.status)}
 
 
 def _get_liked_songs(session_id: str) -> set[SongId]:
@@ -177,7 +177,7 @@ def _fragments_like(
     return resp
 
 
-def _create_app(
+def _create_app(  # noqa: C901
     title: str, *, show_nonlocal_songs: bool, allow_downloading: bool
 ) -> flask.Flask:
     app = flask.Flask(__name__)
@@ -204,11 +204,17 @@ def _create_app(
     def api_audio(selected_id: int) -> flask.Response:
         return _api_audio(selected_id)
 
-    @app.post("/api/songs/<int:selected_id>/download")
-    def api_download(selected_id: int) -> flask.Response:
+    @app.route("/api/songs/<int:selected_id>/download")
+    def api_get_download(selected_id: int) -> dict[str, str]:
         if not allow_downloading:
             return flask.abort(403, "Downloading is not allowed")
-        return _api_download(selected_id)
+        return _api_download(selected_id, start=False)
+
+    @app.post("/api/songs/<int:selected_id>/download")
+    def api_post_download(selected_id: int) -> dict[str, str]:
+        if not allow_downloading:
+            return flask.abort(403, "Downloading is not allowed")
+        return _api_download(selected_id, start=True)
 
     @app.put("/fragments/songs/<int:selected_id>/like")
     def fragments_like(selected_id: int) -> flask.Response:
