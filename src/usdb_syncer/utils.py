@@ -380,6 +380,7 @@ def get_media_duration(path: Path) -> float:
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT,
         check=True,
+        env=subprocessing.get_env_clean(),
     )
     return float(result.stdout)
 
@@ -401,7 +402,11 @@ def get_ffmpeg_version() -> str | None:
         return None
 
     result = subprocess.run(
-        ["ffmpeg", "-version"], capture_output=True, text=True, check=False
+        ["ffmpeg", "-version"],
+        capture_output=True,
+        text=True,
+        check=False,
+        env=subprocessing.get_env_clean(),
     )
 
     output = result.stdout or result.stderr
