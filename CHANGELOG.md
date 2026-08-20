@@ -5,6 +5,7 @@
 ## Fixes
 
 - Fix issues with ffmpeg in the Linux bundle if querying the version or using the previewer.
+- Updated yt-dlp to latest available version 2026.08.19, solving latest download issues.
 
 ## Features
 
