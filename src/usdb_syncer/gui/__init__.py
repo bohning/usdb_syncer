@@ -33,14 +33,7 @@ from usdb_syncer import (
 )
 from usdb_syncer import sync_meta as sync_meta
 from usdb_syncer import usdb_song as usdb_song
-from usdb_syncer.gui import (
-    events,
-    hooks,
-    notification,
-    progress,
-    theme,
-    webserver_dialog,
-)
+from usdb_syncer.gui import events, hooks, notification, progress, theme
 from usdb_syncer.gui.fonts import get_version_font
 from usdb_syncer.webserver import webserver
 
@@ -254,6 +247,8 @@ def _run_main() -> None:
     _maybe_copy_licenses()
     hooks.MainWindowDidLoad.call(mw)
     if settings.get_webserver_auto_start():
+        from usdb_syncer.gui import webserver_dialog
+
         webserver_dialog.try_to_start_webserver(
             port=settings.get_webserver_port(),
             title=settings.get_webserver_title(),
