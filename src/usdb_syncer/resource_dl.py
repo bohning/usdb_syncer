@@ -349,6 +349,7 @@ def _handle_youtube_error(
             YtErrorMsg.YT_GEO_RESTRICTED_1,
             YtErrorMsg.YT_GEO_RESTRICTED_2,
             YtErrorMsg.YT_GEO_RESTRICTED_3,
+            YtErrorMsg.YT_GEO_RESTRICTED_4,
         )
     ):
         _handle_geo_restriction(url, resource, logger)

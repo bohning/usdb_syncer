@@ -125,6 +125,7 @@ class YtErrorMsg:
     )
     YT_GEO_RESTRICTED_2 = "Video unavailable. This video contains content from"
     YT_GEO_RESTRICTED_3 = "Video unavailable. This video is not available"
+    YT_GEO_RESTRICTED_4 = "Video unavailable. It was blocked due to the claimed content"
     YT_UNAVAILABLE = "Video unavailable"
     YT_PARSE_ERROR = "Failed to parse XML"
     YT_FORBIDDEN = "HTTP Error 403: Forbidden"
