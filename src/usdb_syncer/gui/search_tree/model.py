@@ -121,7 +121,9 @@ class TreeModel(QAbstractItemModel):
 
     def parent(self, child: QIndex | None = None) -> QModelIndex | QObject:
         if child is None:
-            return super().parent()
+            parent = super().parent()
+            assert parent is not None
+            return parent
         if not child.isValid():
             return QModelIndex()
         child_item = cast("TreeItem", child.internalPointer())
