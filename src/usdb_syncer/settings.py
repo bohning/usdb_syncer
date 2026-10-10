@@ -119,6 +119,11 @@ class _Settings:
             if isinstance(value, bool):
                 # Qt stores bools as "true" and "false" otherwise
                 value = int(value)
+            elif isinstance(value, Path):
+                value = str(value)
+            elif isinstance(value, Enum):
+                value = value.value
+
             QSettings().setValue(key.value, value)
 
     @classmethod
@@ -129,9 +134,22 @@ class _Settings:
 
             try:
                 value = QSettings().value(key.value)
-            except (AttributeError, ValueError):
-                # setting contains a type incompatible with this version
+            except (AttributeError, ValueError, RuntimeError):
+                # setting contains a type incompatible with this Qt version / deserialization blocked
                 return default
+
+            if value is None:
+                return default
+
+            if isinstance(default, Path):
+                return cast("T", Path(value))
+
+            if isinstance(default, Enum):
+                try:
+                    return cast("T", type(default)(value))
+                except (ValueError, KeyError):
+                    return default
+
             if isinstance(value, ret_type := type(default)):
                 return value
             if isinstance(default, bool) and isinstance(value, int):
