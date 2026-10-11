@@ -91,7 +91,7 @@ class _TemporarySettings:
 T = TypeVar("T")
 
 
-def _coerce_value[T](value: Any, default: T) -> T:
+def _coerce_value(value: Any, default: T) -> T:  # noqa: UP047
     """Coerce a QSettings value to the expected default type."""
     if value is None:
         return default
