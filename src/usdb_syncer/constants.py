@@ -117,9 +117,7 @@ class Usdb:
 class YtErrorMsg:
     """Strings returned by yt-dlp when download fails."""
 
-    YT_AGE_RESTRICTED = (
-        "Sign in to confirm your age. This video may be inappropriate for some users."
-    )
+    YT_AGE_RESTRICTED = "Sign in to confirm your age."
     YT_GEO_RESTRICTED_1 = (
         "The uploader has not made this video available in your country"
     )
