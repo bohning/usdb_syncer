@@ -91,6 +91,38 @@ class _TemporarySettings:
 T = TypeVar("T")
 
 
+def _coerce_value(value: Any, default: T) -> T:
+    """Coerce a QSettings value to the expected default type."""
+    if value is None:
+        return default
+
+    if isinstance(default, Path):
+        return cast("T", Path(value))
+
+    if isinstance(default, Enum):
+        try:
+            return cast("T", type(default)(value))
+        except (ValueError, KeyError):
+            return default
+
+    ret_type = type(default)
+    if isinstance(value, ret_type):
+        return value
+
+    if isinstance(default, bool) and isinstance(value, int):
+        return cast("T", bool(value))
+
+    if isinstance(value, str) and ret_type in (int, float, bool):
+        try:
+            if ret_type is bool:
+                value = int(value)
+            return cast("T", ret_type(value))  # type: ignore[call-arg]
+        except (ValueError, TypeError):
+            pass
+
+    return default
+
+
 class _Settings:
     """Settings for the USDB Syncer.
 
@@ -135,36 +167,11 @@ class _Settings:
             try:
                 value = QSettings().value(key.value)
             except (AttributeError, ValueError, RuntimeError):
-                # setting contains a type incompatible with this Qt version / deserialization blocked
+                # setting contains a type incompatible with this version
+                # or deserialization was blocked by PySide6
                 return default
 
-            if value is None:
-                return default
-
-            if isinstance(default, Path):
-                return cast("T", Path(value))
-
-            if isinstance(default, Enum):
-                try:
-                    return cast("T", type(default)(value))
-                except (ValueError, KeyError):
-                    return default
-
-            if isinstance(value, ret_type := type(default)):
-                return value
-            if isinstance(default, bool) and isinstance(value, int):
-                # we store bools as ints because Qt doesn't store raw bools
-                return cast("T", bool(value))
-            if isinstance(value, str) and ret_type in (int, float, bool):
-                # in INI files (default on Linux) numeric values are stored as strings
-                try:
-                    if ret_type is bool:
-                        value = int(value)
-                    # MyPy doesn't understand any of this, but it should be safe
-                    return cast("T", ret_type(value))  # type: ignore[call-arg]
-                except (ValueError, TypeError):
-                    pass
-            return default
+            return _coerce_value(value, default)
 
     @classmethod
     def reset(cls) -> None:
