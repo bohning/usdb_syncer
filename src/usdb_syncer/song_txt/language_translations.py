@@ -1,5 +1,9 @@
 """Dictionary of language names and their English translations."""
 
+# Since this file deals with a bunch of ambiguous unicode characters,
+# we disable the rule file-wide.
+# ruff: noqa: RUF001, RUF003
+
 LANGUAGE_TRANSLATIONS = {
     # Arabic
     "العربية": "Arabic",
@@ -226,7 +230,6 @@ LANGUAGE_TRANSLATIONS = {
     "francúzština": "French",
     "francoščina": "French",
     "francés": "French",
-    "franska": "French",
     "fransızca": "French",
     # German
     "الألمانية": "German",
