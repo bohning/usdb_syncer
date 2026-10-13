@@ -2,7 +2,7 @@
 
 # Since this file deals with a bunch of ambiguous unicode characters,
 # we disable the rule file-wide.
-# ruff: noqa: RUF001, RUF003
+# ruff: noqa: RUF001
 
 LANGUAGE_TRANSLATIONS = {
     # Arabic
@@ -380,7 +380,6 @@ LANGUAGE_TRANSLATIONS = {
     "latina": "Latin",
     "latin": "Latin",
     "latijn": "Latin",
-    "latina": "Latin",
     "latino": "Latin",
     "ラテン語": "Latin",
     "라틴어": "Latin",
@@ -459,7 +458,6 @@ LANGUAGE_TRANSLATIONS = {
     "ポルトガル語": "Portuguese",
     "포르투갈어": "Portuguese",
     "lusitana": "Portuguese",
-    "portugalski": "Portuguese",
     "português": "Portuguese",
     "portugheză": "Portuguese",
     "португальский": "Portuguese",
@@ -617,7 +615,6 @@ LANGUAGE_TRANSLATIONS = {
     "švédčina": "Swedish",
     "švedščina": "Swedish",
     "svenska": "Swedish",
-    "turkiska": "Swedish",
     "isveççe": "Swedish",
     # Turkish
     "التركية": "Turkish",
