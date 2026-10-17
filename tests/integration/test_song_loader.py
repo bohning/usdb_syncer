@@ -7,6 +7,8 @@ from pathlib import Path
 from typing import Any
 from unittest import mock
 
+from PIL import Image
+
 from tests.conftest import (
     details_from_song,
     example_meta_tags,
@@ -34,7 +36,7 @@ def _download_and_process_image(
     notify_discord: bool = False,
 ) -> Path | None:
     path = target_stem.with_name(f"{target_stem.name} [{kind.value}].jpg")
-    path.touch()
+    Image.new("RGB", (1, 1)).save(path)
     return path
 
 

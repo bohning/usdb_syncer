@@ -97,7 +97,8 @@ class Icon(enum.Enum):
     SONG_FOLDER = "folder_note.png", "folder-music-white.svg"
     STEM_SEPARATION = "arrow-split.png", "call-split-white.svg"
     SUCCESS = "tick-green.png", "check-circle-white.svg"
-    SUCCESS_CHANGES = "tick-green-exclamation.png", "check-decagram-white.svg"
+    SUCCESS_ASPECTRATIO = "tick-green-exclamation.png", "check-decagram-white.svg"
+    SUCCESS_CHANGES = "tick-green-exclamation.png", "check-decagram-white.svg"  # noqa: PIE796
     TAGS = "price-tag.png", "tag-white.svg"
     TEXT = "text.png", "file-document-white.svg"
     TITLE = "title.png", "format-title-white.svg"
