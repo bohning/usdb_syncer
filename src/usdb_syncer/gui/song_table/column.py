@@ -13,6 +13,7 @@ from PySide6.QtGui import QIcon
 from usdb_syncer import db, settings
 from usdb_syncer.constants import RatingSymbol
 from usdb_syncer.gui.icons import Icon
+from usdb_syncer.sync_meta import ResourceFileImage
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
@@ -255,11 +256,11 @@ class Column(ColumnBase, enum.Enum):
             case Column.COVER:
                 if not (sync_meta and (cover := sync_meta.cover)):
                     return None
-                icon = status_icon(cover, sync_meta.path.parent)
+                icon = status_icon(cover, sync_meta.path.parent, (1, 1))
             case Column.BACKGROUND:
                 if not (sync_meta and (background := sync_meta.background)):
                     return None
-                icon = status_icon(background, sync_meta.path.parent)
+                icon = status_icon(background, sync_meta.path.parent, (16, 9))
             case Column.PINNED:
                 if not (sync_meta and sync_meta.pinned):
                     return None
@@ -317,12 +318,30 @@ class CustomColumn(ColumnBase):
         _ColumnRegistry.columns.append(cls.new(key))
 
 
-def status_icon(resource: Resource, folder: Path) -> Icon:
+def status_icon(
+    resource: Resource,
+    folder: Path,
+    expected_image_aspect_ratio: tuple[int, int] | None = None,
+) -> Icon:
     match resource.status:
         case db.JobStatus.SUCCESS | db.JobStatus.SUCCESS_UNCHANGED:
-            icon = (
-                Icon.SUCCESS if resource.file_in_sync(folder) else Icon.SUCCESS_CHANGES
-            )
+            if not resource.file_in_sync(folder):
+                icon = Icon.SUCCESS_CHANGES
+            elif expected_image_aspect_ratio is None:
+                icon = Icon.SUCCESS
+            else:
+                image_file = (
+                    resource.file
+                    if isinstance(resource.file, ResourceFileImage)
+                    else None
+                )
+                icon = (
+                    Icon.SUCCESS
+                    if _image_matches_aspect_ratio(
+                        image_file, expected_image_aspect_ratio
+                    )
+                    else Icon.SUCCESS_ASPECTRATIO
+                )
         case db.JobStatus.SKIPPED_DISABLED:
             icon = Icon.SKIPPED_DISABLED
         case db.JobStatus.SKIPPED_UNAVAILABLE:
@@ -344,6 +363,15 @@ def status_icon(resource: Resource, folder: Path) -> Icon:
         case _ as unreachable:
             assert_never(unreachable)
     return icon
+
+
+def _image_matches_aspect_ratio(
+    image_file: ResourceFileImage | None, expected_ratio: tuple[int, int]
+) -> bool:
+    if image_file is None or image_file.width is None or image_file.height is None:
+        return True
+    numerator, denominator = expected_ratio
+    return image_file.width * denominator == image_file.height * numerator
 
 
 class _ColumnRegistry:

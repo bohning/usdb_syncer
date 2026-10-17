@@ -18,6 +18,7 @@ class Sql(enum.Enum):
     SELECT_USDB_SONG = "select_usdb_song.sql"
     SETUP_SESSION_SCRIPT = "setup_session_script.sql"
     UPSERT_CUSTOM_META_DATA = "upsert_custom_meta_data.sql"
+    UPSERT_IMAGE_DIMENSIONS = "upsert_image_dimensions.sql"
     UPSERT_RESOURCE = "upsert_resource.sql"
     UPSERT_SYNC_META = "upsert_sync_meta.sql"
     UPSERT_USDB_SONG = "upsert_usdb_song.sql"

@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 import attrs
+from PIL import Image
 
 from usdb_syncer import SongId, SyncMetaId, db, settings, utils
 from usdb_syncer.custom_data import CustomData
@@ -77,6 +78,61 @@ class ResourceFile:
 
 
 @attrs.define
+class ResourceFileImage(ResourceFile):
+    """Meta data about a local image file."""
+
+    width: int | None = None
+    height: int | None = None
+
+    @classmethod
+    def new(cls, path: Path, resource: str) -> ResourceFileImage:
+        with Image.open(path) as image:
+            width, height = image.size
+        file = cls(
+            path.name, utils.get_mtime(path), resource, width=width, height=height
+        )
+        file._is_in_sync = True
+        return file
+
+    @classmethod
+    def from_nested_dict(cls, dct: Any) -> ResourceFileImage | None:
+        base_file = super().from_nested_dict(dct)
+        if base_file is None:
+            return None
+        width = dct.get("width")
+        height = dct.get("height")
+        if (
+            not isinstance(width, int)
+            or isinstance(width, bool)
+            or not isinstance(height, int)
+            or isinstance(height, bool)
+        ):
+            width = height = None
+        return cls(
+            base_file.fname,
+            base_file.mtime,
+            base_file.resource,
+            width=width,
+            height=height,
+        )
+
+    @classmethod
+    def from_image_db_row(
+        cls, row: tuple[str | None, int | None, str | None, int | None, int | None]
+    ) -> ResourceFileImage | None:
+        base_file = ResourceFile.from_db_row(row[:3])
+        if base_file is None:
+            return None
+        return cls(
+            base_file.fname,
+            base_file.mtime,
+            base_file.resource,
+            width=row[3],
+            height=row[4],
+        )
+
+
+@attrs.define
 class Resource:
     """Info about the status and the file of a resource."""
 
@@ -84,7 +140,7 @@ class Resource:
     file: ResourceFile | None = None
 
     @classmethod
-    def from_nested_dict(cls, dct: Any) -> Resource | None:
+    def from_nested_dict(cls, dct: Any, image: bool = False) -> Resource | None:
         if not isinstance(dct, dict):
             return None
 
@@ -94,20 +150,27 @@ class Resource:
         except (ValueError, TypeError):
             return None
 
-        file = None
+        file: ResourceFile | None = None
         if "fname" in dct and dct.get("fname") is not None:
-            file = ResourceFile.from_nested_dict(dct)
+            if image:
+                file = ResourceFileImage.from_nested_dict(dct)
+            else:
+                file = ResourceFile.from_nested_dict(dct)
 
         return cls(status, file)
 
     @classmethod
-    def from_db_row(
-        cls, row: tuple[str | None, int | None, str | None, JobStatus | None]
-    ) -> Resource | None:
+    def from_db_row(cls, row: tuple, image: bool = False) -> Resource | None:
         if (status := row[3]) is None:
             return None
 
-        file = ResourceFile.from_db_row(row[:3])
+        file: ResourceFile | None
+        if image:
+            file = ResourceFileImage.from_image_db_row(
+                (row[0], row[1], row[2], row[4], row[5])
+            )
+        else:
+            file = ResourceFile.from_db_row(row[:3])
 
         return cls(status, file)
 
@@ -122,6 +185,19 @@ class Resource:
             resource=self.file.resource if self.file else None,
             status=self.status,
         )
+
+    def image_dimensions_db_params(
+        self, sync_meta_id: SyncMetaId, kind: db.ResourceKind
+    ) -> db.ImageDimensionsParams | None:
+        if (
+            isinstance(self.file, ResourceFileImage)
+            and self.file.width is not None
+            and self.file.height is not None
+        ):
+            return db.ImageDimensionsParams(
+                sync_meta_id, kind, self.file.width, self.file.height
+            )
+        return None
 
     def file_in_sync(self, folder: Path) -> bool:
         return bool(self.file and self.file.is_in_sync(folder))
@@ -191,8 +267,8 @@ class SyncMeta:
                 vocals=Resource.from_nested_dict(dct.get("vocals")),
                 instrumental=Resource.from_nested_dict(dct.get("instrumental")),
                 video=Resource.from_nested_dict(dct["video"]),
-                cover=Resource.from_nested_dict(dct["cover"]),
-                background=Resource.from_nested_dict(dct["background"]),
+                cover=Resource.from_nested_dict(dct["cover"], image=True),
+                background=Resource.from_nested_dict(dct["background"], image=True),
                 custom_data=CustomData(dct.get("custom_data")),
             )
         except (TypeError, KeyError, ValueError):
@@ -205,7 +281,7 @@ class SyncMeta:
 
     @classmethod
     def from_db_row(cls, row: tuple) -> SyncMeta:
-        assert len(row) == 35
+        assert len(row) == 39
         meta = cls(
             sync_meta_id=SyncMetaId(row[0]),
             song_id=SongId(row[1]),
@@ -220,8 +296,8 @@ class SyncMeta:
         meta.vocals = Resource.from_db_row(row[15:19])
         meta.instrumental = Resource.from_db_row(row[19:23])
         meta.video = Resource.from_db_row(row[23:27])
-        meta.cover = Resource.from_db_row(row[27:31])
-        meta.background = Resource.from_db_row(row[31:])
+        meta.cover = Resource.from_db_row(row[27:33], image=True)
+        meta.background = Resource.from_db_row(row[33:39], image=True)
         meta.custom_data = CustomData(db.get_custom_data(meta.sync_meta_id))
         return meta
 
@@ -245,6 +321,17 @@ class SyncMeta:
         db.delete_resources(
             (self.sync_meta_id, kind) for resource, kind in resources if not resource
         )
+        db.delete_image_dimensions((self.sync_meta_id,))
+        db.upsert_image_dimensions(
+            dimensions
+            for resource, kind in resources
+            if resource
+            and (
+                dimensions := resource.image_dimensions_db_params(
+                    self.sync_meta_id, kind
+                )
+            )
+        )
         db.delete_custom_meta_data((self.sync_meta_id,))
         db.upsert_custom_meta_data(
             db.CustomMetaDataParams(self.sync_meta_id, k, v)
@@ -266,6 +353,18 @@ class SyncMeta:
             for meta in metas
             for file, kind in meta.all_resources()
             if not file
+        )
+        db.delete_image_dimensions(meta.sync_meta_id for meta in metas)
+        db.upsert_image_dimensions(
+            dimensions
+            for meta in metas
+            for resource, kind in meta.all_resources()
+            if resource
+            and (
+                dimensions := resource.image_dimensions_db_params(
+                    meta.sync_meta_id, kind
+                )
+            )
         )
         db.delete_custom_meta_data(m.sync_meta_id for m in metas)
         db.upsert_custom_meta_data(
@@ -352,7 +451,13 @@ class SyncMeta:
         return self.path.parent / self.background.file.fname
 
 
-_RESOURCE_FILE_FILTER = attrs.filters.exclude(attrs.fields(ResourceFile)._is_in_sync)
+def _resource_file_filter(attribute: attrs.Attribute[Any], value: Any) -> bool:
+    return attribute.name != "_is_in_sync" and (
+        attribute.name not in ("width", "height") or value is not None
+    )
+
+
+_RESOURCE_FILE_FILTER = _resource_file_filter
 _SYNC_META_FIELDS = attrs.fields(SyncMeta)
 _SYNC_META_FILTER = attrs.filters.exclude(
     _SYNC_META_FIELDS.sync_meta_id, _SYNC_META_FIELDS.path, _SYNC_META_FIELDS.mtime
