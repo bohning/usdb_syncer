@@ -256,11 +256,21 @@ class Column(ColumnBase, enum.Enum):
             case Column.COVER:
                 if not (sync_meta and (cover := sync_meta.cover)):
                     return None
-                icon = status_icon(cover, sync_meta.path.parent, (1, 1))
+                icon = status_icon(
+                    cover,
+                    sync_meta.path.parent,
+                    (1, 1),
+                    ((1000, 1000), (500, 500)),
+                )
             case Column.BACKGROUND:
                 if not (sync_meta and (background := sync_meta.background)):
                     return None
-                icon = status_icon(background, sync_meta.path.parent, (16, 9))
+                icon = status_icon(
+                    background,
+                    sync_meta.path.parent,
+                    (16, 9),
+                    ((1920, 0), (960, 0)),
+                )
             case Column.PINNED:
                 if not (sync_meta and sync_meta.pinned):
                     return None
@@ -322,26 +332,16 @@ def status_icon(
     resource: Resource,
     folder: Path,
     expected_image_aspect_ratio: tuple[int, int] | None = None,
+    quality_thresholds: tuple[tuple[int, int], tuple[int, int]] | None = None,
 ) -> Icon:
     match resource.status:
         case db.JobStatus.SUCCESS | db.JobStatus.SUCCESS_UNCHANGED:
-            if not resource.file_in_sync(folder):
-                icon = Icon.SUCCESS_CHANGES
-            elif expected_image_aspect_ratio is None:
-                icon = Icon.SUCCESS
-            else:
-                image_file = (
-                    resource.file
-                    if isinstance(resource.file, ResourceFileImage)
-                    else None
-                )
-                icon = (
-                    Icon.SUCCESS
-                    if _image_matches_aspect_ratio(
-                        image_file, expected_image_aspect_ratio
-                    )
-                    else Icon.SUCCESS_ASPECTRATIO
-                )
+            icon = _success_icon(
+                resource,
+                folder,
+                expected_image_aspect_ratio,
+                quality_thresholds,
+            )
         case db.JobStatus.SKIPPED_DISABLED:
             icon = Icon.SKIPPED_DISABLED
         case db.JobStatus.SKIPPED_UNAVAILABLE:
@@ -363,6 +363,61 @@ def status_icon(
         case _ as unreachable:
             assert_never(unreachable)
     return icon
+
+
+def _success_icon(
+    resource: Resource,
+    folder: Path,
+    expected_image_aspect_ratio: tuple[int, int] | None,
+    quality_thresholds: tuple[tuple[int, int], tuple[int, int]] | None,
+) -> Icon:
+    if not resource.file_in_sync(folder):
+        return Icon.SUCCESS_CHANGES
+    if expected_image_aspect_ratio is None:
+        return Icon.SUCCESS
+    if (
+        settings.get_cover_quality_indicators()
+        is settings.CoverQualityIndicators.DISABLE
+    ):
+        return Icon.SUCCESS
+
+    image_file = (
+        resource.file if isinstance(resource.file, ResourceFileImage) else None
+    )
+    matches_aspect_ratio = _image_matches_aspect_ratio(
+        image_file, expected_image_aspect_ratio
+    )
+    if (
+        quality_thresholds
+        and image_file
+        and image_file.width is not None
+        and image_file.height is not None
+    ):
+        high_thresholds, medium_thresholds = quality_thresholds
+        if _meets_image_dimensions(image_file, high_thresholds):
+            return Icon.SUCCESS if matches_aspect_ratio else Icon.SUCCESS_ASPECTRATIO
+        if _meets_image_dimensions(image_file, medium_thresholds):
+            return (
+                Icon.SUCCESS_MEDIUM
+                if matches_aspect_ratio
+                else Icon.SUCCESS_MEDIUM_ASPECTRATIO
+            )
+        return (
+            Icon.SUCCESS_SMALL
+            if matches_aspect_ratio
+            else Icon.SUCCESS_SMALL_ASPECTRATIO
+        )
+    return Icon.SUCCESS if matches_aspect_ratio else Icon.SUCCESS_ASPECTRATIO
+
+
+def _meets_image_dimensions(
+    image_file: ResourceFileImage, minimum_dimensions: tuple[int, int]
+) -> bool:
+    assert image_file.width is not None and image_file.height is not None
+    return (
+        image_file.width >= minimum_dimensions[0]
+        and image_file.height >= minimum_dimensions[1]
+    )
 
 
 def _image_matches_aspect_ratio(
