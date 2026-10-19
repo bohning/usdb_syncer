@@ -257,19 +257,13 @@ class Column(ColumnBase, enum.Enum):
                 if not (sync_meta and (cover := sync_meta.cover)):
                     return None
                 icon = status_icon(
-                    cover,
-                    sync_meta.path.parent,
-                    (1, 1),
-                    ((1000, 1000), (500, 500)),
+                    cover, sync_meta.path.parent, (1, 1), ((1000, 1000), (500, 500))
                 )
             case Column.BACKGROUND:
                 if not (sync_meta and (background := sync_meta.background)):
                     return None
                 icon = status_icon(
-                    background,
-                    sync_meta.path.parent,
-                    (16, 9),
-                    ((1920, 0), (960, 0)),
+                    background, sync_meta.path.parent, (16, 9), ((1920, 0), (960, 0))
                 )
             case Column.PINNED:
                 if not (sync_meta and sync_meta.pinned):
@@ -337,10 +331,7 @@ def status_icon(
     match resource.status:
         case db.JobStatus.SUCCESS | db.JobStatus.SUCCESS_UNCHANGED:
             icon = _success_icon(
-                resource,
-                folder,
-                expected_image_aspect_ratio,
-                quality_thresholds,
+                resource, folder, expected_image_aspect_ratio, quality_thresholds
             )
         case db.JobStatus.SKIPPED_DISABLED:
             icon = Icon.SKIPPED_DISABLED
@@ -381,9 +372,7 @@ def _success_icon(
     ):
         return Icon.SUCCESS
 
-    image_file = (
-        resource.file if isinstance(resource.file, ResourceFileImage) else None
-    )
+    image_file = resource.file if isinstance(resource.file, ResourceFileImage) else None
     matches_aspect_ratio = _image_matches_aspect_ratio(
         image_file, expected_image_aspect_ratio
     )

@@ -52,8 +52,7 @@ def test_status_icon_checks_image_ratio(
 
 
 def test_status_icon_preserves_local_change_indicator_for_images(
-    monkeypatch: pytest.MonkeyPatch,
-    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
     monkeypatch.setattr(
         settings,
@@ -74,54 +73,19 @@ def test_status_icon_preserves_local_change_indicator_for_images(
     ("dimensions", "thresholds", "expected_ratio", "expected_icon"),
     [
         ((1000, 1000), ((1000, 1000), (500, 500)), (1, 1), Icon.SUCCESS),
-        (
-            (1200, 1000),
-            ((1000, 1000), (500, 500)),
-            (1, 1),
-            Icon.SUCCESS_ASPECTRATIO,
-        ),
-        (
-            (999, 999),
-            ((1000, 1000), (500, 500)),
-            (1, 1),
-            Icon.SUCCESS_MEDIUM,
-        ),
+        ((1200, 1000), ((1000, 1000), (500, 500)), (1, 1), Icon.SUCCESS_ASPECTRATIO),
+        ((999, 999), ((1000, 1000), (500, 500)), (1, 1), Icon.SUCCESS_MEDIUM),
         (
             (999, 800),
             ((1000, 1000), (500, 500)),
             (1, 1),
             Icon.SUCCESS_MEDIUM_ASPECTRATIO,
         ),
-        (
-            (499, 499),
-            ((1000, 1000), (500, 500)),
-            (1, 1),
-            Icon.SUCCESS_SMALL,
-        ),
-        (
-            (1920, 1080),
-            ((1920, 0), (960, 0)),
-            (16, 9),
-            Icon.SUCCESS,
-        ),
-        (
-            (1919, 1080),
-            ((1920, 0), (960, 0)),
-            (16, 9),
-            Icon.SUCCESS_MEDIUM_ASPECTRATIO,
-        ),
-        (
-            (960, 500),
-            ((1920, 0), (960, 0)),
-            (16, 9),
-            Icon.SUCCESS_MEDIUM_ASPECTRATIO,
-        ),
-        (
-            (959, 1080),
-            ((1920, 0), (960, 0)),
-            (16, 9),
-            Icon.SUCCESS_SMALL_ASPECTRATIO,
-        ),
+        ((499, 499), ((1000, 1000), (500, 500)), (1, 1), Icon.SUCCESS_SMALL),
+        ((1920, 1080), ((1920, 0), (960, 0)), (16, 9), Icon.SUCCESS),
+        ((1919, 1080), ((1920, 0), (960, 0)), (16, 9), Icon.SUCCESS_MEDIUM_ASPECTRATIO),
+        ((960, 500), ((1920, 0), (960, 0)), (16, 9), Icon.SUCCESS_MEDIUM_ASPECTRATIO),
+        ((959, 1080), ((1920, 0), (960, 0)), (16, 9), Icon.SUCCESS_SMALL_ASPECTRATIO),
     ],
 )
 def test_status_icon_indicates_image_quality(
@@ -147,18 +111,14 @@ def test_status_icon_indicates_image_quality(
     image_file._is_in_sync = True
 
     icon = status_icon(
-        Resource(JobStatus.SUCCESS, image_file),
-        tmp_path,
-        expected_ratio,
-        thresholds,
+        Resource(JobStatus.SUCCESS, image_file), tmp_path, expected_ratio, thresholds
     )
 
     assert icon is expected_icon
 
 
 def test_status_icon_hides_aspect_ratio_indicator_when_quality_indicators_disabled(
-    monkeypatch: pytest.MonkeyPatch,
-    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
     monkeypatch.setattr(
         settings,
