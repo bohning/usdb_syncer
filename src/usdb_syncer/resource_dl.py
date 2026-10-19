@@ -329,34 +329,29 @@ def _download_resource(
         except YoutubeDLError as e:
             error_message = utils.remove_ansi_codes(str(e))
             logger.debug(f"Failed to download '{url}': {error_message}")
-            return _handle_youtube_error(url, resource, error_message, options, logger)
+            return _handle_download_error(url, resource, error_message, options, logger)
 
 
-def _handle_youtube_error(
+def _handle_download_error(
     url: str, resource: str, error_message: str, options: YtdlOptions, logger: Logger
 ) -> ResourceDLResult:
     """Handle different YouTube error types."""
-    retry_on = {YtErrorMsg.YT_AGE_RESTRICTED, YtErrorMsg.VM_UNAUTHENTICATED}
+    retry_on = {
+        YtErrorMsg.YT_AGE_RESTRICTED,
+        YtErrorMsg.VM_NOT_LOGGED_IN,
+        YtErrorMsg.VM_UNAUTHENTICATED,
+    }
     hooks.DangerouslyUseYtCookies.call(retry_on)
 
     if any(msg in error_message for msg in retry_on):
         dl_result = _retry_with_cookies(url, options, logger)
         return ResourceDLResult[str](content=dl_result.content)
 
-    if any(
-        msg in error_message
-        for msg in (
-            YtErrorMsg.YT_GEO_RESTRICTED_1,
-            YtErrorMsg.YT_GEO_RESTRICTED_2,
-            YtErrorMsg.YT_GEO_RESTRICTED_3,
-            YtErrorMsg.YT_GEO_RESTRICTED_4,
-        )
-    ):
-        _handle_geo_restriction(url, resource, logger)
-        return ResourceDLResult(error=ResourceDLError(type=DLErrType.GEO_RESTRICTED))
-
     if YtErrorMsg.YT_UNAVAILABLE in error_message:
-        _handle_unavailable(url, logger)
+        if _handle_unavailable(url, resource, logger) == DLErrType.GEO_RESTRICTED:
+            return ResourceDLResult(
+                error=ResourceDLError(type=DLErrType.GEO_RESTRICTED)
+            )
         return ResourceDLResult(error=ResourceDLError(type=DLErrType.UNAVAILABLE))
     if YtErrorMsg.YT_PARSE_ERROR in error_message:
         _handle_parse_error(url, logger)
@@ -384,7 +379,7 @@ def _handle_youtube_error(
 def _retry_with_cookies(
     url: str, options: YtdlOptions, logger: Logger
 ) -> ResourceDLResult:
-    logger.warning("Age-restricted resource. Retrying with cookies ...")
+    logger.warning("Restricted resource. Retrying with cookies ...")
     with yt_dlp.YoutubeDL(options) as ydl:  # pyright: ignore[reportArgumentType]  # yt-dlp expects dynamic params
         hooks.GetYtCookies.call(ydl.cookiejar)
         try:
@@ -397,21 +392,19 @@ def _retry_with_cookies(
             raise
 
 
-def _handle_geo_restriction(url: str, resource: str, logger: Logger) -> None:
-    logger.warning("Geo-restricted resource. You can retry after connecting to a VPN.")
+def _handle_unavailable(url: str, resource: str, logger: Logger) -> DLErrType:
     if "youtube" in url and (
         allowed_countries := utils.get_allowed_countries(resource)
     ):
         logger.info(
             "Countries where the resource is available: " + ", ".join(allowed_countries)
         )
-
-
-def _handle_unavailable(url: str, logger: Logger) -> None:
+        return DLErrType.GEO_RESTRICTED
     logger.warning(
         f"Resource '{url}' is no longer available. Please support the community, "
         "find a suitable replacement resource and comment it on USDB."
     )
+    return DLErrType.UNAVAILABLE
 
 
 def _handle_parse_error(url: str, logger: Logger) -> None:
