@@ -8,9 +8,11 @@ and getters should be added to this module.
 from __future__ import annotations
 
 import functools
+import json
 import os
 import sys
 import threading
+from collections import defaultdict
 from enum import Enum, StrEnum, auto
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, ClassVar, TypeVar, assert_never, cast
@@ -20,12 +22,11 @@ import keyring
 import yt_dlp.cookies
 from PySide6.QtCore import QByteArray, QSettings
 
+from usdb_syncer import db, path_template
 from usdb_syncer.logger import logger
 
 if TYPE_CHECKING:
     from http.cookiejar import CookieJar
-
-    from usdb_syncer import db, path_template
 
 if "pathlib._local" not in sys.modules:
     # required for Path objects pickled with Python < 3.14
@@ -91,6 +92,78 @@ class _TemporarySettings:
 T = TypeVar("T")
 
 
+def _order_to_dict(order: db.SongOrderBase) -> dict[str, Any]:
+    if isinstance(order, db.SongOrder):
+        return {"type": "native", "value": order.value}
+    if isinstance(order, db.CustomSongOrder):
+        return {"type": "custom", "key": order.custom_data_key}
+    return {"type": "native", "value": db.SongOrder.NONE.value}
+
+
+def _order_from_dict(data: dict[str, Any]) -> db.SongOrderBase:
+    if data.get("type") == "custom":
+        return db.CustomSongOrder(custom_data_key=data.get("key", ""))
+    return db.SongOrder(data.get("value", db.SongOrder.NONE.value))
+
+
+def _saved_search_to_dict(item: SavedSearch) -> dict[str, Any]:
+    b = item.search
+    search_dict = {
+        "order": _order_to_dict(b.order),
+        "descending": b.descending,
+        "text": b.text,
+        "artists": b.artists,
+        "titles": b.titles,
+        "editions": b.editions,
+        "ratings": b.ratings,
+        "statuses": [s.value for s in b.statuses],
+        "languages": b.languages,
+        "views": [list(v) for v in b.views],
+        "years": b.years,
+        "genres": b.genres,
+        "creators": b.creators,
+        "custom_data": dict(b.custom_data),
+        "golden_notes": b.golden_notes,
+    }
+    return {
+        "name": item.name,
+        "subscribed": item.subscribed,
+        "search": search_dict,
+    }
+
+
+def _saved_search_from_dict(data: dict[str, Any]) -> SavedSearch:
+    s_data = data.get("search", {})
+    order = _order_from_dict(s_data.get("order", {}))
+    views = [(v[0], v[1]) for v in s_data.get("views", []) if len(v) == 2]
+    custom_data: defaultdict[str, list[str]] = defaultdict(list)
+    for k, v in s_data.get("custom_data", {}).items():
+        custom_data[k] = list(v)
+
+    builder = db.SearchBuilder(
+        order=order,
+        descending=bool(s_data.get("descending", False)),
+        text=str(s_data.get("text", "")),
+        artists=list(s_data.get("artists", [])),
+        titles=list(s_data.get("titles", [])),
+        editions=list(s_data.get("editions", [])),
+        ratings=list(s_data.get("ratings", [])),
+        statuses=[db.DownloadStatus(s) for s in s_data.get("statuses", [])],
+        languages=list(s_data.get("languages", [])),
+        views=views,
+        years=list(s_data.get("years", [])),
+        genres=list(s_data.get("genres", [])),
+        creators=list(s_data.get("creators", [])),
+        custom_data=custom_data,
+        golden_notes=s_data.get("golden_notes"),
+    )
+    return SavedSearch(
+        name=str(data.get("name", "")),
+        search=builder,
+        subscribed=bool(data.get("subscribed", False)),
+    )
+
+
 def _coerce_value(value: Any, default: T) -> T:  # noqa: UP047
     """Coerce a QSettings value to the expected default type."""
     if value is None:
@@ -104,6 +177,16 @@ def _coerce_value(value: Any, default: T) -> T:  # noqa: UP047
             return cast("T", type(default)(value))
         except (ValueError, KeyError):
             return default
+
+    if isinstance(default, path_template.PathTemplate):
+        if isinstance(value, path_template.PathTemplate):
+            return cast("T", value)
+        if isinstance(value, str):
+            try:
+                return cast("T", path_template.PathTemplate.parse(value))
+            except (ValueError, path_template.PathTemplateError):
+                return default
+        return default
 
     ret_type = type(default)
     if isinstance(value, ret_type):
@@ -155,6 +238,8 @@ class _Settings:
                 value = str(value)
             elif isinstance(value, Enum):
                 value = value.value
+            elif isinstance(value, path_template.PathTemplate):
+                value = str(value)
 
             QSettings().setValue(key.value, value)
 
@@ -1353,11 +1438,40 @@ def set_custom_meta_data_columns(keys: list[str], temp: bool = False) -> None:
 
 
 def get_saved_searches() -> list[SavedSearch]:
-    return _Settings.get(SettingKey.SAVED_SEARCHES, [])
+    if temp := _TemporarySettings.get(SettingKey.SAVED_SEARCHES):
+        return cast("list[SavedSearch]", temp)
+
+    try:
+        raw = QSettings().value(SettingKey.SAVED_SEARCHES.value)
+    except (AttributeError, ValueError, RuntimeError):
+        return []
+
+    if isinstance(raw, list):
+        # backward compatibility: already deserialized list of objects
+        if all(isinstance(x, SavedSearch) for x in raw):
+            return cast("list[SavedSearch]", raw)
+        return []
+
+    if not isinstance(raw, str):
+        return []
+
+    try:
+        data = json.loads(raw)
+        if isinstance(data, list):
+            return [_saved_search_from_dict(d) for d in data if isinstance(d, dict)]
+    except (json.JSONDecodeError, ValueError, KeyError, TypeError):
+        pass
+
+    return []
 
 
 def set_saved_searches(searches: list[SavedSearch], temp: bool = False) -> None:
-    _Settings.set(SettingKey.SAVED_SEARCHES, searches, temp)
+    if temp:
+        _Settings.set(SettingKey.SAVED_SEARCHES, searches, temp=True)
+    else:
+        _TemporarySettings.remove(SettingKey.SAVED_SEARCHES)
+        serialized = json.dumps([_saved_search_to_dict(s) for s in searches])
+        QSettings().setValue(SettingKey.SAVED_SEARCHES.value, serialized)
 
 
 def get_default_saved_search() -> str:
