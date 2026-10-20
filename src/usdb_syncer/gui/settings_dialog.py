@@ -270,6 +270,11 @@ class SettingsDialog(Ui_Dialog, QDialog):
             (self.comboBox_fix_linebreaks, settings.FixLinebreaks),
             (self.comboBox_fix_spaces, settings.FixSpaces),
             (self.comboBox_cover_max_size, settings.CoverMaxSize),
+            (self.comboBox_cover_quality_indicators, settings.CoverQualityIndicators),
+            (
+                self.comboBox_background_quality_indicators,
+                settings.BackgroundQualityIndicators,
+            ),
             (self.comboBox_background_max_size, settings.BackgroundMaxSize),
             (self.comboBox_ytdlp_rate_limit, settings.YtdlpRateLimit),
             (self.comboBox_audio_format, settings.AudioFormat),
@@ -305,6 +310,11 @@ class SettingsDialog(Ui_Dialog, QDialog):
         self.groupBox_cover.setChecked(settings.get_cover())
         self.comboBox_cover_max_size.setCurrentIndex(
             self.comboBox_cover_max_size.findData(settings.get_cover_max_size())
+        )
+        self.comboBox_cover_quality_indicators.setCurrentIndex(
+            self.comboBox_cover_quality_indicators.findData(
+                settings.get_cover_quality_indicators()
+            )
         )
         self.comboBox_encoding.setCurrentIndex(
             self.comboBox_encoding.findData(settings.get_encoding())
@@ -373,6 +383,11 @@ class SettingsDialog(Ui_Dialog, QDialog):
         self.comboBox_background_max_size.setCurrentIndex(
             self.comboBox_background_max_size.findData(
                 settings.get_background_max_size()
+            )
+        )
+        self.comboBox_background_quality_indicators.setCurrentIndex(
+            self.comboBox_background_quality_indicators.findData(
+                settings.get_background_quality_indicators()
             )
         )
         self.checkBox_trash_files.setChecked(settings.get_trash_files())
@@ -466,6 +481,12 @@ class SettingsDialog(Ui_Dialog, QDialog):
         settings.set_browser(self.comboBox_browser.currentData())
         settings.set_cover(self.groupBox_cover.isChecked())
         settings.set_cover_max_size(self.comboBox_cover_max_size.currentData())
+        settings.set_cover_quality_indicators(
+            self.comboBox_cover_quality_indicators.currentData()
+        )
+        settings.set_background_quality_indicators(
+            self.comboBox_background_quality_indicators.currentData()
+        )
         settings.set_encoding(self.comboBox_encoding.currentData())
         settings.set_newline(self.comboBox_line_endings.currentData())
         settings.set_version(self.comboBox_format_version.currentData())

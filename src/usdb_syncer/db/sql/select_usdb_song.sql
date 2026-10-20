@@ -54,10 +54,14 @@ SELECT
     cover.mtime,
     cover.resource,
     cover.status,
+    cover_dimensions.width,
+    cover_dimensions.height,
     background.fname,
     background.mtime,
     background.resource,
-    background.status
+    background.status,
+    background_dimensions.width,
+    background_dimensions.height
 FROM
     usdb_song
     LEFT JOIN session_usdb_song ON usdb_song.song_id = session_usdb_song.song_id
@@ -77,5 +81,11 @@ FROM
     AND sync_meta.sync_meta_id = video.sync_meta_id
     LEFT JOIN resource_file AS cover ON cover.kind = 'cover'
     AND sync_meta.sync_meta_id = cover.sync_meta_id
+    LEFT JOIN image_dimensions AS cover_dimensions
+    ON cover_dimensions.sync_meta_id = cover.sync_meta_id
+    AND cover_dimensions.kind = cover.kind
     LEFT JOIN resource_file AS background ON background.kind = 'background'
     AND sync_meta.sync_meta_id = background.sync_meta_id
+    LEFT JOIN image_dimensions AS background_dimensions
+    ON background_dimensions.sync_meta_id = background.sync_meta_id
+    AND background_dimensions.kind = background.kind

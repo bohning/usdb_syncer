@@ -25,7 +25,7 @@ if TYPE_CHECKING:
     from pathlib import Path
 
 
-SCHEMA_VERSION = 10
+SCHEMA_VERSION = 11
 
 # https://www.sqlite.org/limits.html
 _SQL_VARIABLES_LIMIT = 32766
@@ -307,7 +307,7 @@ class SongOrder(SongOrderBase, enum.Enum):
             case SongOrder.VIDEO:
                 return self.order("video")
             case SongOrder.COVER:
-                return self.order("cover")
+                return self.order("cover", by_image_size=True)
             case SongOrder.BACKGROUND:
                 return self.order("background")
             case SongOrder.LAST_CHANGE:
@@ -315,7 +315,7 @@ class SongOrder(SongOrderBase, enum.Enum):
             case SongOrder.STATUS:
                 return _STATUS_COLUMN
 
-    def order(self, alias: str) -> str:
+    def order(self, alias: str, by_image_size: bool = False) -> str:
         """Return CASE SQL expression for resource_file status sorting."""
         statuses = [
             JobStatus.SKIPPED_DISABLED,
@@ -332,12 +332,20 @@ class SongOrder(SongOrderBase, enum.Enum):
             for i, status in enumerate(statuses)
         ]
 
-        return (
+        status_order = (
             "CASE "
             f"WHEN {alias}.sync_meta_id IS NULL THEN 0 "
             f"{' '.join(when_clauses)} "
             f"ELSE {len(statuses) + 1} "
             "END"
+        )
+        if not by_image_size:
+            return status_order
+        return (
+            f"{status_order}, "
+            f"CASE WHEN {alias}_dimensions.width IS NOT NULL "
+            f"AND {alias}_dimensions.height IS NOT NULL "
+            f"THEN {alias}_dimensions.width * {alias}_dimensions.height ELSE -1 END"
         )
 
 
@@ -912,6 +920,16 @@ class ResourceParams:
     status: JobStatus
 
 
+@attrs.define(frozen=True, slots=False)
+class ImageDimensionsParams:
+    """Dimensions of an image resource."""
+
+    sync_meta_id: SyncMetaId
+    kind: ResourceKind
+    width: int
+    height: int
+
+
 def delete_resources(ids: Iterable[tuple[SyncMetaId, ResourceKind]]) -> None:
     for batch in batched(ids, _SQL_SMALLER_THAN_EXPRESSION_TREE):
         if not batch:
@@ -925,6 +943,22 @@ def delete_resources(ids: Iterable[tuple[SyncMetaId, ResourceKind]]) -> None:
 
 def upsert_resources(params: Iterable[ResourceParams]) -> None:
     stmt = Sql.UPSERT_RESOURCE.text()
+    _DbState.connection().executemany(stmt, (p.__dict__ for p in params))
+
+
+def delete_image_dimensions(sync_meta_ids: Iterable[SyncMetaId]) -> None:
+    for batch in batched(sync_meta_ids, _SQL_VARIABLES_LIMIT):
+        if not batch:
+            continue
+        placeholders = ", ".join("?" for _ in batch)
+        _DbState.connection().execute(
+            f"DELETE FROM image_dimensions WHERE sync_meta_id IN ({placeholders})",
+            tuple(map(int, batch)),
+        )
+
+
+def upsert_image_dimensions(params: Iterable[ImageDimensionsParams]) -> None:
+    stmt = Sql.UPSERT_IMAGE_DIMENSIONS.text()
     _DbState.connection().executemany(stmt, (p.__dict__ for p in params))
 
 

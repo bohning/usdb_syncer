@@ -47,9 +47,9 @@ class Icon(enum.Enum):
         "tick-yellow-exclamation.png",
         "check-decagram-outline-white.svg",
     )
-    FALLBACK = "tick-yellow.png", "check-circle-outline-white.svg"  # noqa: PIE796
-    FALLBACK_CHANGES = (  # noqa: PIE796
-        "tick-yellow-exclamation.png",
+    FALLBACK = "tick-purple.png", "check-circle-outline-white.svg"
+    FALLBACK_CHANGES = (
+        "tick-purple-exclamation.png",
         "check-decagram-outline-white.svg",
     )
     FFMPEG = "ffmpeg.svg", None
@@ -97,7 +97,12 @@ class Icon(enum.Enum):
     SONG_FOLDER = "folder_note.png", "folder-music-white.svg"
     STEM_SEPARATION = "arrow-split.png", "call-split-white.svg"
     SUCCESS = "tick-green.png", "check-circle-white.svg"
-    SUCCESS_CHANGES = "tick-green-exclamation.png", "check-decagram-white.svg"
+    SUCCESS_ASPECTRATIO = "tick-green-exclamation.png", "check-decagram-white.svg"
+    SUCCESS_MEDIUM = "tick-yellow.png", "check-circle-white.svg"
+    SUCCESS_MEDIUM_ASPECTRATIO = "tick-yellow-exclamation.png", "check-circle-white.svg"
+    SUCCESS_SMALL = "tick-red.png", "check-circle-white.svg"
+    SUCCESS_SMALL_ASPECTRATIO = "tick-red-exclamation.png", "check-circle-white.svg"
+    SUCCESS_CHANGES = "tick-green-exclamation.png", "check-decagram-white.svg"  # noqa: PIE796
     TAGS = "price-tag.png", "tag-white.svg"
     TEXT = "text.png", "file-document-white.svg"
     TITLE = "title.png", "format-title-white.svg"
