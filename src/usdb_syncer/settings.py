@@ -369,14 +369,14 @@ class CoverQualityIndicators(Enum):
     """Indicators for cover quality."""
 
     DISABLE = 0
-    ENABLE = 1000
+    ENABLE_1000 = 1000
 
     def __str__(self) -> str:
         match self:
             case CoverQualityIndicators.DISABLE:
                 return "disable"
-            case CoverQualityIndicators.ENABLE:
-                return "enable"
+            case CoverQualityIndicators.ENABLE_1000:
+                return "enable (low < 500 px ≤ medium < 1000 px ≤ high)"
             case _ as unreachable:
                 assert_never(unreachable)
 
@@ -410,14 +410,14 @@ class BackgroundQualityIndicators(Enum):
     """Indicators for background quality."""
 
     DISABLE = 0
-    ENABLE = 1920
+    ENABLE_1920 = 1920
 
     def __str__(self) -> str:
         match self:
             case BackgroundQualityIndicators.DISABLE:
                 return "disable"
-            case BackgroundQualityIndicators.ENABLE:
-                return "enable"
+            case BackgroundQualityIndicators.ENABLE_1920:
+                return "enable (low < 960 px ≤ medium < 1920 px ≤ high)"
             case _ as unreachable:
                 assert_never(unreachable)
 

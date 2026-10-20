@@ -257,13 +257,42 @@ class Column(ColumnBase, enum.Enum):
                 if not (sync_meta and (cover := sync_meta.cover)):
                     return None
                 icon = status_icon(
-                    cover, sync_meta.path.parent, (1, 1), ((1000, 1000), (500, 500))
+                    cover,
+                    sync_meta.path.parent,
+                    (1, 1),
+                    (
+                        (
+                            settings.CoverQualityIndicators.ENABLE_1000.value,
+                            settings.CoverQualityIndicators.ENABLE_1000.value,
+                        ),
+                        (
+                            settings.CoverQualityIndicators.ENABLE_1000.value // 2,
+                            settings.CoverQualityIndicators.ENABLE_1000.value // 2,
+                        ),
+                    ),
+                    quality_indicators_enabled=(
+                        settings.get_cover_quality_indicators()
+                        is not settings.CoverQualityIndicators.DISABLE
+                    ),
                 )
             case Column.BACKGROUND:
                 if not (sync_meta and (background := sync_meta.background)):
                     return None
                 icon = status_icon(
-                    background, sync_meta.path.parent, (16, 9), ((1920, 0), (960, 0))
+                    background,
+                    sync_meta.path.parent,
+                    (16, 9),
+                    (
+                        (settings.BackgroundQualityIndicators.ENABLE_1920.value, 1080),
+                        (
+                            settings.BackgroundQualityIndicators.ENABLE_1920.value // 2,
+                            1080 // 2,
+                        ),
+                    ),
+                    quality_indicators_enabled=(
+                        settings.get_background_quality_indicators()
+                        is not settings.BackgroundQualityIndicators.DISABLE
+                    ),
                 )
             case Column.PINNED:
                 if not (sync_meta and sync_meta.pinned):
@@ -327,11 +356,16 @@ def status_icon(
     folder: Path,
     expected_image_aspect_ratio: tuple[int, int] | None = None,
     quality_thresholds: tuple[tuple[int, int], tuple[int, int]] | None = None,
+    quality_indicators_enabled: bool = False,
 ) -> Icon:
     match resource.status:
         case db.JobStatus.SUCCESS | db.JobStatus.SUCCESS_UNCHANGED:
             icon = _success_icon(
-                resource, folder, expected_image_aspect_ratio, quality_thresholds
+                resource,
+                folder,
+                expected_image_aspect_ratio,
+                quality_thresholds,
+                quality_indicators_enabled,
             )
         case db.JobStatus.SKIPPED_DISABLED:
             icon = Icon.SKIPPED_DISABLED
@@ -361,15 +395,13 @@ def _success_icon(
     folder: Path,
     expected_image_aspect_ratio: tuple[int, int] | None,
     quality_thresholds: tuple[tuple[int, int], tuple[int, int]] | None,
+    quality_indicators_enabled: bool,
 ) -> Icon:
     if not resource.file_in_sync(folder):
         return Icon.SUCCESS_CHANGES
     if expected_image_aspect_ratio is None:
         return Icon.SUCCESS
-    if (
-        settings.get_cover_quality_indicators()
-        is settings.CoverQualityIndicators.DISABLE
-    ):
+    if not quality_indicators_enabled:
         return Icon.SUCCESS
 
     image_file = resource.file if isinstance(resource.file, ResourceFileImage) else None
