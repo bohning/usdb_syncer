@@ -118,16 +118,11 @@ class YtErrorMsg:
     """Strings returned by yt-dlp when download fails."""
 
     YT_AGE_RESTRICTED = "Sign in to confirm your age."
-    YT_GEO_RESTRICTED_1 = (
-        "The uploader has not made this video available in your country"
-    )
-    YT_GEO_RESTRICTED_2 = "Video unavailable. This video contains content from"
-    YT_GEO_RESTRICTED_3 = "Video unavailable. This video is not available"
-    YT_GEO_RESTRICTED_4 = "Video unavailable. It was blocked due to the claimed content"
     YT_UNAVAILABLE = "Video unavailable"
     YT_PARSE_ERROR = "Failed to parse XML"
     YT_FORBIDDEN = "HTTP Error 403: Forbidden"
     YT_PREMIUM_ONLY = "This video is only available to Music Premium members"
+    VM_NOT_LOGGED_IN = "The web client only works when logged-in."
     VM_UNAUTHENTICATED = "You're trying to use an unauthenticated request"
     YT_CONFIRM_NOT_BOT = "Sign in to confirm you’re not a bot."  # noqa: RUF001
 
