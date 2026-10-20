@@ -164,6 +164,28 @@ def _saved_search_from_dict(data: dict[str, Any]) -> SavedSearch:
     )
 
 
+def _coerce_path_template(
+    value: Any, default: path_template.PathTemplate
+) -> path_template.PathTemplate:
+    if isinstance(value, path_template.PathTemplate):
+        return value
+    if isinstance(value, str):
+        try:
+            return path_template.PathTemplate.parse(value)
+        except (ValueError, path_template.PathTemplateError):
+            pass
+    return default
+
+
+def _coerce_primitive_str(value: str, ret_type: type) -> Any:
+    try:
+        if ret_type is bool:
+            return bool(int(value))
+        return ret_type(value)
+    except (ValueError, TypeError):
+        return None
+
+
 def _coerce_value(value: Any, default: T) -> T:  # noqa: UP047
     """Coerce a QSettings value to the expected default type."""
     if value is None:
@@ -179,14 +201,7 @@ def _coerce_value(value: Any, default: T) -> T:  # noqa: UP047
             return default
 
     if isinstance(default, path_template.PathTemplate):
-        if isinstance(value, path_template.PathTemplate):
-            return cast("T", value)
-        if isinstance(value, str):
-            try:
-                return cast("T", path_template.PathTemplate.parse(value))
-            except (ValueError, path_template.PathTemplateError):
-                return default
-        return default
+        return _coerce_path_template(value, default)
 
     ret_type = type(default)
     if isinstance(value, ret_type):
@@ -196,12 +211,9 @@ def _coerce_value(value: Any, default: T) -> T:  # noqa: UP047
         return cast("T", bool(value))
 
     if isinstance(value, str) and ret_type in (int, float, bool):
-        try:
-            if ret_type is bool:
-                value = int(value)
-            return cast("T", ret_type(value))  # type: ignore[call-arg]
-        except (ValueError, TypeError):
-            pass
+        parsed = _coerce_primitive_str(value, ret_type)
+        if parsed is not None:
+            return cast("T", parsed)
 
     return default
 
