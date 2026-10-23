@@ -1,5 +1,6 @@
 """General-purpose utilities."""
 
+import contextlib
 import datetime
 import functools
 import itertools
@@ -10,8 +11,9 @@ import subprocess
 import sys
 import time
 import unicodedata
+from collections.abc import Callable
 from pathlib import Path
-from typing import ClassVar
+from typing import ClassVar, Literal
 
 import attrs
 import requests
@@ -446,8 +448,71 @@ def trash_or_delete_path(path: Path) -> None:
             send2trash.send2trash(path)
         except send2trash.TrashPermissionError as err:
             raise errors.TrashError(path) from err
+    elif path.is_dir() and not path.is_symlink():
+        _delete_tree(path)
     else:
-        shutil.rmtree(path) if path.is_dir() else path.unlink()
+        _delete(os.unlink, path)
+
+
+_UNICODE_FORMS: tuple[Literal["NFC", "NFD"], ...] = ("NFC", "NFD")
+
+
+def _delete_tree(path: Path) -> None:
+    if sys.platform != "darwin":
+        shutil.rmtree(path)
+        return
+    # shutil.rmtree deletes entries by their listed name and silently skips ENOENT
+    for root, dirs, files in os.walk(path, topdown=False):
+        for name in files:
+            _delete(os.unlink, Path(root, name))
+        for name in dirs:
+            child = Path(root, name)
+            _delete(os.unlink if child.is_symlink() else os.rmdir, child)
+    _delete(os.rmdir, path)
+
+
+def _delete(remove: Callable[[Path], None], path: Path) -> None:
+    """Call `remove` (unlink or rmdir) on `path`, retrying with other Unicode forms.
+
+    macOS's exFAT driver finds files by any Unicode normalization form, but unlink and
+    rmdir only accept the form actually stored on disk. Directory listings are always
+    NFD, so the stored form is unknown.
+    """
+    try:
+        remove(path)
+    except FileNotFoundError:
+        for variant in _same_file_variants(path):
+            with contextlib.suppress(FileNotFoundError):
+                remove(variant)
+                return
+        raise
+
+
+def _same_file_variants(path: Path) -> list[Path]:
+    """Return the other Unicode forms of `path` that refer to the same file.
+
+    Comparing device and inode ensures that no other file is deleted on file systems
+    where several forms can exist side by side.
+    """
+    try:
+        original = os.lstat(path)
+    except FileNotFoundError:
+        return []
+    variants = {
+        Path(unicodedata.normalize(parent_form, str(path.parent)))
+        / unicodedata.normalize(name_form, path.name)
+        for parent_form, name_form in itertools.product(_UNICODE_FORMS, repeat=2)
+    }
+    return [
+        variant for variant in variants - {path} if _is_same_file(original, variant)
+    ]
+
+
+def _is_same_file(stat: os.stat_result, path: Path) -> bool:
+    try:
+        return os.path.samestat(stat, os.lstat(path))
+    except FileNotFoundError:
+        return False
 
 
 @attrs.define
