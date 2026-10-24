@@ -73,6 +73,14 @@ class PathTemplate:
             raise NotEnoughComponentsError
         return cls([PathTemplateComponent.parse(part) for part in parts])
 
+    @classmethod
+    def try_parse(cls, template: str) -> PathTemplate | None:
+        """Like `parse`, but returns None instead of raising on invalid templates."""
+        try:
+            return cls.parse(template)
+        except PathTemplateError:
+            return None
+
     def evaluate(self, song: UsdbSong, parent: Path = Path()) -> Path:
         """Evaluate the template.
 
