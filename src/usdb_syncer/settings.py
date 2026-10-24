@@ -12,7 +12,6 @@ import json
 import os
 import sys
 import threading
-from collections import defaultdict
 from enum import Enum, StrEnum, auto
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, ClassVar, TypeVar, assert_never, cast
@@ -92,104 +91,13 @@ class _TemporarySettings:
 T = TypeVar("T")
 
 
-def _order_to_dict(order: db.SongOrderBase) -> dict[str, Any]:
-    if isinstance(order, db.SongOrder):
-        return {"type": "native", "value": order.value}
-    if isinstance(order, db.CustomSongOrder):
-        return {"type": "custom", "key": order.custom_data_key}
-    return {"type": "native", "value": db.SongOrder.NONE.value}
-
-
-def _order_from_dict(data: dict[str, Any]) -> db.SongOrderBase:
-    if data.get("type") == "custom":
-        return db.CustomSongOrder(custom_data_key=data.get("key", ""))
-    return db.SongOrder(data.get("value", db.SongOrder.NONE.value))
-
-
-def _saved_search_to_dict(item: SavedSearch) -> dict[str, Any]:
-    b = item.search
-    search_dict = {
-        "order": _order_to_dict(b.order),
-        "descending": b.descending,
-        "text": b.text,
-        "artists": b.artists,
-        "titles": b.titles,
-        "editions": b.editions,
-        "ratings": b.ratings,
-        "statuses": [s.value for s in b.statuses],
-        "languages": b.languages,
-        "views": [list(v) for v in b.views],
-        "years": b.years,
-        "genres": b.genres,
-        "creators": b.creators,
-        "custom_data": dict(b.custom_data),
-        "golden_notes": b.golden_notes,
-    }
-    return {
-        "name": item.name,
-        "subscribed": item.subscribed,
-        "search": search_dict,
-    }
-
-
-def _saved_search_from_dict(data: dict[str, Any]) -> SavedSearch:
-    s_data = data.get("search", {})
-    order = _order_from_dict(s_data.get("order", {}))
-    views = [(v[0], v[1]) for v in s_data.get("views", []) if len(v) == 2]
-    custom_data: defaultdict[str, list[str]] = defaultdict(list)
-    for k, v in s_data.get("custom_data", {}).items():
-        custom_data[k] = list(v)
-
-    builder = db.SearchBuilder(
-        order=order,
-        descending=bool(s_data.get("descending", False)),
-        text=str(s_data.get("text", "")),
-        artists=list(s_data.get("artists", [])),
-        titles=list(s_data.get("titles", [])),
-        editions=list(s_data.get("editions", [])),
-        ratings=list(s_data.get("ratings", [])),
-        statuses=[db.DownloadStatus(s) for s in s_data.get("statuses", [])],
-        languages=list(s_data.get("languages", [])),
-        views=views,
-        years=list(s_data.get("years", [])),
-        genres=list(s_data.get("genres", [])),
-        creators=list(s_data.get("creators", [])),
-        custom_data=custom_data,
-        golden_notes=s_data.get("golden_notes"),
-    )
-    return SavedSearch(
-        name=str(data.get("name", "")),
-        search=builder,
-        subscribed=bool(data.get("subscribed", False)),
-    )
-
-
-def _coerce_path_template(
-    value: Any, default: path_template.PathTemplate
-) -> path_template.PathTemplate:
-    if isinstance(value, path_template.PathTemplate):
-        return value
-    if isinstance(value, str):
-        try:
-            return path_template.PathTemplate.parse(value)
-        except (ValueError, path_template.PathTemplateError):
-            pass
-    return default
-
-
-def _coerce_primitive_str(value: str, ret_type: type) -> Any:
-    try:
-        if ret_type is bool:
-            return bool(int(value))
-        return ret_type(value)
-    except (ValueError, TypeError):
-        return None
-
-
 def _coerce_value(value: Any, default: T) -> T:  # noqa: UP047
     """Coerce a QSettings value to the expected default type."""
     if value is None:
         return default
+
+    if isinstance(value, type(default)):
+        return value
 
     if isinstance(default, Path):
         return cast("T", Path(value))
@@ -201,19 +109,30 @@ def _coerce_value(value: Any, default: T) -> T:  # noqa: UP047
             return default
 
     if isinstance(default, path_template.PathTemplate):
-        return _coerce_path_template(value, default)
+        if isinstance(value, str) and (
+            template := path_template.PathTemplate.try_parse(value)
+        ):
+            return cast("T", template)
+        return default
 
-    ret_type = type(default)
-    if isinstance(value, ret_type):
-        return value
+    return _coerce_primitive(value, default)
 
+
+def _coerce_primitive(value: Any, default: T) -> T:  # noqa: UP047
+    """Coerce a QSettings value to the builtin type of the default."""
     if isinstance(default, bool) and isinstance(value, int):
         return cast("T", bool(value))
 
-    if isinstance(value, str) and ret_type in (int, float, bool):
-        parsed = _coerce_primitive_str(value, ret_type)
-        if parsed is not None:
-            return cast("T", parsed)
+    if isinstance(value, str):
+        try:
+            if isinstance(default, bool):
+                return cast("T", bool(int(value)))
+            if isinstance(default, int):
+                return cast("T", int(value))
+            if isinstance(default, float):
+                return cast("T", float(value))
+        except (ValueError, TypeError):
+            return default
 
     return default
 
@@ -925,6 +844,20 @@ class SavedSearch:
     search: db.SearchBuilder
     subscribed: bool = False
 
+    def to_dict(self) -> dict[str, Any]:
+        """Convert to a dict of builtin types suitable for JSON serialization."""
+        dct = attrs.asdict(self, recurse=False)
+        dct[attrs.fields(SavedSearch).search.name] = self.search.to_dict()
+        return dct
+
+    @classmethod
+    def from_dict(cls, dct: dict[str, Any]) -> SavedSearch:
+        """Inverse of `to_dict`. Raises if the dict is malformed."""
+        field = attrs.fields(cls).search
+        kwargs = dict(dct)
+        kwargs[field.name] = db.SearchBuilder.from_dict(kwargs[field.name])
+        return cls(**kwargs)
+
     def remove(self, temp: bool = False) -> None:
         set_saved_searches(
             [s for s in get_saved_searches() if s.name != self.name], temp=temp
@@ -1456,13 +1389,13 @@ def get_saved_searches() -> list[SavedSearch]:
     try:
         raw = QSettings().value(SettingKey.SAVED_SEARCHES.value)
     except (AttributeError, ValueError, RuntimeError):
+        # setting contains a type incompatible with this version
+        # or deserialization was blocked by PySide6
         return []
 
     if isinstance(raw, list):
-        # backward compatibility: already deserialized list of objects
-        if all(isinstance(x, SavedSearch) for x in raw):
-            return cast("list[SavedSearch]", raw)
-        return []
+        # legacy format: pickled objects, readable only with older PySide6 versions
+        return [s for s in raw if isinstance(s, SavedSearch)]
 
     if not isinstance(raw, str):
         return []
@@ -1470,9 +1403,9 @@ def get_saved_searches() -> list[SavedSearch]:
     try:
         data = json.loads(raw)
         if isinstance(data, list):
-            return [_saved_search_from_dict(d) for d in data if isinstance(d, dict)]
-    except (json.JSONDecodeError, ValueError, KeyError, TypeError):
-        pass
+            return [SavedSearch.from_dict(d) for d in data if isinstance(d, dict)]
+    except (json.JSONDecodeError, TypeError, KeyError, ValueError):
+        logger.exception(None)
 
     return []
 
@@ -1482,7 +1415,7 @@ def set_saved_searches(searches: list[SavedSearch], temp: bool = False) -> None:
         _Settings.set(SettingKey.SAVED_SEARCHES, searches, temp=True)
     else:
         _TemporarySettings.remove(SettingKey.SAVED_SEARCHES)
-        serialized = json.dumps([_saved_search_to_dict(s) for s in searches])
+        serialized = json.dumps([s.to_dict() for s in searches])
         QSettings().setValue(SettingKey.SAVED_SEARCHES.value, serialized)
 
 
