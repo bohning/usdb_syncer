@@ -93,14 +93,14 @@ T = TypeVar("T")
 
 def _coerce_value(value: Any, default: T) -> T:  # noqa: UP047
     """Coerce a QSettings value to the expected default type."""
-    if value is None:
-        return default
-
     if isinstance(value, type(default)):
         return value
 
     if isinstance(default, Path):
-        return cast("T", Path(value))
+        try:
+            return cast("T", Path(value))
+        except TypeError:
+            return default
 
     if isinstance(default, Enum):
         try:
@@ -181,7 +181,11 @@ class _Settings:
                 return temp
 
             try:
-                value = QSettings().value(key.value)
+                qsettings = QSettings()
+                if not qsettings.contains(key.value):
+                    # value() cannot distinguish an absent key from a stored None
+                    return default
+                value = qsettings.value(key.value)
             except (AttributeError, ValueError, RuntimeError):
                 # setting contains a type incompatible with this version
                 # or deserialization was blocked by PySide6
