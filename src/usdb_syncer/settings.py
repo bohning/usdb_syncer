@@ -8,6 +8,7 @@ and getters should be added to this module.
 from __future__ import annotations
 
 import functools
+import json
 import os
 import sys
 import threading
@@ -20,12 +21,11 @@ import keyring
 import yt_dlp.cookies
 from PySide6.QtCore import QByteArray, QSettings
 
+from usdb_syncer import db, path_template
 from usdb_syncer.logger import logger
 
 if TYPE_CHECKING:
     from http.cookiejar import CookieJar
-
-    from usdb_syncer import db, path_template
 
 if "pathlib._local" not in sys.modules:
     # required for Path objects pickled with Python < 3.14
@@ -91,6 +91,52 @@ class _TemporarySettings:
 T = TypeVar("T")
 
 
+def _coerce_value(value: Any, default: T) -> T:  # noqa: UP047
+    """Coerce a QSettings value to the expected default type."""
+    if isinstance(value, type(default)):
+        return value
+
+    if isinstance(default, Path):
+        try:
+            return cast("T", Path(value))
+        except TypeError:
+            return default
+
+    if isinstance(default, Enum):
+        try:
+            return cast("T", type(default)(value))
+        except (ValueError, KeyError):
+            return default
+
+    if isinstance(default, path_template.PathTemplate):
+        if isinstance(value, str) and (
+            template := path_template.PathTemplate.try_parse(value)
+        ):
+            return cast("T", template)
+        return default
+
+    return _coerce_primitive(value, default)
+
+
+def _coerce_primitive(value: Any, default: T) -> T:  # noqa: UP047
+    """Coerce a QSettings value to the builtin type of the default."""
+    if isinstance(default, bool) and isinstance(value, int):
+        return cast("T", bool(value))
+
+    if isinstance(value, str):
+        try:
+            if isinstance(default, bool):
+                return cast("T", bool(int(value)))
+            if isinstance(default, int):
+                return cast("T", int(value))
+            if isinstance(default, float):
+                return cast("T", float(value))
+        except (ValueError, TypeError):
+            return default
+
+    return default
+
+
 class _Settings:
     """Settings for the USDB Syncer.
 
@@ -119,6 +165,13 @@ class _Settings:
             if isinstance(value, bool):
                 # Qt stores bools as "true" and "false" otherwise
                 value = int(value)
+            elif isinstance(value, Path):
+                value = str(value)
+            elif isinstance(value, Enum):
+                value = value.value
+            elif isinstance(value, path_template.PathTemplate):
+                value = str(value)
+
             QSettings().setValue(key.value, value)
 
     @classmethod
@@ -128,25 +181,17 @@ class _Settings:
                 return temp
 
             try:
-                value = QSettings().value(key.value)
-            except (AttributeError, ValueError):
+                qsettings = QSettings()
+                if not qsettings.contains(key.value):
+                    # value() cannot distinguish an absent key from a stored None
+                    return default
+                value = qsettings.value(key.value)
+            except (AttributeError, ValueError, RuntimeError):
                 # setting contains a type incompatible with this version
+                # or deserialization was blocked by PySide6
                 return default
-            if isinstance(value, ret_type := type(default)):
-                return value
-            if isinstance(default, bool) and isinstance(value, int):
-                # we store bools as ints because Qt doesn't store raw bools
-                return cast("T", bool(value))
-            if isinstance(value, str) and ret_type in (int, float, bool):
-                # in INI files (default on Linux) numeric values are stored as strings
-                try:
-                    if ret_type is bool:
-                        value = int(value)
-                    # MyPy doesn't understand any of this, but it should be safe
-                    return cast("T", ret_type(value))  # type: ignore[call-arg]
-                except (ValueError, TypeError):
-                    pass
-            return default
+
+            return _coerce_value(value, default)
 
     @classmethod
     def reset(cls) -> None:
@@ -803,6 +848,20 @@ class SavedSearch:
     search: db.SearchBuilder
     subscribed: bool = False
 
+    def to_dict(self) -> dict[str, Any]:
+        """Convert to a dict of builtin types suitable for JSON serialization."""
+        dct = attrs.asdict(self, recurse=False)
+        dct[attrs.fields(SavedSearch).search.name] = self.search.to_dict()
+        return dct
+
+    @classmethod
+    def from_dict(cls, dct: dict[str, Any]) -> SavedSearch:
+        """Inverse of `to_dict`. Raises if the dict is malformed."""
+        field = attrs.fields(cls).search
+        kwargs = dict(dct)
+        kwargs[field.name] = db.SearchBuilder.from_dict(kwargs[field.name])
+        return cls(**kwargs)
+
     def remove(self, temp: bool = False) -> None:
         set_saved_searches(
             [s for s in get_saved_searches() if s.name != self.name], temp=temp
@@ -1328,11 +1387,40 @@ def set_custom_meta_data_columns(keys: list[str], temp: bool = False) -> None:
 
 
 def get_saved_searches() -> list[SavedSearch]:
-    return _Settings.get(SettingKey.SAVED_SEARCHES, [])
+    if temp := _TemporarySettings.get(SettingKey.SAVED_SEARCHES):
+        return cast("list[SavedSearch]", temp)
+
+    try:
+        raw = QSettings().value(SettingKey.SAVED_SEARCHES.value)
+    except (AttributeError, ValueError, RuntimeError):
+        # setting contains a type incompatible with this version
+        # or deserialization was blocked by PySide6
+        return []
+
+    if isinstance(raw, list):
+        # legacy format: pickled objects, readable only with older PySide6 versions
+        return [s for s in raw if isinstance(s, SavedSearch)]
+
+    if not isinstance(raw, str):
+        return []
+
+    try:
+        data = json.loads(raw)
+        if isinstance(data, list):
+            return [SavedSearch.from_dict(d) for d in data if isinstance(d, dict)]
+    except (json.JSONDecodeError, TypeError, KeyError, ValueError):
+        logger.exception(None)
+
+    return []
 
 
 def set_saved_searches(searches: list[SavedSearch], temp: bool = False) -> None:
-    _Settings.set(SettingKey.SAVED_SEARCHES, searches, temp)
+    if temp:
+        _Settings.set(SettingKey.SAVED_SEARCHES, searches, temp=True)
+    else:
+        _TemporarySettings.remove(SettingKey.SAVED_SEARCHES)
+        serialized = json.dumps([s.to_dict() for s in searches])
+        QSettings().setValue(SettingKey.SAVED_SEARCHES.value, serialized)
 
 
 def get_default_saved_search() -> str:
