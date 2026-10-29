@@ -952,7 +952,7 @@ def delete_image_dimensions(sync_meta_ids: Iterable[SyncMetaId]) -> None:
             continue
         placeholders = ", ".join("?" for _ in batch)
         _DbState.connection().execute(
-            f"DELETE FROM image_dimensions WHERE sync_meta_id IN ({placeholders})",
+            f"DELETE FROM image_details WHERE sync_meta_id IN ({placeholders})",
             tuple(map(int, batch)),
         )
 

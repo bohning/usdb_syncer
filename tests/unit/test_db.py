@@ -56,7 +56,7 @@ def test_persisting_image_dimensions(song: UsdbSong) -> None:
         db_song = UsdbSong.from_db_row(song.song_id, row)
         image_rows = (
             db._DbState.connection()
-            .execute("SELECT kind, width, height FROM image_dimensions")
+            .execute("SELECT kind, width, height FROM image_details")
             .fetchall()
         )
         assert song.sync_meta.cover
@@ -67,7 +67,7 @@ def test_persisting_image_dimensions(song: UsdbSong) -> None:
         song.upsert()
         cleared_image_rows = (
             db._DbState.connection()
-            .execute("SELECT kind, width, height FROM image_dimensions")
+            .execute("SELECT kind, width, height FROM image_details")
             .fetchall()
         )
 

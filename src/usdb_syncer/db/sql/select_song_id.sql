@@ -19,7 +19,7 @@ FROM
     AND sync_meta.sync_meta_id = video.sync_meta_id
     LEFT JOIN resource_file AS cover ON cover.kind = 'cover'
     AND sync_meta.sync_meta_id = cover.sync_meta_id
-    LEFT JOIN image_dimensions AS cover_dimensions
+    LEFT JOIN image_details AS cover_dimensions
     ON cover_dimensions.sync_meta_id = cover.sync_meta_id
     AND cover_dimensions.kind = cover.kind
     LEFT JOIN resource_file AS background ON background.kind = 'background'

@@ -1,6 +1,6 @@
 BEGIN;
 
-CREATE TABLE image_dimensions (
+CREATE TABLE image_details (
     sync_meta_id INTEGER NOT NULL,
     kind TEXT NOT NULL CHECK (kind IN ('cover', 'background')),
     width INTEGER NOT NULL,
