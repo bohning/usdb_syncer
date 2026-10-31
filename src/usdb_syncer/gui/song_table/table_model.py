@@ -187,20 +187,25 @@ def status_tooltip(resource: Resource, folder: Path) -> str:
         local_changes = " (has local changes)"
     match resource.status:
         case JobStatus.SUCCESS | JobStatus.SUCCESS_UNCHANGED:
-            tooltip = f"{file.fname}{local_changes}" if file else "Local file missing"
+            tooltip = (
+                f"{file.display_name}{local_changes}" if file else "Local file missing"
+            )
         case JobStatus.SKIPPED_DISABLED:
             tooltip = "Resource download disabled in the settings"
         case JobStatus.SKIPPED_UNAVAILABLE:
             tooltip = "No resource available"
         case JobStatus.FALLBACK:
             tooltip = (
-                (f"{file.fname} (fallback to commented/USDB resource){local_changes}")
+                (
+                    f"{file.display_name} "
+                    f"(fallback to commented/USDB resource){local_changes}"
+                )
                 if file
                 else "Local file missing"
             )
         case JobStatus.FAILURE_EXISTING:
             tooltip = (
-                (f"{file.fname} (fallback to existing resource){local_changes}")
+                f"{file.display_name} (fallback to existing resource){local_changes}"
                 if file
                 else "Local file missing"
             )
