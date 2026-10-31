@@ -228,6 +228,9 @@ class SongOrderBase:
             return CustomSongOrder(value)
         raise TypeError
 
+    def to_json(self) -> int | str:
+        raise NotImplementedError
+
     def parameter(self) -> str | None:
         return None
 
@@ -315,6 +318,9 @@ class SongOrder(SongOrderBase, enum.Enum):
             case SongOrder.STATUS:
                 return _STATUS_COLUMN
 
+    def to_json(self) -> int | str:
+        return self.value
+
     def order(self, alias: str, by_image_size: bool = False) -> str:
         """Return CASE SQL expression for resource_file status sorting."""
         statuses = [
@@ -368,6 +374,9 @@ class CustomSongOrder(SongOrderBase):
         )
 
     def parameter(self) -> str | None:
+        return self.custom_data_key
+
+    def to_json(self) -> int | str:
         return self.custom_data_key
 
 
@@ -475,15 +484,8 @@ class SearchBuilder:
 
     @classmethod
     def from_json(cls, json_str: str) -> SearchBuilder | None:
-        fields = attrs.fields(cls)
         try:
-            dct = json.loads(json_str)
-            dct[fields.order.name] = SongOrderBase.from_json(dct[fields.order.name])
-            dct[fields.statuses.name] = [
-                DownloadStatus(s) for s in dct[fields.statuses.name]
-            ]
-            dct[fields.views.name] = [tuple(item) for item in dct[fields.views.name]]
-            return cls(**dct)
+            return cls.from_dict(json.loads(json_str))
         except (
             json.decoder.JSONDecodeError,
             UnicodeDecodeError,
@@ -493,6 +495,37 @@ class SearchBuilder:
         ):
             logger.exception(None)
         return None
+
+    def to_dict(self) -> dict[str, Any]:
+        """Convert to a dict of builtin types suitable for JSON serialization."""
+        return attrs.asdict(self, value_serializer=_search_value_serializer)
+
+    @classmethod
+    def from_dict(cls, dct: dict[str, Any]) -> SearchBuilder:
+        """Inverse of `to_dict`. Raises if the dict is malformed."""
+        fields = attrs.fields(cls)
+        kwargs = dict(dct)
+        if (order := kwargs.get(fields.order.name)) is not None:
+            kwargs[fields.order.name] = SongOrderBase.from_json(order)
+        if (statuses := kwargs.get(fields.statuses.name)) is not None:
+            kwargs[fields.statuses.name] = [DownloadStatus(s) for s in statuses]
+        if (views := kwargs.get(fields.views.name)) is not None:
+            kwargs[fields.views.name] = [tuple(v) for v in views]
+        if (custom_data := kwargs.get(fields.custom_data.name)) is not None:
+            kwargs[fields.custom_data.name] = defaultdict(
+                list, {k: list(v) for k, v in custom_data.items()}
+            )
+        return cls(**kwargs)
+
+
+def _search_value_serializer(
+    _inst: type | None, _field: attrs.Attribute | None, value: Any
+) -> Any:
+    if isinstance(value, SongOrderBase):
+        return value.to_json()
+    if isinstance(value, DownloadStatus):
+        return value.value
+    return value
 
 
 def _migrate_to_version_10() -> None:
