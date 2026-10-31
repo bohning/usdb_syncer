@@ -1,5 +1,6 @@
 <RCC>
     <qresource prefix="icons">
+        <file>alert-decagram-white.svg</file>
         <file>alert-white.svg</file>
         <file>arrow-split.png</file>
         <file>artist-white.svg</file>
@@ -21,6 +22,7 @@
         <file>check-circle-white.svg</file>
         <file>check-decagram-outline-white.svg</file>
         <file>check-decagram-white.svg</file>
+        <file>check-white.svg</file>
         <file>check_for_update.png</file>
         <file>chevron-down-white.svg</file>
         <file>chevron-left-white.svg</file>

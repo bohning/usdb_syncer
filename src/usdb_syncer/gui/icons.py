@@ -98,10 +98,13 @@ class Icon(enum.Enum):
     STEM_SEPARATION = "arrow-split.png", "call-split-white.svg"
     SUCCESS = "tick-green.png", "check-circle-white.svg"
     SUCCESS_ASPECTRATIO = "tick-green-exclamation.png", "check-decagram-white.svg"
-    SUCCESS_MEDIUM = "tick-yellow.png", "check-circle-white.svg"
-    SUCCESS_MEDIUM_ASPECTRATIO = "tick-yellow-exclamation.png", "check-circle-white.svg"
-    SUCCESS_SMALL = "tick-red.png", "check-circle-white.svg"
-    SUCCESS_SMALL_ASPECTRATIO = "tick-red-exclamation.png", "check-circle-white.svg"
+    SUCCESS_MEDIUM = "tick-yellow.png", "check-circle-outline-white.svg"  # noqa: PIE796
+    SUCCESS_MEDIUM_ASPECTRATIO = (  # noqa: PIE796
+        "tick-yellow-exclamation.png",
+        "check-decagram-outline-white.svg",
+    )
+    SUCCESS_SMALL = "tick-red.png", "check-white.svg"
+    SUCCESS_SMALL_ASPECTRATIO = "tick-red-exclamation.png", "alert-decagram-white.svg"
     SUCCESS_CHANGES = "tick-green-exclamation.png", "check-decagram-white.svg"  # noqa: PIE796
     TAGS = "price-tag.png", "tag-white.svg"
     TEXT = "text.png", "file-document-white.svg"
