@@ -6,7 +6,13 @@ from pathlib import Path
 from PIL import Image
 
 from usdb_syncer.db import JobStatus
-from usdb_syncer.sync_meta import Resource, ResourceFileImage, SyncMeta, SyncMetaEncoder
+from usdb_syncer.sync_meta import (
+    ImageResource,
+    Resource,
+    ResourceFileImage,
+    SyncMeta,
+    SyncMetaEncoder,
+)
 from usdb_syncer.usdb_song import UsdbSong
 
 
@@ -52,7 +58,8 @@ def test_image_dimensions_roundtrip_in_meta_file(
 
     loaded = SyncMeta.try_from_file(meta.path)
 
-    assert loaded and loaded.cover and isinstance(loaded.cover.file, ResourceFileImage)
+    assert loaded and isinstance(loaded.cover, ImageResource)
+    assert loaded.cover and isinstance(loaded.cover.file, ResourceFileImage)
     assert loaded.cover.file.width == 640
     assert loaded.cover.file.height == 480
 

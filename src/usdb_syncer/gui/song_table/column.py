@@ -13,7 +13,6 @@ from PySide6.QtGui import QIcon
 from usdb_syncer import db, settings
 from usdb_syncer.constants import RatingSymbol
 from usdb_syncer.gui.icons import Icon
-from usdb_syncer.sync_meta import ResourceFileImage
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
@@ -26,6 +25,8 @@ if TYPE_CHECKING:
 
 
 MIN_COLUMN_WIDTH = 24
+COVER_ASPECT_RATIO = (1, 1)
+BACKGROUND_ASPECT_RATIO = (16, 9)
 
 
 class ColumnBase:
@@ -256,43 +257,20 @@ class Column(ColumnBase, enum.Enum):
             case Column.COVER:
                 if not (sync_meta and (cover := sync_meta.cover)):
                     return None
-                icon = status_icon(
+                icon = _image_status_icon(
                     cover,
                     sync_meta.path.parent,
-                    (1, 1),
-                    (
-                        (
-                            settings.CoverQualityIndicators.ENABLE_1000.value,
-                            settings.CoverQualityIndicators.ENABLE_1000.value,
-                        ),
-                        (
-                            settings.CoverQualityIndicators.ENABLE_1000.value // 2,
-                            settings.CoverQualityIndicators.ENABLE_1000.value // 2,
-                        ),
-                    ),
-                    quality_indicators_enabled=(
-                        settings.get_cover_quality_indicators()
-                        is not settings.CoverQualityIndicators.DISABLE
-                    ),
+                    COVER_ASPECT_RATIO,
+                    settings.get_cover_quality_indicators().thresholds,
                 )
             case Column.BACKGROUND:
                 if not (sync_meta and (background := sync_meta.background)):
                     return None
-                icon = status_icon(
+                icon = _image_status_icon(
                     background,
                     sync_meta.path.parent,
-                    (16, 9),
-                    (
-                        (settings.BackgroundQualityIndicators.ENABLE_1920.value, 1080),
-                        (
-                            settings.BackgroundQualityIndicators.ENABLE_1920.value // 2,
-                            1080 // 2,
-                        ),
-                    ),
-                    quality_indicators_enabled=(
-                        settings.get_background_quality_indicators()
-                        is not settings.BackgroundQualityIndicators.DISABLE
-                    ),
+                    BACKGROUND_ASPECT_RATIO,
+                    settings.get_background_quality_indicators().thresholds,
                 )
             case Column.PINNED:
                 if not (sync_meta and sync_meta.pinned):
@@ -390,6 +368,21 @@ def status_icon(
     return icon
 
 
+def _image_status_icon(
+    resource: Resource,
+    folder: Path,
+    expected_image_aspect_ratio: tuple[int, int],
+    quality_thresholds: tuple[tuple[int, int], tuple[int, int]] | None,
+) -> Icon:
+    return status_icon(
+        resource,
+        folder,
+        expected_image_aspect_ratio,
+        quality_thresholds,
+        quality_indicators_enabled=quality_thresholds is not None,
+    )
+
+
 def _success_icon(
     resource: Resource,
     folder: Path,
@@ -404,20 +397,15 @@ def _success_icon(
     if not quality_indicators_enabled:
         return Icon.SUCCESS
 
-    image_file = resource.file if isinstance(resource.file, ResourceFileImage) else None
-    matches_aspect_ratio = _image_matches_aspect_ratio(
-        image_file, expected_image_aspect_ratio
+    file = resource.file
+    matches_aspect_ratio = (
+        file.matches_aspect_ratio(expected_image_aspect_ratio) if file else True
     )
-    if (
-        quality_thresholds
-        and image_file
-        and image_file.width is not None
-        and image_file.height is not None
-    ):
+    if quality_thresholds and file:
         high_thresholds, medium_thresholds = quality_thresholds
-        if _meets_image_dimensions(image_file, high_thresholds):
+        if file.meets_dimensions(high_thresholds):
             return Icon.SUCCESS if matches_aspect_ratio else Icon.SUCCESS_ASPECTRATIO
-        if _meets_image_dimensions(image_file, medium_thresholds):
+        if file.meets_dimensions(medium_thresholds):
             return (
                 Icon.SUCCESS_MEDIUM
                 if matches_aspect_ratio
@@ -429,25 +417,6 @@ def _success_icon(
             else Icon.SUCCESS_SMALL_ASPECTRATIO
         )
     return Icon.SUCCESS if matches_aspect_ratio else Icon.SUCCESS_ASPECTRATIO
-
-
-def _meets_image_dimensions(
-    image_file: ResourceFileImage, minimum_dimensions: tuple[int, int]
-) -> bool:
-    assert image_file.width is not None and image_file.height is not None
-    return (
-        image_file.width >= minimum_dimensions[0]
-        and image_file.height >= minimum_dimensions[1]
-    )
-
-
-def _image_matches_aspect_ratio(
-    image_file: ResourceFileImage | None, expected_ratio: tuple[int, int]
-) -> bool:
-    if image_file is None or image_file.width is None or image_file.height is None:
-        return True
-    numerator, denominator = expected_ratio
-    return image_file.width * denominator == image_file.height * numerator
 
 
 class _ColumnRegistry:

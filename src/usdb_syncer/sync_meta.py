@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, ClassVar
 
 import attrs
 from PIL import Image
@@ -76,6 +76,16 @@ class ResourceFile:
             )
         return self._is_in_sync
 
+    @property
+    def display_name(self) -> str:
+        return self.fname
+
+    def matches_aspect_ratio(self, _expected_ratio: tuple[int, int]) -> bool:
+        return True
+
+    def meets_dimensions(self, _minimum_dimensions: tuple[int, int]) -> bool:
+        return False
+
 
 @attrs.define
 class ResourceFileImage(ResourceFile):
@@ -83,6 +93,26 @@ class ResourceFileImage(ResourceFile):
 
     width: int | None = None
     height: int | None = None
+
+    @property
+    def display_name(self) -> str:
+        if self.width is not None and self.height is not None:
+            return f"{self.fname} ({self.width}x{self.height})"
+        return self.fname
+
+    def matches_aspect_ratio(self, expected_ratio: tuple[int, int]) -> bool:
+        if self.width is None or self.height is None:
+            return True
+        numerator, denominator = expected_ratio
+        return self.width * denominator == self.height * numerator
+
+    def meets_dimensions(self, minimum_dimensions: tuple[int, int]) -> bool:
+        return (
+            self.width is not None
+            and self.height is not None
+            and self.width >= minimum_dimensions[0]
+            and self.height >= minimum_dimensions[1]
+        )
 
     @classmethod
     def new(cls, path: Path, resource: str) -> ResourceFileImage:
@@ -138,9 +168,10 @@ class Resource:
 
     status: JobStatus
     file: ResourceFile | None = None
+    file_type: ClassVar[type[ResourceFile]] = ResourceFile
 
     @classmethod
-    def from_nested_dict(cls, dct: Any, image: bool = False) -> Resource | None:
+    def from_nested_dict(cls, dct: Any) -> Resource | None:
         if not isinstance(dct, dict):
             return None
 
@@ -152,26 +183,16 @@ class Resource:
 
         file: ResourceFile | None = None
         if "fname" in dct and dct.get("fname") is not None:
-            if image:
-                file = ResourceFileImage.from_nested_dict(dct)
-            else:
-                file = ResourceFile.from_nested_dict(dct)
+            file = cls.file_type.from_nested_dict(dct)
 
         return cls(status, file)
 
     @classmethod
-    def from_db_row(cls, row: tuple, image: bool = False) -> Resource | None:
+    def from_db_row(cls, row: tuple) -> Resource | None:
         if (status := row[3]) is None:
             return None
 
-        file: ResourceFile | None
-        if image:
-            file = ResourceFileImage.from_image_db_row(
-                (row[0], row[1], row[2], row[4], row[5])
-            )
-        else:
-            file = ResourceFile.from_db_row(row[:3])
-
+        file = cls.file_type.from_db_row(row[:3])
         return cls(status, file)
 
     def db_params(
@@ -201,6 +222,22 @@ class Resource:
 
     def file_in_sync(self, folder: Path) -> bool:
         return bool(self.file and self.file.is_in_sync(folder))
+
+
+class ImageResource(Resource):
+    """Info about the status and file of an image resource."""
+
+    file_type: ClassVar[type[ResourceFile]] = ResourceFileImage
+
+    @classmethod
+    def from_db_row(cls, row: tuple) -> ImageResource | None:
+        if (status := row[3]) is None:
+            return None
+
+        file = ResourceFileImage.from_image_db_row(
+            (row[0], row[1], row[2], row[4], row[5])
+        )
+        return cls(status, file)
 
 
 @attrs.define
@@ -267,8 +304,8 @@ class SyncMeta:
                 vocals=Resource.from_nested_dict(dct.get("vocals")),
                 instrumental=Resource.from_nested_dict(dct.get("instrumental")),
                 video=Resource.from_nested_dict(dct["video"]),
-                cover=Resource.from_nested_dict(dct["cover"], image=True),
-                background=Resource.from_nested_dict(dct["background"], image=True),
+                cover=ImageResource.from_nested_dict(dct["cover"]),
+                background=ImageResource.from_nested_dict(dct["background"]),
                 custom_data=CustomData(dct.get("custom_data")),
             )
         except (TypeError, KeyError, ValueError):
@@ -296,8 +333,8 @@ class SyncMeta:
         meta.vocals = Resource.from_db_row(row[15:19])
         meta.instrumental = Resource.from_db_row(row[19:23])
         meta.video = Resource.from_db_row(row[23:27])
-        meta.cover = Resource.from_db_row(row[27:33], image=True)
-        meta.background = Resource.from_db_row(row[33:39], image=True)
+        meta.cover = ImageResource.from_db_row(row[27:33])
+        meta.background = ImageResource.from_db_row(row[33:39])
         meta.custom_data = CustomData(db.get_custom_data(meta.sync_meta_id))
         return meta
 
@@ -451,13 +488,21 @@ class SyncMeta:
         return self.path.parent / self.background.file.fname
 
 
+_RESOURCE_FILE_FIELDS = attrs.fields(ResourceFile)
+_IMAGE_RESOURCE_FILE_FIELDS = attrs.fields(ResourceFileImage)
+
+
 def _resource_file_filter(attribute: attrs.Attribute[Any], value: Any) -> bool:
-    return attribute.name != "_is_in_sync" and (
-        attribute.name not in ("width", "height") or value is not None
+    return attribute not in (
+        _RESOURCE_FILE_FIELDS._is_in_sync,
+        _IMAGE_RESOURCE_FILE_FIELDS._is_in_sync,
+    ) and (
+        attribute
+        not in (_IMAGE_RESOURCE_FILE_FIELDS.width, _IMAGE_RESOURCE_FILE_FIELDS.height)
+        or value is not None
     )
 
 
-_RESOURCE_FILE_FILTER = _resource_file_filter
 _SYNC_META_FIELDS = attrs.fields(SyncMeta)
 _SYNC_META_FILTER = attrs.filters.exclude(
     _SYNC_META_FIELDS.sync_meta_id, _SYNC_META_FIELDS.path, _SYNC_META_FIELDS.mtime
@@ -469,7 +514,7 @@ class SyncMetaEncoder(json.JSONEncoder):
 
     def default(self, o: Any) -> Any:
         if isinstance(o, Resource):
-            dct = attrs.asdict(o.file, filter=_RESOURCE_FILE_FILTER) if o.file else {}
+            dct = attrs.asdict(o.file, filter=_resource_file_filter) if o.file else {}
             dct["status"] = o.status
             return dct
         if isinstance(o, MetaTags):

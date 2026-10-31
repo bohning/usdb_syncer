@@ -18,7 +18,7 @@ from usdb_syncer.db import JobStatus
 from usdb_syncer.gui import events as gui_events
 from usdb_syncer.gui.fonts import get_rating_font
 from usdb_syncer.gui.song_table.column import Column, ColumnBase, CustomColumn
-from usdb_syncer.sync_meta import Resource, ResourceFileImage
+from usdb_syncer.sync_meta import Resource
 from usdb_syncer.usdb_song import UsdbSong
 
 QIndex = QModelIndex | QPersistentModelIndex
@@ -185,19 +185,10 @@ def status_tooltip(resource: Resource, folder: Path) -> str:
     local_changes = ""
     if (file := resource.file) and not file.is_in_sync(folder):
         local_changes = " (has local changes)"
-    dimensions = (
-        f" ({file.width}x{file.height})"
-        if isinstance(file, ResourceFileImage)
-        and file.width is not None
-        and file.height is not None
-        else ""
-    )
     match resource.status:
         case JobStatus.SUCCESS | JobStatus.SUCCESS_UNCHANGED:
             tooltip = (
-                f"{file.fname}{dimensions}{local_changes}"
-                if file
-                else "Local file missing"
+                f"{file.display_name}{local_changes}" if file else "Local file missing"
             )
         case JobStatus.SKIPPED_DISABLED:
             tooltip = "Resource download disabled in the settings"
@@ -206,7 +197,7 @@ def status_tooltip(resource: Resource, folder: Path) -> str:
         case JobStatus.FALLBACK:
             tooltip = (
                 (
-                    f"{file.fname}{dimensions} "
+                    f"{file.display_name} "
                     f"(fallback to commented/USDB resource){local_changes}"
                 )
                 if file
@@ -214,8 +205,7 @@ def status_tooltip(resource: Resource, folder: Path) -> str:
             )
         case JobStatus.FAILURE_EXISTING:
             tooltip = (
-                f"{file.fname}{dimensions} (fallback to existing resource)"
-                f"{local_changes}"
+                f"{file.display_name} (fallback to existing resource){local_changes}"
                 if file
                 else "Local file missing"
             )

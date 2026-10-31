@@ -371,6 +371,12 @@ class CoverQualityIndicators(Enum):
     DISABLE = 0
     ENABLE_1000 = 1000
 
+    @property
+    def thresholds(self) -> tuple[tuple[int, int], tuple[int, int]] | None:
+        if self is CoverQualityIndicators.DISABLE:
+            return None
+        return ((self.value, self.value), (self.value // 2, self.value // 2))
+
     def __str__(self) -> str:
         match self:
             case CoverQualityIndicators.DISABLE:
@@ -411,6 +417,13 @@ class BackgroundQualityIndicators(Enum):
 
     DISABLE = 0
     ENABLE_1920 = 1920
+
+    @property
+    def thresholds(self) -> tuple[tuple[int, int], tuple[int, int]] | None:
+        if self is BackgroundQualityIndicators.DISABLE:
+            return None
+        height = self.value * 9 // 16
+        return ((self.value, height), (self.value // 2, height // 2))
 
     def __str__(self) -> str:
         match self:
@@ -869,6 +882,8 @@ class SavedSearch:
 
 def reset() -> None:
     _Settings.reset()
+    get_cover_quality_indicators.cache_clear()
+    get_background_quality_indicators.cache_clear()
 
 
 def get_auto_update() -> bool:
@@ -1047,6 +1062,7 @@ def set_cover_max_size(value: CoverMaxSize, temp: bool = False) -> None:
     _Settings.set(SettingKey.COVER_MAX_SIZE, value, temp)
 
 
+@functools.cache
 def get_cover_quality_indicators() -> CoverQualityIndicators:
     return _Settings.get(
         SettingKey.COVER_QUALITY_INDICATORS, CoverQualityIndicators.DISABLE
@@ -1057,8 +1073,10 @@ def set_cover_quality_indicators(
     value: CoverQualityIndicators, temp: bool = False
 ) -> None:
     _Settings.set(SettingKey.COVER_QUALITY_INDICATORS, value, temp)
+    get_cover_quality_indicators.cache_clear()
 
 
+@functools.cache
 def get_background_quality_indicators() -> BackgroundQualityIndicators:
     return _Settings.get(
         SettingKey.BACKGROUND_QUALITY_INDICATORS, BackgroundQualityIndicators.DISABLE
@@ -1069,6 +1087,7 @@ def set_background_quality_indicators(
     value: BackgroundQualityIndicators, temp: bool = False
 ) -> None:
     _Settings.set(SettingKey.BACKGROUND_QUALITY_INDICATORS, value, temp)
+    get_background_quality_indicators.cache_clear()
 
 
 def get_browser() -> Browser:
