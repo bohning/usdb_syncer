@@ -5,6 +5,7 @@ from __future__ import annotations
 import base64
 import functools
 import itertools
+import json
 import logging
 import os
 import socket
@@ -22,7 +23,7 @@ from werkzeug.serving import WSGIRequestHandler
 
 from usdb_syncer import SongId, db, errors, logger, utils
 from usdb_syncer.song_loader import DownloadManager
-from usdb_syncer.usdb_song import UsdbSong
+from usdb_syncer.usdb_song import UsdbSong, UsdbSongEncoder
 
 _COOKIE_MAX_AGE = 60 * 60 * 24 * 365
 
@@ -197,8 +198,14 @@ def _create_app(  # noqa: C901
         )
 
     @app.route("/api/songs")
-    def api_songs() -> list[UsdbSong]:
-        return _get_songs(flask.request, show_nonlocal_songs, like_counter)
+    def api_songs() -> flask.Response:
+        # Flask's default JSON encoder cannot serialize UsdbSong; reuse the
+        # project's encoder so /api/songs returns application/json instead of 500.
+        songs = _get_songs(flask.request, show_nonlocal_songs, like_counter)
+        return flask.Response(
+            json.dumps(songs, cls=UsdbSongEncoder, ensure_ascii=False),
+            mimetype="application/json",
+        )
 
     @app.route("/api/songs/<int:selected_id>/audio")
     def api_audio(selected_id: int) -> flask.Response:
