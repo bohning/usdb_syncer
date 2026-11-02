@@ -24,4 +24,7 @@ FROM
     AND cover_dimensions.kind = cover.kind
     LEFT JOIN resource_file AS background ON background.kind = 'background'
     AND sync_meta.sync_meta_id = background.sync_meta_id
+    LEFT JOIN image_details AS background_dimensions
+    ON background_dimensions.sync_meta_id = background.sync_meta_id
+    AND background_dimensions.kind = background.kind
     LEFT JOIN custom_meta_data ON sync_meta.sync_meta_id = custom_meta_data.sync_meta_id

@@ -82,7 +82,7 @@ def test_persisting_image_dimensions(song: UsdbSong) -> None:
     assert cleared_image_rows == []
 
 
-def test_cover_order_sorts_by_status_then_image_size(song: UsdbSong) -> None:
+def test_image_order_sorts_by_status_then_image_size(song: UsdbSong) -> None:
     songs = []
     for song_id, status, width, height in (
         (SongId(1), JobStatus.SUCCESS, 200, 100),
@@ -91,6 +91,16 @@ def test_cover_order_sorts_by_status_then_image_size(song: UsdbSong) -> None:
     ):
         item = copy.copy(song)
         item.song_id = song_id
+        image = Resource(
+            status,
+            ResourceFileImage(
+                f"{song_id}.jpg",
+                0,
+                f"https://example.com/{song_id}.jpg",
+                width=width,
+                height=height,
+            ),
+        )
         item.sync_meta = SyncMeta(
             SyncMetaId.new(),
             song_id,
@@ -98,16 +108,8 @@ def test_cover_order_sorts_by_status_then_image_size(song: UsdbSong) -> None:
             Path(f"C:/{song_id}"),
             0,
             MetaTags(),
-            cover=Resource(
-                status,
-                ResourceFileImage(
-                    f"{song_id}.jpg",
-                    0,
-                    f"https://example.com/{song_id}.jpg",
-                    width=width,
-                    height=height,
-                ),
-            ),
+            cover=image,
+            background=image,
         )
         songs.append(item)
 
@@ -115,11 +117,9 @@ def test_cover_order_sorts_by_status_then_image_size(song: UsdbSong) -> None:
         for item in songs:
             item.upsert()
         db.reset_active_sync_metas(Path("C:"))
-        sorted_ids = list(
-            db.search_usdb_songs(db.SearchBuilder(order=db.SongOrder.COVER))
-        )
-
-    assert sorted_ids == [SongId(2), SongId(1), SongId(3)]
+        for order in (db.SongOrder.COVER, db.SongOrder.BACKGROUND):
+            sorted_ids = list(db.search_usdb_songs(db.SearchBuilder(order=order)))
+            assert sorted_ids == [SongId(2), SongId(1), SongId(3)]
 
 
 @pytest.mark.slow

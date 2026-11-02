@@ -310,7 +310,7 @@ class SongOrder(SongOrderBase, enum.Enum):
             case SongOrder.VIDEO:
                 return self.order("video")
             case SongOrder.COVER:
-                return self.order("cover", by_image_size=True)
+                return self.order("cover")
             case SongOrder.BACKGROUND:
                 return self.order("background")
             case SongOrder.LAST_CHANGE:
@@ -321,8 +321,8 @@ class SongOrder(SongOrderBase, enum.Enum):
     def to_json(self) -> int | str:
         return self.value
 
-    def order(self, alias: str, by_image_size: bool = False) -> str:
-        """Return CASE SQL expression for resource_file status sorting."""
+    def order(self, alias: str) -> str:
+        """Return SQL expression for resource status and image size sorting."""
         statuses = [
             JobStatus.SKIPPED_DISABLED,
             JobStatus.SKIPPED_UNAVAILABLE,
@@ -345,7 +345,7 @@ class SongOrder(SongOrderBase, enum.Enum):
             f"ELSE {len(statuses) + 1} "
             "END"
         )
-        if not by_image_size:
+        if self not in (SongOrder.COVER, SongOrder.BACKGROUND):
             return status_order
         return (
             f"{status_order}, "
