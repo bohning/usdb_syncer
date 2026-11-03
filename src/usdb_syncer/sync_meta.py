@@ -76,6 +76,9 @@ class ResourceFile:
             )
         return self._is_in_sync
 
+    def dimensions(self) -> tuple[int, int] | None:
+        return None
+
     def display_name(self) -> str:
         return self.fname
 
@@ -93,23 +96,28 @@ class ResourceFileImage(ResourceFile):
     width: int | None = None
     height: int | None = None
 
+    def dimensions(self) -> tuple[int, int] | None:
+        if self.width is None or self.height is None:
+            return None
+        return self.width, self.height
+
     def display_name(self) -> str:
-        if self.width is not None and self.height is not None:
-            return f"{self.fname} ({self.width}x{self.height})"
+        if dimensions := self.dimensions():
+            return f"{self.fname} ({dimensions[0]}x{dimensions[1]})"
         return self.fname
 
     def matches_aspect_ratio(self, expected_ratio: tuple[int, int]) -> bool:
-        if self.width is None or self.height is None:
+        if not (dimensions := self.dimensions()):
             return True
         numerator, denominator = expected_ratio
-        return self.width * denominator == self.height * numerator
+        return dimensions[0] * denominator == dimensions[1] * numerator
 
     def meets_dimensions(self, minimum_dimensions: tuple[int, int]) -> bool:
+        if not (dimensions := self.dimensions()):
+            return False
         return (
-            self.width is not None
-            and self.height is not None
-            and self.width >= minimum_dimensions[0]
-            and self.height >= minimum_dimensions[1]
+            dimensions[0] >= minimum_dimensions[0]
+            and dimensions[1] >= minimum_dimensions[1]
         )
 
     @classmethod
@@ -208,14 +216,8 @@ class Resource:
     def image_dimensions_db_params(
         self, sync_meta_id: SyncMetaId, kind: db.ResourceKind
     ) -> db.ImageDimensionsParams | None:
-        if (
-            isinstance(self.file, ResourceFileImage)
-            and self.file.width is not None
-            and self.file.height is not None
-        ):
-            return db.ImageDimensionsParams(
-                sync_meta_id, kind, self.file.width, self.file.height
-            )
+        if self.file and (dimensions := self.file.dimensions()):
+            return db.ImageDimensionsParams(sync_meta_id, kind, *dimensions)
         return None
 
     def file_in_sync(self, folder: Path) -> bool:
