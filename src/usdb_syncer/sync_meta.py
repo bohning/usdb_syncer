@@ -76,7 +76,6 @@ class ResourceFile:
             )
         return self._is_in_sync
 
-    @property
     def display_name(self) -> str:
         return self.fname
 
@@ -94,7 +93,6 @@ class ResourceFileImage(ResourceFile):
     width: int | None = None
     height: int | None = None
 
-    @property
     def display_name(self) -> str:
         if self.width is not None and self.height is not None:
             return f"{self.fname} ({self.width}x{self.height})"
