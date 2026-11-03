@@ -66,7 +66,8 @@ def set_usdb_auth(username: str, password: str) -> None:
 class _TemporarySettings:
     """Temporary settings for the USDB Syncer.
 
-    This class is used to store temporary settings in memory.
+    This class is used to store temporary settings in memory, serving both as a caching
+    layer and a way to overwrite settings in the current session.
     It should not be used directly, as it is not thread-safe.
     """
 
@@ -177,21 +178,22 @@ class _Settings:
     @classmethod
     def get(cls, key: SettingKey, default: T) -> T:
         with cls._lock:
-            if temp := _TemporarySettings.get(key):
+            if (temp := _TemporarySettings.get(key)) is not None:
                 return temp
 
             try:
                 qsettings = QSettings()
                 if not qsettings.contains(key.value):
                     # value() cannot distinguish an absent key from a stored None
-                    return default
-                value = qsettings.value(key.value)
+                    value = default
+                value = _coerce_value(qsettings.value(key.value), default)
             except (AttributeError, ValueError, RuntimeError):
                 # setting contains a type incompatible with this version
                 # or deserialization was blocked by PySide6
-                return default
+                value = default
 
-            return _coerce_value(value, default)
+            _TemporarySettings.set(key, value)
+            return value
 
     @classmethod
     def reset(cls) -> None:
@@ -941,8 +943,6 @@ class SavedSearch:
 
 def reset() -> None:
     _Settings.reset()
-    get_cover_quality_indicators.cache_clear()
-    get_background_quality_indicators.cache_clear()
 
 
 def get_auto_update() -> bool:
@@ -1121,7 +1121,6 @@ def set_cover_max_size(value: CoverMaxSize, temp: bool = False) -> None:
     _Settings.set(SettingKey.COVER_MAX_SIZE, value, temp)
 
 
-@functools.cache
 def get_cover_quality_indicators() -> CoverQualityIndicators:
     return _Settings.get(
         SettingKey.COVER_QUALITY_INDICATORS, CoverQualityIndicators.DISABLE
@@ -1132,10 +1131,8 @@ def set_cover_quality_indicators(
     value: CoverQualityIndicators, temp: bool = False
 ) -> None:
     _Settings.set(SettingKey.COVER_QUALITY_INDICATORS, value, temp)
-    get_cover_quality_indicators.cache_clear()
 
 
-@functools.cache
 def get_background_quality_indicators() -> BackgroundQualityIndicators:
     return _Settings.get(
         SettingKey.BACKGROUND_QUALITY_INDICATORS, BackgroundQualityIndicators.DISABLE
@@ -1146,7 +1143,6 @@ def set_background_quality_indicators(
     value: BackgroundQualityIndicators, temp: bool = False
 ) -> None:
     _Settings.set(SettingKey.BACKGROUND_QUALITY_INDICATORS, value, temp)
-    get_background_quality_indicators.cache_clear()
 
 
 def get_browser() -> Browser:
