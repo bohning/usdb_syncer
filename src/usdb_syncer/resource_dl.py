@@ -340,10 +340,13 @@ def _handle_download_error(
         YtErrorMsg.YT_AGE_RESTRICTED,
         YtErrorMsg.VM_NOT_LOGGED_IN,
         YtErrorMsg.VM_UNAUTHENTICATED,
+        YtErrorMsg.YT_CONFIRM_NOT_BOT,
     }
     hooks.DangerouslyUseYtCookies.call(retry_on)
 
     if any(msg in error_message for msg in retry_on):
+        if YtErrorMsg.YT_CONFIRM_NOT_BOT in error_message:
+            _handle_confirm_not_bot(logger)
         dl_result = _retry_with_cookies(url, options, logger)
         return ResourceDLResult[str](content=dl_result.content)
 
@@ -364,13 +367,6 @@ def _handle_download_error(
     if YtErrorMsg.YT_PREMIUM_ONLY in error_message:
         _handle_premium_only(url, logger)
         return ResourceDLResult(error=ResourceDLError(type=DLErrType.PREMIUM_ONLY))
-    if YtErrorMsg.YT_CONFIRM_NOT_BOT in error_message:
-        logger.warning(
-            "Download failed because YouTube suspects bot activity. "
-            "Reconnect to your ISP / reboot your router to get a new external "
-            "IP address and try again."
-        )
-        return ResourceDLResult(error=ResourceDLError(type=DLErrType.DL_FAILED))
 
     logger.warning("Download failed unexpectedly.")
     return ResourceDLResult(error=ResourceDLError(type=DLErrType.DL_FAILED))
@@ -418,6 +414,15 @@ def _handle_premium_only(url: str, logger: Logger) -> None:
 def _handle_forbidden(url: str, logger: Logger) -> None:
     logger.warning(
         f"Failed to download resource '{url}'. Your IP/account might have been blocked."
+    )
+
+
+def _handle_confirm_not_bot(logger: Logger) -> None:
+    logger.warning(
+        "Download failed because YouTube suspects bot activity. "
+        "Retrying with cookies from your browser. If this fails, you may need to "
+        "reconnect to your ISP / reboot your router to get a new external "
+        "IP address and try again."
     )
 
 
