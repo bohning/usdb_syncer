@@ -821,7 +821,8 @@ def search_usdb_song_creators(search: str) -> set[str]:
 
 def get_in_folder(folder: Path) -> list[tuple]:
     stmt = f"{Sql.SELECT_SYNC_META.text()} WHERE path GLOB ? || '/*'"
-    return _DbState.connection().execute(stmt, (folder.as_posix(),)).fetchall()
+    str_folder = folder.as_posix().removesuffix("/")
+    return _DbState.connection().execute(stmt, (str_folder,)).fetchall()
 
 
 def reset_active_sync_metas(folder: Path) -> None:
