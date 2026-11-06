@@ -116,6 +116,9 @@ def _coerce_value(value: Any, default: T) -> T:  # noqa: UP047
             return cast("T", template)
         return default
 
+    if isinstance(default, (list, _SavedSearches)):
+        return cast("T", _SavedSearches.try_from_qsettings(value)) or default
+
     return _coerce_primitive(value, default)
 
 
@@ -172,11 +175,13 @@ class _Settings:
                 value = value.value
             elif isinstance(value, path_template.PathTemplate):
                 value = str(value)
+            elif isinstance(value, _SavedSearches):
+                value = value.to_qsettings()
 
             QSettings().setValue(key.value, value)
 
     @classmethod
-    def get(cls, key: SettingKey, default: T) -> T:
+    def get(cls, key: SettingKey, default: T, qsettings: QSettings | None = None) -> T:
         with cls._lock:
             if (temp := _TemporarySettings.get(key)) is not None:
                 return temp
@@ -941,6 +946,32 @@ class SavedSearch:
         return next((s for s in get_saved_searches() if s.name == name), None)
 
 
+@attrs.define
+class _SavedSearches:
+    """Wrapper for `SavedSearch`es to enable (de)serializing from/to `QSettings`."""
+
+    inner: list[SavedSearch]
+
+    @classmethod
+    def try_from_qsettings(cls, value: Any) -> _SavedSearches | None:
+        if isinstance(value, list):
+            # legacy format: pickled objects, readable only with older PySide6 versions
+            return _SavedSearches([s for s in value if isinstance(s, SavedSearch)])
+        if isinstance(value, str):
+            try:
+                data = json.loads(value)
+                if isinstance(data, list):
+                    return _SavedSearches(
+                        [SavedSearch.from_dict(d) for d in data if isinstance(d, dict)]
+                    )
+            except (json.JSONDecodeError, TypeError, KeyError, ValueError):
+                logger.exception(None)
+        return None
+
+    def to_qsettings(self) -> str:
+        return json.dumps([s.to_dict() for s in self.inner])
+
+
 def reset() -> None:
     _Settings.reset()
 
@@ -1460,40 +1491,11 @@ def set_custom_meta_data_columns(keys: list[str], temp: bool = False) -> None:
 
 
 def get_saved_searches() -> list[SavedSearch]:
-    if temp := _TemporarySettings.get(SettingKey.SAVED_SEARCHES):
-        return cast("list[SavedSearch]", temp)
-
-    try:
-        raw = QSettings().value(SettingKey.SAVED_SEARCHES.value)
-    except (AttributeError, ValueError, RuntimeError):
-        # setting contains a type incompatible with this version
-        # or deserialization was blocked by PySide6
-        return []
-
-    if isinstance(raw, list):
-        # legacy format: pickled objects, readable only with older PySide6 versions
-        return [s for s in raw if isinstance(s, SavedSearch)]
-
-    if not isinstance(raw, str):
-        return []
-
-    try:
-        data = json.loads(raw)
-        if isinstance(data, list):
-            return [SavedSearch.from_dict(d) for d in data if isinstance(d, dict)]
-    except (json.JSONDecodeError, TypeError, KeyError, ValueError):
-        logger.exception(None)
-
-    return []
+    return _Settings.get(SettingKey.SAVED_SEARCHES, _SavedSearches([])).inner
 
 
 def set_saved_searches(searches: list[SavedSearch], temp: bool = False) -> None:
-    if temp:
-        _Settings.set(SettingKey.SAVED_SEARCHES, searches, temp=True)
-    else:
-        _TemporarySettings.remove(SettingKey.SAVED_SEARCHES)
-        serialized = json.dumps([s.to_dict() for s in searches])
-        QSettings().setValue(SettingKey.SAVED_SEARCHES.value, serialized)
+    _Settings.set(SettingKey.SAVED_SEARCHES, _SavedSearches(searches), temp=temp)
 
 
 def get_default_saved_search() -> str:
