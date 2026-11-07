@@ -25,6 +25,8 @@ if TYPE_CHECKING:
 
 
 MIN_COLUMN_WIDTH = 24
+COVER_ASPECT_RATIO = (1, 1)
+BACKGROUND_ASPECT_RATIO = (16, 9)
 
 
 class ColumnBase:
@@ -255,11 +257,21 @@ class Column(ColumnBase, enum.Enum):
             case Column.COVER:
                 if not (sync_meta and (cover := sync_meta.cover)):
                     return None
-                icon = status_icon(cover, sync_meta.path.parent)
+                icon = _image_status_icon(
+                    cover,
+                    sync_meta.path.parent,
+                    COVER_ASPECT_RATIO,
+                    settings.get_cover_quality_indicators().thresholds,
+                )
             case Column.BACKGROUND:
                 if not (sync_meta and (background := sync_meta.background)):
                     return None
-                icon = status_icon(background, sync_meta.path.parent)
+                icon = _image_status_icon(
+                    background,
+                    sync_meta.path.parent,
+                    BACKGROUND_ASPECT_RATIO,
+                    settings.get_background_quality_indicators().thresholds,
+                )
             case Column.PINNED:
                 if not (sync_meta and sync_meta.pinned):
                     return None
@@ -317,11 +329,21 @@ class CustomColumn(ColumnBase):
         _ColumnRegistry.columns.append(cls.new(key))
 
 
-def status_icon(resource: Resource, folder: Path) -> Icon:
+def status_icon(
+    resource: Resource,
+    folder: Path,
+    expected_image_aspect_ratio: tuple[int, int] | None = None,
+    quality_thresholds: tuple[tuple[int, int], tuple[int, int]] | None = None,
+    quality_indicators_enabled: bool = False,
+) -> Icon:
     match resource.status:
         case db.JobStatus.SUCCESS | db.JobStatus.SUCCESS_UNCHANGED:
-            icon = (
-                Icon.SUCCESS if resource.file_in_sync(folder) else Icon.SUCCESS_CHANGES
+            icon = _success_icon(
+                resource,
+                folder,
+                expected_image_aspect_ratio,
+                quality_thresholds,
+                quality_indicators_enabled,
             )
         case db.JobStatus.SKIPPED_DISABLED:
             icon = Icon.SKIPPED_DISABLED
@@ -344,6 +366,57 @@ def status_icon(resource: Resource, folder: Path) -> Icon:
         case _ as unreachable:
             assert_never(unreachable)
     return icon
+
+
+def _image_status_icon(
+    resource: Resource,
+    folder: Path,
+    expected_image_aspect_ratio: tuple[int, int],
+    quality_thresholds: tuple[tuple[int, int], tuple[int, int]] | None,
+) -> Icon:
+    return status_icon(
+        resource,
+        folder,
+        expected_image_aspect_ratio,
+        quality_thresholds,
+        quality_indicators_enabled=quality_thresholds is not None,
+    )
+
+
+def _success_icon(
+    resource: Resource,
+    folder: Path,
+    expected_image_aspect_ratio: tuple[int, int] | None,
+    quality_thresholds: tuple[tuple[int, int], tuple[int, int]] | None,
+    quality_indicators_enabled: bool,
+) -> Icon:
+    if not resource.file_in_sync(folder):
+        return Icon.SUCCESS_CHANGES
+    if expected_image_aspect_ratio is None:
+        return Icon.SUCCESS
+    if not quality_indicators_enabled:
+        return Icon.SUCCESS
+
+    file = resource.file
+    matches_aspect_ratio = (
+        file.matches_aspect_ratio(expected_image_aspect_ratio) if file else True
+    )
+    if quality_thresholds and file:
+        high_thresholds, medium_thresholds = quality_thresholds
+        if file.meets_dimensions(high_thresholds):
+            return Icon.SUCCESS if matches_aspect_ratio else Icon.SUCCESS_ASPECTRATIO
+        if file.meets_dimensions(medium_thresholds):
+            return (
+                Icon.SUCCESS_MEDIUM
+                if matches_aspect_ratio
+                else Icon.SUCCESS_MEDIUM_ASPECTRATIO
+            )
+        return (
+            Icon.SUCCESS_SMALL
+            if matches_aspect_ratio
+            else Icon.SUCCESS_SMALL_ASPECTRATIO
+        )
+    return Icon.SUCCESS if matches_aspect_ratio else Icon.SUCCESS_ASPECTRATIO
 
 
 class _ColumnRegistry:

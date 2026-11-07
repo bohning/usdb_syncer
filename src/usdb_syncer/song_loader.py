@@ -42,7 +42,7 @@ from usdb_syncer.resource_dl import ImageKind
 from usdb_syncer.separation import SeparationManager
 from usdb_syncer.settings import FormatVersion
 from usdb_syncer.song_txt import SongTxt
-from usdb_syncer.sync_meta import Resource, ResourceFile, SyncMeta
+from usdb_syncer.sync_meta import Resource, ResourceFile, ResourceFileImage, SyncMeta
 from usdb_syncer.usdb_song import DownloadStatus, UsdbSong
 from usdb_syncer.utils import video_url_from_resource
 
@@ -242,7 +242,7 @@ class _TempResourceFile:
         return None
 
     def to_resource(
-        self, locations: _Locations, temp: bool, status: JobStatus
+        self, locations: _Locations, temp: bool, status: JobStatus, image: bool = False
     ) -> Resource:
         path_resource = self.path_and_resource(locations, temp=temp)
         match status:
@@ -253,7 +253,11 @@ class _TempResourceFile:
                 | JobStatus.SUCCESS
             ):
                 if path_resource:
-                    file = ResourceFile.new(*path_resource)
+                    file = (
+                        ResourceFileImage.new(*path_resource)
+                        if image
+                        else ResourceFile.new(*path_resource)
+                    )
                     return Resource(status, file)
                 # there should be a file, but for some reason there isn't
                 return Resource(JobStatus.FAILURE)
@@ -1189,10 +1193,13 @@ def _write_sync_meta(ctx: _Context) -> None:
         ctx.locations, temp=False, status=ctx.results[Job.VIDEO_DOWNLOAD]
     )
     ctx.song.sync_meta.cover = ctx.out.cover.to_resource(
-        ctx.locations, temp=False, status=ctx.results[Job.COVER_DOWNLOAD]
+        ctx.locations, temp=False, status=ctx.results[Job.COVER_DOWNLOAD], image=True
     )
     ctx.song.sync_meta.background = ctx.out.background.to_resource(
-        ctx.locations, temp=False, status=ctx.results[Job.BACKGROUND_DOWNLOAD]
+        ctx.locations,
+        temp=False,
+        status=ctx.results[Job.BACKGROUND_DOWNLOAD],
+        image=True,
     )
     ctx.song.sync_meta.synchronize_to_file()
 

@@ -14,7 +14,7 @@ import sys
 import threading
 from enum import Enum, StrEnum, auto
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, ClassVar, TypeVar, assert_never, cast
+from typing import TYPE_CHECKING, Any, ClassVar, TypeVar, assert_never
 
 import attrs
 import keyring
@@ -25,6 +25,7 @@ from usdb_syncer import db, path_template
 from usdb_syncer.logger import logger
 
 if TYPE_CHECKING:
+    from collections.abc import Callable
     from http.cookiejar import CookieJar
 
 if "pathlib._local" not in sys.modules:
@@ -44,7 +45,7 @@ NO_KEYRING_BACKEND_WARNING = (
 
 
 def get_usdb_auth() -> tuple[str, str]:
-    username = _Settings.get(SettingKey.USDB_USER_NAME, "")
+    username = _Settings.get_str(SettingKey.USDB_USER_NAME, "")
     pwd = ""
     try:
         pwd = keyring.get_password(SYSTEM_USDB, username) or ""
@@ -55,7 +56,7 @@ def get_usdb_auth() -> tuple[str, str]:
 
 
 def set_usdb_auth(username: str, password: str) -> None:
-    _Settings.set(SettingKey.USDB_USER_NAME, username)
+    _Settings.set_native(SettingKey.USDB_USER_NAME, username, temp=False)
     try:
         keyring.set_password(SYSTEM_USDB, username, password)
     except keyring.core.backend.errors.NoKeyringError as error:
@@ -66,7 +67,8 @@ def set_usdb_auth(username: str, password: str) -> None:
 class _TemporarySettings:
     """Temporary settings for the USDB Syncer.
 
-    This class is used to store temporary settings in memory.
+    This class is used to store temporary settings in memory, serving both as a caching
+    layer and a way to overwrite settings in the current session.
     It should not be used directly, as it is not thread-safe.
     """
 
@@ -87,54 +89,15 @@ class _TemporarySettings:
         """Get a temporary setting."""
         return cls._temporary_settings.get(key, None)
 
+    @classmethod
+    def contains(cls, key: SettingKey) -> bool:
+        return key in cls._temporary_settings
+
 
 T = TypeVar("T")
+E = TypeVar("E", bound=Enum)
 
-
-def _coerce_value(value: Any, default: T) -> T:  # noqa: UP047
-    """Coerce a QSettings value to the expected default type."""
-    if isinstance(value, type(default)):
-        return value
-
-    if isinstance(default, Path):
-        try:
-            return cast("T", Path(value))
-        except TypeError:
-            return default
-
-    if isinstance(default, Enum):
-        try:
-            return cast("T", type(default)(value))
-        except (ValueError, KeyError):
-            return default
-
-    if isinstance(default, path_template.PathTemplate):
-        if isinstance(value, str) and (
-            template := path_template.PathTemplate.try_parse(value)
-        ):
-            return cast("T", template)
-        return default
-
-    return _coerce_primitive(value, default)
-
-
-def _coerce_primitive(value: Any, default: T) -> T:  # noqa: UP047
-    """Coerce a QSettings value to the builtin type of the default."""
-    if isinstance(default, bool) and isinstance(value, int):
-        return cast("T", bool(value))
-
-    if isinstance(value, str):
-        try:
-            if isinstance(default, bool):
-                return cast("T", bool(int(value)))
-            if isinstance(default, int):
-                return cast("T", int(value))
-            if isinstance(default, float):
-                return cast("T", float(value))
-        except (ValueError, TypeError):
-            return default
-
-    return default
+NativeType = str | int | float | QByteArray | list[str] | None
 
 
 class _Settings:
@@ -146,11 +109,33 @@ class _Settings:
     _lock = threading.RLock()
 
     @classmethod
-    def set(cls, key: SettingKey, value: Any, temp: bool = False) -> None:
+    def set(
+        cls,
+        key: SettingKey,
+        value: T,
+        serializer: Callable[[T], NativeType],
+        *,
+        temp: bool,
+    ) -> None:
+        if temp:
+            cls._set_temporary(key, value)
+        else:
+            cls._set_permanent(key, serializer(value))
+
+    @classmethod
+    def set_native(cls, key: SettingKey, value: NativeType, *, temp: bool) -> None:
         if temp:
             cls._set_temporary(key, value)
         else:
             cls._set_permanent(key, value)
+
+    @classmethod
+    def set_bool(cls, key: SettingKey, value: bool, *, temp: bool) -> None:
+        cls.set(key, value, int, temp=temp)
+
+    @classmethod
+    def set_path(cls, key: SettingKey, value: Path, *, temp: bool) -> None:
+        cls.set(key, value, str, temp=temp)
 
     @classmethod
     def _set_temporary(cls, key: SettingKey, value: Any) -> None:
@@ -158,40 +143,52 @@ class _Settings:
             _TemporarySettings.set(key, value)
 
     @classmethod
-    def _set_permanent(cls, key: SettingKey, value: Any) -> None:
+    def _set_permanent(cls, key: SettingKey, value: NativeType) -> None:
         with cls._lock:
             _TemporarySettings.remove(key)
-
-            if isinstance(value, bool):
-                # Qt stores bools as "true" and "false" otherwise
-                value = int(value)
-            elif isinstance(value, Path):
-                value = str(value)
-            elif isinstance(value, Enum):
-                value = value.value
-            elif isinstance(value, path_template.PathTemplate):
-                value = str(value)
-
             QSettings().setValue(key.value, value)
 
     @classmethod
-    def get(cls, key: SettingKey, default: T) -> T:
+    def get(cls, key: SettingKey, default: T, deserializer: Callable[[Any], T]) -> T:
         with cls._lock:
-            if temp := _TemporarySettings.get(key):
-                return temp
-
+            if _TemporarySettings.contains(key):
+                return _TemporarySettings.get(key)
+            value = default
+            qsettings = QSettings()
             try:
-                qsettings = QSettings()
-                if not qsettings.contains(key.value):
+                if qsettings.contains(key.value):
                     # value() cannot distinguish an absent key from a stored None
-                    return default
-                value = qsettings.value(key.value)
-            except (AttributeError, ValueError, RuntimeError):
+                    value = deserializer(qsettings.value(key.value))
+            except (AttributeError, ValueError, RuntimeError, TypeError):
                 # setting contains a type incompatible with this version
                 # or deserialization was blocked by PySide6
-                return default
+                pass
+            _TemporarySettings.set(key, value)
+            return value
 
-            return _coerce_value(value, default)
+    @classmethod
+    def get_str(cls, key: SettingKey, default: str) -> str:
+        return cls.get(key, default, str)
+
+    @classmethod
+    def get_str_list(cls, key: SettingKey, default: list[str]) -> list[str]:
+        return cls.get(key, default, lambda vs: [str(v) for v in vs])
+
+    @classmethod
+    def get_int(cls, key: SettingKey, default: int) -> int:
+        return cls.get(key, default, int)
+
+    @classmethod
+    def get_bool(cls, key: SettingKey, default: bool) -> bool:
+        return cls.get(key, default, bool)
+
+    @classmethod
+    def get_path(cls, key: SettingKey, default: Path) -> Path:
+        return cls.get(key, default, Path)
+
+    @classmethod
+    def get_enum(cls, key: SettingKey, default: E) -> E:
+        return cls.get(key, default, type(default))
 
     @classmethod
     def reset(cls) -> None:
@@ -234,9 +231,11 @@ class SettingKey(Enum):
     VIDEO_EMBED_ARTWORK = "downloads/video_embed_artwork"
     COVER = "downloads/cover"
     COVER_MAX_SIZE = "downloads/cover_max_size"
+    COVER_QUALITY_INDICATORS = "downloads/cover_quality_indicators"
     BACKGROUND = "downloads/background"
     BACKGROUND_ALWAYS = "downloads/background_always"
     BACKGROUND_MAX_SIZE = "downloads/background_max_size"
+    BACKGROUND_QUALITY_INDICATORS = "downloads/background_quality_indicators"
     DISCORD_ALLOWED = "downloads/discord_allowed"
     TRASH_REMOTELY_DELETED_SONGS = "downloads/trash_remotely_deleted_songs"
     MAIN_WINDOW_GEOMETRY = "geometry/main_window"
@@ -408,6 +407,28 @@ class CoverMaxSize(MaxSize):
                 assert_never(unreachable)
 
 
+class CoverQualityIndicators(Enum):
+    """Indicators for cover quality."""
+
+    DISABLE = 0
+    ENABLE_1000 = 1000
+
+    @property
+    def thresholds(self) -> tuple[tuple[int, int], tuple[int, int]] | None:
+        if self is CoverQualityIndicators.DISABLE:
+            return None
+        return ((self.value, self.value), (self.value // 2, self.value // 2))
+
+    def __str__(self) -> str:
+        match self:
+            case CoverQualityIndicators.DISABLE:
+                return "disable"
+            case CoverQualityIndicators.ENABLE_1000:
+                return "enable (low < 500 px ≤ medium < 1000 px ≤ high)"
+            case _ as unreachable:
+                assert_never(unreachable)
+
+
 class BackgroundMaxSize(MaxSize):
     """Maximum background size."""
 
@@ -429,6 +450,29 @@ class BackgroundMaxSize(MaxSize):
                 return "1280x1280 px"
             case BackgroundMaxSize.PX_940:
                 return "940x940 px"
+            case _ as unreachable:
+                assert_never(unreachable)
+
+
+class BackgroundQualityIndicators(Enum):
+    """Indicators for background quality."""
+
+    DISABLE = 0
+    ENABLE_1920 = 1920
+
+    @property
+    def thresholds(self) -> tuple[tuple[int, int], tuple[int, int]] | None:
+        if self is BackgroundQualityIndicators.DISABLE:
+            return None
+        height = self.value * 9 // 16
+        return ((self.value, height), (self.value // 2, height // 2))
+
+    def __str__(self) -> str:
+        match self:
+            case BackgroundQualityIndicators.DISABLE:
+                return "disable"
+            case BackgroundQualityIndicators.ENABLE_1920:
+                return "enable (low < 960 px ≤ medium < 1920 px ≤ high)"
             case _ as unreachable:
                 assert_never(unreachable)
 
@@ -891,381 +935,443 @@ class SavedSearch:
             return None
         return next((s for s in get_saved_searches() if s.name == name), None)
 
+    @classmethod
+    def deserialize(cls, value: Any) -> list[SavedSearch]:
+        if isinstance(value, list):
+            # legacy format: pickled objects, readable only with older PySide6 versions
+            return [s for s in value if isinstance(s, SavedSearch)]
+        if isinstance(value, str):
+            try:
+                data = json.loads(value)
+                if isinstance(data, list):
+                    return [
+                        SavedSearch.from_dict(d) for d in data if isinstance(d, dict)
+                    ]
+            except (json.JSONDecodeError, TypeError, KeyError, ValueError):
+                logger.exception(None)
+        return []
+
+    @classmethod
+    def serialize(cls, searches: list[SavedSearch]) -> str:
+        return json.dumps([s.to_dict() for s in searches])
+
 
 def reset() -> None:
     _Settings.reset()
 
 
 def get_auto_update() -> bool:
-    return _Settings.get(SettingKey.AUTO_UPDATE, False)
+    return _Settings.get_bool(SettingKey.AUTO_UPDATE, False)
 
 
 def set_auto_update(value: bool, temp: bool = False) -> None:
-    _Settings.set(SettingKey.AUTO_UPDATE, value, temp)
+    _Settings.set_bool(SettingKey.AUTO_UPDATE, value, temp=temp)
 
 
 def get_throttling_threads() -> int:
-    return _Settings.get(SettingKey.THROTTLING_THREADS, 0)
+    return _Settings.get_int(SettingKey.THROTTLING_THREADS, 0)
 
 
 def set_throttling_threads(value: int, temp: bool = False) -> None:
-    _Settings.set(SettingKey.THROTTLING_THREADS, value, temp)
+    _Settings.set_native(SettingKey.THROTTLING_THREADS, value, temp=temp)
 
 
 def get_ytdlp_rate_limit() -> YtdlpRateLimit:
-    return _Settings.get(SettingKey.YTDLP_RATE_LIMIT, YtdlpRateLimit.DISABLE)
+    return _Settings.get(
+        SettingKey.YTDLP_RATE_LIMIT, YtdlpRateLimit.DISABLE, lambda v: YtdlpRateLimit(v)
+    )
 
 
 def set_ytdlp_rate_limit(value: YtdlpRateLimit, temp: bool = False) -> None:
-    _Settings.set(SettingKey.YTDLP_RATE_LIMIT, value, temp)
+    _Settings.set(SettingKey.YTDLP_RATE_LIMIT, value, lambda v: v.value, temp=temp)
 
 
 def get_audio() -> bool:
-    return _Settings.get(SettingKey.AUDIO, True)
+    return _Settings.get_bool(SettingKey.AUDIO, True)
 
 
 def set_audio(value: bool, temp: bool = False) -> None:
-    _Settings.set(SettingKey.AUDIO, value, temp)
+    _Settings.set_bool(SettingKey.AUDIO, value, temp=temp)
 
 
 def get_audio_format() -> AudioFormat:
-    return _Settings.get(SettingKey.AUDIO_FORMAT, AudioFormat.M4A)
+    return _Settings.get_enum(SettingKey.AUDIO_FORMAT, AudioFormat.M4A)
 
 
 def set_audio_format(value: AudioFormat, temp: bool = False) -> None:
-    _Settings.set(SettingKey.AUDIO_FORMAT, value, temp)
+    _Settings.set(SettingKey.AUDIO_FORMAT, value, lambda v: v.value, temp=temp)
 
 
 def get_audio_bitrate() -> AudioBitrate:
-    return _Settings.get(SettingKey.AUDIO_BITRATE, AudioBitrate.KBPS_256)
+    return _Settings.get_enum(SettingKey.AUDIO_BITRATE, AudioBitrate.KBPS_256)
 
 
 def set_audio_bitrate(value: AudioBitrate, temp: bool = False) -> None:
-    _Settings.set(SettingKey.AUDIO_BITRATE, value, temp)
+    _Settings.set(SettingKey.AUDIO_BITRATE, value, lambda v: v.value, temp=temp)
 
 
 def get_audio_normalization() -> AudioNormalization:
-    return _Settings.get(SettingKey.AUDIO_NORMALIZATION, AudioNormalization.DISABLE)
+    return _Settings.get(
+        SettingKey.AUDIO_NORMALIZATION,
+        AudioNormalization.DISABLE,
+        lambda v: AudioNormalization(v),
+    )
 
 
 def set_audio_normalization(value: AudioNormalization, temp: bool = False) -> None:
-    _Settings.set(SettingKey.AUDIO_NORMALIZATION, value, temp)
+    _Settings.set(SettingKey.AUDIO_NORMALIZATION, value, lambda v: v.value, temp=temp)
 
 
 def get_audio_embed_artwork() -> bool:
-    return _Settings.get(SettingKey.AUDIO_EMBED_ARTWORK, False)
+    return _Settings.get_bool(SettingKey.AUDIO_EMBED_ARTWORK, False)
 
 
 def set_audio_embed_artwork(value: bool, temp: bool = False) -> None:
-    _Settings.set(SettingKey.AUDIO_EMBED_ARTWORK, value, temp)
+    _Settings.set_bool(SettingKey.AUDIO_EMBED_ARTWORK, value, temp=temp)
 
 
 def get_audio_separation() -> bool:
-    return _Settings.get(SettingKey.AUDIO_SEPARATION, False)
+    return _Settings.get_bool(SettingKey.AUDIO_SEPARATION, False)
 
 
 def set_audio_separation(value: bool, temp: bool = False) -> None:
-    _Settings.set(SettingKey.AUDIO_SEPARATION, value, temp)
+    _Settings.set_bool(SettingKey.AUDIO_SEPARATION, value, temp=temp)
 
 
 def get_audio_separation_executable() -> str:
-    return _Settings.get(SettingKey.AUDIO_SEPARATION_EXEC, "")
+    return _Settings.get_str(SettingKey.AUDIO_SEPARATION_EXEC, "")
 
 
 def set_audio_separation_executable(value: str, temp: bool = False) -> None:
-    _Settings.set(SettingKey.AUDIO_SEPARATION_EXEC, value, temp)
+    _Settings.set_native(SettingKey.AUDIO_SEPARATION_EXEC, value, temp=temp)
 
 
 def get_audio_separation_model() -> str:
-    return _Settings.get(SettingKey.AUDIO_SEPARATION_MODEL, "")
+    return _Settings.get_str(SettingKey.AUDIO_SEPARATION_MODEL, "")
 
 
 def set_audio_separation_model(value: str, temp: bool = False) -> None:
-    _Settings.set(SettingKey.AUDIO_SEPARATION_MODEL, value, temp)
+    _Settings.set_native(SettingKey.AUDIO_SEPARATION_MODEL, value, temp=temp)
 
 
 def get_audio_separation_threads() -> int:
-    return _Settings.get(SettingKey.AUDIO_SEPARATION_THREADS, 1)
+    return _Settings.get_int(SettingKey.AUDIO_SEPARATION_THREADS, 1)
 
 
 def set_audio_separation_threads(value: int, temp: bool = False) -> None:
-    _Settings.set(SettingKey.AUDIO_SEPARATION_THREADS, value, temp)
+    _Settings.set_native(SettingKey.AUDIO_SEPARATION_THREADS, value, temp=temp)
 
 
 def get_encoding() -> Encoding:
-    return _Settings.get(SettingKey.ENCODING, Encoding.UTF_8)
+    return _Settings.get_enum(SettingKey.ENCODING, Encoding.UTF_8)
 
 
 def set_encoding(value: Encoding, temp: bool = False) -> None:
-    _Settings.set(SettingKey.ENCODING, value, temp)
+    _Settings.set(SettingKey.ENCODING, value, lambda v: v.value, temp=temp)
 
 
 def get_newline() -> Newline:
-    return _Settings.get(SettingKey.NEWLINE, Newline.default())
+    return _Settings.get_enum(SettingKey.NEWLINE, Newline.default())
 
 
 def set_newline(value: Newline, temp: bool = False) -> None:
-    _Settings.set(SettingKey.NEWLINE, value, temp)
+    _Settings.set(SettingKey.NEWLINE, value, lambda v: v.value, temp=temp)
 
 
 def get_version() -> FormatVersion:
-    return _Settings.get(SettingKey.FORMAT_VERSION, FormatVersion.V1_0_0)
+    return _Settings.get_enum(SettingKey.FORMAT_VERSION, FormatVersion.V1_0_0)
 
 
 def set_version(value: FormatVersion, temp: bool = False) -> None:
-    _Settings.set(SettingKey.FORMAT_VERSION, value, temp)
+    _Settings.set(SettingKey.FORMAT_VERSION, value, lambda v: v.value, temp=temp)
 
 
 def get_txt() -> bool:
-    return _Settings.get(SettingKey.TXT, True)
+    return _Settings.get_bool(SettingKey.TXT, True)
 
 
 def set_txt(value: bool, temp: bool = False) -> None:
-    _Settings.set(SettingKey.TXT, value, temp)
+    _Settings.set_bool(SettingKey.TXT, value, temp=temp)
 
 
 def get_fix_linebreaks() -> FixLinebreaks:
-    return _Settings.get(SettingKey.FIX_LINEBREAKS, FixLinebreaks.YASS_STYLE)
+    return _Settings.get_enum(SettingKey.FIX_LINEBREAKS, FixLinebreaks.YASS_STYLE)
 
 
 def set_fix_linebreaks(value: FixLinebreaks, temp: bool = False) -> None:
-    _Settings.set(SettingKey.FIX_LINEBREAKS, value, temp)
+    _Settings.set(SettingKey.FIX_LINEBREAKS, value, lambda v: v.value, temp=temp)
 
 
 def get_fix_first_words_capitalization() -> bool:
-    return _Settings.get(SettingKey.FIX_FIRST_WORDS_CAPITALIZATION, True)
+    return _Settings.get_bool(SettingKey.FIX_FIRST_WORDS_CAPITALIZATION, True)
 
 
 def set_fix_first_words_capitalization(value: bool, temp: bool = False) -> None:
-    _Settings.set(SettingKey.FIX_FIRST_WORDS_CAPITALIZATION, value, temp)
+    _Settings.set_bool(SettingKey.FIX_FIRST_WORDS_CAPITALIZATION, value, temp=temp)
 
 
 def get_fix_spaces() -> FixSpaces:
-    return _Settings.get(SettingKey.FIX_SPACES, FixSpaces.AFTER)
+    return _Settings.get_enum(SettingKey.FIX_SPACES, FixSpaces.AFTER)
 
 
 def set_fix_spaces(value: FixSpaces, temp: bool = False) -> None:
-    _Settings.set(SettingKey.FIX_SPACES, value, temp)
+    _Settings.set(SettingKey.FIX_SPACES, value, lambda v: v.value, temp=temp)
 
 
 def get_fix_quotation_marks() -> bool:
-    return _Settings.get(SettingKey.FIX_QUOTATION_MARKS, True)
+    return _Settings.get_bool(SettingKey.FIX_QUOTATION_MARKS, True)
 
 
 def set_fix_quotation_marks(value: bool, temp: bool = False) -> None:
-    _Settings.set(SettingKey.FIX_QUOTATION_MARKS, value, temp)
+    _Settings.set_bool(SettingKey.FIX_QUOTATION_MARKS, value, temp=temp)
 
 
 def get_cover() -> bool:
-    return _Settings.get(SettingKey.COVER, True)
+    return _Settings.get_bool(SettingKey.COVER, True)
 
 
 def set_cover(value: bool, temp: bool = False) -> None:
-    _Settings.set(SettingKey.COVER, value, temp)
+    _Settings.set_bool(SettingKey.COVER, value, temp=temp)
 
 
 def get_cover_max_size() -> CoverMaxSize:
-    return _Settings.get(SettingKey.COVER_MAX_SIZE, CoverMaxSize.PX_1920)
+    return _Settings.get_enum(SettingKey.COVER_MAX_SIZE, CoverMaxSize.PX_1920)
 
 
 def set_cover_max_size(value: CoverMaxSize, temp: bool = False) -> None:
-    _Settings.set(SettingKey.COVER_MAX_SIZE, value, temp)
+    _Settings.set(SettingKey.COVER_MAX_SIZE, value, lambda v: v.value, temp=temp)
+
+
+def get_cover_quality_indicators() -> CoverQualityIndicators:
+    return _Settings.get_enum(
+        SettingKey.COVER_QUALITY_INDICATORS, CoverQualityIndicators.DISABLE
+    )
+
+
+def set_cover_quality_indicators(
+    value: CoverQualityIndicators, temp: bool = False
+) -> None:
+    _Settings.set(
+        SettingKey.COVER_QUALITY_INDICATORS, value, lambda v: v.value, temp=temp
+    )
+
+
+def get_background_quality_indicators() -> BackgroundQualityIndicators:
+    return _Settings.get_enum(
+        SettingKey.BACKGROUND_QUALITY_INDICATORS, BackgroundQualityIndicators.DISABLE
+    )
+
+
+def set_background_quality_indicators(
+    value: BackgroundQualityIndicators, temp: bool = False
+) -> None:
+    _Settings.set(
+        SettingKey.BACKGROUND_QUALITY_INDICATORS, value, lambda v: v.value, temp=temp
+    )
 
 
 def get_browser() -> Browser:
-    return _Settings.get(SettingKey.BROWSER, Browser.NONE)
+    return _Settings.get(SettingKey.BROWSER, Browser.NONE, lambda v: Browser(v))
 
 
 def set_browser(value: Browser, temp: bool = False) -> None:
-    _Settings.set(SettingKey.BROWSER, value, temp)
+    _Settings.set(SettingKey.BROWSER, value, lambda v: v.value, temp=temp)
 
 
 def get_song_dir() -> Path:
-    return _Settings.get(SettingKey.SONG_DIR, Path.home().joinpath("songs").resolve())
+    return _Settings.get_path(
+        SettingKey.SONG_DIR, Path.home().joinpath("songs").resolve()
+    )
 
 
 def set_song_dir(value: Path, temp: bool = False) -> None:
-    _Settings.set(SettingKey.SONG_DIR, value, temp)
+    _Settings.set_path(SettingKey.SONG_DIR, value, temp=temp)
 
 
 def get_video() -> bool:
-    return _Settings.get(SettingKey.VIDEO, True)
+    return _Settings.get_bool(SettingKey.VIDEO, True)
 
 
 def set_video(value: bool, temp: bool = False) -> None:
-    _Settings.set(SettingKey.VIDEO, value, temp)
+    _Settings.set_bool(SettingKey.VIDEO, value, temp=temp)
 
 
 def get_video_format() -> VideoContainer:
-    return _Settings.get(SettingKey.VIDEO_FORMAT, VideoContainer.MP4)
+    return _Settings.get_enum(SettingKey.VIDEO_FORMAT, VideoContainer.MP4)
 
 
 def set_video_format(value: VideoContainer, temp: bool = False) -> None:
-    _Settings.set(SettingKey.VIDEO_FORMAT, value, temp)
+    _Settings.set(SettingKey.VIDEO_FORMAT, value, lambda v: v.value, temp=temp)
 
 
 def get_video_reencode() -> bool:
-    return _Settings.get(SettingKey.VIDEO_REENCODE, False)
+    return _Settings.get_bool(SettingKey.VIDEO_REENCODE, False)
 
 
 def set_video_reencode(value: bool, temp: bool = False) -> None:
-    _Settings.set(SettingKey.VIDEO_REENCODE, value, temp)
+    _Settings.set_bool(SettingKey.VIDEO_REENCODE, value, temp=temp)
 
 
 def get_video_format_new() -> VideoCodec:
-    return _Settings.get(SettingKey.VIDEO_FORMAT_NEW, VideoCodec.H264)
+    return _Settings.get_enum(SettingKey.VIDEO_FORMAT_NEW, VideoCodec.H264)
 
 
 def set_video_format_new(value: VideoCodec, temp: bool = False) -> None:
-    _Settings.set(SettingKey.VIDEO_FORMAT_NEW, value, temp)
+    _Settings.set(SettingKey.VIDEO_FORMAT_NEW, value, lambda v: v.value, temp=temp)
 
 
 def get_video_resolution() -> VideoResolution:
-    return _Settings.get(SettingKey.VIDEO_RESOLUTION_MAX, VideoResolution.P1080)
+    return _Settings.get_enum(SettingKey.VIDEO_RESOLUTION_MAX, VideoResolution.P1080)
 
 
 def set_video_resolution(value: VideoResolution, temp: bool = False) -> None:
-    _Settings.set(SettingKey.VIDEO_RESOLUTION_MAX, value, temp)
+    _Settings.set(SettingKey.VIDEO_RESOLUTION_MAX, value, lambda v: v.value, temp=temp)
 
 
 def get_video_fps() -> VideoFps:
-    return _Settings.get(SettingKey.VIDEO_FPS_MAX, VideoFps.FPS_60)
+    return _Settings.get_enum(SettingKey.VIDEO_FPS_MAX, VideoFps.FPS_60)
 
 
 def set_video_fps(value: VideoFps, temp: bool = False) -> None:
-    _Settings.set(SettingKey.VIDEO_FPS_MAX, value, temp)
+    _Settings.set(SettingKey.VIDEO_FPS_MAX, value, lambda v: v.value, temp=temp)
 
 
 def get_video_embed_artwork() -> bool:
-    return _Settings.get(SettingKey.VIDEO_EMBED_ARTWORK, False)
+    return _Settings.get_bool(SettingKey.VIDEO_EMBED_ARTWORK, False)
 
 
 def set_video_embed_artwork(value: bool, temp: bool = False) -> None:
-    _Settings.set(SettingKey.VIDEO_EMBED_ARTWORK, value, temp)
+    _Settings.set_bool(SettingKey.VIDEO_EMBED_ARTWORK, value, temp=temp)
 
 
 def get_background() -> bool:
-    return _Settings.get(SettingKey.BACKGROUND, True)
+    return _Settings.get_bool(SettingKey.BACKGROUND, True)
 
 
 def set_background(value: bool, temp: bool = False) -> None:
-    _Settings.set(SettingKey.BACKGROUND, value, temp)
+    _Settings.set_bool(SettingKey.BACKGROUND, value, temp=temp)
 
 
 def get_background_always() -> bool:
-    return _Settings.get(SettingKey.BACKGROUND_ALWAYS, True)
+    return _Settings.get_bool(SettingKey.BACKGROUND_ALWAYS, True)
 
 
 def set_background_always(value: bool, temp: bool = False) -> None:
-    _Settings.set(SettingKey.BACKGROUND_ALWAYS, value, temp)
+    _Settings.set_bool(SettingKey.BACKGROUND_ALWAYS, value, temp=temp)
 
 
 def get_background_max_size() -> BackgroundMaxSize:
-    return _Settings.get(SettingKey.BACKGROUND_MAX_SIZE, BackgroundMaxSize.PX_1920)
+    return _Settings.get_enum(SettingKey.BACKGROUND_MAX_SIZE, BackgroundMaxSize.PX_1920)
 
 
 def set_background_max_size(value: BackgroundMaxSize, temp: bool = False) -> None:
-    _Settings.set(SettingKey.BACKGROUND_MAX_SIZE, value, temp)
+    _Settings.set(SettingKey.BACKGROUND_MAX_SIZE, value, lambda v: v.value, temp=temp)
 
 
 def get_discord_allowed() -> bool:
-    return _Settings.get(SettingKey.DISCORD_ALLOWED, False)
+    return _Settings.get_bool(SettingKey.DISCORD_ALLOWED, False)
 
 
 def set_discord_allowed(value: bool, temp: bool = False) -> None:
-    _Settings.set(SettingKey.DISCORD_ALLOWED, value, temp)
+    _Settings.set_bool(SettingKey.DISCORD_ALLOWED, value, temp=temp)
 
 
 def get_ffmpeg_dir() -> str:
-    return _Settings.get(SettingKey.FFMPEG_DIR, "")
+    return _Settings.get_str(SettingKey.FFMPEG_DIR, "")
 
 
 def set_ffmpeg_dir(value: str, temp: bool = False) -> None:
-    _Settings.set(SettingKey.FFMPEG_DIR, value, temp)
+    _Settings.set_native(SettingKey.FFMPEG_DIR, value, temp=temp)
 
 
 def get_geometry_main_window() -> QByteArray:
-    return _Settings.get(SettingKey.MAIN_WINDOW_GEOMETRY, QByteArray())
+    return _Settings.get(SettingKey.MAIN_WINDOW_GEOMETRY, QByteArray(), QByteArray)
 
 
 def set_geometry_main_window(geometry: QByteArray, temp: bool = False) -> None:
-    _Settings.set(SettingKey.MAIN_WINDOW_GEOMETRY, geometry, temp)
+    _Settings.set_native(SettingKey.MAIN_WINDOW_GEOMETRY, geometry, temp=temp)
 
 
 def get_state_main_window() -> QByteArray:
-    return _Settings.get(SettingKey.MAIN_WINDOW_STATE, QByteArray())
+    return _Settings.get(SettingKey.MAIN_WINDOW_STATE, QByteArray(), QByteArray)
 
 
 def set_state_main_window(state: QByteArray, temp: bool = False) -> None:
-    _Settings.set(SettingKey.MAIN_WINDOW_STATE, state, temp)
+    _Settings.set_native(SettingKey.MAIN_WINDOW_STATE, state, temp=temp)
 
 
 def get_geometry_log_dock() -> QByteArray:
-    return _Settings.get(SettingKey.DOCK_LOG_GEOMETRY, QByteArray())
+    return _Settings.get(SettingKey.DOCK_LOG_GEOMETRY, QByteArray(), QByteArray)
 
 
 def set_geometry_log_dock(state: QByteArray, temp: bool = False) -> None:
-    _Settings.set(SettingKey.DOCK_LOG_GEOMETRY, state, temp)
+    _Settings.set_native(SettingKey.DOCK_LOG_GEOMETRY, state, temp=temp)
 
 
 def get_table_view_header_state() -> QByteArray:
-    return _Settings.get(SettingKey.TABLE_VIEW_HEADER_STATE, QByteArray())
+    return _Settings.get(SettingKey.TABLE_VIEW_HEADER_STATE, QByteArray(), QByteArray)
 
 
 def set_table_view_header_state(state: QByteArray, temp: bool = False) -> None:
-    _Settings.set(SettingKey.TABLE_VIEW_HEADER_STATE, state, temp)
+    _Settings.set_native(SettingKey.TABLE_VIEW_HEADER_STATE, state, temp=temp)
 
 
 def get_path_template(
     default: path_template.PathTemplate,
 ) -> path_template.PathTemplate:
-    return _Settings.get(SettingKey.PATH_TEMPLATE, default)
+    return _Settings.get(
+        SettingKey.PATH_TEMPLATE, default, path_template.PathTemplate.parse
+    )
 
 
 def set_path_template(template: path_template.PathTemplate, temp: bool = False) -> None:
-    _Settings.set(SettingKey.PATH_TEMPLATE, template, temp)
+    _Settings.set(SettingKey.PATH_TEMPLATE, template, str, temp=temp)
 
 
 def get_theme() -> Theme:
-    return _Settings.get(SettingKey.VIEW_THEME, Theme.SYSTEM)
+    return _Settings.get_enum(SettingKey.VIEW_THEME, Theme.SYSTEM)
 
 
-def set_theme(theme: Theme) -> None:
-    _Settings.set(SettingKey.VIEW_THEME, theme)
+def set_theme(theme: Theme, temp: bool = False) -> None:
+    _Settings.set(SettingKey.VIEW_THEME, theme, lambda v: v.value, temp=temp)
 
 
 def get_primary_color() -> Color:
-    return _Settings.get(SettingKey.VIEW_PRIMARY_COLOR, Color.RED)
+    return _Settings.get_enum(SettingKey.VIEW_PRIMARY_COLOR, Color.RED)
 
 
-def set_primary_color(primary_color: Color) -> None:
-    _Settings.set(SettingKey.VIEW_PRIMARY_COLOR, primary_color)
+def set_primary_color(primary_color: Color, temp: bool = False) -> None:
+    _Settings.set(
+        SettingKey.VIEW_PRIMARY_COLOR, primary_color, lambda v: v.value, temp=temp
+    )
 
 
 def get_colored_background() -> bool:
-    return _Settings.get(SettingKey.VIEW_COLORED_BACKGROUND, False)
+    return _Settings.get_bool(SettingKey.VIEW_COLORED_BACKGROUND, False)
 
 
-def set_colored_background(colored_background: bool) -> None:
-    _Settings.set(SettingKey.VIEW_COLORED_BACKGROUND, colored_background)
+def set_colored_background(colored_background: bool, temp: bool = False) -> None:
+    _Settings.set_bool(
+        SettingKey.VIEW_COLORED_BACKGROUND, colored_background, temp=temp
+    )
 
 
 def get_app_path(app: SupportedApps) -> Path | None:
     match app:
         case SupportedApps.KAREDI:
-            path = _Settings.get(SettingKey.APP_PATH_KAREDI, "")
+            path = _Settings.get_str(SettingKey.APP_PATH_KAREDI, "")
         case SupportedApps.PERFORMOUS:
-            path = _Settings.get(SettingKey.APP_PATH_PERFORMOUS, "")
+            path = _Settings.get_str(SettingKey.APP_PATH_PERFORMOUS, "")
         case SupportedApps.TUNE_PERFECT:
-            path = _Settings.get(SettingKey.APP_PATH_TUNE_PERFECT, "")
+            path = _Settings.get_str(SettingKey.APP_PATH_TUNE_PERFECT, "")
         case SupportedApps.ULTRASTAR_MANAGER:
-            path = _Settings.get(SettingKey.APP_PATH_ULTRASTAR_MANAGER, "")
+            path = _Settings.get_str(SettingKey.APP_PATH_ULTRASTAR_MANAGER, "")
         case SupportedApps.USDX:
-            path = _Settings.get(SettingKey.APP_PATH_USDX, "")
+            path = _Settings.get_str(SettingKey.APP_PATH_USDX, "")
         case SupportedApps.VOCALUXE:
-            path = _Settings.get(SettingKey.APP_PATH_VOCALUXE, "")
+            path = _Settings.get_str(SettingKey.APP_PATH_VOCALUXE, "")
         case SupportedApps.YASS_RELOADED:
-            path = _Settings.get(SettingKey.APP_PATH_YASS_RELOADED, "")
+            path = _Settings.get_str(SettingKey.APP_PATH_YASS_RELOADED, "")
         case _ as unreachable:
             assert_never(unreachable)
     return Path(path) if path != "" else None
@@ -1291,19 +1397,21 @@ def set_app_path(app: SupportedApps, path: str, temp: bool = False) -> None:
         case _ as unreachable:
             assert_never(unreachable)
 
-    _Settings.set(setting_key, path, temp)
+    _Settings.set_native(setting_key, path, temp=temp)
 
 
 def get_report_pdf_pagesize() -> ReportPDFPagesize:
-    return _Settings.get(SettingKey.REPORT_PDF_PAGESIZE, ReportPDFPagesize.A4)
+    return _Settings.get_enum(SettingKey.REPORT_PDF_PAGESIZE, ReportPDFPagesize.A4)
 
 
 def set_report_pdf_pagesize(pagesize: ReportPDFPagesize, temp: bool = False) -> None:
-    _Settings.set(SettingKey.REPORT_PDF_PAGESIZE, pagesize, temp)
+    _Settings.set(
+        SettingKey.REPORT_PDF_PAGESIZE, pagesize, lambda v: v.value, temp=temp
+    )
 
 
 def get_report_pdf_orientation() -> ReportPDFOrientation:
-    return _Settings.get(
+    return _Settings.get_enum(
         SettingKey.REPORT_PDF_ORIENTATION, ReportPDFOrientation.PORTRAIT
     )
 
@@ -1311,161 +1419,134 @@ def get_report_pdf_orientation() -> ReportPDFOrientation:
 def set_report_pdf_orientation(
     orientation: ReportPDFOrientation, temp: bool = False
 ) -> None:
-    _Settings.set(SettingKey.REPORT_PDF_ORIENTATION, orientation, temp)
+    _Settings.set(
+        SettingKey.REPORT_PDF_ORIENTATION, orientation, lambda v: v.value, temp=temp
+    )
 
 
 def get_report_pdf_margin() -> int:
-    return _Settings.get(SettingKey.REPORT_PDF_MARGIN, 20)
+    return _Settings.get_int(SettingKey.REPORT_PDF_MARGIN, 20)
 
 
 def set_report_pdf_margin(margin: int, temp: bool = False) -> None:
-    _Settings.set(SettingKey.REPORT_PDF_MARGIN, margin, temp)
+    _Settings.set_native(SettingKey.REPORT_PDF_MARGIN, margin, temp=temp)
 
 
 def get_report_pdf_columns() -> int:
-    return _Settings.get(SettingKey.REPORT_PDF_COLUMNS, 2)
+    return _Settings.get_int(SettingKey.REPORT_PDF_COLUMNS, 2)
 
 
 def set_report_pdf_columns(columns: int, temp: bool = False) -> None:
-    _Settings.set(SettingKey.REPORT_PDF_COLUMNS, columns, temp)
+    _Settings.set_native(SettingKey.REPORT_PDF_COLUMNS, columns, temp=temp)
 
 
 def get_report_pdf_fontsize() -> int:
-    return _Settings.get(SettingKey.REPORT_PDF_FONTSIZE, 10)
+    return _Settings.get_int(SettingKey.REPORT_PDF_FONTSIZE, 10)
 
 
 def set_report_pdf_fontsize(fontsize: int, temp: bool = False) -> None:
-    _Settings.set(SettingKey.REPORT_PDF_FONTSIZE, fontsize, temp)
+    _Settings.set_native(SettingKey.REPORT_PDF_FONTSIZE, fontsize, temp=temp)
 
 
 def get_report_json_indent() -> int:
-    return _Settings.get(SettingKey.REPORT_JSON_INDENT, 4)
+    return _Settings.get_int(SettingKey.REPORT_JSON_INDENT, 4)
 
 
 def set_report_json_indent(indent: int, temp: bool = False) -> None:
-    _Settings.set(SettingKey.REPORT_JSON_INDENT, indent, temp)
+    _Settings.set_native(SettingKey.REPORT_JSON_INDENT, indent, temp=temp)
 
 
 def get_trash_remotely_deleted_songs() -> bool:
-    return _Settings.get(SettingKey.TRASH_REMOTELY_DELETED_SONGS, False)
+    return _Settings.get_bool(SettingKey.TRASH_REMOTELY_DELETED_SONGS, False)
 
 
 def set_trash_remotely_deleted_songs(value: bool, temp: bool = False) -> None:
-    _Settings.set(SettingKey.TRASH_REMOTELY_DELETED_SONGS, value, temp)
+    _Settings.set_bool(SettingKey.TRASH_REMOTELY_DELETED_SONGS, value, temp=temp)
 
 
 def get_trash_files() -> bool:
-    return _Settings.get(SettingKey.TRASH_FILES, True)
+    return _Settings.get_bool(SettingKey.TRASH_FILES, True)
 
 
 def set_trash_files(value: bool, temp: bool = False) -> None:
-    _Settings.set(SettingKey.TRASH_FILES, value, temp)
+    _Settings.set_bool(SettingKey.TRASH_FILES, value, temp=temp)
 
 
 def get_diff_only_changes() -> bool:
-    return _Settings.get(SettingKey.DIFF_ONLY_CHANGES, False)
+    return _Settings.get_bool(SettingKey.DIFF_ONLY_CHANGES, False)
 
 
 def set_diff_only_changes(value: bool, temp: bool = False) -> None:
-    _Settings.set(SettingKey.DIFF_ONLY_CHANGES, value, temp)
+    _Settings.set_bool(SettingKey.DIFF_ONLY_CHANGES, value, temp=temp)
 
 
 def get_diff_context_lines() -> int:
-    return _Settings.get(SettingKey.DIFF_CONTEXT_LINES, 3)
+    return _Settings.get_int(SettingKey.DIFF_CONTEXT_LINES, 3)
 
 
 def set_diff_context_lines(lines: int, temp: bool = False) -> None:
-    _Settings.set(SettingKey.DIFF_CONTEXT_LINES, lines, temp)
+    _Settings.set_native(SettingKey.DIFF_CONTEXT_LINES, lines, temp=temp)
 
 
 def get_custom_meta_data_columns() -> list[str]:
-    return _Settings.get(SettingKey.CUSTOM_META_DATA_COLUMNS, [])
+    return _Settings.get_str_list(SettingKey.CUSTOM_META_DATA_COLUMNS, [])
 
 
 def set_custom_meta_data_columns(keys: list[str], temp: bool = False) -> None:
-    _Settings.set(SettingKey.CUSTOM_META_DATA_COLUMNS, keys, temp)
+    _Settings.set_native(SettingKey.CUSTOM_META_DATA_COLUMNS, keys, temp=temp)
 
 
 def get_saved_searches() -> list[SavedSearch]:
-    if temp := _TemporarySettings.get(SettingKey.SAVED_SEARCHES):
-        return cast("list[SavedSearch]", temp)
-
-    try:
-        raw = QSettings().value(SettingKey.SAVED_SEARCHES.value)
-    except (AttributeError, ValueError, RuntimeError):
-        # setting contains a type incompatible with this version
-        # or deserialization was blocked by PySide6
-        return []
-
-    if isinstance(raw, list):
-        # legacy format: pickled objects, readable only with older PySide6 versions
-        return [s for s in raw if isinstance(s, SavedSearch)]
-
-    if not isinstance(raw, str):
-        return []
-
-    try:
-        data = json.loads(raw)
-        if isinstance(data, list):
-            return [SavedSearch.from_dict(d) for d in data if isinstance(d, dict)]
-    except (json.JSONDecodeError, TypeError, KeyError, ValueError):
-        logger.exception(None)
-
-    return []
+    return _Settings.get(SettingKey.SAVED_SEARCHES, [], SavedSearch.deserialize)
 
 
 def set_saved_searches(searches: list[SavedSearch], temp: bool = False) -> None:
-    if temp:
-        _Settings.set(SettingKey.SAVED_SEARCHES, searches, temp=True)
-    else:
-        _TemporarySettings.remove(SettingKey.SAVED_SEARCHES)
-        serialized = json.dumps([s.to_dict() for s in searches])
-        QSettings().setValue(SettingKey.SAVED_SEARCHES.value, serialized)
+    _Settings.set(SettingKey.SAVED_SEARCHES, searches, SavedSearch.serialize, temp=temp)
 
 
 def get_default_saved_search() -> str:
-    return _Settings.get(SettingKey.DEFAULT_SAVED_SEARCH, "")
+    return _Settings.get_str(SettingKey.DEFAULT_SAVED_SEARCH, "")
 
 
 def set_default_saved_search(name: str, temp: bool = False) -> None:
-    _Settings.set(SettingKey.DEFAULT_SAVED_SEARCH, name, temp)
+    _Settings.set_native(SettingKey.DEFAULT_SAVED_SEARCH, name, temp=temp)
 
 
 def get_webserver_title() -> str:
-    return _Settings.get(SettingKey.WEBSERVER_TITLE, "")
+    return _Settings.get_str(SettingKey.WEBSERVER_TITLE, "")
 
 
 def set_webserver_title(title: str, temp: bool = False) -> None:
-    _Settings.set(SettingKey.WEBSERVER_TITLE, title, temp)
+    _Settings.set_native(SettingKey.WEBSERVER_TITLE, title, temp=temp)
 
 
 def get_webserver_port() -> int:
-    return _Settings.get(SettingKey.WEBSERVER_PORT, 0)
+    return _Settings.get_int(SettingKey.WEBSERVER_PORT, 0)
 
 
 def set_webserver_port(port: int, temp: bool = False) -> None:
-    _Settings.set(SettingKey.WEBSERVER_PORT, port, temp)
+    _Settings.set_native(SettingKey.WEBSERVER_PORT, port, temp=temp)
 
 
 def get_webserver_show_nonlocal_songs() -> bool:
-    return _Settings.get(SettingKey.WEBSERVER_SHOW_NONLOCAL_SONGS, True)
+    return _Settings.get_bool(SettingKey.WEBSERVER_SHOW_NONLOCAL_SONGS, True)
 
 
 def set_webserver_show_nonlocal_songs(yes: bool, temp: bool = False) -> None:
-    _Settings.set(SettingKey.WEBSERVER_SHOW_NONLOCAL_SONGS, yes, temp)
+    _Settings.set_bool(SettingKey.WEBSERVER_SHOW_NONLOCAL_SONGS, yes, temp=temp)
 
 
 def get_webserver_allow_downloading() -> bool:
-    return _Settings.get(SettingKey.WEBSERVER_ALLOW_DOWNLOADING, False)
+    return _Settings.get_bool(SettingKey.WEBSERVER_ALLOW_DOWNLOADING, False)
 
 
 def set_webserver_allow_downloading(yes: bool, temp: bool = False) -> None:
-    _Settings.set(SettingKey.WEBSERVER_ALLOW_DOWNLOADING, yes, temp)
+    _Settings.set_bool(SettingKey.WEBSERVER_ALLOW_DOWNLOADING, yes, temp=temp)
 
 
 def get_webserver_auto_start() -> bool:
-    return _Settings.get(SettingKey.WEBSERVER_AUTO_START, False)
+    return _Settings.get_bool(SettingKey.WEBSERVER_AUTO_START, False)
 
 
 def set_webserver_auto_start(yes: bool, temp: bool = False) -> None:
-    _Settings.set(SettingKey.WEBSERVER_AUTO_START, yes, temp)
+    _Settings.set_bool(SettingKey.WEBSERVER_AUTO_START, yes, temp=temp)

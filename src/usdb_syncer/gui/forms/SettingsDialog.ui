@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>846</width>
-    <height>791</height>
+    <height>809</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -488,6 +488,13 @@
               <bool>true</bool>
              </property>
              <layout class="QGridLayout" name="gridLayout_cover" columnstretch="0,1">
+              <item row="0" column="1">
+               <widget class="QComboBox" name="comboBox_cover_max_size">
+                <property name="toolTip">
+                 <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Images larger than this will be scaled to the set value.&lt;/p&gt;&lt;p&gt;Some karaoke software variants may have problems displaying covers larger than 1920x1920 pixels.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                </property>
+               </widget>
+              </item>
               <item row="0" column="0">
                <widget class="QLabel" name="label_cover_max_size">
                 <property name="sizePolicy">
@@ -510,12 +517,18 @@
                 </property>
                </widget>
               </item>
-              <item row="0" column="1">
-               <widget class="QComboBox" name="comboBox_cover_max_size">
-                <property name="toolTip">
-                 <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Images larger than this will be scaled to the set value.&lt;/p&gt;&lt;p&gt;Some karaoke software variants may have problems displaying covers larger than 1920x1920 pixels.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+              <item row="1" column="0">
+               <widget class="QLabel" name="label_cover_quality_indicators">
+                <property name="text">
+                 <string>Quality indicators:</string>
+                </property>
+                <property name="alignment">
+                 <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
                 </property>
                </widget>
+              </item>
+              <item row="1" column="1">
+               <widget class="QComboBox" name="comboBox_cover_quality_indicators"/>
               </item>
              </layout>
             </widget>
@@ -536,6 +549,19 @@
                 </property>
                 <property name="checked">
                  <bool>true</bool>
+                </property>
+               </widget>
+              </item>
+              <item row="1" column="1">
+               <widget class="QComboBox" name="comboBox_background_max_size"/>
+              </item>
+              <item row="1" column="0">
+               <widget class="QLabel" name="label_background_max_size">
+                <property name="text">
+                 <string>Maximum dimensions:</string>
+                </property>
+                <property name="alignment">
+                 <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
                 </property>
                </widget>
               </item>
@@ -561,18 +587,18 @@
                 </property>
                </widget>
               </item>
-              <item row="1" column="0">
-               <widget class="QLabel" name="label_background_max_size">
+              <item row="2" column="0">
+               <widget class="QLabel" name="label_background_quality_indicators">
                 <property name="text">
-                 <string>Maximum dimensions:</string>
+                 <string>Quality indicators:</string>
                 </property>
                 <property name="alignment">
                  <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
                 </property>
                </widget>
               </item>
-              <item row="1" column="1">
-               <widget class="QComboBox" name="comboBox_background_max_size"/>
+              <item row="2" column="1">
+               <widget class="QComboBox" name="comboBox_background_quality_indicators"/>
               </item>
              </layout>
             </widget>
