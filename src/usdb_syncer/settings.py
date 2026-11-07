@@ -97,7 +97,7 @@ class _TemporarySettings:
 T = TypeVar("T")
 E = TypeVar("E", bound=Enum)
 
-type NativeType = str | int | float | QByteArray | list[str] | None
+NativeType = str | int | float | QByteArray | list[str] | None
 
 
 class _Settings:
