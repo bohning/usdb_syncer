@@ -6,11 +6,12 @@ import json
 from typing import TYPE_CHECKING
 from unittest.mock import patch
 
-from usdb_syncer.usdb_song import UsdbSong
 from usdb_syncer.webserver import webserver
 
 if TYPE_CHECKING:
     from flask.testing import FlaskClient
+
+    from usdb_syncer.usdb_song import UsdbSong
 
 
 def test_api_songs_returns_json_for_usdb_song(song: UsdbSong) -> None:
