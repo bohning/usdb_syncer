@@ -91,3 +91,14 @@ def test_saved_search_json_round_trip() -> None:
 
         assert restored == search
         assert restored.search.custom_data["missing"] == []
+
+
+def test_setting_is_cached(isolated_qsettings: Path) -> None:
+    default = settings.get_throttling_threads()
+    new = default + 1
+    settings.set_throttling_threads(new)
+    assert settings.get_throttling_threads() == new
+    settings.reset()
+    assert settings.get_throttling_threads() == new
+    settings._TemporarySettings._temporary_settings.clear()
+    assert settings.get_throttling_threads() == default
