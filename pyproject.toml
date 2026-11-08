@@ -204,4 +204,5 @@ exclude = [
     "**/.*",
     ".venv",
     "info",
+    "songs",
 ]
