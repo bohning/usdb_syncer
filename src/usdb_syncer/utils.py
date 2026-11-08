@@ -189,7 +189,7 @@ def extract_vimeo_id(url: str) -> str | None:
         (?:vimeo\.com/)
         (?:video/)?
         (\d{2,9})                   # the actual id
-        (?:[%#?&]|$)                # URL may contain additonal parameters
+        (?:[%#?&]|$)                # URL may contain additional parameters
         .*
         """
     if match := re.search(pattern, url, re.VERBOSE | re.IGNORECASE):
@@ -202,8 +202,7 @@ def read_file_head(
 ) -> list[str] | None:
     """Return the first `length` lines of `path`.
 
-    If `encoding` is None, try UTF-8 (with
-    BOM) first, then cp1252.
+    If `encoding` is None, try UTF-8 (with BOM) first, then cp1252.
     """
     for enc in [encoding] if encoding else ["utf-8-sig", "cp1252"]:
         try:
