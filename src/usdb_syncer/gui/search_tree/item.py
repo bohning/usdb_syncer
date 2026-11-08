@@ -171,7 +171,7 @@ class TreeItem:
 
     def apply_search(self, search: db.SearchBuilder) -> list[TreeItem]:
         changed = []
-        if self.children:
+        if self.data.is_parent():
             for child in self.children:
                 before = child.checked
                 changed.extend(child.apply_search(search))
