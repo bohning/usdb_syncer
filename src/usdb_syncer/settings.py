@@ -1559,7 +1559,7 @@ def migrate_settings_to_schema_12() -> None:
 
     As of 0.25.0, we stored custom types in QSettings which got pickled by PySide6.
     But starting with 6.12, PySide throws a RuntimeError for these types. So we load
-    all of the affected settings and rewrite them with in the new format once.
+    all of the affected settings and rewrite them in the new format once.
     """
     match = re.match("(\\d+)\\.(\\d+)\\.(\\d+)", PySide6.__version__)
     if match is None or (int(match[1]) >= 6 and int(match[2]) >= 12):
