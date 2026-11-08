@@ -1,3 +1,22 @@
+<!-- 0.26.0 -->
+
+# Changes
+
+❗Important: PySide requires us to change how settings are stored. This will be the last
+release that can read the legacy settings, and it will migrate them automatically.
+If you skip this release, some settings may be lost.
+
+## Fixes
+
+- The webserver's `/api/songs` endpoint has been fixed.
+
+## Features
+
+- Dimensions and aspect ratio of downloaded image files are now tracked. If enabled in 
+  the settings, they are taken into account when sorting on the cover or background 
+  column, appear in the tooltip on hover, and their quality is indicated by new icons 
+  (most detailed in the system theme.)
+
 <!-- 0.25.0 -->
 
 # Changes
