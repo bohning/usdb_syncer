@@ -10,6 +10,7 @@ from __future__ import annotations
 import functools
 import json
 import os
+import re
 import sys
 import threading
 from enum import Enum, StrEnum, auto
@@ -18,6 +19,7 @@ from typing import TYPE_CHECKING, Any, ClassVar, TypeVar, assert_never
 
 import attrs
 import keyring
+import PySide6
 import yt_dlp.cookies
 from PySide6.QtCore import QByteArray, QSettings
 
@@ -1559,6 +1561,13 @@ def migrate_settings_to_schema_12() -> None:
     But starting with 6.12, PySide throws a RuntimeError for these types. So we load
     all of the affected settings and rewrite them with in the new format once.
     """
+    match = re.match("(\\d+)\\.(\\d+)\\.(\\d+)", PySide6.__version__)
+    if match is None or (int(match[1]) >= 6 and int(match[2]) >= 12):
+        logger.warning(
+            f"Cannot migrate legacy settings with PySide {PySide6.__version__}; "
+            "some settings may be lost."
+        )
+        return
     to_migrate: list[tuple[Callable[[], Any], Callable[[Any, bool], None]]] = [
         (get_ytdlp_rate_limit, set_ytdlp_rate_limit),
         (get_audio_format, set_audio_format),
