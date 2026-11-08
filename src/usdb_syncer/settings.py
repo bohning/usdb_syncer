@@ -1550,3 +1550,44 @@ def get_webserver_auto_start() -> bool:
 
 def set_webserver_auto_start(yes: bool, temp: bool = False) -> None:
     _Settings.set_bool(SettingKey.WEBSERVER_AUTO_START, yes, temp=temp)
+
+
+def migrate_settings_to_schema_12() -> None:
+    """One-off migration of custom types in QSetting to serialized values.
+
+    As of 0.25.0, we stored custom types in QSettings which got pickled by PySide6.
+    But starting with 6.12, PySide throws a RuntimeError for these types. So we load
+    all of the affected settings and rewrite them with in the new format once.
+    """
+    to_migrate: list[tuple[Callable[[], Any], Callable[[Any, bool], None]]] = [
+        (get_ytdlp_rate_limit, set_ytdlp_rate_limit),
+        (get_audio_format, set_audio_format),
+        (get_audio_bitrate, set_audio_bitrate),
+        (get_audio_normalization, set_audio_normalization),
+        (get_encoding, set_encoding),
+        (get_newline, set_newline),
+        (get_version, set_version),
+        (get_fix_linebreaks, set_fix_linebreaks),
+        (get_fix_spaces, set_fix_spaces),
+        (get_cover_max_size, set_cover_max_size),
+        (get_cover_quality_indicators, set_cover_quality_indicators),
+        (get_background_quality_indicators, set_background_quality_indicators),
+        (get_browser, set_browser),
+        (get_song_dir, set_song_dir),
+        (get_video_format, set_video_format),
+        (get_video_format_new, set_video_format_new),
+        (get_video_resolution, set_video_resolution),
+        (get_video_fps, set_video_fps),
+        (get_background_max_size, set_background_max_size),
+        (
+            lambda: get_path_template(path_template.PathTemplate.default()),
+            set_path_template,
+        ),
+        (get_theme, set_theme),
+        (get_primary_color, set_primary_color),
+        (get_report_pdf_pagesize, set_report_pdf_pagesize),
+        (get_report_pdf_orientation, set_report_pdf_orientation),
+        (get_saved_searches, set_saved_searches),
+    ]
+    for getter, setter in to_migrate:
+        setter(getter(), False)

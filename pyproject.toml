@@ -23,7 +23,7 @@ dependencies = [
     "packaging",
     "pillow>=10",
     "platformdirs",
-    "PySide6",
+    "PySide6<6.12",
     "qrcode[pil]~=8.2",
     "reportlab",
     "requests",
@@ -204,4 +204,5 @@ exclude = [
     "**/.*",
     ".venv",
     "info",
+    "songs",
 ]
