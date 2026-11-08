@@ -25,7 +25,7 @@ if TYPE_CHECKING:
     from pathlib import Path
 
 
-SCHEMA_VERSION = 11
+SCHEMA_VERSION = 12
 
 # https://www.sqlite.org/limits.html
 _SQL_VARIABLES_LIMIT = 32766
@@ -117,6 +117,10 @@ def _validate_schema(connection: sqlite3.Connection) -> None:
     for ver in range(version + 1, SCHEMA_VERSION + 1):
         if ver == 10:
             _migrate_to_version_10()
+        if ver == 12:
+            from usdb_syncer import settings
+
+            settings.migrate_settings_to_schema_12()
         connection.executescript(Sql.migration_text(ver))
         logger.debug(f"Database migrated to version {ver}.")
     if version < SCHEMA_VERSION:
