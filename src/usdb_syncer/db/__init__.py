@@ -217,6 +217,10 @@ class DownloadStatus(enum.IntEnum):
             case _ as unreachable:
                 assert_never(unreachable)
 
+    @classmethod
+    def local(cls) -> list[DownloadStatus]:
+        return [DownloadStatus.OUTDATED, DownloadStatus.SYNCHRONIZED]
+
 
 class SongOrderBase:
     """Base class for native and custom song orders."""
