@@ -28,12 +28,34 @@ from usdb_syncer.usdb_song import UsdbSong, UsdbSongEncoder
 _COOKIE_MAX_AGE = 60 * 60 * 24 * 365
 
 
-def _get_songs(
-    request: flask.Request, show_nonlocal_songs: bool, like_counter: Counter[SongId]
-) -> list[UsdbSong]:
+def _parse_view_parmeter(param: str) -> tuple[int, int | None]:
+    lower, upper = param.split("-", maxsplit=1)
+    return int(lower), int(upper) if upper else None
+
+
+def _filter_allowed_statuses(
+    requested: list[db.DownloadStatus], show_nonlocal_songs: bool
+) -> list[db.DownloadStatus]:
+    if show_nonlocal_songs:
+        return requested
+    local = db.DownloadStatus.local()
+    return [s for s in requested if s in local] or local
+
+
+def _parse_bool_parameter(param: str) -> bool:
+    match param:
+        case "true":
+            return True
+        case "false":
+            return False
+        case _:
+            raise ValueError
+
+
+def _parse_search(
+    request: flask.Request, show_nonlocal_songs: bool
+) -> db.SearchBuilder:
     builder = db.SearchBuilder()
-    if not show_nonlocal_songs:
-        builder.statuses = [db.DownloadStatus.OUTDATED, db.DownloadStatus.SYNCHRONIZED]
     if search := request.args.get("search"):
         builder.text = search
     sort_by = request.args.get("sort_by", "artist")
@@ -47,13 +69,35 @@ def _get_songs(
     sort_order = request.args.get("sort_order", "asc")
     if sort_order == "desc":
         builder.descending = True
+    builder.artists = request.args.getlist("artist")
+    builder.titles = request.args.getlist("title")
+    builder.editions = request.args.getlist("edition")
+    builder.ratings = request.args.getlist("rating", float)
+    builder.statuses = _filter_allowed_statuses(
+        request.args.getlist("status", lambda s: db.DownloadStatus(int(s))),
+        show_nonlocal_songs,
+    )
+    builder.languages = request.args.getlist("language")
+    builder.views = request.args.getlist("views", _parse_view_parmeter)
+    builder.years = request.args.getlist("year", int)
+    builder.genres = request.args.getlist("genre")
+    builder.creators = request.args.getlist("creator")
+    builder.golden_notes = request.args.get("golden_notes", type=_parse_bool_parameter)
+    return builder
+
+
+def _get_songs(
+    request: flask.Request, show_nonlocal_songs: bool, like_counter: Counter[SongId]
+) -> list[UsdbSong]:
+    builder = _parse_search(request, show_nonlocal_songs)
     limit = request.args.get("limit", 100, type=int)
     offset = request.args.get("offset", 0, type=int)
-
     song_ids = db.search_usdb_songs(builder)
-    if sort_by == "likes":
+    if request.args.get("sort_by") == "likes":
         song_ids = sorted(
-            song_ids, key=lambda s: like_counter[s], reverse=sort_order == "desc"
+            song_ids,
+            key=lambda s: like_counter[s],
+            reverse=request.args.get("sort_order") == "desc",
         )
     return [
         s

@@ -1,3 +1,11 @@
+<!-- 0.27.0 -->
+
+# Changes
+
+## Features
+
+- The webserver's `/api/songs` endpoint now supports filters like `GET /api/songs?artist=Queen&artist=ABBA`.
+
 <!-- 0.26.0 -->
 
 # Changes
@@ -12,9 +20,9 @@ If you skip this release, some settings may be lost.
 
 ## Features
 
-- Dimensions and aspect ratio of downloaded image files are now tracked. If enabled in 
-  the settings, they are taken into account when sorting on the cover or background 
-  column, appear in the tooltip on hover, and their quality is indicated by new icons 
+- Dimensions and aspect ratio of downloaded image files are now tracked. If enabled in
+  the settings, they are taken into account when sorting on the cover or background
+  column, appear in the tooltip on hover, and their quality is indicated by new icons
   (most detailed in the system theme.)
 
 <!-- 0.25.0 -->
