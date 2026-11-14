@@ -182,7 +182,9 @@ class _Settings:
 
     @classmethod
     def get_bool(cls, key: SettingKey, default: bool) -> bool:
-        return cls.get(key, default, bool)
+        # Qt may return a str, so it's vital to convert to an int first,
+        # because `bool("0") == True`, but `bool(0) == False`
+        return cls.get(key, default, lambda i: bool(int(i)))
 
     @classmethod
     def get_path(cls, key: SettingKey, default: Path) -> Path:

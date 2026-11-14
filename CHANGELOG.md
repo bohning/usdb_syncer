@@ -2,6 +2,13 @@
 
 # Changes
 
+❗Important: If you're on Linux, please check your settings due to the bug listed below.
+Additionally, 0.27.0 will also migrate settings from previous releases (see notes for 0.26.0). You may safely skip 0.26.0 if you have not yet used it.
+
+## Fixes
+
+- Unfortunately, 0.26.0 introduced a bug with reading boolean values on Linux. Please check your settings with this release to ensure no settings have been inadvertantly restored to their defaults.
+
 ## Features
 
 - The webserver's `/api/songs` endpoint now supports filters like `GET /api/songs?artist=Queen&artist=ABBA`.
