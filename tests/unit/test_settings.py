@@ -102,3 +102,13 @@ def test_setting_is_cached(isolated_qsettings: Path) -> None:
     assert settings.get_throttling_threads() == new
     settings._TemporarySettings._temporary_settings.clear()
     assert settings.get_throttling_threads() == default
+
+
+def test_bool_roundtrips_in_qsettings(isolated_qsettings: Path) -> None:
+    # note: This test is essentially useless because Qt returns the saved value
+    # with the same type here from its cache, but will return it as a str in a
+    # new process.
+    settings._Settings.set_bool(settings.SettingKey.AUDIO, False, temp=False)
+    assert not settings._Settings.get_bool(settings.SettingKey.AUDIO, True)
+    settings._Settings.set_bool(settings.SettingKey.AUDIO, True, temp=False)
+    assert settings._Settings.get_bool(settings.SettingKey.AUDIO, False)
