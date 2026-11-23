@@ -5,6 +5,7 @@ import sys
 from enum import StrEnum
 
 BPM_THRESHOLD = 200.0
+FILE_MTIME_TOLERANCE_MICROSECONDS = 2_000_000
 GITHUB_API_LATEST = "https://api.github.com/repos/bohning/usdb_syncer/releases/latest"
 GITHUB_DL_LATEST = "https://github.com/bohning/usdb_syncer/releases/latest"
 GITHUB_SHARED_CONTENT = (

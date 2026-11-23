@@ -124,6 +124,7 @@ class Column(ColumnBase, enum.Enum):
     COVER = ColumnValue("Cover", False, Icon.COVER, MIN_COLUMN_WIDTH, db.SongOrder.COVER)
     BACKGROUND = ColumnValue("Background", False, Icon.BACKGROUND, MIN_COLUMN_WIDTH, db.SongOrder.BACKGROUND)
     DOWNLOAD_STATUS = ColumnValue("Status", True, Icon.DOWNLOAD, None, db.SongOrder.STATUS)
+    LOCAL_CHANGES = ColumnValue("Local Changes", True, Icon.CHANGES, None, db.SongOrder.LOCAL_CHANGES)
     # fmt: on
 
     def val(self) -> ColumnValue:
@@ -179,6 +180,13 @@ class Column(ColumnBase, enum.Enum):
                 return song.tags
             case Column.LAST_CHANGE:
                 return str(datetime.fromtimestamp(song.usdb_mtime))
+            case Column.LOCAL_CHANGES:
+                if not song.sync_meta:
+                    return None
+                return ", ".join(
+                    local_change_label(change.kind)
+                    for change in song.sync_meta.local_changes()
+                )
             case Column.DOWNLOAD_STATUS:
                 return str(song.status)
             case (
@@ -216,6 +224,7 @@ class Column(ColumnBase, enum.Enum):
                 | Column.CREATOR
                 | Column.TAGS
                 | Column.LAST_CHANGE
+                | Column.LOCAL_CHANGES
             ):
                 return None
             case Column.SAMPLE_URL:
@@ -435,3 +444,8 @@ def rating_str(rating: float) -> str:
 
 def yes_no_str(yes: bool) -> str:
     return "Yes" if yes else "No"
+
+
+def local_change_label(kind: db.ResourceKind) -> str:
+    """Return the user-facing name of a resource kind."""
+    return kind.display_name()

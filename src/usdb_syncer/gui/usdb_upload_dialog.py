@@ -44,14 +44,30 @@ class UsdbUploadDialog(Ui_Dialog, QDialog):
     _instance: ClassVar[UsdbUploadDialog | None] = None
 
     def __init__(
-        self, parent: QWidget | None, submittable: list[tuple[UsdbSong, SongChanges]]
+        self,
+        parent: QWidget | None,
+        submittable: list[tuple[UsdbSong, SongChanges]],
+        *,
+        allow_submission: bool = True,
     ) -> None:
         super().__init__(parent=parent)
         gui_utils.cleanup_on_close(self)
         self.setupUi(self)
         self.resize(1200, 800)
-        if ok_button := self.buttonBox.button(self.buttonBox.StandardButton.Ok):
-            ok_button.setText("Submit")
+        self.allow_submission = allow_submission
+        if allow_submission:
+            if ok_button := self.buttonBox.button(self.buttonBox.StandardButton.Ok):
+                ok_button.setText("Submit")
+        else:
+            self.setWindowTitle("Compare text with USDB")
+            self.label.setText("Current USDB")
+            self.label_2.setText("Local (may include automatic Syncer fixes)")
+            self.label_2.setToolTip(
+                "The Syncer may have changed formatting, timing markers, headers, "
+                "or notes when the song was downloaded. Differences are not "
+                "necessarily manual edits."
+            )
+            self.buttonBox.setStandardButtons(self.buttonBox.StandardButton.Close)
 
         self.submittable = submittable
         self._load_settings()
@@ -122,6 +138,9 @@ class UsdbUploadDialog(Ui_Dialog, QDialog):
 
     def accept(self) -> None:
         """Submit selected songs and close dialog."""
+        if not self.allow_submission:
+            self.reject()
+            return
 
         def task(progress: utils.ProgressProxy) -> None:
             progress.reset(
@@ -174,6 +193,45 @@ def submit_or_reject_selected(parent: QWidget, selected: list[UsdbSong]) -> None
         UsdbUploadDialog(parent, submittable).show()
 
 
+def compare_text_with_usdb(parent: QWidget, selected: list[UsdbSong]) -> None:
+    """Compare local text files with the current USDB versions."""
+    comparable: list[tuple[UsdbSong, SongChanges]] = []
+    rejected: list[tuple[UsdbSong, str]] = []
+
+    for song in selected:
+        match _validate_song_for_comparison(song):
+            case ValidationSuccess(changes):
+                comparable.append((song, changes))
+            case ValidationFailure(reason):
+                rejected.append((song, reason))
+
+    if rejected:
+        _show_rejection_message(parent, rejected, comparison=True)
+
+    if comparable:
+        UsdbUploadDialog(parent, comparable, allow_submission=False).show()
+
+
+def has_local_text_file(song: UsdbSong) -> bool:
+    """Return whether the song has an existing tracked local text file."""
+    return bool(
+        song.sync_meta
+        and (txt_path := song.sync_meta.txt_path())
+        and txt_path.is_file()
+    )
+
+
+def can_compare_text_with_usdb(song: UsdbSong) -> bool:
+    """Return whether local or remote state indicates a useful text comparison."""
+    if not has_local_text_file(song) or not song.sync_meta:
+        return False
+    txt = song.sync_meta.txt
+    has_local_change = bool(
+        txt and txt.file and not txt.file.is_in_sync(song.sync_meta.path.parent)
+    )
+    return has_local_change or song.status is DownloadStatus.OUTDATED
+
+
 def _validate_song_for_submission(
     song: UsdbSong,
 ) -> ValidationFailure | ValidationSuccess:
@@ -206,8 +264,33 @@ def _validate_song_for_submission(
     return ValidationSuccess(song_changes)
 
 
+def _validate_song_for_comparison(
+    song: UsdbSong,
+) -> ValidationFailure | ValidationSuccess:
+    logger = song_logger(song.song_id)
+    if not has_local_text_file(song):
+        return ValidationFailure("local text file is missing")
+
+    remote_str = get_notes(song.song_id, logger)
+    if not remote_str:
+        return ValidationFailure("not remote")
+    remote_txt = SongTxt.try_parse(remote_str, logger)
+    if not remote_txt:
+        return ValidationFailure("remote parsing failed")
+
+    song_changes = song.get_changes(remote_txt, normalize_for_upload=False)
+    return (
+        ValidationSuccess(song_changes)
+        if song_changes
+        else ValidationFailure("local text parsing failed")
+    )
+
+
 def _show_rejection_message(
-    parent: QWidget, rejected_songs: list[tuple[UsdbSong, str]]
+    parent: QWidget,
+    rejected_songs: list[tuple[UsdbSong, str]],
+    *,
+    comparison: bool = False,
 ) -> None:
     """Show a message listing why songs cannot be submitted."""
     if not rejected_songs:
@@ -215,9 +298,10 @@ def _show_rejection_message(
 
     if len(rejected_songs) == 1:
         song, reason = rejected_songs[0]
+        action = "compared" if comparison else "submitted"
         html = (
             f"<p>The song <b>{song.song_id}: {song.artist_title_str()}</b> cannot "
-            f"be submitted:</p><p style='color: #888;'>{reason}</p>"
+            f"be {action}:</p><p style='color: #888;'>{reason}</p>"
         )
     else:
         rows = []
@@ -230,14 +314,15 @@ def _show_rejection_message(
                 f"</tr>"
             )
 
+        action = "compared" if comparison else "submitted"
         html = (
-            "<p>The following songs cannot be submitted:</p>"
+            f"<p>The following songs cannot be {action}:</p>"
             "<table cellspacing='0' cellpadding='5'>" + "".join(rows) + "</table>"
         )
 
     msg_box = QMessageBox(parent)
     msg_box.setIcon(QMessageBox.Icon.Information)
-    msg_box.setWindowTitle("Not Submittable")
+    msg_box.setWindowTitle("Not Comparable" if comparison else "Not Submittable")
     msg_box.setTextFormat(Qt.TextFormat.RichText)
     msg_box.setText(html)
     msg_box.setStandardButtons(QMessageBox.StandardButton.Ok)

@@ -11,7 +11,7 @@ import pytest
 from usdb_syncer import SongId, SyncMetaId, db
 from usdb_syncer.db import JobStatus
 from usdb_syncer.meta_tags import MetaTags
-from usdb_syncer.sync_meta import Resource, ResourceFileImage, SyncMeta
+from usdb_syncer.sync_meta import Resource, ResourceFile, ResourceFileImage, SyncMeta
 from usdb_syncer.usdb_song import UsdbSong
 
 PERFORMANCE_TEST_ITEM_COUNT = 100000
@@ -120,6 +120,58 @@ def test_image_order_sorts_by_status_then_image_size(song: UsdbSong) -> None:
         for order in (db.SongOrder.COVER, db.SongOrder.BACKGROUND):
             sorted_ids = list(db.search_usdb_songs(db.SearchBuilder(order=order)))
             assert sorted_ids == [SongId(2), SongId(1), SongId(3)]
+
+
+def test_local_changes_order_checks_tracked_files(
+    song: UsdbSong, tmp_path: Path
+) -> None:
+    songs = []
+    cases = (
+        (SongId(1), (), False),
+        (SongId(2), (db.ResourceKind.AUDIO,), True),
+        (SongId(3), (db.ResourceKind.TXT,), True),
+        (SongId(4), (db.ResourceKind.TXT, db.ResourceKind.AUDIO), True),
+    )
+    for song_id, resource_kinds, changed in cases:
+        item = copy.copy(song)
+        item.song_id = song_id
+        song_folder = tmp_path.joinpath(str(song_id))
+        song_folder.mkdir()
+        resources: dict[db.ResourceKind, Resource] = {}
+        for kind in resource_kinds or (db.ResourceKind.AUDIO,):
+            path = song_folder.joinpath(f"song.{kind.value}")
+            path.touch()
+            file = ResourceFile.new(path, f"https://example.com/song.{kind.value}")
+            if changed:
+                file.mtime = 0
+            resources[kind] = Resource(JobStatus.SUCCESS, file)
+        item.sync_meta = SyncMeta(
+            SyncMetaId.new(),
+            song_id,
+            0,
+            song_folder.joinpath("song.usdb"),
+            0,
+            MetaTags(),
+            txt=resources.get(db.ResourceKind.TXT),
+            audio=resources.get(db.ResourceKind.AUDIO),
+        )
+        songs.append(item)
+
+    with db.managed_connection(":memory:"):
+        for item in songs:
+            item.upsert()
+        db.reset_active_sync_metas(tmp_path)
+        ascending = list(
+            db.search_usdb_songs(db.SearchBuilder(order=db.SongOrder.LOCAL_CHANGES))
+        )
+        descending = list(
+            db.search_usdb_songs(
+                db.SearchBuilder(order=db.SongOrder.LOCAL_CHANGES, descending=True)
+            )
+        )
+
+    assert ascending == [SongId(1), SongId(2), SongId(3), SongId(4)]
+    assert descending == [SongId(4), SongId(3), SongId(2), SongId(1)]
 
 
 @pytest.mark.slow

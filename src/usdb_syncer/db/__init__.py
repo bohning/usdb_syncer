@@ -10,19 +10,19 @@ import threading
 import time
 from collections import defaultdict
 from enum import StrEnum, auto
+from pathlib import Path
 from typing import TYPE_CHECKING, Any, assert_never, cast
 
 import attrs
 from more_itertools import batched
 
-from usdb_syncer import SongId, SyncMetaId, errors
+from usdb_syncer import SongId, SyncMetaId, constants, errors
 from usdb_syncer.logger import logger
 
 from .sql import Sql
 
 if TYPE_CHECKING:
     from collections.abc import Generator, Iterable, Iterator
-    from pathlib import Path
 
 
 SCHEMA_VERSION = 12
@@ -66,6 +66,9 @@ class _DbState:
             raise errors.AlreadyConnectedError()
         cls._local.connection = sqlite3.connect(
             db_path, check_same_thread=False, isolation_level=None, timeout=60
+        )
+        cls._local.connection.create_function(
+            "local_file_changed", 3, _local_file_changed
         )
         logger.debug(f"Connected to database at '{db_path}'.")
         if cls.trace_sql:
@@ -130,6 +133,26 @@ def _validate_schema(connection: sqlite3.Connection) -> None:
             {"version": SCHEMA_VERSION, "ctime": int(time.time() * 1_000_000)},
         )
     connection.executescript(Sql.SETUP_SESSION_SCRIPT.text_uncached())
+
+
+def _local_file_changed(
+    sync_meta_path: str | None, fname: str | None, saved_mtime: int | None
+) -> int:
+    """Check a tracked file's live mtime for the LOCAL_CHANGES sort order.
+
+    Use the same tolerance as ResourceFile.is_in_sync so sorting and display
+    classify timestamp changes consistently.
+    """
+    if sync_meta_path is None or fname is None or saved_mtime is None:
+        return 0
+    path = Path(sync_meta_path).parent.joinpath(fname)
+    try:
+        current_mtime = int(path.stat().st_mtime * 1_000_000)
+    except OSError:
+        return 1
+    return int(
+        abs(current_mtime - saved_mtime) >= constants.FILE_MTIME_TOLERANCE_MICROSECONDS
+    )
 
 
 def connect(db_path: Path | str) -> None:
@@ -270,6 +293,8 @@ class SongOrder(SongOrderBase, enum.Enum):
     BACKGROUND = enum.auto()
     LAST_CHANGE = enum.auto()
     STATUS = enum.auto()
+    # Keep new values at the end to preserve serialized enum values.
+    LOCAL_CHANGES = enum.auto()
 
     def sql(self) -> str | None:  # noqa: C901
         match self:
@@ -325,6 +350,14 @@ class SongOrder(SongOrderBase, enum.Enum):
                 return "usdb_song.usdb_mtime"
             case SongOrder.STATUS:
                 return _STATUS_COLUMN
+            case SongOrder.LOCAL_CHANGES:
+                changes = " || ".join(
+                    "CASE WHEN local_file_changed("
+                    f"sync_meta.path, {kind.value}.fname, {kind.value}.mtime"
+                    f") THEN '{kind.display_name()}, ' ELSE '' END"
+                    for kind in ResourceKind
+                )
+                return f"rtrim({changes}, ', ')"
 
     def to_json(self) -> int | str:
         return self.value
@@ -948,6 +981,10 @@ class ResourceKind(enum.StrEnum):
     VIDEO = "video"
     COVER = "cover"
     BACKGROUND = "background"
+
+    def display_name(self) -> str:
+        """Return the user-facing resource name used in the song table."""
+        return "Text" if self is ResourceKind.TXT else self.value.title()
 
 
 @attrs.define(frozen=True, slots=False)

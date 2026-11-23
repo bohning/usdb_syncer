@@ -288,6 +288,7 @@
     <addaction name="action_show_in_usdb"/>
     <addaction name="action_post_comment_in_usdb"/>
     <addaction name="menu_rate_song_on_usdb"/>
+    <addaction name="action_compare_text_with_usdb"/>
     <addaction name="action_submit_to_usdb"/>
     <addaction name="separator"/>
     <addaction name="menu_open_song_in"/>
@@ -913,6 +914,18 @@
    </property>
    <property name="toolTip">
     <string>Submit local changes to USDB</string>
+   </property>
+  </action>
+  <action name="action_compare_text_with_usdb">
+   <property name="icon">
+    <iconset resource="../resources/qt/resources.qrc">
+     <normaloff>:/icons/diff.png</normaloff>:/icons/diff.png</iconset>
+   </property>
+   <property name="text">
+    <string>Compare text with USDB</string>
+   </property>
+   <property name="toolTip">
+    <string>Compare the local text file with the current USDB version</string>
    </property>
   </action>
   <action name="action_licenses">

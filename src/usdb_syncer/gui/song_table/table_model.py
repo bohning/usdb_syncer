@@ -17,7 +17,12 @@ from usdb_syncer import SongId, events, settings
 from usdb_syncer.db import JobStatus
 from usdb_syncer.gui import events as gui_events
 from usdb_syncer.gui.fonts import get_rating_font
-from usdb_syncer.gui.song_table.column import Column, ColumnBase, CustomColumn
+from usdb_syncer.gui.song_table.column import (
+    Column,
+    ColumnBase,
+    CustomColumn,
+    local_change_label,
+)
 from usdb_syncer.sync_meta import Resource
 from usdb_syncer.usdb_song import UsdbSong
 
@@ -175,6 +180,16 @@ def _tooltip_data(song: UsdbSong, column: int) -> str | None:
         return None
 
     col = Column.from_index(column)
+    if col == Column.LOCAL_CHANGES:
+        changes = sync_meta.local_changes()
+        return (
+            "\n".join(
+                f"{local_change_label(change.kind)}: {change.file.fname} "
+                f"({'missing' if change.missing else 'modified'})"
+                for change in changes
+            )
+            or None
+        )
     if resource := col.get_resource_for_column(sync_meta):
         return status_tooltip(resource, sync_meta.path.parent)
 

@@ -259,8 +259,14 @@ class UsdbSong:
             db.set_usdb_song_playing(self.song_id, is_playing)
             _UsdbSongCache.update(self)
 
-    def get_changes(self, remote_txt: SongTxt) -> SongChanges | None:
-        """Analyze changes between local and remote versions of a song."""
+    def get_changes(
+        self, remote_txt: SongTxt, *, normalize_for_upload: bool = True
+    ) -> SongChanges | None:
+        """Analyze changes between local and remote versions of a song.
+
+        Disable upload normalization for read-only comparisons to skip canonical
+        upload fixes while retaining the shared USDB text serialization.
+        """
         logger = song_logger(self.song_id)
 
         remote_str = remote_txt.str_for_upload(ensure_canonical=False)
@@ -274,7 +280,14 @@ class UsdbSong:
             return None
         if not (local_txt := SongTxt.try_from_file(txt_path, logger)):
             return None
-        local_str = local_txt.str_for_upload(sync_meta.meta_tags, remote_txt.headers)
+        sync_meta_tags = (
+            sync_meta.meta_tags
+            if normalize_for_upload or not sync_meta.meta_tags.is_empty()
+            else None
+        )
+        local_str = local_txt.str_for_upload(
+            sync_meta_tags, remote_txt.headers, ensure_canonical=normalize_for_upload
+        )
 
         diff_remote, diff_local, builder = generate_remote_vs_local_diffs(
             remote_str, local_str
