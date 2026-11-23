@@ -138,7 +138,11 @@ def _validate_schema(connection: sqlite3.Connection) -> None:
 def _local_file_changed(
     sync_meta_path: str | None, fname: str | None, saved_mtime: int | None
 ) -> int:
-    """Return whether a tracked file is missing or has a different mtime."""
+    """Check a tracked file's live mtime for the LOCAL_CHANGES sort order.
+
+    Use the same tolerance as ResourceFile.is_in_sync so sorting and display
+    classify timestamp changes consistently.
+    """
     if sync_meta_path is None or fname is None or saved_mtime is None:
         return 0
     path = Path(sync_meta_path).parent.joinpath(fname)

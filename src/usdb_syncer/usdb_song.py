@@ -262,7 +262,11 @@ class UsdbSong:
     def get_changes(
         self, remote_txt: SongTxt, *, normalize_for_upload: bool = True
     ) -> SongChanges | None:
-        """Analyze changes between local and remote versions of a song."""
+        """Analyze changes between local and remote versions of a song.
+
+        Disable upload normalization for read-only comparisons to skip canonical
+        upload fixes while retaining the shared USDB text serialization.
+        """
         logger = song_logger(self.song_id)
 
         remote_str = remote_txt.str_for_upload(ensure_canonical=False)
