@@ -33,7 +33,11 @@ from usdb_syncer.gui.settings_dialog import SettingsDialog
 from usdb_syncer.gui.shortcuts import MainWindowShortcut, SongTableShortcut
 from usdb_syncer.gui.song_table.song_table import SongTable
 from usdb_syncer.gui.usdb_login_dialog import UsdbLoginDialog
-from usdb_syncer.gui.usdb_upload_dialog import submit_or_reject_selected
+from usdb_syncer.gui.usdb_upload_dialog import (
+    can_compare_text_with_usdb,
+    compare_text_with_usdb,
+    submit_or_reject_selected,
+)
 from usdb_syncer.gui.webserver_dialog import WebserverDialog
 from usdb_syncer.logger import logger
 from usdb_syncer.song_loader import DownloadManager
@@ -151,6 +155,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
             (self.action_rate_3stars, lambda: self._rate_in_usdb(3), None),
             (self.action_rate_4stars, lambda: self._rate_in_usdb(4), None),
             (self.action_rate_5stars, lambda: self._rate_in_usdb(5), None),
+            (self.action_compare_text_with_usdb, self._compare_text_with_usdb, None),
             (self.action_submit_to_usdb, self._submit_to_usdb, None),
             (self.action_open_song_folder, self._open_current_song_folder, None),
             (
@@ -236,6 +241,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
             action.triggered.connect(func)
             if shortcut:
                 action.setShortcut(shortcut)
+        self.menu_songs.aboutToShow.connect(self._update_compare_action)
         self.menu_custom_data.aboutToShow.connect(self.table.build_custom_data_menu)
 
     def _setup_shortcuts(self) -> None:
@@ -428,6 +434,18 @@ class MainWindow(Ui_MainWindow, QMainWindow):
 
         submit_or_reject_selected(self, selected)
 
+    def _compare_text_with_usdb(self) -> None:
+        """Compare selected local text files with the current USDB versions."""
+        compare_text_with_usdb(self, list(self.table.selected_songs()))
+
+    def _update_compare_action(self) -> None:
+        """Enable comparison when a selected song has a local text file."""
+        self.action_compare_text_with_usdb.setEnabled(
+            any(
+                can_compare_text_with_usdb(song) for song in self.table.selected_songs()
+            )
+        )
+
     def _open_current_song(self, action: Callable[[Path], None]) -> None:
         if song := self.table.current_song():
             if song.sync_meta:
@@ -511,6 +529,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         self.action_pin.setIcon(icons.Icon.PIN.icon(key))
         self.action_delete.setIcon(icons.Icon.DELETE.icon(key))
         self.action_submit_to_usdb.setIcon(icons.Icon.UPLOAD.icon(key))
+        self.action_compare_text_with_usdb.setIcon(icons.Icon.DIFF.icon(key))
         self.action_open_song_in_usdx.setIcon(icons.Icon.USDX.icon(key))
         self.action_open_song_in_vocaluxe.setIcon(icons.Icon.VOCALUXE.icon(key))
         self.action_open_song_in_performous.setIcon(icons.Icon.PERFORMOUS.icon(key))
@@ -535,6 +554,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         if not song:
             return
         for action in (
+            self.action_compare_text_with_usdb,
             self.action_submit_to_usdb,
             self.action_open_song_folder,
             self.menu_open_song_in,
@@ -550,5 +570,6 @@ class MainWindow(Ui_MainWindow, QMainWindow):
             self.menu_custom_data,
         ):
             action.setEnabled(song.is_local())
+        self.action_compare_text_with_usdb.setEnabled(can_compare_text_with_usdb(song))
         self.action_pin.setChecked(song.is_pinned())
         self.action_songs_abort.setEnabled(song.status.can_be_aborted())

@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING, Any, ClassVar
 import attrs
 from PIL import Image
 
-from usdb_syncer import SongId, SyncMetaId, db, settings, utils
+from usdb_syncer import SongId, SyncMetaId, constants, db, settings, utils
 from usdb_syncer.custom_data import CustomData
 from usdb_syncer.db import JobStatus
 from usdb_syncer.logger import logger
@@ -21,9 +21,8 @@ if TYPE_CHECKING:
 
 SYNC_META_VERSION = 1
 SYNC_META_INDENT = 4
-# mtimes may deviate up to 2 seconds on different file systems
-# See https://en.wikipedia.org/wiki/File_Allocation_Table
-MTIME_TOLERANCE_SECS = 2
+# mtimes may deviate on file systems such as FAT.
+MTIME_TOLERANCE_SECS = constants.FILE_MTIME_TOLERANCE_MICROSECONDS // 1_000_000
 
 
 class SyncMetaTooNewError(Exception):
@@ -71,8 +70,8 @@ class ResourceFile:
             path = folder.joinpath(self.fname)
             self._is_in_sync = (
                 path.exists()
-                and abs(utils.get_mtime(path) - self.mtime) / 1_000_000
-                < MTIME_TOLERANCE_SECS
+                and abs(utils.get_mtime(path) - self.mtime)
+                < constants.FILE_MTIME_TOLERANCE_MICROSECONDS
             )
         return self._is_in_sync
 
@@ -238,6 +237,15 @@ class ImageResource(Resource):
             (row[0], row[1], row[2], row[4], row[5])
         )
         return cls(status, file)
+
+
+@attrs.define(frozen=True)
+class LocalChange:
+    """A tracked resource file that was modified or removed locally."""
+
+    kind: db.ResourceKind
+    file: ResourceFile
+    missing: bool
 
 
 @attrs.define
@@ -434,6 +442,22 @@ class SyncMeta:
             (self.cover, db.ResourceKind.COVER),
             (self.background, db.ResourceKind.BACKGROUND),
         )
+
+    def local_changes(self, force_check: bool = False) -> tuple[LocalChange, ...]:
+        """Return tracked resource files that differ from their saved timestamps."""
+        folder = self.path.parent
+        changes = []
+        for resource, kind in self.all_resources():
+            if not resource or not resource.file:
+                continue
+            file = resource.file
+            if not file.is_in_sync(folder, force_check=force_check):
+                changes.append(
+                    LocalChange(
+                        kind, file, missing=not folder.joinpath(file.fname).exists()
+                    )
+                )
+        return tuple(changes)
 
     def db_params(self) -> db.SyncMetaParams:
         return db.SyncMetaParams(
