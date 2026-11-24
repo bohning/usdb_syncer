@@ -287,6 +287,7 @@
     <addaction name="action_force_redownload"/>
     <addaction name="action_show_in_usdb"/>
     <addaction name="action_post_comment_in_usdb"/>
+    <addaction name="action_submit_gap_comment"/>
     <addaction name="menu_rate_song_on_usdb"/>
     <addaction name="action_submit_to_usdb"/>
     <addaction name="separator"/>
@@ -913,6 +914,18 @@
    </property>
    <property name="toolTip">
     <string>Submit local changes to USDB</string>
+   </property>
+  </action>
+  <action name="action_submit_gap_comment">
+   <property name="icon">
+    <iconset resource="../resources/qt/resources.qrc">
+     <normaloff>:/icons/balloon.png</normaloff>:/icons/balloon.png</iconset>
+   </property>
+   <property name="text">
+    <string>Post Comment on USDB containing only GAP</string>
+   </property>
+   <property name="toolTip">
+    <string>Post only the local #GAP value for selected songs whose text file has local changes</string>
    </property>
   </action>
   <action name="action_licenses">
