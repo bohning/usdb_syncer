@@ -1,7 +1,7 @@
 """usdb_syncer's GUI."""
 
 from collections.abc import Callable
-from math import isfinite
+from decimal import Decimal, InvalidOperation
 from pathlib import Path
 from typing import Any
 
@@ -82,18 +82,20 @@ def _read_local_gap(path: Path) -> str | None:
         header, separator, value = line[1:].partition(":")
         if separator and header.lower() == "gap" and (gap := value.strip()):
             try:
-                parsed_gap = float(gap.replace(",", "."))
-            except ValueError:
+                parsed_gap = Decimal(gap.replace(",", "."))
+            except InvalidOperation:
                 continue
-            if isfinite(parsed_gap):
+            if parsed_gap.is_finite():
                 return gap
     return None
 
 
 def _post_gap_comments(
-    selected: list[UsdbSong], progress: utils.ProgressProxy
+    selected: list[UsdbSong],
+    progress: utils.ProgressProxy,
+    posted_gap_comments: set[tuple[SongId, Decimal]],
 ) -> tuple[int, int, int, bool]:
-    """Post each selected song's GAP if its local text file has changed."""
+    """Post each changed local GAP once per application session."""
     progress.reset(
         f"Posting #GAP comments for {len(selected)} selected songs.",
         maximum=len(selected),
@@ -136,6 +138,16 @@ def _post_gap_comments(
             continue
 
         assert gap is not None
+        # This in-memory guard suppresses repeats only until the application exits.
+        comment_key = (song.song_id, Decimal(gap.replace(",", ".")))
+        if comment_key in posted_gap_comments:
+            skipped += 1
+            song_log.info(
+                "Skipped #GAP comment: this song and GAP value were already posted "
+                "during this session."
+            )
+            continue
+
         try:
             post_song_comment(song.song_id, f"#GAP: {gap}", "neutral")
         except Exception:
@@ -143,6 +155,7 @@ def _post_gap_comments(
             song_log.exception("Failed to post local #GAP comment.")
         else:
             posted += 1
+            posted_gap_comments.add(comment_key)
     return posted, skipped, failed, stopped
 
 
@@ -153,6 +166,8 @@ class MainWindow(Ui_MainWindow, QMainWindow):
 
     def __init__(self) -> None:
         super().__init__()
+        # Intentionally session-only: this set is recreated when the app starts.
+        self._posted_gap_comments: set[tuple[SongId, Decimal]] = set()
         self.setupUi(self)
         self.tree = FilterTree(self)
         self.table = SongTable(self)
@@ -521,7 +536,10 @@ class MainWindow(Ui_MainWindow, QMainWindow):
                 notification.success(message)
 
         run_with_progress(
-            lambda progress: _post_gap_comments(selected, progress), on_done=on_done
+            lambda progress: _post_gap_comments(
+                selected, progress, self._posted_gap_comments
+            ),
+            on_done=on_done,
         )
 
     def _show_preview_dialog(self) -> None:

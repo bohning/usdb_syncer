@@ -1,5 +1,6 @@
 """Tests for posting comments containing local #GAP values."""
 
+from decimal import Decimal
 from pathlib import Path
 
 import attrs
@@ -51,35 +52,85 @@ def test_post_gap_comments_only_posts_changed_text_files(
         posted.append((song_id, text, rating))
 
     monkeypatch.setattr(mw, "post_song_comment", post_comment)
+    posted_gap_comments: set[tuple[SongId, Decimal]] = set()
 
     result = mw._post_gap_comments(
-        [changed, unchanged, missing_gap, missing_file], utils.ProgressProxy("test")
+        [changed, unchanged, missing_gap, missing_file],
+        utils.ProgressProxy("test"),
+        posted_gap_comments,
     )
 
     assert result == (1, 3, 0, False)
     assert posted == [(SongId(101), "#GAP: 84", "neutral")]
 
 
-def test_post_gap_comments_continues_after_post_failure(
+def test_post_gap_comments_retries_failed_post(
     song: UsdbSong, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     first = _song_with_txt(song, tmp_path, 201, "#GAP: 20\n", changed=True)
     second = _song_with_txt(song, tmp_path, 202, "#GAP: 30\n", changed=True)
     calls: list[tuple[SongId, str, str]] = []
+    failed_once = False
 
     def post_comment(song_id: SongId, text: str, rating: str) -> None:
+        nonlocal failed_once
         calls.append((song_id, text, rating))
-        if song_id == SongId(201):
+        if song_id == SongId(201) and not failed_once:
+            failed_once = True
             raise RuntimeError("USDB unavailable")
 
     monkeypatch.setattr(mw, "post_song_comment", post_comment)
+    posted_gap_comments: set[tuple[SongId, Decimal]] = set()
 
-    result = mw._post_gap_comments([first, second], utils.ProgressProxy("test"))
+    result = mw._post_gap_comments(
+        [first, second], utils.ProgressProxy("test"), posted_gap_comments
+    )
+    retry_result = mw._post_gap_comments(
+        [first], utils.ProgressProxy("test"), posted_gap_comments
+    )
 
     assert result == (1, 0, 1, False)
+    assert retry_result == (1, 0, 0, False)
     assert calls == [
         (SongId(201), "#GAP: 20", "neutral"),
         (SongId(202), "#GAP: 30", "neutral"),
+        (SongId(201), "#GAP: 20", "neutral"),
+    ]
+
+
+def test_post_gap_comments_suppresses_duplicate_numeric_gap(
+    song: UsdbSong, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    changed = _song_with_txt(song, tmp_path, 301, "#GAP: 50.1\n", changed=True)
+    posted: list[tuple[SongId, str, str]] = []
+
+    def post_comment(song_id: SongId, text: str, rating: str) -> None:
+        posted.append((song_id, text, rating))
+
+    monkeypatch.setattr(mw, "post_song_comment", post_comment)
+    posted_gap_comments: set[tuple[SongId, Decimal]] = set()
+
+    first_result = mw._post_gap_comments(
+        [changed], utils.ProgressProxy("test"), posted_gap_comments
+    )
+    assert changed.sync_meta
+    txt_path = changed.sync_meta.txt_path()
+    assert txt_path
+    txt_path.write_text("#GAP: 50,1\n", encoding="utf-8")
+    duplicate_result = mw._post_gap_comments(
+        [changed], utils.ProgressProxy("test"), posted_gap_comments
+    )
+    txt_path.write_text("#GAP: 51,1\n", encoding="utf-8")
+    changed_gap_result = mw._post_gap_comments(
+        [changed], utils.ProgressProxy("test"), posted_gap_comments
+    )
+
+    assert first_result == (1, 0, 0, False)
+    assert duplicate_result == (0, 1, 0, False)
+    assert changed_gap_result == (1, 0, 0, False)
+    assert posted == [
+        (SongId(301), "#GAP: 50.1", "neutral"),
+        (SongId(301), "#GAP: 51,1", "neutral"),
     ]
 
 
