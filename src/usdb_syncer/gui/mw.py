@@ -1,13 +1,23 @@
 """usdb_syncer's GUI."""
 
 from collections.abc import Callable
+from decimal import Decimal, InvalidOperation
 from pathlib import Path
 from typing import Any
 
 from PySide6.QtGui import QCloseEvent, QShowEvent
 from PySide6.QtWidgets import QFileDialog, QMainWindow
 
-from usdb_syncer import SongId, db, events, settings, song_routines, usdb_id_file, utils
+from usdb_syncer import (
+    SongId,
+    db,
+    errors,
+    events,
+    settings,
+    song_routines,
+    usdb_id_file,
+    utils,
+)
 from usdb_syncer.constants import Usdb
 from usdb_syncer.gui import (
     cover_widget,
@@ -35,13 +45,118 @@ from usdb_syncer.gui.song_table.song_table import SongTable
 from usdb_syncer.gui.usdb_login_dialog import UsdbLoginDialog
 from usdb_syncer.gui.usdb_upload_dialog import submit_or_reject_selected
 from usdb_syncer.gui.webserver_dialog import WebserverDialog
-from usdb_syncer.logger import logger
+from usdb_syncer.logger import logger, song_logger
+from usdb_syncer.settings import Encoding
 from usdb_syncer.song_loader import DownloadManager
 from usdb_syncer.sync_meta import SyncMeta
-from usdb_syncer.usdb_scraper import SessionManager, UserRole, post_song_rating
+from usdb_syncer.usdb_scraper import (
+    SessionManager,
+    UserRole,
+    post_song_comment,
+    post_song_rating,
+)
 from usdb_syncer.usdb_song import UsdbSong
 from usdb_syncer.utils import AppPaths, open_path_or_file
 from usdb_syncer.webserver import webserver
+
+
+def _read_local_gap(path: Path) -> str | None:
+    """Read an explicit #GAP value using the encodings supported for song text."""
+    text: str | None = None
+    for encoding in (Encoding.UTF_8_BOM, Encoding.CP1252):
+        try:
+            text = path.read_text(encoding=encoding.value, errors="strict")
+        except UnicodeDecodeError:
+            continue
+        except OSError:
+            return None
+        else:
+            break
+
+    if text is None:
+        return None
+
+    for line in text.splitlines():
+        if not line.startswith("#"):
+            break
+        header, separator, value = line[1:].partition(":")
+        if separator and header.lower() == "gap" and (gap := value.strip()):
+            try:
+                parsed_gap = Decimal(gap.replace(",", "."))
+            except InvalidOperation:
+                continue
+            if parsed_gap.is_finite():
+                return gap
+    return None
+
+
+def _post_gap_comments(
+    selected: list[UsdbSong],
+    progress: utils.ProgressProxy,
+    posted_gap_comments: set[tuple[SongId, Decimal]],
+) -> tuple[int, int, int, bool]:
+    """Post each changed local GAP once per application session."""
+    progress.reset(
+        f"Posting #GAP comments for {len(selected)} selected songs.",
+        maximum=len(selected),
+    )
+    posted = skipped = failed = 0
+    stopped = False
+    for song in selected:
+        try:
+            progress.increase()
+        except errors.AbortError:
+            stopped = True
+            break
+
+        song_log = song_logger(song.song_id)
+        reason: str | None = None
+        gap: str | None = None
+        try:
+            sync_meta = song.sync_meta
+            if not sync_meta:
+                reason = "song is not local"
+            elif not (txt_resource := sync_meta.txt) or not txt_resource.file:
+                reason = "no local text file is tracked"
+            # Use the text icon's timestamp check, refreshing it for this batch.
+            elif txt_resource.file.is_in_sync(
+                sync_meta.path.parent, force_check=True
+            ):
+                reason = "local text file has no timestamp-detected changes"
+            elif not (txt_path := sync_meta.txt_path()) or not txt_path.is_file():
+                reason = "local text file is missing"
+            elif (gap := _read_local_gap(txt_path)) is None:
+                reason = "local text file has no readable #GAP value"
+        except Exception:
+            failed += 1
+            song_log.exception("Failed to read local text file for #GAP.")
+            continue
+
+        if reason:
+            skipped += 1
+            song_log.info(f"Skipped #GAP comment: {reason}.")
+            continue
+
+        assert gap is not None
+        # This in-memory guard suppresses repeats only until the application exits.
+        comment_key = (song.song_id, Decimal(gap.replace(",", ".")))
+        if comment_key in posted_gap_comments:
+            skipped += 1
+            song_log.info(
+                "Skipped #GAP comment: this song and GAP value were already posted "
+                "during this session."
+            )
+            continue
+
+        try:
+            post_song_comment(song.song_id, f"#GAP: {gap}", "neutral")
+        except Exception:
+            failed += 1
+            song_log.exception("Failed to post local #GAP comment.")
+        else:
+            posted += 1
+            posted_gap_comments.add(comment_key)
+    return posted, skipped, failed, stopped
 
 
 class MainWindow(Ui_MainWindow, QMainWindow):
@@ -51,6 +166,8 @@ class MainWindow(Ui_MainWindow, QMainWindow):
 
     def __init__(self) -> None:
         super().__init__()
+        # Intentionally session-only: this set is recreated when the app starts.
+        self._posted_gap_comments: set[tuple[SongId, Decimal]] = set()
         self.setupUi(self)
         self.tree = FilterTree(self)
         self.table = SongTable(self)
@@ -146,6 +263,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
             ),
             (self.action_show_in_usdb, self._show_current_song_in_usdb, None),
             (self.action_post_comment_in_usdb, self._show_comment_dialog, None),
+            (self.action_submit_gap_comment, self._submit_gap_comments, None),
             (self.action_rate_1star, lambda: self._rate_in_usdb(1), None),
             (self.action_rate_2stars, lambda: self._rate_in_usdb(2), None),
             (self.action_rate_3stars, lambda: self._rate_in_usdb(3), None),
@@ -397,6 +515,33 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         else:
             logger.debug("Not opening comment dialog: no song selected.")
 
+    def _submit_gap_comments(self) -> None:
+        selected = list(self.table.selected_songs())
+        if not selected:
+            notification.error("No songs selected.")
+            return
+
+        def on_done(result: tuple[int, int, int, bool]) -> None:
+            posted, skipped, failed, stopped = result
+            message = (
+                f"Posted {posted} #GAP comment(s); skipped {skipped}; failed {failed}."
+            )
+            if stopped:
+                message += " Stopped before all selected songs were processed."
+            if failed:
+                notification.error(f"{message} See the log for details.")
+            elif skipped or stopped:
+                notification.warning(message)
+            else:
+                notification.success(message)
+
+        run_with_progress(
+            lambda progress: _post_gap_comments(
+                selected, progress, self._posted_gap_comments
+            ),
+            on_done=on_done,
+        )
+
     def _show_preview_dialog(self) -> None:
         song = self.table.current_song()
         if song:
@@ -504,6 +649,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         self.action_force_redownload.setIcon(icons.Icon.DOWNLOAD_FORCE.icon(key))
         self.action_show_in_usdb.setIcon(icons.Icon.USDB.icon(key))
         self.action_post_comment_in_usdb.setIcon(icons.Icon.COMMENT.icon(key))
+        self.action_submit_gap_comment.setIcon(icons.Icon.COMMENT.icon(key))
         self.menu_rate_song_on_usdb.setIcon(icons.Icon.RATING.icon(key))
         self.action_open_song_folder.setIcon(icons.Icon.SONG_FOLDER.icon(key))
         self.menu_open_song_in.setIcon(icons.Icon.OPEN_SONG_WITH.icon(key))
